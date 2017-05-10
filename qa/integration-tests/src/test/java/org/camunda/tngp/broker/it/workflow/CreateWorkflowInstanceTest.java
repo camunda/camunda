@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.client.ClientCommandRejectedException;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,8 +96,8 @@ public class CreateWorkflowInstanceTest
         final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // expected
-        exception.expect(WorkflowInstanceRejectedException.class);
-        exception.expectMessage("Creation of workflow instance with id illegal and version -1 was rejected.");
+        exception.expect(ClientCommandRejectedException.class);
+        exception.expectMessage("Failed to create instance of workflow with BPMN process id 'illegal' and version '-1'.");
 
         // when
         workflowService

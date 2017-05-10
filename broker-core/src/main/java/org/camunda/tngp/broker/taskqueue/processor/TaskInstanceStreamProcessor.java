@@ -50,6 +50,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final FailTaskProcessor failTaskProcessor = new FailTaskProcessor();
     protected final ExpireLockTaskProcessor expireLockTaskProcessor = new ExpireLockTaskProcessor();
     protected final UpdateRetriesTaskProcessor updateRetriesTaskProcessor = new UpdateRetriesTaskProcessor();
+    protected final CancelTaskProcessor cancelTaskProcessor = new CancelTaskProcessor();
 
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
@@ -130,6 +131,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             case UPDATE_RETRIES:
                 eventProcessor = updateRetriesTaskProcessor;
                 break;
+            case CANCEL:
+                eventProcessor = cancelTaskProcessor;
+                break;
 
             default:
                 break;
@@ -171,7 +175,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             .tryWrite();
     }
 
-    class CreateTaskProcessor implements EventProcessor
+    private class CreateTaskProcessor implements EventProcessor
     {
 
         @Override
@@ -205,7 +209,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    class LockTaskProcessor implements EventProcessor
+    private class LockTaskProcessor implements EventProcessor
     {
         protected boolean isLocked;
         protected long writtenEventPosition;
@@ -280,7 +284,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    class CompleteTaskProcessor implements EventProcessor
+    private class CompleteTaskProcessor implements EventProcessor
     {
         protected boolean isCompleted;
 
@@ -324,12 +328,12 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isCompleted)
             {
-                indexWriter.write(eventKey, TaskEventType.COMPLETED, -1, -1);
+                taskIndex.remove(eventKey);
             }
         }
     }
 
-    class FailTaskProcessor implements EventProcessor
+    private class FailTaskProcessor implements EventProcessor
     {
         protected boolean isFailed;
 
@@ -376,7 +380,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    class ExpireLockTaskProcessor implements EventProcessor
+    private class ExpireLockTaskProcessor implements EventProcessor
     {
         protected boolean isExpired;
 
@@ -418,7 +422,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    class UpdateRetriesTaskProcessor implements EventProcessor
+    private class UpdateRetriesTaskProcessor implements EventProcessor
     {
         @Override
         public void processEvent()
@@ -446,6 +450,44 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             return writeEventToLogStream(writer);
+        }
+    }
+
+    private class CancelTaskProcessor implements EventProcessor
+    {
+        private boolean isCanceled;
+
+        @Override
+        public void processEvent()
+        {
+            isCanceled = false;
+
+            indexAccessor.wrapIndexKey(eventKey);
+
+            if (indexAccessor.getTypeId() > 0)
+            {
+                taskEvent.setEventType(TaskEventType.CANCELED);
+                isCanceled = true;
+            }
+            else
+            {
+                taskEvent.setEventType(TaskEventType.CANCEL_REJECTED);
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeEventToLogStream(writer);
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isCanceled)
+            {
+                taskIndex.remove(eventKey);
+            }
         }
     }
 

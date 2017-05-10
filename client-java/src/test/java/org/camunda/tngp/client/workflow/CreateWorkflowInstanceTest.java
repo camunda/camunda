@@ -5,10 +5,10 @@ import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.ByteArrayInputStream;
 
+import org.camunda.tngp.client.ClientCommandRejectedException;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,7 +40,7 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstance()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith()
+        brokerRule.onWorkflowRequestRespondWith(1L)
                 .put("eventType", "WORKFLOW_INSTANCE_CREATED")
                 .put("version", 1)
                 .put("workflowInstanceKey", 1)
@@ -66,7 +66,7 @@ public class CreateWorkflowInstanceTest
         // given
         final byte[] payload = getBytes("{ \"bar\" : 4 }");
 
-        brokerRule.onWorkflowRequestRespondWith()
+        brokerRule.onWorkflowRequestRespondWith(1L)
             .put("eventType", "WORKFLOW_INSTANCE_CREATED")
             .put("version", 1)
             .put("workflowInstanceKey", 1)
@@ -106,7 +106,7 @@ public class CreateWorkflowInstanceTest
     public void shouldRejectCreateWorkflowInstance()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith()
+        brokerRule.onWorkflowRequestRespondWith(1L)
                 .put("eventType", "WORKFLOW_INSTANCE_REJECTED")
                 .put("bpmnProcessId", "foo")
                 .put("version", 1)
@@ -115,8 +115,8 @@ public class CreateWorkflowInstanceTest
 
 
         // expect exception
-        expectedException.expect(WorkflowInstanceRejectedException.class);
-        expectedException.expectMessage("Creation of workflow instance with id foo and version 1 was rejected.");
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Failed to create instance of workflow with BPMN process id 'foo' and version '1'.");
 
         // when
         clientRule.workflowTopic()
@@ -129,7 +129,7 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceWithVersion()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith()
+        brokerRule.onWorkflowRequestRespondWith(1L)
                 .put("eventType", "WORKFLOW_INSTANCE_CREATED")
                 .put("workflowInstanceKey", 1)
                 .done()

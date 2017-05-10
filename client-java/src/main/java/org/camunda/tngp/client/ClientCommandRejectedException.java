@@ -10,35 +10,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.client.impl.cmd.taskqueue;
+package org.camunda.tngp.client;
 
-public enum TaskEventType
+/**
+ * A client command was rejected by the broker.
+ */
+public class ClientCommandRejectedException extends RuntimeException
 {
-    CREATE,
-    CREATED,
+    private static final long serialVersionUID = 1L;
 
-    LOCK,
-    LOCKED,
-    LOCK_REJECTED,
-
-    COMPLETE,
-    COMPLETED,
-    COMPLETE_REJECTED,
-
-    EXPIRE_LOCK,
-    LOCK_EXPIRED,
-    LOCK_EXPIRATION_REJECTED,
-
-    FAIL,
-    FAILED,
-    FAIL_REJECTED,
-
-    UPDATE_RETRIES,
-    RETRIES_UPDATED,
-    UPDATE_RETRIES_REJECTED,
-
-    CANCEL,
-    CANCELED,
-    CANCEL_REJECTED;
-
+    public ClientCommandRejectedException(String errorMessage)
+    {
+        super(errorMessage);
+    }
 }

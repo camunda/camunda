@@ -23,12 +23,16 @@ import java.util.stream.Collectors;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.event.TaskEvent;
+import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.junit.rules.ExternalResource;
 
 public class RecordingTaskEventHandler extends ExternalResource
 {
+    private static final TopicEventHandler NOOP_EVENT_HANDLER = (m, e) ->
+    { };
+
     protected String subscriptionName = "recording-handler";
 
     protected final List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
@@ -58,6 +62,7 @@ public class RecordingTaskEventHandler extends ExternalResource
 
         subscription = client.newSubscription()
             .name(subscriptionName)
+            .defaultHandler(NOOP_EVENT_HANDLER)
             .taskEventHandler((metadata, taskEvent) -> taskEvents.add(taskEvent))
             .open();
     }

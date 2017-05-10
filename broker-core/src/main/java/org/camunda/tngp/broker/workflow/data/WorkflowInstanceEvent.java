@@ -3,7 +3,11 @@ package org.camunda.tngp.broker.workflow.data;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.broker.util.msgpack.property.*;
+import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
+import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
+import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
+import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
 public class WorkflowInstanceEvent extends UnpackedObject
@@ -18,7 +22,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
     public static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
     private final EnumProperty<WorkflowInstanceEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowInstanceEventType.class);
-    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
+    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
     private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);

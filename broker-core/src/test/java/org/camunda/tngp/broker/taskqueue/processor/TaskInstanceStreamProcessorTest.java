@@ -378,6 +378,68 @@ public class TaskInstanceStreamProcessorTest
     }
 
     @Test
+    public void shouldCancelTaskIfCreated()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CANCEL));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+    }
+
+    @Test
+    public void shouldCancelTaskIfLocked()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(lockTime)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CANCEL));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+    }
+
+    @Test
+    public void shouldCancelTaskIfFailed()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(lockTime)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAIL)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CANCEL));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+    }
+
+    @Test
     public void shouldRejectLockTaskIfLockTimeIsNotInFuture()
     {
         // given
@@ -834,6 +896,31 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectCancelTaskIfCompleted()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(lockTime)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.COMPLETE)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CANCEL));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCEL_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
     }
 
 }

@@ -33,7 +33,6 @@ import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEventType;
 import org.camunda.tngp.broker.workflow.graph.WorkflowValidationResultFormatter;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
@@ -72,7 +71,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
     }
 

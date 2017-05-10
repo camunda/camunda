@@ -5,20 +5,23 @@ import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.io.InputStream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.tngp.client.ClientCommandRejectedException;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
 import org.camunda.tngp.protocol.clientapi.EventType;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a command to create a workflow instance.
  */
 public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, WorkflowInstance> implements CreateWorkflowInstanceCmd
 {
+    private static final String EXCEPTION_MSG = "Failed to create instance of workflow with BPMN process id '%s' and version '%d'.";
+
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
@@ -85,7 +88,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     {
         if (event.getEventType() == WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED)
         {
-            throw new WorkflowInstanceRejectedException(event.getBpmnProcessId(), event.getVersion());
+            throw new ClientCommandRejectedException(String.format(EXCEPTION_MSG, event.getBpmnProcessId(), event.getVersion()));
         }
         return new WorkflowInstanceImpl(event);
     }

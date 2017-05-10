@@ -100,15 +100,14 @@ public class StubBrokerRule extends ExternalResource
             .bind();
     }
 
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith()
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(long key)
     {
-        return onWorkflowRequestRespondWith(TEST_TOPIC_NAME, TEST_PARTITION_ID, 123);
+        return onWorkflowRequestRespondWith(TEST_TOPIC_NAME, TEST_PARTITION_ID, key);
     }
 
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(final String topicName, final int partitionId, final long key)
     {
-        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_EVENT &&
-            "CREATE_WORKFLOW_INSTANCE".equals(ecr.getCommand().get("eventType")))
+        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_EVENT)
             .respondWith()
             .topicName(topicName)
             .partitionId(partitionId)

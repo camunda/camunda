@@ -1,5 +1,15 @@
 package org.camunda.tngp.broker.workflow.processor;
 
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
+
+import java.nio.ByteOrder;
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
@@ -17,17 +27,26 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
-import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
@@ -35,39 +54,38 @@ import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
-import java.nio.ByteOrder;
-import java.util.EnumMap;
-import java.util.Map;
-
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
-
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
 
-    public static final int SIZE_OF_PROCESS_ID = BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR;
-    public static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
+    private static final int SIZE_OF_PROCESS_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
+
+    private static final int MAX_WORKFLOW_INSTANCE_ACTIVITY_COUNT = 64;
+    private static final int WORKFLOW_INSTANCE_INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_LONG * MAX_WORKFLOW_INSTANCE_ACTIVITY_COUNT;
+
+    private static final int SIZE_OF_ACTIVITY_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int ACTIVITY_INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_ACTIVITY_ID;
+
+    private static final UnsafeBuffer EMPTY_TASK_TYPE = new UnsafeBuffer("".getBytes());
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
 
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
-    protected final WorkflowInstanceCompletedEventProcessor workflowInstanceCompletedEventProcessor = new WorkflowInstanceCompletedEventProcessor();
+    protected final CancelWorkflowInstanceProcessor cancelWorkflowInstanceProcessor = new CancelWorkflowInstanceProcessor();
 
-    protected final SequenceFlowTakenEventProcessor sequenceFlowTakenEventProcessor = new SequenceFlowTakenEventProcessor();
-    protected final ActivityActivatedEventProcessor activityActivatedEventProcessor;
+    protected final EventProcessor sequenceFlowTakenEventProcessor = new ActiveWorkflowInstanceProcessor(new SequenceFlowTakenEventProcessor());
+    protected final EventProcessor activityActivatedEventProcessor;
 
-    protected final TaskCompletedEventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
+    protected final EventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
 
     protected final Map<BpmnAspect, EventProcessor> aspectHandlers;
     {
         aspectHandlers = new EnumMap<>(BpmnAspect.class);
 
-        aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowAspectHandler());
-        aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ConsumeTokenAspectHandler());
+        aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new ActiveWorkflowInstanceProcessor(new TakeSequenceFlowAspectHandler()));
+        aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ActiveWorkflowInstanceProcessor(new ConsumeTokenAspectHandler()));
     }
 
     // data //////////////////////////////////////////
@@ -79,17 +97,19 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
     protected final TaskEvent taskEvent = new TaskEvent();
 
+    protected final WorkflowInstanceEvent lookupWorkflowInstanceEvent = new WorkflowInstanceEvent();
+
     // internal //////////////////////////////////////
 
     protected final CommandResponseWriter responseWriter;
 
     /**
-     * An hash index which contains as key the BPMN process partitionId and as value the corresponding latest definition version.
+     * An hash index which contains as key the BPMN process id and as value the corresponding latest definition version.
      */
     protected final Bytes2LongHashIndex latestWorkflowVersionIndex;
 
     /**
-     * An hash index which contains as key the BPMN process partitionId and definition version concatenated
+     * An hash index which contains as key the BPMN process id and definition version concatenated
      * and as value the position of the deployment event.
      */
     protected final Bytes2LongHashIndex workflowPositionIndex;
@@ -98,8 +118,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     /**
      * An hash index which contains as key the workflow instance key and as value the active token count.
      */
-    protected final Long2LongHashIndex workflowInstanceTokenCountIndex;
-    protected final WorkflowInstanceTokenCountIndexAccessor workflowInstanceIndexAccessor = new WorkflowInstanceTokenCountIndexAccessor();
+    protected final Long2BytesHashIndex workflowInstanceIndex;
+    protected final WorkflowInstanceIndexAccessor workflowInstanceIndexAccessor = new WorkflowInstanceIndexAccessor();
+
+    protected final Long2BytesHashIndex activityInstanceIndex;
+    protected final ActivityInstanceIndexAccessor activityInstanceIndexAccessor = new ActivityInstanceIndexAccessor();
 
     /**
      * An hash index which contains as key the workflow instance key and as value the
@@ -109,7 +132,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected final ComposedSnapshot composedSnapshot;
 
-    protected LogStreamReader deploymentLogStreamReader;
+    protected LogStreamReader logStreamReader;
 
     protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
@@ -137,7 +160,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             CommandResponseWriter responseWriter,
             IndexStore workflowPositionIndexStore,
             IndexStore workflowVersionIndexStore,
-            IndexStore workflowInstanceTokenCountIndexStore,
+            IndexStore workflowInstanceIndexStore,
+            IndexStore activityInstanceIndexStore,
             IndexStore workflowInstancePayloadIndexStore,
             int cacheSize,
             int maxPayloadSize)
@@ -146,17 +170,19 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.workflowPositionIndex = new Bytes2LongHashIndex(workflowPositionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
         this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
-        this.workflowInstanceTokenCountIndex = new Long2LongHashIndex(workflowInstanceTokenCountIndexStore, Short.MAX_VALUE, 256);
+        this.workflowInstanceIndex = new Long2BytesHashIndex(workflowInstanceIndexStore, Short.MAX_VALUE, 256, WORKFLOW_INSTANCE_INDEX_VALUE_SIZE);
+        this.activityInstanceIndex = new Long2BytesHashIndex(activityInstanceIndexStore, Short.MAX_VALUE, 256, ACTIVITY_INDEX_VALUE_SIZE);
 
         this.maxPayloadSize = maxPayloadSize;
         this.payloadMappingProcessor = new PayloadMappingProcessor(maxPayloadSize);
-        this.activityActivatedEventProcessor = new ActivityActivatedEventProcessor(maxPayloadSize);
+        this.activityActivatedEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityActivatedEventProcessor(maxPayloadSize));
         this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, maxPayloadSize + SIZE_OF_INT);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(workflowPositionIndex, workflowPositionIndexStore),
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
-                new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore),
+                new HashIndexSnapshotSupport<>(workflowInstanceIndex, workflowInstanceIndexStore),
+                new HashIndexSnapshotSupport<>(activityInstanceIndex, activityInstanceIndexStore),
                 new HashIndexSnapshotSupport<>(workflowInstancePayloadIndex, workflowInstancePayloadIndexStore));
 
         workflowCache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
@@ -176,7 +202,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
 
-        this.deploymentLogStreamReader = new BufferedLogStreamReader(sourceStream);
+        this.logStreamReader = new BufferedLogStreamReader(sourceStream);
     }
 
     public static MetadataFilter eventFilter()
@@ -254,8 +280,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = workflowInstanceCreatedEventProcessor;
                 break;
 
-            case WORKFLOW_INSTANCE_COMPLETED:
-                eventProcessor = workflowInstanceCompletedEventProcessor;
+            case CANCEL_WORKFLOW_INSTANCE:
+                eventProcessor = cancelWorkflowInstanceProcessor;
                 break;
 
             case SEQUENCE_FLOW_TAKEN:
@@ -301,14 +327,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         return eventProcessor;
     }
 
-    private ExecutableWorkflow lookupWorkflow(long position)
+    protected ExecutableWorkflow lookupWorkflow(long position)
     {
         ExecutableWorkflow workflow = null;
-        final boolean found = deploymentLogStreamReader.seek(position);
+        final boolean found = logStreamReader.seek(position);
 
-        if (found && deploymentLogStreamReader.hasNext())
+        if (found && logStreamReader.hasNext())
         {
-            final LoggedEvent deployedWorkflowEvent = deploymentLogStreamReader.next();
+            final LoggedEvent deployedWorkflowEvent = logStreamReader.next();
 
             deployedWorkflowEvent.readValue(deploymentEvent);
 
@@ -337,6 +363,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         return workflow;
     }
 
+    protected void lookupWorkflowInstanceEvent(long position, WorkflowInstanceEvent wfEvent)
+    {
+        final boolean found = logStreamReader.seek(position);
+        if (found && logStreamReader.hasNext())
+        {
+            final LoggedEvent event = logStreamReader.next();
+
+            wfEvent.reset();
+            event.readValue(wfEvent);
+        }
+        else
+        {
+            throw new IllegalStateException("workflow instance event not found.");
+        }
+    }
+
     protected <T extends ExecutableFlowElement> T getCurrentActivity()
     {
         final DirectBuffer bpmnProcessId = workflowInstanceEvent.getBpmnProcessId();
@@ -363,6 +405,39 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .metadataWriter(targetEventMetadata)
                 .valueWriter(workflowInstanceEvent)
                 .tryWrite();
+    }
+
+    protected long writeTaskEvent(LogStreamWriter writer)
+    {
+        targetEventMetadata.reset();
+        targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(TASK_EVENT);
+
+        // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+        // don't forget to set the key or use positionAsKey
+        return writer
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(taskEvent)
+                .tryWrite();
+    }
+
+    protected boolean sendWorkflowInstanceResponse()
+    {
+        return responseWriter
+                .brokerEventMetadata(sourceEventMetadata)
+                .topicName(logStreamTopicName)
+                .partitionId(logStreamPartitionId)
+                .key(eventKey)
+                .eventWriter(workflowInstanceEvent)
+                .tryWriteResponse();
+    }
+
+    private void cleanIndexForWorkflowInstance(long workflowInstanceKey)
+    {
+        workflowInstancePayloadIndex.remove(workflowInstanceKey);
+        workflowInstanceIndex.remove(workflowInstanceKey);
     }
 
     private final class CreateWorkflowInstanceEventProcessor implements EventProcessor
@@ -394,13 +469,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public boolean executeSideEffects()
         {
-            return responseWriter
-                    .brokerEventMetadata(sourceEventMetadata)
-                    .topicName(logStreamTopicName)
-                    .partitionId(logStreamPartitionId)
-                    .key(eventKey)
-                    .eventWriter(workflowInstanceEvent)
-                    .tryWriteResponse();
+            return sendWorkflowInstanceResponse();
         }
 
         @Override
@@ -438,33 +507,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            // a new token is created
-            workflowInstanceTokenCountIndex.put(eventKey, 1L);
-        }
-    }
-
-    private final class WorkflowInstanceCompletedEventProcessor implements EventProcessor
-    {
-        @Override
-        public void processEvent()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void updateState()
-        {
-            // all tokens are consumed
-            workflowInstanceIndexAccessor.remove(workflowInstanceEvent.getWorkflowInstanceKey());
-            // payload is not needed anymore
-            workflowInstancePayloadIndex.remove(workflowInstanceEvent.getWorkflowInstanceKey());
+            workflowInstanceIndexAccessor.newWorkflowInstance(eventKey, eventPosition);
         }
     }
 
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
-
         private final MutableDirectBuffer tempPayload;
+        private long taskKey;
 
         ActivityActivatedEventProcessor(int maxPayload)
         {
@@ -532,26 +582,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(TASK_EVENT);
+            return taskKey = writeTaskEvent(writer.positionAsKey());
+        }
 
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer
-                    .positionAsKey()
-                    .metadataWriter(targetEventMetadata)
-                    .valueWriter(taskEvent)
-                    .tryWrite();
+        @Override
+        public void updateState()
+        {
+            activityInstanceIndexAccessor.setTaskKey(eventKey, taskKey);
         }
     }
 
     private final class SequenceFlowTakenEventProcessor implements EventProcessor
     {
+        private boolean isActivityActivated;
+        private long writtenEventPosition;
+
         @Override
         public void processEvent()
         {
+            isActivityActivated = false;
+
             final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
             final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
 
@@ -564,6 +614,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             else if (targetNode instanceof ExecutableServiceTask)
             {
                 workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
+                isActivityActivated = true;
             }
             else
             {
@@ -574,7 +625,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeWorkflowEvent(writer.positionAsKey());
+            return writtenEventPosition = writeWorkflowEvent(writer.positionAsKey());
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isActivityActivated)
+            {
+                workflowInstanceIndexAccessor.newActivity(workflowInstanceEvent.getWorkflowInstanceKey(), writtenEventPosition);
+                activityInstanceIndexAccessor.newActivityInstance(writtenEventPosition, workflowInstanceEvent.getActivityId());
+            }
         }
     }
 
@@ -609,7 +670,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             isCompleted = false;
 
-            final long activeTokenCount = workflowInstanceIndexAccessor.getActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            final long activeTokenCount = workflowInstanceIndexAccessor
+                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .getTokenCount();
             if (activeTokenCount == 1)
             {
                 workflowInstanceEvent
@@ -636,13 +699,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            if (isCompleted)
+            {
+                cleanIndexForWorkflowInstance(workflowInstanceEvent.getWorkflowInstanceKey());
+            }
+            else
+            {
+                workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            }
         }
     }
 
     private final class DeployedWorkflowEventProcessor implements EventProcessor
     {
-        protected final UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH]);
+        protected final UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[BpmnTransformer.ID_MAX_LENGTH]);
 
         @Override
         public void processEvent()
@@ -668,24 +738,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class TaskCompletedEventProcessor implements EventProcessor
     {
-        private TaskHeaders taskHeaders;
         private boolean isActivityCompleted;
+        private long workflowInstanceKey;
+        private long activityInstanceKey;
 
         @Override
         public void processEvent()
         {
             isActivityCompleted = false;
-            taskHeaders = taskEvent.headers();
+            final TaskHeaders taskHeaders = taskEvent.headers();
 
-            if (taskHeaders.getWorkflowInstanceKey() > 0)
+            workflowInstanceKey = taskHeaders.getWorkflowInstanceKey();
+            activityInstanceKey = taskHeaders.getActivityInstanceKey();
+
+            if (workflowInstanceKey > 0 && isTaskOpen(activityInstanceKey))
             {
-
-                // assuming that the workflow instance is still in this activity
                 workflowInstanceEvent
                     .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
                     .setBpmnProcessId(taskHeaders.getBpmnProcessId())
                     .setVersion(taskHeaders.getWorkflowDefinitionVersion())
-                    .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                    .setWorkflowInstanceKey(workflowInstanceKey)
                     .setActivityId(taskHeaders.getActivityId());
 
                 final ExecutableFlowNode currentActivity = getCurrentActivity();
@@ -696,11 +768,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
 
+        private boolean isTaskOpen(long activityInstanceKey)
+        {
+            // task key = -1 when activity is left
+            return activityInstanceIndexAccessor.wrapActivityInstanceKey(activityInstanceKey).getTaskKey() == eventKey;
+        }
+
         protected final DirectBuffer tempPayload = new UnsafeBuffer(0, 0);
 
         public void setWorkflowInstancePayload(Mapping[] mappings)
         {
-            final byte payload[] = workflowInstancePayloadIndex.get(taskHeaders.getWorkflowInstanceKey());
+            final byte payload[] = workflowInstancePayloadIndex.get(workflowInstanceKey);
             tempPayload.wrap(payload);
             final Integer payloadLength = tempPayload.getInt(0);
             tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
@@ -717,10 +795,174 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             if (isActivityCompleted)
             {
-                position = writeWorkflowEvent(
-                        writer.key(taskHeaders.getActivityInstanceKey()));
+                position = writeWorkflowEvent(writer.key(activityInstanceKey));
             }
             return position;
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isActivityCompleted)
+            {
+                workflowInstanceIndexAccessor.removeActivity(workflowInstanceKey, activityInstanceKey);
+                activityInstanceIndex.remove(activityInstanceKey);
+            }
+        }
+    }
+
+    private final class CancelWorkflowInstanceProcessor implements EventProcessor
+    {
+        private final WorkflowInstanceEvent activityInstanceEvent = new WorkflowInstanceEvent();
+
+        private boolean isCanceled;
+        private long activityInstanceKey;
+
+        @Override
+        public void processEvent()
+        {
+            isCanceled = false;
+
+            workflowInstanceIndexAccessor.wrapWorkflowInstanceKey(eventKey);
+
+            if (workflowInstanceIndexAccessor.getTokenCount() > 0)
+            {
+                lookupWorkflowInstanceEvent(workflowInstanceIndexAccessor.getPosition(), lookupWorkflowInstanceEvent);
+
+                workflowInstanceEvent
+                    .setEventType(WorkflowInstanceEventType.WORKFLOW_INSTANCE_CANCELED)
+                    .setBpmnProcessId(lookupWorkflowInstanceEvent.getBpmnProcessId())
+                    .setVersion(lookupWorkflowInstanceEvent.getVersion())
+                    .setWorkflowInstanceKey(eventKey);
+
+                activityInstanceKey = workflowInstanceIndexAccessor.getActivityInstanceKey();
+
+                isCanceled = true;
+            }
+            else
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.CANCEL_WORKFLOW_INSTANCE_REJECTED);
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            // TODO write events as batch - see camunda-tngp/logstreams#30
+            if (activityInstanceKey > 0)
+            {
+                activityInstanceIndexAccessor.wrapActivityInstanceKey(activityInstanceKey);
+
+                final long taskKey = activityInstanceIndexAccessor.getTaskKey();
+                if (taskKey > 0)
+                {
+                    writeCancelTaskEvent(writer, taskKey);
+                }
+
+                writeTerminateActivityInstanceEvent(writer, activityInstanceKey);
+            }
+
+            return writeWorkflowEvent(writer.key(eventKey));
+        }
+
+        private void writeCancelTaskEvent(LogStreamWriter writer, long taskKey)
+        {
+            taskEvent.reset();
+            taskEvent
+                .setEventType(TaskEventType.CANCEL)
+                .setType(EMPTY_TASK_TYPE)
+                .headers()
+                    .setBpmnProcessId(lookupWorkflowInstanceEvent.getBpmnProcessId())
+                    .setWorkflowDefinitionVersion(lookupWorkflowInstanceEvent.getVersion())
+                    .setWorkflowInstanceKey(eventKey)
+                    .setActivityId(activityInstanceIndexAccessor.getActivityId())
+                    .setActivityInstanceKey(activityInstanceKey);
+
+            writeTaskEvent(writer.key(taskKey));
+        }
+
+        private void writeTerminateActivityInstanceEvent(LogStreamWriter writer, long activityInstanceKey)
+        {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .eventType(WORKFLOW_EVENT);
+            // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+            activityInstanceEvent.reset();
+            activityInstanceEvent
+                .setEventType(WorkflowInstanceEventType.ACTIVITY_TERMINATED)
+                .setBpmnProcessId(lookupWorkflowInstanceEvent.getBpmnProcessId())
+                .setVersion(lookupWorkflowInstanceEvent.getVersion())
+                .setWorkflowInstanceKey(eventKey)
+                .setActivityId(activityInstanceIndexAccessor.getActivityId());
+
+            writer
+                .key(activityInstanceKey)
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(activityInstanceEvent)
+                .tryWrite();
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            return sendWorkflowInstanceResponse();
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isCanceled)
+            {
+                cleanIndexForWorkflowInstance(eventKey);
+            }
+        }
+    }
+
+    private final class ActiveWorkflowInstanceProcessor implements EventProcessor
+    {
+        private final EventProcessor processor;
+
+        private boolean isActive;
+
+        ActiveWorkflowInstanceProcessor(EventProcessor processor)
+        {
+            this.processor = processor;
+        }
+
+        @Override
+        public void processEvent()
+        {
+            isActive = workflowInstanceIndexAccessor
+                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .getTokenCount() > 0;
+
+            if (isActive)
+            {
+                processor.processEvent();
+            }
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            return isActive ? processor.executeSideEffects() : true;
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return isActive ? processor.writeEvent(writer) : 0L;
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isActive)
+            {
+                processor.updateState();
+            }
         }
     }
 
@@ -749,34 +991,143 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class WorkflowInstanceTokenCountIndexAccessor
+    private final class WorkflowInstanceIndexAccessor
     {
-        protected static final long MISSING_VALUE = -1L;
+        private static final int POSITION_OFFSET = 0;
+        private static final int TOKEN_COUNT_OFFSET = POSITION_OFFSET + SIZE_OF_LONG;
+        private static final int ACTIVITY_INSTANCE_KEY_OFFSET = TOKEN_COUNT_OFFSET + SIZE_OF_INT;
 
-        public long getActiveTokenCount(long workflowInstanceKey)
+        protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[WORKFLOW_INSTANCE_INDEX_VALUE_SIZE]);
+
+        protected boolean isRead = false;
+
+        public WorkflowInstanceIndexAccessor wrapWorkflowInstanceKey(long key)
         {
-            final long count = workflowInstanceTokenCountIndex.get(workflowInstanceKey, MISSING_VALUE);
+            isRead = false;
 
-            if (count != MISSING_VALUE)
+            final byte[] indexValue = workflowInstanceIndex.get(key);
+            if (indexValue != null)
             {
-                return count;
+                buffer.wrap(indexValue);
+                isRead = true;
             }
-            else
-            {
-                throw new RuntimeException("No index found for workflow instance.");
-            }
+
+            return this;
         }
 
-        public void remove(long workflowInstanceKey)
+        public long getPosition()
         {
-            workflowInstanceTokenCountIndex.remove(workflowInstanceKey, MISSING_VALUE);
+            return isRead ? buffer.getLong(POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN) : -1L;
+        }
+
+        public int getTokenCount()
+        {
+            return isRead ? buffer.getInt(TOKEN_COUNT_OFFSET, ByteOrder.LITTLE_ENDIAN) : -1;
+        }
+
+        public long getActivityInstanceKey()
+        {
+            return isRead ? buffer.getLong(ACTIVITY_INSTANCE_KEY_OFFSET, ByteOrder.LITTLE_ENDIAN) : -1L;
+        }
+
+        public void newWorkflowInstance(long workflowInstanceKey, long position)
+        {
+            buffer.putLong(POSITION_OFFSET, position, ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(TOKEN_COUNT_OFFSET, 1, ByteOrder.LITTLE_ENDIAN);
+
+            workflowInstanceIndex.put(workflowInstanceKey, buffer.byteArray());
+        }
+
+        public void newActivity(long workflowInstanceKey, long activityInstanceKey)
+        {
+            wrapWorkflowInstanceKey(workflowInstanceKey);
+
+            buffer.putLong(ACTIVITY_INSTANCE_KEY_OFFSET, activityInstanceKey, ByteOrder.LITTLE_ENDIAN);
+
+            workflowInstanceIndex.put(workflowInstanceKey, buffer.byteArray());
+        }
+
+        public void removeActivity(long workflowInstanceKey, long activityInstanceKey)
+        {
+            wrapWorkflowInstanceKey(workflowInstanceKey);
+
+            buffer.putLong(ACTIVITY_INSTANCE_KEY_OFFSET, -1L, ByteOrder.LITTLE_ENDIAN);
+
+            workflowInstanceIndex.put(workflowInstanceKey, buffer.byteArray());
         }
 
         public void decrementActiveTokenCount(long workflowInstanceKey)
         {
-            final long activeTokenCount = getActiveTokenCount(workflowInstanceKey);
+            final int activeTokenCount = getTokenCount();
 
-            workflowInstanceTokenCountIndex.put(workflowInstanceKey, activeTokenCount - 1);
+            buffer.putInt(TOKEN_COUNT_OFFSET, activeTokenCount, ByteOrder.LITTLE_ENDIAN);
+
+            workflowInstanceIndex.put(workflowInstanceKey, buffer.byteArray());
+        }
+    }
+
+    private final class ActivityInstanceIndexAccessor
+    {
+        private static final int TASK_KEY_OFFSET = 0;
+        private static final int ACTIVITY_ID_LENGTH_OFFSET = TASK_KEY_OFFSET + SIZE_OF_LONG;
+        private static final int ACTIVITY_ID_OFFSET = ACTIVITY_ID_LENGTH_OFFSET + SIZE_OF_INT;
+
+        private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[ACTIVITY_INDEX_VALUE_SIZE]);
+        private final UnsafeBuffer activityIdBuffer = new UnsafeBuffer(new byte[SIZE_OF_ACTIVITY_ID]);
+
+        private boolean isRead = false;
+
+        public ActivityInstanceIndexAccessor wrapActivityInstanceKey(long key)
+        {
+            isRead = false;
+
+            final byte[] indexValue = activityInstanceIndex.get(key);
+            if (indexValue != null)
+            {
+                buffer.wrap(indexValue);
+                isRead = true;
+            }
+
+            return this;
+        }
+
+        public long getTaskKey()
+        {
+            return isRead ? buffer.getLong(TASK_KEY_OFFSET, ByteOrder.LITTLE_ENDIAN) : -1L;
+        }
+
+        public DirectBuffer getActivityId()
+        {
+            if (isRead)
+            {
+                final int length = buffer.getInt(ACTIVITY_ID_LENGTH_OFFSET, ByteOrder.LITTLE_ENDIAN);
+
+                activityIdBuffer.wrap(buffer, ACTIVITY_ID_OFFSET, length);
+            }
+            else
+            {
+                activityIdBuffer.wrap(0, 0);
+            }
+
+            return activityIdBuffer;
+        }
+
+        public void newActivityInstance(long activityInstanceKey, DirectBuffer activityId)
+        {
+            buffer.putLong(TASK_KEY_OFFSET, -1L, ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(ACTIVITY_ID_LENGTH_OFFSET, activityId.capacity(), ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(ACTIVITY_ID_OFFSET, activityId, 0, activityId.capacity());
+
+            activityInstanceIndex.put(activityInstanceKey, buffer.byteArray());
+        }
+
+        public void setTaskKey(long activityInstanceKey, long taskKey)
+        {
+            wrapActivityInstanceKey(activityInstanceKey);
+
+            buffer.putLong(TASK_KEY_OFFSET, taskKey, ByteOrder.LITTLE_ENDIAN);
+
+            activityInstanceIndex.put(activityInstanceKey, buffer.byteArray());
         }
     }
 

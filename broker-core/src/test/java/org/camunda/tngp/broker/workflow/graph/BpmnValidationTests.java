@@ -13,13 +13,15 @@ import java.util.stream.IntStream;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.*;
+import org.camunda.bpm.model.bpmn.instance.BaseElement;
+import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes;
 import org.junit.Test;
 
@@ -114,7 +116,7 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(process))
             .isNotNull()
             .hasSize(1)
-            .extracting("code").contains(ValidationCodes.NO_PROCESS_ID);
+            .extracting("code").contains(ValidationCodes.MISSING_ID);
     }
 
     @Test
@@ -122,7 +124,7 @@ public class BpmnValidationTests
     {
         // given
         final StringBuffer bpmnProcessIdBuilder = new StringBuffer();
-        IntStream.range(0, BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH + 1).forEach(i -> bpmnProcessIdBuilder.append("a"));
+        IntStream.range(0, BpmnTransformer.ID_MAX_LENGTH + 1).forEach(i -> bpmnProcessIdBuilder.append("a"));
         final String bpmnProcessId = bpmnProcessIdBuilder.toString();
 
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess(bpmnProcessId)
@@ -138,7 +140,31 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById(bpmnProcessId)))
             .isNotNull()
             .hasSize(1)
-            .extracting("code").contains(ValidationCodes.PROCESS_ID_TOO_LONG);
+            .extracting("code").contains(ValidationCodes.ID_TOO_LONG);
+    }
+
+    @Test
+    public void shouldNotBeValidIfActivityIdTooLong()
+    {
+        // given
+        final StringBuffer bpmnProcessIdBuilder = new StringBuffer();
+        IntStream.range(0, BpmnTransformer.ID_MAX_LENGTH + 1).forEach(i -> bpmnProcessIdBuilder.append("a"));
+        final String activityId = bpmnProcessIdBuilder.toString();
+
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+            .startEvent(activityId)
+            .endEvent()
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById(activityId)))
+            .isNotNull()
+            .hasSize(1)
+            .extracting("code").contains(ValidationCodes.ID_TOO_LONG);
     }
 
     @Test

@@ -11,10 +11,19 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.*;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ActivityIdRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ExecutableProcessRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.OutgoingSequenceFlowRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessStartEventRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ServiceTaskRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.TaskTypeRule;
 
 public class BpmnTransformer
 {
+    public static final int ID_MAX_LENGTH = 255;
+
     private static final List<ModelElementValidator<?>> BPMN_VALIDATORS;
 
     static
@@ -22,6 +31,7 @@ public class BpmnTransformer
         BPMN_VALIDATORS = new ArrayList<>();
         BPMN_VALIDATORS.add(new ExecutableProcessRule());
         BPMN_VALIDATORS.add(new BpmnProcessIdRule());
+        BPMN_VALIDATORS.add(new ActivityIdRule());
         BPMN_VALIDATORS.add(new ProcessStartEventRule());
         BPMN_VALIDATORS.add(new OutgoingSequenceFlowRule());
         BPMN_VALIDATORS.add(new TaskTypeRule());

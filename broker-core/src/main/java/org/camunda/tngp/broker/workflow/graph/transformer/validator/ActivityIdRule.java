@@ -12,32 +12,32 @@
  */
 package org.camunda.tngp.broker.workflow.graph.transformer.validator;
 
-import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.FlowElement;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 
-public class BpmnProcessIdRule implements ModelElementValidator<Process>
+public class ActivityIdRule implements ModelElementValidator<FlowElement>
 {
     @Override
-    public Class<Process> getElementType()
+    public Class<FlowElement> getElementType()
     {
-        return Process.class;
+        return FlowElement.class;
     }
 
     @Override
-    public void validate(Process process, ValidationResultCollector validationResultCollector)
+    public void validate(FlowElement flowElement, ValidationResultCollector validationResultCollector)
     {
-        final String bpmnProcessId = process.getId();
+        final String activityId = flowElement.getId();
 
-        if (bpmnProcessId == null || bpmnProcessId.isEmpty())
+        if (activityId == null || activityId.isEmpty())
         {
-            validationResultCollector.addError(ValidationCodes.MISSING_ID, "BPMN process id is required.");
+            validationResultCollector.addError(ValidationCodes.MISSING_ID, "Activity id is required.");
         }
-        else if (bpmnProcessId.length() > BpmnTransformer.ID_MAX_LENGTH)
+        else if (activityId.length() > BpmnTransformer.ID_MAX_LENGTH)
         {
             validationResultCollector.addError(ValidationCodes.ID_TOO_LONG,
-                    String.format("BPMN process id must not be longer than %d.", BpmnTransformer.ID_MAX_LENGTH));
+                    String.format("Activity id must not be longer than %d.", BpmnTransformer.ID_MAX_LENGTH));
         }
     }
 

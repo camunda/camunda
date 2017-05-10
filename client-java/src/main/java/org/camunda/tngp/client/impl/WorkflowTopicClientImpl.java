@@ -13,8 +13,10 @@
 package org.camunda.tngp.client.impl;
 
 import org.camunda.tngp.client.WorkflowTopicClient;
+import org.camunda.tngp.client.workflow.cmd.CancelWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateDeploymentCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
+import org.camunda.tngp.client.workflow.cmd.impl.CancelWorkflowInstanceCmdImpl;
 import org.camunda.tngp.client.workflow.cmd.impl.CreateDeploymentCmdImpl;
 import org.camunda.tngp.client.workflow.cmd.impl.CreateWorkflowInstanceCmdImpl;
 
@@ -41,6 +43,12 @@ public class WorkflowTopicClientImpl implements WorkflowTopicClient
     public CreateWorkflowInstanceCmd create()
     {
         return new CreateWorkflowInstanceCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+    }
+
+    @Override
+    public CancelWorkflowInstanceCmd cancel()
+    {
+        return new CancelWorkflowInstanceCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
 }
