@@ -180,7 +180,8 @@ public class ClientChannelPoolingTest
         // there is no object reuse
         assertThat(channels).doesNotContain(newChannel);
 
-        // the least recently returned channel has been closed
+        // the least recently returned channel has been closed asynchronously
+        TestUtil.waitUntil(() -> channels[1].isClosed());
         assertThat(channels[1].isClosed()).isTrue();
         assertThat(channels[0].isOpen()).isTrue();
     }
