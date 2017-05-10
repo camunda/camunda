@@ -1,18 +1,23 @@
 package org.camunda.tngp.broker.test;
 
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Set;
+
 import org.agrona.IoUtil;
 import org.camunda.tngp.broker.Broker;
 import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Set;
 
 
 
@@ -102,6 +107,7 @@ class ConfigurationHelper
     }
 }
 
+@Ignore
 public class ComponentConfigurationFileExistsTest
 {
 
@@ -136,7 +142,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseGlobalPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
 
         final ConfigurationHelper configHelper = new ConfigurationHelper();
 
@@ -161,7 +167,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseGlobalTempPathIfGlobalPathExists()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
         final ConfigurationHelper configHelper = new ConfigurationHelper();
         configMaps.put("[global]", new String[]{"globalUseTemp = true", "globalDataDirectory = \"/tmp/global\""});
         configString = configHelper.setConfigMaps(configMaps).generateConfig();
@@ -183,7 +189,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseGlobalTempPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
 
         final ConfigurationHelper configHelper = new ConfigurationHelper();
         configMaps.put("[global]", new String[]{"globalUseTemp = true"});
@@ -207,7 +213,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseGlobalTempPathIfNoGlobalProperty()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
 
         final ConfigurationHelper configHelper = new ConfigurationHelper();
 
@@ -230,7 +236,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseSpecificPathOnLogsAndGlobalPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
 
         final ConfigurationHelper configHelper = new ConfigurationHelper();
 
@@ -256,7 +262,7 @@ public class ComponentConfigurationFileExistsTest
     @Test
     public void shouldUseSpecificPathOnLogsAndGlobalTempPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<String, String[]>();
+        final HashMap<String, String[]> configMaps = new HashMap<>();
 
         final ConfigurationHelper configHelper = new ConfigurationHelper();
 
