@@ -81,7 +81,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       context.addServlet(holderPwd,"/");
 
       ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
-      errorMapper.addErrorPage(404,"/"); // map all 404's to root (aka /index.html)
+      errorMapper.addErrorPage(200,"/"); // forward all new/expired requests as OK (200) to root (aka /index.html)
       context.setErrorHandler(errorMapper);
 
       FilterHolder holder = new FilterHolder(GzipFilter.class);
