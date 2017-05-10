@@ -310,8 +310,8 @@ public class GossipController
         final int idx = peers.find(localPeer);
         if (idx > 0)
         {
-            peers.get(idx, localPeer);
-            if (localPeer.state() != ALIVE)
+            peers.get(idx, tmp);
+            if (tmp.state() != ALIVE)
             {
                 // refute
                 localPeer.alive();
