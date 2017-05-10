@@ -1,5 +1,8 @@
 import {$document} from './dom';
 
+// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser#9851769
+const isIE = /*@cc_on!@*/false || !!$document.documentMode;
+
 // This function is a bit hacky. Well that is very delicate description.
 // It suppose to act as proxy to parent node with few limitations
 // Those limitations should be less troublesome than using document fragment anyway
@@ -13,72 +16,25 @@ import {$document} from './dom';
 // in way that would be intuitive, but that can be implemented when need arrises
 // Also it maybe helpful to use MutationObserver to achieve better compatibility
 export function createProxyNode(parent, startMarker) {
-  // Using detached node as proxy in hope that there will be no error related to
-  // wrong type passed to some native function. Although that may not be desired.
   let currentStartMarker = startMarker;
   let childNodes = [];
-  const proxyNode = $document.createElement(parent.tagName);
-  const descriptors = {};
 
-  proxyNode.setStartMarker = (startMarker) => currentStartMarker = startMarker;
-
-  // Not using Object.keys, because prototype properties need to be proxied too
-  for (const property in parent) {
-    const value = parent[property];
-
-    if (typeof value === 'function') {
-      descriptors[property] = {
-        enumerable: true,
-        configurable: false,
-        writable: false,
-        value: value.bind(parent)
-      };
-    } else {
-      descriptors[property] = {
-        enumerable: true,
-        configurable: false,
-        get: () => parent[property],
-        set: value => parent[property] = value
-      };
-    }
-  }
-
-  descriptors.childNodes = {
-    enumerable: true,
-    configurable: false,
-    // Another limitation childNodes is not live array like element
-    get: () => childNodes.slice()
-  };
-
-  descriptors.appendChild = {
-    enumerable: true,
-    configurable: false,
-    // Another limitation childNodes is not live array like element
-    value: (child) => {
+  const proxyMethods = {
+    setStartMarker: (startMarker) => currentStartMarker = startMarker,
+    appendChild: (child) => {
       const lastNode = childNodes[childNodes.length - 1] || currentStartMarker;
 
       parent.insertBefore(child, lastNode.nextSibling);
       childNodes.push(child);
-    }
-  };
-  descriptors.append = descriptors.appendChild;
-
-  descriptors.removeChild = {
-    enumerable: true,
-    configurable: false,
-    // Another limitation childNodes is not live array like element
-    value: (child) => {
+    },
+    append: aliasMethod('appendChild'),
+    removeChild: (child) => {
       parent.removeChild(child);
 
       childNodes = childNodes.filter(other => other !== child);
-    }
-  };
-  descriptors.remove = descriptors.removeChild;
-
-  descriptors.insertBefore = {
-    enumerable: true,
-    configurable: false,
-    value: (child, target) => {
+    },
+    remove: aliasMethod('removeChild'),
+    insertBefore: (child, target) => {
       const index = childNodes.indexOf(target);
 
       if (index >= 0) {
@@ -88,27 +44,16 @@ export function createProxyNode(parent, startMarker) {
       }
 
       parent.insertBefore(child, target);
-    }
-  };
-
-  descriptors.removeChildren = {
-    enumerable: true,
-    configurable: false,
-    // Another limitation childNodes is not live array like element
-    value: () => {
+    },
+    removeChildren: () => {
       const deatachedNodes = childNodes;
 
       childNodes.forEach(child => parent.removeChild(child));
       childNodes = [];
 
       return deatachedNodes;
-    }
-  };
-
-  descriptors.replaceChild = {
-    enumerable: true,
-    configurable: false,
-    value: (newChild, oldChild) => {
+    },
+    replaceChild: (newChild, oldChild) => {
       childNodes = childNodes.map(child => {
         if (child === oldChild) {
           return newChild;
@@ -120,6 +65,78 @@ export function createProxyNode(parent, startMarker) {
       parent.replaceChild(newChild, oldChild);
     }
   };
+
+  const proxyProperties = {
+    childNodes: () => childNodes.slice()
+  };
+
+  const proxyNode = isIE ?
+    createWithIteration(parent, proxyProperties, proxyMethods) :
+    createWithProxyTrap(parent, proxyProperties, proxyMethods);
+
+  return proxyNode;
+
+  function aliasMethod(target) {
+    return (...args) => proxyMethods[target](...args);
+  }
+}
+
+function createWithProxyTrap(parent, proxyProperties, proxyMethods) {
+  return new Proxy(parent, {
+    get: (obj, prop) => {
+      if (proxyProperties[prop]) {
+        return proxyProperties[prop]();
+      }
+
+      if (proxyMethods[prop]) {
+        return proxyMethods[prop];
+      }
+
+      const value = obj[prop];
+
+      if (typeof value === 'function') {
+        return value.bind(obj);
+      }
+
+      return value;
+    },
+    set: (obj, prop, value) => {
+      if (proxyProperties[prop] || proxyMethods[prop]) {
+        return;
+      }
+
+      obj[prop] = value;
+    }
+  });
+}
+
+function createWithIteration(parent, proxyProperties, proxyMethods) {
+  const descriptors = {};
+  const proxyNode = {};
+
+  proxyNode.setStartMarker = proxyMethods.setStartMarker;
+  proxyNode.removeChildren = proxyMethods.removeChildren;
+
+  // Not using Object.keys, because prototype properties need to be proxied too
+  for (const property in parent) {
+    const value = parent[property];
+
+    if (typeof value === 'function') {
+      descriptors[property] = {
+        enumerable: true,
+        configurable: false,
+        writable: false,
+        value: proxyMethods[property] ? proxyMethods[property] : value.bind(parent)
+      };
+    } else {
+      descriptors[property] = {
+        enumerable: true,
+        configurable: false,
+        get: () => proxyProperties[property] ? proxyProperties[property] : parent[property],
+        set: value => parent[property] = value
+      };
+    }
+  }
 
   Object.defineProperties(proxyNode, descriptors);
 
