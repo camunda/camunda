@@ -178,8 +178,7 @@ public class ClientApiMessageHandler
 
         if (logStream != null)
         {
-            // TODO: eventMetadata.raftTermId(logStream.getCurrentTermId());
-
+            eventMetadata.raftTermId(logStream.getTerm());
             logStreamWriter.wrap(logStream);
 
             if (key != ExecuteCommandRequestDecoder.keyNullValue())

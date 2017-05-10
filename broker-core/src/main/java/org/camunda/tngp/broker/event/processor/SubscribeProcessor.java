@@ -209,7 +209,8 @@ public class SubscribeProcessor implements EventProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Constants.PROTOCOL_VERSION);
+            metadata.protocolVersion(Constants.PROTOCOL_VERSION)
+                .raftTermId(manager.getTargetStream().getTerm());
 
             subscriberEvent
                 .setStartPosition(processor.getStartPosition())

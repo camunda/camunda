@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.StringUtil.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -87,6 +86,7 @@ public class LockTaskStreamProcessorTest
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
+        context.setTargetStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
     }

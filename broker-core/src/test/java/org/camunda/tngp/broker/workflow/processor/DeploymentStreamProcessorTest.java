@@ -12,11 +12,11 @@
  */
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.test.util.BufferAssert.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
 
@@ -69,6 +69,7 @@ public class DeploymentStreamProcessorTest
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
+        context.setTargetStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
     }

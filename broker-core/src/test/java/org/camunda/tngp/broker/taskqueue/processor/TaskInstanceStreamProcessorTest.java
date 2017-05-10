@@ -1,12 +1,9 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -73,11 +70,13 @@ public class TaskInstanceStreamProcessorTest
 
         when(mockLogStream.getTopicName()).thenReturn(wrapString("test-topic"));
         when(mockLogStream.getPartitionId()).thenReturn(1);
+        when(mockLogStream.getTerm()).thenReturn(1);
 
         streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore, mockTaskSubscriptionManager);
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
+        context.setTargetStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
 

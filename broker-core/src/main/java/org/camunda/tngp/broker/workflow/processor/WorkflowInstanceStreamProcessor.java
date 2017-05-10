@@ -1,10 +1,7 @@
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import java.nio.ByteOrder;
 import java.util.EnumMap;
@@ -157,6 +154,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
      */
     protected final int maxPayloadSize;
 
+    protected LogStream targetStream;
+
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
             IndexStore workflowPositionIndexStore,
@@ -204,6 +203,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.logStreamPartitionId = sourceStream.getPartitionId();
 
         this.logStreamReader = new BufferedLogStreamReader(sourceStream);
+
+        this.targetStream = context.getTargetStream();
     }
 
     public static MetadataFilter eventFilter()
@@ -405,9 +406,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
                 .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(WORKFLOW_EVENT);
-
-        // TODO: targetEventMetadata.raftTermId(raftTermId);
+                .eventType(WORKFLOW_EVENT)
+                .raftTermId(targetStream.getTerm());
 
         // don't forget to set the key or use positionAsKey
         return writer
@@ -421,9 +421,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
                 .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT);
-
-        // TODO: targetEventMetadata.raftTermId(raftTermId);
+                .eventType(TASK_EVENT)
+                .raftTermId(targetStream.getTerm());
 
         // don't forget to set the key or use positionAsKey
         return writer
@@ -932,8 +931,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             targetEventMetadata.reset();
             targetEventMetadata
                     .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(WORKFLOW_EVENT);
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
+                    .eventType(WORKFLOW_EVENT)
+                    .raftTermId(targetStream.getTerm());
 
             activityInstanceEvent.reset();
             activityInstanceEvent

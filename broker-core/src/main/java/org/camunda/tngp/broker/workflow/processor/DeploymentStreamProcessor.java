@@ -12,8 +12,8 @@
  */
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -65,6 +65,8 @@ public class DeploymentStreamProcessor implements StreamProcessor
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
+    protected LogStream targetStream;
+
     protected long eventKey;
 
     public DeploymentStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
@@ -87,6 +89,8 @@ public class DeploymentStreamProcessor implements StreamProcessor
         final LogStream sourceStream = context.getSourceStream();
         logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
+
+        targetStream = context.getTargetStream();
     }
 
     public static MetadataFilter eventFilter()
@@ -216,9 +220,8 @@ public class DeploymentStreamProcessor implements StreamProcessor
             targetEventMetadata.reset();
             targetEventMetadata
                 .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(DEPLOYMENT_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
+                .eventType(DEPLOYMENT_EVENT)
+                .raftTermId(targetStream.getTerm());
 
             return writer
                 .key(eventKey)

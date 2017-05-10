@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.event.processor;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +41,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected final SnapshotSupport snapshotResource;
 
+    protected LogStream targetStream;
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
     protected final ServiceName<LogStream> streamServiceName;
@@ -89,12 +90,19 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         final LogStream sourceStream = context.getSourceStream();
         this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
+
+        targetStream = context.getTargetStream();
     }
 
     @Override
     public SnapshotSupport getStateResource()
     {
         return snapshotResource;
+    }
+
+    public LogStream getTargetStream()
+    {
+        return targetStream;
     }
 
     @Override
@@ -291,7 +299,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Constants.PROTOCOL_VERSION);
+            metadata.protocolVersion(Constants.PROTOCOL_VERSION)
+                .raftTermId(targetStream.getTerm());
 
             return writer
                 .key(currentEvent.getKey())
@@ -375,7 +384,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             metadata.eventType(EventType.SUBSCRIPTION_EVENT)
                 .reqChannelId(-1)
                 .reqConnectionId(-1)
-                .reqRequestId(-1);
+                .reqRequestId(-1)
+                .raftTermId(targetStream.getTerm());
 
             return writer
                     .key(currentEvent.getKey())

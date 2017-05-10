@@ -12,10 +12,8 @@
  */
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +57,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
+
+    protected LogStream targetStream;
 
     protected int availableSubscriptionCredits = 0;
 
@@ -113,9 +113,10 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         cmdQueue = context.getStreamProcessorCmdQueue();
 
         final LogStream sourceStream = context.getSourceStream();
-
         logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
+
+        targetStream = context.getTargetStream();
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
@@ -322,8 +323,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
                 .reqChannelId(lockSubscription.getChannelId())
                 .subscriberKey(lockSubscription.getSubscriberKey())
                 .protocolVersion(Constants.PROTOCOL_VERSION)
+                .raftTermId(targetStream.getTerm())
                 .eventType(TASK_EVENT);
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
 
             position = writer.key(eventKey)
                     .metadataWriter(targetEventMetadata)

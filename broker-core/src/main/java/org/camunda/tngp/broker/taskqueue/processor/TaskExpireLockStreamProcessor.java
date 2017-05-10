@@ -12,8 +12,8 @@
  */
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import java.util.HashMap;
 
@@ -55,6 +55,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected LogStreamReader targetLogStreamReader;
     protected LogStreamWriter targetLogStreamWriter;
 
+    protected LogStream targetStream;
     protected DirectBuffer targetLogStreamTopicName;
     protected int targetLogStreamPartitionId;
     protected int streamProcessorId;
@@ -80,7 +81,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         targetLogStreamReader = context.getTargetLogStreamReader();
         targetLogStreamWriter = context.getLogStreamWriter();
 
-        final LogStream targetStream = context.getTargetStream();
+        targetStream = context.getTargetStream();
         targetLogStreamTopicName = targetStream.getTopicName();
         targetLogStreamPartitionId = targetStream.getPartitionId();
     }
@@ -227,9 +228,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             targetEventMetadata
                 .reset()
                 .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
+                .eventType(TASK_EVENT)
+                .raftTermId(targetStream.getTerm());
 
             final long position = targetLogStreamWriter
                     .producerId(streamProcessorId)

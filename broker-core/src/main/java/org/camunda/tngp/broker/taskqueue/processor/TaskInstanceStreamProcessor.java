@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import java.nio.ByteOrder;
 
@@ -64,6 +64,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
+    protected LogStream targetStream;
+
     protected long eventPosition = 0;
     protected long eventKey = 0;
     protected long sourceEventPosition = 0;
@@ -90,6 +92,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         final LogStream sourceStream = context.getSourceStream();
         logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
+
+        targetStream = context.getTargetStream();
     }
 
     public static MetadataFilter eventFilter()
@@ -164,9 +168,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
             .protocolVersion(Constants.PROTOCOL_VERSION)
-            .eventType(TASK_EVENT);
-
-        // TODO: targetEventMetadata.raftTermId(raftTermId);
+            .eventType(TASK_EVENT)
+            .raftTermId(targetStream.getTerm());
 
         return writer
             .key(eventKey)

@@ -53,6 +53,7 @@ public class ClientApiMessageHandlerTest
     protected static final int TRANSPORT_CHANNEL_ID = 21;
     private static final int CONNECTION_ID = 4;
     private static final int REQUEST_ID = 5;
+    private static final int RAFT_TERM = 10;
 
     protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
     protected static final int LOG_STREAM_PARTITION_ID = 1;
@@ -115,6 +116,7 @@ public class ClientApiMessageHandlerTest
                 mock(TaskSubscriptionManager.class));
 
         messageHandler.addStream(logStream);
+        logStream.setTerm(RAFT_TERM);
     }
 
     @After
@@ -152,6 +154,7 @@ public class ClientApiMessageHandlerTest
         assertThat(eventMetadata.getReqChannelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
         assertThat(eventMetadata.getReqConnectionId()).isEqualTo(CONNECTION_ID);
         assertThat(eventMetadata.getReqRequestId()).isEqualTo(REQUEST_ID);
+        assertThat(eventMetadata.getRaftTermId()).isEqualTo(RAFT_TERM);
     }
 
     @Test

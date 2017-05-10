@@ -12,9 +12,7 @@
  */
 package org.camunda.tngp.broker.incident.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
 
@@ -87,6 +85,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     private DirectBuffer logStreamTopicName;
     private int logStreamPartitionId;
 
+    private LogStream targetStream;
     public IncidentStreamProcessor(CommandResponseWriter responseWriter, IndexStore instanceIndexStore, IndexStore activityIndexStore, IndexStore taskIndexStore)
     {
         this.responseWriter = responseWriter;
@@ -114,6 +113,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         logStreamTopicName = logStream.getTopicName();
         logStreamPartitionId = logStream.getPartitionId();
         logStreamReader = new BufferedLogStreamReader(logStream);
+
+        targetStream = context.getTargetStream();
     }
 
     public static MetadataFilter eventFilter()
@@ -217,8 +218,8 @@ public class IncidentStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata.eventType(EventType.INCIDENT_EVENT)
-            .protocolVersion(Constants.PROTOCOL_VERSION);
-        // TODO: targetEventMetadata.raftTermId(raftTermId);
+            .protocolVersion(Constants.PROTOCOL_VERSION)
+            .raftTermId(targetStream.getTerm());
 
         return writer
                 .metadataWriter(targetEventMetadata)
@@ -321,8 +322,8 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 targetEventMetadata
                     .incidentKey(eventKey)
-                    .protocolVersion(Constants.PROTOCOL_VERSION);
-                // TODO: targetEventMetadata.raftTermId(raftTermId);
+                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .raftTermId(targetStream.getTerm());
 
                 position = writer
                         .key(failureEvent.getKey())

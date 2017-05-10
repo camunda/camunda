@@ -33,6 +33,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 {
     private final int streamProcessorId;
 
+    private final LogStream logStream;
     private final DirectBuffer sourceStreamTopicName;
     private final int sourceStreamPartitionId;
 
@@ -48,6 +49,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     public IncidentStreamProcessorErrorHandler(LogStream logStream, int streamProcessorId)
     {
         this.streamProcessorId = streamProcessorId;
+        this.logStream = logStream;
         this.sourceStreamTopicName = logStream.getTopicName();
         this.sourceStreamPartitionId = logStream.getPartitionId();
 
@@ -72,7 +74,8 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         incidentEventMetadata.reset()
             .protocolVersion(Constants.PROTOCOL_VERSION)
-            .eventType(EventType.INCIDENT_EVENT);
+            .eventType(EventType.INCIDENT_EVENT)
+            .raftTermId(logStream.getTerm());
 
         incidentEvent.reset();
         incidentEvent
