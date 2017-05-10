@@ -143,6 +143,8 @@ public class InvitationRequest implements BufferWriter, BufferReader
     @Override
     public void wrap(final DirectBuffer buffer, int offset, final int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
         offset += headerDecoder.encodedLength();
 
@@ -170,7 +172,14 @@ public class InvitationRequest implements BufferWriter, BufferReader
             members.add(member);
         }
 
-        topicName.wrap(buffer, bodyDecoder.limit() + topicNameHeaderLength(), bodyDecoder.topicNameLength());
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        // skip topic name in decoder
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     public void reset()

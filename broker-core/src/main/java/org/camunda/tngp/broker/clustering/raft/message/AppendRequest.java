@@ -146,6 +146,8 @@ public class AppendRequest implements BufferReader, BufferWriter
     @Override
     public void wrap(final DirectBuffer buffer, int offset, final int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
         offset += headerDecoder.encodedLength();
 
@@ -178,15 +180,26 @@ public class AppendRequest implements BufferReader, BufferWriter
 
             isLeaderAvailable = true;
         }
+        else
+        {
+            // skip host header in decoder
+            bodyDecoder.limit(bodyDecoder.limit() + hostHeaderLength());
+        }
 
+        final int dataLength = bodyDecoder.dataLength();
         offset = bodyDecoder.limit() + AppendRequestDecoder.dataHeaderLength();
 
         isReadableEntryAvailable = false;
-        if (bodyDecoder.dataLength() > 0)
+        if (dataLength > 0)
         {
             readableEntry.wrap(buffer, offset);
             isReadableEntryAvailable = true;
         }
+
+        // skip data in decoder
+        bodyDecoder.limit(offset + dataLength);
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     @Override

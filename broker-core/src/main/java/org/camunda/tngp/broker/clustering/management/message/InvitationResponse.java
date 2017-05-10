@@ -35,12 +35,16 @@ public class InvitationResponse implements BufferWriter, BufferReader
     @Override
     public void wrap(final DirectBuffer buffer, int offset, final int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
         offset += headerDecoder.encodedLength();
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         term = bodyDecoder.term();
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     @Override

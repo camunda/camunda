@@ -108,6 +108,8 @@ public class JoinRequest implements BufferReader, BufferWriter
     @Override
     public void wrap(final DirectBuffer buffer, int offset, final int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
         offset += headerDecoder.encodedLength();
 
@@ -135,6 +137,13 @@ public class JoinRequest implements BufferReader, BufferWriter
 
             isMemberAvailable = true;
         }
+        else
+        {
+            // skip host header in decoder
+            bodyDecoder.limit(bodyDecoder.limit() + hostHeaderLength());
+        }
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     public void reset()

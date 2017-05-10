@@ -61,6 +61,8 @@ public class ProbeRequest implements BufferReader, BufferWriter
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
 
         offset += headerDecoder.encodedLength();
@@ -72,6 +74,8 @@ public class ProbeRequest implements BufferReader, BufferWriter
         target.port(bodyDecoder.port());
         target.hostLength(hostLength);
         bodyDecoder.getHost(target.getHostBuffer(), 0, hostLength);
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     public void reset()

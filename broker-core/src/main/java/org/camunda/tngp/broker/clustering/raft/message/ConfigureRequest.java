@@ -160,6 +160,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
+        final int frameEnd = offset + length;
+
         headerDecoder.wrap(buffer, offset);
         offset += headerDecoder.encodedLength();
 
@@ -195,6 +197,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
 
         // skip topic name in decoder
         bodyDecoder.limit(topicNameOffset + topicNameLength);
+
+        assert bodyDecoder.limit() == frameEnd : "Decoder read only to position " + bodyDecoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     public void reset()
