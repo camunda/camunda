@@ -285,7 +285,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         verify(mockErrorResponseWriter).errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template partitionId '%d' is not supported.", 999);
+        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template id '%d' is not supported.", 999);
         verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
     }
 
