@@ -11,6 +11,7 @@ describe('<Filter>', () => {
   let onFilterChanged;
   let onHistoryStateChange;
   let removeHistoryListener;
+  let getProcessDefinition;
   let node;
   let update;
   let eventsBus;
@@ -27,12 +28,14 @@ describe('<Filter>', () => {
 
     removeHistoryListener = sinon.spy();
 
+    getProcessDefinition = sinon.spy();
+
     onHistoryStateChange = sinon.stub().returns(removeHistoryListener);
     __set__('onHistoryStateChange', onHistoryStateChange);
 
     onFilterChanged = sinon.spy();
 
-    ({node, update, eventsBus} = mountTemplate(<Filter onFilterChanged={onFilterChanged} />));
+    ({node, update, eventsBus} = mountTemplate(<Filter onFilterChanged={onFilterChanged} getProcessDefinition={getProcessDefinition} />));
   });
 
   afterEach(() => {
@@ -64,6 +67,10 @@ describe('<Filter>', () => {
   it('should add history listener', () => {
     expect(onHistoryStateChange.calledOnce).to.eql(true);
     expect(onHistoryStateChange.calledWith(onFilterChanged)).to.eql(true);
+  });
+
+  it('should pass getDefinitionId function to CreateFilter component', () => {
+    expect(CreateFilter.getAttribute('getProcessDefinition')).to.eql(getProcessDefinition);
   });
 
   it('should remove history listener on destroy event', () => {

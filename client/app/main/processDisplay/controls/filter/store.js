@@ -1,6 +1,6 @@
 import jsurl from 'jsurl';
 import {addRouteReducer, getRouter} from 'router';
-import {reducer} from './reducer';
+import {reducer} from './routeReducer';
 import {createChangeObserver} from 'utils';
 
 const router = getRouter();

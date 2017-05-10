@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DateFilter} from 'main/processDisplay/controls/filter/DateFilter';
+import {DateFilter} from 'main/processDisplay/controls/filter/date/DateFilter';
 
 describe('<DateFilter>', () => {
   let node;

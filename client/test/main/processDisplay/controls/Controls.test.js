@@ -10,6 +10,7 @@ describe('<Controls>', () => {
   let View;
   let AnalysisSelection;
   let onCriteriaChanged;
+  let getProcessDefinition;
   let node;
   let update;
   let getView;
@@ -31,10 +32,11 @@ describe('<Controls>', () => {
     __set__('getFilter', getFilter);
 
     onCriteriaChanged = sinon.spy();
+    getProcessDefinition = sinon.spy();
 
     Controls = createControls();
 
-    ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} />));
+    ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} getProcessDefinition={getProcessDefinition} />));
   });
 
   afterEach(() => {
@@ -81,6 +83,10 @@ describe('<Controls>', () => {
     it('should display the analysis selection', () => {
       expect(node).to.not.contain.text(AnalysisSelection.text);
     });
+  });
+
+  it('should pass getDefinitionId function to Filter component', () => {
+    expect(Filter.getAttribute('getProcessDefinition')).to.eql(getProcessDefinition);
   });
 
   describe('onViewChanged', () => {

@@ -7,7 +7,7 @@ import {View, getView} from './view';
 export function createControls(analysisControlIntegrator) {
   const AnalysisSelection = createAnalysisSelection(analysisControlIntegrator);
 
-  const Controls = withSelector(({onCriteriaChanged, getBpmnViewer}) => {
+  const Controls = withSelector(({onCriteriaChanged, getBpmnViewer, getProcessDefinition}) => {
     const template = <div className="controls row">
       <div className="col-xs-12">
         <form>
@@ -25,7 +25,7 @@ export function createControls(analysisControlIntegrator) {
               </tr>
             <tr>
               <View onViewChanged={onViewChanged}/>
-              <Filter onFilterChanged={onControlsChange} />
+              <Filter onFilterChanged={onControlsChange} getProcessDefinition={getProcessDefinition} />
               <Match>
                 <Case predicate={isBranchAnalyisView}>
                   <AnalysisSelection selector="selection" />

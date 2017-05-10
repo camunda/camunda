@@ -1,6 +1,7 @@
 import {jsx, Scope, List, Match, Case} from 'view-utils';
 import {onNextTick} from 'utils';
-import {DateFilter} from './DateFilter';
+import {DateFilter} from './date/DateFilter';
+import {VariableFilter} from './variable/VariableFilter';
 import {deleteFilter as deleteFilterService} from './service';
 
 export function FilterBar({onFilterDeleted}) {
@@ -12,6 +13,9 @@ export function FilterBar({onFilterDeleted}) {
             <Match>
               <Case predicate={isType('startDate')}>
                 <DateFilter selector="data" onDelete={deleteFilter}/>
+              </Case>
+              <Case predicate={isType('variable')}>
+                <VariableFilter selector="data" onDelete={deleteFilter}/>
               </Case>
             </Match>
           </li>

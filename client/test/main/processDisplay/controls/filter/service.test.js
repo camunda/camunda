@@ -1,14 +1,12 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {createStartDateFilter, formatDate, deleteFilter, getFilter,
+import {deleteFilter, getFilter,
         __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/service';
 
 describe('Filter service', () => {
-  const CREATE_FILTER_ACTION = 'CREATE_FILTER_ACTION';
   const DELETE_FILTER = 'DELETE_FILTER';
 
   let dispatch;
-  let createCreateStartDateFilterAction;
   let createDeleteFilterAction;
   let parse;
   let getLastRoute;
@@ -16,9 +14,6 @@ describe('Filter service', () => {
   beforeEach(() => {
     dispatch = sinon.spy();
     __set__('dispatch', dispatch);
-
-    createCreateStartDateFilterAction = sinon.stub().returns(CREATE_FILTER_ACTION);
-    __set__('createCreateStartDateFilterAction', createCreateStartDateFilterAction);
 
     createDeleteFilterAction = sinon.stub().returns(DELETE_FILTER);
     __set__('createDeleteFilterAction', createDeleteFilterAction);
@@ -34,35 +29,9 @@ describe('Filter service', () => {
 
   afterEach(() => {
     __ResetDependency__('dispatchAction');
-    __ResetDependency__('createCreateStartDateFilterAction');
     __ResetDependency__('createDeleteFilterAction');
     __ResetDependency__('parse');
     __ResetDependency__('getLastRoute');
-  });
-
-  describe('createStartDateFilter', () => {
-    const start = '2016-12-01T00:00:00';
-    const end = '2016-12-31T23:59:59';
-
-    beforeEach(() => {
-      createStartDateFilter(start, end);
-    });
-    it('should dispatch open modal action', () => {
-      expect(dispatch.calledWith(CREATE_FILTER_ACTION)).to.eql(true);
-    });
-
-    it('should create action', () => {
-      expect(createCreateStartDateFilterAction.calledOnce).to.eql(true);
-      expect(createCreateStartDateFilterAction.calledWith(start, end)).to.eql(true);
-    });
-  });
-
-  describe('formatDate', () => {
-    it('should return only the date portion without time', () => {
-      const formatted = formatDate(new Date('2017-02-15T12:00:00'));
-
-      expect(formatted).to.eql('2017-02-15');
-    });
   });
 
   describe('deleteFilter', () => {

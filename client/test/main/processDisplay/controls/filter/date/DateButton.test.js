@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DateButton, TODAY, YESTERDAY, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/DateButton';
+import {DateButton, TODAY, YESTERDAY, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateButton';
 
 describe('<DateButton>', () => {
   let node;

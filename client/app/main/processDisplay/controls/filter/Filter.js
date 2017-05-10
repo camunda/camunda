@@ -4,10 +4,10 @@ import {CreateFilter} from './CreateFilter';
 import {getFilter} from './service';
 import {onHistoryStateChange} from './store';
 
-export const Filter = ({onFilterChanged}) => {
+export const Filter = ({onFilterChanged, getProcessDefinition}) => {
   const template = <Scope selector={createFilterState}>
     <FilterBar onFilterDeleted={onFilterChanged}  />
-    <CreateFilter onFilterAdded={onFilterChanged}  />
+    <CreateFilter onFilterAdded={onFilterChanged} getProcessDefinition={getProcessDefinition}  />
   </Scope>;
 
   return (node, eventsBus) => {

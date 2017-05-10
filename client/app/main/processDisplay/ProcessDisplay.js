@@ -14,7 +14,7 @@ function Process() {
   const {Diagram, Controls, integrator} = createDiagramControlsIntegrator();
 
   const template = <div className="process-display">
-    <Controls selector={createControlsState} onCriteriaChanged={handleCriteriaChange} />
+    <Controls selector={createControlsState} onCriteriaChanged={handleCriteriaChange} getProcessDefinition={getDefinitionId} />
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
@@ -96,7 +96,7 @@ function Process() {
     }
   }
 
-  function isLoadingSomething({diagram: {bpmnXml, heatmap, targetValue}, controls}) {
+  function isLoadingSomething({diagram: {bpmnXml, heatmap, targetValue}}) {
     return isLoading(bpmnXml) || isLoading(heatmap) || isLoading(targetValue);
   }
 

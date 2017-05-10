@@ -1,11 +1,6 @@
-import isEqual from 'lodash.isequal';
-
-export const OPEN_DATE_FILTER_MODAL = 'OPEN_DATE_FILTER_MODAL';
-export const CLOSE_DATE_FILTER_MODAL = 'CLOSE_DATE_FILTER_MODAL';
 export const CREATE_START_DATE_FILTER = 'CREATE_START_DATE_FILTER';
-export const DELETE_FILTER = 'DELETE_FILTER';
 
-export function reducer(state = [], action) {
+export function routeReducer(state = [], action) {
   if (action.type === CREATE_START_DATE_FILTER) {
     // remove old date filter
     const newState = state.filter(({type}) => {
@@ -23,11 +18,6 @@ export function reducer(state = [], action) {
       }
     ];
   }
-  if (action.type === DELETE_FILTER) {
-    return state.filter(({data}) => {
-      return !isEqual(data, action.filter);
-    });
-  }
 
   return state;
 }
@@ -37,12 +27,5 @@ export function createCreateStartDateFilterAction(start, end) {
     type: CREATE_START_DATE_FILTER,
     start,
     end
-  };
-}
-
-export function createDeleteFilterAction(filter) {
-  return {
-    type: DELETE_FILTER,
-    filter
   };
 }

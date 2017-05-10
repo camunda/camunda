@@ -150,13 +150,15 @@ describe('ProcessDisplay service', () => {
               lowerBoundary : true,
               upperBoundary : true
             }
-          ]
+          ],
+          variables: []
         }
       };
 
       loadData({
         query: [
           {
+            type: 'startDate',
             data: {
               start,
               end

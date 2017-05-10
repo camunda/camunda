@@ -143,6 +143,10 @@ describe('<ProcessDisplay>', () => {
     expect(Controls.getAttribute('onCriteriaChanged')).to.be.a('function');
   });
 
+  it('should pass getDefinitionId function to Controls component', () => {
+    expect(Controls.getAttribute('getProcessDefinition')).to.be.a('function');
+  });
+
   it('should load data when onCriteriaChanged is called', () => {
     Controls.getAttribute('onCriteriaChanged')(NEW_CRITERIA);
 

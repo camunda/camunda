@@ -1,0 +1,111 @@
+import {jsx, OnEvent, Socket, Scope, List, Text, Attribute, createReferenceComponent} from 'view-utils';
+import {onNextTick, isInitial} from 'utils';
+import {createModal} from 'widgets';
+import {loadVariables, selectVariableIdx, deselectVariableIdx, createVariableFilter} from './service';
+
+import {OperatorSelection} from './OperatorSelection';
+import {ValueInput} from './ValueInput';
+
+export function createVariableModal(createCallback, getProcessDefinition) {
+  const Modal = createModal();
+  const Reference = createReferenceComponent();
+
+  let loadedDefinition;
+
+  const VariableModal = () => {
+    return (parentNode, eventBus) => {
+      const template =
+        <Modal>
+          <Socket name="head">
+            <button type="button" className="close">
+              <OnEvent event="click" listener={Modal.close} />
+              <span>×</span>
+            </button>
+            <h4 className="modal-title">New Variable Filter</h4>
+          </Socket>
+          <Socket name="body">
+            <form>
+              <span className="label">Variable Name</span>
+              <select className="form-control">
+                <Reference name="variableDropdown" />
+                <OnEvent event="change" listener={changeVariable} />
+                <option disabled="disabled">Please Select Variable</option>
+                <Scope selector={getVariableNames}>
+                  <List>
+                    <option>
+                      <Text property="name" />
+                    </option>
+                  </List>
+                </Scope>
+              </select>
+
+              <OperatorSelection />
+
+              <ValueInput />
+            </form>
+          </Socket>
+          <Socket name="foot">
+            <button type="button" className="btn btn-default">
+              <OnEvent event="click" listener={Modal.close} />
+              Abort
+            </button>
+            <button type="button" className="btn btn-primary">
+              <OnEvent event="click" listener={createFilter} />
+              <Attribute attribute="disabled" selector={isFilterInvalid} />
+              Create Filter
+            </button>
+          </Socket>
+        </Modal>;
+      const templateUpdate = template(parentNode, eventBus);
+
+      return [templateUpdate, ({variables}) => {
+        const definition = getProcessDefinition();
+
+        if (definition !== loadedDefinition || isInitial(variables)) {
+          loadedDefinition = definition;
+          loadVariables(definition);
+        }
+      }];
+
+      function getVariableNames({variables: {data}}) {
+        return data;
+      }
+
+      function isFilterInvalid({selectedIdx, operator, value}) {
+        return selectedIdx === undefined ||
+          operator === undefined ||
+          value === undefined ||
+          value === '';
+      }
+
+      function changeVariable({event:{target:{selectedIndex}}}) {
+        selectVariableIdx(selectedIndex - 1); // -1 to deal with the "please select variable" entry
+      }
+
+      function createFilter({state: {variables: {data}, selectedIdx, operator, value}}) {
+        const variable = data[selectedIdx];
+
+        createVariableFilter({
+          name: variable.name,
+          type: variable.type,
+          operator: operator,
+          values: [value]
+        });
+
+        Modal.close();
+
+        onNextTick(createCallback);
+      }
+    };
+  };
+
+  VariableModal.open = () => {
+    Reference.getNode('variableDropdown').selectedIndex = 0;
+    deselectVariableIdx();
+
+    Modal.open();
+  };
+  VariableModal.close = Modal.close;
+
+  return VariableModal;
+}
