@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const shell = require('shelljs');
 const utils = require('./utils');
 const engine = require('./engine');
+const {c7port} = require('./config');
 
 const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
@@ -57,7 +58,7 @@ mvnCleanPackage.on('close', code => {
 
             utils.changeFile(config, {
               regexp: /http:\/\/localhost:8080\/engine-rest/g,
-              replacement: 'http://localhost:8050/engine-rest'
+              replacement: `http://localhost:${c7port}/engine-rest`
             });
 
             runWithColor('java -jar ' + backendJar, 'BE', chalk.green);
