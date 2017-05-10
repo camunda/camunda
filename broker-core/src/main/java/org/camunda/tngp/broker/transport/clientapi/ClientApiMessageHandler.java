@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
-import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
-import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
-import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.*;
+import static org.camunda.tngp.transport.protocol.Protocols.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -146,7 +145,7 @@ public class ClientApiMessageHandler
                 isHandled = errorResponseWriter
                         .metadata(eventMetadata)
                         .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-                        .errorMessage("Cannot handle message. Template partitionId '%d' is not supported.", templateId)
+                        .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
                         .failedRequest(buffer, messageOffset, messageLength)
                         .tryWriteResponseOrLogFailure();
                 break;
