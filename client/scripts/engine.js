@@ -13,7 +13,7 @@ const tmpDir = path.resolve(__dirname, '..', 'tmp');
 const databaseDir = path.resolve(__dirname, '..', 'camunda-h2-dbs');
 const extractTarget = path.resolve(tmpDir, 'engine');
 const demoDataDir = path.resolve(__dirname, '..', 'demo-data');
-const engineUrl = 'http://localhost:8080';
+const engineUrl = 'http://localhost:8050';
 const camAPI = new CamundaClient({
   mock: false,
   apiUri: engineUrl + '/engine-rest'
@@ -30,6 +30,7 @@ exports.init = init;
 
 function init() {
   return downloadAndExtractEngine()
+    .then(changeServerConfig)
     .then(startServer)
     .then(deployDefinitions)
     .then(startInstances)
@@ -48,6 +49,30 @@ function downloadAndExtractEngine() {
     .then(() => console.log(chalk.green('Engine extracted')));
 }
 
+function changeServerConfig() {
+  const configFile = utils.findPath(extractTarget, [
+    'server',
+    /tomcat/,
+    'conf',
+    'server.xml'
+  ]);
+
+  const startScript = path.resolve(
+    extractTarget,
+    utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
+  );
+
+  utils.changeFile(configFile, {
+    regexp: /port="8080"/g,
+    replacement: 'port="8050"'
+  });
+
+  utils.changeFile(startScript, {
+    regexp: /http:\/\/localhost:8080/g,
+    replacement: 'http://localhost:8050'
+  });
+}
+
 function startServer() {
   return utils.isServerUp(engineUrl)
     .then(running => {
@@ -59,8 +84,8 @@ function startServer() {
       ]);
       const startScript = path.resolve(
         extractTarget,
-         utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
-       );
+        utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
+      );
 
       if (running) {
         console.log(chalk.yellow('Previous instance of engine still running closing...'));

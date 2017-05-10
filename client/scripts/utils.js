@@ -17,6 +17,7 @@ exports.extract = promisify(tarball.extractTarball);
 exports.runWithColor = runWithColor;
 exports.isWindows = /^win/.test(process.platform);
 exports.runInSequence = runInSequence;
+exports.changeFile = changeFile;
 
 function runWithColor(command, name, color, options = {}) {
   const process = exec(command, options);
@@ -121,4 +122,19 @@ function runInSequence(values, taskFn) {
     },
     Promise.resolve([])
   )
+}
+
+function changeFile(file, change) {
+  if (change.regexp instanceof RegExp) {
+    return changeFile(file, (content) => {
+      return content.replace(change.regexp, change.replacement);
+    });
+  }
+
+  const content = fs.readFileSync(file);
+
+  fs.writeFileSync(
+    file,
+    change(content.toString())
+  );
 }

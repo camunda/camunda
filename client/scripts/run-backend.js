@@ -50,6 +50,15 @@ mvnCleanPackage.on('close', code => {
         return utils.waitForServer('http://localhost:9200')
           .then(() => {
             const backendJar = utils.findFile(extractDir, '.jar');
+            const config = utils.findPath(extractDir, [
+              'environment',
+              'environment.properties'
+            ]);
+
+            utils.changeFile(config, {
+              regexp: /http:\/\/localhost:8080\/engine-rest/g,
+              replacement: 'http://localhost:8050/engine-rest'
+            });
 
             runWithColor('java -jar ' + backendJar, 'BE', chalk.green);
 
