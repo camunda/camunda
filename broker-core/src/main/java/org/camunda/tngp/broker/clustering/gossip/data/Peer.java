@@ -240,13 +240,13 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     @Override
     public String toString()
     {
-        return String.format(
-            "Peer { State: %s, Heartbeat: %s, Endpoints: { Client: %s, Management: %s, Replication: %s } }",
-            state(),
-            heartbeat(),
-            clientEndpoint(),
-            managementEndpoint(),
-            replicationEndpoint()
-        );
+        return "Peer{" +
+            "clientEndpoint=" + clientEndpoint +
+            ", managementEndpoint=" + managementEndpoint +
+            ", replicationEndpoint=" + replicationEndpoint +
+            ", heartbeat=" + heartbeat +
+            ", state=" + state +
+            ", changeStateTime=" + changeStateTime +
+            '}';
     }
 }
