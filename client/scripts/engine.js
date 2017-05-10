@@ -21,6 +21,7 @@ const camAPI = new CamundaClient({
 const deploymentService = new camAPI.resource('deployment');
 const processDefinitionService = new camAPI.resource('process-definition');
 const taskService = new camAPI.resource('task');
+const variableService = new camAPI.resource('variable');
 
 shell.rm('-rf', tmpDir);
 shell.rm('-rf', databaseDir);
@@ -77,10 +78,13 @@ function startServer() {
 }
 
 function deployDefinitions() {
-  const demoDataModules = utils.findFile(demoDataDir, '.data.js', true);
+  const demoDataModules = utils
+    .findFile(demoDataDir, '.data.js', true)
+    .sort();
 
-  return Promise.all(
-    demoDataModules.map((file) => {
+  return utils.runInSequence(
+    demoDataModules,
+    (file) => {
       const module = require(file);
 
       return deploy(module)
@@ -90,7 +94,7 @@ function deployDefinitions() {
 
           return module;
         });
-    })
+    }
   );
 }
 
@@ -105,8 +109,13 @@ function matchResourcesWithIds(module) {
   const {resources} = module;
 
   return ({deployedProcessDefinitions}) => {
+    if (!deployedProcessDefinitions) {
+      throw new Error('Deployment failed');
+    }
+
     return Object.assign({}, module, {
-      resources: resources.map(({name}) => {
+      resources: resources.map((resource) => {
+        const {name} = resource;
         const id = Object
           .keys(deployedProcessDefinitions)
           .find(key => {
@@ -115,7 +124,7 @@ function matchResourcesWithIds(module) {
             return resource === name;
           });
 
-        return {name, id};
+        return Object.assign({id}, resource);
       })
     });
   };
@@ -130,8 +139,9 @@ function startInstances(modules) {
 function startModuleInstances(module) {
   const {resources, instances} = module;
 
-  return Promise.all(
-    instances.map(instanceDefinition => {
+  return utils.runInSequence(
+    instances,
+    (instanceDefinition) => {
       const {resource, variables} = instanceDefinition;
       const {id, taskIterationLimit} = resources.find(({name}) => name === resource);
 
@@ -143,7 +153,7 @@ function startModuleInstances(module) {
 
         return Object.assign({taskIterationLimit}, instanceDefinition, instance);
       });
-    })
+    }
   ).then(instances => {
     return Object.assign({}, module, {instances});
   });
@@ -156,19 +166,25 @@ function completeTasks(modules) {
 }
 
 function completeModuleTasks({instances}) {
-  return Promise.all(
-    instances.map(completeInstanceTasks)
+  return utils.runInSequence(
+    instances,
+    // it may look bit strange, but map passes index as second argument to called function
+    // which is not desired here, hence this strange arrow function is needed
+    instance => completeInstanceTasks(instance)
   );
 }
 
 function completeInstanceTasks(instance, iteration = 0) {
   let skipped = false;
 
-  return getTaskList(instance)
-  .then(tasks => {
-    return Promise.all(
-      tasks.map(task => {
-        const variables = instance.handleTask(task);
+
+
+  return Promise.all([getTaskList(instance), getVariables(instance)])
+  .then(([tasks, previousVariables]) => {
+    return utils.runInSequence(
+      tasks,
+      task => {
+        const variables = instance.handleTask(task, previousVariables);
 
         if (variables) {
           return taskService.complete({
@@ -180,16 +196,16 @@ function completeInstanceTasks(instance, iteration = 0) {
         skipped = true;
 
         return Promise.resolve();
-      })
-    )
-    .then(() => taskService.count({processInstanceId: instance.id}))
-    .then(({count}) => {
-      if (!skipped && count > 0 && instance.taskIterationLimit <= iteration) {
-        return completeInstanceTasks(instance, iteration + 1);
       }
+    )
+  })
+  .then(() => taskService.count({processInstanceId: instance.id}))
+  .then(count => {
+    if (!skipped && count > 0 && instance.taskIterationLimit >= iteration) {
+      return completeInstanceTasks(instance, iteration + 1);
+    }
 
-      console.log(chalk.green('INSTANCE TASKS COMPLETED'), instance.id);
-    })
+    console.log(chalk.green('INSTANCE TASKS COMPLETED'), instance.id);
   });
 }
 
@@ -199,4 +215,17 @@ function getTaskList(instance) {
     maxResults: 9999
   })
   .then(({_embedded: {task}}) => task)
+}
+
+function getVariables(instance) {
+  return variableService.list({
+    maxResults: 9999,
+    processInstanceIdIn: [instance.id]
+  }).then(({items: variables}) => {
+    return variables.reduce((variables, variable) => {
+      variables[variable.name] = variable.value;
+
+      return variables;
+    }, {});
+  })
 }

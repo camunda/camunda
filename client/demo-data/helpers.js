@@ -29,3 +29,21 @@ exports.generateInstances = (resource, length, getProperties) => {
 
   return instances;
 };
+
+exports.getEngineValue = (value, type) => {
+  if (!type) {
+    switch (typeof value) {
+      case 'number':
+        type = 'Double';
+        break;
+      case 'string':
+        type = 'String';
+        break;
+      case 'boolean':
+        type = 'Boolean';
+        break;
+    }
+  }
+
+  return {value, type};
+};

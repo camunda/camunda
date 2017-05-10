@@ -16,6 +16,7 @@ exports.promisify = promisify;
 exports.extract = promisify(tarball.extractTarball);
 exports.runWithColor = runWithColor;
 exports.isWindows = /^win/.test(process.platform);
+exports.runInSequence = runInSequence;
 
 function runWithColor(command, name, color, options = {}) {
   const process = exec(command, options);
@@ -35,7 +36,7 @@ function runWithColor(command, name, color, options = {}) {
   return process;
 }
 
-function waitForServer(address, retries = 5, waitTime = 10) {
+function waitForServer(address, retries = 5, waitTime = 5) {
   return delay(waitTime * 1000)
     .then(request.bind(null, address))
     .catch(function (error) {
@@ -108,4 +109,16 @@ function promisify(original, thisArg) {
      );
    });
  };
+}
+
+function runInSequence(values, taskFn) {
+  return values.reduce(
+    (listPromise, value, index) => {
+      return listPromise.then(list => {
+        return taskFn(value, index)
+          .then(result => list.concat(result));
+      });
+    },
+    Promise.resolve([])
+  )
 }

@@ -1,12 +1,11 @@
 const {getResource, generateInstances} = require('./helpers');
 
-const resource = 'obtain-schufa.bpmn';
-
 exports.resources = [
-  getResource(resource)
+  getResource('lead-qualification-version1.bpmn'),
+  getResource('sub-process.bpmn'),
 ];
 
-exports.instances = generateInstances(resource, 10, (index) => {
+exports.instances =  generateInstances('sub-process.bpmn', 10, (index) => {
   return {
     variables: {
       var1: {
@@ -18,18 +17,11 @@ exports.instances = generateInstances(resource, 10, (index) => {
         type: 'Double'
       }
     },
-    handleTask
+    handleTask: handleTask
   };
 });
 
 // Return object with variables to complete task or undefined to do nothing
-function handleTask(task) {
-  if (task.taskDefinitionKey === 'UserTask_1') {
-    return {
-      var3: {
-        type: 'String',
-        value: 'some variable ' + Math.random()
-      }
-    };
-  }
+function handleTask() {
+  return {};
 }
