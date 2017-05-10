@@ -27,6 +27,12 @@ public class Heartbeat implements Comparable<Heartbeat>
         return this;
     }
 
+    public void wrap(final Heartbeat heartbeat)
+    {
+        this.generation(heartbeat.generation())
+            .version(heartbeat.version());
+    }
+
     @Override
     public int compareTo(Heartbeat o)
     {
@@ -40,10 +46,33 @@ public class Heartbeat implements Comparable<Heartbeat>
         return cmp;
     }
 
-    public void wrap(final Heartbeat heartbeat)
+    @Override
+    public boolean equals(final Object o)
     {
-        this.generation(heartbeat.generation())
-            .version(heartbeat.version());
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final Heartbeat heartbeat = (Heartbeat) o;
+
+        if (generation != heartbeat.generation)
+        {
+            return false;
+        }
+        return version == heartbeat.version;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (generation ^ (generation >>> 32));
+        result = 31 * result + version;
+        return result;
     }
 
     @Override
