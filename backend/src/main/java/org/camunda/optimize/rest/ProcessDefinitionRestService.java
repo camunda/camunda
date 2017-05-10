@@ -185,7 +185,7 @@ public class ProcessDefinitionRestService {
   @Path("/{id}/variables")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String, List<GetVariablesResponseDto>> getVariables(@PathParam("id") String processDefinitionId) {
+  public List<GetVariablesResponseDto> getVariables(@PathParam("id") String processDefinitionId) {
     return variableReader.getVariables(processDefinitionId);
   }
 

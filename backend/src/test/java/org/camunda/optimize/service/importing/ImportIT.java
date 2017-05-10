@@ -215,11 +215,11 @@ public class ImportIT  {
     //when
     String token = embeddedOptimizeRule.authenticateAdmin();
     String procDefId = engineRule.getProcessDefinitionId();
-    Map<String, List<GetVariablesResponseDto>> variablesResponseDtos = embeddedOptimizeRule.target()
+    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<Map<String, List<GetVariablesResponseDto>>>(){});
+        .get(new GenericType<List<GetVariablesResponseDto>>(){});
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));

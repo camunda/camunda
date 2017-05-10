@@ -70,12 +70,11 @@ public class VariableReaderIT {
     }
 
     // when
-    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    assertThat(variables.get("varName").size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+    GetVariablesResponseDto responseDto = variables.get(0);
     assertThat(responseDto.getValues().size(), is(15));
     assertThat(responseDto.isValuesAreComplete(), is(false));
   }
@@ -97,19 +96,17 @@ public class VariableReaderIT {
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "asdfasd", procInst);
 
     // when
-    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    assertThat(variables.get("varName").size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+    GetVariablesResponseDto responseDto = variables.get(0);
     assertThat(responseDto.getValues().size(), is(embeddedOptimizeRule.getMaxVariableValueListSize()));
     assertThat(responseDto.isValuesAreComplete(), is(false));
   }
 
   @Test
   public void getVariables() {
-
     // given
     StringVariableDto variableDto = new StringVariableDto();
     variableDto.setName("var1");
@@ -129,7 +126,7 @@ public class VariableReaderIT {
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "3", procInst);
 
     // when
-    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(3));
@@ -138,12 +135,17 @@ public class VariableReaderIT {
     assertVariableNameValueRelation(variables, "var3", "value3");
   }
 
-  private void assertVariableNameValueRelation(Map<String, List<GetVariablesResponseDto>> variables, String name, String value) {
-    assertThat(variables.get(name).size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get(name).get(0);
-    assertThat(responseDto.getValues().get(0), is(value));
-    assertThat(responseDto.isValuesAreComplete(), is(true));
-    assertThat(responseDto.getType(), is("String"));
+  private void assertVariableNameValueRelation(List<GetVariablesResponseDto> variables, String name, String value) {
+    boolean found = false;
+    for (GetVariablesResponseDto variable : variables) {
+      if (variable.getName().equals(name)) {
+        assertThat(variable.getValues().get(0), is(value));
+        assertThat(variable.isValuesAreComplete(), is(true));
+        assertThat(variable.getType(), is("String"));
+        found = true;
+      }
+    }
+    assertThat(found, is(true));
   }
 
   @Test
@@ -167,14 +169,15 @@ public class VariableReaderIT {
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
     // when
-    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
-    assertThat(variables.size(), is(1));
-    assertThat(variables.get("varName").size(), is(2));
-    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
-    assertThat(responseDto.getValues().size(), is(1));
-    assertThat(responseDto.isValuesAreComplete(), is(true));
+    assertThat(variables.size(), is(2));
+    for (GetVariablesResponseDto variable : variables) {
+      assertThat(variable.getName(), is("varName"));
+      assertThat(variable.getValues().size(), is(1));
+      assertThat(variable.isValuesAreComplete(), is(true));
+    }
   }
 
   @Test
@@ -193,16 +196,14 @@ public class VariableReaderIT {
         elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "2", procInst);
 
     // when
-    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    assertThat(variables.get("varName").size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+    GetVariablesResponseDto responseDto = variables.get(0);
     assertThat(responseDto.getValues().size(), is(1));
     assertThat(responseDto.isValuesAreComplete(), is(true));
   }
-
 
   @Test
   public void allPrimitiveTypesCanBeRead() throws ParseException {
@@ -218,12 +219,11 @@ public class VariableReaderIT {
       elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
       // when
-      Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+      List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
       // then
       assertThat(variables.size(), is(1));
-      assertThat(variables.get("varName").size(), is(1));
-      GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+      GetVariablesResponseDto responseDto = variables.get(0);
       assertThat(responseDto.getName(), is("varName"));
       assertThat(responseDto.getType(), is(typeValueEntry.getKey()));
       assertThat(responseDto.isValuesAreComplete(), is(true));
@@ -268,14 +268,14 @@ public class VariableReaderIT {
     return typeToValue;
   }
 
-  private Map<String, List<GetVariablesResponseDto>> getGetVariablesResponseDtos(String processDefinition) {
+  private List<GetVariablesResponseDto> getGetVariablesResponseDtos(String processDefinition) {
     String token = embeddedOptimizeRule.authenticateAdmin();
     Response response =
         embeddedOptimizeRule.target("process-definition/" + processDefinition + "/variables")
             .request()
             .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
             .get();
-    return response.readEntity(new GenericType<Map<String, List<GetVariablesResponseDto>>>() {});
+    return response.readEntity(new GenericType<List<GetVariablesResponseDto>>() {});
   }
 
 }

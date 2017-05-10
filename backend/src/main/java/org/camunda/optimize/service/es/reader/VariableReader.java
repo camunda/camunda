@@ -36,7 +36,7 @@ public class VariableReader {
     variableExtractor = new VariableExtractor(configurationService);
   }
 
-  public Map<String, List<GetVariablesResponseDto>> getVariables(String processDefinitionId) {
+  public List<GetVariablesResponseDto> getVariables(String processDefinitionId) {
     logger.debug("Fetching variables for process definition: {}", processDefinitionId);
     QueryBuilder query;
     query =

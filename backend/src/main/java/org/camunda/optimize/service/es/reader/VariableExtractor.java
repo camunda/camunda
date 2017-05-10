@@ -34,16 +34,12 @@ public class VariableExtractor {
     nameToTypeToVariableResponse = new HashMap<>();
   }
 
-  public Map<String, List<GetVariablesResponseDto>> getVariables() {
-    Map<String, List<GetVariablesResponseDto>> nameToResponses = new HashMap<>();
-    for (Map.Entry<String, Map<String, GetVariablesResponseDto>> nameToTypeToResponse : nameToTypeToVariableResponse.entrySet()) {
-      List<GetVariablesResponseDto> responseDtoList = new ArrayList<>();
-      for (GetVariablesResponseDto responseDto : nameToTypeToResponse.getValue().values()) {
-        responseDtoList.add(responseDto);
-      }
-      nameToResponses.put(nameToTypeToResponse.getKey(), responseDtoList);
+  public List<GetVariablesResponseDto> getVariables() {
+    List<GetVariablesResponseDto> variables = new ArrayList<>();
+    for (Map<String, GetVariablesResponseDto> typeToResponse : nameToTypeToVariableResponse.values()) {
+      variables.addAll(typeToResponse.values());
     }
-    return nameToResponses;
+    return variables;
   }
 
   public void clearVariables() {
