@@ -1,6 +1,7 @@
 package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.time.Duration;
 import java.util.Date;
@@ -246,6 +247,24 @@ public class ClientChannelPoolingTest
 
         // when
         pool.requestChannel(addr);
+    }
+
+    @Test
+    public void shouldAllowNullValuesOnReturnChannel()
+    {
+        // given
+        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+
+        // when
+        try
+        {
+            pool.returnChannel(null);
+            // then there is no exception
+        }
+        catch (Exception e)
+        {
+            fail("should not throw exception");
+        }
     }
 
     protected ClientChannel[] openChannelsInPortRange(ClientChannelPool pool, int firstPort, int range)

@@ -106,7 +106,10 @@ public class ClientChannelPoolImpl implements ClientChannelPool
     @Override
     public void returnChannel(ClientChannel channel)
     {
-        ((ClientChannelImpl) channel).countUsageEnd();
+        if (channel != null)
+        {
+            ((ClientChannelImpl) channel).countUsageEnd();
+        }
     }
 
     protected ChannelRequest scheduleChannelRequest(SocketAddress remoteAddress, CompletableFuture<ClientChannel> completionFuture)
