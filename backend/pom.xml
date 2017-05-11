@@ -404,6 +404,7 @@
               <timeout>60</timeout>
               <httpPort>9200</httpPort>
               <pathScripts>${project.basedir}/src/main/scripts</pathScripts>
+              <pathConf>${project.basedir}/src/test/es_conf</pathConf>
               <skip>${skipTests}</skip>
               <logLevel>ERROR</logLevel>
             </configuration>
