@@ -53,21 +53,34 @@ public class ChannelRequest implements PooledFuture<ClientChannel>
     }
 
     @Override
-    public ClientChannel pollAndReturnOnSuccess()
+    public boolean isFailed()
     {
-        final ClientChannel channelToReturn = channel;
+        return failed;
+    }
 
-        if (channelToReturn != null || failed)
+    @Override
+    public ClientChannel poll()
+    {
+        return channel;
+    }
+
+    protected boolean isResolved()
+    {
+        return failed || channel != null;
+    }
+
+    @Override
+    public void release()
+    {
+        if (!isResolved())
         {
-            reset();
-            requestPool.returnObject(this);
-            if (failed)
-            {
-                throw new RuntimeException("Could not open client channel");
-            }
+            // this is important to returning the future to the pool while it is still
+            // in use by the party resolving/failing it
+            throw new RuntimeException("Cannot release future before it is resolved");
         }
 
-        return channelToReturn;
+        reset();
+        requestPool.returnObject(this);
     }
 
     protected void reset()

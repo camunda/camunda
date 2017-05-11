@@ -3,7 +3,12 @@ package org.camunda.tngp.transport;
 public interface PooledFuture<T>
 {
 
-    T pollAndReturnOnSuccess();
+    // consumer
+    T poll();
+    boolean isFailed();
+    void release();
+
+    // producer
     void resolve(T value);
     void fail();
 

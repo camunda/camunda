@@ -97,7 +97,9 @@ public class ClientChannelPoolImpl implements ClientChannelPool
         }
         else
         {
-            return completionFuture.join();
+            return completionFuture
+                .whenComplete((c, t) -> channelRequest.release())
+                .join();
         }
     }
 

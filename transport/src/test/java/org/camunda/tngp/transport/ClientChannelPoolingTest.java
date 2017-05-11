@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.Date;
+import java.util.concurrent.CompletionException;
 
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
@@ -11,10 +12,15 @@ import org.camunda.tngp.transport.impl.ClientChannelPoolImpl;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ClientChannelPoolingTest
 {
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     protected Transport clientTransport;
     protected Transport serverTransport;
@@ -70,8 +76,9 @@ public class ClientChannelPoolingTest
 
         // then
         final ClientChannel channel = TestUtil
-                .doRepeatedly(() -> channelFuture.pollAndReturnOnSuccess())
+                .doRepeatedly(() -> channelFuture.poll())
                 .until(c -> c != null);
+        assertThat(channelFuture.isFailed()).isFalse();
         assertThat(channel.isOpen()).isTrue();
         assertThat(channel.getRemoteAddress()).isEqualTo(addr);
     }
@@ -209,6 +216,37 @@ public class ClientChannelPoolingTest
         }
     }
 
+    @Test
+    public void shouldFailToServeAsyncWhenChannelConenctFails()
+    {
+        // given
+        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        // when
+        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+
+        // then
+        TestUtil.waitUntil(() -> future.isFailed());
+
+        assertThat(future.isFailed()).isTrue();
+        assertThat(future.poll()).isNull();
+    }
+
+
+    @Test
+    public void shouldFailToServeWhenChannelConenctFails()
+    {
+        // given
+        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        // then
+        exception.expect(CompletionException.class);
+
+        // when
+        pool.requestChannel(addr);
+    }
 
     protected ClientChannel[] openChannelsInPortRange(ClientChannelPool pool, int firstPort, int range)
     {
