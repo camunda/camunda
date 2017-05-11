@@ -155,12 +155,21 @@ public class SingleMessageController
 
             if (context.channelFuture != null)
             {
-                final ClientChannel clientChannel = context.channelFuture.pollAndReturnOnSuccess();
-                if (clientChannel != null)
+                if (!context.channelFuture.isFailed())
                 {
-                    context.channel = clientChannel;
+                    final ClientChannel clientChannel = context.channelFuture.poll();
+                    if (clientChannel != null)
+                    {
+                        context.channel = clientChannel;
+                        context.channelFuture.release();
+                        context.channelFuture = null;
+                        context.take(TRANSITION_DEFAULT);
+                    }
+                }
+                else
+                {
+                    context.channelFuture.release();
                     context.channelFuture = null;
-                    context.take(TRANSITION_DEFAULT);
                 }
             }
 
