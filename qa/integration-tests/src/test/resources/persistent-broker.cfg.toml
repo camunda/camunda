@@ -1,5 +1,10 @@
 # Default TNGP Config File. Used if no config file is provided to the broker.
 
+# Global configuration --------------------------------
+
+[global]
+
+
 # Networking configuration ----------------------------
 
 [network]
@@ -32,19 +37,19 @@ maxIdleTimeMs = 200
 idleStrategy = "BACKOFF"
 
 [metrics]
-countersFileName = "${brokerFolder}/persistent-broker/metrics/"
+directory = "${brokerFolder}/persistent-broker/metrics/"
 
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-logDirectories = [ "${brokerFolder}/persistent-broker/logs/" ]
-indexDirectory = "${brokerFolder}/persistent-broker/index/"
+directories = [ "${brokerFolder}/persistent-broker/logs/" ]
+directory = "${brokerFolder}/persistent-broker/index/"
 
 [snapshot]
-snapshotDirectory = "${brokerFolder}/persistent-broker/snapshots/"
+directory = "${brokerFolder}/persistent-broker/snapshots/"
 
 # Topic Subscriptions ------------------------------------------
 
 [subscriptions]
-snapshotDirectory = "${brokerFolder}/persistent-broker/subscription-snapshots/"
+directory = "${brokerFolder}/persistent-broker/subscription-snapshots/"

@@ -1,288 +1,279 @@
 package org.camunda.tngp.broker.test;
 
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Set;
+import java.nio.file.Paths;
 
-import org.agrona.IoUtil;
 import org.camunda.tngp.broker.Broker;
 import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
+import org.camunda.tngp.util.FileUtil;
+import org.camunda.tngp.util.LangUtil;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 
-
-class ConfigurationHelper
-{
-    public HashMap<String, String[]> configMaps;
-    public StringBuffer configBuffer = new StringBuffer();
-
-    public ConfigurationHelper setConfigMaps(HashMap<String, String[]> c)
-    {
-        this.configMaps = c;
-        return this;
-    }
-
-
-    private void lineHandler(String sCurrentLine)
-    {
-        final String[] subConfig;
-        if ((subConfig = configMaps.get(sCurrentLine)) != null)
-        {
-            for (String each : subConfig)
-            {
-                configBuffer.append(each);
-                configBuffer.append(System.lineSeparator());
-            }
-            configMaps.remove(sCurrentLine);
-        }
-    }
-    public String generateConfig()
-    {
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final File cfgFile = new File(classLoader.getResource("tngp.unit-test.cfg.toml").getFile());
-        BufferedReader br = null;
-        FileReader fr = null;
-        try
-        {
-            fr = new FileReader(cfgFile);
-            br = new BufferedReader(fr);
-            String sCurrentLine;
-            br = new BufferedReader(new FileReader(cfgFile));
-            while ((sCurrentLine = br.readLine()) != null)
-            {
-
-                configBuffer.append(sCurrentLine);
-                configBuffer.append(System.lineSeparator());
-                lineHandler(sCurrentLine);
-            }
-            if (!configMaps.isEmpty())
-            {
-                final Set<String> keys = configMaps.keySet();
-                for (String key : keys)
-                {
-                    configBuffer.append(key);
-                    configBuffer.append(System.lineSeparator());
-                    lineHandler(key);
-                }
-            }
-
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            try
-            {
-                if (br != null)
-                {
-                    br.close();
-                }
-
-                if (fr != null)
-                {
-                    fr.close();
-                }
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
-
-        }
-//        System.out.println(configBuffer.toString());
-        return configBuffer.toString();
-    }
-}
-
-@Ignore
 public class ComponentConfigurationFileExistsTest
 {
 
     /*Test cases:
-     * t set global data path, no  global use temp, no  local data path => use global data path √
-     * √ no  global data path, no  global use temp, no  local data path => use global temp data path -unable to test
-     * √ set global data path, set global use temp, no  local data path => use global temp data path √
-     * √ no  global data path, set global use temp, no  local data path => use global temp data path √
-     * √ set global data path, set global use temp, set local data path => use global temp data path for others, use local data path for specific part
-     * x no  global data path, set global use temp, set local data path => use global temp data path for others, use local data path for specific part
-     * x no  global data path, no  global use temp, set local data path => use global temp data path for others, use local data path for specific part
-     * √ set global data path, no  global use temp, set local data path => use global data path for others, use local data path for specific part
+     * 1. √ set global data path, no  global use temp, no  local data path => use global data path
+     * 2. √ no  global data path, no  global use temp, doesn't care  local data path => use  ./tngp-data/
+     * 3. √ set global data path, set global use temp, no  local data path => throw exception
+     * 4. √ no  global data path, set global use temp, no  local data path => use global temp data path
+     * 5. √ no  global data path, set global use temp, set local data path => use global temp data path for others, use local data path for specified part
+     * 6. √ no  global data path, no  global use temp, set local data path => use  ./tngp-data/ for others, use local data path for specified part
+     * 7. √ set global data path, no  global use temp, set local data path => use global data path for others, use local data path for specified part
+     * 8. √ should automatically remove the temporary folder.
      * */
 
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     Broker broker;
+    EmbeddedBrokerRule embeddedBroker;
     String configString;
     Thread brokerThreadHandler;
     String workSpace;
+    ClassLoader classLoader = getClass().getClassLoader();
 
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
-        final Path path = Files.createTempDirectory("tngp-config-test-");
-        workSpace = path.toString();
-
-        System.out.println("------------->");
-
     }
 
     @Test
     public void shouldUseGlobalPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
 
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
+        //given
+        final String fileName = "tngp.test.global-data-path.no-global-use-temp-data.no-local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
+        final Path path = Paths.get("/tmp/tngp-testing/global-data-path/");
 
-        final String path = workSpace + "/tmp/global/";
+        //when
 
-        configMaps.put("[global]", new String[]{"globalDataDirectory = \"" + path + "\""});
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
+        embeddedBroker.startBroker();
+        //then
 
-        bootBroker();
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(path + "/logs").exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
 
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(path + "logs").exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        //clean
+        shutdownBroker();
+        rudelyDeleteFolder(path.toString());
+
 
     }
 
     @Test
-    public void shouldUseGlobalTempPathIfGlobalPathExists()
+    public void shouldUseCurrentPath()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
-        configMaps.put("[global]", new String[]{"globalUseTemp = true", "globalDataDirectory = \"/tmp/global\""});
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
 
-        bootBroker();
+        //given
+        final String fileName = "tngp.test.no-global-data-path.no-global-use-temp-data.no-local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
+
+        //when
+
+        embeddedBroker.startBroker();
+        final String path = Paths.get("./tngp-data/").toAbsolutePath().normalize().toString();
+        //then
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(path + "/logs").exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
+
+        //clean
+
+        shutdownBroker();
+
+
+
+    }
+
+    @Test
+    public void shouldUseTempPath()
+    {
+
+        //given
+        final String fileName = "tngp.test.no-global-data-path.global-use-temp-data.no-local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
+
+        //when
+
+        embeddedBroker.startBroker();
         final String path = getGlobalDataPath();
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(path + "logs").exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        //then
+
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(path + "/logs").exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
+
+
+        //clean
+
+        shutdownBroker();
 
 
     }
 
+
+
     @Test
-    public void shouldUseGlobalTempPath()
+    public void shouldCleanTempDirectory()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
 
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
-        configMaps.put("[global]", new String[]{"globalUseTemp = true"});
+        //given
+        final String fileName = "tngp.test.no-global-data-path.global-use-temp-data.no-local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
 
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
+        //when
 
-        bootBroker();
+        embeddedBroker.startBroker();
         final String path = getGlobalDataPath();
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(path + "logs").exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        shutdownBroker();
+
+        //then
+
+        assertThat(new File(path.toString()).exists()).isFalse();
 
 
     }
 
+
     @Test
-    public void shouldUseGlobalTempPathIfNoGlobalProperty()
+    public void shouldUseTempPathForOthersUseLocalPathForLogs()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
 
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
+        //given
+        final String fileName = "tngp.test.no-global-data-path.global-use-temp-data.local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
 
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
+        //when
 
-        bootBroker();
+        embeddedBroker.startBroker();
         final String path = getGlobalDataPath();
+        final Path logsPath = Paths.get("/tmp/test/logs");
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(path + "logs").exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        //then
+
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(logsPath.toString()).exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
+
+        //clean
+
+        shutdownBroker();
+        rudelyDeleteFolder(logsPath.toString());
 
 
     }
 
     @Test
-    public void shouldUseSpecificPathOnLogsAndGlobalPath()
+    public void shouldUseGlobalPathForOthersUseLocalPathForLogs()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
 
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
+        //given
+        final String fileName = "tngp.test.global-data-path.no-global-use-temp-data.local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
 
-        final String path = workSpace + "/tmp/global/";
-        final String logsPath = workSpace + "/tmp/local/logs/";
+        //when
 
-        configMaps.put("[global]", new String[]{"globalDataDirectory = \"" + path + "\""});
-        configMaps.put("[logs]", new String[]{"logDirectories = [ \"" + logsPath + "\" ]"});
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
-        bootBroker();
+        embeddedBroker.startBroker();
+        final Path path = Paths.get("/tmp/tngp-testing/global-data-path/");
+        final Path logsPath = Paths.get("/tmp/test/logs");
 
+        //then
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(logsPath).exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(logsPath.toString()).exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
+
+        //clean
+
+        shutdownBroker();
+        rudelyDeleteFolder(logsPath.toString());
+        rudelyDeleteFolder(path.toString());
 
     }
 
     @Test
-    public void shouldUseSpecificPathOnLogsAndGlobalTempPath()
+    public void shouldUseCurrentPathForOthersUseLocalPathForLogs()
     {
-        final HashMap<String, String[]> configMaps = new HashMap<>();
 
-        final ConfigurationHelper configHelper = new ConfigurationHelper();
+        //given
+        final String fileName = "tngp.test.no-global-data-path.no-global-use-temp-data.local-data-path.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
 
-        final String logsPath = workSpace + "/tmp/local/logs/";
+        //when
 
-        configMaps.put("[global]", new String[]{"globalUseTemp = true", "globalDataDirectory = \"/tmp/global\""});
-        configMaps.put("[logs]", new String[]{"logDirectories = [ \"" + logsPath + "\" ]"});
-        configString = configHelper.setConfigMaps(configMaps).generateConfig();
-        bootBroker();
+        embeddedBroker.startBroker();
+        final String path = Paths.get("./tngp-data/").toAbsolutePath().normalize().toString();
+        final Path logsPath = Paths.get("/tmp/test/logs");
 
-        final String path = getGlobalDataPath();
+        //then
 
+        assertThat(new File(path + "/gossip/gossip.tngp").exists()).isTrue();
+        assertThat(new File(path + "/index").exists()).isTrue();
+        assertThat(new File(logsPath.toString()).exists()).isTrue();
+        assertThat(new File(path + "/meta").exists()).isTrue();
+        assertThat(new File(path + "/metrics/metrics.tngp").exists()).isTrue();
+        assertThat(new File(path + "/snapshot").exists()).isTrue();
+        assertThat(new File(path + "/subscription").exists()).isTrue();
 
-        assert (new File(path + "gossip").exists());
-        assert (new File(path + "index").exists());
-        assert (new File(logsPath).exists());
-        assert (new File(path + "meta").exists());
-        assert (new File(path + "metrics/tngp.metrics").exists());
-        assert (new File(path + "snapshot").exists());
-        assert (new File(path + "subscription").exists());
+        //clean
+
+        shutdownBroker();
+        rudelyDeleteFolder(logsPath.toString());
+    }
+
+    @Test
+    public void shouldThrowException()
+    {
+
+        //given
+        final String fileName = "tngp.test.global-data-path.global-use-temp-data.-.cfg.toml";
+        embeddedBroker = new EmbeddedBrokerRule(fileName);
+
+        //except
+
+        thrown.expect(RuntimeException.class);
+        //when
+        embeddedBroker.startBroker();
+
+        shutdownBroker();
 
     }
 
@@ -290,66 +281,44 @@ public class ComponentConfigurationFileExistsTest
     @After
     public void after()
     {
-        shutdownBroker();
-        deleteDir(new File(workSpace));
     }
 
-
-
-    private void shutdownBroker()
+    private void rudelyDeleteFolder(String path)
     {
-        if (broker != null)
-        {
-            broker.close();
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException e)
-            {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            broker = null;
-        }
-
-    }
-    private void bootBroker()
-    {
-        broker = new Broker(new ByteArrayInputStream(configString.getBytes()));
         try
         {
-            Thread.sleep(4000);
+            FileUtil.deleteFolder(path.toString());
         }
-        catch (InterruptedException e)
+        catch (Exception e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LangUtil.rethrowUnchecked(e);
         }
     }
-
-
-    private void deleteDir(File file)
+    private void shutdownBroker()
     {
-        final File[] contents = file.listFiles();
-        if (contents != null)
+        if (embeddedBroker != null)
         {
-            for (File f : contents)
+            try
             {
-                deleteDir(f);
+                System.out.println("shutting down broker..");
+                embeddedBroker.stopBroker();
+//                Thread.sleep(5000);
+                System.out.println("sleep done");
+            }
+            catch (Exception e)
+            {
+                //do nothing
             }
         }
-        IoUtil.deleteIfExists(file);
     }
-
 
     private String getGlobalDataPath()
     {
-        if (this.broker == null)
+        if (this.embeddedBroker == null)
         {
-            throw new RuntimeException("broker should be initialized");
+            throw new RuntimeException("embedded broker should be initialized");
         }
-        final ConfigurationManagerImpl cfgManager = (ConfigurationManagerImpl) broker.getBrokerContext().getConfigurationManager();
+        final ConfigurationManagerImpl cfgManager = (ConfigurationManagerImpl) embeddedBroker.getBroker().getBrokerContext().getConfigurationManager();
         return cfgManager.getGlobalConfiguration().getGlobalDataDirectory();
     }
 

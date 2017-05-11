@@ -2,10 +2,6 @@
 
 # Global configuration --------------------------------
 
-[global]
-useTempDirectory = true
-
-
 # Networking configuration ----------------------------
 
 [network]
@@ -38,3 +34,9 @@ idleStrategy = "BACKOFF"
 
 [logs]
 defaultLogSegmentSize = 512
+directories = [
+	"/tmp/test/logs",	
+]
+
+[index]
+

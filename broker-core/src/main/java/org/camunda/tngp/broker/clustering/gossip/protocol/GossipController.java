@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.broker.clustering.gossip.Gossip;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Heartbeat;
@@ -214,16 +215,7 @@ public class GossipController
         {
             workcount += 1;
 
-            final File file = new File(config.peersStorageFile);
-            try
-            {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
-            catch (IOException e1)
-            {
-                e1.printStackTrace();
-            }
+            final File file = new File(config.directory + Gossip.GOSSIP_FILE_NAME);
             final MessageDigest messageDigest = StreamUtil.getSha1Digest();
 
             try (InputStream is = peers.toInputStream())

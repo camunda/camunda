@@ -93,7 +93,7 @@ public class ClusterManager implements Agent
 
     public void open()
     {
-        String metaDirectory = config.metaDirectory;
+        String metaDirectory = config.directory;
 
         if (metaDirectory == null || metaDirectory.isEmpty())
         {
@@ -108,7 +108,7 @@ public class ClusterManager implements Agent
             }
         }
 
-        config.metaDirectory = metaDirectory;
+        config.directory = metaDirectory;
 
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
 
@@ -262,7 +262,7 @@ public class ClusterManager implements Agent
         final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
         final String path = logStorage.getConfig().getPath();
 
-        final MetaStore meta = new MetaStore(this.config.metaDirectory + File.separator + String.format("%s.meta", logStream.getLogName()));
+        final MetaStore meta = new MetaStore(this.config.directory + File.separator + String.format("%s.meta", logStream.getLogName()));
         meta.storeTopicNameAndPartitionIdAndDirectory(logStream.getTopicName(), logStream.getPartitionId(), path);
 
         createRaft(logStream, meta, members, bootstrap);

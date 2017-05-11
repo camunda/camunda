@@ -1,52 +1,69 @@
 
 package org.camunda.tngp.broker.system;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import org.camunda.tngp.util.FileUtil;
 
 public class GlobalConfiguration extends ComponentConfiguration
 {
-
-    public String globalDataDirectory = null;
-    public Boolean globalUseTemp = null;
-
+    public static final String DEFAULT_DATA_PATH = "./tngp-data";
+    public String directory = null;
+    public Boolean useTempDirectory = null;
+    private Boolean useCurrentPath = false;
 
     public void init()
     {
-        if (globalUseTemp == null)
+        if (useTempDirectory != null && this.directory != null)
         {
-            if (this.globalDataDirectory == null)
-            {
-                System.out.println("WARNING! there is no 'globalUseTemp' nor 'globalDataDirectory' in TOML configuration file, will automatically set 'globalUseTemp = true'");
-                this.globalUseTemp = true;
-            }
-            else
-            {
-                return;
-            }
+            throw new RuntimeException("'directory' and 'useTempDirectory' cannot exist at the same time, please delete one");
         }
-        if (this.globalUseTemp)
+
+        if (useTempDirectory == null && this.directory == null)
+        {
+            System.out.println("No specific temporary nor data path, will use '" + DEFAULT_DATA_PATH + "' to store data.");
+            useCurrentPath = true;
+            this.directory = DEFAULT_DATA_PATH;
+        }
+
+        if (this.useTempDirectory != null && this.useTempDirectory)
         {
             try
             {
-                this.globalDataDirectory = Files.createTempDirectory("tngp-temp-").toString() + "/";
+                this.directory = Files.createTempDirectory("tngp-temp-").toString();
             }
             catch (IOException e)
             {
                 e.printStackTrace();
             }
-            System.out.println("Using Temp Dir: " + this.globalDataDirectory);
+            System.out.println("Using Temp Dir: " + this.directory);
         }
+
+
+        this.directory = FileUtil.getCanonicalDirectoryPath(this.directory);
     }
 
     public String getGlobalDataDirectory()
     {
-        return this.globalDataDirectory;
-    }
-    public Boolean getGlobalUseTemp()
-    {
-        return this.globalUseTemp;
+        return this.directory;
     }
 
+    public Boolean getGlobalUseTemp()
+    {
+        return this.useTempDirectory;
+    }
+
+    public void cleanTempFolder()
+    {
+        if (this.useTempDirectory != null && this.useTempDirectory && new File(this.directory).exists())
+        {
+            FileUtil.deleteFolder(this.directory);
+        }
+        if (useCurrentPath && new File(this.directory).exists())
+        {
+            FileUtil.deleteFolder(this.directory);
+        }
+    }
 
 }

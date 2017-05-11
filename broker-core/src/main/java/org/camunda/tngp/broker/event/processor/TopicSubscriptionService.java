@@ -51,6 +51,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     protected Map<DirectBuffer, Int2ObjectHashMap<TopicSubscriptionManagementProcessor>> managersByLog = new HashMap<>();
 
     protected DeferredCommandContext asyncContext;
+    protected IndexStore indexStore;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd(this::onStreamAdded)
@@ -105,7 +106,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     {
         asyncContext.runAsync(() ->
         {
-            final IndexStore indexStore = newIndexStoreForLog(logStream.getLogName());
+            indexStore = newIndexStoreForLog(logStream.getLogName());
 
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
                 logStreamServiceName,
@@ -132,9 +133,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
     protected IndexStore newIndexStoreForLog(String logName)
     {
-        if (config.snapshotDirectory != null && !config.snapshotDirectory.isEmpty())
+        if (config.directory != null && !config.directory.isEmpty())
         {
-            final String indexFile = config.snapshotDirectory + File.separator + "ack-index." + logName + ".idx";
+            final String indexFile = config.directory + File.separator + "ack-index." + logName + ".idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             return new FileChannelIndexStore(indexFileChannel);
         }
@@ -245,5 +246,12 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         }
 
         return null;
+    }
+
+    @Override
+    public void onClose()
+    {
+        indexStore.flush();
+        indexStore.close();
     }
 }

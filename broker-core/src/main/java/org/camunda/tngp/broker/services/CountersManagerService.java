@@ -20,6 +20,7 @@ public class CountersManagerService implements Service<Counters>
     public static final int LABELS_BUFFER_SIZE = (int) (COUNTERS_FILE_SIZE * 0.75);
     public static final int COUNTERS_BUFFER_OFFSET = BitUtil.align(LABELS_BUFFER_SIZE, 8);
     public static final int COUNTERS_BUFFER_SIZE = COUNTERS_FILE_SIZE - COUNTERS_BUFFER_OFFSET;
+    public static final String COUNTERS_FILE_NAME = "metrics.tngp";
 
     protected final String countersFileName;
     protected boolean deleteCountersFileOnExit;
@@ -31,7 +32,7 @@ public class CountersManagerService implements Service<Counters>
     {
         final MetricsCfg metricsCfg = configurationManager.readEntry("metrics", MetricsCfg.class);
 
-        countersFileName = metricsCfg.countersFileName;
+        countersFileName = metricsCfg.directory + COUNTERS_FILE_NAME;
 
 
     }

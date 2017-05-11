@@ -24,7 +24,7 @@ public class SnapshotStorageService implements Service<SnapshotStorage>
     {
         serviceContext.run(() ->
         {
-            final String snapshotDirectory = config.snapshotDirectory;
+            final String snapshotDirectory = config.directory;
 
             snapshotStorage = LogStreams.createFsSnapshotStore(snapshotDirectory)
                 .build();

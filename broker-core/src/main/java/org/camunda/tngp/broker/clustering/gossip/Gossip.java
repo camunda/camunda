@@ -17,6 +17,7 @@ public class Gossip implements Agent
 
     private final GossipController gossipController;
     private final GossipFragmentHandler fragmentHandler;
+    public static final String GOSSIP_FILE_NAME = "gossip.tngp";
 
     public Gossip(final GossipContext context)
     {

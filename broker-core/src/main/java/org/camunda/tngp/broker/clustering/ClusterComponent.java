@@ -44,13 +44,14 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 public class ClusterComponent implements Component
 {
     public static final String WORKER_NAME = "management-worker.0";
+    private SystemContext systemContext;
 
     @Override
     public void init(final SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
         final ConfigurationManager configurationManager = context.getConfigurationManager();
-
+        this.systemContext = context;
         final TransportComponentCfg config = configurationManager.readEntry("network", TransportComponentCfg.class);
 
         initLocalPeer(serviceContainer, config);
@@ -124,7 +125,7 @@ public class ClusterComponent implements Component
             .dependency(subscriptionServiceName, gossipContextService.getSubscriptionInjector())
             .install();
 
-        final GossipService gossipService = new GossipService();
+        final GossipService gossipService = new GossipService(systemContext);
         serviceContainer.createService(GOSSIP_SERVICE, gossipService)
             .dependency(AGENT_RUNNER_SERVICE, gossipService.getAgentRunnerInjector())
             .dependency(GOSSIP_CONTEXT_SERVICE, gossipService.getGossipContextInjector())

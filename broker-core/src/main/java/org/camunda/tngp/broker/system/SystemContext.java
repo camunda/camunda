@@ -92,6 +92,7 @@ public class SystemContext implements AutoCloseable
         try
         {
             serviceContainer.close(10, TimeUnit.SECONDS);
+            this.configurationManager.getGlobalConfiguration().cleanTempFolder();
         }
         catch (TimeoutException e)
         {

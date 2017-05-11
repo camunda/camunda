@@ -26,7 +26,7 @@ import java.nio.channels.FileChannel;
 import java.time.Duration;
 
 import org.agrona.concurrent.Agent;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
+import org.camunda.tngp.broker.logstreams.cfg.StreamProcessorCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.executor.ScheduledCommand;
@@ -66,13 +66,14 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
-    protected LogStreamsCfg logStreamsCfg;
+    protected StreamProcessorCfg streamProcessorCfg;
 
     protected ScheduledCommand scheduledCheckExpirationCmd;
+    protected IndexStore indexStore;
 
     public TaskQueueManagerService(final ConfigurationManager configurationManager)
     {
-        logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
+        streamProcessorCfg = configurationManager.readEntry("index", StreamProcessorCfg.class);
     }
 
     @Override
@@ -86,9 +87,9 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore indexStore;
 
-        final String indexDirectory = logStreamsCfg.indexDirectory;
+
+        final String indexDirectory = streamProcessorCfg.directory;
         if (indexDirectory != null && !indexDirectory.isEmpty())
         {
             final String indexFile = indexDirectory + File.separator + "default.idx";
@@ -225,6 +226,13 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     public String roleName()
     {
         return NAME;
+    }
+
+    @Override
+    public void onClose()
+    {
+        indexStore.flush();
+        indexStore.close();
     }
 
 }

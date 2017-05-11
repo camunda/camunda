@@ -3,7 +3,8 @@
 # Global configuration --------------------------------
 
 [global]
-useTempDirectory = true
+
+directory = "/tmp/tngp-testing/global-data-path"
 
 
 # Networking configuration ----------------------------

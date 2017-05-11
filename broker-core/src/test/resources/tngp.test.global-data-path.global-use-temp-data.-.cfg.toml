@@ -3,6 +3,8 @@
 # Global configuration --------------------------------
 
 [global]
+
+directory = "/tmp/tngp-testing/global-data-path"
 useTempDirectory = true
 
 

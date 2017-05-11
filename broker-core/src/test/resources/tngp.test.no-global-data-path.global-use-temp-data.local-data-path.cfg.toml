@@ -38,3 +38,8 @@ idleStrategy = "BACKOFF"
 
 [logs]
 defaultLogSegmentSize = 512
+directories = [
+	"/tmp/test/logs",	
+]
+
+

@@ -53,6 +53,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
     protected final ServiceStartContext serviceContext;
     protected final Bytes2LongHashIndex ackIndex;
+    protected final IndexStore ackIndexStore;
 
     protected DeferredCommandContext cmdContext;
 
@@ -78,6 +79,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
+        this.ackIndexStore = ackIndexStore;
         this.ackIndex = new Bytes2LongHashIndex(ackIndexStore, Short.MAX_VALUE, 256, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
         this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex, ackIndexStore);
     }

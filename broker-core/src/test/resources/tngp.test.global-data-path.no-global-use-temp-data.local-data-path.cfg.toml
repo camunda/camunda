@@ -3,7 +3,7 @@
 # Global configuration --------------------------------
 
 [global]
-useTempDirectory = true
+directory = "/tmp/tngp-testing/global-data-path"
 
 
 # Networking configuration ----------------------------
@@ -38,3 +38,8 @@ idleStrategy = "BACKOFF"
 
 [logs]
 defaultLogSegmentSize = 512
+directories = [
+	"/tmp/test/logs",	
+]
+
+

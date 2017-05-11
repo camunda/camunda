@@ -28,7 +28,7 @@ import java.nio.channels.FileChannel;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.incident.IncidentStreamProcessorErrorHandler;
 import org.camunda.tngp.broker.incident.processor.IncidentStreamProcessor;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
+import org.camunda.tngp.broker.logstreams.cfg.StreamProcessorCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
@@ -58,12 +58,21 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
-    protected LogStreamsCfg logStreamsCfg;
+    protected StreamProcessorCfg streamProcessorCfg;
     protected WorkflowCfg workflowCfg;
+    protected IndexStore workflowDeploymentIndexStore;
+    protected IndexStore workflowPositionIndexStore;
+    protected IndexStore workflowVersionIndexStore;
+    protected IndexStore workflowInstanceIndexStore;
+    protected IndexStore activityInstanceIndexStore;
+    protected IndexStore workflowInstancePayloadIndexStore;
+    protected IndexStore incidentInstanceIndex;
+    protected IndexStore activityInstanceIndex;
+    protected IndexStore incidentTaskIndex;
 
     public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
-        logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
+        streamProcessorCfg = configurationManager.readEntry("index", StreamProcessorCfg.class);
         workflowCfg = configurationManager.readEntry("workflow", WorkflowCfg.class);
     }
 
@@ -82,13 +91,13 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = deploymentStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore indexStore = createIndexStore("workflow.deployment");
+        this.workflowDeploymentIndexStore = createIndexStore("workflow.deployment");
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
-        final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter, indexStore);
+        final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter, workflowDeploymentIndexStore);
         final StreamProcessorService deploymentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 DEPLOYMENT_PROCESSOR_ID,
@@ -108,11 +117,11 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore workflowPositionIndexStore = createIndexStore("workflow.instance.position");
-        final IndexStore workflowVersionIndexStore = createIndexStore("workflow.instance.version");
-        final IndexStore workflowInstanceIndexStore = createIndexStore("workflow.instance");
-        final IndexStore activityInstanceIndexStore = createIndexStore("workflow.activity");
-        final IndexStore workflowInstancePayloadIndexStore = createIndexStore("workflow.instance.payload");
+        workflowPositionIndexStore = createIndexStore("workflow.instance.position");
+        workflowVersionIndexStore = createIndexStore("workflow.instance.version");
+        workflowInstanceIndexStore = createIndexStore("workflow.instance");
+        activityInstanceIndexStore = createIndexStore("workflow.activity");
+        workflowInstancePayloadIndexStore = createIndexStore("workflow.instance.payload");
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
@@ -150,9 +159,11 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = incidentStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore incidentInstanceIndex = createIndexStore("incident.instance");
-        final IndexStore activityInstanceIndex = createIndexStore("incident.activity");
-        final IndexStore incidentTaskIndex = createIndexStore("incident.task");
+
+        incidentInstanceIndex = createIndexStore("incident.instance");
+        activityInstanceIndex = createIndexStore("incident.activity");
+        incidentTaskIndex = createIndexStore("incident.task");
+
 
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
@@ -180,7 +191,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final IndexStore indexStore;
 
 
-        final String indexDirectory = logStreamsCfg.indexDirectory;
+        final String indexDirectory = streamProcessorCfg.directory;
         if (indexDirectory != null && !indexDirectory.isEmpty())
         {
             final String indexFile = indexDirectory + File.separator + indexName + ".idx";
@@ -254,6 +265,30 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     public String roleName()
     {
         return NAME;
+    }
+
+    @Override
+    public void onClose()
+    {
+
+        workflowDeploymentIndexStore.flush();
+        workflowPositionIndexStore.flush();
+        workflowVersionIndexStore.flush();
+        workflowInstanceIndexStore.flush();
+        activityInstanceIndexStore.flush();
+        workflowInstancePayloadIndexStore.flush();
+        incidentInstanceIndex.flush();
+        activityInstanceIndex.flush();
+        incidentTaskIndex.flush();
+        workflowDeploymentIndexStore.close();
+        workflowPositionIndexStore.close();
+        workflowVersionIndexStore.close();
+        workflowInstanceIndexStore.close();
+        activityInstanceIndexStore.close();
+        workflowInstancePayloadIndexStore.close();
+        incidentInstanceIndex.close();
+        activityInstanceIndex.close();
+        incidentTaskIndex.close();
     }
 
 }

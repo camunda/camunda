@@ -52,18 +52,23 @@ public class EmbeddedBrokerRule extends ExternalResource
         stopBroker();
     }
 
+    public Broker getBroker()
+    {
+        return this.broker;
+    }
+
     public void restartBroker()
     {
         stopBroker();
         startBroker();
     }
 
-    protected void stopBroker()
+    public void stopBroker()
     {
         broker.close();
     }
 
-    protected void startBroker()
+    public void startBroker()
     {
         broker = new Broker(configSupplier.get());
 

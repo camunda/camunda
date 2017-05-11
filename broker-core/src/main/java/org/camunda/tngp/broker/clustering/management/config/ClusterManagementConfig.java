@@ -5,15 +5,15 @@ import org.camunda.tngp.broker.system.GlobalConfiguration;
 
 public class ClusterManagementConfig extends ComponentConfiguration
 {
-    public String metaDirectory;
+    public String directory;
 
     @Override
     protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
     {
 
-        this.metaDirectory = (String) new Rules("first")
-             .setGlobalObj(global.globalDataDirectory)
-             .setLocalObj(metaDirectory, "metaDirectory")
+        this.directory = (String) new Rules("first")
+             .setGlobalObj(global.directory)
+             .setLocalObj(directory, "directory")
              .setRule((r) ->
              { return r + "meta/"; }).execute();
 

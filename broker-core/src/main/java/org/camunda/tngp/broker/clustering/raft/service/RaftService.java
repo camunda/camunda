@@ -26,6 +26,8 @@ public class RaftService implements Service<Raft>
     private MetaStore meta;
     private boolean bootstrap;
 
+    private CompletableFuture<Void> closeLogFuture;
+
     public RaftService(final LogStream logStream, final MetaStore meta, final List<Member> members, boolean bootstrap)
     {
         this.logStream = logStream;
@@ -60,14 +62,20 @@ public class RaftService implements Service<Raft>
     @Override
     public void stop(ServiceStopContext ctx)
     {
-        final CompletableFuture<Void> closeFuture = raft.closeAsync().thenAccept((v) ->
+        final CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
+
+        raft.closeAsync().thenAccept((v) ->
         {
             final AgentRunnerServices agentRunnerService = agentRunnerInjector.getValue();
             agentRunnerService.raftAgentRunnerService().remove(raft);
-            raft.stream().closeAsync();
+            raft.stream().closeAsync().whenComplete((v2, t) ->
+            {
+                closeFuture.complete(null);
+            });
         });
 
         ctx.async(closeFuture);
+
     }
 
     @Override

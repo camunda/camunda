@@ -67,15 +67,15 @@ public class LogStreamsManager
         final boolean deleteOnExit = false;
 
         int assignedLogDirectory = 0;
-        if (logStreamsCfg.logDirectories.length == 0)
+        if (logStreamsCfg.directories.length == 0)
         {
             throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
         }
-        else if (logStreamsCfg.logDirectories.length > 1)
+        else if (logStreamsCfg.directories.length > 1)
         {
-            assignedLogDirectory = new Random().nextInt(logStreamsCfg.logDirectories.length - 1);
+            assignedLogDirectory = new Random().nextInt(logStreamsCfg.directories.length - 1);
         }
-        logDirectory = logStreamsCfg.logDirectories[assignedLogDirectory] + File.separator + logName;
+        logDirectory = logStreamsCfg.directories[assignedLogDirectory] + File.separator + logName;
 
 
         final int logSegmentSize = logStreamsCfg.defaultLogSegmentSize * 1024 * 1024;
