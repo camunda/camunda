@@ -24,7 +24,7 @@ module.exports = {
     preLoaders: [
       {
         test: /\.js$/,
-        loader: "eslint-loader",
+        loader: 'eslint-loader',
         include: [
           path.resolve(__dirname, 'app'),
           path.resolve(__dirname, 'test')
@@ -57,6 +57,10 @@ module.exports = {
       {
         test: /\.(eot|svg|ttf|woff|woff2)$/,
         loader: 'file-loader?name=fonts/[name].[ext]'
+      },
+      {
+        test: /\.ico$/,
+        loader: 'file-loader?name=[name].[ext]'
       },
       {
         test: /\.(jpg|png)$/,
@@ -94,7 +98,8 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       title: 'Camunda Optimize',
-      template: 'app/index.html'
+      template: 'app/index.html',
+      favicon: 'app/favicon.ico'
     })
   ],
   devServer: {
