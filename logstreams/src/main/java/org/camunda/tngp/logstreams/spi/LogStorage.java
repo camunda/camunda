@@ -54,9 +54,9 @@ public interface LogStorage
     /**
      * Truncates the log up to the given address.
      *
-     * @param addr The address at which to truncate the log.
+     * @param address The address at which to truncate the log.
      */
-    void truncate(long addr);
+    void truncate(long address);
 
     /**
      * Naive implementation of the {@link #read(ByteBuffer, long, ReadResultProcessor)} method. Does not

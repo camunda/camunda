@@ -18,7 +18,7 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
  */
 public class CompleteAndCommittedEventsInBlockProcessor implements ReadResultProcessor
 {
-    private static final int POSITION_LENGTH = positionOffset(messageOffset(0)) + SIZE_OF_LONG;
+    public static final int POSITION_LENGTH = positionOffset(messageOffset(0)) + SIZE_OF_LONG;
 
     protected final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
     protected final Position commitPosition = new AtomicLongPosition();
@@ -73,7 +73,7 @@ public class CompleteAndCommittedEventsInBlockProcessor implements ReadResultPro
         while (remainingBytes >= POSITION_LENGTH)
         {
             final int fragmentLength = getFragmentLength(directBuffer, position);
-            final long loggedEventPosition = getPosition(directBuffer, messageOffset(position));
+            final long loggedEventPosition = getPosition(directBuffer, position);
 
             if (fragmentLength <= remainingBytes && loggedEventPosition <= commitPosition.get())
             {

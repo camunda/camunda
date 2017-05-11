@@ -13,10 +13,9 @@ import org.camunda.tngp.util.state.WaitState;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
 import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
@@ -32,10 +31,8 @@ public class LogBlockIndexController implements Agent
      */
     public static final float DEFAULT_DEVIATION = 0.1f;
 
-    private static final int ILLEGAL_ADDRESS = -1;
     protected static final int TRANSITION_SNAPSHOT = 3;
     protected static final int TRANSITION_TRUNCATE = 4;
-    private static final int POSITION_LENGTH = positionOffset(messageOffset(0)) + SIZE_OF_LONG;
 
     // STATES /////////////////////////////////////////////////////////
 
@@ -74,11 +71,10 @@ public class LogBlockIndexController implements Agent
 
     // INTERNAL ///////////////////////////////////////////////////
 
-    protected long nextAddress = ILLEGAL_ADDRESS;
+    protected long nextAddress = INVALID_ADDRESS;
     protected int bufferSize;
     protected ByteBuffer ioBuffer;
     protected CompletableFuture<Void> truncateFuture;
-    protected long truncatePosition;
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
@@ -104,7 +100,6 @@ public class LogBlockIndexController implements Agent
                 .from(openingState).take(TRANSITION_DEFAULT).to(openState)
                 .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
                 .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
-                .from(truncateState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
                 .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
                 .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
                 .from(openState).take(TRANSITION_CLOSE).to(closedState)
@@ -182,13 +177,13 @@ public class LogBlockIndexController implements Agent
         public int doWork(LogContext logContext)
         {
             // open state
-            if (nextAddress == ILLEGAL_ADDRESS)
+            if (nextAddress == INVALID_ADDRESS)
             {
                 nextAddress = logStorage.getFirstBlockAddress();
             }
 
             int result = 0;
-            if (nextAddress != ILLEGAL_ADDRESS)
+            if (nextAddress != INVALID_ADDRESS)
             {
                 final long currentAddress = nextAddress;
 
@@ -207,7 +202,7 @@ public class LogBlockIndexController implements Agent
                     }
                     else if (opResult > currentAddress)
                     {
-                        tryToCreateBlockIndex(logContext, currentAddress, opResult);
+                        tryToCreateBlockIndex(logContext, currentAddress);
                         // set next address
                         nextAddress = opResult;
                         result = 1;
@@ -217,24 +212,36 @@ public class LogBlockIndexController implements Agent
             return result;
         }
 
-        private void tryToCreateBlockIndex(LogContext logContext, long currentAddress, long opResult)
+        /**
+         * Resolves the current block start address.
+         *
+         * If the log context has no current block address stored then a block was read at once.
+         * In that case we have to use the currentAddress, which then corresponds to the begin of the block,
+         * otherwise we use the cached block address if block was partly read.
+         *
+         * @param logContext the log context which contains the cached block start address
+         * @param currentAddress the current address on which the block was read
+         * @return the resolved correct block start address
+         */
+        private long resolveCurrentBlockStartAddress(LogContext logContext, long currentAddress)
+        {
+            return logContext.hasCurrentBlockAddress() ? logContext.getCurrentBlockAddress() : currentAddress;
+        }
+
+        private void tryToCreateBlockIndex(LogContext logContext, long currentAddress)
         {
             currentBlockSize += ioBuffer.position();
             // if block size is greater then or equals to index block size we will create an index
             if (currentBlockSize >= indexBlockSize)
             {
-                final long currentBlockAddress = logContext.getCurrentBlockAddress();
-
-                // if current block address is zero then a complete block was read at once
-                // so we have to use the currentAddress which corresponds to the begin of the block
-                // otherwise we use the cached block address if block was partly read
-                createBlockIdx(logContext, currentBlockAddress == 0 ? currentAddress : currentBlockAddress);
+                final long blockStartAddress = resolveCurrentBlockStartAddress(logContext, currentAddress);
+                createBlockIdx(logContext, blockStartAddress);
 
                 // reset buffer position and limit for reuse
                 ioBuffer.clear();
 
                 // reset cached block address
-                logContext.setCurrentBlockAddress(0);
+                logContext.resetCurrentBlockAddress();
                 currentBlockSize = 0;
             }
             else
@@ -244,10 +251,10 @@ public class LogBlockIndexController implements Agent
                 ioBuffer.clear();
 
                 // cache address of block begin
-                if (logContext.getCurrentBlockAddress() == 0)
+                if (!logContext.hasCurrentBlockAddress())
                 {
                     logContext.setCurrentBlockAddress(currentAddress);
-                    logContext.setLastPosition(getPosition(buffer, messageOffset(0)));
+                    logContext.setLastPosition(getPosition(buffer, 0));
                 }
             }
         }
@@ -268,7 +275,7 @@ public class LogBlockIndexController implements Agent
             // write block IDX
             final long contextPosition = logContext.getLastPosition();
             final long position = contextPosition == 0
-                ? getPosition(buffer, messageOffset(0))
+                ? getPosition(buffer, 0)
                 : contextPosition;
             blockIndex.addBlock(position, addressOfFirstEventInBlock);
 
@@ -280,8 +287,14 @@ public class LogBlockIndexController implements Agent
             }
             else
             {
-                logContext.setLastPosition(0);
+                logContext.resetLastPosition();
             }
+        }
+
+        public void reset(LogContext context)
+        {
+            currentBlockSize = 0;
+            nextAddress = context.getCurrentBlockAddress();
         }
     }
 
@@ -386,17 +399,15 @@ public class LogBlockIndexController implements Agent
         readResultProcessor.setCommitPosition(commitPosition);
     }
 
-    public CompletableFuture<Void> truncate(long position)
+    public CompletableFuture<Void> truncate()
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
         getStateMachine().addCommand(LogContext ->
         {
-
             final boolean possibleToTakeTransition = LogContext.tryTake(TRANSITION_TRUNCATE);
             if (possibleToTakeTransition)
             {
-                truncatePosition = position;
                 truncateFuture = future;
             }
             else
@@ -410,114 +421,21 @@ public class LogBlockIndexController implements Agent
 
     private class TruncateState implements State<LogContext>
     {
-
-        public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
-
         @Override
         public int doWork(LogContext logContext) throws Exception
         {
-            logContext.reset();
-            int transition = TRANSITION_DEFAULT;
             try
             {
-                long truncateAddress = blockIndex.size() > 0
-                    ? blockIndex.lookupBlockAddress(truncatePosition)
-                    : logStorage.getFirstBlockAddress();
-
-                // find event with given position to calculate address
-                truncateAddress = readTillTruncatePosition(truncateAddress);
-
-                // truncate
-                transition = truncate(logContext, truncateAddress);
+                openState.reset(logContext);
+                logContext.reset();
             }
             finally
             {
-                truncatePosition = 0;
                 truncateFuture.complete(null);
                 truncateFuture = null;
-                logContext.take(transition);
+                logContext.take(TRANSITION_DEFAULT);
             }
             return 0;
-        }
-
-        private long readTillTruncatePosition(long truncateAddress)
-        {
-            long currentAddress = truncateAddress;
-            boolean foundPosition = false;
-
-            while (currentAddress > 0 && !foundPosition)
-            {
-                ioBuffer.clear();
-                currentAddress = logStorage.read(ioBuffer, currentAddress);
-
-                int remainingBytes = ioBuffer.position();
-                int position = 0;
-                buffer.wrap(ioBuffer);
-
-                while (remainingBytes >= POSITION_LENGTH)
-                {
-                    final int messageLength = getFragmentLength(buffer, position);
-                    final long loggedEventPosition = getPosition(buffer, messageOffset(position));
-                    if (loggedEventPosition == truncatePosition)
-                    {
-                        foundPosition = true;
-                        currentAddress -= remainingBytes;
-                        remainingBytes = 0;
-                    }
-                    else if (messageLength <= remainingBytes)
-                    {
-                        remainingBytes -= messageLength;
-                        position += messageLength;
-                    }
-                    else
-                    {
-                        currentAddress -= remainingBytes;
-                        remainingBytes = 0;
-                    }
-                }
-
-                if (remainingBytes < POSITION_LENGTH)
-                {
-                    currentAddress -= remainingBytes;
-                }
-            }
-
-            if (!foundPosition)
-            {
-                currentAddress = ILLEGAL_ADDRESS;
-            }
-            return currentAddress;
-        }
-
-        private int truncate(LogContext logContext, long truncateAddress)
-        {
-            int transition = TRANSITION_DEFAULT;
-            if (truncateAddress != ILLEGAL_ADDRESS)
-            {
-                blockIndex.truncate(truncatePosition);
-                logStorage.truncate(truncateAddress);
-
-                // write new snapshot
-                final int lastIdx = blockIndex.size() - 1;
-                if (lastIdx >= 0)
-                {
-                    final long lastBlockPosition = blockIndex.getLogPosition(lastIdx);
-
-                    logContext.setLastPosition(lastBlockPosition);
-                    transition = TRANSITION_SNAPSHOT;
-                }
-                else
-                {
-                    // if all blocks are deleted we need to clean up the snapshots as well
-                    snapshotStorage.purgeSnapshot(name);
-                }
-                nextAddress = truncateAddress;
-            }
-            else
-            {
-                truncateFuture.completeExceptionally(new IllegalArgumentException(String.format(EXCEPTION_MSG_TRUNCATE_FAILED, truncatePosition)));
-            }
-            return transition;
         }
     }
 }

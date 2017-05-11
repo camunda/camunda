@@ -12,19 +12,22 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.nio.ByteBuffer;
-import java.util.*;
-
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.mockito.invocation.InvocationOnMock;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Random;
+
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.MAX_READ_EVENT_SIZE;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MockLogStorage
 {
@@ -86,8 +89,14 @@ public class MockLogStorage
         private byte[] value = null;
 
         private byte[] metadata = null;
+        private short metadataLength = 0;
+        private short topicNameLength = 0;
 
         private final int amount;
+        private boolean partlyRead;
+
+        private long readCount = 0L;
+        private long maxPosition = -1;
 
         public MockLogEntryBuilder(int amount)
         {
@@ -103,6 +112,12 @@ public class MockLogStorage
         public MockLogEntryBuilder position(long position)
         {
             this.position = position;
+            return this;
+        }
+
+        public MockLogEntryBuilder maxPosition(long position)
+        {
+            this.maxPosition = position;
             return this;
         }
 
@@ -160,10 +175,30 @@ public class MockLogStorage
             return this;
         }
 
+        public MockLogEntryBuilder partlyRead()
+        {
+            this.partlyRead = true;
+            return this;
+        }
+
         public void build(LogStorage mockLogStorage)
         {
-            final short topicNameLength = (short) (sourceEventLogStreamTopicName != null ? sourceEventLogStreamTopicName.length : 0);
-            final short metadataLength = (short) (metadata != null ? metadata.length : 0);
+            preBuild();
+
+            if (partlyRead)
+            {
+                when(mockLogStorage.read(any(ByteBuffer.class), anyLong())).thenAnswer(this::readBufferPartly);
+            }
+            else
+            {
+                when(mockLogStorage.read(any(ByteBuffer.class), eq(address))).thenAnswer(this::readBuffer);
+            }
+        }
+
+        private void preBuild()
+        {
+            topicNameLength = (short) (sourceEventLogStreamTopicName != null ? sourceEventLogStreamTopicName.length : 0);
+            metadataLength = (short) (metadata != null ? metadata.length : 0);
             final int headerLength = headerLength(topicNameLength, metadataLength);
 
             // min. message length
@@ -178,28 +213,119 @@ public class MockLogStorage
             {
                 messageLength = headerLength + value.length;
             }
+            readCount = position;
+        }
 
-            when(mockLogStorage.read(any(ByteBuffer.class), eq(address))).thenAnswer(invocation ->
+        public long readBufferPartly(InvocationOnMock invocation)
+        {
+            final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
+            final long address = (Long) invocation.getArguments()[1];
+            position = readCount;
+
+            final long result;
+            if (maxPosition == INVALID_ADDRESS ||
+                position <= maxPosition)
             {
-                final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
-                final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-
-                int offset = byteBuffer.position();
-
-                for (int i = 0; i < amount; i++)
+                final long limit = byteBuffer.limit();
+                if (limit == HEADER_LENGTH)
                 {
-                    buffer.putInt(lengthOffset(offset), messageLength);
-
-                    final int messageOffset = messageOffset(offset);
-                    if (messageOffset <= byteBuffer.limit())
+                    readHeader(invocation);
+                }
+                else
+                {
+                    if (limit != MAX_READ_EVENT_SIZE)
                     {
-                        setPosition(buffer, messageOffset, position + i);
-                        setProducerId(buffer, messageOffset, producerId);
-                        setSourceEventLogStreamPartitionId(buffer, messageOffset, sourceEventLogStreamPartitionId);
-                        setSourceEventPosition(buffer, messageOffset, sourceEventPosition);
+                        readCount++;
+                    }
+                    readRest(invocation);
+                }
+                result = address + byteBuffer.limit();
+            }
+            else
+            {
+                result = LogStorage.OP_RESULT_NO_DATA;
+            }
+
+            return result;
+        }
+
+        public void readHeader(InvocationOnMock invocation)
+        {
+            final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
+            final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+
+            final int offset = byteBuffer.position();
+            buffer.putInt(lengthOffset(offset), messageLength);
+
+            byteBuffer.position(byteBuffer.limit());
+        }
+
+        public void readRest(InvocationOnMock invocation)
+        {
+            final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
+            final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+
+            int offset = byteBuffer.position();
+            final int messageOffset = messageOffset(offset);
+            if (messageOffset < byteBuffer.limit())
+            {
+                setPosition(buffer, messageOffset, position);
+                setProducerId(buffer, messageOffset, producerId);
+                setSourceEventLogStreamPartitionId(buffer, messageOffset, sourceEventLogStreamPartitionId);
+                setSourceEventPosition(buffer, messageOffset, sourceEventPosition);
+                setKey(buffer, messageOffset, key);
+                setSourceEventLogStreamTopicNameLength(buffer, messageOffset, topicNameLength);
+                setMetadataLength(buffer, messageOffset, metadataLength);
+
+                if (sourceEventLogStreamTopicNameOffset(messageOffset) < byteBuffer.limit())
+                {
+                    if (sourceEventLogStreamTopicName != null)
+                    {
+                        buffer.putBytes(sourceEventLogStreamTopicNameOffset(messageOffset), sourceEventLogStreamTopicName);
+                    }
+
+                    if (metadata != null)
+                    {
+                        buffer.putBytes(metadataOffset(messageOffset, topicNameLength), metadata);
+                    }
+
+                    if (value != null)
+                    {
+                        final int valueOffset = valueOffset(messageOffset, topicNameLength, metadataLength);
+                        final byte[] valueToWrite = Arrays.copyOf(value, Math.min(value.length, byteBuffer.limit() - valueOffset));
+                        buffer.putBytes(valueOffset, valueToWrite);
+                    }
+                }
+            }
+            offset += alignedLength(messageLength);
+
+            byteBuffer.position(Math.min(offset, byteBuffer.limit()));
+        }
+
+        public long readBuffer(InvocationOnMock invocation)
+        {
+            final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
+            final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+
+            int offset = byteBuffer.position();
+
+            for (int i = 0; i < amount; i++)
+            {
+                buffer.putInt(lengthOffset(offset), messageLength);
+
+                final int messageOffset = messageOffset(offset);
+                if (messageOffset < byteBuffer.limit())
+                {
+                    setPosition(buffer, messageOffset, position + i);
+                    setProducerId(buffer, messageOffset, producerId);
+                    setSourceEventLogStreamPartitionId(buffer, messageOffset, sourceEventLogStreamPartitionId);
+                    setSourceEventPosition(buffer, messageOffset, sourceEventPosition);
+
+                    if (keyOffset(messageOffset) < byteBuffer.limit())
+                    {
                         setKey(buffer, messageOffset, key + i);
-                        setSourceEventLogStreamTopicNameLength(buffer, messageOffset, (short) topicNameLength);
-                        setMetadataLength(buffer, messageOffset, (short) metadataLength);
+                        setSourceEventLogStreamTopicNameLength(buffer, messageOffset, topicNameLength);
+                        setMetadataLength(buffer, messageOffset, metadataLength);
 
                         if (sourceEventLogStreamTopicName != null)
                         {
@@ -218,15 +344,12 @@ public class MockLogStorage
                             buffer.putBytes(valueOffset, valueToWrite);
                         }
                     }
-
-                    offset += alignedLength(messageLength);
                 }
+                offset += alignedLength(messageLength);
+            }
 
-                byteBuffer.position(Math.min(offset, byteBuffer.limit()));
-
-                return nextAddress;
-            });
+            byteBuffer.position(Math.min(offset, byteBuffer.limit()));
+            return nextAddress;
         }
     }
-
 }

@@ -113,7 +113,7 @@ public class LogEntryDescriptor
 
     public static long getPosition(final DirectBuffer buffer, final int offset)
     {
-        return buffer.getLong(positionOffset(offset));
+        return buffer.getLong(positionOffset(messageOffset(offset)));
     }
 
     public static void setPosition(final MutableDirectBuffer buffer, final int offset, final long position)

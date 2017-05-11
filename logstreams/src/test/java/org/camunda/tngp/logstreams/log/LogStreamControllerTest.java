@@ -12,27 +12,6 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -53,16 +32,22 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
+
 public class LogStreamControllerTest
 {
-    public static final String TOPIC_NAME = "test-topic";
-    private static final DirectBuffer TOPIC_NAME_BUFFER = wrapString(TOPIC_NAME);
-    private static final int PARTITION_ID = 0;
-    private static final String LOG_NAME = String.format("%s.%d", TOPIC_NAME, PARTITION_ID);
-
-    private static final long LOG_POSITION = 100L;
-    private static final long LOG_ADDRESS = 456L;
-
     private static final int MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 6;
     private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
 

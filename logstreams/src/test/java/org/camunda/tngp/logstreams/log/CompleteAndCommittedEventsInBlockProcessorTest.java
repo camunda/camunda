@@ -24,7 +24,6 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
  */
 public class CompleteAndCommittedEventsInBlockProcessorTest
 {
-
     private static final int SEGMENT_SIZE = 1024 * 16;
 
     protected static final int LENGTH = headerLength(0, 0);
@@ -93,7 +92,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
     }
 
     @Test
@@ -136,7 +135,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
         assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
     }
 
     @Test
@@ -157,11 +156,11 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // second event was read as well
         assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(ALIGNED_LEN))).isEqualTo(2);
+        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
     }
 
     @Test
@@ -182,7 +181,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
@@ -208,7 +207,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
@@ -264,11 +263,11 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
+        assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // second event was read as well
         assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, messageOffset(ALIGNED_LEN))).isEqualTo(2);
+        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(2 * ALIGNED_LEN);

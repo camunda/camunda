@@ -1,15 +1,5 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
-
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -29,13 +19,28 @@ import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
 
 /**
  * Represents the implementation of the LogStream interface.
  */
 public final class LogStreamImpl implements LogStream
 {
+    public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
+    public static final String EXCEPTION_MSG_TRUNCATE_COMMITTED_POSITION = "Can't truncate position which is already committed!";
 
     private static final int DEFAULT_INDEX_BLOCK_SIZE = 1024 * 1024 * 4;
     private static final int DEFAULT_READ_BLOCK_SIZE = 1024;
@@ -330,7 +335,26 @@ public final class LogStreamImpl implements LogStream
         {
             throw new IllegalStateException(EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
         }
-        return logBlockIndexController.truncate(position);
+
+        if (position <= getCommitPosition())
+        {
+            throw new IllegalArgumentException(EXCEPTION_MSG_TRUNCATE_COMMITTED_POSITION);
+        }
+
+        final long truncateAddress = getAddressForPosition(this, position);
+        if (truncateAddress != INVALID_ADDRESS)
+        {
+            logStorage.truncate(truncateAddress);
+            return logBlockIndexController.truncate();
+        }
+        else
+        {
+            final CompletableFuture completableFuture = new CompletableFuture();
+            completableFuture.completeExceptionally(
+                new IllegalArgumentException(
+                    String.format(EXCEPTION_MSG_TRUNCATE_FAILED, position)));
+            return completableFuture;
+        }
     }
 
     @Override

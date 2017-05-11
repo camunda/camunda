@@ -115,12 +115,12 @@ public class FsLogStorage implements LogStorage
     }
 
     @Override
-    public void truncate(long addr)
+    public void truncate(long address)
     {
         ensureOpenedStorage();
 
-        final int segmentId = partitionId(addr);
-        final int segmentOffset = partitionOffset(addr);
+        final int segmentId = partitionId(address);
+        final int segmentOffset = partitionOffset(address);
         addressCheck(segmentId, segmentOffset);
 
         truncateLogSegment(segmentId, segmentOffset);

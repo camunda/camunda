@@ -17,11 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LogBlockIndexTest
 {
     private static final int CAPACITY = 111;
-    private static final int INDEX_BLOCK_SIZE = 1024;
 
     private LogBlockIndex blockIndex;
-
-    private MockLogStorage mockLogStorage;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -30,8 +27,6 @@ public class LogBlockIndexTest
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
-
-        mockLogStorage = new MockLogStorage();
 
         blockIndex = createNewBlockIndex(CAPACITY);
     }
@@ -138,176 +133,6 @@ public class LogBlockIndexTest
         for (int i = 0; i < 10; i++)
         {
             assertThat(blockIndex.lookupBlockAddress(i)).isEqualTo(-1);
-        }
-    }
-
-    @Test
-    public void shouldTruncateWithPositionBeforeFirstBlockPosition()
-    {
-        // given
-        final int capacity = blockIndex.capacity();
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // when
-        blockIndex.truncate(5);
-
-        // then
-        assertThat(blockIndex.size()).isEqualTo(0);
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            assertThat(blockIndex.lookupBlockAddress(pos)).isEqualTo(-1L);
-            assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(-1L);
-        }
-    }
-
-    @Test
-    public void shouldTruncateAtFirstBlock()
-    {
-        // given
-        final int capacity = blockIndex.capacity();
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // when
-        blockIndex.truncate(10);
-
-        // then
-        assertThat(blockIndex.size()).isEqualTo(0);
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            assertThat(blockIndex.lookupBlockAddress(pos)).isEqualTo(-1L);
-            assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(-1L);
-        }
-    }
-
-    @Test
-    public void shouldTruncateLastBlock()
-    {
-        // given
-        final int capacity = blockIndex.capacity();
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // assume
-        assertThat(blockIndex.size()).isEqualTo(111);
-        assertThat(blockIndex.lookupBlockAddress(1110)).isEqualTo(11100L);
-        assertThat(blockIndex.lookupBlockPosition(1110)).isEqualTo(1110L);
-
-        // when
-        blockIndex.truncate(1110);
-
-        // then
-        assertThat(blockIndex.size()).isEqualTo(110);
-        assertThat(blockIndex.lookupBlockAddress(1110)).isEqualTo(11000L);
-        assertThat(blockIndex.lookupBlockPosition(1110)).isEqualTo(1100L);
-    }
-
-    @Test
-    public void shouldNotTruncateLastBlock()
-    {
-        // given
-        final int capacity = blockIndex.capacity();
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // assume
-        assertThat(blockIndex.size()).isEqualTo(111);
-        assertThat(blockIndex.lookupBlockAddress(1110)).isEqualTo(11100L);
-        assertThat(blockIndex.lookupBlockPosition(1110)).isEqualTo(1110L);
-
-        // when
-        blockIndex.truncate(1115);
-
-        // then
-        assertThat(blockIndex.size()).isEqualTo(111);
-        assertThat(blockIndex.lookupBlockAddress(1110)).isEqualTo(11100L);
-        assertThat(blockIndex.lookupBlockPosition(1110)).isEqualTo(1110L);
-    }
-
-    @Test
-    public void shouldTruncateAtGivenBlockPosition()
-    {
-        // given
-        final int capacity = blockIndex.capacity();
-
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // when
-        blockIndex.truncate(550);
-
-        // then
-        final int size = blockIndex.size();
-        assertThat(size).isEqualTo(54);
-
-        for (int i = size; i < capacity; i++)
-        {
-            final int pos = i * 10;
-            assertThat(blockIndex.lookupBlockAddress(pos)).isEqualTo(5400L);
-            assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(540L);
-        }
-    }
-
-    @Test
-    public void shouldTruncateAtNextBlockPosition()
-    {
-        final int capacity = blockIndex.capacity();
-
-        // when
-        for (int i = 0; i < capacity; i++)
-        {
-            final int pos = (i + 1) * 10;
-            final int addr = (i + 1) * 100;
-
-            blockIndex.addBlock(pos, addr);
-        }
-
-        // when
-        blockIndex.truncate(555);
-
-        // then
-        final int size = blockIndex.size();
-        assertThat(size).isEqualTo(55);
-
-        for (int i = size; i < capacity; i++)
-        {
-            final int pos = i * 10;
-            assertThat(blockIndex.lookupBlockAddress(pos)).isEqualTo(5500L);
-            assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(550L);
         }
     }
 

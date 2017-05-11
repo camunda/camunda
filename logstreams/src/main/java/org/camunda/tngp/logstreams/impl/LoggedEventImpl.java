@@ -72,7 +72,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     @Override
     public long getPosition()
     {
-        return LogEntryDescriptor.getPosition(buffer, messageOffset);
+        return LogEntryDescriptor.getPosition(buffer, fragmentOffset);
     }
 
     @Override
