@@ -38,6 +38,7 @@ import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.incident.IncidentResolveResult;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
+import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -115,6 +116,30 @@ public class IncidentTest
 
         assertThat(taskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
         waitUntil(() -> incidentEventRecorder.getEventTypes().contains("RESOLVED"));
+    }
+
+    @Test
+    public void shouldDeleteIncidentWhenWorkflowInstanceIsCanceled()
+    {
+        // given
+        clientRule.workflowTopic().deploy()
+            .bpmnModelInstance(WORKFLOW)
+            .execute();
+
+        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+            .bpmnProcessId("process")
+            .execute();
+
+        waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
+        assertThat(incidentEventRecorder.getEventTypes()).contains("CREATED");
+
+        // when
+        clientRule.workflowTopic().cancel()
+            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
+            .execute();
+
+        // then
+        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("DELETED"));
     }
 
     @Test

@@ -76,7 +76,7 @@ public class CancelWorkflowInstanceTest
 
         final List<SubscribedEvent> workflowEvents = testClient
                 .receiveEvents(workflowInstanceEvents())
-                .limit(8)
+                .limit(9)
                 .collect(Collectors.toList());
 
         assertThat(workflowEvents).extracting(e -> e.event().get(PROP_EVENT_TYPE)).containsExactly(
@@ -84,6 +84,7 @@ public class CancelWorkflowInstanceTest
                 "WORKFLOW_INSTANCE_CREATED",
                 "START_EVENT_OCCURRED",
                 "SEQUENCE_FLOW_TAKEN",
+                "ACTIVITY_READY",
                 "ACTIVITY_ACTIVATED",
                 "CANCEL_WORKFLOW_INSTANCE",
                 "ACTIVITY_TERMINATED",

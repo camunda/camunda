@@ -1,6 +1,7 @@
 package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
@@ -8,11 +9,12 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.UpdateTaskRetriesCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements UpdateTaskRetriesCmd
 {
@@ -84,7 +86,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     {
         super.validate();
         ensureGreaterThanOrEqual("task key", taskKey, 0);
-        ensureGreaterThanOrEqual("retries", retries, 0);
+        ensureGreaterThan("retries", retries, 0);
         ensureNotNullOrEmpty("task type", taskType);
     }
 

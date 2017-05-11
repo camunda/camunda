@@ -430,7 +430,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             indexAccessor.wrapIndexKey(eventKey);
             final int typeId = indexAccessor.getTypeId();
 
-            if (typeId == TaskEventType.FAILED.id())
+            if (typeId == TaskEventType.FAILED.id() && taskEvent.getRetries() > 0)
             {
                 taskEvent.setEventType(TaskEventType.RETRIES_UPDATED);
             }

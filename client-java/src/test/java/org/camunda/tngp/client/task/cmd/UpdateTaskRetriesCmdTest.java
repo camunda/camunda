@@ -23,10 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
@@ -42,6 +38,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class UpdateTaskRetriesCmdTest
 {
@@ -208,7 +209,21 @@ public class UpdateTaskRetriesCmdTest
             .taskType("foo");
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("retries must be greater than or equal to 0");
+        thrown.expectMessage("retries must be greater than 0");
+
+        command.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIRetriesAreLessThanOne()
+    {
+        command
+            .taskKey(2L)
+            .taskType("foo")
+            .retries(0);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("retries must be greater than 0");
 
         command.validate();
     }

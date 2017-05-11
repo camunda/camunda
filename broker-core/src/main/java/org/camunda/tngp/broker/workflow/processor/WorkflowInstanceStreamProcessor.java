@@ -76,9 +76,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final CancelWorkflowInstanceProcessor cancelWorkflowInstanceProcessor = new CancelWorkflowInstanceProcessor();
 
     protected final EventProcessor sequenceFlowTakenEventProcessor = new ActiveWorkflowInstanceProcessor(new SequenceFlowTakenEventProcessor());
-    protected final EventProcessor activityActivatedEventProcessor;
-
+    protected final EventProcessor activityReadyEventProcessor;
+    protected final EventProcessor activityActivatedEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityActivatedEventProcessor());
     protected final EventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
+    protected final EventProcessor activityCompletingEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityCompletingEventProcessor());
 
     protected final Map<BpmnAspect, EventProcessor> aspectHandlers;
     {
@@ -175,7 +176,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.maxPayloadSize = maxPayloadSize;
         this.payloadMappingProcessor = new PayloadMappingProcessor(maxPayloadSize);
-        this.activityActivatedEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityActivatedEventProcessor(maxPayloadSize));
+        this.activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor(maxPayloadSize));
         this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, maxPayloadSize + SIZE_OF_INT);
 
         this.composedSnapshot = new ComposedSnapshot(
@@ -288,8 +289,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = sequenceFlowTakenEventProcessor;
                 break;
 
+            case ACTIVITY_READY:
+                eventProcessor = activityReadyEventProcessor;
+                break;
+
             case ACTIVITY_ACTIVATED:
                 eventProcessor = activityActivatedEventProcessor;
+                break;
+
+            case ACTIVITY_COMPLETING:
+                eventProcessor = activityCompletingEventProcessor;
                 break;
 
             case START_EVENT_OCCURRED:
@@ -511,12 +520,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class ActivityActivatedEventProcessor implements EventProcessor
+    private final class ActivityReadyEventProcessor implements EventProcessor
     {
         private final MutableDirectBuffer tempPayload;
-        private long taskKey;
 
-        ActivityActivatedEventProcessor(int maxPayload)
+        ActivityReadyEventProcessor(int maxPayload)
         {
             tempPayload = new UnsafeBuffer(new byte[maxPayload + SIZE_OF_INT]);
         }
@@ -529,16 +537,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             if (activty instanceof ExecutableServiceTask)
             {
                 final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
-                final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
 
-                taskEvent
-                    .setEventType(TaskEventType.CREATE)
-                    .setType(taskMetadata.getTaskType())
-                    .setRetries(taskMetadata.getRetries());
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
 
-                setTaskHeaders(serviceTask, taskMetadata);
-
-                setTaskPayload(serviceTask.getIoMapping().getInputMappings());
+                setWorkflowInstancePayload(serviceTask.getIoMapping().getInputMappings());
             }
             else
             {
@@ -546,20 +548,50 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
 
-
-        public void setTaskPayload(Mapping[] mappings)
+        private void setWorkflowInstancePayload(Mapping[] mappings)
         {
             final DirectBuffer sourcePayload = workflowInstanceEvent.getPayload();
             tempPayload.putInt(0, sourcePayload.capacity(), ByteOrder.LITTLE_ENDIAN);
             sourcePayload.getBytes(0, tempPayload, SIZE_OF_INT, sourcePayload.capacity());
-            workflowInstancePayloadIndex.put(workflowInstanceEvent.getWorkflowInstanceKey(), tempPayload.byteArray());
 
             final int resultLen = payloadMappingProcessor.extractPayload(mappings, sourcePayload);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-            taskEvent.setPayload(buffer, 0, resultLen);
+            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
         }
 
-        public void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.key(eventKey));
+        }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstancePayloadIndex.put(workflowInstanceEvent.getWorkflowInstanceKey(), tempPayload.byteArray());
+        }
+    }
+
+    private final class ActivityActivatedEventProcessor implements EventProcessor
+    {
+        private long taskKey;
+
+        @Override
+        public void processEvent()
+        {
+            final ExecutableServiceTask serviceTask = getCurrentActivity();
+            final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
+
+            taskEvent
+                .setEventType(TaskEventType.CREATE)
+                .setType(taskMetadata.getTaskType())
+                .setRetries(taskMetadata.getRetries())
+                .setPayload(workflowInstanceEvent.getPayload());
+
+            setTaskHeaders(serviceTask, taskMetadata);
+        }
+
+        private void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
         {
             final TaskHeaders taskHeaders = taskEvent.headers()
                 .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
@@ -594,13 +626,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class SequenceFlowTakenEventProcessor implements EventProcessor
     {
-        private boolean isActivityActivated;
+        private boolean isActivityReady;
         private long writtenEventPosition;
 
         @Override
         public void processEvent()
         {
-            isActivityActivated = false;
+            isActivityReady = false;
 
             final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
             final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
@@ -613,8 +645,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
             else if (targetNode instanceof ExecutableServiceTask)
             {
-                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
-                isActivityActivated = true;
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_READY);
+                isActivityReady = true;
             }
             else
             {
@@ -631,7 +663,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            if (isActivityActivated)
+            if (isActivityReady)
             {
                 workflowInstanceIndexAccessor.newActivity(workflowInstanceEvent.getWorkflowInstanceKey(), writtenEventPosition);
                 activityInstanceIndexAccessor.newActivityInstance(writtenEventPosition, workflowInstanceEvent.getActivityId());
@@ -739,31 +771,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private final class TaskCompletedEventProcessor implements EventProcessor
     {
         private boolean isActivityCompleted;
-        private long workflowInstanceKey;
         private long activityInstanceKey;
 
         @Override
         public void processEvent()
         {
             isActivityCompleted = false;
-            final TaskHeaders taskHeaders = taskEvent.headers();
 
-            workflowInstanceKey = taskHeaders.getWorkflowInstanceKey();
+            final TaskHeaders taskHeaders = taskEvent.headers();
             activityInstanceKey = taskHeaders.getActivityInstanceKey();
 
-            if (workflowInstanceKey > 0 && isTaskOpen(activityInstanceKey))
+            if (taskHeaders.getWorkflowInstanceKey() > 0 && isTaskOpen(activityInstanceKey))
             {
                 workflowInstanceEvent
-                    .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
+                    .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETING)
                     .setBpmnProcessId(taskHeaders.getBpmnProcessId())
                     .setVersion(taskHeaders.getWorkflowDefinitionVersion())
-                    .setWorkflowInstanceKey(workflowInstanceKey)
-                    .setActivityId(taskHeaders.getActivityId());
+                    .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                    .setActivityId(taskHeaders.getActivityId())
+                    .setPayload(taskEvent.getPayload());
 
-                final ExecutableFlowNode currentActivity = getCurrentActivity();
-                final ExecutableServiceTask serviceTask = (ExecutableServiceTask) currentActivity;
-
-                setWorkflowInstancePayload(serviceTask.getIoMapping().getOutputMappings());
                 isActivityCompleted = true;
             }
         }
@@ -774,30 +801,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             return activityInstanceIndexAccessor.wrapActivityInstanceKey(activityInstanceKey).getTaskKey() == eventKey;
         }
 
-        protected final DirectBuffer tempPayload = new UnsafeBuffer(0, 0);
-
-        public void setWorkflowInstancePayload(Mapping[] mappings)
-        {
-            final byte payload[] = workflowInstancePayloadIndex.get(workflowInstanceKey);
-            tempPayload.wrap(payload);
-            final Integer payloadLength = tempPayload.getInt(0);
-            tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
-
-            final int resultLen = payloadMappingProcessor.mergePayloads(mappings, taskEvent.getPayload(), tempPayload);
-            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
-        }
-
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            long position = 0L;
-
-            if (isActivityCompleted)
-            {
-                position = writeWorkflowEvent(writer.key(activityInstanceKey));
-            }
-            return position;
+            return isActivityCompleted ? writeWorkflowEvent(writer.key(activityInstanceKey)) : 0L;
         }
 
         @Override
@@ -805,9 +812,48 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             if (isActivityCompleted)
             {
-                workflowInstanceIndexAccessor.removeActivity(workflowInstanceKey, activityInstanceKey);
-                activityInstanceIndex.remove(activityInstanceKey);
+                activityInstanceIndexAccessor.setTaskKey(activityInstanceKey, -1L);
             }
+        }
+    }
+
+    private final class ActivityCompletingEventProcessor implements EventProcessor
+    {
+        protected final DirectBuffer tempPayload = new UnsafeBuffer(0, 0);
+
+        @Override
+        public void processEvent()
+        {
+            final ExecutableServiceTask serviceTask = getCurrentActivity();
+
+            workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED);
+
+            setWorkflowInstancePayload(serviceTask.getIoMapping().getOutputMappings());
+        }
+
+        private void setWorkflowInstancePayload(Mapping[] mappings)
+        {
+            final byte payload[] = workflowInstancePayloadIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
+            tempPayload.wrap(payload);
+            final Integer payloadLength = tempPayload.getInt(0);
+            tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
+
+            final int resultLen = payloadMappingProcessor.mergePayloads(mappings, workflowInstanceEvent.getPayload(), tempPayload);
+            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.key(eventKey));
+        }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstanceIndexAccessor.removeActivity(workflowInstanceEvent.getWorkflowInstanceKey(), eventKey);
+            activityInstanceIndex.remove(eventKey);
         }
     }
 

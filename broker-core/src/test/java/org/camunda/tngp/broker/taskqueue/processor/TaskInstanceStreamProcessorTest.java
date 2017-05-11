@@ -337,7 +337,8 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.UPDATE_RETRIES)
-                .setLockOwner(2));
+                .setLockOwner(2)
+                .setRetries(2));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.RETRIES_UPDATED);
@@ -896,6 +897,36 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectUpdateRetriesIfRetriesLessThanOne() throws InterruptedException, ExecutionException
+    {
+        // given
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATE)
+                .setRetries(1));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(lockTime)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAIL)
+                .setLockOwner(3)
+                .setRetries(0));
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setLockOwner(2)
+                .setRetries(0));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
     }
 
     @Test

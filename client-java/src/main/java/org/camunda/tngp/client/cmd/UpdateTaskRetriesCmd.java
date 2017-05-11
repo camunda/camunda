@@ -2,6 +2,10 @@ package org.camunda.tngp.client.cmd;
 
 import java.util.Map;
 
+/**
+ * Update the remaining task retries. If the retries are equal to zero then the
+ * task will not be locked again unless the retries are increased.
+ */
 public interface UpdateTaskRetriesCmd extends SetPayloadCmd<Long, UpdateTaskRetriesCmd>
 {
     /**
@@ -20,8 +24,8 @@ public interface UpdateTaskRetriesCmd extends SetPayloadCmd<Long, UpdateTaskRetr
     UpdateTaskRetriesCmd headers(Map<String, Object> headers);
 
     /**
-     * Sets the remaining retries of the task. If the retries are equal to zero
-     * then the task will not be locked again unless the retries are increased.
+     * Sets the remaining retries of the task. The retries must be greater than
+     * zero.
      */
     UpdateTaskRetriesCmd retries(int remainingRetries);
 

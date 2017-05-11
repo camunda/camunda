@@ -157,7 +157,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final String streamProcessorName = streamProcessorServiceName.getName();
 
         final IndexStore incidentInstanceIndex = createIndexStore("incident.instance");
-        final IndexStore incidentPositionIndex = createIndexStore("incident.position");
+        final IndexStore activityInstanceIndex = createIndexStore("incident.activity");
         final IndexStore incidentTaskIndex = createIndexStore("incident.task");
 
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
@@ -165,7 +165,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
 
-        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(responseWriter, incidentInstanceIndex, incidentPositionIndex, incidentTaskIndex);
+        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(responseWriter, incidentInstanceIndex, activityInstanceIndex, incidentTaskIndex);
 
         final StreamProcessorService incidentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,

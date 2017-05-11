@@ -12,6 +12,14 @@
  */
 package org.camunda.tngp.broker.incident;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
 import org.agrona.MutableDirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -28,12 +36,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 public class IncidentTest
 {
@@ -95,7 +97,7 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         // then
-        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -105,7 +107,8 @@ public class IncidentTest
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", failureEvent.key());
     }
 
     @Test
@@ -120,7 +123,7 @@ public class IncidentTest
         testClient.completeTaskOfType("test");
 
         // then
-        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(taskEvents("COMPLETED"));
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -130,7 +133,8 @@ public class IncidentTest
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", failureEvent.key());
     }
 
     @Test
@@ -150,7 +154,7 @@ public class IncidentTest
         assertThat(response.key()).isEqualTo(incidentEvent.key());
         assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVED.name());
 
-        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(taskEvents("CREATED"));
+        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         assertThat(followUpEvent.event()).containsEntry("payload", PAYLOAD);
 
         final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
@@ -160,7 +164,8 @@ public class IncidentTest
             .containsEntry("errorMessage", "No data found for query '$.foo'.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", followUpEvent.key());
     }
 
     @Test
@@ -192,7 +197,8 @@ public class IncidentTest
             .containsEntry("errorMessage", "No data found for query '$.foo'.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", followUpEvent.key());
     }
 
     @Test
@@ -277,6 +283,32 @@ public class IncidentTest
     }
 
     @Test
+    public void shouldDeleteIncidentIfActivityTerminated()
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        final SubscribedEvent incidentCreatedEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        cancelWorkflowInstance(workflowInstanceKey);
+
+        // then
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+
+        assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"));
+    }
+
+    @Test
     public void shouldCreateIncidentIfTaskHasNoRetriesLeft()
     {
         // given
@@ -288,6 +320,7 @@ public class IncidentTest
         failTaskWithNoRetriesLeft();
 
         // then
+        final SubscribedEvent activityEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent failedEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
@@ -298,7 +331,8 @@ public class IncidentTest
             .containsEntry("failureEventPosition", failedEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", activityEvent.key());
     }
 
     @Test
@@ -331,6 +365,7 @@ public class IncidentTest
         assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
 
         // then
+        final SubscribedEvent activityEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -339,7 +374,36 @@ public class IncidentTest
             .containsEntry("errorMessage", "No more retries left.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "failingTask");
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", activityEvent.key());
+    }
+
+    @Test
+    public void shouldDeleteIncidentIfTaskIsCanceled()
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+
+        failTaskWithNoRetriesLeft();
+
+        final SubscribedEvent incidentCreatedEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        cancelWorkflowInstance(workflowInstanceKey);
+
+        // then
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+
+        assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"));
     }
 
     @Test
@@ -398,6 +462,21 @@ public class IncidentTest
                 .put("payload", payload)
                 .done()
             .sendAndAwait();
+    }
+
+    private void cancelWorkflowInstance(final long workflowInstanceKey)
+    {
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
+            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
+            .key(workflowInstanceKey)
+            .eventTypeWorkflow()
+            .command()
+                .put("eventType", "CANCEL_WORKFLOW_INSTANCE")
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", "WORKFLOW_INSTANCE_CANCELED");
     }
 
 }

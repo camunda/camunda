@@ -118,7 +118,8 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
             incidentEvent
                 .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
                 .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityId(workflowInstanceEvent.getActivityId());
+                .setActivityId(workflowInstanceEvent.getActivityId())
+                .setActivityInstanceKey(failureEvent.getKey());
         }
         else if (failureEventMetadata.getEventType() == EventType.TASK_EVENT)
         {
@@ -130,7 +131,8 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
             incidentEvent
                 .setBpmnProcessId(taskHeaders.getBpmnProcessId())
                 .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
-                .setActivityId(taskHeaders.getActivityId());
+                .setActivityId(taskHeaders.getActivityId())
+                .setActivityInstanceKey(taskHeaders.getActivityInstanceKey());
         }
     }
 

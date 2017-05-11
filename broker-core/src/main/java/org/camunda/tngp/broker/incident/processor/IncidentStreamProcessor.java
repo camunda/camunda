@@ -30,7 +30,6 @@ import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskHeaders;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
-import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
@@ -57,8 +56,9 @@ public class IncidentStreamProcessor implements StreamProcessor
     private static final short STATE_INCIDENT_RESOLVE_FAILED = 4;
 
     private final Long2BytesHashIndex incidentInstanceIndex;
-    private final Long2LongHashIndex sourcePositionIndex;
+    private final Long2LongHashIndex activityInstanceIndex;
     private final Long2LongHashIndex failedTaskIndex;
+
     private final SnapshotSupport indexSnapshot;
 
     private final IncidentInstanceIndexAccessor incidentIndexAccessor = new IncidentInstanceIndexAccessor();
@@ -66,9 +66,10 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final CreateIncidentProcessor createIncidentProcessor = new CreateIncidentProcessor();
     private final ResolveIncidentProcessor resolveIncidentProcessor = new ResolveIncidentProcessor();
     private final ResolveFailedProcessor resolveFailedProcessor = new ResolveFailedProcessor();
-    private final ResultEventProcessor resultEventProcessor = new ResultEventProcessor();
+    private final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor();
+    private final ActivityTerminatedProcessor activityTerminatedProcessor = new ActivityTerminatedProcessor();
     private final TaskFailedProcessor taskFailedProcessor = new TaskFailedProcessor();
-    private final TaskRetriesUpdatedProcessor taskRetriesUpdatedProcessor = new TaskRetriesUpdatedProcessor();
+    private final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor();
 
     private final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     private final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -79,7 +80,6 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private long eventKey;
     private long eventPosition;
-    private long sourceEventPosition;
 
     private final CommandResponseWriter responseWriter;
 
@@ -87,16 +87,16 @@ public class IncidentStreamProcessor implements StreamProcessor
     private DirectBuffer logStreamTopicName;
     private int logStreamPartitionId;
 
-    public IncidentStreamProcessor(CommandResponseWriter responseWriter, IndexStore instanceIndexStore, IndexStore positionIndexStore, IndexStore taskIndexStore)
+    public IncidentStreamProcessor(CommandResponseWriter responseWriter, IndexStore instanceIndexStore, IndexStore activityIndexStore, IndexStore taskIndexStore)
     {
         this.responseWriter = responseWriter;
         this.incidentInstanceIndex = new Long2BytesHashIndex(instanceIndexStore, Short.MAX_VALUE, 64, INCIDENT_INSTANCE_INDEX_LENGTH);
-        this.sourcePositionIndex = new Long2LongHashIndex(positionIndexStore, Short.MAX_VALUE, 64);
+        this.activityInstanceIndex = new Long2LongHashIndex(activityIndexStore, Short.MAX_VALUE, 64);
         this.failedTaskIndex = new Long2LongHashIndex(taskIndexStore, Short.MAX_VALUE, 64);
 
         this.indexSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(incidentInstanceIndex, instanceIndexStore),
-                new HashIndexSnapshotSupport<>(sourcePositionIndex, positionIndexStore),
+                new HashIndexSnapshotSupport<>(activityInstanceIndex, activityIndexStore),
                 new HashIndexSnapshotSupport<>(failedTaskIndex, taskIndexStore));
     }
 
@@ -128,7 +128,6 @@ public class IncidentStreamProcessor implements StreamProcessor
     {
         eventKey = event.getKey();
         eventPosition = event.getPosition();
-        sourceEventPosition = event.getSourceEventPosition();
 
         sourceEventMetadata.reset();
         event.readMetadata(sourceEventMetadata);
@@ -183,8 +182,12 @@ public class IncidentStreamProcessor implements StreamProcessor
 
         switch (workflowInstanceEvent.getEventType())
         {
+            case ACTIVITY_ACTIVATED:
             case ACTIVITY_COMPLETED:
-                return resultEventProcessor;
+                return activityIncidentResolvedProcessor;
+
+            case ACTIVITY_TERMINATED:
+                return activityTerminatedProcessor;
 
             default:
                 return null;
@@ -198,14 +201,12 @@ public class IncidentStreamProcessor implements StreamProcessor
 
         switch (taskEvent.getEventType())
         {
-            case CREATE:
-                return resultEventProcessor;
-
             case FAILED:
                 return taskFailedProcessor;
 
             case RETRIES_UPDATED:
-                return taskRetriesUpdatedProcessor;
+            case CANCELED:
+                return taskIncidentResolvedProcessor;
 
             default:
                 return null;
@@ -256,45 +257,32 @@ public class IncidentStreamProcessor implements StreamProcessor
         public void updateState()
         {
             incidentIndexAccessor.created(eventKey, STATE_WORKFLOW_INCIDENT_CREATED, eventPosition, incidentEvent.getFailureEventPosition());
+            activityInstanceIndex.put(incidentEvent.getActivityInstanceKey(), eventKey);
         }
     }
 
     private final class ResolveIncidentProcessor implements EventProcessor
     {
-        private UnpackedObject resolveEvent;
-        private long failureEventKey;
-        private long writtenEventPosition;
+        private boolean isResolved;
+        private LoggedEvent failureEvent;
 
         @Override
         public void processEvent()
         {
-            resolveEvent = null;
+            isResolved = false;
 
             incidentIndexAccessor.wrapIncidentKey(eventKey);
 
             if (incidentIndexAccessor.getState() == STATE_WORKFLOW_INCIDENT_CREATED || incidentIndexAccessor.getState() == STATE_INCIDENT_RESOLVE_FAILED)
             {
-                final LoggedEvent failureEvent = findEvent(incidentIndexAccessor.getFailureEventPosition());
-                failureEventKey = failureEvent.getKey();
+                failureEvent = findEvent(incidentIndexAccessor.getFailureEventPosition());
 
-                targetEventMetadata.reset();
-                failureEvent.readMetadata(targetEventMetadata);
+                workflowInstanceEvent.reset();
+                failureEvent.readValue(workflowInstanceEvent);
 
-                switch (targetEventMetadata.getEventType())
-                {
-                    case WORKFLOW_EVENT:
-                        resolveEvent = resolveWorkflowInstanceEvent(failureEvent);
-                        break;
+                workflowInstanceEvent.setPayload(incidentEvent.getPayload());
 
-                    case TASK_EVENT:
-                        resolveEvent = resolveTaskEvent(failureEvent);
-                        break;
-
-                    default:
-                        throw new IllegalStateException(String.format("Unexpected failure event of type '%s'.", targetEventMetadata.getEventType()));
-                }
-
-                targetEventMetadata.incidentKey(eventKey);
+                isResolved = true;
             }
             else
             {
@@ -302,28 +290,12 @@ public class IncidentStreamProcessor implements StreamProcessor
             }
         }
 
-        private WorkflowInstanceEvent resolveWorkflowInstanceEvent(LoggedEvent failureEvent)
-        {
-            workflowInstanceEvent.reset();
-            failureEvent.readValue(workflowInstanceEvent);
-
-            return workflowInstanceEvent.setPayload(incidentEvent.getPayload());
-        }
-
-        private TaskEvent resolveTaskEvent(LoggedEvent failureEvent)
-        {
-            taskEvent.reset();
-            failureEvent.readValue(taskEvent);
-
-            return taskEvent.setPayload(incidentEvent.getPayload());
-        }
-
         @Override
         public boolean executeSideEffects()
         {
             boolean success = true;
 
-            if (resolveEvent == null)
+            if (!isResolved)
             {
                 success = responseWriter
                     .brokerEventMetadata(sourceEventMetadata)
@@ -339,32 +311,38 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            if (resolveEvent != null)
+            long position = 0L;
+
+            if (isResolved)
             {
-                // metadata is read before
-                targetEventMetadata.protocolVersion(Constants.PROTOCOL_VERSION);
+                targetEventMetadata.reset();
+
+                failureEvent.readMetadata(targetEventMetadata);
+
+                targetEventMetadata
+                    .incidentKey(eventKey)
+                    .protocolVersion(Constants.PROTOCOL_VERSION);
                 // TODO: targetEventMetadata.raftTermId(raftTermId);
 
-                writtenEventPosition = writer
-                        .key(failureEventKey)
+                position = writer
+                        .key(failureEvent.getKey())
                         .metadataWriter(targetEventMetadata)
-                        .valueWriter(resolveEvent)
+                        .valueWriter(workflowInstanceEvent)
                         .tryWrite();
             }
             else
             {
-                writtenEventPosition = writeIncidentEvent(writer.key(eventKey));
+                position = writeIncidentEvent(writer.key(eventKey));
             }
-            return writtenEventPosition;
+            return position;
         }
 
         @Override
         public void updateState()
         {
-            if (resolveEvent != null)
+            if (isResolved)
             {
                 incidentIndexAccessor.resolve(eventKey, sourceEventMetadata.getReqChannelId(), sourceEventMetadata.getReqConnectionId(), sourceEventMetadata.getReqRequestId());
-                sourcePositionIndex.put(writtenEventPosition, eventKey);
             }
         }
     }
@@ -410,12 +388,11 @@ public class IncidentStreamProcessor implements StreamProcessor
             if (isFailed)
             {
                 incidentIndexAccessor.resolveFailed(eventKey);
-                sourcePositionIndex.remove(sourceEventPosition, -1L);
             }
         }
     }
 
-    private final class ResultEventProcessor implements EventProcessor
+    private final class ActivityIncidentResolvedProcessor implements EventProcessor
     {
         private boolean isResolved;
         private long incidentKey;
@@ -425,7 +402,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isResolved = false;
 
-            incidentKey = sourcePositionIndex.get(sourceEventPosition, -1L);
+            incidentKey = activityInstanceIndex.get(eventKey, -1L);
 
             if (incidentKey > 0)
             {
@@ -446,10 +423,6 @@ public class IncidentStreamProcessor implements StreamProcessor
                 {
                     throw new IllegalStateException("inconsistent incident index");
                 }
-            }
-            else
-            {
-                // ignore event
             }
         }
 
@@ -479,13 +452,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            long position = 0;
-
-            if (isResolved)
-            {
-                position = writeIncidentEvent(writer.key(incidentKey));
-            }
-            return position;
+            return isResolved ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
         }
 
         @Override
@@ -494,7 +461,56 @@ public class IncidentStreamProcessor implements StreamProcessor
             if (isResolved)
             {
                 incidentInstanceIndex.remove(incidentKey);
-                sourcePositionIndex.remove(sourceEventPosition, -1L);
+                activityInstanceIndex.remove(incidentEvent.getActivityInstanceKey(), -1L);
+            }
+        }
+    }
+
+    private final class ActivityTerminatedProcessor implements EventProcessor
+    {
+        private boolean isTerminated;
+        private long incidentKey;
+
+        @Override
+        public void processEvent()
+        {
+            incidentKey = activityInstanceIndex.get(eventKey, -1L);
+
+            if (incidentKey > 0)
+            {
+                incidentIndexAccessor.wrapIncidentKey(incidentKey);
+
+                if (incidentIndexAccessor.getState() > 0)
+                {
+                    final LoggedEvent incidentCreateEvent = findEvent(incidentIndexAccessor.getIncidentEventPosition());
+
+                    incidentEvent.reset();
+                    incidentCreateEvent.readValue(incidentEvent);
+
+                    incidentEvent.setEventType(IncidentEventType.DELETED);
+
+                    isTerminated = true;
+                }
+                else
+                {
+                    throw new IllegalStateException("inconsistent incident index");
+                }
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return isTerminated ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isTerminated)
+            {
+                incidentInstanceIndex.remove(incidentKey);
+                activityInstanceIndex.remove(eventKey, -1L);
             }
         }
     }
@@ -521,7 +537,8 @@ public class IncidentStreamProcessor implements StreamProcessor
                     .setFailureEventPosition(eventPosition)
                     .setBpmnProcessId(taskHeaders.getBpmnProcessId())
                     .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
-                    .setActivityId(taskHeaders.getActivityId());
+                    .setActivityId(taskHeaders.getActivityId())
+                    .setActivityInstanceKey(taskHeaders.getActivityInstanceKey());
             }
         }
 
@@ -548,7 +565,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class TaskRetriesUpdatedProcessor implements EventProcessor
+    private final class TaskIncidentResolvedProcessor implements EventProcessor
     {
         private boolean isResolved;
         private long incidentKey;
@@ -556,11 +573,11 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
+            isResolved = false;
+
             incidentKey = failedTaskIndex.get(eventKey, -1L);
 
-            isResolved = taskEvent.getRetries() > 0 && incidentKey > 0;
-
-            if (isResolved)
+            if (incidentKey > 0)
             {
                 incidentIndexAccessor.wrapIncidentKey(incidentKey);
 
@@ -585,7 +602,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeIncidentEvent(writer.key(incidentKey));
+            return isResolved ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
         }
 
         @Override
