@@ -88,7 +88,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
         try {
           configStream.close();
         } catch (IOException e) {
-          e.printStackTrace();
+          logger.error("error closing stream", e);
         }
       }
     }

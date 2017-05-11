@@ -1,7 +1,6 @@
 package org.camunda.optimize.jetty;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -80,8 +79,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       holderPwd.setInitParameter("dirAllowed","true");
       context.addServlet(holderPwd,"/");
 
-      ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
-      errorMapper.addErrorPage(404,"/"); // map all 404's to root (aka /index.html)
+
+      NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
       context.setErrorHandler(errorMapper);
 
       FilterHolder holder = new FilterHolder(GzipFilter.class);
