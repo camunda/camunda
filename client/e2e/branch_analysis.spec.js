@@ -33,8 +33,8 @@ describe('Branch Analysis', () => {
     browser.setValue('input[type="password"]', 'admin');
     browser.click('button[type="submit"]');
 
-    browser.waitForExist('.process-definition-card*=Process_1');
-    browser.click('.process-definition-card*=Process_1');
+    browser.waitForExist('.process-definition-card*=Simple');
+    browser.click('.process-definition-card*=Simple');
 
     // SELECT VIEW
     browser.waitForExist('.dropdown*=None');

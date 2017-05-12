@@ -5,7 +5,7 @@ const CamundaClient = require('camunda-bpm-sdk-js').Client;
 const chalk = require('chalk');
 const fs = require('fs');
 const utils = require('./utils');
-const {c7port} = require('./config');
+let {c7port} = require('./config');
 
 const communityUrl = 'https://camunda.org/release/camunda-bpm/tomcat/7.7/camunda-bpm-tomcat-7.7.0-alpha1.tar.gz';
 const tmpDir = path.resolve(__dirname, '..', 'tmp');
@@ -14,6 +14,16 @@ const tmpDir = path.resolve(__dirname, '..', 'tmp');
 const databaseDir = path.resolve(__dirname, '..', 'camunda-h2-dbs');
 const extractTarget = path.resolve(tmpDir, 'engine');
 const demoDataDir = path.resolve(__dirname, '..', 'demo-data');
+
+if (process.argv[2] === 'start') {
+  const port = +process.argv[3];
+  if (!isNaN(port)) {
+    c7port = port;
+  }
+
+  init().catch(console.error);
+}
+
 const engineUrl = `http://localhost:${c7port}`;
 const camAPI = new CamundaClient({
   mock: false,
