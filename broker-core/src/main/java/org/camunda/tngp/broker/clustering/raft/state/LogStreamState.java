@@ -149,8 +149,6 @@ public class LogStreamState
 
         if (addr >= 0)
         {
-            blockIndex.truncate(position);
-            System.out.println("truncate block index: " + position);
             logStorage.truncate(addr);
             System.out.println("truncate log storage: " + addr);
         }
