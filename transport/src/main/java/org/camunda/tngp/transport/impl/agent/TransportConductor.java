@@ -99,7 +99,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         channel.setConnected();
         connectTransportPoller.removeChannel(channel);
 
-        final CompletableFuture<TransportChannel> connectFuture = connectFutures.get(channel);
+        final CompletableFuture<TransportChannel> connectFuture = connectFutures.remove(channel);
 
         if (!isClosing)
         {
@@ -107,8 +107,15 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
             openFuture.whenComplete((v, t) ->
             {
-                notifyChannelHandlerOpen(channel);
-                connectFuture.complete(channel);
+                if (t == null)
+                {
+                    notifyChannelHandlerOpen(channel);
+                    connectFuture.complete(channel);
+                }
+                else if (connectFuture != null)
+                {
+                    connectFuture.completeExceptionally(t);
+                }
             });
         }
         else

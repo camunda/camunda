@@ -63,7 +63,16 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void registerChannel(TransportChannelImpl c, CompletableFuture<Void> receiverFuture)
     {
-        transportPoller.addChannel(c);
+        try
+        {
+            transportPoller.addChannel(c);
+        }
+        catch (Exception e)
+        {
+            receiverFuture.completeExceptionally(e);
+            return;
+        }
+
         receiverFuture.complete(null);
     }
 

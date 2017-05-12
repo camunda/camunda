@@ -86,6 +86,7 @@ public class ChannelRequest implements PooledFuture<ClientChannel>
     protected void reset()
     {
         this.channel = null;
+        this.failed = false;
     }
 
     public SocketAddress getRemoteAddress()
