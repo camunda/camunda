@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.job.impl.ProcessDefinitionXmlImportJob;
@@ -30,8 +31,13 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   }
 
   @Override
-  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
-    return engineEntityFetcher.fetchProcessDefinitionXmls(indexOfFirstResult, maxPageSize);
+  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint() throws OptimizeException {
+    return importStrategy.fetchProcessDefinitionXmls();
+  }
+
+  @Override
+  public int getEngineEntityCount() throws OptimizeException {
+    return importStrategy.fetchProcessDefinitionCount();
   }
 
   @Override

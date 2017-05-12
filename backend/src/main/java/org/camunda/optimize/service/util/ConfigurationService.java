@@ -1,10 +1,9 @@
 package org.camunda.optimize.service.util;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.stereotype.Component;
+
+import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
 /**
  * @author Askar Akhmerov
@@ -37,6 +36,8 @@ public class ConfigurationService {
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
   private int importExecutorThreadCount;
+  @Value("${camunda.optimize.engine.import.process-definition-list}")
+  private String processDefinitionsToImport;
   @Value(("${camunda.optimize.variable.max.valueList.size}"))
   private int maxVariableValueListSize;
 
@@ -67,6 +68,8 @@ public class ConfigurationService {
   private String elasticSearchUsersType;
   @Value("${camunda.optimize.es.import.index.type}")
   private String importIndexType;
+  @Value("${camunda.optimize.es.procdef.import.index.type}")
+  private String processDefinitionImportIndexType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
@@ -216,6 +219,7 @@ public class ConfigurationService {
   }
 
   public int getEngineImportMaxPageSize() {
+    ensureGreaterThanZero(engineImportMaxPageSize);
     return engineImportMaxPageSize;
   }
 
@@ -296,6 +300,7 @@ public class ConfigurationService {
   }
 
   public int getXmlDefinitionPageSize() {
+    ensureGreaterThanZero(engineImportProcessDefinitionXmlMaxPageSize);
     return engineImportProcessDefinitionXmlMaxPageSize;
   }
 
@@ -305,5 +310,29 @@ public class ConfigurationService {
 
   public int getMaxVariablesPageSize() {
     return maxVariablesPageSize;
+  }
+
+  public String[] getProcessDefinitionsToImport() {
+    String[] processDefinitionArrayToImport = splitStringByComma(processDefinitionsToImport);
+    if(processDefinitionArrayToImport.length == 1 && processDefinitionArrayToImport[0].isEmpty()) {
+      return new String[]{};
+    }
+    return processDefinitionArrayToImport;
+  }
+
+  public boolean areProcessDefinitionsToImportDefined() {
+    return getProcessDefinitionsToImport().length > 0;
+  }
+
+  public static String[] splitStringByComma(String commaSeparatedList) {
+    return commaSeparatedList.trim().split("\\s*,\\s*");
+  }
+
+  public String getProcessDefinitionImportIndexType() {
+    return processDefinitionImportIndexType;
+  }
+
+  public void setProcessDefinitionsToImport(String processDefinitionsToImport) {
+    this.processDefinitionsToImport = processDefinitionsToImport;
   }
 }

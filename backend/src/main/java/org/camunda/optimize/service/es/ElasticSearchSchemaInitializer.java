@@ -4,6 +4,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
+import org.camunda.optimize.service.es.schema.type.DefinitionImportIndexType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -42,6 +43,9 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private ImportIndexType importIndexType;
 
+  @Autowired
+  private DefinitionImportIndexType definitionImportIndexType;
+
   @PostConstruct
   public void initializeSchema() {
     initializeMappings();
@@ -60,6 +64,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(importIndexType);
     schemaManager.addMapping(targetValueType);
     schemaManager.addMapping(processInstanceType);
+    schemaManager.addMapping(definitionImportIndexType);
   }
 
 }

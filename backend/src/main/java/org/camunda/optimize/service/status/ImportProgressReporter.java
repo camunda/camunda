@@ -1,8 +1,6 @@
 package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.EngineEntityFetcher;
-import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +8,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ImportProgressReporter {
-
-  @Autowired
-  private EngineEntityFetcher engineEntityFetcher;
 
   @Autowired
   private ImportServiceProvider importServiceProvider;
@@ -32,9 +27,7 @@ public class ImportProgressReporter {
    * or the process definition count from the engine.
    */
   public int computeImportProgress() throws OptimizeException {
-    int totalEngineEntityCount =
-      engineEntityFetcher.fetchHistoricActivityInstanceCount() +
-        2 * engineEntityFetcher.fetchProcessDefinitionCount();
+    double totalEngineEntityCount = getTotalEngineCount();
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
@@ -50,5 +43,13 @@ public class ImportProgressReporter {
       alreadyImportedCount += importService.getImportStartIndex();
     }
     return alreadyImportedCount;
+  }
+
+  private double getTotalEngineCount() throws OptimizeException {
+    double engineCount = 0;
+    for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
+      engineCount += importService.getEngineEntityCount();
+    }
+    return engineCount;
   }
 }

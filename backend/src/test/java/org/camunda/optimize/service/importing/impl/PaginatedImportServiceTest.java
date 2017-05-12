@@ -1,19 +1,12 @@
 package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.service.es.reader.ImportIndexReader;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
-import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.job.impl.EventImportJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -31,7 +24,6 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,20 +35,17 @@ public class PaginatedImportServiceTest {
 
   private static final String TEST_ACTIVITY_ID = "testActivityId";
 
-  @Rule
-  public final ExpectedException exception = ExpectedException.none();
-
   @InjectMocks
   private ActivityImportService activityImportService;
-
-  @Mock
-  private EngineEntityFetcher engineEntityFetcher;
 
   @Mock
   private ImportJobExecutor importJobExecutor;
 
   @Mock
-  private ImportIndexReader importIndexReader;
+  private ImportStrategyProvider importStrategyProvider;
+
+  @Mock
+  private TotalQuantityBasedImportStrategy importStrategy;
 
   //do not remove as it is used for autowiring
   @Spy
@@ -70,25 +59,14 @@ public class PaginatedImportServiceTest {
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.initMocks(this);
-  }
-
-  @Test
-  public void unreasonableMaxPageSizeThrowsError() throws OptimizeException {
-    // given
-    when(configurationService.getEngineImportMaxPageSize()).thenReturn(0);
-
-    // then
-    exception.expect(OptimizeRuntimeException.class);
-
-    // when
-    activityImportService.init();
+    when(importStrategyProvider.getImportStrategyInstance()).thenReturn(importStrategy);
   }
 
   @Test
   public void importIsDoneInPages() throws Exception {
     // given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
-    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
+    when(importStrategy.fetchHistoricActivityInstances())
       .thenReturn(resultList.subList(0, 2))
       .thenReturn(resultList.subList(2, 4))
       .thenReturn(resultList.subList(4, 5))
@@ -101,8 +79,8 @@ public class PaginatedImportServiceTest {
     activityImportService.executeImport();
 
     // then
-    verify(engineEntityFetcher, times(4))
-      .fetchHistoricActivityInstances(anyInt(), anyInt());
+    verify(importStrategy, times(4))
+      .fetchHistoricActivityInstances();
     List<EventImportJob> eventImportJobs = getEventImportJobs();
     assertThat(eventImportJobs.size(), is(3));
     assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(2));
@@ -114,12 +92,12 @@ public class PaginatedImportServiceTest {
   public void importCanBeExecutedSeveralTimes() throws Exception {
     // given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
-    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
+    when(importStrategy.fetchHistoricActivityInstances())
       .thenReturn(resultList.subList(0, 2))
       .thenReturn(Collections.emptyList());
     activityImportService.executeImport();
     activityImportService.executeImport();
-    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
+    when(importStrategy.fetchHistoricActivityInstances())
       .thenReturn(resultList.subList(2, 4))
       .thenReturn(resultList.subList(4, 5))
       .thenReturn(Collections.emptyList());
@@ -130,8 +108,8 @@ public class PaginatedImportServiceTest {
     activityImportService.executeImport();
 
     // then
-    verify(engineEntityFetcher, times(5))
-      .fetchHistoricActivityInstances(anyInt(), anyInt());
+    verify(importStrategy, times(5))
+      .fetchHistoricActivityInstances();
     List<EventImportJob> eventImportJobs = getEventImportJobs();
     assertThat(eventImportJobs.size(), is(3));
     assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(2));
@@ -143,12 +121,12 @@ public class PaginatedImportServiceTest {
   public void importCanBeReset() throws Exception {
     // given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
-    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
+    when(importStrategy.fetchHistoricActivityInstances())
       .thenReturn(resultList.subList(4, 5))
       .thenReturn(Collections.emptyList());
     activityImportService.executeImport();
     activityImportService.executeImport();
-    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
+    when(importStrategy.fetchHistoricActivityInstances())
       .thenReturn(resultList.subList(0, 2))
       .thenReturn(resultList.subList(2, 4))
       .thenReturn(Collections.emptyList());
@@ -160,8 +138,8 @@ public class PaginatedImportServiceTest {
     activityImportService.executeImport();
 
     // then
-    verify(engineEntityFetcher, times(5))
-      .fetchHistoricActivityInstances(anyInt(), anyInt());
+    verify(importStrategy, times(5))
+      .fetchHistoricActivityInstances();
     List<EventImportJob> eventImportJobs = getEventImportJobs();
     assertThat(eventImportJobs.size(), is(3));
     assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(1));

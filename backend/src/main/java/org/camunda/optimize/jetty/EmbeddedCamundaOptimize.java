@@ -8,6 +8,7 @@ import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -191,6 +192,10 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public ImportServiceProvider getImportServiceProvider() {
     return jerseyCamundaOptimize.getApplicationContext().getBean(ImportServiceProvider.class);
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return jerseyCamundaOptimize.getApplicationContext().getBean(ConfigurationService.class);
   }
 
   @Override

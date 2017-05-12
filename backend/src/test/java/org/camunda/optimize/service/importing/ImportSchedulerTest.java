@@ -54,7 +54,7 @@ public class ImportSchedulerTest {
   private List<PaginatedImportService> services;
 
   @Before
-  public void setUp() {
+  public void setUp() throws OptimizeException {
     importScheduler.resetBackoffCounter();
     importScheduler.importScheduleJobs.clear();
 
@@ -92,11 +92,14 @@ public class ImportSchedulerTest {
     }
   }
 
-  private List<PaginatedImportService> mockImportServices() {
+  private List<PaginatedImportService> mockImportServices() throws OptimizeException {
     List<PaginatedImportService> services = new ArrayList<>();
     services.add(mock(ActivityImportService.class));
     services.add(mock(ProcessDefinitionImportService.class));
     services.add(mock(ProcessDefinitionXmlImportService.class));
+    for (PaginatedImportService service : services) {
+      when(service.executeImport()).thenReturn(new ImportResult());
+    }
     return services;
   }
 

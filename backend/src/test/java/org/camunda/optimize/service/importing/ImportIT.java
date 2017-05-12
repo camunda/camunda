@@ -90,7 +90,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterItermediateImportState() throws OptimizeException {
+  public void importProgressReporterIntermediateImportState() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importEngineEntities();

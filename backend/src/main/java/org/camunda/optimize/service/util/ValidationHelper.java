@@ -48,4 +48,10 @@ public class ValidationHelper {
       throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
     }
   }
+
+  public static <T> void ensureNotEmpty(T[] array) {
+    if (array == null || array.length == 0) {
+      throw new OptimizeValidationException("Array should not be empty!");
+    }
+  }
 }

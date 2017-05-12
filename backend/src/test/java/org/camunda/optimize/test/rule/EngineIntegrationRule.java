@@ -108,16 +108,10 @@ public class EngineIntegrationRule extends TestWatcher {
         throw new RuntimeException("Something really bad happened during purge, " +
             "please check tomcat logs of engine-purge servlet");
       }
-      client.close();
     } catch (IOException e) {
       logger.error("Error during purge request", e);
     } finally {
-      try {
-        client.close();
-      } catch (IOException e) {
-        logger.error("Could not close clien!");
-        e.printStackTrace();
-      }
+      closeClient(client);
     }
   }
 
@@ -136,12 +130,7 @@ public class EngineIntegrationRule extends TestWatcher {
       logger.error("Error while trying to finish the user task!!");
       e.printStackTrace();
     } finally {
-      try {
-        client.close();
-      } catch (IOException e) {
-        logger.error("Could not close clien!");
-        e.printStackTrace();
-      }
+      closeClient(client);
     }
   }
 
@@ -190,6 +179,8 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (IOException e) {
       e.printStackTrace();
       throw new OptimizeRuntimeException("Could not fetch the process definition!");
+    } finally {
+      closeClient(client);
     }
   }
 
@@ -205,8 +196,19 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (IOException e) {
       logger.error("Could not start the given process model!");
       e.printStackTrace();
+    } finally {
+      closeClient(client);
     }
     return processInstanceId;
+  }
+
+  private void closeClient(CloseableHttpClient client) {
+    try {
+      client.close();
+    } catch (IOException e) {
+      logger.error("Could not close clien!");
+      e.printStackTrace();
+    }
   }
 
   public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
@@ -343,7 +345,7 @@ public class EngineIntegrationRule extends TestWatcher {
         done = true;
       }
     }
-
+    client.close();
   }
 
   public final WebTarget target() {

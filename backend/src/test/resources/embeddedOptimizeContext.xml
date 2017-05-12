@@ -24,6 +24,8 @@
 
   <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
 
+  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.ImportStrategyProviderFactory"/>
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"

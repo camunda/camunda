@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.job.impl.EventImportJob;
@@ -36,8 +37,13 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   }
 
   @Override
-  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
-    return engineEntityFetcher.fetchHistoricActivityInstances(indexOfFirstResult, maxPageSize);
+  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
+    return importStrategy.fetchHistoricActivityInstances();
+  }
+
+  @Override
+  public int getEngineEntityCount() throws OptimizeException {
+    return importStrategy.fetchHistoricActivityInstanceCount();
   }
 
   @Override

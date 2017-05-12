@@ -5,11 +5,11 @@ import org.camunda.optimize.dto.optimize.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
-import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
 import org.junit.rules.TestWatcher;
@@ -158,6 +158,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return indexes;
   }
 
+  public void updateImportIndexes() {
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
+      importService.updateImportIndex();
+    }
+  }
+
   public void resetImportStartIndexes() {
     getJobExecutor().startExecutingImportJobs();
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
@@ -192,5 +198,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public int getMaxVariableValueListSize() {
     return Integer.parseInt(properties.getProperty("camunda.optimize.variable.max.valueList.size"));
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return camundaOptimize.getConfigurationService();
   }
 }

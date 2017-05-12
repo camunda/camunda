@@ -2,6 +2,8 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +25,7 @@ import static org.hamcrest.core.Is.is;
 public class ImportProgressReporterTest {
 
   @Mock
-  private EngineEntityFetcher engineEntityFetcher;
+  private ActivityImportService activityImportService;
 
   @Mock
   private ImportServiceProvider importServiceProvider;
@@ -73,11 +75,8 @@ public class ImportProgressReporterTest {
   }
 
   private void initializeMocks() throws OptimizeException {
-    Mockito.when(engineEntityFetcher.fetchHistoricActivityInstanceCount()).thenReturn(totalEngineEntityCount);
-    Mockito.when(engineEntityFetcher.fetchProcessDefinitionCount()).thenReturn(0);
-    Mockito.when(engineEntityFetcher.fetchHistoricVariableInstanceCount()).thenReturn(0);
-    ActivityImportService importService = Mockito.mock(ActivityImportService.class);
-    Mockito.when(importService.getImportStartIndex()).thenReturn(optimizeImportCount);
-    Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(importService));
+    Mockito.when(activityImportService.getEngineEntityCount()).thenReturn(totalEngineEntityCount);
+    Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
+    Mockito.when(activityImportService.getImportStartIndex()).thenReturn(optimizeImportCount);
   }
 }

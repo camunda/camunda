@@ -4,28 +4,27 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-  classpath:org/springframework/beans/factory/xml/spring-beans-3.2.xsd
-  http://www.springframework.org/schema/context
-  classpath:org/springframework/context/config/spring-context-3.2.xsd
-  http://www.springframework.org/schema/tool
-  classpath:org/springframework/beans/factory/xml/spring-tool-3.0.xsd">
+  http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+>
 
   <context:annotation-config/>
   <context:component-scan base-package="org.camunda.optimize.service"/>
   <context:component-scan base-package="org.camunda.optimize.rest"/>
+  <context:component-scan base-package="org.camunda.optimize.test"/>
 
-  <context:property-placeholder ignore-resource-not-found="true" location="classpath:service.properties,classpath:environment.properties" />
+  <context:property-placeholder location="classpath:service.properties,classpath:import/import-service-it.properties" />
 
   <bean id="engineClient"  class="org.camunda.optimize.rest.engine.EngineClientFactory"/>
 
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.ImportStrategyProviderFactory"/>
-
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
   <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
+
+  <bean id="importStrategyProvider"  class="org.camunda.optimize.test.factory.MockImportStrategyProviderFactory"/>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
@@ -33,7 +32,8 @@
         factory-bean="objectMapperFactory"
   />
 
-  <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" init-method="start"/>
+  <!-- provide a bean, but do not start it -->
+  <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
   <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>
@@ -41,7 +41,6 @@
   <bean id="branchAnalysisReader" class="org.camunda.optimize.service.es.reader.BranchAnalysisReader"/>
   <bean id="statusCheckingService" class="org.camunda.optimize.service.status.StatusCheckingService"/>
   <bean id="importProgressReporter" class="org.camunda.optimize.service.status.ImportProgressReporter"/>
-
 
 
 </beans>

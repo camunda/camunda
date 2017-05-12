@@ -19,6 +19,8 @@
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
+  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.ImportStrategyProviderFactory"/>
+
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
   <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
