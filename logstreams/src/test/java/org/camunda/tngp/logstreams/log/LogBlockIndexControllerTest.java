@@ -1,5 +1,6 @@
 package org.camunda.tngp.logstreams.log;
 
+import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
@@ -12,6 +13,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
@@ -41,6 +43,7 @@ public class LogBlockIndexControllerTest
 
     @Mock
     private LogStorage mockLogStorage;
+    private final AtomicLongPosition commitPosition = new AtomicLongPosition();
 
     @Mock
     private SnapshotStorage mockSnapshotStorage;
@@ -55,6 +58,7 @@ public class LogBlockIndexControllerTest
     public void init() throws Exception
     {
         MockitoAnnotations.initMocks(this);
+        commitPosition.setOrdered(Long.MAX_VALUE);
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
             .agentRunnerService(mockAgentRunnerService)
@@ -70,7 +74,7 @@ public class LogBlockIndexControllerTest
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
-        blockIdxController = new LogBlockIndexController(builder);
+        blockIdxController = new LogBlockIndexController(builder, commitPosition);
 
         blockIdxController.doWork();
     }
@@ -145,6 +149,7 @@ public class LogBlockIndexControllerTest
         // -> open
         blockIdxController.doWork();
         blockIdxController.doWork();
+        blockIdxController.doWork();
         // -> snapshotting
         blockIdxController.doWork();
 
@@ -174,6 +179,8 @@ public class LogBlockIndexControllerTest
         blockIdxController.doWork();
         // -> open
         blockIdxController.doWork();
+        blockIdxController.doWork();
+        // -> create
         blockIdxController.doWork();
         // -> snapshotting
         blockIdxController.doWork();
@@ -216,9 +223,52 @@ public class LogBlockIndexControllerTest
         // -> open
         blockIdxController.doWork();
         blockIdxController.doWork();
+        blockIdxController.doWork();
 
         // idx for block should be created
         verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+    }
+
+    @Test
+    public void shouldNotAddBlockForFullBlockButUncommittedPosition() throws Exception
+    {
+        // given position is committed which is less than position of last event
+        commitPosition.setOrdered(LOG_POSITION - 1);
+        final AtomicLong position = new AtomicLong(LOG_POSITION);
+        when(mockLogStorage.read(any(ByteBuffer.class), anyLong(), any(ReadResultProcessor.class)))
+            .thenAnswer(readEvent(() -> position.getAndIncrement()));
+
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+
+        // when blocks are read and create state is executed
+        blockIdxController.doWork(); // read event with pos LOG_POSITION
+        blockIdxController.doWork(); // read event with pos LOG_POSITION + 1
+        blockIdxController.doWork(); // try to create block index
+
+        // then controller is still in create state
+        assertThat(blockIdxController.isInCreateState()).isTrue();
+        verify(mockBlockIndex, never()).addBlock(anyLong(), anyLong());
+
+        // when commit position is set and create state is executed
+        commitPosition.setOrdered(LOG_POSITION);
+        blockIdxController.doWork();
+
+        // then controller is still in create state
+        // since LOG_POSITION is not equal or greater then the last
+        // position of the last event in block
+        assertThat(blockIdxController.isInCreateState()).isTrue();
+        verify(mockBlockIndex, never()).addBlock(anyLong(), anyLong());
+
+
+        // when commit position is set and create state is executed
+        commitPosition.setOrdered(LOG_POSITION + 1);
+        blockIdxController.doWork();
+
+        // then block index is created
+        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+        assertThat(blockIdxController.isOpen()).isTrue();
     }
 
     @Test
@@ -236,7 +286,7 @@ public class LogBlockIndexControllerTest
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .deviation(0.5f);
 
-        final LogBlockIndexController blockIndexController = new LogBlockIndexController(builder);
+        final LogBlockIndexController blockIndexController = new LogBlockIndexController(builder, commitPosition);
 
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
@@ -341,7 +391,6 @@ public class LogBlockIndexControllerTest
         assertThat(blockIdxController.getNextAddress()).isGreaterThan(READ_BLOCK_SIZE);
     }
 
-
     @Test
     public void shouldTruncateAfterBlockIndexWasCreated() throws Exception
     {
@@ -361,6 +410,7 @@ public class LogBlockIndexControllerTest
         // -> opening
         blockIdxController.doWork();
         // -> open
+        blockIdxController.doWork();
         blockIdxController.doWork();
         blockIdxController.doWork();
 
@@ -388,7 +438,7 @@ public class LogBlockIndexControllerTest
     }
 
     @Test
-    public void shouldNotTruncateIfNotInOpenState() throws Exception
+    public void shouldNotTruncateIfStateIsNeitherOpenNorCreate() throws Exception
     {
         // given not open block index controller
         assertThat(blockIdxController.isOpen()).isFalse();
@@ -402,4 +452,47 @@ public class LogBlockIndexControllerTest
         assertThat(truncateFuture.isCompletedExceptionally()).isTrue();
         assertThat(blockIdxController.isOpen()).isFalse();
     }
+
+    @Test
+    public void shouldTruncateInCreateStateBeforeBlockIndexWasCreated()
+    {
+        commitPosition.setOrdered(INVALID_ADDRESS);
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readTwoEvents(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        // given
+        // block index controller, which process a block and waits for commit position to create a block index
+        // the begin address of the next block index is saved after that
+        blockIdxController.openAsync();
+        // opening
+        blockIdxController.doWork();
+        // open
+        blockIdxController.doWork();
+        blockIdxController.doWork();
+
+        // idx for block should not be created
+        assertThat(blockIdxController.isInCreateState()).isTrue();
+        verify(mockBlockIndex, never()).addBlock(LOG_POSITION, LOG_ADDRESS);
+        assertThat(blockIdxController.getNextAddress()).isEqualTo(INDEX_BLOCK_SIZE + LOG_ADDRESS);
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = blockIdxController.truncate();
+        blockIdxController.doWork();
+
+        // then truncate was successful and controller is again in open state
+        assertThat(truncateFuture.isDone()).isTrue();
+        assertThat(blockIdxController.isOpen()).isTrue();
+
+        // next address was reset
+        assertThat(blockIdxController.getNextAddress()).isEqualTo(LOG_ADDRESS);
+
+        // read again
+        blockIdxController.doWork();
+        assertThat(blockIdxController.getNextAddress()).isEqualTo(READ_BLOCK_SIZE + LOG_ADDRESS);
+        commitPosition.setOrdered(Long.MAX_VALUE);
+    }
+
 }

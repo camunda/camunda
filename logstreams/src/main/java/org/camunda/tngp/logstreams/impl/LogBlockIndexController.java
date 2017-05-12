@@ -2,6 +2,7 @@ package org.camunda.tngp.logstreams.impl;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.agent.AgentRunnerService;
@@ -33,6 +34,7 @@ public class LogBlockIndexController implements Agent
 
     protected static final int TRANSITION_SNAPSHOT = 3;
     protected static final int TRANSITION_TRUNCATE = 4;
+    protected static final int TRANSITION_CREATE = 5;
 
     // STATES /////////////////////////////////////////////////////////
 
@@ -41,6 +43,8 @@ public class LogBlockIndexController implements Agent
     protected final SnapshottingState snapshottingState = new SnapshottingState();
     protected final ClosedState closedState = new ClosedState();
     protected final TruncateState truncateState = new TruncateState();
+    protected final BlockIndexCreationState blockIndexCreationState = new BlockIndexCreationState();
+
     protected final LogStateMachineAgent stateMachine;
 
     //  MANDATORY //////////////////////////////////////////////////
@@ -65,7 +69,7 @@ public class LogBlockIndexController implements Agent
     protected final SnapshotStorage snapshotStorage;
     protected final SnapshotPolicy snapshotPolicy;
     protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
-    protected final CompleteAndCommittedEventsInBlockProcessor readResultProcessor = new CompleteAndCommittedEventsInBlockProcessor();
+    protected final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
     protected final Runnable openStateRunnable;
     protected final Runnable closedStateRunnable;
 
@@ -75,14 +79,20 @@ public class LogBlockIndexController implements Agent
     protected int bufferSize;
     protected ByteBuffer ioBuffer;
     protected CompletableFuture<Void> truncateFuture;
+    protected Position commitPosition;
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
+    {
+        this(logStreamBuilder, null);
+    }
+
+    public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition)
     {
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
         this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
-        this.readResultProcessor.setCommitPosition(logStreamBuilder.getCommitPosition().get());
+        this.commitPosition = commitPosition;
 
         this.deviation = logStreamBuilder.getDeviation();
         this.indexBlockSize = (int) ((float) logStreamBuilder.getIndexBlockSize() * (1f - deviation));
@@ -98,12 +108,19 @@ public class LogBlockIndexController implements Agent
             StateMachine.<LogContext>builder(s -> new LogContext(s))
                 .initialState(closedState)
                 .from(openingState).take(TRANSITION_DEFAULT).to(openState)
-                .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+
                 .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
                 .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
-                .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
                 .from(openState).take(TRANSITION_CLOSE).to(closedState)
                 .from(closedState).take(TRANSITION_OPEN).to(openingState)
+                .from(openState).take(TRANSITION_CREATE).to(blockIndexCreationState)
+
+                .from(blockIndexCreationState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+                .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
+                .from(blockIndexCreationState).take(TRANSITION_TRUNCATE).to(truncateState)
+                .from(blockIndexCreationState).take(TRANSITION_CLOSE).to(closedState)
+                .from(blockIndexCreationState).take(TRANSITION_DEFAULT).to(openState)
+
                 .build(), openStateRunnable, closedStateRunnable);
     }
 
@@ -166,7 +183,6 @@ public class LogBlockIndexController implements Agent
                 nextAddress = recoveredAddress;
             }
         }
-
     }
 
     protected class OpenState implements State<LogContext>
@@ -212,36 +228,17 @@ public class LogBlockIndexController implements Agent
             return result;
         }
 
-        /**
-         * Resolves the current block start address.
-         *
-         * If the log context has no current block address stored then a block was read at once.
-         * In that case we have to use the currentAddress, which then corresponds to the begin of the block,
-         * otherwise we use the cached block address if block was partly read.
-         *
-         * @param logContext the log context which contains the cached block start address
-         * @param currentAddress the current address on which the block was read
-         * @return the resolved correct block start address
-         */
-        private long resolveCurrentBlockStartAddress(LogContext logContext, long currentAddress)
-        {
-            return logContext.hasCurrentBlockAddress() ? logContext.getCurrentBlockAddress() : currentAddress;
-        }
-
         private void tryToCreateBlockIndex(LogContext logContext, long currentAddress)
         {
             currentBlockSize += ioBuffer.position();
             // if block size is greater then or equals to index block size we will create an index
             if (currentBlockSize >= indexBlockSize)
             {
-                final long blockStartAddress = resolveCurrentBlockStartAddress(logContext, currentAddress);
-                createBlockIdx(logContext, blockStartAddress);
-
-                // reset buffer position and limit for reuse
-                ioBuffer.clear();
-
-                // reset cached block address
-                logContext.resetCurrentBlockAddress();
+                if (!logContext.hasCurrentBlockAddress())
+                {
+                    logContext.setCurrentBlockAddress(currentAddress);
+                }
+                logContext.take(TRANSITION_CREATE);
                 currentBlockSize = 0;
             }
             else
@@ -267,30 +264,6 @@ public class LogBlockIndexController implements Agent
             buffer.wrap(ioBuffer);
         }
 
-        private void createBlockIdx(LogContext logContext, long addressOfFirstEventInBlock)
-        {
-            // wrap buffer to access first event
-            buffer.wrap(ioBuffer);
-
-            // write block IDX
-            final long contextPosition = logContext.getLastPosition();
-            final long position = contextPosition == 0
-                ? getPosition(buffer, 0)
-                : contextPosition;
-            blockIndex.addBlock(position, addressOfFirstEventInBlock);
-
-            // check if snapshot should be created
-            if (snapshotPolicy.apply(position))
-            {
-                logContext.setLastPosition(position);
-                logContext.take(TRANSITION_SNAPSHOT);
-            }
-            else
-            {
-                logContext.resetLastPosition();
-            }
-        }
-
         public void reset(LogContext context)
         {
             currentBlockSize = 0;
@@ -300,7 +273,6 @@ public class LogBlockIndexController implements Agent
 
     protected class SnapshottingState implements TransitionState<LogContext>
     {
-
         @Override
         public void work(LogContext logContext)
         {
@@ -359,6 +331,11 @@ public class LogBlockIndexController implements Agent
         return getStateMachine().isRunning();
     }
 
+    public boolean isInCreateState()
+    {
+        return getStateMachine().getCurrentState() == blockIndexCreationState;
+    }
+
     public void open()
     {
         getStateMachine().open();
@@ -391,12 +368,14 @@ public class LogBlockIndexController implements Agent
 
     public long getCommitPosition()
     {
-        return this.readResultProcessor.getCommitPosition();
-    }
-
-    public void setCommitPosition(long commitPosition)
-    {
-        readResultProcessor.setCommitPosition(commitPosition);
+        if (commitPosition == null)
+        {
+            return INVALID_ADDRESS;
+        }
+        else
+        {
+            return commitPosition.get();
+        }
     }
 
     public CompletableFuture<Void> truncate()
@@ -412,11 +391,57 @@ public class LogBlockIndexController implements Agent
             }
             else
             {
-                future.completeExceptionally(new IllegalStateException("Cannot truncate log stream. State is not open."));
+                future.completeExceptionally(new IllegalStateException("Cannot truncate log stream. State is neither open nor create."));
             }
         });
 
         return future;
+    }
+
+    private class BlockIndexCreationState implements State<LogContext>
+    {
+        @Override
+        public int doWork(LogContext logContext) throws Exception
+        {
+            int result = 0;
+            if (readResultProcessor.getLastReadEventPosition() <= getCommitPosition())
+            {
+                createBlockIdx(logContext, logContext.getCurrentBlockAddress());
+
+                // reset buffer position and limit for reuse
+                ioBuffer.clear();
+
+                // reset cached block address
+                logContext.resetCurrentBlockAddress();
+                result = 1;
+            }
+            return result;
+        }
+
+        private void createBlockIdx(LogContext logContext, long addressOfFirstEventInBlock)
+        {
+            // wrap buffer to access first event
+            buffer.wrap(ioBuffer);
+
+            // write block IDX
+            final long contextPosition = logContext.getLastPosition();
+            final long position = contextPosition == 0
+                ? getPosition(buffer, 0)
+                : contextPosition;
+            blockIndex.addBlock(position, addressOfFirstEventInBlock);
+
+            // check if snapshot should be created
+            if (snapshotPolicy.apply(position))
+            {
+                logContext.setLastPosition(position);
+                logContext.take(TRANSITION_SNAPSHOT);
+            }
+            else
+            {
+                logContext.resetLastPosition();
+                logContext.take(TRANSITION_DEFAULT);
+            }
+        }
     }
 
     private class TruncateState implements State<LogContext>

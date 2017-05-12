@@ -61,7 +61,7 @@ public final class LogStreamImpl implements LogStream
     protected LogStreamController logStreamController;
     protected AgentRunnerService writeAgentRunnerService;
     protected Dispatcher writeBuffer;
-
+    protected final Position commitPosition = new AtomicLongPosition();
 
     private LogStreamImpl(final LogStreamBuilder logStreamBuilder)
     {
@@ -69,7 +69,6 @@ public final class LogStreamImpl implements LogStream
         if (topicName.capacity() > MAX_TOPIC_NAME_LENGTH)
         {
             throw new RuntimeException(String.format("Topic name exceeds max length (%d > %d bytes)", topicName.capacity(), MAX_TOPIC_NAME_LENGTH));
-
         }
 
         this.topicName = cloneBuffer(topicName);
@@ -79,7 +78,8 @@ public final class LogStreamImpl implements LogStream
         this.blockIndex = logStreamBuilder.getBlockIndex();
         this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
 
-        this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder);
+        commitPosition.setOrdered(INVALID_ADDRESS);
+        this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition);
 
         if (!logStreamBuilder.isLogStreamControllerDisabled())
         {
@@ -208,13 +208,13 @@ public final class LogStreamImpl implements LogStream
     @Override
     public long getCommitPosition()
     {
-        return logBlockIndexController.getCommitPosition();
+        return commitPosition.get();
     }
 
     @Override
     public void setCommitPosition(long commitPosition)
     {
-        logBlockIndexController.setCommitPosition(commitPosition);
+        this.commitPosition.setOrdered(commitPosition);
     }
 
     @Override
@@ -379,7 +379,6 @@ public final class LogStreamImpl implements LogStream
         protected AgentRunnerService agentRunnerService;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
-        protected Position commitPosition;
 
         protected String logRootPath;
         protected String logDirectory;
@@ -529,12 +528,6 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T commitPosition(Position commitPosition)
-        {
-            this.commitPosition = commitPosition;
-            return self();
-        }
-
         // getter /////////////////
 
 
@@ -583,16 +576,6 @@ public final class LogStreamImpl implements LogStream
                 this.logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
             }
             return logBlockIndex;
-        }
-
-        public Position getCommitPosition()
-        {
-            if (commitPosition == null)
-            {
-                commitPosition = new AtomicLongPosition();
-                commitPosition.setOrdered(-1);
-            }
-            return commitPosition;
         }
 
         public int getMaxAppendBlockSize()

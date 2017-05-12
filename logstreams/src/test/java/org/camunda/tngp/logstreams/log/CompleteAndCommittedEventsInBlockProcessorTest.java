@@ -3,7 +3,7 @@ package org.camunda.tngp.logstreams.log;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.impl.CompleteAndCommittedEventsInBlockProcessor;
+import org.camunda.tngp.logstreams.impl.CompleteEventsInBlockProcessor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import org.junit.Before;
@@ -35,7 +35,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private CompleteAndCommittedEventsInBlockProcessor processor;
+    private CompleteEventsInBlockProcessor processor;
     private String logPath;
     private FsLogStorageConfiguration fsStorageConfig;
     private FsLogStorage fsLogStorage;
@@ -44,7 +44,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     @Before
     public void init()
     {
-        processor = new CompleteAndCommittedEventsInBlockProcessor();
+        processor = new CompleteEventsInBlockProcessor();
         logPath = tempFolder.getRoot().getAbsolutePath();
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
         fsLogStorage = new FsLogStorage(fsStorageConfig);
@@ -78,7 +78,6 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldReadAndProcessFirstEvent()
     {
         // given buffer, which could contain first event
-        processor.setCommitPosition(1);
         final ByteBuffer readBuffer = ByteBuffer.allocate(ALIGNED_LEN);
 
         // when read into buffer and buffer was processed
@@ -96,53 +95,9 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     }
 
     @Test
-    public void shouldNotReadFirstEventIfNoCommitPositionIsSet()
-    {
-        // given buffer, which could contain first event
-        final ByteBuffer readBuffer = ByteBuffer.allocate(ALIGNED_LEN);
-
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
-
-        // then
-        // result is equal to start address no event was read
-        assertThat(result).isEqualTo(appendedAddress);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
-
-        // first event was read
-        assertThat(readBuffer.position()).isEqualTo(0);
-        assertThat(readBuffer.limit()).isEqualTo(readBuffer.capacity());
-    }
-
-    @Test
-    public void shouldNotReadSecondEventIfCommitPositionIsSetToFirst()
-    {
-        // given buffer, which could contain both event's
-        processor.setCommitPosition(1);
-        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
-
-        // when read into buffer and buffer was processed
-        final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
-
-        // then
-        // result is equal to start address plus first event length
-        assertThat(result).isEqualTo(appendedAddress + ALIGNED_LEN);
-        final DirectBuffer buffer = new UnsafeBuffer(0, 0);
-        buffer.wrap(readBuffer);
-
-        // first event was read
-        assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
-        assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
-    }
-
-    @Test
     public void shouldReadAndProcessTwoEvents()
     {
         // given buffer, which could contain 2 events
-        processor.setCommitPosition(2);
         final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
 
         // when read into buffer and buffer was processed
@@ -167,7 +122,6 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldTruncateHalfEvent()
     {
         // given buffer, which could contain 1.5 events
-        processor.setCommitPosition(2);
         final ByteBuffer readBuffer = ByteBuffer.allocate((int) (ALIGNED_LEN * 1.5));
 
         // when read into buffer and buffer was processed
@@ -193,7 +147,6 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     {
         // given buffer, which could contain one event and only 3 next bits
         // so not the complete next message len
-        processor.setCommitPosition(2);
         final ByteBuffer readBuffer = ByteBuffer.allocate((ALIGNED_LEN + 3));
 
         // when read into buffer and buffer was processed
@@ -231,7 +184,6 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldInsufficientBufferCapacityForLessThenHalfFullBuffer()
     {
         // given buffer
-        processor.setCommitPosition(3);
         final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN / 2);
 
         // when read into buffer and buffer was processed
@@ -247,7 +199,6 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldTruncateBufferOnHalfBufferWasRead()
     {
         // given buffer
-        processor.setCommitPosition(3);
         final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(0, 96)));
 
         // when read into buffer and buffer was processed

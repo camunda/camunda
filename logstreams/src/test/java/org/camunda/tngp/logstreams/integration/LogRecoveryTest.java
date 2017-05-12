@@ -1,15 +1,6 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil;
@@ -25,12 +16,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
 public class LogRecoveryTest
 {
     // ~ overall message size 46 MB
     private static final int MSG_SIZE = 911;
     private static final int WORK_COUNT = 50_000;
-    private final AtomicLongPosition commitPosition = new AtomicLongPosition();
 
     private static final int LOG_SEGMENT_SIZE = 1024 * 1024 * 8;
     private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
@@ -52,8 +51,6 @@ public class LogRecoveryTest
     @Before
     public void setup()
     {
-        commitPosition.setOrdered(Long.MAX_VALUE);
-
         logPath = temFolder.getRoot().getAbsolutePath();
 
         agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
@@ -69,7 +66,6 @@ public class LogRecoveryTest
             .logSegmentSize(LOG_SEGMENT_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
-            .commitPosition(commitPosition)
             .snapshotPolicy(pos -> false)
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService);
@@ -86,6 +82,7 @@ public class LogRecoveryTest
     {
         // given open log stream and written events
         final LogStream logStream = logStreamBuilder.build();
+        logStream.setCommitPosition(Long.MAX_VALUE);
         logStream.open();
         writeLogEvents(logStream, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
@@ -107,6 +104,7 @@ public class LogRecoveryTest
     {
         // given block index for written events
         final LogStream logStream = logStreamBuilder.build();
+        logStream.setCommitPosition(Long.MAX_VALUE);
         logStream.open();
         writeLogEvents(logStream, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
@@ -144,6 +142,7 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder
             .snapshotPolicy((pos) -> isLastLogEntry.getAndSet(false))
             .build();
+        log.setCommitPosition(Long.MAX_VALUE);
         log.open();
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT / 2);
@@ -161,6 +160,7 @@ public class LogRecoveryTest
         final LogStream newLog = getLogStreamBuilder()
             .logStreamControllerDisabled(true)
             .build();
+        newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();
 
         // then block index is recovered
@@ -184,6 +184,7 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder
             .snapshotPolicy((pos) -> isLastLogEntry.getAndSet(false))
             .build();
+        log.setCommitPosition(Long.MAX_VALUE);
         log.open();
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT / 2);
@@ -231,6 +232,7 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder
             .snapshotPolicy(pos -> (snapshotCount.incrementAndGet() % snapshotInterval) == 0)
             .build();
+        log.setCommitPosition(Long.MAX_VALUE);
         log.open();
         writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT);
@@ -260,13 +262,13 @@ public class LogRecoveryTest
     @Test
     public void shouldRecoverEventPosition() throws InterruptedException, ExecutionException
     {
-
         final LogStream log = logStreamBuilder.build();
+        log.setCommitPosition(Long.MAX_VALUE);
         log.open();
 
         // write events
-        writeLogEvents(log, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, WORK_COUNT_PER_BLOCK_IDX);
+        writeLogEvents(log, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 0);
+        waitUntilWrittenKey(log, 2 * WORK_COUNT_PER_BLOCK_IDX);
 
         log.close();
         int indexSize = log.getLogBlockIndex().size();
@@ -274,29 +276,33 @@ public class LogRecoveryTest
 
         // re-open the log
         final LogStream newLog = getLogStreamBuilder().build();
+        newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();
 
-        // check if indices are equal
+        // check if new log creates indices
+        // perhaps not equal since he has to process all events
         final int newIndexSize = newLog.getLogBlockIndex().size();
-        assertThat(indexSize).isEqualTo(newIndexSize);
+        assertThat(newIndexSize).isGreaterThan(0);
+        assertThat(indexSize).isLessThanOrEqualTo(newIndexSize);
 
         // write more events
-        writeLogEvents(newLog, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX);
-        waitUntilWrittenKey(newLog, 2 * WORK_COUNT_PER_BLOCK_IDX);
+        writeLogEvents(newLog, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 2 * WORK_COUNT_PER_BLOCK_IDX);
+        waitUntilWrittenKey(newLog, 4 * WORK_COUNT_PER_BLOCK_IDX);
 
         newLog.close();
         indexSize = newLog.getLogBlockIndex().size();
-        final int calculatesIndexSize = calculateIndexSize(2 * WORK_COUNT_PER_BLOCK_IDX);
+        final int calculatesIndexSize = calculateIndexSize(4 * WORK_COUNT_PER_BLOCK_IDX);
         assertThat(indexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
 
         // assert that the event position is recovered after re-open and continues after the last event
-        readLogAndAssertEvents(2 * WORK_COUNT_PER_BLOCK_IDX, calculatesIndexSize);
+        readLogAndAssertEvents(4 * WORK_COUNT_PER_BLOCK_IDX, calculatesIndexSize);
     }
 
     @Test
     public void shouldResumeLogStream() throws InterruptedException, ExecutionException
     {
         final LogStream logStream = logStreamBuilder.build();
+        logStream.setCommitPosition(Long.MAX_VALUE);
         logStream.open();
         // write events
         writeLogEvents(logStream, WORK_COUNT_PER_BLOCK_IDX / 10, MSG_SIZE, 0);
@@ -310,18 +316,18 @@ public class LogRecoveryTest
         logStream.open();
 
         // write more events
-        writeLogEvents(logStream, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX / 10);
-        waitUntilWrittenKey(logStream, WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
+        writeLogEvents(logStream, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX / 10);
+        waitUntilWrittenKey(logStream, 2 * WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
 
         logStream.close();
 
         // after resume an index was written
-        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
+        final int calculatesIndexSize = calculateIndexSize(2 * WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
         assertThat(logStream.getLogBlockIndex().size()).isGreaterThan(indexSize);
         indexSize = logStream.getLogBlockIndex().size();
-        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+        assertThat(indexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
 
-        readLogAndAssertEvents(WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10), calculatesIndexSize);
+        readLogAndAssertEvents(2 * WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10), calculatesIndexSize);
     }
 
     protected void readLogAndAssertEvents(int workCount, int indexSize)
@@ -330,7 +336,7 @@ public class LogRecoveryTest
             .deleteOnClose(true)
             .logStreamControllerDisabled(true)
             .build();
-
+        newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();
 
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
