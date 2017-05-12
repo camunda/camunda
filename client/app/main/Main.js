@@ -31,7 +31,7 @@ export function Main() {
         </div>
       </div>
       <Notifications selector="notifications" />
-      <Footer />
+      <Footer selector="footer" />
     </LoginRoot>
   </Router>;
 }

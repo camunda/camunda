@@ -1,15 +1,15 @@
-import {jsx, Text} from 'view-utils';
+import {jsx, Text, withSelector} from 'view-utils';
+import {Progress} from './progress';
 
-const template = <footer>
+export const Footer = withSelector(() => <footer>
   <div className="container-fluid">
     <div className="row">
-      <div className="col-xs-12">
+      <div className="col-xs-2">
+        <Progress selector="progress" />
+      </div>
+      <div className="col-xs-10">
         &copy; Camunda services GmbH 2017, All Rights Reserved / <span className="version"><Text property="version" /></span>
       </div>
     </div>
   </div>
-</footer>;
-
-export function Footer() {
-  return template;
-}
+</footer>);

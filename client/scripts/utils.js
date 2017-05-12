@@ -112,16 +112,39 @@ function promisify(original, thisArg) {
  };
 }
 
-function runInSequence(values, taskFn) {
-  return values.reduce(
-    (listPromise, value, index) => {
-      return listPromise.then(list => {
-        return taskFn(value, index)
-          .then(result => list.concat(result));
-      });
-    },
-    Promise.resolve([])
-  )
+function runInSequence(values, taskFn, chunkSize = 5) {
+  return splitIntoChunks(values, chunkSize)
+    .reduce(
+      (listPromise, chunkValues, mainIndex) => {
+        return listPromise.then(list => {
+          return Promise.all(
+            chunkValues.map(
+              (value, minorIndex) => taskFn(value, mainIndex + minorIndex)
+            )
+          ).then(result => list.concat(result));
+        });
+      },
+      Promise.resolve([])
+    );
+}
+
+function splitIntoChunks(data, chunkSize) {
+  const result = [];
+  let currentChunk = [];
+  let chunkIndex = 0;
+
+  for (let i = 0; i < data.length; i++) {
+    currentChunk.push(data[i]);
+    chunkIndex++;
+
+    if (chunkIndex === chunkIndex || i + 1 === data.length) {
+      result.push(currentChunk);
+      chunkIndex = 0;
+      currentChunk = [];
+    }
+  }
+
+  return result;
 }
 
 function changeFile(file, change) {

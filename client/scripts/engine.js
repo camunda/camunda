@@ -203,8 +203,6 @@ function completeModuleTasks({instances}) {
 function completeInstanceTasks(instance, iteration = 0) {
   let skipped = false;
 
-
-
   return Promise.all([getTaskList(instance), getVariables(instance)])
   .then(([tasks, previousVariables]) => {
     return utils.runInSequence(

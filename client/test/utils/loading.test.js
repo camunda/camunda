@@ -1,11 +1,13 @@
 import {expect} from 'chai';
 import {DESTROY_EVENT} from 'view-utils';
-import {addLoading, createLoadingActionFunction, createResultActionFunction,
-        createResetActionFunction, createErrorActionFunction, addDestroyEventCleanUp,
-        INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE} from 'utils/loading';
+import {
+  addLoading, createLoadingActionFunction, createResultActionFunction,
+  createResetActionFunction, createErrorActionFunction, addDestroyEventCleanUp,
+  createLoadingReducer, INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE
+} from 'utils/loading';
 import sinon from 'sinon';
 
-describe('loading', () => {
+describe('addLoading', () => {
   let reducer;
   let originalReducer;
 
@@ -138,5 +140,64 @@ describe('addDestroyEventCleanUp', () => {
         property: name
       })).to.eql(true, `expected reset action to be dispatch for ${name}`);
     });
+  });
+});
+
+describe('createLoadingReducer', () => {
+  const name = 'name';
+  let reducer;
+
+  beforeEach(() => {
+    reducer = createLoadingReducer(name);
+  });
+
+  it('should return initial state for undefined', () => {
+    expect(reducer(undefined, {type: '@@INIT'}))
+      .to.eql({
+        state: INITIAL_STATE
+      });
+  });
+
+  it('should return initial state for undefined', () => {
+    expect(reducer(undefined, {type: '@@INIT'}))
+      .to.eql({
+        state: INITIAL_STATE
+      });
+  });
+
+  it('should return loading state on loading action', () => {
+    expect(reducer({}, {type: 'LOAD_NAME'}))
+      .to.eql({
+        state: LOADING_STATE
+      });
+  });
+
+  it('should return loaded state on loaded action', () => {
+    const result = 'result';
+
+    expect(reducer({}, {type: 'LOADED_NAME', result}))
+      .to.eql({
+        state: LOADED_STATE,
+        data: result
+      });
+  });
+
+  it('should return error state on error action', () => {
+    const error = 'result';
+
+    expect(reducer({}, {type: 'ERROR_NAME', error}))
+      .to.eql({
+        state: ERROR_STATE,
+        error
+      });
+  });
+
+  it('should return initial state on reset action', () => {
+    const error = 'result';
+
+    expect(reducer({}, {type: 'RESET_NAME', error}))
+      .to.eql({
+        state: INITIAL_STATE,
+      });
   });
 });
