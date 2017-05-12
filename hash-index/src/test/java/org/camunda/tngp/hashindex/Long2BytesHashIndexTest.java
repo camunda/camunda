@@ -18,12 +18,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class Long2BytesHashIndexTest
 {
+    protected static final int INDEX_SIZE = 15;
+    protected static final int VALUE_LENGTH = 3 * SIZE_OF_BYTE;
+
     private static final byte[] VALUE = "bar".getBytes();
     private static final byte[] ANOTHER_VALUE = "plo".getBytes();
 
@@ -36,12 +40,14 @@ public class Long2BytesHashIndexTest
     @Before
     public void createIndex()
     {
-        final int indexSize = 15;
-        final int valueLength = 3 * SIZE_OF_BYTE;
-
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2BytesHashIndex(indexStore, indexSize, 1, valueLength);
+        index = newIndex();
         assertThat(index.indexSize).isEqualTo(16);
+    }
+
+    protected Long2BytesHashIndex newIndex()
+    {
+        return new Long2BytesHashIndex(indexStore, INDEX_SIZE, 1, VALUE_LENGTH);
     }
 
     @After
@@ -236,6 +242,42 @@ public class Long2BytesHashIndexTest
 
         // then
         assertThat(index.get(0)).isNull();
+    }
+
+    @Test
+    @Ignore("https://github.com/camunda-tngp/util/issues/15")
+    public void shouldAccessIndexWithNewObject()
+    {
+        // given
+        index.put(0, VALUE);
+        index.flush();
+        indexStore.flush();
+
+        // a second index working on the same index store (e.g. after broker restart)
+        final Long2BytesHashIndex newIndex = new Long2BytesHashIndex(indexStore);
+        newIndex.reInit();
+
+        // when
+        final byte[] returnValue = newIndex.get(0);
+
+        // then
+        assertThat(returnValue).containsExactly(VALUE);
+    }
+
+    @Test
+    @Ignore("https://github.com/camunda-tngp/util/issues/16")
+    public void shouldNotOverwriteValue()
+    {
+        // given
+        final byte[] originalAnotherValue = ANOTHER_VALUE.clone();
+        index.put(0, VALUE);
+        index.put(1, ANOTHER_VALUE);
+
+        // when
+        index.get(0);
+
+        // then
+        assertThat(ANOTHER_VALUE).containsExactly(originalAnotherValue);
     }
 
 }
