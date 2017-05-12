@@ -1,6 +1,5 @@
 import {$window} from './dom';
 
-// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser#9851769
 const isProxySupported = typeof $window.Proxy === 'function';
 
 // This function is a bit hacky. Well that is very delicate description.
