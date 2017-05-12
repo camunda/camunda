@@ -1,7 +1,7 @@
-import {$document} from './dom';
+import {$window} from './dom';
 
 // http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser#9851769
-const isIE = /*@cc_on!@*/false || !!$document.documentMode;
+const isProxySupported = typeof $window.Proxy === 'function';
 
 // This function is a bit hacky. Well that is very delicate description.
 // It suppose to act as proxy to parent node with few limitations
@@ -70,9 +70,9 @@ export function createProxyNode(parent, startMarker) {
     childNodes: () => childNodes.slice()
   };
 
-  const proxyNode = isIE ?
-    createWithIteration(parent, proxyProperties, proxyMethods) :
-    createWithProxyTrap(parent, proxyProperties, proxyMethods);
+  const proxyNode = isProxySupported ?
+    createWithProxyTrap(parent, proxyProperties, proxyMethods) :
+    createWithIteration(parent, proxyProperties, proxyMethods);
 
   return proxyNode;
 
