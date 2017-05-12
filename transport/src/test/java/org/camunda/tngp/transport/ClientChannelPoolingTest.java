@@ -267,6 +267,68 @@ public class ClientChannelPoolingTest
         }
     }
 
+    @Test
+    public void shouldResetFailedConnectFuturesOnRelease()
+    {
+        // given
+        final ClientChannelPool pool = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+
+        TestUtil.waitUntil(() -> future.isFailed());
+
+        // when
+        future.release();
+
+        // then
+        assertThat(future.poll()).isNull();
+        assertThat(future.isFailed()).isFalse();
+    }
+
+    @Test
+    public void shouldResetSuccessfulConnectFuturesOnRelease()
+    {
+        // given
+        final ClientChannelPool pool = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport.createServerSocketBinding(addr).bind();
+
+        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+        TestUtil.waitUntil(() -> future.poll() != null);
+
+        // when
+        future.release();
+
+        // then
+        assertThat(future.poll()).isNull();
+        assertThat(future.isFailed()).isFalse();
+    }
+
+    @Test
+    public void shouldFailConcurrentRequestsForSameRemoteAddress()
+    {
+        final ClientChannelPool pool = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        // when
+        final PooledFuture<ClientChannel> future1 = pool.requestChannelAsync(addr);
+        final PooledFuture<ClientChannel> future2 = pool.requestChannelAsync(addr);
+        TestUtil.waitUntil(() -> future1.isFailed() && future2.isFailed());
+
+        // then
+        assertThat(future1.isFailed()).isTrue();
+        assertThat(future2.isFailed()).isTrue();
+    }
+
     protected ClientChannel[] openChannelsInPortRange(ClientChannelPool pool, int firstPort, int range)
     {
         final ClientChannel[] channels = new ClientChannel[range];

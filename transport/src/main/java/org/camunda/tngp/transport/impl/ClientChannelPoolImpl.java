@@ -132,7 +132,7 @@ public class ClientChannelPoolImpl implements ClientChannelPool
         final SocketAddress remoteAddress = request.getRemoteAddress();
         final ClientChannelImpl channel = findExistingChannel(remoteAddress);
 
-        if (channel != null)
+        if (channel != null && channel.isOpen())
         {
             request.resolve(channel);
         }
