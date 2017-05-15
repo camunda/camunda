@@ -170,11 +170,11 @@ public class SingleMessageController
                 {
                     context.channelFuture.release();
                     context.channelFuture = null;
+                    context.take(TRANSITION_FAILED);
                 }
             }
 
             return workcount;
-
         }
 
         @Override
@@ -223,7 +223,6 @@ public class SingleMessageController
 
     static class CloseChannelState implements TransitionState<SingleMessageContext>
     {
-
         @Override
         public void work(SingleMessageContext context) throws Exception
         {
@@ -231,11 +230,18 @@ public class SingleMessageController
             final ClientChannel endpointChannel = context.channel;
             clientChannelManager.returnChannel(endpointChannel);
 
+            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            if (channelFuture != null)
+            {
+                channelFuture.release();
+            }
+
+            context.channelFuture = null;
             context.channel = null;
             context.requestWriter = null;
+            context.receiver.reset();
 
             context.take(TRANSITION_DEFAULT);
         }
-
     }
 }

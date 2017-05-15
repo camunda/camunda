@@ -124,8 +124,6 @@ public class RequestResponseController
 
     public void close()
     {
-        requestResponseContext.reset();
-
         requestStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
     }
 
@@ -183,12 +181,6 @@ public class RequestResponseController
             this.connections = connections;
         }
 
-        public void reset()
-        {
-            receiver.reset();
-            requestWriter = null;
-        }
-
         public DirectBuffer getResponseBuffer()
         {
             if (request != null)
@@ -237,7 +229,9 @@ public class RequestResponseController
         {
             int workcount = 0;
 
-            if (context.channelFuture == null)
+            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+
+            if (channelFuture == null)
             {
                 final ClientChannelPool clientChannelManager = context.clientChannelManager;
                 final SocketAddress receiver = context.receiver;
@@ -246,23 +240,24 @@ public class RequestResponseController
                 context.channelFuture = clientChannelManager.requestChannelAsync(receiver);
             }
 
-            if (context.channelFuture != null)
+            if (channelFuture != null)
             {
-                if (!context.channelFuture.isFailed())
+                if (!channelFuture.isFailed())
                 {
-                    final ClientChannel clientChannel = context.channelFuture.poll();
+                    final ClientChannel clientChannel = channelFuture.poll();
                     if (clientChannel != null)
                     {
                         context.channel = clientChannel;
-                        context.channelFuture.release();
+                        channelFuture.release();
                         context.channelFuture = null;
                         context.take(TRANSITION_DEFAULT);
                     }
                 }
                 else
                 {
-                    context.channelFuture.release();
+                    channelFuture.release();
                     context.channelFuture = null;
+                    context.take(TRANSITION_FAILED);
                 }
             }
 
@@ -381,12 +376,21 @@ public class RequestResponseController
                 connection.close();
             }
 
+            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            if (channelFuture != null)
+            {
+                channelFuture.release();
+            }
+
             final ClientChannel endpointChannel = context.channel;
             context.clientChannelManager.returnChannel(endpointChannel);
 
             context.connection = null;
             context.channel = null;
+            context.channelFuture = null;
             context.request = null;
+            context.requestWriter = null;
+            context.receiver.reset();
 
             context.take(TRANSITION_DEFAULT);
         }
