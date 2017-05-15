@@ -112,12 +112,6 @@ public class ConfigurationService {
   private double importResetInterval;
   @Value("${camunda.optimize.es.import.handler.max.backoff}")
   private long maximumBackoff;
-  @Value("${camunda.optimize.es.settings.index.refresh_interval}")
-  private int esRefreshInterval;
-  @Value("${camunda.optimize.es.settings.index.number_of_replicas}")
-  private int esNumberOfReplicas;
-  @Value("${camunda.optimize.es.settings.index.number_of_shards}")
-  private int esNumberOfShards;
 
   public String getSecret() {
     return secret;
@@ -311,17 +305,5 @@ public class ConfigurationService {
 
   public int getMaxVariablesPageSize() {
     return maxVariablesPageSize;
-  }
-
-  public int getEsRefreshInterval() {
-    return esRefreshInterval;
-  }
-
-  public int getEsNumberOfReplicas() {
-    return esNumberOfReplicas;
-  }
-
-  public int getEsNumberOfShards() {
-    return esNumberOfShards;
   }
 }
