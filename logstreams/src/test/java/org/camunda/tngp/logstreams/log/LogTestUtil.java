@@ -2,7 +2,6 @@ package org.camunda.tngp.logstreams.log;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.impl.CompleteEventsInBlockProcessor;
 import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
