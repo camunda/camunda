@@ -1,4 +1,7 @@
 import {getLogin} from 'login';
+import {getRouter, getLastRoute} from 'router';
+
+const router = getRouter();
 
 const $fetch = fetch; //for mocking ;)
 const DEFAULT_HEADERS = {
@@ -53,6 +56,10 @@ export function request({url, method, body, query, headers}) {
 
     if (status >= 200 && status < 300) {
       return response;
+    } else if (status === 401) {
+      const {name, params} = getLastRoute();
+
+      router.goTo('login', {name, params: JSON.stringify(params)}, true);
     }
 
     return Promise.reject(response);

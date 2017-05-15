@@ -14,6 +14,9 @@ describe('http service', () => {
 
     let $fetch;
     let getLogin;
+    let router;
+    let lastRoute;
+    let getLastRoute;
 
     beforeEach(() => {
       $fetch = sinon
@@ -27,11 +30,26 @@ describe('http service', () => {
         .stub()
         .returns({token});
       __set__('getLogin', getLogin);
+
+      router = {
+        goTo: sinon.spy()
+      };
+      __set__('router', router);
+
+      lastRoute = {
+        name: 'dd',
+        params: {b: 1}
+      };
+
+      getLastRoute = sinon.stub().returns(lastRoute);
+      __set__('getLastRoute', getLastRoute);
     });
 
     afterEach(() => {
       __ResetDependency__('$fetch');
       __ResetDependency__('getLogin');
+      __ResetDependency__('router');
+      __ResetDependency__('getLastRoute');
     });
 
     it('should open http request with given method and url', () => {
@@ -131,6 +149,26 @@ describe('http service', () => {
       });
 
       Promise.runAll();
+    });
+
+    it('should redirect to login page when response status is 401', (done) => {
+      $fetch.returns(
+        Promise.resolve({
+          status: 401
+        })
+      );
+
+      request({
+        url,
+        method
+      }).catch(() => done());
+
+      Promise.runAll();
+
+      expect(router.goTo.calledWith('login', {
+        name: lastRoute.name,
+        params: JSON.stringify(lastRoute.params)
+      })).to.eql(true);
     });
 
     it('should add Authorization header', () => {
