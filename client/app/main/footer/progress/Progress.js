@@ -1,16 +1,14 @@
-import {jsx, withSelector, Text, Scope, Match, Case} from 'view-utils';
+import {jsx, withSelector, Text, Match, Case} from 'view-utils';
 import {loadProgress} from './service';
 
 export const Progress = withSelector(() => {
-  const template = <Scope selector={({data}) => data || {} }>
-    <Match>
-      <Case predicate={({progress}) => progress !== undefined && progress < 100}>
-        <div className="import-progress">
-          Import in progress <Text property="progress" />%
-        </div>
-      </Case>
-    </Match>
-  </Scope>;
+  const template = <Match>
+    <Case predicate={({data}) => data !== undefined && data < 100}>
+      <div className="import-progress">
+        Import in progress <Text property="data" />%
+      </div>
+    </Case>
+  </Match>;
 
   loadProgress();
 

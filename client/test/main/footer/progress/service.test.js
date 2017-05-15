@@ -90,7 +90,7 @@ describe('loadProgress', () => {
   it('should dispatch progress result action', () => {
     Promise.runAll();
 
-    expect(createLoadingProgressResultAction.calledWith(response)).to.eql(true);
+    expect(createLoadingProgressResultAction.calledWith(response.progress)).to.eql(true);
     expect(dispatchAction.calledWith(createLoadingProgressResultAction)).to.eql(true);
   });
 

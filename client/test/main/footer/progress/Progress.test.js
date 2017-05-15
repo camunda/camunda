@@ -25,13 +25,13 @@ describe('<Progress>', () => {
   });
 
   it('should show progres when it is below 100', () => {
-    update({data: {progress: 10}});
+    update({data: 10});
 
     expect(node).to.contain.text('10%');
   });
 
   it('should not show progres when it is 100', () => {
-    update({data: {progress: 100}});
+    update({data: 100});
 
     expect(node.innerText.trim()).to.eql('');
   });

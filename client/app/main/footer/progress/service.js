@@ -21,7 +21,7 @@ export function loadProgress() {
           cancelTask();
         }
 
-        dispatchAction(createLoadingProgressResultAction(result));
+        dispatchAction(createLoadingProgressResultAction(result.progress));
       })
       .catch(err => {
         cancelTask();
