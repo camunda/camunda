@@ -171,6 +171,25 @@ describe('http service', () => {
       })).to.eql(true);
     });
 
+    it('should not redirect to login page when response status is 401 and current route already is login', (done) => {
+      $fetch.returns(
+        Promise.resolve({
+          status: 401
+        })
+      );
+
+      lastRoute.name = 'login';
+
+      request({
+        url,
+        method
+      }).catch(() => done());
+
+      Promise.runAll();
+
+      expect(router.goTo.called).to.eql(false);
+    });
+
     it('should add Authorization header', () => {
       request({
         url,

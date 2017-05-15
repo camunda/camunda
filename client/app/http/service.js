@@ -59,7 +59,9 @@ export function request({url, method, body, query, headers}) {
     } else if (status === 401) {
       const {name, params} = getLastRoute();
 
-      router.goTo('login', {name, params: JSON.stringify(params)}, true);
+      if (name !== 'login') {
+        router.goTo('login', {name, params: JSON.stringify(params)}, true);
+      }
     }
 
     return Promise.reject(response);
