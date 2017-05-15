@@ -50,7 +50,7 @@ module "optimize_db_security_in" {
 #
 resource "aws_instance" "optimize" {
   ami = "${data.aws_ami.ubuntu.id}"
-  instance_type = "t2.large"
+  instance_type = "m4.large"
   key_name = "${data.terraform_remote_state.global.jenkins_aws_key_id}"
   iam_instance_profile = "${aws_iam_instance_profile.optimize_s3_iam_instance_profile.name}"
   vpc_security_group_ids = ["${aws_security_group.optimize.id}"]
