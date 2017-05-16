@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
@@ -76,6 +77,18 @@ public class ProcessDefinitionRestService {
   }
 
   /**
+   * Retrieves all process definition stored in Optimize and groups them by key.
+   * @return A collection of process definitions.
+   * @throws OptimizeException Something went wrong while fetching the process definitions.
+   */
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/groupedByKey")
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey () throws OptimizeException {
+    return processDefinitionReader.getProcessDefinitionsGroupedByKey();
+  }
+
+  /**
    * Get the process definition xml to a given process definition id.
    * @param processDefinitionId The process definition id the xml should be returned.
    * @return The process definition xml requested.
@@ -84,6 +97,17 @@ public class ProcessDefinitionRestService {
   @Path("/{id}/xml")
   public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
     return processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+  }
+
+  /**
+   * Get the process definition xml to a given process definition id.
+   * @param ids List of process Definition ids for which xml has to be returned
+   * @return The process definition xml requested.
+   */
+  @POST
+  @Path("/xml")
+  public Map<String,String> getProcessDefinitionsXml(List<String> ids) {
+    return processDefinitionReader.getProcessDefinitionsXml(ids);
   }
 
   /**

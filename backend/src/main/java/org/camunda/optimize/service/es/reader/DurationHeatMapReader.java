@@ -20,7 +20,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 public class DurationHeatMapReader extends HeatMapReader {
 
   void processAggregations(HeatMapResponseDto result, SearchRequestBuilder srb) {
-     Aggregations aggregations = getTermsWithAggregation(srb);
+    Aggregations aggregations = getTermsWithAggregation(srb);
     Nested activities = aggregations.get("events");
     Filter filteredActivities = activities.getAggregations().get("filteredEvents");
     Terms terms = filteredActivities.getAggregations().get("activities");

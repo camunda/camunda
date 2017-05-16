@@ -2,6 +2,9 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -10,7 +13,9 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +25,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class ProcessDefinitionReader {
-
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionReader.class);
 
   @Autowired
@@ -44,7 +49,7 @@ public class ProcessDefinitionReader {
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
-    ArrayList <String> types = new ArrayList<>();
+    ArrayList<String> types = new ArrayList<>();
     types.add(configurationService.getProcessDefinitionType());
     if (withXml) {
       types.add(configurationService.getProcessDefinitionXmlType());
@@ -52,7 +57,7 @@ public class ProcessDefinitionReader {
 
     SearchResponse scrollResp = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(types.toArray(new String[types.size()] ))
+        .setTypes(types.toArray(new String[types.size()]))
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setSize(100)
@@ -83,19 +88,19 @@ public class ProcessDefinitionReader {
     if (definitionsResult.containsKey(mapped.getId())) {
       mapped.setBpmn20Xml(definitionsResult.get(mapped.getId()).getBpmn20Xml());
     }
-    definitionsResult.put(mapped.getId(),mapped);
+    definitionsResult.put(mapped.getId(), mapped);
   }
 
   private void addPartialDefinition(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
-    String id = hit.getSource().get("id").toString();
-    String xml = hit.getSource().get("bpmn20Xml").toString();
+    String id = hit.getSource().get(ProcessDefinitionType.PROCESS_DEFINITION_ID).toString();
+    String xml = hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
     if (definitionsResult.containsKey(id)) {
       definitionsResult.get(id).setBpmn20Xml(xml);
     } else {
       ExtendedProcessDefinitionOptimizeDto toAdd = new ExtendedProcessDefinitionOptimizeDto();
       toAdd.setId(id);
       toAdd.setBpmn20Xml(xml);
-      definitionsResult.put(toAdd.getId(),toAdd);
+      definitionsResult.put(toAdd.getId(), toAdd);
     }
   }
 
@@ -112,19 +117,49 @@ public class ProcessDefinitionReader {
 
   public String getProcessDefinitionXml(String processDefinitionId) {
     GetResponse response = esclient.prepareGet(
-      configurationService.getOptimizeIndex(),
-      configurationService.getProcessDefinitionXmlType(),
-      processDefinitionId)
-      .get();
+        configurationService.getOptimizeIndex(),
+        configurationService.getProcessDefinitionXmlType(),
+        processDefinitionId)
+        .get();
 
     String xml = null;
-    if(response.isExists()) {
-      xml = response.getSource().get("bpmn20Xml").toString();
-    }else {
+    if (response.isExists()) {
+      xml = response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
+    } else {
       logger.warn("Could not find process definition xml with id {}", processDefinitionId);
     }
     return xml;
   }
 
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
+    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
+    List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
+    for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
+      if (!resultMap.containsKey(process.getKey())) {
+        resultMap.put(process.getKey(), constructGroup(process));
+      }
+      resultMap.get(process.getKey()).getVersions().add(process);
+    }
+    return new ArrayList<>(resultMap.values());
+  }
 
+  private ProcessDefinitionGroupOptimizeDto constructGroup(ExtendedProcessDefinitionOptimizeDto process) {
+    ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
+    result.setKey(process.getKey());
+    return result;
+  }
+
+  public Map<String, String> getProcessDefinitionsXml(List<String> ids) {
+    Map<String, String> result = new HashMap<>();
+    SearchResponse response = esclient.prepareSearch(
+        configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getProcessDefinitionXmlType())
+        .setQuery(QueryBuilders.termsQuery(ProcessDefinitionXmlType.ID, ids))
+        .get();
+
+    for(SearchHit hit : response.getHits()) {
+      result.put(hit.getSource().get(ProcessDefinitionXmlType.ID).toString(), hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
+    }
+    return result;
+  }
 }

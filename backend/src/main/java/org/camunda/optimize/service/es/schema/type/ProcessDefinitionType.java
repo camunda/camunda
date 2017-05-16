@@ -9,6 +9,8 @@ import java.io.IOException;
 @Component
 public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
+  public static final String PROCESS_DEFINITION_ID = "id";
+
   @Override
   public String getType() {
     return configurationService.getProcessDefinitionType();
@@ -17,7 +19,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
-      .startObject("id")
+      .startObject(PROCESS_DEFINITION_ID)
         .field("type", "keyword")
       .endObject()
       .startObject("key")

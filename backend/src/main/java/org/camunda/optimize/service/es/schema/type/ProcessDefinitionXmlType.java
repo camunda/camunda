@@ -9,6 +9,9 @@ import java.io.IOException;
 @Component
 public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
 
+  public static final String ID = "id";
+  public static final String BPMN_20_XML = "bpmn20Xml";
+
   @Override
   public String getType() {
     return configurationService.getProcessDefinitionXmlType();
@@ -17,10 +20,10 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
-      .startObject("id")
+      .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject("bpmn20Xml")
+      .startObject(BPMN_20_XML)
         .field("type", "text")
         .field("index", false)
       .endObject();

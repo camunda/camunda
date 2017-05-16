@@ -2,10 +2,9 @@ package org.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
 
-public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class ProcessDefinitionOptimizeDto extends KeyProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
 
   protected String id;
-  protected String key;
   protected String name;
   protected long version;
 
@@ -15,14 +14,6 @@ public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
 
   public void setId(String id) {
     this.id = id;
-  }
-
-  public String getKey() {
-    return key;
-  }
-
-  public void setKey(String key) {
-    this.key = key;
   }
 
   public String getName() {
