@@ -398,7 +398,7 @@ public class TaskSubscriptionManagerTest
     }
 
     @Test
-    public void shouldFailToIncreaseSubscriptionCreditsIfNotExist() throws Exception
+    public void shouldNotIncreaseSubscriptionCreditsIfNotExist() throws Exception
     {
         // given
         manager.addSubscription(subscription);

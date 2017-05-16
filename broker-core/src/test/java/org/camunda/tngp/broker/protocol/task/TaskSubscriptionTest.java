@@ -89,4 +89,24 @@ public class TaskSubscriptionTest
         assertThat(error.getErrorData()).isEqualTo("Cannot increase task subscription credits. Credits must be positive.");
     }
 
+
+    @Test
+    public void shouldRejectNegativeCredits()
+    {
+        // when
+        final ErrorResponse error = apiRule.createControlMessageRequest()
+            .messageType(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .data()
+                .put("subscriberKey", 1)
+                .put("credits", -10)
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
+                .done()
+            .send().awaitError();
+
+        // then
+        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(error.getErrorData()).isEqualTo("Cannot increase task subscription credits. Credits must be positive.");
+    }
+
 }

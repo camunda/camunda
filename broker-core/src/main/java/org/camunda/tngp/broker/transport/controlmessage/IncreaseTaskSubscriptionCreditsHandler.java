@@ -56,14 +56,14 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         subscription.wrap(buffer);
 
-        creditsRequest.setCredits(subscription.getCredits());
-        creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
-
         if (subscription.getCredits() <= 0)
         {
             sendError(eventMetada, buffer, "Cannot increase task subscription credits. Credits must be positive.");
             return COMPLETED_FUTURE;
         }
+
+        creditsRequest.setCredits(subscription.getCredits());
+        creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
 
         final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
 
