@@ -106,6 +106,8 @@ public class ProcessDefinitionRestService {
    */
   @POST
   @Path("/xml")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
   public Map<String,String> getProcessDefinitionsXml(List<String> ids) {
     return processDefinitionReader.getProcessDefinitionsXml(ids);
   }
