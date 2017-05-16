@@ -238,4 +238,21 @@ public class LongRingBufferTest
         // then
         assertThat(elementAdded).isFalse();
     }
+
+    @Test
+    public void shouldWorkWithNonPowerOf2Capacity()
+    {
+        // given
+        final LongRingBuffer buffer = new LongRingBuffer(3);
+
+        buffer.addElementToHead(1L);
+        buffer.addElementToHead(2L);
+        buffer.addElementToHead(3L);
+
+        // when
+        final boolean elementAdded = buffer.addElementToHead(4L);
+
+        // then
+        assertThat(elementAdded).isFalse();
+    }
 }
