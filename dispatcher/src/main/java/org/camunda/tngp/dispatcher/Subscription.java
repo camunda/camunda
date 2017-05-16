@@ -8,6 +8,8 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALI
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
@@ -50,6 +52,8 @@ public class Subscription
      * Read fragments from the buffer and invoke the given handler for each
      * fragment. Consume the fragments (i.e. update the subscription position)
      * after all fragments are handled.
+     *
+     * <p> Note that the handler is not aware of fragment batches.
      *
      * @return the amount of read fragments
      */
@@ -161,6 +165,8 @@ public class Subscription
      * depending on the return value of {@link FragmentHandler#onFragment(org.agrona.DirectBuffer, int, int, int, boolean)}.
      * If a fragment is not consumed then no following fragments are read.
      *
+     * <p> Note that the handler is not aware of fragment batches.
+     *
      * @return the amount of read fragments
      */
     public int peekAndConsume(FragmentHandler frgHandler, int maxNumOfFragments)
@@ -209,6 +215,8 @@ public class Subscription
      * operation using {@link BlockPeek#markCompleted()} or
      * {@link BlockPeek#markFailed()}.
      *
+     * <p>Note that the block only contains complete fragment batches.
+     *
      * @param isStreamAware
      *            if <code>true</code>, it stops reading fragments when a
      *            fragment has a different stream id than the previous one
@@ -254,14 +262,15 @@ public class Subscription
             long limit,
             final boolean isStreamAware)
     {
-
         final UnsafeBuffer buffer = partition.getDataBuffer();
         final int bufferOffset = partition.getUnderlyingBufferOffset();
         final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
-
         final int firstFragmentOffset = partitionOffset;
-        int blockLength = 0;
+
+        int readBytes = 0;
         int initialStreamId = -1;
+        boolean isReadingBatch = false;
+        int offset = partitionOffset;
 
         int offsetLimit = partitionOffset(limit);
         if (partitionId(limit) > partitionId)
@@ -269,7 +278,6 @@ public class Subscription
             offsetLimit = partition.getPartitionSize();
         }
 
-        // scan buffer for block
         do
         {
             final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
@@ -288,8 +296,9 @@ public class Subscription
                     partitionId += 1;
                     partitionOffset = 0;
                 }
+                offset = partitionOffset;
 
-                if (blockLength == 0)
+                if (readBytes == 0)
                 {
                     position.proposeMaxOrdered(position(partitionId, partitionOffset));
                 }
@@ -301,25 +310,36 @@ public class Subscription
                 if (isStreamAware)
                 {
                     final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
-                    if (blockLength == 0)
+                    if (readBytes == 0)
                     {
                         initialStreamId = streamId;
                     }
-                    else
+                    else if (streamId != initialStreamId)
                     {
-                        if (streamId != initialStreamId)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
 
-                final int alignedFrameLength = alignedLength(length);
+                final byte flags = buffer.getByte(flagsOffset(partitionOffset));
+                if (!isReadingBatch)
+                {
+                    isReadingBatch = flagBatchBegin(flags);
+                }
+                else
+                {
+                    isReadingBatch = !flagBatchEnd(flags);
+                }
 
-                if (alignedFrameLength <= maxBlockSize - blockLength)
+                final int alignedFrameLength = alignedLength(length);
+                if (alignedFrameLength <= maxBlockSize - readBytes)
                 {
                     partitionOffset += alignedFrameLength;
-                    blockLength += alignedFrameLength;
+                    readBytes += alignedFrameLength;
+
+                    if (!isReadingBatch)
+                    {
+                        offset = partitionOffset;
+                    }
                 }
                 else
                 {
@@ -327,22 +347,16 @@ public class Subscription
                 }
             }
         }
-        while (maxBlockSize - blockLength > HEADER_LENGTH && partitionOffset < offsetLimit);
+        while (maxBlockSize - readBytes > HEADER_LENGTH && partitionOffset < offsetLimit);
 
+        // only read complete fragment batches
+        final int blockLength = readBytes + offset - partitionOffset;
         if (blockLength > 0)
         {
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
 
-            availableBlock.setBlock(
-                rawBuffer,
-                position,
-                initialStreamId,
-                absoluteOffset,
-                blockLength,
-                partitionId,
-                partitionOffset);
+            availableBlock.setBlock(rawBuffer, position, initialStreamId, absoluteOffset, blockLength, partitionId, offset);
         }
-
         return blockLength;
     }
 

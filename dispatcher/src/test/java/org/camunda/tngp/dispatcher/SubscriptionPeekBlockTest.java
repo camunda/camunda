@@ -7,6 +7,8 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALI
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
@@ -350,6 +352,92 @@ public class SubscriptionPeekBlockTest
         assertThat(bytesAvailable).isEqualTo(0);
         // no fragment was peeked
         verifyNoMoreInteractions(blockPeekSpy);
+    }
+
+    @Test
+    public void shouldReadFragmentBatch()
+    {
+        final int firstFragOffset = 0;
+        final int secondFragOffset = nextFragmentOffset(firstFragOffset);
+        final int nextFragOffset = nextFragmentOffset(secondFragOffset);
+
+        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(firstFragOffset))).thenReturn(enableFlagBatchBegin((byte) 0));
+
+        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagBatchEnd((byte) 0));
+
+        // when
+        final int bytesAvailable = subscription.peekBlock(logBufferPartition, blockPeekSpy, A_PARTITION_ID, firstFragOffset, 2 * A_FRAGMENT_LENGTH, position(A_PARTITION_ID, nextFragOffset), false);
+
+        blockPeekSpy.markCompleted();
+
+        // then
+        assertThat(bytesAvailable).isEqualTo(2 * A_FRAGMENT_LENGTH);
+        // two fragments were peeked
+        verify(blockPeekSpy).setBlock(rawBuffer, subscriberPositionMock, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset);
+        // and the position was increased by the fragment length of the two fragments
+        verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
+    }
+
+    @Test
+    public void shouldNotReadFragmentBatchPartitial()
+    {
+        final int firstFragOffset = 0;
+        final int secondFragOffset = nextFragmentOffset(firstFragOffset);
+        final int nextFragOffset = nextFragmentOffset(secondFragOffset);
+
+        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(firstFragOffset))).thenReturn(enableFlagBatchBegin((byte) 0));
+
+        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagBatchEnd((byte) 0));
+
+        // when
+        final int bytesAvailable = subscription.peekBlock(logBufferPartition, blockPeekSpy, A_PARTITION_ID, firstFragOffset, A_FRAGMENT_LENGTH, position(A_PARTITION_ID, nextFragOffset), false);
+
+        // then
+        assertThat(bytesAvailable).isEqualTo(0);
+        // no fragment was peeked
+        verifyNoMoreInteractions(blockPeekSpy);
+    }
+
+    @Test
+    public void shouldDiscardPartitialFragmentBatch()
+    {
+        final int firstFragOffset = 0;
+        final int secondFragOffset = nextFragmentOffset(firstFragOffset);
+        final int nextFragOffset = nextFragmentOffset(secondFragOffset);
+
+        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(firstFragOffset))).thenReturn((byte) 0);
+
+        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagBatchBegin((byte) 0));
+
+        // when
+        final int bytesAvailable = subscription.peekBlock(logBufferPartition, blockPeekSpy, A_PARTITION_ID, firstFragOffset, 2 * A_FRAGMENT_LENGTH, position(A_PARTITION_ID, nextFragOffset), false);
+
+        blockPeekSpy.markCompleted();
+
+        // then
+        assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
+        // one fragment was peeked
+        verify(blockPeekSpy).setBlock(rawBuffer, subscriberPositionMock, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset);
+        // and the position was increased by the fragment length of the two fragments
+        verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
     }
 
     private int nextFragmentOffset(final int currentOffset)

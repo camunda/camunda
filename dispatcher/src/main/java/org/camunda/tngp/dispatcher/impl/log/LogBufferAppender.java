@@ -15,6 +15,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffse
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
+import org.camunda.tngp.dispatcher.ClaimedFragmentBatch;
 
 
 public class LogBufferAppender
@@ -22,6 +23,7 @@ public class LogBufferAppender
     public static final int RESULT_PADDING_AT_END_OF_PARTITION = -2;
     public static final int RESULT_END_OF_PARTITION = -1;
 
+    @SuppressWarnings("restriction")
     public int appendFrame(
             final LogBufferPartition partition,
             final int activePartitionId,
@@ -60,6 +62,7 @@ public class LogBufferAppender
         return newTail;
     }
 
+    @SuppressWarnings("restriction")
     public int claim(
             final LogBufferPartition partition,
             final int activePartitionId,
@@ -97,6 +100,38 @@ public class LogBufferAppender
         return newTail;
     }
 
+    public int claim(
+            final LogBufferPartition partition,
+            final int activePartitionId,
+            final ClaimedFragmentBatch batch,
+            final int fragmentCount,
+            final int batchLength)
+    {
+        final int partitionSize = partition.getPartitionSize();
+        // reserve enough space for frame alignment because each batch fragment must start on an aligned position
+        final int framedMessageLength = batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT);
+        final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
+
+        // move the tail of the partition
+        final int frameOffset = partition.getAndAddTail(alignedFrameLength);
+
+        int newTail = frameOffset + alignedFrameLength;
+
+        if (newTail <= (partitionSize - HEADER_LENGTH))
+        {
+            final UnsafeBuffer buffer = partition.getDataBuffer();
+            // all fragment data are written using the claimed batch
+            batch.wrap(buffer, activePartitionId, frameOffset, framedMessageLength);
+        }
+        else
+        {
+            newTail = onEndOfPartition(partition, frameOffset);
+        }
+
+        return newTail;
+    }
+
+    @SuppressWarnings("restriction")
     protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset)
     {
         int newTail = RESULT_END_OF_PARTITION;

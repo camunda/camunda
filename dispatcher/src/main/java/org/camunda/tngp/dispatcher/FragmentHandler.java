@@ -2,7 +2,12 @@ package org.camunda.tngp.dispatcher;
 
 import org.agrona.DirectBuffer;
 
-
+/**
+ * Consume fragments from the buffer.
+ *
+ * <p>
+ * Note that the handler is not aware of fragment batches.
+ */
 @FunctionalInterface
 public interface FragmentHandler
 {

@@ -234,7 +234,55 @@ public class Dispatcher implements AutoCloseable
         }
 
         return newPosition;
+    }
 
+    /**
+     * Claim a batch of fragments on the buffer with the given length. Use
+     * {@link #nextFragment(int, int)} to add a new fragment to the batch. Write the
+     * fragment message using {@link #getBuffer()} and {@link #getFragmentOffset()}
+     * to get the buffer offset of this fragment. Complete the whole batch operation
+     * by calling either {@link #commit()} or {@link #abort()}.
+     * Note that the claim operation can fail
+     * if the publisher limit or the buffer partition size is reached.
+     *
+     * @return the new publisher position if the batch was claimed
+     *         successfully. Otherwise, the return value is negative.
+     */
+    public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength)
+    {
+        final long limit = publisherLimit.getVolatile();
+
+        final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+
+        final int partitionOffset = partition.getTailCounterVolatile();
+        final long position = position(activePartitionId, partitionOffset);
+
+        long newPosition = -1;
+
+        if (position < limit)
+        {
+            final int newOffset;
+
+            if (batchLength < maxFrameLength)
+            {
+                newOffset = logAppender.claim(partition,
+                        activePartitionId,
+                        batch,
+                        fragmentCount,
+                        batchLength);
+            }
+            else
+            {
+                throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
+            }
+
+            newPosition = updatePublisherPosition(activePartitionId, newOffset);
+
+            publisherPosition.proposeMaxOrdered(newPosition);
+        }
+
+        return newPosition;
     }
 
     protected long updatePublisherPosition(final int activePartitionId, int newOffset)
