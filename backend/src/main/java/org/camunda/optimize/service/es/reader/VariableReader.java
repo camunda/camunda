@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
 

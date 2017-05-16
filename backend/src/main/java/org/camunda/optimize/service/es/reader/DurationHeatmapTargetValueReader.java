@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.DurationHeatmapTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.transport.TransportClient;

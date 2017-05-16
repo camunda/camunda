@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.security.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;

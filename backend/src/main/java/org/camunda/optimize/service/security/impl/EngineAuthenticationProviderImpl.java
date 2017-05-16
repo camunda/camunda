@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.security.impl;
 
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
-import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;

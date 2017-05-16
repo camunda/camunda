@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;

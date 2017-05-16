@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.schema;
 
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.importing.EventDto;
 
 public class ExtendedEventDto extends EventDto {
 

@@ -1,11 +1,11 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;

@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.mapping;
 
-import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ConfigurationService;

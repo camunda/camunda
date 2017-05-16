@@ -1,8 +1,8 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 
 import java.util.ArrayList;
 import java.util.Date;

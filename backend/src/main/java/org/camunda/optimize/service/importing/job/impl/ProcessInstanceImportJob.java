@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.importing.job.impl;
 
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.writer.ProcessInstanceWriter;
 import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;

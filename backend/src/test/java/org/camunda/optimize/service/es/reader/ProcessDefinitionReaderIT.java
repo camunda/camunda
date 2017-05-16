@@ -1,10 +1,10 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;

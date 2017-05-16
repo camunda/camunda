@@ -1,23 +1,16 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.es.mapping.VariableFilterHelper;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.InnerHitBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryParseContext;
-import org.elasticsearch.index.query.ScriptQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

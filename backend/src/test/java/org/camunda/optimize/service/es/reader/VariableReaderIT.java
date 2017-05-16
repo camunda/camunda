@@ -1,15 +1,15 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.variable.BooleanVariableDto;
-import org.camunda.optimize.dto.optimize.variable.DateVariableDto;
-import org.camunda.optimize.dto.optimize.variable.DoubleVariableDto;
-import org.camunda.optimize.dto.optimize.variable.IntegerVariableDto;
-import org.camunda.optimize.dto.optimize.variable.LongVariableDto;
-import org.camunda.optimize.dto.optimize.variable.ShortVariableDto;
-import org.camunda.optimize.dto.optimize.variable.StringVariableDto;
-import org.camunda.optimize.dto.optimize.variable.VariableInstanceDto;
+import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.variable.value.BooleanVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.DateVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.DoubleVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.IntegerVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.LongVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.ShortVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.StringVariableDto;
+import org.camunda.optimize.dto.optimize.variable.value.VariableInstanceDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Before;

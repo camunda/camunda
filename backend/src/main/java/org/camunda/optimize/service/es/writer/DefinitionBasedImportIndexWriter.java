@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;

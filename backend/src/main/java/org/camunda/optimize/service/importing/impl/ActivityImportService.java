@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;

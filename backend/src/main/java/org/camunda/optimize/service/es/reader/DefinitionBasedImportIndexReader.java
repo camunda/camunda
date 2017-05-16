@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.DefinitionBasedImportIndexDto;
-import org.camunda.optimize.service.es.schema.type.ImportIndexType;
+import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.transport.TransportClient;

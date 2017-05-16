@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.schema;
 
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;

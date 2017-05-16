@@ -127,8 +127,7 @@ public class EngineIntegrationRule extends TestWatcher {
         claimAndCompleteUserTask(client, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to finish the user task!!");
-      e.printStackTrace();
+      logger.error("Error while trying to finish the user task!!", e);
     } finally {
       closeClient(client);
     }
@@ -177,8 +176,7 @@ public class EngineIntegrationRule extends TestWatcher {
       client.close();
       return procDefs.get(0).getId();
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new OptimizeRuntimeException("Could not fetch the process definition!");
+      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
     } finally {
       closeClient(client);
     }
@@ -194,8 +192,7 @@ public class EngineIntegrationRule extends TestWatcher {
       processInstanceId = startProcessInstance(procDefs.get(0).getId(), client, variables);
       client.close();
     } catch (IOException e) {
-      logger.error("Could not start the given process model!");
-      e.printStackTrace();
+      logger.error("Could not start the given process model!", e);
     } finally {
       closeClient(client);
     }
@@ -206,8 +203,7 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       client.close();
     } catch (IOException e) {
-      logger.error("Could not close clien!");
-      e.printStackTrace();
+      logger.error("Could not close client!", e);
     }
   }
 
@@ -228,8 +224,7 @@ public class EngineIntegrationRule extends TestWatcher {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
     } catch (IOException e) {
-      logger.error("Error during deployment request! Could not deploy the given process model!");
-      e.printStackTrace();
+      logger.error("Error during deployment request! Could not deploy the given process model!", e);
     }
     return deployment;
   }
@@ -276,8 +271,7 @@ public class EngineIntegrationRule extends TestWatcher {
         .addParameter("deploymentId", deployment.getId())
         .build();
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!");
-      e.printStackTrace();
+      logger.error("Could not build uri!", e);
     }
     get.setURI(uri);
     CloseableHttpResponse response = client.execute(get);
@@ -327,8 +321,7 @@ public class EngineIntegrationRule extends TestWatcher {
           .addParameter("unfinished", "true")
           .build();
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!");
-      e.printStackTrace();
+      logger.error("Could not build uri!", e);
     }
     get.setURI(uri);
     int iterations = 0;

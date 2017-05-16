@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 /**

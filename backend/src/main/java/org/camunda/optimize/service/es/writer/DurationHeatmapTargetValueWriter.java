@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.writer;
 
-import org.camunda.optimize.dto.optimize.DurationHeatmapTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.support.WriteRequest;

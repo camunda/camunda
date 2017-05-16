@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.status;
 
-import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.transport.TransportClient;

@@ -1,8 +1,7 @@
 package org.camunda.optimize.service.importing.job.impl;
 
-import org.camunda.optimize.dto.optimize.VariableDto;
+import org.camunda.optimize.dto.optimize.variable.VariableDto;
 import org.camunda.optimize.service.es.writer.VariableWriter;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

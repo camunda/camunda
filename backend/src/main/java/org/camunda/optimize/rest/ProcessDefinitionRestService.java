@@ -1,13 +1,13 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.DurationHeatmapTargetValueDto;
-import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
-import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;

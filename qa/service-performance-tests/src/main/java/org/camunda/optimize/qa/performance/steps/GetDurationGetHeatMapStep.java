@@ -1,7 +1,7 @@
 package org.camunda.optimize.qa.performance.steps;
 
-import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import ru.yandex.qatools.allure.annotations.Step;

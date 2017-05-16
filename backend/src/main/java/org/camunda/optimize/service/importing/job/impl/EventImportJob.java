@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.importing.job.impl;
 
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;

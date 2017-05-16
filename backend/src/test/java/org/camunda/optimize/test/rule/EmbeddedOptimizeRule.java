@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.rule;
 
-import org.camunda.optimize.dto.optimize.CredentialsDto;
-import org.camunda.optimize.dto.optimize.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportResult;

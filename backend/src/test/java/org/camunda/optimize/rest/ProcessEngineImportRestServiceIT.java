@@ -2,7 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;

@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;

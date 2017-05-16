@@ -1,9 +1,8 @@
 package org.camunda.optimize.service.importing.job.impl;
 
-import org.camunda.optimize.dto.optimize.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
-import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
