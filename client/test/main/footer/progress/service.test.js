@@ -4,7 +4,8 @@ import {setupPromiseMocking} from 'testHelpers';
 import {loadProgress, __set__, __ResetDependency__} from 'main/footer/progress/service';
 
 describe('loadProgress', () => {
-  let response;
+  let progressResponse;
+  let connectionResponse;
   let get;
   let dispatchAction;
   let addNotification;
@@ -17,13 +18,17 @@ describe('loadProgress', () => {
   setupPromiseMocking();
 
   beforeEach(() => {
-    response = {
+    progressResponse = {
       json: sinon.stub().returnsThis(),
       progress: 20
     };
 
+    connectionResponse = {
+      json: sinon.stub().returnsThis(),
+      a: 1
+    };
+
     get = sinon.stub();
-    get.returns(Promise.resolve(response));
     __set__('get', get);
 
     dispatchAction = sinon.spy();
@@ -47,8 +52,6 @@ describe('loadProgress', () => {
     createLoadingProgressErrorAction = sinon.stub();
     createLoadingProgressErrorAction.returns(createLoadingProgressErrorAction);
     __set__('createLoadingProgressErrorAction', createLoadingProgressErrorAction);
-
-    loadProgress();
   });
 
   afterEach(() => {
@@ -61,42 +64,58 @@ describe('loadProgress', () => {
     __ResetDependency__('createLoadingProgressErrorAction');
   });
 
-  it('should dispatch loading action', () => {
-    expect(dispatchAction.calledWith(createLoadingProgressAction)).to.eql(true);
-  });
+  describe('on success', () => {
+    beforeEach(() => {
+      get.withArgs('/api/status/import-progress').returns(Promise.resolve(progressResponse));
+      get.withArgs('/api/status/connection').returns(Promise.resolve(connectionResponse));
 
-  it('should fetch GET import-progress API endpoint', () => {
-    expect(get.calledWith('/api/status/import-progress')).to.eql(true);
-  });
+      loadProgress();
+    });
 
-  it('should start interval', () => {
-    expect(interval.called).to.eql(true);
-  });
+    it('should dispatch loading action', () => {
+      expect(dispatchAction.calledWith(createLoadingProgressAction)).to.eql(true);
+    });
 
-  it('should cancel interval when progress is 100', () => {
-    response.progress = 100;
+    it('should fetch GET import-progress API endpoint', () => {
+      expect(get.calledWith('/api/status/import-progress')).to.eql(true);
+    });
 
-    Promise.runAll();
+    it('should fetch GET connection status API endpoint', () => {
+      expect(get.calledWith('/api/status/connection')).to.eql(true);
+    });
 
-    expect(cancelTask.calledOnce).to.eql(true);
-  });
+    it('should start interval', () => {
+      expect(interval.called).to.eql(true);
+    });
 
-  it('should not cancel task when progress is below 100', () => {
-    Promise.runAll();
+    it('should cancel interval when progress is 100', () => {
+      progressResponse.progress = 100;
 
-    expect(cancelTask.called).to.eql(false);
-  });
+      Promise.runAll();
 
-  it('should dispatch progress result action', () => {
-    Promise.runAll();
+      expect(cancelTask.calledOnce).to.eql(true);
+    });
 
-    expect(createLoadingProgressResultAction.calledWith(response.progress)).to.eql(true);
-    expect(dispatchAction.calledWith(createLoadingProgressResultAction)).to.eql(true);
+    it('should not cancel task when progress is below 100', () => {
+      Promise.runAll();
+
+      expect(cancelTask.called).to.eql(false);
+    });
+
+    it('should dispatch progress result action', () => {
+      Promise.runAll();
+
+      expect(createLoadingProgressResultAction.calledWith({
+        ...progressResponse,
+        ...connectionResponse
+      })).to.eql(true);
+      expect(dispatchAction.calledWith(createLoadingProgressResultAction)).to.eql(true);
+    });
   });
 
   describe('on error', () => {
     beforeEach(() => {
-      get.returns(Promise.reject(response));
+      get.returns(Promise.reject(progressResponse));
       loadProgress();
       Promise.runAll();
     });

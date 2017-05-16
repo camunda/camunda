@@ -14,14 +14,20 @@ export function loadProgress() {
   progressTask();
 
   function progressTask() {
-    get('/api/status/import-progress')
-      .then(response => response.json())
-      .then(result => {
-        if (+result.progress === 100) {
+    Promise
+      .all([
+        get('/api/status/import-progress').then(response => response.json()),
+        get('/api/status/connection').then(response => response.json())
+      ])
+      .then(([importStatus, connectionStatus]) => {
+        if (+importStatus.progress === 100) {
           cancelTask();
         }
 
-        dispatchAction(createLoadingProgressResultAction(result.progress));
+        dispatchAction(createLoadingProgressResultAction({
+          ...importStatus,
+          ...connectionStatus
+        }));
       })
       .catch(err => {
         cancelTask();

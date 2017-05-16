@@ -6,3 +6,5 @@ export {Chart} from './Chart';
 export {LoadingIndicator} from './LoadingIndicator';
 export {Select, Option} from './Select';
 export {Loader} from './Loader';
+export {Icon} from './Icon';
+export {Tooltip} from './Tooltip';
