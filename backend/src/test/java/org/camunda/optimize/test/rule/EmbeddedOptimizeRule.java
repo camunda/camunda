@@ -59,11 +59,15 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getJobExecutor().startExecutingImportJobs();
     for(ImportScheduleJob job : getScheduleFactory().createPagedJobs()) {
       ImportResult result = job.execute();
-      for (ImportScheduleJob idJob : getScheduleFactory().createIndexedScheduleJobs(result.getIdsToFetch())) {
-        idJob.execute();
-      }
+      executeIdJobs(result);
     }
     getJobExecutor().stopExecutingImportJobs();
+  }
+
+  private void executeIdJobs(ImportResult result) throws OptimizeException {
+    for (ImportScheduleJob idJob : getScheduleFactory().createIndexedScheduleJobs(result.getIdsToFetch())) {
+      executeIdJobs(idJob.execute());
+    }
   }
 
   private ScheduleJobFactory getScheduleFactory() {
