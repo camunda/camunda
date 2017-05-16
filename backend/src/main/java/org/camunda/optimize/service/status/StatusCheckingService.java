@@ -36,10 +36,10 @@ public class StatusCheckingService {
     boolean isConnected = false;
     try {
       String endPoint = configurationService.getEngineRestApiEndpoint();
-      String endPointWithoutRestPath = endPoint.substring(0, endPoint.lastIndexOf("/"));
+      String engineEndpoint = endPoint + "/engine";
       Response response = engineClient
-        .target(endPointWithoutRestPath)
-        .request(MediaType.TEXT_PLAIN_TYPE)
+        .target(engineEndpoint)
+        .request(MediaType.APPLICATION_JSON)
         .get();
       isConnected = response.getStatus() == 200;
     } catch (Exception ignored) {
