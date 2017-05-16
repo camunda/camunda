@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -89,19 +90,26 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     return totalCount;
   }
 
-  public ProcessDefinitionXmlEngineDto fetchProcessDefinitionXml(String processDefinitionId) {
-    ProcessDefinitionXmlEngineDto xml;
-    try {
-      xml = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
-        .request(MediaType.APPLICATION_JSON)
-        .get(ProcessDefinitionXmlEngineDto.class);
-    } catch (RuntimeException e) {
-      logError("Could not fetch process definition xmls from engine. Please check the connection!", e);
-      xml = null;
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXml(int indexOfFirstResult,
+                                                                  int maxPageSize,
+                                                                  String processDefinitionId) {
+    List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId);
+    List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>();
+    for (ProcessDefinitionEngineDto procDef : procDefs) {
+      ProcessDefinitionXmlEngineDto xml;
+      try {
+        xml = client
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+          .request(MediaType.APPLICATION_JSON)
+          .get(ProcessDefinitionXmlEngineDto.class);
+        xmls.add(xml);
+      } catch (RuntimeException e) {
+        logError("Could not fetch process definition xmls from engine. Please check the connection!", e);
+        xml = null;
+      }
     }
-    return xml;
+    return xmls;
   }
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,

@@ -149,7 +149,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
 
   @Override
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls() {
-    return Collections.singletonList(engineEntityFetcher.fetchProcessDefinitionXml(currentProcessDefinition));
+    return engineEntityFetcher.fetchProcessDefinitionXml(importIndex, maxImportSize, currentProcessDefinition);
   }
 
   @Override
