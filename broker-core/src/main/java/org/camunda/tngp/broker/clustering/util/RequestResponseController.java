@@ -47,6 +47,7 @@ public class RequestResponseController
     {
     };
 
+    private final ClosingChannelState closingChannelState = new ClosingChannelState();
     private final ClosingState closingState = new ClosingState();
     private final OpenConnectionState openConnectionState = new OpenConnectionState();
     private final OpenChannelState openChannelState = new OpenChannelState();
@@ -81,26 +82,29 @@ public class RequestResponseController
                     .from(closedState).take(TRANSITION_CLOSE).to(closedState)
 
                     .from(openConnectionState).take(TRANSITION_DEFAULT).to(openChannelState)
-                    .from(openConnectionState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(openConnectionState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(openChannelState).take(TRANSITION_DEFAULT).to(openRequestState)
                     .from(openChannelState).take(TRANSITION_FAILED).to(failedState)
-                    .from(openChannelState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(openChannelState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(openRequestState).take(TRANSITION_DEFAULT).to(sendRequestState)
                     .from(openRequestState).take(TRANSITION_FAILED).to(failedState)
-                    .from(openRequestState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(openRequestState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(sendRequestState).take(TRANSITION_DEFAULT).to(pollResponseState)
                     .from(sendRequestState).take(TRANSITION_FAILED).to(failedState)
-                    .from(sendRequestState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(sendRequestState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(pollResponseState).take(TRANSITION_DEFAULT).to(responseAvailableState)
                     .from(pollResponseState).take(TRANSITION_FAILED).to(failedState)
-                    .from(pollResponseState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(pollResponseState).take(TRANSITION_CLOSE).to(closingChannelState)
 
-                    .from(responseAvailableState).take(TRANSITION_CLOSE).to(closingState)
-                    .from(failedState).take(TRANSITION_CLOSE).to(closingState)
+                    .from(responseAvailableState).take(TRANSITION_CLOSE).to(closingChannelState)
+                    .from(failedState).take(TRANSITION_CLOSE).to(closingChannelState)
+
+                    .from(closingChannelState).take(TRANSITION_DEFAULT).to(closingState)
+                    .from(closingChannelState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
                     .from(closingState).take(TRANSITION_CLOSE).to(closingState)
@@ -359,6 +363,35 @@ public class RequestResponseController
         }
     }
 
+    static class ClosingChannelState implements State<RequestResponseContext>
+    {
+        @Override
+        public int doWork(RequestResponseContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            if (channelFuture != null)
+            {
+                if (channelFuture.isFailed() || channelFuture.poll() != null)
+                {
+                    channelFuture.release();
+                    context.channelFuture = null;
+
+                    workcount += 1;
+                    context.take(TRANSITION_DEFAULT);
+                }
+            }
+            else
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
     static class ClosingState implements TransitionState<RequestResponseContext>
     {
         @Override
@@ -376,18 +409,11 @@ public class RequestResponseController
                 connection.close();
             }
 
-            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
-            if (channelFuture != null)
-            {
-                channelFuture.release();
-            }
-
             final ClientChannel endpointChannel = context.channel;
             context.clientChannelManager.returnChannel(endpointChannel);
 
             context.connection = null;
             context.channel = null;
-            context.channelFuture = null;
             context.request = null;
             context.requestWriter = null;
             context.receiver.reset();

@@ -43,7 +43,8 @@ public class SingleMessageController
 
     private final OpenChannelState openChannelState = new OpenChannelState();
     private final SendMessageState sendMessageState = new SendMessageState();
-    private final CloseChannelState closeChannelState = new CloseChannelState();
+    private final ClosingChannelState closingChannelState = new ClosingChannelState();
+    private final ClosingState closingState = new ClosingState();
 
     private SingleMessageContext singleMessageContext;
     private final StateMachineAgent<SingleMessageContext> singleMessageStateMachine;
@@ -63,17 +64,20 @@ public class SingleMessageController
 
                     .from(openChannelState).take(TRANSITION_DEFAULT).to(sendMessageState)
                     .from(openChannelState).take(TRANSITION_FAILED).to(failedState)
-                    .from(openChannelState).take(TRANSITION_CLOSE).to(closeChannelState)
+                    .from(openChannelState).take(TRANSITION_CLOSE).to(closingChannelState)
 
                     .from(sendMessageState).take(TRANSITION_DEFAULT).to(sentState)
                     .from(sendMessageState).take(TRANSITION_FAILED).to(failedState)
-                    .from(sendMessageState).take(TRANSITION_CLOSE).to(closeChannelState)
+                    .from(sendMessageState).take(TRANSITION_CLOSE).to(closingChannelState)
 
-                    .from(sentState).take(TRANSITION_CLOSE).to(closeChannelState)
-                    .from(failedState).take(TRANSITION_CLOSE).to(closeChannelState)
+                    .from(sentState).take(TRANSITION_CLOSE).to(closingChannelState)
+                    .from(failedState).take(TRANSITION_CLOSE).to(closingChannelState)
 
-                    .from(closeChannelState).take(TRANSITION_DEFAULT).to(closedState)
-                    .from(closeChannelState).take(TRANSITION_CLOSE).to(closeChannelState)
+                    .from(closingChannelState).take(TRANSITION_DEFAULT).to(closingState)
+                    .from(closingChannelState).take(TRANSITION_CLOSE).to(closingChannelState)
+
+                    .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+                    .from(closingState).take(TRANSITION_CLOSE).to(closingState)
 
                     .build());
     }
@@ -221,7 +225,36 @@ public class SingleMessageController
         }
     }
 
-    static class CloseChannelState implements TransitionState<SingleMessageContext>
+    static class ClosingChannelState implements State<SingleMessageContext>
+    {
+        @Override
+        public int doWork(SingleMessageContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            if (channelFuture != null)
+            {
+                if (channelFuture.isFailed() || channelFuture.poll() != null)
+                {
+                    channelFuture.release();
+                    context.channelFuture = null;
+
+                    workcount += 1;
+                    context.take(TRANSITION_DEFAULT);
+                }
+            }
+            else
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
+    static class ClosingState implements TransitionState<SingleMessageContext>
     {
         @Override
         public void work(SingleMessageContext context) throws Exception
@@ -230,13 +263,6 @@ public class SingleMessageController
             final ClientChannel endpointChannel = context.channel;
             clientChannelManager.returnChannel(endpointChannel);
 
-            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
-            if (channelFuture != null)
-            {
-                channelFuture.release();
-            }
-
-            context.channelFuture = null;
             context.channel = null;
             context.requestWriter = null;
             context.receiver.reset();
