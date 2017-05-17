@@ -4,7 +4,7 @@ import {addNotification} from 'notifications';
 import {interval} from 'utils';
 import {createLoadingProgressAction, createLoadingProgressResultAction, createLoadingProgressErrorAction} from './reducer';
 
-const REFRESH_TIME = 5000;
+const REFRESH_TIME = 60000;
 
 export function loadProgress() {
   dispatchAction(createLoadingProgressAction());
