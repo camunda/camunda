@@ -4,7 +4,7 @@ import {createLoadingDiagramAction, createLoadingDiagramResultAction, createLoad
         createLoadingHeatmapAction, createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,
         createLoadingTargetValueAction, createLoadingTargetValueResultAction, createLoadingTargetValueErrorAction
 } from './diagram';
-import {getFilterQuery} from 'utils';
+import {getFilterQuery} from './query';
 import {getLastRoute} from 'router';
 import {addNotification} from 'notifications';
 

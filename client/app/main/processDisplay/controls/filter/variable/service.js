@@ -1,8 +1,7 @@
 import {dispatchAction} from 'view-utils';
 import {get} from 'http';
 import {createLoadingVariablesAction, createLoadingVariablesResultAction, createLoadingVariablesErrorAction,
-        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction
-} from './reducer';
+        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction} from './reducer';
 import {createCreateVariableFilterAction} from './routeReducer';
 import {addNotification} from 'notifications';
 import {dispatch} from '../store';
@@ -11,6 +10,7 @@ export function loadVariables(definition) {
   dispatchAction(createLoadingVariablesAction());
   get(`/api/process-definition/${definition}/variables`)
     .then(response => response.json())
+    .then(result => result.sort((a, b) => a.name < b.name ? -1 : 1))
     .then(result => {
       dispatchAction(createLoadingVariablesResultAction(result));
     })

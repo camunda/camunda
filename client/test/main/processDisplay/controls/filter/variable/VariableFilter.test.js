@@ -12,15 +12,17 @@ describe('<VariableFilter>', () => {
   let operatorLabels;
 
   const name = 'A';
+  const type = 'String';
   const operator = '<';
   const value = 41;
 
   beforeEach(() => {
-    state = {filter: {
+    state = [
       name,
+      type,
       operator,
-      values: [value]
-    }};
+      [value]
+    ];
 
     callback = sinon.spy();
 
@@ -29,7 +31,7 @@ describe('<VariableFilter>', () => {
     };
     __set__('operatorLabels', operatorLabels);
 
-    ({node, update} = mountTemplate(<VariableFilter selector="filter" onDelete={callback}/>));
+    ({node, update} = mountTemplate(<VariableFilter onDelete={callback}/>));
 
     update(state);
   });

@@ -13,7 +13,7 @@ describe('Variable Filter service', () => {
   const LOADING_RESULT_ACTION = 'LOADING_RESULT_ACTION';
   const LOADING_ERROR_ACTION = 'LOADING_ERROR_ACTION';
 
-  const VARIABLES_DATA = 'some variables data';
+  let variablesData;
 
   let dispatch;
   let dispatchAction;
@@ -30,6 +30,8 @@ describe('Variable Filter service', () => {
   setupPromiseMocking();
 
   beforeEach(() => {
+    variablesData = [{name: 'b'}, {name: 'a'}];
+
     dispatch = sinon.spy();
     __set__('dispatch', dispatch);
 
@@ -38,7 +40,7 @@ describe('Variable Filter service', () => {
 
     get = sinon.stub().returns(Promise.resolve({
       json: sinon.stub().returns(
-        Promise.resolve(VARIABLES_DATA)
+        Promise.resolve(variablesData)
       )
     }));
     __set__('get', get);
@@ -104,8 +106,17 @@ describe('Variable Filter service', () => {
 
       Promise.runAll();
 
-      expect(createLoadingVariablesResultAction.calledWith(VARIABLES_DATA)).to.eql(true);
+      expect(createLoadingVariablesResultAction.calledWith(variablesData)).to.eql(true);
       expect(dispatchAction.calledWith(LOADING_RESULT_ACTION)).to.eql(true);
+    });
+
+    it('should sort the variables by name', () => {
+      loadVariables(definition);
+
+      Promise.runAll();
+
+      expect(variablesData[0].name).to.eql('a');
+      expect(variablesData[1].name).to.eql('b');
     });
 
     it('should show a notification in case anything goes wrong', () => {

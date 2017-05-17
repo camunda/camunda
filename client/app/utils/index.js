@@ -10,7 +10,6 @@ export {onNextTick} from './onNextTick';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
 export {formatTime, createDelayedTimePrecisionElement} from './formatTime';
 export {formatNumber} from './formatNumber';
-export {getFilterQuery} from './query';
 export {runOnce} from './runOnce';
 export {createQueue} from './createQueue';
 export {createChangeObserver} from './createChangeObserver';

@@ -9,7 +9,6 @@ export function OperatorButton({operator, implicitValue}) {
     <Scope selector={getAggregatedLabel}>
       <Text property="label" />
     </Scope>
-    {getAggregatedLabel}
   </button>;
 
   function getAggregatedLabel() {

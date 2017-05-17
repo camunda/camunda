@@ -1,4 +1,5 @@
 import {jsx, withSelector, Scope, Text, OnEvent} from 'view-utils';
+import {parseVariableFilter} from 'main/processDisplay/query';
 import operatorLabels from './labels';
 
 export const VariableFilter = withSelector(({onDelete}) => {
@@ -8,21 +9,23 @@ export const VariableFilter = withSelector(({onDelete}) => {
       ×
     </button>
     <span>
-      <span className="variable-name">
-        <Text property="name" />
-      </span>
-      &nbsp;
-      <span className="variable-operator">
-        <Scope selector={getHumanReadableLabelForOperator}>
-          <Text property="operator" />
-        </Scope>
-      </span>
-      &nbsp;
-      <span className="variable-value badge">
-        <Scope selector={getFirstValue}>
-          <Text property="value" />
-        </Scope>
-      </span>
+      <Scope selector={parseVariableFilter}>
+        <span className="variable-name">
+          <Text property="name" />
+        </span>
+        &nbsp;
+        <span className="variable-operator">
+          <Scope selector={getHumanReadableLabelForOperator}>
+            <Text property="operator" />
+          </Scope>
+        </span>
+        &nbsp;
+        <span className="variable-value badge">
+          <Scope selector={getFirstValue}>
+            <Text property="value" />
+          </Scope>
+        </span>
+      </Scope>
     </span>
   </span>;
 

@@ -1,7 +1,7 @@
 import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction, createSetHeightAction} from './reducer';
 import {dispatchAction} from 'view-utils';
 import {post} from 'http';
-import {getFilterQuery} from 'utils';
+import {getFilterQuery} from '../query';
 import {addNotification} from 'notifications';
 import {getDefinitionId} from '../service';
 import {getFilter} from 'main/processDisplay/controls/filter';

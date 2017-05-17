@@ -23,6 +23,15 @@ export function getFilterQuery(filter) {
 
     variables: filter
       .filter(entry => entry.type === 'variable')
-      .map(entry => entry.data)
+      .map(entry => parseVariableFilter(entry.data))
+  };
+}
+
+export function parseVariableFilter(data) {
+  return {
+    name: data[0],
+    type: data[1],
+    operator: data[2],
+    values: data[3]
   };
 }

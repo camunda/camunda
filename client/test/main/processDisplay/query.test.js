@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {getFilterQuery} from 'utils/query';
+import {getFilterQuery} from 'main/processDisplay/query';
 
 describe('getFilterQuery', () => {
   it('should convert a date filter to query entries', () => {
@@ -23,18 +23,15 @@ describe('getFilterQuery', () => {
     const response = getFilterQuery([
       {
         type: 'variable',
-        data: {
-          name: 'a',
-          operator: '=',
-          value: 123
-        }
+        data: ['a', 'String', '=', [123]]
       }
     ]);
 
     expect(response.variables).to.exist;
     expect(response.variables).to.have.a.lengthOf(1);
     expect(response.variables[0].name).to.eql('a');
+    expect(response.variables[0].type).to.eql('String');
     expect(response.variables[0].operator).to.eql('=');
-    expect(response.variables[0].value).to.eql(123);
+    expect(response.variables[0].values[0]).to.eql(123);
   });
 });
