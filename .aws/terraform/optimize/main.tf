@@ -89,6 +89,11 @@ EOF
 resource "aws_iam_instance_profile" "optimize_s3_iam_instance_profile" {
     name = "optimize_s3_iam_instance_profile"
     roles = ["${aws_iam_role.optimize_s3_role.name}"]
+
+    # workaround for https://github.com/hashicorp/terraform/issues/1885
+    provisioner "local-exec" {
+      command = "sleep 120"
+    }
 }
 
 resource "aws_iam_role_policy" "optimize_s3_role_policy" {
