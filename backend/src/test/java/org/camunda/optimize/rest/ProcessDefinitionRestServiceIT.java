@@ -178,6 +178,30 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
+  public void getProcessDefinitionXmlWithNonsenseIdReturns404Code() throws IOException {
+    //given
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
+    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+    expectedXml.setBpmn20Xml("ProcessModelXml");
+    expectedXml.setId(ID);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target("process-definition/nonsenseId/xml")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(404));
+    String message =
+        response.readEntity(String.class);
+    assertThat(message.contains("Could not find xml for process definition with id"), is(true));
+  }
+
+  @Test
   public void getFrequencyHeatMapWithoutAuthentication() throws IOException {
     // when
     Response response =

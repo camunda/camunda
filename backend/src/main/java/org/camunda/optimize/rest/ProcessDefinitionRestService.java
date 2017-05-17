@@ -95,13 +95,24 @@ public class ProcessDefinitionRestService {
    */
   @GET
   @Path("/{id}/xml")
-  public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
-    return processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+  public Response getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
+    Response response;
+    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+    if (xml == null) {
+      String notFoundErrorMessage = "Could not find xml for process definition with id :" + processDefinitionId;
+      response = Response.status(404)
+        .entity(notFoundErrorMessage)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .build();
+    } else {
+      response = Response.ok(xml, MediaType.APPLICATION_JSON).build();
+    }
+    return response;
   }
 
   /**
-   * Get the process definition xml to a given process definition id.
-   * @param ids List of process Definition ids for which xml has to be returned
+   * Get the process definition xmls to the given process definition ids.
+   * @param ids List of process Definition ids for which the xmls have to be returned
    * @return The process definition xml requested.
    */
   @POST
