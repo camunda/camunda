@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionException;
 
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.impl.ClientChannelPoolImpl;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -50,16 +50,16 @@ public class ClientChannelPoolingTest
     public void shouldServeClientChannel()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
         // when
-        final ClientChannel channel = pool.requestChannel(addr);
+        final Channel channel = channelManager.requestChannel(addr);
 
         // then
-        assertThat(channel.isOpen()).isTrue();
+        assertThat(channel.isReady()).isTrue();
         assertThat(channel.getRemoteAddress()).isEqualTo(addr);
     }
 
@@ -67,20 +67,21 @@ public class ClientChannelPoolingTest
     public void shouldServeClientChannelAsync()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
         // when
-        final PooledFuture<ClientChannel> channelFuture = pool.requestChannelAsync(addr);
+        final PooledFuture<Channel> channelFuture = channelManager.requestChannelAsync(addr);
 
         // then
-        final ClientChannel channel = TestUtil
+        final Channel channel = TestUtil
                 .doRepeatedly(() -> channelFuture.poll())
                 .until(c -> c != null);
         assertThat(channelFuture.isFailed()).isFalse();
-        assertThat(channel.isOpen()).isTrue();
+
+        assertThat(channel.isReady()).isTrue();
         assertThat(channel.getRemoteAddress()).isEqualTo(addr);
     }
 
@@ -88,101 +89,102 @@ public class ClientChannelPoolingTest
     public void shouldReuseClientChannelsToSameRemoteAddress()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
-        final ClientChannel channel1 = pool.requestChannel(addr);
+        final Channel stream1 = channelManager.requestChannel(addr);
 
         // when
-        final ClientChannel channel2 = pool.requestChannel(addr);
+        final Channel stream2 = channelManager.requestChannel(addr);
 
         // then
-        assertThat(channel2).isSameAs(channel1);
+        assertThat(stream1).isSameAs(stream2);
     }
 
     @Test
-    public void shouldNotReuseClientChannelsToDifferentRemoteAddress()
+    public void shouldNotReuseStreamsToDifferentRemoteAddress()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr1 = new SocketAddress("localhost", 51115);
         final SocketAddress addr2 = new SocketAddress("localhost", 51116);
         serverTransport.createServerSocketBinding(addr1).bind();
         serverTransport.createServerSocketBinding(addr2).bind();
 
-        final ClientChannel channel1 = pool.requestChannel(addr1);
+        final Channel stream1 = channelManager.requestChannel(addr1);
 
         // when
-        final ClientChannel channel2 = pool.requestChannel(addr2);
+        final Channel stream2 = channelManager.requestChannel(addr2);
 
         // then
-        assertThat(channel2).isNotSameAs(channel1);
-        assertThat(channel2.getId()).isNotEqualTo(channel1.getId());
+        assertThat(stream2).isNotSameAs(stream1);
+        assertThat(stream2.getStreamId()).isNotEqualTo(stream1.getStreamId());
     }
 
     @Test
     public void shouldOpenNewChannelAfterChannelClose()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
-        final ClientChannel channel1 = pool.requestChannel(addr);
-        channel1.close();
+        final Channel channel1 = channelManager.requestChannel(addr);
+        ((ChannelImpl) channel1).initiateClose();
+        TestUtil.waitUntil(() -> channel1.isClosed());
 
         // when
-        final ClientChannel channel2 = pool.requestChannel(addr);
+        final Channel channel2 = channelManager.requestChannel(addr);
 
         // then
         assertThat(channel2).isNotSameAs(channel1);
-        assertThat(channel2.getId()).isNotEqualTo(channel1.getId());
+        assertThat(channel2.getStreamId()).isNotEqualTo(channel1.getStreamId());
     }
 
     @Test
     public void shouldCloseChannelsOnPoolClose()
     {
         // given
-        final ClientChannelPoolImpl pool = (ClientChannelPoolImpl) clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
-        final ClientChannel channel = pool.requestChannel(addr);
+        final Channel channel = channelManager.requestChannel(addr);
 
         // when
-        pool.closeAsync().join();
+        channelManager.closeAllChannelsAsync().join();
 
         // then
         assertThat(channel.isClosed()).isTrue();
     }
 
     @Test
-    public void shouldEvictUnusedChannelWhenCapacityIsReached()
+    public void shouldEvictUnusedStreamWhenCapacityIsReached()
     {
         // given
         ClockUtil.setCurrentTime(new Date().getTime());
 
         final int initialCapacity = 2;
 
-        final ClientChannelPool pool = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
                 .initialCapacity(initialCapacity)
                 .build();
 
         bindServerSocketsInPortRange(51115, initialCapacity + 1);
-        final ClientChannel[] channels = openChannelsInPortRange(pool, 51115, initialCapacity);
+        final Channel[] channels = openStreamsInPortRange(channelManager, 51115, initialCapacity);
 
-        pool.returnChannel(channels[1]);
+        channelManager.returnChannel(channels[1]);
         ClockUtil.addTime(Duration.ofHours(1));
-        pool.returnChannel(channels[0]);
+        channelManager.returnChannel(channels[0]);
 
         // when
-        final ClientChannel newChannel = pool.requestChannel(new SocketAddress("localhost", 51115 + initialCapacity));
+        final Channel newChannel = channelManager.requestChannel(new SocketAddress("localhost", 51115 + initialCapacity));
 
         // then
         // there is no object reuse
@@ -191,7 +193,7 @@ public class ClientChannelPoolingTest
         // the least recently returned channel has been closed asynchronously
         TestUtil.waitUntil(() -> channels[1].isClosed());
         assertThat(channels[1].isClosed()).isTrue();
-        assertThat(channels[0].isOpen()).isTrue();
+        assertThat(channels[0].isReady()).isTrue();
     }
 
     @Test
@@ -199,7 +201,7 @@ public class ClientChannelPoolingTest
     {
         final int initialCapacity = 2;
 
-        final ClientChannelPool pool = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
                 .initialCapacity(initialCapacity)
                 .build();
@@ -207,25 +209,25 @@ public class ClientChannelPoolingTest
         bindServerSocketsInPortRange(51115, initialCapacity + 1);
 
         // when
-        final ClientChannel[] channels = openChannelsInPortRange(pool, 51115, initialCapacity + 1);
+        final Channel[] channels = openStreamsInPortRange(channelManager, 51115, initialCapacity + 1);
 
         // then all channels are open
         assertThat(channels).hasSize(initialCapacity + 1);
-        for (ClientChannel channel : channels)
+        for (Channel channel : channels)
         {
-            assertThat(channel.isOpen()).isTrue();
+            assertThat(channel.isReady()).isTrue();
         }
     }
 
     @Test
-    public void shouldFailToServeAsyncWhenChannelConenctFails()
+    public void shouldFailToServeAsyncWhenChannelConnectFails()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         // when
-        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
 
         // then
         TestUtil.waitUntil(() -> future.isFailed());
@@ -234,31 +236,30 @@ public class ClientChannelPoolingTest
         assertThat(future.poll()).isNull();
     }
 
-
     @Test
     public void shouldFailToServeWhenChannelConenctFails()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         // then
         exception.expect(CompletionException.class);
 
         // when
-        pool.requestChannel(addr);
+        channelManager.requestChannel(addr);
     }
 
     @Test
     public void shouldAllowNullValuesOnReturnChannel()
     {
         // given
-        final ClientChannelPool pool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
         // when
         try
         {
-            pool.returnChannel(null);
+            channelManager.returnChannel(null);
             // then there is no exception
         }
         catch (Exception e)
@@ -271,12 +272,12 @@ public class ClientChannelPoolingTest
     public void shouldResetFailedConnectFuturesOnRelease()
     {
         // given
-        final ClientChannelPool pool = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
                 .build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
-        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
 
         TestUtil.waitUntil(() -> future.isFailed());
 
@@ -292,14 +293,14 @@ public class ClientChannelPoolingTest
     public void shouldResetSuccessfulConnectFuturesOnRelease()
     {
         // given
-        final ClientChannelPool pool = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
                 .build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
-        final PooledFuture<ClientChannel> future = pool.requestChannelAsync(addr);
+        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
         TestUtil.waitUntil(() -> future.poll() != null);
 
         // when
@@ -313,15 +314,15 @@ public class ClientChannelPoolingTest
     @Test
     public void shouldFailConcurrentRequestsForSameRemoteAddress()
     {
-        final ClientChannelPool pool = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
                 .build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         // when
-        final PooledFuture<ClientChannel> future1 = pool.requestChannelAsync(addr);
-        final PooledFuture<ClientChannel> future2 = pool.requestChannelAsync(addr);
+        final PooledFuture<Channel> future1 = channelManager.requestChannelAsync(addr);
+        final PooledFuture<Channel> future2 = channelManager.requestChannelAsync(addr);
         TestUtil.waitUntil(() -> future1.isFailed() && future2.isFailed());
 
         // then
@@ -329,9 +330,9 @@ public class ClientChannelPoolingTest
         assertThat(future2.isFailed()).isTrue();
     }
 
-    protected ClientChannel[] openChannelsInPortRange(ClientChannelPool pool, int firstPort, int range)
+    protected Channel[] openStreamsInPortRange(ChannelManager pool, int firstPort, int range)
     {
-        final ClientChannel[] channels = new ClientChannel[range];
+        final Channel[] channels = new Channel[range];
         for (int i = 0; i < range; i++)
         {
             channels[i] = pool.requestChannel(new SocketAddress("localhost", firstPort + i));

@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.TransportChannel;
 
 /**
  * Manages a number of pooled connections to be reused by different threads
@@ -67,7 +67,7 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
         return connection;
     }
 
-    public void handleChannelClose(TransportChannel transportChannel)
+    public void handleChannelClose(Channel transportChannel)
     {
         for (TransportConnectionImpl c : connections)
         {

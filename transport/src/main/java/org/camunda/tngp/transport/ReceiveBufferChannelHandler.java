@@ -1,9 +1,8 @@
 package org.camunda.tngp.transport;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-
-import org.agrona.DirectBuffer;
 
 /**
  * A simple implementation of {@link TransportChannelHandler} discarding errors and
@@ -21,31 +20,31 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
         // ignore
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
         // ignore
     }
 
     @Override
-    public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         System.err.println("send error on channel " + transportChannel);
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         long offerPosition = -1;
 
         do
         {
-            offerPosition = receiveBuffer.offer(buffer, offset, length, transportChannel.getId());
+            offerPosition = receiveBuffer.offer(buffer, offset, length, transportChannel.getStreamId());
         }
         while (offerPosition == -2);
 
@@ -53,7 +52,7 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         // drop
         return true;

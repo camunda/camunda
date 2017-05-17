@@ -40,7 +40,7 @@ public class TransportChannelListenerTest
     }
 
     @Test
-    public void shouldInvokeRegisteredListener() throws InterruptedException
+    public void shouldInvokeRegisteredListenerOnChannelClose() throws InterruptedException
     {
         // given
         final LoggingTransportChannelListener clientListener = new LoggingTransportChannelListener();
@@ -52,13 +52,14 @@ public class TransportChannelListenerTest
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         serverTransport.createServerSocketBinding(addr).bind();
-        final ClientChannel channel = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
-                .build()
-                .requestChannel(addr);
+                .build();
+
+        final Channel channel = channelManager.requestChannel(addr);
 
         // when
-        channel.close();
+        channelManager.closeAllChannelsAsync().join();
 
         // then
         assertThat(clientListener.closedChannels).hasSize(1);
@@ -83,17 +84,17 @@ public class TransportChannelListenerTest
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         serverTransport.createServerSocketBinding(addr).bind();
-        final ClientChannel channel = clientTransport
+        final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
-                .build()
-                .requestChannel(addr);
+                .build();
+        channelManager.requestChannel(addr);
 
         // when
         clientTransport.removeChannelListener(clientListener);
         serverTransport.removeChannelListener(serverListener);
 
         // then
-        channel.close();
+        channelManager.closeAllChannelsAsync().join();
 
         assertThat(clientListener.closedChannels).hasSize(0);
         assertThat(serverListener.closedChannels).hasSize(0);
@@ -102,10 +103,10 @@ public class TransportChannelListenerTest
     public static class LoggingTransportChannelListener implements TransportChannelListener
     {
 
-        protected List<TransportChannel> closedChannels = new ArrayList<>();
+        protected List<Channel> closedChannels = new ArrayList<>();
 
         @Override
-        public void onChannelClosed(TransportChannel channel)
+        public void onChannelClosed(Channel channel)
         {
             closedChannels.add(channel);
         }

@@ -55,10 +55,10 @@ public class ClientChannelKeepAliveTest
             .transportChannelHandler(controlFrameHandler)
             .bind();
 
-        final ClientChannelPool channelPool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
-        final ClientChannel channel = channelPool.requestChannel(addr);
-        TestUtil.waitUntil(() -> channel.isOpen());
+        final Channel channel = channelManager.requestChannel(addr);
+        TestUtil.waitUntil(() -> channel.isReady());
 
         // when
         ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
@@ -81,10 +81,10 @@ public class ClientChannelKeepAliveTest
             .transportChannelHandler(controlFrameHandler)
             .bind();
 
-        final ClientChannelPool channelPool = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
 
-        final ClientChannel channel = channelPool.requestChannel(addr);
-        TestUtil.waitUntil(() -> channel.isOpen());
+        final Channel channel = channelManager.requestChannel(addr);
+        TestUtil.waitUntil(() -> channel.isReady());
 
         ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
         TestUtil.waitUntil(() -> controlFrameHandler.numReceivedKeepAliveFrames == 1);
@@ -102,34 +102,34 @@ public class ClientChannelKeepAliveTest
         protected int numReceivedKeepAliveFrames = 0;
 
         @Override
-        public void onChannelKeepAlive(TransportChannel channel)
+        public void onChannelKeepAlive(Channel channel)
         {
             numReceivedKeepAliveFrames++;
         }
 
         @Override
-        public void onChannelOpened(TransportChannel transportChannel)
+        public void onChannelOpened(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelClosed(TransportChannel transportChannel)
+        public void onChannelClosed(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
         }
 
         @Override
-        public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             return true;
         }
 
         @Override
-        public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             return true;
         }

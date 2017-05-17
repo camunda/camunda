@@ -22,13 +22,15 @@ public class ProtocolRequestResponseTest
                 .bind();
 
              final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
-             final ClientChannel channel = clientTransport
-                     .createClientChannelPool()
-                     .requestResponseProtocol(connectionPool)
-                     .build()
-                     .requestChannel(addr);
              final TransportConnection connection = connectionPool.openConnection())
         {
+
+            final Channel channel = clientTransport
+                    .createClientChannelPool()
+                    .requestResponseProtocol(connectionPool)
+                    .build()
+                    .requestChannel(addr);
+
             final RequestQueue q = new RequestQueue(32);
 
             int completedRequests = 0;
@@ -37,7 +39,7 @@ public class ProtocolRequestResponseTest
             {
                 if (q.hasCapacity())
                 {
-                    final TransportRequest request = connection.openRequest(channel.getId(), 1024);
+                    final TransportRequest request = connection.openRequest(channel.getStreamId(), 1024);
                     if (request != null)
                     {
                         request.commit();

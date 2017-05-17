@@ -1,5 +1,6 @@
 package org.camunda.tngp.transport;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.ErrorHandler;
@@ -7,15 +8,18 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.CompositeAgent;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
-import org.camunda.tngp.transport.impl.agent.TransportConductor;
 
 public class TransportBuilder
 {
@@ -40,6 +44,12 @@ public class TransportBuilder
     protected int maxMessageLength = 1024 * 16;
     protected long channelKeepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
 
+    /*
+     * default is sufficient for (default / 12) state transition that can be buffered at the same time;
+     * with 32 * 1024 byte, that is ~2700.
+     */
+    protected int stateDispatchBufferSize = 32 * 1024;
+
     protected ThreadingMode threadingMode = ThreadingMode.SHARED;
 
     protected CountersManager countersManager;
@@ -49,10 +59,14 @@ public class TransportBuilder
     protected boolean agentsExternallyManaged = false;
     protected boolean sendBufferExternallyManaged = false;
 
-    protected TransportConductor transportConductor;
+    protected Conductor conductor;
     protected Agent sendBufferConductor;
     protected Receiver receiver;
     protected Sender sender;
+
+    protected static final int CONTROL_FRAME_BUFFER_SIZE = RingBufferDescriptor.TRAILER_LENGTH + (1024 * 4);
+    protected ManyToOneRingBuffer controlFrameBuffer = new ManyToOneRingBuffer(
+            new UnsafeBuffer(ByteBuffer.allocateDirect(CONTROL_FRAME_BUFFER_SIZE)));
 
     static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
@@ -89,6 +103,12 @@ public class TransportBuilder
         return this;
     }
 
+    public TransportBuilder stateDispatchBufferSize(int stateDispatchBufferSize)
+    {
+        this.stateDispatchBufferSize = stateDispatchBufferSize;
+        return this;
+    }
+
     public TransportBuilder maxMessageLength(int maxMessageLength)
     {
         this.maxMessageLength = maxMessageLength;
@@ -122,12 +142,18 @@ public class TransportBuilder
         initConductor();
         startAgents();
 
-        return new Transport(transportContext);
+        return new Transport(conductor, transportContext);
     }
 
     protected void initConductor()
     {
-        transportConductor = new TransportConductor(transportContext);
+        conductor = new Conductor(
+                sender,
+                receiver,
+                controlFrameBuffer,
+                maxMessageLength,
+                channelKeepAlivePeriod,
+                stateDispatchBufferSize);
     }
 
     protected void initTransportContext()
@@ -169,7 +195,7 @@ public class TransportBuilder
 
     protected void initSender()
     {
-        this.sender = new Sender(this.transportContext);
+        this.sender = new Sender(controlFrameBuffer, this.transportContext);
     }
 
     protected void startAgents()
@@ -184,11 +210,11 @@ public class TransportBuilder
 
                 if (sendBufferExternallyManaged)
                 {
-                    agentRunners[0] = startAgents(transportConductor, receiver, sender);
+                    agentRunners[0] = startAgents(conductor, receiver, sender);
                 }
                 else
                 {
-                    agentRunners[0] = startAgents(transportConductor, sendBufferConductor, receiver, sender);
+                    agentRunners[0] = startAgents(conductor, sendBufferConductor, receiver, sender);
                 }
             }
             else if (threadingMode == ThreadingMode.DEDICATED)
@@ -197,11 +223,11 @@ public class TransportBuilder
 
                 if (sendBufferExternallyManaged)
                 {
-                    agentRunners[0] = startAgents(transportConductor);
+                    agentRunners[0] = startAgents(conductor);
                 }
                 else
                 {
-                    agentRunners[0] = startAgents(transportConductor, sendBufferConductor);
+                    agentRunners[0] = startAgents(conductor, sendBufferConductor);
                 }
                 agentRunners[1] = startAgents(receiver);
                 agentRunners[2] = startAgents(sender);
@@ -245,9 +271,9 @@ public class TransportBuilder
 
     }
 
-    public TransportConductor getTransportConductor()
+    public Conductor getTransportConductor()
     {
-        return transportConductor;
+        return conductor;
     }
 
     public Sender getSender()

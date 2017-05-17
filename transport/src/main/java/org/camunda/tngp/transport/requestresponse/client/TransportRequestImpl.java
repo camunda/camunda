@@ -12,7 +12,7 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
@@ -261,11 +261,11 @@ public class TransportRequestImpl implements TransportRequest
         return responseLength;
     }
 
-    public void processChannelClosed(TransportChannel transportChannel)
+    public void processChannelClosed(Channel transportChannel)
     {
         if (STATE_FIELD.get(this) == STATE_OPEN)
         {
-            if (transportChannel.getId() == channelId)
+            if (transportChannel.getStreamId() == channelId)
             {
                 STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_FAILED);
             }

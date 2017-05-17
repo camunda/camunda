@@ -1,37 +1,38 @@
 package org.camunda.tngp.transport.impl.agent;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 
-public class Sender implements Agent, Consumer<SenderCmd>
+public class Sender implements Agent
 {
 
-    protected final ManyToOneConcurrentArrayQueue<SenderCmd> cmdQueue;
+    protected final DeferredCommandContext commandContext;
 
     protected final ManyToOneRingBuffer controlFrameBuffer;
-    protected TransportChannelImpl controlFrameInProgressChannel;
+    protected ChannelImpl controlFrameInProgressChannel;
 
-    protected final Int2ObjectHashMap<TransportChannelImpl> channelMap;
+    protected final Int2ObjectHashMap<ChannelImpl> channelMap;
 
     protected final Subscription senderSubscription;
 
     protected final SenderBlockPeek blockPeek = new SenderBlockPeek();
 
-    public Sender(TransportContext context)
+    public Sender(
+            ManyToOneRingBuffer controlFrameBuffer,
+            TransportContext context)
     {
-        cmdQueue = context.getSenderCmdQueue();
         senderSubscription = context.getSenderSubscription();
         channelMap = new Int2ObjectHashMap<>();
-        this.controlFrameBuffer = context.getControlFrameBuffer();
+        this.controlFrameBuffer = controlFrameBuffer;
+        this.commandContext = new DeferredCommandContext();
     }
 
     protected boolean isMessageSendingInProgress()
@@ -48,7 +49,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     {
         int workCount = 0;
 
-        workCount += cmdQueue.drain(this);
+        workCount += commandContext.doWork();
 
         if (!isMessageSendingInProgress())
         {
@@ -94,7 +95,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     protected void sendControlFrame(int channelId, DirectBuffer buf, int offset, int length)
     {
-        final TransportChannelImpl channelImpl = channelMap.get(channelId);
+        final ChannelImpl channelImpl = channelMap.get(channelId);
         if (channelImpl != null)
         {
             channelImpl.initControlFrame(buf, offset, length);
@@ -116,27 +117,34 @@ public class Sender implements Agent, Consumer<SenderCmd>
         return "sender";
     }
 
-    @Override
-    public void accept(SenderCmd t)
+
+    public CompletableFuture<Void> removeChannelAsync(ChannelImpl c)
     {
-        t.execute(this);
+        return commandContext.runAsync((future) ->
+        {
+            removeChannel(c);
+            future.complete(null);
+        });
     }
 
-    public void registerChannel(TransportChannelImpl c, CompletableFuture<Void> future)
+    protected void removeChannel(ChannelImpl c)
     {
-        channelMap.put(c.getId(), c);
-        future.complete(null);
-    }
-
-    public void removeChannel(TransportChannelImpl c)
-    {
-        channelMap.remove(c.getId());
+        channelMap.remove(c.getStreamId());
         blockPeek.onChannelRemoved(c);
     }
 
-    public boolean scheduleControlFrameRequest(TransportChannelImpl channel, DirectBuffer buffer, int offset, int length)
+    public CompletableFuture<Void> registerChannelAsync(ChannelImpl c)
     {
-        return controlFrameBuffer.write(channel.getId(), buffer, offset, length);
+        return commandContext.runAsync((future) ->
+        {
+            registerChannel(c);
+            future.complete(null);
+        });
+    }
+
+    protected void registerChannel(ChannelImpl c)
+    {
+        channelMap.put(c.getStreamId(), c);
     }
 
 }

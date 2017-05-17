@@ -1,6 +1,8 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.headerLength;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.MessageHandler;

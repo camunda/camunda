@@ -4,7 +4,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 
 public class SenderBlockPeek extends BlockPeek
 {
@@ -12,10 +12,10 @@ public class SenderBlockPeek extends BlockPeek
 
     private static final int MAX_BLOCK_SIZE = 1024 * 1024;
 
-    protected TransportChannelImpl currentChannel;
+    protected ChannelImpl currentChannel;
     protected boolean hasAvailable = false;
 
-    public int peek(Subscription senderSubscription, Int2ObjectHashMap<TransportChannelImpl> channelMap)
+    public int peek(Subscription senderSubscription, Int2ObjectHashMap<ChannelImpl> channelMap)
     {
         int available = 0;
 
@@ -29,7 +29,7 @@ public class SenderBlockPeek extends BlockPeek
 
                 currentChannel = channelMap.get(channelId);
 
-                if (currentChannel == null)
+                if (currentChannel == null || currentChannel.isClosed())
                 {
                     markFailed();
                     System.err.println("Channel with id " + channelId + " not open.");
@@ -71,8 +71,7 @@ public class SenderBlockPeek extends BlockPeek
                     // TODO: only wrap incomplete messages
                     sendErrorBlock.wrap(byteBuffer, bufferOffset, bufferOffset + blockLength);
 
-                    currentChannel.getChannelHandler()
-                        .onChannelSendError(currentChannel, sendErrorBlock, 0, getBlockLength());
+                    currentChannel.onChannelSendError(sendErrorBlock, 0, getBlockLength());
                 }
                 finally
                 {
@@ -86,7 +85,7 @@ public class SenderBlockPeek extends BlockPeek
         return bytesSent;
     }
 
-    public void onChannelRemoved(TransportChannelImpl c)
+    public void onChannelRemoved(ChannelImpl c)
     {
         if (currentChannel == c)
         {

@@ -45,7 +45,6 @@ public class ControlFramesTest
     public void shouldEchoControlFrames()
     {
         // fix the time to disable keep alive messages
-        // TODO: disabling keep alive messages could also be a builder option
         ClockUtil.setCurrentTime(new Date().getTime());
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
@@ -62,12 +61,14 @@ public class ControlFramesTest
 
             final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
 
-            final ClientChannel channel = clientTransport
-                    .createClientChannelPool()
-                    .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, collectingHandler)
-                    .build()
-                    .requestChannel(addr))
+            )
         {
+            final Channel channel = clientTransport
+                .createClientChannelPool()
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, collectingHandler)
+                .build()
+                .requestChannel(addr);
+
             for (int i = 0; i < numRequests; i++)
             {
                 while (!channel.scheduleControlFrame(FULL_DUPLEX_CONTROL_FRAME))
@@ -87,22 +88,22 @@ public class ControlFramesTest
     {
 
         @Override
-        public void onChannelOpened(TransportChannel transportChannel)
+        public void onChannelOpened(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelClosed(TransportChannel transportChannel)
+        public void onChannelClosed(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
         }
 
         @Override
-        public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             return true;
         }
@@ -110,7 +111,7 @@ public class ControlFramesTest
         protected int loopCounter = 0;
 
         @Override
-        public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             return transportChannel.scheduleControlFrame(buffer, offset, length);
         }

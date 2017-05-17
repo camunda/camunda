@@ -1,41 +1,40 @@
 package org.camunda.tngp.transport.spi;
 
-import org.camunda.tngp.transport.TransportChannel;
-
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.transport.Channel;
 
 public interface TransportChannelHandler
 {
 
     // invoked in the conductor thread
-    void onChannelOpened(TransportChannel transportChannel);
+    void onChannelOpened(Channel transportChannel);
 
     // invoked in the conductor thread
-    void onChannelClosed(TransportChannel transportChannel);
+    void onChannelClosed(Channel transportChannel);
 
     // invoked in the receiver thread
-    default void onChannelKeepAlive(TransportChannel channel)
+    default void onChannelKeepAlive(Channel channel)
     {
         // ignore
     }
 
     // invoked in the sender thread
     void onChannelSendError(
-            TransportChannel transportChannel,
+            Channel transportChannel,
             DirectBuffer buffer,
             int offset,
             int length);
 
     // invoked in the receiver thread
     boolean onChannelReceive(
-            TransportChannel transportChannel,
+            Channel transportChannel,
             DirectBuffer buffer,
             int offset,
             int length);
 
     // invoked in the receiver thread
     boolean onControlFrame(
-            TransportChannel transportChannel,
+            Channel transportChannel,
             DirectBuffer buffer,
             int offset,
             int length);

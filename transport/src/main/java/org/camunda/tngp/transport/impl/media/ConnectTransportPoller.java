@@ -4,26 +4,15 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.function.ToIntFunction;
 
-import org.camunda.tngp.transport.impl.ClientChannelImpl;
-import org.camunda.tngp.transport.impl.agent.TransportConductor;
-import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
-
 import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.nio.TransportPoller;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 
 public class ConnectTransportPoller extends TransportPoller
 {
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 
-    protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> cmdQueue;
-
     protected int channelCount = 0;
-
-    public ConnectTransportPoller(TransportConductor receiver)
-    {
-        this.cmdQueue = receiver.getCmdQueue();
-    }
 
     public int pollNow()
     {
@@ -50,13 +39,9 @@ public class ConnectTransportPoller extends TransportPoller
     {
         if (key != null)
         {
-            final ClientChannelImpl channel = (ClientChannelImpl) key.attachment();
+            final ChannelImpl channel = (ChannelImpl) key.attachment();
             channel.finishConnect();
-
-            cmdQueue.add((cc) ->
-            {
-                cc.onClientChannelConnected(channel);
-            });
+            removeChannel(channel);
 
             return 1;
         }
@@ -64,13 +49,13 @@ public class ConnectTransportPoller extends TransportPoller
         return 0;
     }
 
-    public void addChannel(ClientChannelImpl channel)
+    public void addChannel(ChannelImpl channel)
     {
         channel.registerSelector(selector, SelectionKey.OP_CONNECT);
         ++channelCount;
     }
 
-    public void removeChannel(ClientChannelImpl channel)
+    public void removeChannel(ChannelImpl channel)
     {
         channel.removeSelector(selector);
         --channelCount;

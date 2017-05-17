@@ -14,11 +14,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.transport.ServerSocketBinding;
-import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-
-import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
+import org.camunda.tngp.util.LangUtil;
 
 public class ServerSocketBindingImpl implements ServerSocketBinding
 {
@@ -31,24 +30,28 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
 
     protected volatile int state;
 
-    protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue;
-    protected final TransportContext transportContext;
     protected final InetSocketAddress bindAddress;
+    protected final Conductor conductor;
 
-    protected List<ServerChannelImpl> openChannels = new ArrayList<>();
+    protected List<ChannelImpl> openChannels = new ArrayList<>();
+
+    protected final SharedStateMachineBlueprint<ChannelImpl> channelLifecycle;
 
     protected ServerSocketChannel media;
     protected TransportChannelHandler channelHandler;
 
     public ServerSocketBindingImpl(
-            final TransportContext transportContext,
             final InetSocketAddress bindAddress,
-            final TransportChannelHandler channelHandler)
+            final TransportChannelHandler channelHandler,
+            final Conductor conductor,
+            SharedStateMachineBlueprint<ChannelImpl> defaultLifecycle)
     {
-        this.transportContext = transportContext;
         this.channelHandler = channelHandler;
-        this.conductorCmdQueue = transportContext.getConductorCmdQueue();
         this.bindAddress = bindAddress;
+        this.conductor = conductor;
+        this.channelLifecycle = defaultLifecycle.copy()
+                .onState(ChannelImpl.STATE_READY, this::onChannelConnected)
+                .onState(ChannelImpl.STATE_CLOSED | ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::onChannelClosed);
 
         if (bindAddress == null)
         {
@@ -70,13 +73,23 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         }
         catch (IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
     }
 
-    public void onChannelClosed(ServerChannelImpl serverChannelImpl)
+    protected void onChannelClosed(ChannelImpl serverChannelImpl)
     {
         openChannels.remove(serverChannelImpl);
+    }
+
+    protected void onChannelConnected(ChannelImpl channel)
+    {
+        openChannels.add(channel);
+    }
+
+    public SharedStateMachineBlueprint<ChannelImpl> getChannelLifecycle()
+    {
+        return channelLifecycle;
     }
 
     public void registerSelector(Selector selector, int op)
@@ -88,7 +101,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         }
         catch (ClosedChannelException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -106,15 +119,13 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
             }
             catch (IOException e)
             {
-                LangUtil.rethrowUnchecked(e);
+                throw new RuntimeException(e);
             }
         }
     }
 
-    public ServerChannelImpl accept()
+    public SocketChannel accept()
     {
-        ServerChannelImpl channel = null;
-
         if (STATE_UPDATER.get(this) == STATE_OPEN)
         {
             try
@@ -122,37 +133,24 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
                 final SocketChannel socketChannel = media.accept();
                 socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
                 socketChannel.configureBlocking(false);
-
-                channel = new ServerChannelImpl(
-                        transportContext,
-                        this,
-                        socketChannel,
-                        channelHandler);
-
-                openChannels.add(channel);
-
+                return socketChannel;
             }
             catch (IOException e)
             {
-                LangUtil.rethrowUnchecked(e);
+                throw new RuntimeException(e);
             }
         }
-
-        return channel;
+        else
+        {
+            return null;
+        }
     }
 
     public CompletableFuture<ServerSocketBinding> closeAsync()
     {
         if (STATE_UPDATER.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
         {
-            final CompletableFuture<ServerSocketBinding> completableFuture = new CompletableFuture<>();
-
-            conductorCmdQueue.add((c) ->
-            {
-                c.closeServerSocketBinding(this, completableFuture);
-            });
-
-            return completableFuture;
+            return conductor.closeServerSocketAsync(this);
         }
         else
         {
@@ -184,26 +182,39 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public void closeAllChannels()
+    public CompletableFuture<Void> closeAllChannelsAsync()
     {
         try
         {
-            final ArrayList<ServerChannelImpl> openChannelsCopy = new ArrayList<>(openChannels);
+            final ArrayList<ChannelImpl> openChannelsCopy = new ArrayList<>(openChannels);
 
-            final CompletableFuture[] completableFutures = new CompletableFuture[openChannelsCopy.size()];
-
+            final List<CompletableFuture> completableFutures = new ArrayList<>(openChannelsCopy.size());
             for (int i = 0; i < openChannelsCopy.size(); i++)
             {
-                completableFutures[i] = openChannelsCopy.get(i).closeAsync();
+                final ChannelImpl channel = openChannelsCopy.get(i);
+                final boolean closeInitiated = conductor.closeChannel(channel);
+
+                if (closeInitiated)
+                {
+                    final CompletableFuture<ChannelImpl> closeFuture = new CompletableFuture<>();
+                    channel.listenForClose(closeFuture);
+
+                    completableFutures.add(closeFuture);
+                }
             }
 
-            CompletableFuture.allOf(completableFutures);
+            return LangUtil.allOf(completableFutures);
         }
         catch (Exception e)
         {
             e.printStackTrace();
+            return CompletableFuture.completedFuture(null);
         }
+    }
+
+    public TransportChannelHandler getChannelHandler()
+    {
+        return channelHandler;
     }
 
 }

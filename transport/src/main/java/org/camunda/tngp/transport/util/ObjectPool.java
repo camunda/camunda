@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.impl;
+package org.camunda.tngp.transport.util;
 
 import java.util.function.Function;
 

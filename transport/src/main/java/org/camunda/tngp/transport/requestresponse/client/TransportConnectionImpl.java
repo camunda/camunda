@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.util.LongArrayIndex;
@@ -175,7 +175,7 @@ public class TransportConnectionImpl implements TransportConnection
     }
 
     // invoked in conductor thread
-    public void processChannelClosed(TransportChannel transportChannel)
+    public void processChannelClosed(Channel transportChannel)
     {
         if (openRequests.size() > 0)
         {

@@ -1,53 +1,48 @@
 package org.camunda.tngp.transport.impl.agent;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.transport.impl.ClientChannelImpl;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.ReadTransportPoller;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionImpl;
+import org.camunda.tngp.util.DeferredCommandContext;
 
 /**
  *
  * Responsibilities
  * <ul>
- * <li>Polling the media for READ and performing {@link ClientChannelImpl#receive()} operations</li>
+ * <li>Polling the media for READ and performing {@link ChannelImpl#receive()} operations</li>
  * <li>Processing Request timeouts</li>
  * <li>Closing connections</li>
  * <li>Closing channels</li>
  * </ul>
  */
-public class Receiver implements Agent, Consumer<ReceiverCmd>
+public class Receiver implements Agent
 {
-    protected final ManyToOneConcurrentArrayQueue<ReceiverCmd> cmdQueue;
-
+    protected final DeferredCommandContext commandContext;
     protected final ReadTransportPoller transportPoller;
-
-    protected final ManyToOneConcurrentArrayQueue<SenderCmd> toSenderCmdQueue;
-
-    protected final List<TransportConnectionImpl> connectionsToClose = new ArrayList<>(10);
 
     public Receiver(TransportContext context)
     {
-        cmdQueue = context.getReceiverCmdQueue();
-        toSenderCmdQueue = context.getSenderCmdQueue();
-        transportPoller = new ReadTransportPoller(this);
+        commandContext = new DeferredCommandContext();
+        transportPoller = new ReadTransportPoller();
     }
 
     public int doWork() throws Exception
     {
         int work = 0;
 
-        work += cmdQueue.drain(this);
+        work += commandContext.doWork();
         work += transportPoller.pollNow();
 
         return work;
+    }
+
+    @Override
+    public void onClose()
+    {
+        transportPoller.close();
     }
 
     public String roleName()
@@ -55,35 +50,29 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         return "receiver";
     }
 
-    @Override
-    public void accept(ReceiverCmd t)
+    public CompletableFuture<Void> removeChannelAsync(ChannelImpl c)
     {
-        t.execute(this);
-    }
-
-    public void registerChannel(TransportChannelImpl c, CompletableFuture<Void> receiverFuture)
-    {
-        try
+        return commandContext.runAsync((future) ->
         {
-            transportPoller.addChannel(c);
-        }
-        catch (Exception e)
+            transportPoller.removeChannel(c);
+            future.complete(null);
+        });
+    }
+
+    public CompletableFuture<Void> registerChannelAsync(ChannelImpl c)
+    {
+        return commandContext.runAsync((future) ->
         {
-            receiverFuture.completeExceptionally(e);
-            return;
-        }
-
-        receiverFuture.complete(null);
-    }
-
-    public void removeChannel(TransportChannelImpl c)
-    {
-        transportPoller.removeChannel(c);
-    }
-
-    public ManyToOneConcurrentArrayQueue<ReceiverCmd> getCmdQueue()
-    {
-        return this.cmdQueue;
+            try
+            {
+                transportPoller.addChannel(c);
+                future.complete(null);
+            }
+            catch (Exception e)
+            {
+                future.completeExceptionally(e);
+            }
+        });
     }
 
 }

@@ -7,7 +7,7 @@ import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocol
 import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
@@ -26,20 +26,20 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
     }
 
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
         connectionManager.handleChannelClose(transportChannel);
     }
 
     @Override
     public void onChannelSendError(
-        final TransportChannel transportChannel,
+        final Channel transportChannel,
         final DirectBuffer blockBuffer,
         final int blockOffset,
         final int blockLength)
@@ -81,7 +81,7 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 
     @Override
     public boolean onChannelReceive(
-        final TransportChannel channel,
+        final Channel channel,
         final DirectBuffer buffer,
         final int offset,
         final int length)
@@ -104,7 +104,7 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         // this protocol does not send any control frames from server to client.
         return true;

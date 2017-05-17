@@ -33,24 +33,24 @@ public class MixedProtocolsTest
 
                 final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
 
-                final ClientChannel channel = clientTransport.createClientChannelPool()
+                final TransportConnection connection = connectionPool.openConnection())
+        {
+            final Channel channel = clientTransport.createClientChannelPool()
                     .requestResponseProtocol(connectionPool)
                     .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, singleMessageHandler)
                     .build()
                     .requestChannel(addr);
 
-                final TransportConnection connection = connectionPool.openConnection())
-        {
             final DataFramePool dataFramePool = DataFramePool.newBoundedPool(2, clientTransport.getSendBuffer());
 
             for (int i = 0; i < numRequests; i++)
             {
-                final PooledTransportRequest request = connection.openRequest(channel.getId(), 1024);
+                final PooledTransportRequest request = connection.openRequest(channel.getStreamId(), 1024);
 
                 request.getClaimedRequestBuffer().putInt(request.getClaimedOffset(), i);
                 request.commit();
 
-                final OutgoingDataFrame dataFrame = dataFramePool.openFrame(channel.getId(), 1024);
+                final OutgoingDataFrame dataFrame = dataFramePool.openFrame(channel.getStreamId(), 1024);
                 dataFrame.getBuffer().putInt(0, i);
                 dataFrame.commit();
 
@@ -82,22 +82,22 @@ public class MixedProtocolsTest
         }
 
         @Override
-        public void onChannelOpened(TransportChannel transportChannel)
+        public void onChannelOpened(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelClosed(TransportChannel transportChannel)
+        public void onChannelClosed(Channel transportChannel)
         {
         }
 
         @Override
-        public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
         }
 
         @Override
-        public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             final short protocolId = buffer.getShort(offset);
             if (protocolId == Protocols.REQUEST_RESPONSE)
@@ -119,9 +119,9 @@ public class MixedProtocolsTest
             }
         }
 
-        protected boolean echoMessage(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        protected boolean echoMessage(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
-            final long offerPosition = sendBuffer.offer(buffer, offset, length, transportChannel.getId());
+            final long offerPosition = sendBuffer.offer(buffer, offset, length, transportChannel.getStreamId());
 
             if (offerPosition < 0)
             {
@@ -132,7 +132,7 @@ public class MixedProtocolsTest
         }
 
         @Override
-        public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
         {
             return true;
         }

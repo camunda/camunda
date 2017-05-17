@@ -35,6 +35,11 @@ public class SocketAddress implements Comparable<SocketAddress>
         port(port);
     }
 
+    public SocketAddress(InetSocketAddress address)
+    {
+        this(address.getHostName(), address.getPort());
+    }
+
     public MutableDirectBuffer getHostBuffer()
     {
         return hostBuffer;

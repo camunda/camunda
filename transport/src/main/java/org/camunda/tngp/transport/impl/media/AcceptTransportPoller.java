@@ -2,28 +2,24 @@ package org.camunda.tngp.transport.impl.media;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.function.ToIntFunction;
 
-import org.camunda.tngp.transport.impl.ServerChannelImpl;
-import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
-import org.camunda.tngp.transport.impl.agent.TransportConductor;
-import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
-
 import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.nio.TransportPoller;
+import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 
 public class AcceptTransportPoller extends TransportPoller
 {
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
-
-    protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> cmdQueue;
+    protected final Conductor conductor;
 
     protected int bindingCount = 0;
 
-    public AcceptTransportPoller(TransportConductor conductor)
+    public AcceptTransportPoller(Conductor conductor)
     {
-        this.cmdQueue = conductor.getCmdQueue();
+        this.conductor = conductor;
     }
 
     public int pollNow()
@@ -55,12 +51,12 @@ public class AcceptTransportPoller extends TransportPoller
         if (key != null)
         {
             final ServerSocketBindingImpl serverSocketBinding = (ServerSocketBindingImpl) key.attachment();
-            final ServerChannelImpl serverChannel = serverSocketBinding.accept();
+            final SocketChannel serverChannel = serverSocketBinding.accept();
 
-            cmdQueue.add((cc) ->
-            {
-                cc.onServerChannelOpened(serverChannel);
-            });
+            conductor.newChannel(
+                    serverChannel,
+                    serverSocketBinding.getChannelHandler(),
+                    serverSocketBinding.getChannelLifecycle());
 
             return 1;
         }

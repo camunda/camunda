@@ -6,26 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
-import org.camunda.tngp.transport.impl.agent.Receiver;
-import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
-
 import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.nio.TransportPoller;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 
 public class ReadTransportPoller extends TransportPoller
 {
-    protected final List<TransportChannelImpl> channels = new ArrayList<>(100);
+    protected final List<ChannelImpl> channels = new ArrayList<>(100);
 
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
-
-    protected final ManyToOneConcurrentArrayQueue<ReceiverCmd> cmdQueue;
-
-    public ReadTransportPoller(Receiver receiver)
-    {
-        this.cmdQueue = receiver.getCmdQueue();
-    }
 
     public int pollNow()
     {
@@ -35,7 +24,11 @@ public class ReadTransportPoller extends TransportPoller
         {
             for (int i = 0; i < channels.size(); i++)
             {
-                workCount += channels.get(i).receive();
+                final ChannelImpl channel = channels.get(i);
+                if (!channel.isClosed())
+                {
+                    workCount += channel.receive();
+                }
             }
         }
         else
@@ -61,20 +54,20 @@ public class ReadTransportPoller extends TransportPoller
 
         if (key != null && key.isReadable())
         {
-            final TransportChannelImpl channel = (TransportChannelImpl) key.attachment();
+            final ChannelImpl channel = (ChannelImpl) key.attachment();
             workCount = channel.receive();
         }
 
         return workCount;
     }
 
-    public void addChannel(TransportChannelImpl channel)
+    public void addChannel(ChannelImpl channel)
     {
         channel.registerSelector(selector, SelectionKey.OP_READ);
         channels.add(channel);
     }
 
-    public void removeChannel(TransportChannelImpl channel)
+    public void removeChannel(ChannelImpl channel)
     {
         channel.removeSelector(selector);
         channels.remove(channel);

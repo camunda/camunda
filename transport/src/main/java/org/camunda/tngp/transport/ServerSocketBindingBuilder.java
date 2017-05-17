@@ -3,28 +3,21 @@ package org.camunda.tngp.transport;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.transport.impl.DefaultChannelHandler;
-import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
-import org.camunda.tngp.transport.impl.TransportContext;
-import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 public class ServerSocketBindingBuilder
 {
-    protected final TransportContext transportContext;
-
+    protected final Conductor conductor;
     protected final InetSocketAddress bindAddress;
-
-    protected ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue;
 
     protected TransportChannelHandler channelHandler = new DefaultChannelHandler();
 
-    public ServerSocketBindingBuilder(TransportContext transportContext, InetSocketAddress bindAddress)
+    public ServerSocketBindingBuilder(Conductor conductor, InetSocketAddress bindAddress)
     {
-        this.transportContext = transportContext;
+        this.conductor = conductor;
         this.bindAddress = bindAddress;
-        this.conductorCmdQueue = transportContext.getConductorCmdQueue();
     }
 
     public ServerSocketBindingBuilder transportChannelHandler(TransportChannelHandler channelHandler)
@@ -41,19 +34,7 @@ public class ServerSocketBindingBuilder
 
     public CompletableFuture<ServerSocketBinding> bindAsync()
     {
-        final CompletableFuture<ServerSocketBinding> bindFuture = new CompletableFuture<>();
-
-        final ServerSocketBindingImpl serverSocketBindingImpl = new ServerSocketBindingImpl(
-                transportContext,
-                bindAddress,
-                channelHandler);
-
-        conductorCmdQueue.add((cc) ->
-        {
-            cc.doBindServerSocket(serverSocketBindingImpl, bindFuture);
-        });
-
-        return bindFuture;
+        return conductor.bindServerSocketAsync(bindAddress, channelHandler);
     }
 
 }

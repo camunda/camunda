@@ -14,22 +14,22 @@ public class CollectingHandler implements TransportChannelHandler
     protected int lastMessageId = -1;
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         final int messageId = buffer.getInt(offset + TransportHeaderDescriptor.headerLength());
         assertThat(messageId - 1).isEqualTo(lastMessageId);
@@ -39,7 +39,7 @@ public class CollectingHandler implements TransportChannelHandler
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         controlFramesReceived++;
         return true;

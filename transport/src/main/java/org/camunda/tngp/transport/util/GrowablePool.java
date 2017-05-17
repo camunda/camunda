@@ -1,9 +1,8 @@
-package org.camunda.tngp.transport.impl;
+package org.camunda.tngp.transport.util;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 public class GrowablePool<T> implements Iterable<T>
@@ -11,7 +10,6 @@ public class GrowablePool<T> implements Iterable<T>
     protected final Class<T> elementClass;
     protected T[] values;
 
-    protected final Predicate<T> removalPredicate;
     protected final ToIntFunction<PoolIterator<T>> evictionFunction;
     protected final Consumer<T> evictionHandler;
     protected final GrowablePoolIterator iterator = new GrowablePoolIterator();
@@ -19,13 +17,11 @@ public class GrowablePool<T> implements Iterable<T>
     public GrowablePool(
             Class<T> elementClass,
             int initialCapacity,
-            Predicate<T> removalPredicate,
             ToIntFunction<PoolIterator<T>> evictionFunction,
             Consumer<T> evictionHandler)
     {
         this.elementClass = elementClass;
         this.values = (T[]) Array.newInstance(elementClass, initialCapacity);
-        this.removalPredicate = removalPredicate;
         this.evictionFunction = evictionFunction;
         this.evictionHandler = evictionHandler;
     }
@@ -39,17 +35,15 @@ public class GrowablePool<T> implements Iterable<T>
 
     public void add(T element)
     {
-        // try to reuse an empty existing slot
-        for (int i = 0; i < values.length; i++)
+        final int currentCapacity = values.length;
+        for (int i = 0; i < currentCapacity; i++)
         {
-            if (tryRemove(i) == null)
+            if (values[i] == null)
             {
                 values[i] = element;
                 return;
             }
         }
-
-        final int currentCapacity = values.length;
 
         // try to evict an element
         final int indexToEvict = evictionFunction.applyAsInt(iterator());
@@ -85,27 +79,7 @@ public class GrowablePool<T> implements Iterable<T>
         }
         if (elementIndex >= 0)
         {
-            dropElement(elementIndex);
-        }
-    }
-
-    protected void dropElement(int index)
-    {
-        values[index] = null;
-    }
-
-    protected T tryRemove(int index)
-    {
-        final T result = values[index];
-
-        if (result != null && removalPredicate.test(result))
-        {
-            dropElement(index);
-            return null;
-        }
-        else
-        {
-            return result;
+            values[elementIndex] = null;
         }
     }
 
@@ -115,7 +89,7 @@ public class GrowablePool<T> implements Iterable<T>
         return iterator;
     }
 
-    protected interface PoolIterator<T> extends Iterator<T>
+    public interface PoolIterator<T> extends Iterator<T>
     {
         int getCurrentElementIndex();
     }
@@ -147,19 +121,25 @@ public class GrowablePool<T> implements Iterable<T>
         }
 
         @Override
+        public void remove()
+        {
+            values[currentElementIndex] = null;
+        }
+
+        @Override
         public int getCurrentElementIndex()
         {
             return currentElementIndex;
         }
 
+        // TODO: can be further simplified now
         protected void moveToNext()
         {
             do
             {
                 nextElementIndex++;
-
             }
-            while (nextElementIndex < values.length && tryRemove(nextElementIndex) == null);
+            while (nextElementIndex < values.length && values[nextElementIndex] == null);
         }
     }
 }

@@ -2,7 +2,7 @@ package org.camunda.tngp.transport.impl;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
@@ -24,7 +24,7 @@ public class CompositeChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
         for (int i = 0; i < handlers.length; i++)
         {
@@ -33,7 +33,7 @@ public class CompositeChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
         for (int i = 0; i < handlers.length; i++)
         {
@@ -42,21 +42,21 @@ public class CompositeChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         final TransportChannelHandler handler = getHandler(buffer, offset, length);
         handler.onChannelSendError(transportChannel, buffer, offset, length);
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         final TransportChannelHandler handler = getHandler(buffer, offset, length);
         return handler.onChannelReceive(transportChannel, buffer, offset, length);
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         final TransportChannelHandler handler = getHandler(buffer, DataFrameDescriptor.HEADER_LENGTH + offset, length - DataFrameDescriptor.HEADER_LENGTH);
         return handler.onControlFrame(transportChannel, buffer, offset, length);

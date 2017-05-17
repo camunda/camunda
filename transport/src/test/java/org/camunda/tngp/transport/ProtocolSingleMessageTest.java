@@ -28,22 +28,22 @@ public class ProtocolSingleMessageTest
                 .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
                 .bind();
 
-            final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
+            final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64))
+        {
+            final DataFramePool dataFramePool = new DataFramePoolImpl(32, clientTransport.getSendBuffer());
 
-            final ClientChannel channel = clientTransport
+            final Channel channel = clientTransport
                     .createClientChannelPool()
                     .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, clientChannelHandler)
                     .build()
-                    .requestChannel(addr))
-        {
-            final DataFramePool dataFramePool = new DataFramePoolImpl(32, clientTransport.getSendBuffer());
+                    .requestChannel(addr);
 
             for (int i = 0; i < numRequests; i++)
             {
                 OutgoingDataFrame dataFrame;
                 do
                 {
-                    dataFrame = dataFramePool.openFrame(channel.getId(), BitUtil.SIZE_OF_INT);
+                    dataFrame = dataFramePool.openFrame(channel.getStreamId(), BitUtil.SIZE_OF_INT);
                 }
                 while (dataFrame == null);
 

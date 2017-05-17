@@ -3,8 +3,10 @@ package org.camunda.tngp.transport;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.agrona.concurrent.AgentRunner;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 
 public class Transport implements AutoCloseable
 {
@@ -16,51 +18,37 @@ public class Transport implements AutoCloseable
 
     protected final TransportContext transportContext;
     protected final Dispatcher sendBuffer;
+    protected final Conductor conductor;
 
     protected volatile int state;
 
-    public Transport(TransportContext transportContext)
+    public Transport(Conductor conductor, TransportContext transportContext)
     {
+        this.conductor = conductor;
         this.transportContext = transportContext;
         this.sendBuffer = transportContext.getSendBuffer();
 
         STATE_FIELD.set(this, STATE_OPEN);
     }
 
-    public ClientChannelPoolBuilder createClientChannelPool()
+    public ChannelManagerBuilder createClientChannelPool()
     {
         if (STATE_OPEN != STATE_FIELD.get(this))
         {
             throw new IllegalStateException("Cannot create client channel on " + this + ", transport is not open.");
         }
 
-        return new ClientChannelPoolBuilder(transportContext);
+        return new ChannelManagerBuilder(conductor);
     }
 
     public CompletableFuture<Void> registerChannelListener(TransportChannelListener listener)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        transportContext.getConductorCmdQueue().add((c) ->
-        {
-            c.registerChannelListener(listener);
-            future.complete(null);
-        });
-
-        return future;
+        return conductor.registerChannelListenerAsync(listener);
     }
 
     public CompletableFuture<Void> removeChannelListener(TransportChannelListener listener)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        transportContext.getConductorCmdQueue().add((c) ->
-        {
-            c.removeChannelListener(listener);
-            future.complete(null);
-        });
-
-        return future;
+        return conductor.removeChannelListenerAsync(listener);
     }
 
     public ServerSocketBindingBuilder createServerSocketBinding(SocketAddress addr)
@@ -70,7 +58,7 @@ public class Transport implements AutoCloseable
             throw new IllegalStateException("Cannot create server socket on " + this + ", transport is not open.");
         }
 
-        return new ServerSocketBindingBuilder(transportContext, addr.toInetSocketAddress());
+        return new ServerSocketBindingBuilder(conductor, addr.toInetSocketAddress());
     }
 
     public Dispatcher getSendBuffer()
@@ -82,14 +70,25 @@ public class Transport implements AutoCloseable
     {
         if (STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
         {
-            final CompletableFuture<Transport> closeFuture = new CompletableFuture<>();
-
-            transportContext.getConductorCmdQueue().add((c) ->
+            return conductor.closeAsync().thenApply((v) ->
             {
-                c.close(this, closeFuture);
-            });
+                // thread is required because the conductor agent cannot close
+                // itself very well
+                final Thread t = new Thread(() ->
+                {
+                    final AgentRunner[] agentRunners = transportContext.getAgentRunners();
+                    if (agentRunners != null)
+                    {
+                        for (AgentRunner agentRunner : agentRunners)
+                        {
+                            agentRunner.close();
+                        }
+                    }
+                });
+                t.start();
 
-            return closeFuture;
+                return this;
+            });
         }
         else
         {

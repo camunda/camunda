@@ -3,5 +3,5 @@ package org.camunda.tngp.transport;
 public interface TransportChannelListener
 {
 
-    void onChannelClosed(TransportChannel channel);
+    void onChannelClosed(Channel channel);
 }

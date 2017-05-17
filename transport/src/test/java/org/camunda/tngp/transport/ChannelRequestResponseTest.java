@@ -66,10 +66,10 @@ public class ChannelRequestResponseTest
             .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
             .bind();
 
-        final ClientChannel channel = clientTransport.createClientChannelPool()
+        final ChannelManager channelManager = clientTransport.createClientChannelPool()
             .transportChannelHandler(Protocols.REQUEST_RESPONSE, new ReceiveBufferChannelHandler(clientReceiveBuffer))
-            .build()
-            .requestChannel(addr);
+            .build();
+        final Channel channel = channelManager.requestChannel(addr);
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
         final Subscription clientReceiveBufferSubscription = clientReceiveBuffer.openSubscription("client-receiver");
@@ -81,14 +81,14 @@ public class ChannelRequestResponseTest
             waitForResponse(clientReceiveBufferSubscription, fragmentHandler, i);
         }
 
-        channel.close();
+        channelManager.returnChannel(channel);
         clientTransport.close();
         serverTransport.close();
     }
 
-    protected void sendRequest(Dispatcher sendBuffer, UnsafeBuffer msg, ClientChannel channel)
+    protected void sendRequest(Dispatcher sendBuffer, UnsafeBuffer msg, Channel channel)
     {
-        while (sendBuffer.offer(msg, 0, msg.capacity(), channel.getId()) < 0)
+        while (sendBuffer.offer(msg, 0, msg.capacity(), channel.getStreamId()) < 0)
         {
             // spin
         }
