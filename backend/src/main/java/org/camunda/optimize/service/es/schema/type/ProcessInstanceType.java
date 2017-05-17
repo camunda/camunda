@@ -61,6 +61,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
             .endObject()
             .startObject(EVENTS)
               .field("type", "nested")
+              .field("include_in_all", false)
               .startObject("properties");
                 addNestedEventField(newBuilder)
               .endObject()
@@ -72,16 +73,16 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(EVENT_ID)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_ID)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_TYPE)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(EVENT_DURATION)
-      .field("type", "long")
+        .field("type", "long")
       .endObject();
   }
 
@@ -89,6 +90,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
     XContentBuilder newBuilder = builder
         .startObject(STRING_VARIABLES)
           .field("type", "nested")
+          .field("include_in_all", false)
           .startObject("properties");
             addNestedVariableField(newBuilder, "keyword")
           .endObject()

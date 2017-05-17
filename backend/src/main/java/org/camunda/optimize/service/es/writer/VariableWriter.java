@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -27,6 +28,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -57,8 +59,6 @@ public class VariableWriter {
 
   private SimpleDateFormat sdf;
 
-  private final String variableParameterName = "variable";
-
   @PostConstruct
   public void init() {
     sdf = new SimpleDateFormat(configurationService.getDateFormat());
@@ -67,15 +67,139 @@ public class VariableWriter {
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
-    BulkRequestBuilder addVariableToProcessInstanceBulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esclient.prepareBulk();
     BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
+
+    //build map first
+    Map<String, Map <String, List<VariableDto>>> processToTypedVariables = new HashMap<>();
     for (VariableDto variable : variables) {
-      addImportVariableRequest(addVariableToProcessInstanceBulkRequest, variable);
+      if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
+        continue;
+      }
+
+      if (!processToTypedVariables.containsKey(variable.getProcessInstanceId())) {
+        processToTypedVariables.put(variable.getProcessInstanceId(), newTypeMap());
+      }
+      Map<String,List<VariableDto>> typedVars = processToTypedVariables.get(variable.getProcessInstanceId());
+
+      typedVars.get(variableTypeToFieldLabel(variable.getType())).add(variable);
       addVariableRequest(variableBulkRequest, variable);
     }
-    addVariableToProcessInstanceBulkRequest.get();
+
+    for (Map.Entry<String, Map <String, List<VariableDto>>> entry : processToTypedVariables.entrySet()) {
+      //for every process id
+      //for every type execute one upsert
+      addImportVariablesRequest(addVariablesToProcessInstanceBulkRequest, entry.getKey(), entry.getValue());
+    }
+    try {
+      addVariablesToProcessInstanceBulkRequest.get();
+    } catch (NullPointerException e) {
+      logger.error("NPE for PID [{}]" , e);
+    }
     variableBulkRequest.get();
   }
+
+  private Map<String, List<VariableDto>> newTypeMap() {
+    Map<String, List<VariableDto>> result = new HashMap<>();
+    for (String type : VariableHelper.allVariableTypeFieldLabels) {
+      result.put(type, new ArrayList<>());
+    }
+    return result;
+  }
+
+  private void addImportVariablesRequest(
+      BulkRequestBuilder addVariablesToProcessInstanceBulkRequest,
+      String processInstanceId,
+      Map<String, List<VariableDto>> typeMappedVars
+  ) throws IOException, ParseException {
+
+    Map<String, Object> params = buildParameters(typeMappedVars);
+
+    Script updateScript = new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        createInlineUpdateScript(typeMappedVars),
+        params
+    );
+
+    String newEntryIfAbsent = getNewProcessInstanceRecordString(processInstanceId, typeMappedVars);
+
+    if (newEntryIfAbsent != null) {
+      addVariablesToProcessInstanceBulkRequest.add(esclient
+          .prepareUpdate(
+              configurationService.getOptimizeIndex(),
+              configurationService.getProcessInstanceType(),
+              processInstanceId)
+          .setScript(updateScript)
+          .setUpsert(newEntryIfAbsent, XContentType.JSON)
+      );
+    }
+
+  }
+
+  private Map<String, Object> buildParameters(Map<String, List<VariableDto>> typeMappedVars) throws IOException, ParseException {
+    Map<String, Object> params = new HashMap<>();
+    for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
+      String typeName = typedVarsEntry.getKey();
+      List jsonMap = objectMapper.readValue(
+          objectMapper.writeValueAsString(mapTypeValues(typedVarsEntry.getValue())),
+          List.class);
+      params.put(typeName, jsonMap);
+    }
+
+    return params;
+  }
+
+  private List<VariableInstanceDto> mapTypeValues(List<VariableDto> variablesOfOneType) throws ParseException {
+    List <VariableInstanceDto> result = new ArrayList();
+    for (VariableDto variable : variablesOfOneType) {
+      result.add(parseValue(variable));
+    }
+    return result;
+  }
+
+  private String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars) {
+    StringBuilder builder = new StringBuilder();
+    for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
+      String typeName = typedVarsEntry.getKey();
+      builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
+    }
+    return builder.toString();
+  }
+
+  private String getNewProcessInstanceRecordString(String processInstanceId, Map<String, List<VariableDto>> typeMappedVars) throws JsonProcessingException, ParseException {
+
+    VariableDto variable = grabFirstOne(typeMappedVars);
+    if (variable == null) {
+      //all is lost, no variables to persist, should have crashed before.
+      return null;
+    }
+
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(variable.getProcessDefinitionId());
+    procInst.setProcessDefinitionKey(variable.getProcessDefinitionKey());
+    procInst.setProcessInstanceId(processInstanceId);
+    procInst.setStartDate(new Date());
+    procInst.setEndDate(new Date());
+    for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
+      for (VariableDto var : entry.getValue()) {
+        procInst.addVariableInstance(parseValue(var));
+      }
+    }
+    return objectMapper.writeValueAsString(procInst);
+  }
+
+  private VariableDto grabFirstOne(Map<String, List<VariableDto>> typeMappedVars) {
+    VariableDto variable = null;
+    for (Map.Entry <String, List<VariableDto>> e : typeMappedVars.entrySet()) {
+      if (!e.getValue().isEmpty()) {
+        variable = e.getValue().get(0);
+        break;
+      }
+    }
+    return variable;
+  }
+
 
   private void addVariableRequest(BulkRequestBuilder variableBulkRequest, VariableDto variable) throws JsonProcessingException {
     String variableId = variable.getId();
@@ -89,56 +213,8 @@ public class VariableWriter {
     );
   }
 
-  private void addImportVariableRequest(BulkRequestBuilder addVariableToProcessInstanceBulkRequest, VariableDto variable) throws IOException, ParseException {
-    if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
-      return;
-    }
-    String processInstanceId = variable.getProcessInstanceId();
-    VariableInstanceDto variableInstanceDto = parseValue(variable);
-    Map<String, Object> params = new HashMap<>();
-    // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-    HashMap jsonMap = objectMapper.readValue(
-      objectMapper.writeValueAsString(variableInstanceDto),
-      HashMap.class
-    );
-    params.put(variableParameterName, jsonMap);
-
-    Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      createInlineUpdateScript(variable.getType()),
-      params
-    );
-
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(variable.getProcessDefinitionId());
-    procInst.setProcessDefinitionKey(variable.getProcessDefinitionKey());
-    procInst.setProcessInstanceId(variable.getProcessInstanceId());
-    procInst.setStartDate(new Date());
-    procInst.setEndDate(new Date());
-    procInst.addVariableInstance(variableInstanceDto);
-    String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-
-    addVariableToProcessInstanceBulkRequest.add(esclient
-      .prepareUpdate(
-        configurationService.getOptimizeIndex(),
-        configurationService.getProcessInstanceType(),
-        processInstanceId)
-      .setScript(updateScript)
-      .setUpsert(newEntryIfAbsent, XContentType.JSON)
-    );
-  }
-
   private boolean isVariableFromCaseDefinition(VariableDto variable) {
     return variable.getProcessDefinitionId() == null;
-  }
-
-  private String createInlineUpdateScript(String type) {
-    return "ctx._source." +
-      variableTypeToFieldLabel(type) +
-      ".add(params." +
-      variableParameterName +
-      ")";
   }
 
   private VariableInstanceDto parseValue(VariableDto e) throws ParseException {

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,9 +42,17 @@ public class EventsWriter {
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
+    Map<String, List<EventDto>> processEvents = new HashMap<>();
     for (EventDto e : events) {
-      addEventToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, e);
+      if (!processEvents.containsKey(e.getProcessInstanceId())) {
+        processEvents.put(e.getProcessInstanceId(), new ArrayList<>());
+      }
+      processEvents.get(e.getProcessInstanceId()).add(e);
       addEventRequest(eventBulkRequest, e);
+    }
+
+    for (Map.Entry<String, List<EventDto>> entry : processEvents.entrySet()) {
+      addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
     }
     addEventToProcessInstanceBulkRequest.get();
     eventBulkRequest.get();
@@ -51,53 +60,66 @@ public class EventsWriter {
 
   private void addEventRequest(BulkRequestBuilder eventBulkRequest, EventDto e) {
     eventBulkRequest.add(
-      esclient.prepareIndex(
-        configurationService.getOptimizeIndex(),
-        configurationService.getEventType(),
-        e.getId())
-      .setSource(Collections.emptyMap())
+        esclient.prepareIndex(
+            configurationService.getOptimizeIndex(),
+            configurationService.getEventType(),
+            e.getId())
+            .setSource(Collections.emptyMap())
     );
   }
 
-  private void addEventToProcessInstanceRequest(BulkRequestBuilder addEventToProcessInstanceBulkRequest, EventDto e) throws IOException {
-    String processInstanceId = e.getProcessInstanceId();
-    SimpleEventDto simpleEventDto = new SimpleEventDto();
-    simpleEventDto.setDurationInMs(e.getDurationInMs());
-    simpleEventDto.setActivityId(e.getActivityId());
-    simpleEventDto.setId(e.getId());
-    simpleEventDto.setActivityType(e.getActivityType());
+  private void addEventsToProcessInstanceRequest(BulkRequestBuilder addEventToProcessInstanceBulkRequest, List<EventDto> processEvents, String processInstanceId) throws IOException {
+    List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
     Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-    HashMap jsonMap = objectMapper.readValue(
-      objectMapper.writeValueAsString(simpleEventDto),
-      HashMap.class
+    List jsonMap = objectMapper.readValue(
+        objectMapper.writeValueAsString(simpleEvents),
+        List.class
     );
-    params.put("event", jsonMap);
+    params.put("events", jsonMap);
 
     Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.events.add(params.event)",
-      params
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.events.addAll(params.events)",
+        params
     );
 
+    EventDto e = getFirst(processEvents);
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(e.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(e.getProcessDefinitionKey());
     procInst.setProcessInstanceId(e.getProcessInstanceId());
     procInst.setStartDate(new Date());
     procInst.setEndDate(new Date());
-    procInst.getEvents().add(simpleEventDto);
+    procInst.getEvents().addAll(simpleEvents);
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     addEventToProcessInstanceBulkRequest.add(esclient
-      .prepareUpdate(
-        configurationService.getOptimizeIndex(),
-        configurationService.getProcessInstanceType(),
-        processInstanceId)
-      .setScript(updateScript)
-      .setUpsert(newEntryIfAbsent, XContentType.JSON)
+        .prepareUpdate(
+            configurationService.getOptimizeIndex(),
+            configurationService.getProcessInstanceType(),
+            processInstanceId)
+        .setScript(updateScript)
+        .setUpsert(newEntryIfAbsent, XContentType.JSON)
     );
+  }
+
+  private EventDto getFirst(List<EventDto> processEvents) {
+    return processEvents.get(0);
+  }
+
+  private List<SimpleEventDto> getSimpleEventDtos(List<EventDto> processEvents) {
+    List<SimpleEventDto> simpleEvents = new ArrayList<>();
+    for (EventDto e : processEvents) {
+      SimpleEventDto simpleEventDto = new SimpleEventDto();
+      simpleEventDto.setDurationInMs(e.getDurationInMs());
+      simpleEventDto.setActivityId(e.getActivityId());
+      simpleEventDto.setId(e.getId());
+      simpleEventDto.setActivityType(e.getActivityType());
+      simpleEvents.add(simpleEventDto);
+    }
+    return simpleEvents;
   }
 
 }
