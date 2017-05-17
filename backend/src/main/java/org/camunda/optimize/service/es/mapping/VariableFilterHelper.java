@@ -3,25 +3,19 @@ package org.camunda.optimize.service.es.mapping;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.SHORT_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
+import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
+import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
+import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -33,20 +27,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 public class VariableFilterHelper {
 
   private Logger logger = LoggerFactory.getLogger(VariableFilterHelper.class);
-
-  private Map<String,String> typeToVariableFieldLabel;
-  
-  @PostConstruct
-  private void init() {
-    typeToVariableFieldLabel = new HashMap<>();
-    typeToVariableFieldLabel.put("string", STRING_VARIABLES);
-    typeToVariableFieldLabel.put("integer", INTEGER_VARIABLES);
-    typeToVariableFieldLabel.put("short", SHORT_VARIABLES);
-    typeToVariableFieldLabel.put("long", LONG_VARIABLES);
-    typeToVariableFieldLabel.put("double", DOUBLE_VARIABLES);
-    typeToVariableFieldLabel.put("boolean", BOOLEAN_VARIABLES);
-    typeToVariableFieldLabel.put("date", DATE_VARIABLES);
-  }
 
   public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterMapDto filter) {
     return this.addVariableFilters(query, filter.getVariables());
@@ -88,8 +68,8 @@ public class VariableFilterHelper {
 
   private QueryBuilder createStringQueryBuilder(VariableFilterDto dto) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    String variableNameFieldLabel = getFullVariableNameFieldLabel(dto.getType());
-    String variableValueFieldLabel = getFullVariableValueFieldLabel(dto.getType());
+    String variableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
+    String variableValueFieldLabel = getNestedVariableValueFieldLabelForType(dto.getType());
     if (dto.getOperator().equals("=")) {
       for (String value : dto.getValues()) {
        boolQueryBuilder.should(
@@ -126,14 +106,14 @@ public class VariableFilterHelper {
       return boolQueryBuilder;
     }
     QueryBuilder resultQuery = nestedQuery(
-      typeToVariableFieldLabel.get(dto.getType().toLowerCase()),
+      variableTypeToFieldLabel(dto.getType().toLowerCase()),
       boolQueryBuilder,
       ScoreMode.None);
-    String variableNameFieldLabel = getFullVariableNameFieldLabel(dto.getType());
+    String variableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
     boolQueryBuilder.must(
       termQuery(variableNameFieldLabel, dto.getName())
     );
-    String variableValueFieldLabel = getFullVariableValueFieldLabel(dto.getType());
+    String variableValueFieldLabel = getNestedVariableValueFieldLabelForType(dto.getType());
     Object value = retrieveValue(dto);
     switch (dto.getOperator()) {
       case "=":
@@ -182,14 +162,6 @@ public class VariableFilterHelper {
     return value;
   }
 
-  private String getFullVariableNameFieldLabel(String variableType) {
-    return typeToVariableFieldLabel.get(variableType.toLowerCase()) + "." + ProcessInstanceType.VARIABLE_NAME;
-  }
-
-  private String getFullVariableValueFieldLabel(String variableType) {
-    return typeToVariableFieldLabel.get(variableType.toLowerCase()) + "." + ProcessInstanceType.VARIABLE_VALUE;
-  }
-
   private QueryBuilder createDateQueryBuilder(VariableFilterDto dto) {
     return createNumberQueryBuilder(dto);
   }
@@ -198,14 +170,17 @@ public class VariableFilterHelper {
     QueryBuilder queryBuilder = matchAllQuery();
     if (dto.getOperator().equals("=")) {
       queryBuilder =
-            nestedQuery(
-              BOOLEAN_VARIABLES,
-              boolQuery()
-                .must(termsQuery("booleanVariables.name", dto.getName()))
-                .must(termsQuery("booleanVariables.value", retrieveValue(dto))
-              ),
-              ScoreMode.None
-            );
+        nestedQuery(
+          BOOLEAN_VARIABLES,
+          boolQuery()
+            .must(
+              termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), dto.getName())
+            )
+            .must(
+              termsQuery(getNestedVariableValueFieldLabelForType(dto.getType()), retrieveValue(dto))
+            ),
+          ScoreMode.None
+        );
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not supported for type [Boolean]", dto.getOperator());
     }

@@ -10,6 +10,8 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.IN
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.SHORT_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
 
 public class VariableHelper {
 
@@ -21,7 +23,12 @@ public class VariableHelper {
   public static final String BOOLEAN_TYPE = "Boolean";
   public static final String DATE_TYPE = "Date";
 
-  private static Map<String,String> typeToVariableFieldLabel = init();
+  public static final String[] allVariableTypeFieldLabels =
+    {STRING_VARIABLES, INTEGER_VARIABLES, LONG_VARIABLES, SHORT_VARIABLES,
+      DOUBLE_VARIABLES, DATE_VARIABLES, BOOLEAN_VARIABLES};
+
+  private static Map<String, String> typeToVariableFieldLabel = initTypeToVariableFieldLabel();
+  private static Map<String, String> variableFieldLabelToType = initVariableFieldLabelToType();
 
   public static boolean isStringType(String type) {
     return type.toLowerCase().equals(STRING_TYPE.toLowerCase());
@@ -51,7 +58,7 @@ public class VariableHelper {
     return type.toLowerCase().equals(DATE_TYPE.toLowerCase());
   }
 
-  private static Map<String,String> init() {
+  private static Map<String,String> initTypeToVariableFieldLabel() {
     typeToVariableFieldLabel = new HashMap<>();
     typeToVariableFieldLabel.put("string", STRING_VARIABLES);
     typeToVariableFieldLabel.put("integer", INTEGER_VARIABLES);
@@ -63,11 +70,51 @@ public class VariableHelper {
     return typeToVariableFieldLabel;
   }
 
+  private static Map<String, String> initVariableFieldLabelToType() {
+    variableFieldLabelToType = new HashMap<>();
+    variableFieldLabelToType.put(STRING_VARIABLES, STRING_TYPE);
+    variableFieldLabelToType.put(INTEGER_VARIABLES, INTEGER_TYPE);
+    variableFieldLabelToType.put(SHORT_VARIABLES, SHORT_TYPE);
+    variableFieldLabelToType.put(LONG_VARIABLES, LONG_TYPE);
+    variableFieldLabelToType.put(DOUBLE_VARIABLES, DOUBLE_TYPE);
+    variableFieldLabelToType.put(BOOLEAN_VARIABLES, BOOLEAN_TYPE);
+    variableFieldLabelToType.put(DATE_VARIABLES, DATE_TYPE);
+    return variableFieldLabelToType;
+  }
+
   public static boolean isVariableTypeSupported(String variableType) {
     return typeToVariableFieldLabel.containsKey(variableType.toLowerCase());
   }
 
   public static String variableTypeToFieldLabel(String variableType) {
     return typeToVariableFieldLabel.get(variableType.toLowerCase());
+  }
+
+  public static String fieldLabelToVariableType(String variableFieldLabel) {
+    return variableFieldLabelToType.get(variableFieldLabel);
+  }
+
+  public static String[] getAllVariableTypeFieldLabels() {
+    return allVariableTypeFieldLabels;
+  }
+
+  public static String getNestedVariableNameFieldLabel(String variableFieldLabel) {
+    return variableFieldLabel + "." + VARIABLE_NAME;
+  }
+
+  public static String getNestedVariableValueFieldLabel(String variableFieldLabel) {
+    return variableFieldLabel + "." + VARIABLE_VALUE;
+  }
+
+  public static String getNestedVariableNameFieldLabelForType(String variableType) {
+    return getNestedVariableNameFieldLabel(
+      typeToVariableFieldLabel.get(variableType.toLowerCase())
+    );
+  }
+
+  public static String getNestedVariableValueFieldLabelForType(String variableType) {
+    return getNestedVariableValueFieldLabel(
+      typeToVariableFieldLabel.get(variableType.toLowerCase())
+    );
   }
 }

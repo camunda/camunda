@@ -268,6 +268,59 @@ public class VariableReaderIT {
     return typeToValue;
   }
 
+  @Test
+  public void variablesAreSortedByThereUsedFrequency() {
+    // given
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    int exceededMaxVariableValue = embeddedOptimizeRule.getMaxVariableValueListSize() + 1;
+    for (int i = 0; i < exceededMaxVariableValue; i++) {
+      IntegerVariableDto variableDto = new IntegerVariableDto();
+      variableDto.setType("Integer");
+      variableDto.setName("varName");
+      variableDto.setValue(i);
+      procInst.addVariableInstance(variableDto);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), String.valueOf(i), procInst);
+    }
+
+    // when
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+
+    // then
+    assertThat(variables.size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get(0);
+    assertThat(responseDto.getValues().size(), is(15));
+    assertThat(responseDto.isValuesAreComplete(), is(false));
+    List<String> values = responseDto.getValues();
+    for (int i=0; i<values.size(); i++) {
+      assertThat(Integer.parseInt(values.get(i)), is(i));
+    }
+  }
+
+  @Test
+  public void variablesDoNotContainDuplicates() {
+    // given
+    StringVariableDto variableDto = new StringVariableDto();
+    variableDto.setName("aStringVariableName");
+    variableDto.setType("String");
+    variableDto.setValue("aStringValue");
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.addVariableInstance(variableDto);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "2", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "3", procInst);
+
+    // when
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+
+    // then
+    assertThat(variables.size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get(0);
+    assertThat(responseDto.getValues().size(), is(1));
+    assertVariableNameValueRelation(variables, "aStringVariableName", "aStringValue");
+  }
+
   private List<GetVariablesResponseDto> getGetVariablesResponseDtos(String processDefinition) {
     String token = embeddedOptimizeRule.authenticateAdmin();
     Response response =
