@@ -18,7 +18,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
@@ -27,6 +26,7 @@ import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -71,7 +71,7 @@ public class CommandExecutorTest
     protected RequestWriter requestWriter;
 
     @Mock
-    protected ClientChannelResolver clientChannelResolver;
+    protected Channel channel;
 
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
 
@@ -95,7 +95,8 @@ public class CommandExecutorTest
 
         when(requestWriter.getLength()).thenReturn(REQUEST_LENGTH);
 
-        when(clientChannelResolver.getChannelIdForCmd(any(AbstractCmdImpl.class))).thenReturn(73);
+        when(channel.getStreamId()).thenReturn(CHANNEL_ID);
+        when(channel.isReady()).thenReturn(true);
 
         when(responseHandler.getResponseSchemaId()).thenReturn(ExecuteCommandResponseEncoder.SCHEMA_ID);
         when(responseHandler.getResponseTemplateId()).thenReturn(ExecuteCommandResponseEncoder.TEMPLATE_ID);
@@ -106,7 +107,11 @@ public class CommandExecutorTest
             .blockLength(ExecuteCommandResponseEncoder.BLOCK_LENGTH)
             .version(ExecuteCommandResponseEncoder.SCHEMA_VERSION);
 
-        commandExecutor = new ClientCmdExecutor(mock(TransportConnectionPool.class), mock(DataFramePool.class), clientChannelResolver);
+        commandExecutor = new ClientCmdExecutor(
+                mock(TransportConnectionPool.class),
+                mock(DataFramePool.class));
+
+        commandExecutor.setChannel(channel);
     }
 
     @Test

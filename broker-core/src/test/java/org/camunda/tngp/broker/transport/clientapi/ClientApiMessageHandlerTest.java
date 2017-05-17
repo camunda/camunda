@@ -1,13 +1,16 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
-import static org.camunda.tngp.util.StringUtil.*;
-import static org.camunda.tngp.util.VarDataUtil.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutionException;
 
@@ -31,7 +34,7 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.test.util.FluentMock;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
@@ -74,7 +77,7 @@ public class ClientApiMessageHandlerTest
     private ClientApiMessageHandler messageHandler;
 
     @Mock
-    private TransportChannel mockTransportChannel;
+    private Channel mockTransportChannel;
 
     @Mock
     private Dispatcher mockSendBuffer;
@@ -96,7 +99,7 @@ public class ClientApiMessageHandlerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        when(mockTransportChannel.getId()).thenReturn(TRANSPORT_CHANNEL_ID);
+        when(mockTransportChannel.getStreamId()).thenReturn(TRANSPORT_CHANNEL_ID);
 
         final AgentRunnerService agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
 

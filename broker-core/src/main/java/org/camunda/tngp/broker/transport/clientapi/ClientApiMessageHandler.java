@@ -1,8 +1,9 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.*;
-import static org.camunda.tngp.transport.protocol.Protocols.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
+import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
+import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,7 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.SingleMessageHeaderDescriptor;
@@ -78,14 +79,14 @@ public class ClientApiMessageHandler
         this.taskSubscriptionManager = taskSubscriptionManager;
     }
 
-    public boolean handleMessage(final TransportChannel transportChannel, final DirectBuffer buffer, final int offset, final int length)
+    public boolean handleMessage(final Channel transportChannel, final DirectBuffer buffer, final int offset, final int length)
     {
         boolean isHandled = false;
 
         cmdQueue.drain(cmdConsumer);
 
         eventMetadata.reset();
-        eventMetadata.reqChannelId(transportChannel.getId());
+        eventMetadata.reqChannelId(transportChannel.getStreamId());
 
         int messageOffset = offset + TransportHeaderDescriptor.headerLength();
         int messageLength = length - TransportHeaderDescriptor.headerLength();

@@ -9,9 +9,9 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder;
 import org.camunda.tngp.transport.Transports;
+import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
-import org.camunda.tngp.transport.impl.agent.TransportConductor;
 
 public class TransportService implements Service<Transport>
 {
@@ -19,7 +19,7 @@ public class TransportService implements Service<Transport>
     protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
 
     protected Transport transport;
-    protected TransportConductor transportConductor;
+    protected Conductor transportConductor;
     protected Receiver receiver;
     protected Sender sender;
 

@@ -37,7 +37,7 @@ import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
@@ -96,7 +96,7 @@ public class ClusterComponent implements Component
             .install();
 
         final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(clientChannelManagerCapacity);
-        final ServiceName<ClientChannelPool> clientChannelManagerServiceName = clientChannelManagerName(component);
+        final ServiceName<ChannelManager> clientChannelManagerServiceName = clientChannelManagerName(component);
         serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
             .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
             .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
@@ -143,7 +143,7 @@ public class ClusterComponent implements Component
 
         // TODO: make capacity of client channel manager configurable
         final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(100);
-        final ServiceName<ClientChannelPool> clientChannelManagerServiceName = clientChannelManagerName("management");
+        final ServiceName<ChannelManager> clientChannelManagerServiceName = clientChannelManagerName("management");
         serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
             .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
             .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())

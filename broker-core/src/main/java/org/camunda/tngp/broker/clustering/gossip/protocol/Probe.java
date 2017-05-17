@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
 import org.camunda.tngp.broker.clustering.gossip.message.ProbeRequest;
 import org.camunda.tngp.broker.clustering.util.MessageWriter;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -157,7 +157,7 @@ public class Probe
             super(stateMachine);
             this.peers = gossipContext.getPeers();
 
-            final ClientChannelPool clientChannelManager = gossipContext.getClientChannelPool();
+            final ChannelManager clientChannelManager = gossipContext.getClientChannelPool();
             final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
             this.requestController = new RequestResponseController(clientChannelManager, connections, config.probeTimeout);

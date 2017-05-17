@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.clustering.util;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.transport.ClientChannel;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.Channel;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.PooledFuture;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.protocol.Protocols;
@@ -49,7 +49,7 @@ public class SingleMessageController
     private SingleMessageContext singleMessageContext;
     private final StateMachineAgent<SingleMessageContext> singleMessageStateMachine;
 
-    public SingleMessageController(final ClientChannelPool clientChannelManager, final Dispatcher sendBuffer)
+    public SingleMessageController(final ChannelManager clientChannelManager, final Dispatcher sendBuffer)
     {
         this.singleMessageStateMachine = new StateMachineAgent<>(
                 StateMachine.<SingleMessageContext> builder(s ->
@@ -123,15 +123,15 @@ public class SingleMessageController
 
     static class SingleMessageContext extends SimpleStateMachineContext
     {
-        final ClientChannelPool clientChannelManager;
+        final ChannelManager clientChannelManager;
         final SocketAddress receiver;
         final MessageWriter messageWriter;
 
-        PooledFuture<ClientChannel> channelFuture;
-        ClientChannel channel;
+        PooledFuture<Channel> channelFuture;
+        Channel channel;
         BufferWriter requestWriter;
 
-        SingleMessageContext(final StateMachine<?> stateMachine, final ClientChannelPool clientChannelManager, final Dispatcher sendBuffer)
+        SingleMessageContext(final StateMachine<?> stateMachine, final ChannelManager clientChannelManager, final Dispatcher sendBuffer)
         {
             super(stateMachine);
             this.clientChannelManager = clientChannelManager;
@@ -150,7 +150,7 @@ public class SingleMessageController
 
             if (context.channelFuture == null)
             {
-                final ClientChannelPool clientChannelManager = context.clientChannelManager;
+                final ChannelManager clientChannelManager = context.clientChannelManager;
                 final SocketAddress receiver = context.receiver;
 
                 workcount += 1;
@@ -161,7 +161,7 @@ public class SingleMessageController
             {
                 if (!context.channelFuture.isFailed())
                 {
-                    final ClientChannel clientChannel = context.channelFuture.poll();
+                    final Channel clientChannel = context.channelFuture.poll();
                     if (clientChannel != null)
                     {
                         context.channel = clientChannel;
@@ -196,12 +196,12 @@ public class SingleMessageController
         {
             final MessageWriter messageWriter = context.messageWriter;
             final BufferWriter requestWriter = context.requestWriter;
-            final ClientChannel channel = context.channel;
+            final Channel channel = context.channel;
 
             int workcount = 0;
 
             final boolean isSent = messageWriter.protocol(Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
-                .channelId(channel.getId())
+                .channelId(channel.getStreamId())
                 .message(requestWriter)
                 .tryWriteMessage();
 
@@ -232,7 +232,7 @@ public class SingleMessageController
         {
             int workcount = 0;
 
-            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            final PooledFuture<Channel> channelFuture = context.channelFuture;
             if (channelFuture != null)
             {
                 if (channelFuture.isFailed() || channelFuture.poll() != null)
@@ -259,8 +259,8 @@ public class SingleMessageController
         @Override
         public void work(SingleMessageContext context) throws Exception
         {
-            final ClientChannelPool clientChannelManager = context.clientChannelManager;
-            final ClientChannel endpointChannel = context.channel;
+            final ChannelManager clientChannelManager = context.clientChannelManager;
+            final Channel endpointChannel = context.channel;
             clientChannelManager.returnChannel(endpointChannel);
 
             context.channel = null;

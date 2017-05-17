@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.impl.DefaultChannelHandler;
 
 public class ClientApiChannelHandler extends DefaultChannelHandler
@@ -14,14 +14,14 @@ public class ClientApiChannelHandler extends DefaultChannelHandler
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         return messageHandler.handleMessage(transportChannel, buffer, offset, length);
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
-        messageHandler.onChannelClose(transportChannel.getId());
+        messageHandler.onChannelClose(transportChannel.getStreamId());
     }
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.AbstractSingleMessageCmd;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -18,15 +19,13 @@ public class ClientCmdExecutor
 {
     protected final TransportConnectionPool connectionPool;
     protected final DataFramePool dataFramePool;
-    protected final ClientChannelResolver clientChannelResolver;
+    protected Channel channel;
 
     public ClientCmdExecutor(final TransportConnectionPool connectionPool,
-            DataFramePool dataFramePool,
-            final ClientChannelResolver clientChannelResolver)
+            DataFramePool dataFramePool)
     {
         this.connectionPool = connectionPool;
         this.dataFramePool = dataFramePool;
-        this.clientChannelResolver = clientChannelResolver;
     }
 
     public <R> R execute(final AbstractCmdImpl<R> cmd)
@@ -65,9 +64,10 @@ public class ClientCmdExecutor
         final RequestWriter requestWriter = cmd.getRequestWriter();
         requestWriter.validate();
 
-        final int channelId = clientChannelResolver.getChannelIdForCmd(cmd);
+        System.out.println("Client: executing command " + cmd);
+        ensureStreamConnected();
 
-        final PooledTransportRequest request = connection.openRequest(channelId, requestWriter.getLength());
+        final PooledTransportRequest request = connection.openRequest(channel.getStreamId(), requestWriter.getLength());
 
         if (request != null)
         {
@@ -102,9 +102,9 @@ public class ClientCmdExecutor
         final RequestWriter requestWriter = cmd.getRequestWriter();
         requestWriter.validate();
 
-        final int channelId = clientChannelResolver.getChannelIdForCmd(cmd);
+        ensureStreamConnected();
 
-        final OutgoingDataFrame dataFrame = dataFramePool.openFrame(requestWriter.getLength(), channelId);
+        final OutgoingDataFrame dataFrame = dataFramePool.openFrame(requestWriter.getLength(), channel.getStreamId());
 
         if (dataFrame != null)
         {
@@ -124,5 +124,18 @@ public class ClientCmdExecutor
             throw new RuntimeException("Failed to open data frame");
         }
 
+    }
+
+    protected void ensureStreamConnected()
+    {
+        if (channel == null || !channel.isReady())
+        {
+            throw new RuntimeException("Currently not connected to broker");
+        }
+    }
+
+    public void setChannel(Channel remoteStream)
+    {
+        this.channel = remoteStream;
     }
 }

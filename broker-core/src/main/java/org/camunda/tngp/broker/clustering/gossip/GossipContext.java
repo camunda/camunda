@@ -6,7 +6,7 @@ import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerSelector;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class GossipContext
@@ -17,7 +17,7 @@ public class GossipContext
     private PeerList peers;
 
     private Subscription subscription;
-    private ClientChannelPool clientChannelPool;
+    private ChannelManager clientChannelPool;
     private TransportConnectionPool connections;
     private Dispatcher sendBuffer;
 
@@ -63,12 +63,12 @@ public class GossipContext
         this.subscription = subscription;
     }
 
-    public ClientChannelPool getClientChannelPool()
+    public ChannelManager getClientChannelPool()
     {
         return clientChannelPool;
     }
 
-    public void setClientChannelPool(ClientChannelPool clientChannelPool)
+    public void setClientChannelPool(ChannelManager clientChannelPool)
     {
         this.clientChannelPool = clientChannelPool;
     }

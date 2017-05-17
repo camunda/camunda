@@ -11,7 +11,7 @@ import org.camunda.tngp.broker.clustering.gossip.data.PeerSelector;
 import org.camunda.tngp.broker.clustering.gossip.message.GossipRequest;
 import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
@@ -160,7 +160,7 @@ public class Dissemination
             this.request = new GossipRequest();
             this.response = new GossipResponse();
 
-            final ClientChannelPool clientChannelManager = gossipContext.getClientChannelPool();
+            final ChannelManager clientChannelManager = gossipContext.getClientChannelPool();
             final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
             this.requestController = new RequestResponseController(clientChannelManager, connections, config.disseminationTimeout);

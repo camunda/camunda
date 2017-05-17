@@ -20,6 +20,7 @@ import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +43,12 @@ public class TopicSubscriptionTest
     public void setUp()
     {
         this.client = clientRule.getClient();
+    }
+
+    @After
+    public void tearDown()
+    {
+        System.out.println("Test: after invoked");
     }
 
     @Test
@@ -352,10 +359,15 @@ public class TopicSubscriptionTest
         TestUtil.waitUntil(() -> !firstSubscription.isOpen());
         client.disconnect();
 
+        System.out.println("Test: Client disconnected; broker server binding closed");
+
         broker.openServerSocketBinding();
+        System.out.println("Test: Client connecting");
         client.connect();
+        System.out.println("Test: Client connected");
 
         // when
+        // TODO: der hier ist flaky
         final TopicSubscription secondSubscription = clientRule.topic().newSubscription()
                 .startAtHeadOfTopic()
                 .handler((m, e) ->

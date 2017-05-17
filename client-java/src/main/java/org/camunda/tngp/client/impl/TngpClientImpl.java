@@ -6,8 +6,8 @@ import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
@@ -18,12 +18,12 @@ import org.camunda.tngp.client.IncidentTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
-import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.incident.impl.IncidentTopicClientImpl;
 import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.transport.ClientChannel;
+import org.camunda.tngp.transport.Channel;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
@@ -49,16 +49,17 @@ public class TngpClientImpl implements TngpClient
     protected final Transport transport;
     protected final TransportConnectionPool connectionPool;
     protected final DataFramePool dataFramePool;
-    protected ClientChannel channel;
+    protected Channel channel;
     protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
 
-    protected DummyChannelResolver channelResolver;
     protected ClientCmdExecutor cmdExecutor;
 
     protected final ObjectMapper objectMapper;
 
     protected SubscriptionManager subscriptionManager;
+
+    protected ChannelManager channelManager;
 
     public TngpClientImpl(final Properties properties)
     {
@@ -110,9 +111,7 @@ public class TngpClientImpl implements TngpClient
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
         dataFramePool = DataFramePool.newBoundedPool(maxRequests, transport.getSendBuffer());
 
-        channelResolver = new DummyChannelResolver();
-
-        cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool, channelResolver);
+        cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -129,18 +128,19 @@ public class TngpClientImpl implements TngpClient
                 prefetchCapacity,
                 dataFrameReceiveBuffer.openSubscription("task-acquisition"));
         transport.registerChannelListener(subscriptionManager);
+
+        channelManager = transport.createClientChannelPool()
+                .requestResponseProtocol(connectionPool)
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
+                .build();
     }
 
     @Override
     public void connect()
     {
-        channel = transport.createClientChannelPool()
-                .requestResponseProtocol(connectionPool)
-                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
-                .build()
-                .requestChannel(contactPoint);
+        channel = channelManager.requestChannel(contactPoint);
 
-        channelResolver.setChannelId(channel.getId());
+        cmdExecutor.setChannel(channel);
 
         subscriptionManager.start();
     }
@@ -152,10 +152,9 @@ public class TngpClientImpl implements TngpClient
 
         subscriptionManager.stop();
 
-        channel.close();
+        cmdExecutor.setChannel(null);
+        channelManager.closeAllChannelsAsync().join();
         channel = null;
-
-        channelResolver.resetChannelId();
     }
 
     @Override

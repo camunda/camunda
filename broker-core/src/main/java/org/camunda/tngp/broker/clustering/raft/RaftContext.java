@@ -5,7 +5,7 @@ import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
@@ -18,7 +18,7 @@ public class RaftContext
     private AgentRunnerServices agentRunner;
     private SocketAddress raftEndpoint;
     private Subscription subscription;
-    private ClientChannelPool clientChannelManager;
+    private ChannelManager clientChannelManager;
     private TransportConnectionPool connections;
     private Dispatcher sendBuffer;
 
@@ -61,12 +61,12 @@ public class RaftContext
         this.subscription = subscription;
     }
 
-    public ClientChannelPool getClientChannelPool()
+    public ChannelManager getClientChannelPool()
     {
         return clientChannelManager;
     }
 
-    public void setClientChannelPool(ClientChannelPool clientChannelManager)
+    public void setClientChannelPool(ChannelManager clientChannelManager)
     {
         this.clientChannelManager = clientChannelManager;
     }

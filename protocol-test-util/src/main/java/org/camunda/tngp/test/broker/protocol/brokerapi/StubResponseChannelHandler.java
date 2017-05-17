@@ -12,7 +12,7 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
@@ -46,23 +46,23 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         throw new RuntimeException("not implemented");
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
 
         // copy request to be able to verify it later
@@ -83,22 +83,22 @@ public class StubResponseChannelHandler implements TransportChannelHandler
             boolean requestHandled = false;
             if (ExecuteCommandRequestDecoder.TEMPLATE_ID == headerDecoder.templateId())
             {
-                final ExecuteCommandRequest request = new ExecuteCommandRequest(transportChannel.getId(), msgPackHelper);
+                final ExecuteCommandRequest request = new ExecuteCommandRequest(transportChannel.getStreamId(), msgPackHelper);
                 request.wrap(copy, requestResponseMessageOffset, requestResponseMessageLength);
                 commandRequests.add(request);
                 allRequests.add(request);
 
-                requestHandled = handleRequest(request, cmdRequestStubs, transportChannel.getId());
+                requestHandled = handleRequest(request, cmdRequestStubs, transportChannel.getStreamId());
 
             }
             else if (ControlMessageRequestDecoder.TEMPLATE_ID == headerDecoder.templateId())
             {
-                final ControlMessageRequest request = new ControlMessageRequest(transportChannel.getId(), msgPackHelper);
+                final ControlMessageRequest request = new ControlMessageRequest(transportChannel.getStreamId(), msgPackHelper);
                 request.wrap(copy, requestResponseMessageOffset, requestResponseMessageLength);
                 controlMessageRequests.add(request);
                 allRequests.add(request);
 
-                requestHandled = handleRequest(request, controlMessageStubs, transportChannel.getId());
+                requestHandled = handleRequest(request, controlMessageStubs, transportChannel.getStreamId());
             }
 
             if (!requestHandled)
@@ -164,7 +164,7 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         // ignore
         System.out.println("Stub: Ignoring control frame");

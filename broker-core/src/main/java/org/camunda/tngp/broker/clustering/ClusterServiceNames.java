@@ -11,7 +11,7 @@ import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterServiceNames
@@ -43,9 +43,9 @@ public class ClusterServiceNames
         return ServiceName.newServiceName(String.format("cluster.%s.subscription", name), Subscription.class);
     }
 
-    public static ServiceName<ClientChannelPool> clientChannelManagerName(final String name)
+    public static ServiceName<ChannelManager> clientChannelManagerName(final String name)
     {
-        return ServiceName.newServiceName(String.format("cluster.%s.client.channel.manager", name), ClientChannelPool.class);
+        return ServiceName.newServiceName(String.format("cluster.%s.client.channel.manager", name), ChannelManager.class);
     }
 
     public static ServiceName<TransportConnectionPool> transportConnectionPoolName(final String name)

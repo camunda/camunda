@@ -6,7 +6,7 @@ import org.camunda.tngp.broker.logstreams.LogStreamsManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterManagerContext
@@ -14,7 +14,7 @@ public class ClusterManagerContext
     private AgentRunnerServices agentRunner;
     private Peer localPeer;
     private Subscription subscription;
-    private ClientChannelPool clientChannelPool;
+    private ChannelManager clientChannelPool;
     private TransportConnectionPool connections;
     private Dispatcher sendBuffer;
     private PeerList peers;
@@ -50,12 +50,12 @@ public class ClusterManagerContext
         this.subscription = subscription;
     }
 
-    public ClientChannelPool getClientChannelPool()
+    public ChannelManager getClientChannelPool()
     {
         return clientChannelPool;
     }
 
-    public void setClientChannelPool(ClientChannelPool clientChannelManager)
+    public void setClientChannelPool(ChannelManager clientChannelManager)
     {
         this.clientChannelPool = clientChannelManager;
     }

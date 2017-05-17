@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.transport.ClientChannel;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.Channel;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.PooledFuture;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
@@ -59,14 +59,14 @@ public class RequestResponseController
     private final StateMachineAgent<RequestResponseContext> requestStateMachine;
 
     public RequestResponseController(
-            final ClientChannelPool clientChannelManager,
+            final ChannelManager clientChannelManager,
             final TransportConnectionPool connections)
     {
         this(clientChannelManager, connections, -1);
     }
 
     public RequestResponseController(
-            final ClientChannelPool clientChannelManager,
+            final ChannelManager clientChannelManager,
             final TransportConnectionPool connections,
             final int timeout)
     {
@@ -164,19 +164,19 @@ public class RequestResponseController
     static class RequestResponseContext extends SimpleStateMachineContext
     {
         TransportConnection connection;
-        ClientChannel channel;
-        PooledFuture<ClientChannel> channelFuture;
+        Channel channel;
+        PooledFuture<Channel> channelFuture;
         TransportRequest request;
 
         final SocketAddress receiver;
 
         final int timeout;
-        final ClientChannelPool clientChannelManager;
+        final ChannelManager clientChannelManager;
         final TransportConnectionPool connections;
 
         BufferWriter requestWriter;
 
-        RequestResponseContext(StateMachine<?> stateMachine, final int timeout, final ClientChannelPool clientChannelManager, final TransportConnectionPool connections)
+        RequestResponseContext(StateMachine<?> stateMachine, final int timeout, final ChannelManager clientChannelManager, final TransportConnectionPool connections)
         {
             super(stateMachine);
             this.receiver = new SocketAddress();
@@ -233,11 +233,11 @@ public class RequestResponseController
         {
             int workcount = 0;
 
-            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            final PooledFuture<Channel> channelFuture = context.channelFuture;
 
-            if (channelFuture == null)
+            if (channelFuture == null && context.channel == null)
             {
-                final ClientChannelPool clientChannelManager = context.clientChannelManager;
+                final ChannelManager clientChannelManager = context.clientChannelManager;
                 final SocketAddress receiver = context.receiver;
 
                 workcount += 1;
@@ -248,10 +248,10 @@ public class RequestResponseController
             {
                 if (!channelFuture.isFailed())
                 {
-                    final ClientChannel clientChannel = channelFuture.poll();
-                    if (clientChannel != null)
+                    final Channel stream = channelFuture.poll();
+                    if (stream != null)
                     {
-                        context.channel = clientChannel;
+                        context.channel = stream;
                         channelFuture.release();
                         context.channelFuture = null;
                         context.take(TRANSITION_DEFAULT);
@@ -285,10 +285,10 @@ public class RequestResponseController
             int workcount = 0;
 
             final TransportConnection connection = context.connection;
-            final ClientChannel channel = context.channel;
+            final Channel channel = context.channel;
             final BufferWriter requestWriter = context.requestWriter;
 
-            final int channelId = channel.getId();
+            final int channelId = channel.getStreamId();
 
             final int length = requestWriter.getLength();
 
@@ -370,7 +370,7 @@ public class RequestResponseController
         {
             int workcount = 0;
 
-            final PooledFuture<ClientChannel> channelFuture = context.channelFuture;
+            final PooledFuture<Channel> channelFuture = context.channelFuture;
             if (channelFuture != null)
             {
                 if (channelFuture.isFailed() || channelFuture.poll() != null)
@@ -409,7 +409,7 @@ public class RequestResponseController
                 connection.close();
             }
 
-            final ClientChannel endpointChannel = context.channel;
+            final Channel endpointChannel = context.channel;
             context.clientChannelManager.returnChannel(endpointChannel);
 
             context.connection = null;

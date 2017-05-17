@@ -9,12 +9,11 @@ import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
-import org.camunda.tngp.transport.ClientChannel;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.Channel;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
@@ -33,8 +32,8 @@ public class ClientApiRule extends ExternalResource
     protected final int port = 51015;
     protected final String host = "localhost";
 
-    protected ClientChannelPool clientChannelPool;
-    protected ClientChannel clientChannel;
+    protected ChannelManager clientChannelPool;
+    protected Channel clientChannel;
 
     protected TransportConnectionPool connectionPool;
 
@@ -87,12 +86,12 @@ public class ClientApiRule extends ExternalResource
 
     public ExecuteCommandRequestBuilder createCmdRequest()
     {
-        return new ExecuteCommandRequestBuilder(connectionPool, clientChannel.getId(), msgPackHelper);
+        return new ExecuteCommandRequestBuilder(connectionPool, clientChannel.getStreamId(), msgPackHelper);
     }
 
     public ControlMessageRequestBuilder createControlMessageRequest()
     {
-        return new ControlMessageRequestBuilder(connectionPool, clientChannel.getId(), msgPackHelper);
+        return new ControlMessageRequestBuilder(connectionPool, clientChannel.getStreamId(), msgPackHelper);
     }
 
 
@@ -217,7 +216,7 @@ public class ClientApiRule extends ExternalResource
             throw new RuntimeException("No channel open");
         }
 
-        clientChannel.close();
+        clientChannelPool.closeAllChannelsAsync().join();
         clientChannel = null;
     }
 
@@ -237,20 +236,20 @@ public class ClientApiRule extends ExternalResource
         {
 
             @Override
-            public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
             {
                 Arrays.stream(handlers).forEach((h) -> h.onControlFrame(transportChannel, buffer, offset, length));
                 return true;
             }
 
             @Override
-            public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
             {
                 Arrays.stream(handlers).forEach((h) -> h.onChannelSendError(transportChannel, buffer, offset, length));
             }
 
             @Override
-            public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
             {
                 return Arrays.stream(handlers)
                         .map((h) -> h.onChannelReceive(transportChannel, buffer, offset, length))
@@ -258,13 +257,13 @@ public class ClientApiRule extends ExternalResource
             }
 
             @Override
-            public void onChannelOpened(TransportChannel transportChannel)
+            public void onChannelOpened(Channel transportChannel)
             {
                 Arrays.stream(handlers).forEach((h) -> h.onChannelOpened(transportChannel));
             }
 
             @Override
-            public void onChannelClosed(TransportChannel transportChannel)
+            public void onChannelClosed(Channel transportChannel)
             {
                 Arrays.stream(handlers).forEach((h) -> h.onChannelClosed(transportChannel));
             }

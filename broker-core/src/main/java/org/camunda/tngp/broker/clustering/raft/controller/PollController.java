@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
 import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
@@ -160,7 +160,7 @@ public class PollController
 
             this.context = context;
 
-            final ClientChannelPool clientChannelManager = context.getClientChannelPool();
+            final ChannelManager clientChannelManager = context.getClientChannelPool();
             final TransportConnectionPool connections = context.getConnections();
             this.requestController = new RequestResponseController(clientChannelManager, connections);
 

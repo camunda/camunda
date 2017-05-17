@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
@@ -57,22 +57,22 @@ public class RawMessageCollector implements TransportChannelHandler, Supplier<Ra
     }
 
     @Override
-    public void onChannelOpened(TransportChannel transportChannel)
+    public void onChannelOpened(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelClosed(TransportChannel transportChannel)
+    public void onChannelClosed(Channel transportChannel)
     {
     }
 
     @Override
-    public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
     }
 
     @Override
-    public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         final short protocolId = buffer.getShort(TransportHeaderDescriptor.protocolIdOffset(offset));
 
@@ -101,7 +101,7 @@ public class RawMessageCollector implements TransportChannelHandler, Supplier<Ra
     }
 
     @Override
-    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         return true;
     }

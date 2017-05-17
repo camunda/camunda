@@ -21,7 +21,7 @@ import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.TransportChannelListener;
 
 public class SubscriptionManager implements TransportChannelListener
@@ -169,10 +169,10 @@ public class SubscriptionManager implements TransportChannelListener
     }
 
     @Override
-    public void onChannelClosed(TransportChannel channel)
+    public void onChannelClosed(Channel channel)
     {
-        taskSubscriptions.abortSubscriptionsOnChannel(channel.getId());
-        topicSubscriptions.abortSubscriptionsOnChannel(channel.getId());
+        taskSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
+        topicSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
     }
 
 }
