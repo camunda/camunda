@@ -71,6 +71,19 @@ describe('<OperatorButton>', () => {
     expect(setValue.calledWith('V')).to.eql(true);
   });
 
+  it('should call setValue if implicit value is provided but falsy', () => {
+    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue={false} />));
+    update({});
+
+    triggerEvent({
+      node,
+      selector: 'button',
+      eventName: 'click'
+    });
+
+    expect(setValue.calledWith(false)).to.eql(true);
+  });
+
   it('should have the active class if operator is active', () => {
     ({node, update} = mountTemplate(<OperatorButton operator="T" />));
     update({operator: 'T'});

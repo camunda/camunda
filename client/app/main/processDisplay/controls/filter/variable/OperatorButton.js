@@ -13,20 +13,20 @@ export function OperatorButton({operator, implicitValue}) {
 
   function getAggregatedLabel() {
     return {label:
-      `${labels[operator]} ${implicitValue ? labels[implicitValue] : ''}`.trim()
+      `${labels[operator]} ${implicitValue !== undefined ? labels[implicitValue.toString()] : ''}`.trim()
     };
   }
 
   function applyOperator() {
     setOperator(operator);
-    if (implicitValue) {
+    if (implicitValue !== undefined) {
       setValue(implicitValue);
     }
   }
 
   function isSelectedOperator(state) {
     const matchingOperator = state.operator === operator;
-    const matchingValue = implicitValue ? state.value === implicitValue : true;
+    const matchingValue = implicitValue !== undefined ? state.value === implicitValue : true;
 
     return matchingOperator && matchingValue;
   }

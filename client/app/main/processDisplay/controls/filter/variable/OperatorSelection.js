@@ -9,8 +9,8 @@ export function OperatorSelection() {
         <OperatorButton operator="!=" />
       </Case>
       <Case predicate={variableHasType('Boolean')}>
-        <OperatorButton operator="=" implicitValue="true" />
-        <OperatorButton operator="=" implicitValue="false" />
+        <OperatorButton operator="=" implicitValue={true} />
+        <OperatorButton operator="=" implicitValue={false} />
       </Case>
       <Case predicate={variableSelected}>
         <OperatorButton operator="=" />

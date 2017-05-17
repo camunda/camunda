@@ -56,9 +56,9 @@ describe('<OperatorSelection>', () => {
 
     expect(node.textContent).to.contain(OperatorButton.text);
     expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({implicitValue: 'true'})).to.eql(true);
+    expect(OperatorButton.appliedWith({implicitValue: true})).to.eql(true);
     expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({implicitValue: 'false'})).to.eql(true);
+    expect(OperatorButton.appliedWith({implicitValue: false})).to.eql(true);
   });
 
   it('should have =, !=, < and > operators for all other types (numbers and dates)', () => {
