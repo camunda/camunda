@@ -5,31 +5,48 @@ export const LOAD_PROCESSDEFINITIONS = 'LOAD_PROCESSDEFINITIONS';
 
 export const LOADING_PROPERTY = 'processDefinitions';
 
-export const reducer = addLoading((state, {type, key, version}) => {
-  const newState = {...state};
+export const reducer = addLoading((state, {type, key, version, xml}) => {
+  if (state[LOADING_PROPERTY]) {
+    const {[LOADING_PROPERTY]: {data: definitions, ...meta}} = state;
 
-  // reset selected versions when (re-)loading processDefinitions
-  if (type === LOAD_PROCESSDEFINITIONS) {
-    newState.versions = {};
+    if (type === SET_VERSION) {
+      return {
+        ...state,
+        [LOADING_PROPERTY]: {
+          ...meta,
+          data: definitions.map(entry => {
+            if (entry.current.key === key) {
+              let current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
+
+              if (xml) {
+                current = {
+                  ...current,
+                  bpmn20Xml: xml
+                };
+              }
+
+              return {
+                current,
+                versions: entry.versions
+              };
+            }
+
+            return entry;
+          })
+        }
+      };
+    }
   }
 
-  if (type === SET_VERSION) {
-    return {
-      ...newState,
-      versions: {
-        ...newState.versions,
-        [key]: version
-      }
-    };
-  }
-  return newState;
+  return state;
 }, LOADING_PROPERTY);
 
-export function createSetVersionAction(key, version) {
+export function createSetVersionAction(key, version, xml) {
   return {
     type: SET_VERSION,
     key,
-    version
+    version,
+    xml
   };
 }
 

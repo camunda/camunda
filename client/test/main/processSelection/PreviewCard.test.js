@@ -6,6 +6,7 @@ import {PreviewCard, __set__, __ResetDependency__} from 'main/processSelection/P
 
 describe('<PreviewCard>', () => {
   let DiagramPreview;
+  let createDiagramPreview;
   let openDefinition;
   let setVersionForProcess;
   let node;
@@ -14,7 +15,10 @@ describe('<PreviewCard>', () => {
 
   beforeEach(() => {
     DiagramPreview = createMockComponent('DiagramPreview');
-    __set__('DiagramPreview', DiagramPreview);
+    DiagramPreview.setLoading = sinon.spy();
+
+    createDiagramPreview = sinon.stub().returns(DiagramPreview);
+    __set__('createDiagramPreview', createDiagramPreview);
 
     openDefinition = sinon.spy();
     __set__('openDefinition', openDefinition);
@@ -26,7 +30,7 @@ describe('<PreviewCard>', () => {
   });
 
   afterEach(() => {
-    __ResetDependency__('DiagramPreview');
+    __ResetDependency__('createDiagramPreview');
     __ResetDependency__('openDefinition');
     __ResetDependency__('setVersionForProcess');
   });
@@ -34,11 +38,13 @@ describe('<PreviewCard>', () => {
   describe('single version', () => {
     beforeEach(() => {
       state = {
-        id: 'processId',
-        key: 'processKey',
-        name: 'processName',
-        version: 1,
-        bpmn20Xml: 'some xml',
+        current: {
+          id: 'processId',
+          key: 'processKey',
+          name: 'processName',
+          version: 1,
+          bpmn20Xml: 'some xml'
+        },
         versions: [{
           id: 'processId',
           key: 'processKey',
@@ -80,11 +86,13 @@ describe('<PreviewCard>', () => {
   describe('multiple versions', () => {
     beforeEach(() => {
       state = {
-        id: 'processId',
-        key: 'processKey',
-        name: 'processName',
-        version: 2,
-        bpmn20Xml: 'some xml',
+        current: {
+          id: 'processId',
+          key: 'processKey',
+          name: 'processName',
+          version: 2,
+          bpmn20Xml: 'some xml',
+        },
         versions: [{
           id: 'processId',
           key: 'processKey',
@@ -116,7 +124,18 @@ describe('<PreviewCard>', () => {
       });
 
       expect(setVersionForProcess.calledOnce).to.eql(true);
-      expect(setVersionForProcess.calledWith('processKey', 1)).to.eql(true);
+      expect(setVersionForProcess.calledWith(state.versions[1])).to.eql(true);
+    });
+
+    it('should trigger loading of diagram preview when switching the version', () => {
+      node.querySelector('select').selectedIndex = 1;
+      triggerEvent({
+        node: node,
+        selector: 'select',
+        eventName: 'change'
+      });
+
+      expect(DiagramPreview.setLoading.calledWith(true)).to.eql(true);
     });
 
     it('should open the selected version', () => {

@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {get} from 'http';
+import {get, post} from 'http';
 import {createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
         createLoadProcessDefinitionsErrorAction, createSetVersionAction} from './reducer';
 import {getRouter} from 'router';
@@ -9,8 +9,31 @@ const router = getRouter();
 
 export function loadProcessDefinitions() {
   dispatchAction(createLoadProcessDefinitionsAction());
-  get('/api/process-definition?includeXml=true')
+  get('/api/process-definition/groupedByKey')
     .then(response => response.json())
+    .then(result => {
+      const withLastestVersions = result.map(({versions}) => {
+        const latestVersion = getLatestVersion(versions);
+
+        return {
+          current: latestVersion,
+          versions
+        };
+      });
+      const ids = withLastestVersions.map(({current: {id}}) => id);
+
+      return post('/api/process-definition/xml', ids)
+        .then(response => response.json())
+        .then(xmls => {
+          return withLastestVersions.map(entry => {
+            const xml = xmls[entry.current.id];
+
+            entry.current.bpmn20Xml = xml;
+
+            return entry;
+          });
+        });
+    })
     .then(result => {
       dispatchAction(createLoadProcessDefinitionsResultAction(result));
     })
@@ -23,10 +46,22 @@ export function loadProcessDefinitions() {
     });
 }
 
+function getLatestVersion(versions) {
+  return versions.sort(({version: versionA}, {version: versionB}) => {
+    return versionB - versionA;
+  })[0];
+}
+
 export function openDefinition(id) {
   router.goTo('processDisplay', {definition: id});
 }
 
-export function setVersionForProcess(key, version) {
+export function setVersionForProcess({id, key, version, bpmn20Xml}) {
+  if (typeof bpmn20Xml !== 'string') {
+    return get(`/api/process-definition/${id}/xml`)
+      .then(response => response.text())
+      .then(xml => dispatchAction(createSetVersionAction(key, version, xml)));
+  }
+
   dispatchAction(createSetVersionAction(key, version));
 }

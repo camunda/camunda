@@ -75,8 +75,7 @@ describe('<ProcessSelection>', () => {
             version: 4,
             bpmn20Xml: 'some xml'
           }]
-        },
-        versions: {}
+        }
       };
 
       update(state);
@@ -84,36 +83,6 @@ describe('<ProcessSelection>', () => {
 
     it('should display a preview of the definition', () => {
       expect(node.textContent).to.include('PreviewCard');
-    });
-  });
-
-  describe('multiple versions', () => {
-    beforeEach(() => {
-      state = {
-        processDefinitions: {
-          state: LOADED_STATE,
-          data: [{
-            id: 'processId1',
-            key: 'processKey',
-            name: 'processName 1',
-            version: 1,
-            bpmn20Xml: 'some xml 1'
-          }, {
-            id: 'processId2',
-            key: 'processKey',
-            name: 'processName 2',
-            version: 2,
-            bpmn20Xml: 'some xml 2'
-          }]
-        },
-        versions: {}
-      };
-
-      update(state);
-    });
-
-    it('should only display a single previewCard', () => {
-      expect(node.querySelector('.row').textContent).to.eql('PreviewCard');
     });
   });
 });

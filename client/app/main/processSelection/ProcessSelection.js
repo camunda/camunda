@@ -18,7 +18,7 @@ export const ProcessSelection = withSelector(() => {
           </div>
         </Case>
         <Default>
-          <Scope selector={getGroupedDefinitions}>
+          <Scope selector={({processDefinitions: {data}}) => data}>
             <div className="row">
               <List>
                 <PreviewCard />
@@ -34,35 +34,8 @@ export const ProcessSelection = withSelector(() => {
     return !isLoaded(processDefinitions);
   }
 
-  function areThereNoProcessDefinitions({processDefinitions:{data}}) {
+  function areThereNoProcessDefinitions({processDefinitions :{data}}) {
     return data.length === 0;
-  }
-
-  function getGroupedDefinitions({processDefinitions:{data}, versions}) {
-    const out = data
-      .filter(entry => isSelectedVersion(entry, data, versions[entry.key]))
-      .sort(({key: keyA}, {key: keyB}) => keyA.localeCompare(keyB))
-      .map(definition => {
-        return {
-          ...definition,
-          versions: getVersionsFor(definition, data)
-        };
-      });
-
-    return out;
-  }
-
-  function getVersionsFor(entry, data) {
-    return data
-      .filter(({key}) => key === entry.key)
-      .sort(({version: versionA}, {version: versionB}) => versionB - versionA);
-  }
-
-  function isSelectedVersion(entry, data, selectedVersion) {
-    return entry.version === (selectedVersion ? selectedVersion : Math.max(...data
-      .filter(({key}) => key === entry.key)
-      .map(({version}) => version))
-    );
   }
 
   return (parentNode, eventsBus) => {

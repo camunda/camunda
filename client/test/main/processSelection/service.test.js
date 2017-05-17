@@ -8,24 +8,68 @@ describe('ProcessSelection service', () => {
   const START_ACTION = 'START_ACTION';
   const STOP_ACTION = 'STOP_ACTION';
   const SET_ACTION = 'SET_ACTION';
-  const processDefinitionResponse = 'some process definition data';
 
   let router;
   let dispatchAction;
   let get;
+  let post;
   let createLoadProcessDefinitionsAction;
   let createLoadProcessDefinitionsResultAction;
   let createSetVersionAction;
+  let processDefinitionResponse;
+  let xmlResponse;
 
   setupPromiseMocking();
 
   beforeEach(() => {
-    get = sinon.stub().returns(Promise.resolve({
+    get = sinon.stub();
+    __set__('get', get);
+
+    post = sinon.stub();
+    __set__('post', post);
+
+    processDefinitionResponse = [
+      {
+        versions: [
+          {
+            id: 'd1',
+            version: 1,
+            key: 'd'
+          },
+          {
+            id: 'd2',
+            version: 2,
+            key: 'd'
+          }
+        ]
+      },
+      {
+        versions:[
+          {
+            id: 'c1',
+            version: 1,
+            key: 'c'
+          }
+        ]
+      }
+    ];
+
+    get.returns(Promise.resolve({
       json: sinon.stub().returns(
         Promise.resolve(processDefinitionResponse)
       )
     }));
-    __set__('get', get);
+
+    xmlResponse = {
+      d2: 'd2-xml',
+      c1: 'c1-xml'
+    };
+
+    post.withArgs('/api/process-definition/xml').returns(Promise.resolve({
+      json: sinon.stub().returns(
+        Promise.resolve(xmlResponse)
+      )
+    }));
 
     router = {
       goTo: sinon.spy()
@@ -47,6 +91,7 @@ describe('ProcessSelection service', () => {
 
   afterEach(() => {
     __ResetDependency__('get');
+    __ResetDependency__('post');
     __ResetDependency__('router');
     __ResetDependency__('dispatchAction');
     __ResetDependency__('createLoadProcessDefinitionsAction');
@@ -70,8 +115,40 @@ describe('ProcessSelection service', () => {
     });
 
     it('should dispatch an action with the returned response', () => {
+      const expectedResponse = [
+        {
+          current: {
+            ...processDefinitionResponse[0].versions[0],
+            bpmn20Xml: xmlResponse.d2
+          },
+          versions: [
+            {
+              ...processDefinitionResponse[0].versions[0],
+              bpmn20Xml: xmlResponse.d2
+            },
+            {
+              ...processDefinitionResponse[0].versions[1],
+            }
+          ]
+        },
+        {
+          current: {
+            ...processDefinitionResponse[1].versions[0],
+            bpmn20Xml: xmlResponse.c1
+          },
+          versions: [
+            {
+              ...processDefinitionResponse[1].versions[0],
+              bpmn20Xml: xmlResponse.c1
+            }
+          ]
+        }
+      ];
+
       expect(dispatchAction.calledWith(STOP_ACTION)).to.eql(true);
-      expect(createLoadProcessDefinitionsResultAction.calledWith(processDefinitionResponse)).to.eql(true);
+      expect(
+        createLoadProcessDefinitionsResultAction.calledWith(expectedResponse)
+      ).to.eql(true);
     });
   });
 

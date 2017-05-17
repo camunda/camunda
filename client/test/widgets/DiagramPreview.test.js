@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DiagramPreview, __set__, __ResetDependency__} from 'widgets/DiagramPreview';
+import {createDiagramPreview, __set__, __ResetDependency__} from 'widgets/DiagramPreview';
 
 describe('<DiagramPreview>', () => {
   const diagramXml = 'diagram-xml';
@@ -11,9 +11,10 @@ describe('<DiagramPreview>', () => {
   let viewer;
   let canvas;
   let update;
-  let md5;
   let queue;
   let done;
+  let node;
+  let DiagramPreview;
 
   beforeEach(() => {
     canvas = {
@@ -36,9 +37,6 @@ describe('<DiagramPreview>', () => {
     };
     __set__('Viewer', Viewer);
 
-    md5 = sinon.stub().returns(Math.random());
-    __set__('md5', md5);
-
     done = sinon.spy();
 
     queue = {
@@ -48,7 +46,9 @@ describe('<DiagramPreview>', () => {
     };
     __set__('queue', queue);
 
-    ({update} = mountTemplate(
+    DiagramPreview = createDiagramPreview();
+
+    ({node, update} = mountTemplate(
       <DiagramPreview />
     ));
 
@@ -57,7 +57,6 @@ describe('<DiagramPreview>', () => {
 
   afterEach(() => {
     __ResetDependency__('Viewer');
-    __ResetDependency__('md5');
     __ResetDependency__('queue');
   });
 
@@ -76,5 +75,31 @@ describe('<DiagramPreview>', () => {
     update(diagramXml);
 
     expect(viewer.importXML.calledOnce).to.eql(true);
+  });
+
+  describe('setLoading', () => {
+    it('should hide loader when used with false', () => {
+      //given
+      DiagramPreview.setLoading(true);
+      expect(node.querySelector('.diagram-loading').style.display).to.eql('block');
+
+      //when
+      DiagramPreview.setLoading(false);
+
+      //expected
+      expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+    });
+
+    it('should show loader when used with true', () => {
+      //given
+      DiagramPreview.setLoading(false);
+      expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+
+      //when
+      DiagramPreview.setLoading(true);
+
+      //expected
+      expect(node.querySelector('.diagram-loading').style.display).to.eql('block');
+    });
   });
 });
