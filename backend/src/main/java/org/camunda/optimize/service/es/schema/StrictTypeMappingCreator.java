@@ -29,6 +29,9 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator{
             .startObject("properties");
               addProperties(content)
             .endObject()
+            .startObject("_all")
+              .field("enabled",false)
+            .endObject()
             .startArray("dynamic_templates")
               .startObject()
                 .startObject("string_template")
