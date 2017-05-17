@@ -90,14 +90,6 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
             incidentEvent.setEventType(IncidentEventType.CREATE);
 
             logStreamWriter.positionAsKey();
-            final long position = logStreamWriter
-                    .producerId(streamProcessorId)
-                    .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
-                    .metadataWriter(incidentEventMetadata)
-                    .valueWriter(incidentEvent)
-                    .tryWrite();
-
-            return position > 0 ? RESULT_SUCCESS : RESULT_FAILURE;
         }
         else
         {
@@ -106,8 +98,14 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
             logStreamWriter.key(failureEventMetadata.getIncidentKey());
         }
 
-        return RESULT_SUCCESS;
+        final long position = logStreamWriter
+                .producerId(streamProcessorId)
+                .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
+                .metadataWriter(incidentEventMetadata)
+                .valueWriter(incidentEvent)
+                .tryWrite();
 
+        return position > 0 ? RESULT_SUCCESS : RESULT_FAILURE;
     }
 
     private void setWorkflowInstanceData(LoggedEvent failureEvent)
