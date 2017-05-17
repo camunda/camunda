@@ -1,4 +1,5 @@
 import {addLoading, createLoadingActionFunction, createResultActionFunction, createErrorActionFunction} from 'utils';
+import {CHANGE_ROUTE_ACTION} from 'router';
 
 export const SELECT_VARIABLE_IDX = 'SELECT_VARIABLE_IDX';
 export const SET_OPERATOR = 'SET_OPERATOR';
@@ -24,6 +25,9 @@ export const reducer = addLoading((state = {operator: '='}, action) => {
       ...state,
       value: action.value
     };
+  }
+  if (action.type === CHANGE_ROUTE_ACTION && !action.route.params.definition) {
+    return {};
   }
 
   return state;

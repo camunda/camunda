@@ -21,6 +21,7 @@ describe('<VariableModal>', () => {
   let createVariableFilter;
   let OperatorSelection;
   let ValueInput;
+  let ValueSelection;
   let getProcessDefinition;
   let VariableModal;
   let variables;
@@ -52,6 +53,9 @@ describe('<VariableModal>', () => {
     ValueInput = createMockComponent('ValueInput');
     __set__('ValueInput', ValueInput);
 
+    ValueSelection = createMockComponent('ValueSelection');
+    __set__('ValueSelection', ValueSelection);
+
     loadVariables = sinon.spy();
     __set__('loadVariables', loadVariables);
 
@@ -82,6 +86,7 @@ describe('<VariableModal>', () => {
     __ResetDependency__('OperatorSelection');
     __ResetDependency__('onNextTick');
     __ResetDependency__('ValueInput');
+    __ResetDependency__('ValueSelection');
     __ResetDependency__('loadVariables');
     __ResetDependency__('selectVariableIdx');
     __ResetDependency__('deselectVariableIdx');
@@ -184,6 +189,19 @@ describe('<VariableModal>', () => {
 
       it('should contain an value input component', () => {
         expect(bodyNode.textContent).to.contain(ValueInput.text);
+      });
+
+      it('should contain a value selection component if list of values is complete', () => {
+        variables.data = variables.data.map(variable => {
+          return {
+            ...variable,
+            values: [1, 2, 3],
+            valuesAreComplete: true
+          };
+        });
+        update({variables, selectedIdx: 1});
+
+        expect(bodyNode.textContent).to.contain(ValueSelection.text);
       });
     });
 

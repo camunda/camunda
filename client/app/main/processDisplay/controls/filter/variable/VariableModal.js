@@ -1,10 +1,11 @@
-import {jsx, OnEvent, Socket, Scope, List, Text, Attribute, createReferenceComponent} from 'view-utils';
+import {jsx, OnEvent, Socket, Scope, List, Text, Attribute, Match, Case, Default, createReferenceComponent} from 'view-utils';
 import {onNextTick, isInitial} from 'utils';
 import {createModal} from 'widgets';
 import {loadVariables, selectVariableIdx, deselectVariableIdx, createVariableFilter} from './service';
 
 import {OperatorSelection} from './OperatorSelection';
 import {ValueInput} from './ValueInput';
+import {ValueSelection} from './ValueSelection';
 
 export function createVariableModal(createCallback, getProcessDefinition) {
   const Modal = createModal();
@@ -41,7 +42,14 @@ export function createVariableModal(createCallback, getProcessDefinition) {
 
               <OperatorSelection />
 
-              <ValueInput />
+              <Match>
+                <Case predicate={shouldShowValueSelection}>
+                  <ValueSelection />
+                </Case>
+                <Default>
+                  <ValueInput />
+                </Default>
+              </Match>
             </form>
           </Socket>
           <Socket name="foot">
@@ -66,6 +74,15 @@ export function createVariableModal(createCallback, getProcessDefinition) {
           loadVariables(definition);
         }
       }];
+
+      function shouldShowValueSelection(state) {
+        return getSelectedVariableProperty(state, 'valuesAreComplete') &&
+               getSelectedVariableProperty(state, 'type') !== 'Boolean';
+      }
+
+      function getSelectedVariableProperty({variables: {data}, selectedIdx}, property) {
+        return selectedIdx !== undefined && data[selectedIdx][property];
+      }
 
       function getVariableNames({variables: {data}}) {
         return data;
