@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
@@ -145,6 +146,23 @@ public class PaginatedImportServiceTest {
     assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(1));
     assertThat(eventImportJobs.get(1).getEntitiesToImport().size(), is(2));
     assertThat(eventImportJobs.get(2).getEntitiesToImport().size(), is(2));
+  }
+
+  @Test
+  public void importReturnsNullIfThereAreNoIdsToPostProcess() throws Exception {
+    // given
+    HistoricActivityInstanceEngineDto instance = new HistoricActivityInstanceEngineDto();
+      instance.setId("testId");
+      instance.setActivityId(TEST_ACTIVITY_ID);
+      instance.setProcessInstanceId(null);
+    when(importStrategy.fetchHistoricActivityInstances())
+      .thenReturn(Collections.singletonList(instance));
+
+    // when
+    activityImportService.executeImport();
+
+    // then
+    assertThat(activityImportService.getIdsForPostProcessing(), is(nullValue()));
   }
 
   private List<EventImportJob> getEventImportJobs() throws InterruptedException {
