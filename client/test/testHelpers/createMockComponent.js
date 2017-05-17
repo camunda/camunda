@@ -73,10 +73,24 @@ export function createMockComponent(text, applyChildren) {
   });
 
   constructoringFn.appliedWith = (predicate) => {
+    return callsUsedWith(predicate, appliedCalls);
+  };
+
+  constructoringFn.updatedWith = (predicate) => {
+    const calls = [];
+
+    for (let i = 0; i < update.callCount; i++) {
+      calls.push(update.getCall(i).args[0]);
+    }
+
+    return callsUsedWith(predicate, calls);
+  };
+
+  function callsUsedWith(predicate, calls) {
     const predicateFn = buildPredicateFunction(predicate);
 
-    return appliedCalls.filter(predicateFn).length > 0;
-  };
+    return calls.filter(predicateFn).length > 0;
+  }
 
   constructoringFn.reset = () => {
     constructoringFn.calls = [];

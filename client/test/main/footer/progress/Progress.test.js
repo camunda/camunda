@@ -40,28 +40,40 @@ describe('<Progress>', () => {
     expect(node).to.contain.text(Tooltip.text);
   });
 
-  it('should create elasticsearch connected indicator', () => {
-    update({data: {progress: 10, connectedToElasticsearch: true}});
+  it('should create connected indicator', () => {
+    update({
+      data: {
+        progress: 10,
+        connectedToElasticsearch: true,
+        connectedToEngine: true
+      }
+    });
 
-    expect(Tooltip.appliedWith({text: 'Connected to elasticsearch'})).to.eql(true);
+    expect(Tooltip.appliedWith({text: 'Connected to engine and elastic search'})).to.eql(true);
   });
 
   it('should create elasticsearch disconnected indicator', () => {
-    update({data: {progress: 10, connectedToElasticsearch: false}});
+    update({
+      data: {
+        progress: 10,
+        connectedToElasticsearch: false,
+        connectedToEngine: true
+      }
+    });
 
-    expect(Tooltip.appliedWith({text: 'Couldn\'t connect to elasticsearch'})).to.eql(true);
-  });
-
-  it('should create elasticsearch connected indicator', () => {
-    update({data: {progress: 10, connectedToEngine: true}});
-
-    expect(Tooltip.appliedWith({text: 'Connected to engine'})).to.eql(true);
+    expect(Tooltip.updatedWith({message: 'Disconnected from elastic search'})).to.eql(true);
   });
 
   it('should create engine disconnected indicator', () => {
-    update({data: {progress: 10, connectedToEngine: false}});
+    update({
+      data: {
+        progress: 10,
+        connectedToElasticsearch: true,
+        connectedToEngine: false
+      }
+    });
 
-    expect(Tooltip.appliedWith({text: 'Couldn\'t connect to engine'})).to.eql(true);
+    expect(Tooltip.updatedWith({message: 'Disconnected from engine'})).to.eql(true);
   });
 
   it('should not show progres when it is 100', () => {

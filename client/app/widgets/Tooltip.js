@@ -1,7 +1,8 @@
-import {jsx, $document, $window, DESTROY_EVENT} from 'view-utils';
+import {jsx, $document, $window, DESTROY_EVENT, Text} from 'view-utils';
 import {onNextTick} from 'utils/onNextTick';
 
-export function Tooltip({text}) {
+export function Tooltip({text, isStatic = true}) {
+  const TooltipContent = isStatic ? StaticTooltipContent : DynamicTooltipContent;
   const tooltipTemplate = <TooltipContent text={text} />;
 
   return (node, eventsBus) => {
@@ -37,9 +38,16 @@ export function Tooltip({text}) {
   };
 }
 
-function TooltipContent({text}) {
+function StaticTooltipContent({text}) {
   return <div className="tooltip top" role="tooltip" style="opacity: 1;">
     <div className="tooltip-arrow"></div>
     <div className="tooltip-inner" style="text-align: left;">{text}</div>
+  </div>;
+}
+
+function DynamicTooltipContent({text}) {
+  return <div className="tooltip top" role="tooltip" style="opacity: 1;">
+    <div className="tooltip-arrow"></div>
+    <div className="tooltip-inner" style="text-align: left;"><Text property={text}/></div>
   </div>;
 }

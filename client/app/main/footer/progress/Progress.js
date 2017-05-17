@@ -3,21 +3,6 @@ import {Icon} from 'widgets/Icon';
 import {Tooltip} from 'widgets/Tooltip';
 import {loadProgress} from './service';
 
-const Indicator = withSelector(({ok, fail}) => {
-  return <Match>
-    <Case predicate={state => state}>
-      <Icon icon="glyphicon-ok-sign">
-        <Tooltip text={ok} />
-      </Icon>
-    </Case>
-    <Default>
-      <Icon icon="glyphicon-minus-sign">
-        <Tooltip text={fail} />
-      </Icon>
-    </Default>
-  </Match>;
-});
-
 export const Progress = withSelector(() => {
   const template = <Scope selector="data">
     <Match>
@@ -25,8 +10,7 @@ export const Progress = withSelector(() => {
         <div className="import-progress">
           Import in progress <Text property="progress" />%
           <span className="connection-indicators">
-            <Indicator selector="connectedToElasticsearch" ok="Connected to elasticsearch" fail="Couldn't connect to elasticsearch"/>
-            <Indicator selector="connectedToEngine" ok="Connected to engine" fail="Couldn't connect to engine"/>
+            <Indicator/>
           </span>
         </div>
       </Case>
@@ -41,3 +25,44 @@ export const Progress = withSelector(() => {
     ];
   };
 });
+
+function Indicator() {
+  return <Match>
+    <Case predicate={isConnected}>
+      <Icon icon="ok-sign">
+        <Tooltip text="Connected to engine and elastic search" />
+      </Icon>
+    </Case>
+    <Default>
+      <Scope selector={getErrorMessage}>
+        <Icon icon="minus-sign">
+          <Tooltip text="message" isStatic={false} />
+        </Icon>
+      </Scope>
+    </Default>
+  </Match>;
+
+  function isConnected({connectedToElasticsearch, connectedToEngine}) {
+    return connectedToElasticsearch && connectedToEngine;
+  }
+
+  function getErrorMessage({connectedToElasticsearch, connectedToEngine}) {
+    if (!connectedToElasticsearch && !connectedToEngine) {
+      return {
+        message: 'Disconnected from elastic search and engine'
+      };
+    }
+
+    if (!connectedToEngine) {
+      return {
+        message: 'Disconnected from engine'
+      };
+    }
+
+    if (!connectedToElasticsearch) {
+      return {
+        message: 'Disconnected from elastic search'
+      };
+    }
+  }
+}
