@@ -30,6 +30,8 @@
         factory-bean="objectMapperFactory"
   />
 
+  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.ImportStrategyProviderFactory"/>
+
   <!-- provide a bean, but do not start it -->
   <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
