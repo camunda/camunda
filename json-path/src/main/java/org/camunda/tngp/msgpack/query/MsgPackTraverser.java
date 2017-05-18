@@ -21,6 +21,13 @@ public class MsgPackTraverser
         this.errorMessage = null;
     }
 
+    public void reset()
+    {
+        msgPackReader.reset();
+        this.invalidPosition = NO_INVALID_POSITION;
+        this.errorMessage = null;
+    }
+
     /**
      * @param visitor
      * @return true if document could be traversed successfully

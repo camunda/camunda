@@ -20,6 +20,11 @@ public class MsgPackReader
         return this;
     }
 
+    public void reset()
+    {
+        this.offset = 0;
+    }
+
     public int readMapHeader()
     {
         final byte mapHeaderByte = buffer.getByte(offset);
