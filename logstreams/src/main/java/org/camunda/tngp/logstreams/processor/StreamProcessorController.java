@@ -605,19 +605,11 @@ public class StreamProcessorController implements Agent
 
             if (hasProcessedAnyEvent)
             {
-                final boolean snapshotWritten = ensureSnapshotWritten(context);
+                ensureSnapshotWritten(context);
+            }
 
-                if (snapshotWritten)
-                {
-                    context.take(TRANSITION_DEFAULT);
-                    workCount += 1;
-                }
-            }
-            else
-            {
-                context.take(TRANSITION_DEFAULT);
-                workCount += 1;
-            }
+            context.take(TRANSITION_DEFAULT);
+            workCount += 1;
 
             return workCount;
         }

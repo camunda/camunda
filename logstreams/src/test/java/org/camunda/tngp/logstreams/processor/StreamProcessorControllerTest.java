@@ -338,18 +338,11 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isClosing()).isTrue();
 
-        // -> closingSnapshotting
-        controller.doWork();
-
-        when(mockTargetLogStream.getCommitPosition()).thenReturn(2L);
-
-        // -> closingSnapshotting
-        controller.doWork();
-
-        assertThat(controller.isClosing()).isTrue();
-
         // -> closing
         controller.doWork();
+
+        assertThat(controller.isClosing()).isFalse();
+
         // -> closed
         controller.doWork();
 
