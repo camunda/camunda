@@ -17,6 +17,7 @@ import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
 import org.camunda.tngp.util.state.TransitionState;
 import org.camunda.tngp.util.state.WaitState;
 
@@ -26,7 +27,16 @@ public class FollowerState extends ActiveState
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_CLOSE = 2;
 
-    private final WaitState<FollowerContext> closedState = (c) ->
+    private static final StateMachineCommand<PollContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
+    {
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
+    private final WaitState<PollContext> closedState = (c) ->
     {
     };
 
@@ -35,23 +45,23 @@ public class FollowerState extends ActiveState
     private final ClosePollRequestsState closePollRequestsState = new ClosePollRequestsState();
     private final ClosingState closingState = new ClosingState();
 
-    private final StateMachineAgent<FollowerContext> followerPollStateMachine;
-    private FollowerContext followerContext;
-
-    private boolean open;
+    private final StateMachineAgent<PollContext> pollStateMachine;
+    private PollContext pollContext;
 
     private long heartbeatTimeoutConfig = 350L;
     private long heartbeatTimeout = -1L;
+
+    private boolean open;
 
     public FollowerState(final RaftContext context)
     {
         super(context);
 
-        this.followerPollStateMachine = new StateMachineAgent<>(StateMachine
-                .<FollowerContext> builder(s ->
+        this.pollStateMachine = new StateMachineAgent<>(StateMachine
+                .<PollContext> builder(s ->
                 {
-                    followerContext = new FollowerContext(s, context);
-                    return followerContext;
+                    pollContext = new PollContext(s, context);
+                    return pollContext;
                 })
                 .initialState(closedState)
 
@@ -75,23 +85,30 @@ public class FollowerState extends ActiveState
     @Override
     public void open()
     {
+        open = true;
         context.getLogStreamState().reset();
         raft.lastContactNow();
         heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
-        open = true;
+
     }
 
     @Override
     public void close()
     {
-        heartbeatTimeout = -1L;
         open = false;
+        pollStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
+        heartbeatTimeout = -1L;
     }
 
     @Override
     public boolean isClosed()
     {
-        return !open;
+        return !open && isPollStateMachineClosed();
+    }
+
+    protected boolean isPollStateMachineClosed()
+    {
+        return pollStateMachine.getCurrentState() == closedState;
     }
 
     @Override
@@ -99,15 +116,15 @@ public class FollowerState extends ActiveState
     {
         int workcount = 0;
 
-        workcount += followerPollStateMachine.doWork();
+        workcount += pollStateMachine.doWork();
 
         final long current = System.currentTimeMillis();
         if (current >= (raft.lastContact() + heartbeatTimeout))
         {
             workcount += 1;
-            if (followerPollStateMachine.getCurrentState() == closedState)
+            if (open && isPollStateMachineClosed())
             {
-                followerContext.take(TRANSITION_OPEN);
+                pollContext.take(TRANSITION_OPEN);
             }
         }
 
@@ -147,7 +164,7 @@ public class FollowerState extends ActiveState
         return RaftMembershipState.FOLLOWER;
     }
 
-    static class FollowerContext extends SimpleStateMachineContext
+    static class PollContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final Quorum quorum;
@@ -156,24 +173,18 @@ public class FollowerState extends ActiveState
         long electionTime = -1L;
         long electionTimeout = -1L;
 
-        FollowerContext(final StateMachine<?> stateMachine, final RaftContext context)
+        PollContext(final StateMachine<?> stateMachine, final RaftContext context)
         {
             super(stateMachine);
             this.quorum = new Quorum();
             this.raft = context.getRaft();
         }
-
-        public void reset()
-        {
-            electionTime = -1L;
-            electionTimeout = -1L;
-        }
     }
 
-    class OpenPollRequestsState implements TransitionState<FollowerContext>
+    class OpenPollRequestsState implements TransitionState<PollContext>
     {
         @Override
-        public void work(final FollowerContext context) throws Exception
+        public void work(final PollContext context) throws Exception
         {
             final Quorum quorum = context.quorum;
             final Raft raft = context.raft;
@@ -208,10 +219,10 @@ public class FollowerState extends ActiveState
         }
     }
 
-    static class OpenState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class OpenState implements org.camunda.tngp.util.state.State<PollContext>
     {
         @Override
-        public int doWork(FollowerContext context) throws Exception
+        public int doWork(PollContext context) throws Exception
         {
             int workcount = 0;
 
@@ -241,11 +252,8 @@ public class FollowerState extends ActiveState
                     // this will close this current state
                     raft.transition(RaftMembershipState.CANDIDATE);
                 }
-                else
-                {
-                    raft.lastContactNow();
-                }
 
+                raft.lastContactNow();
                 context.take(TRANSITION_CLOSE);
             }
             else if (System.currentTimeMillis() >= electionTime + electionTimeout)
@@ -261,10 +269,10 @@ public class FollowerState extends ActiveState
         }
     }
 
-    static class ClosePollRequestsState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class ClosePollRequestsState implements org.camunda.tngp.util.state.State<PollContext>
     {
         @Override
-        public int doWork(FollowerContext context) throws Exception
+        public int doWork(PollContext context) throws Exception
         {
             int workcount = 0;
 
@@ -291,11 +299,11 @@ public class FollowerState extends ActiveState
         }
     }
 
-    static class ClosingState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class ClosingState implements org.camunda.tngp.util.state.State<PollContext>
     {
 
         @Override
-        public int doWork(FollowerContext context) throws Exception
+        public int doWork(PollContext context) throws Exception
         {
             final Raft raft = context.raft;
 

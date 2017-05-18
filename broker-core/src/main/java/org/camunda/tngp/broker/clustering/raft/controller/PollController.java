@@ -243,6 +243,7 @@ public class PollController
             }
             else if (requestController.isFailed())
             {
+                context.quorum.fail();
                 workcount += 1;
                 context.take(TRANSITION_FAILED);
             }

@@ -11,6 +11,10 @@ public class Quorum
     public void open(final int quorum)
     {
         this.quorum = quorum;
+
+        succeeded = 1;
+        failed = 0;
+        stepdown = false;
     }
 
     public void close()

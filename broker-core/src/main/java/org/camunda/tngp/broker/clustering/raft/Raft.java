@@ -35,9 +35,28 @@ import org.camunda.tngp.broker.clustering.raft.state.RaftState;
 import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.transport.SocketAddress;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
+import org.camunda.tngp.util.state.WaitState;
 
 public class Raft implements Agent
 {
+    private static final int TRANSITION_OPEN = 0;
+    private static final int TRANSITION_DEFAULT = 1;
+    private static final int TRANSITION_CLOSE = 2;
+
+    private static final StateMachineCommand<TransitionContext> CLOSE_MACHINE_COMMAND = (c) ->
+    {
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
     private final RaftContext context;
     private final LogStream stream;
     private final MetaStore meta;
@@ -67,6 +86,18 @@ public class Raft implements Agent
     private final RaftMessageHandler fragmentHandler;
 
     private final List<Consumer<Raft>> stateChangeListeners;
+
+    private final WaitState<TransitionContext> closedState = (c) ->
+    {
+    };
+    private final OpeningState openingState = new OpeningState();
+    private final OpenState openState = new OpenState();
+    private final CloseState closeState = new CloseState();
+    private final ClosingState closingState = new ClosingState();
+    private final TransitionState transitionState = new TransitionState();
+
+    private StateMachineAgent<TransitionContext> transitionStateMachine;
+    private TransitionContext transitionContext;
 
     public Raft(final RaftContext context, final LogStream stream, final MetaStore meta)
     {
@@ -121,8 +152,49 @@ public class Raft implements Agent
                 this.members.add(new Member(m.endpoint(), context));
             }
         }
+
+        initStateMachine();
     }
 
+    private void initStateMachine()
+    {
+        transitionStateMachine = new StateMachineAgent<>(StateMachine
+                .<TransitionContext> builder(s ->
+                {
+                    transitionContext = new TransitionContext(s, this);
+                    return transitionContext;
+                })
+                .initialState(closedState)
+
+                .from(closedState).take(TRANSITION_OPEN).to(openingState)
+                .from(closedState).take(TRANSITION_CLOSE).to(closedState)
+
+                .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+                .from(openingState).take(TRANSITION_CLOSE).to(closeState)
+
+                .from(openState).take(TRANSITION_CLOSE).to(closeState)
+
+                .from(closeState).take(TRANSITION_DEFAULT).to(closingState)
+                .from(closeState).take(TRANSITION_CLOSE).to(closeState)
+
+                .from(closingState).take(TRANSITION_DEFAULT).to(transitionState)
+                .from(closingState).take(TRANSITION_CLOSE).to(closingState)
+
+                .from(transitionState).take(TRANSITION_OPEN).to(openingState)
+                .from(transitionState).take(TRANSITION_DEFAULT).to(closedState)
+                .from(transitionState).take(TRANSITION_CLOSE).to(transitionState)
+
+                .build());
+
+        transitionStateMachine.addCommand((c) ->
+        {
+            final boolean opened = c.tryTake(TRANSITION_OPEN);
+            if (!opened)
+            {
+                throw new IllegalStateException();
+            }
+        });
+    }
 
     @Override
     public String roleName()
@@ -136,21 +208,22 @@ public class Raft implements Agent
         int workcount = 0;
 
         workcount += fragmentHandler.doWork();
-        workcount += state.doWork();
+        workcount += transitionStateMachine.doWork();
         workcount += joinController.doWork();
         workcount += leaveController.doWork();
 
         return workcount;
     }
 
-    public void close()
+    public CompletableFuture<Void> closeAsync()
     {
-        this.state.close();
+        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
 
-        while (!this.state.isClosed())
-        {
-            this.state.doWork();
-        }
+        transitionContext.next = null;
+        transitionContext.closeFuture = closeFuture;
+        transitionStateMachine.addCommand(CLOSE_MACHINE_COMMAND);
+
+        return closeFuture;
     }
 
     public LogStream stream()
@@ -443,29 +516,15 @@ public class Raft implements Agent
 
     public void transition(final RaftMembershipState state)
     {
-        if (this.state.state() != state)
+        if (this.state == leaderState && state == followerState.state())
         {
-            //System.out.println(String.format("Transitioning %s from %s to %s, %d", stream.getLogName(), this.state.state(), state, System.currentTimeMillis()));
+            new RuntimeException("TEST").printStackTrace();
+        }
 
-            try
-            {
-                this.state.close();
-
-                while (!this.state.isClosed())
-                {
-                    this.state.doWork();
-                }
-            }
-            finally
-            {
-                this.state = getState(state);
-                this.state.open();
-            }
-
-            for (int i = 0; i < stateChangeListeners.size(); i++)
-            {
-                stateChangeListeners.get(i).accept(this);
-            }
+        if (this.state.state() != state && transitionContext.closeFuture == null)
+        {
+            transitionContext.next = state;
+            transitionStateMachine.addCommand(CLOSE_MACHINE_COMMAND);
         }
     }
 
@@ -535,5 +594,126 @@ public class Raft implements Agent
             ", state=" + state +
             ", configuration=" + configuration +
             '}';
+    }
+
+    static class TransitionContext extends SimpleStateMachineContext
+    {
+        private final Raft raft;
+
+        RaftMembershipState next;
+        CompletableFuture<Void> closeFuture;
+
+        TransitionContext(StateMachine<?> stateMachine, Raft raft)
+        {
+            super(stateMachine);
+            this.raft = raft;
+        }
+    }
+
+    static class OpeningState implements org.camunda.tngp.util.state.State<TransitionContext>
+    {
+        @Override
+        public int doWork(TransitionContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+            raft.state.open();
+
+            workcount += 1;
+            context.take(TRANSITION_DEFAULT);
+
+            return workcount;
+        }
+    }
+
+    static class OpenState implements org.camunda.tngp.util.state.State<TransitionContext>
+    {
+        @Override
+        public int doWork(TransitionContext context) throws Exception
+        {
+            final Raft raft = context.raft;
+            return raft.state.doWork();
+        }
+    }
+
+    static class CloseState implements org.camunda.tngp.util.state.State<TransitionContext>
+    {
+        @Override
+        public int doWork(TransitionContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+            raft.state.close();
+            workcount += 1;
+
+            context.take(TRANSITION_DEFAULT);
+
+            return workcount;
+        }
+    }
+
+    static class ClosingState implements org.camunda.tngp.util.state.State<TransitionContext>
+    {
+        @Override
+        public int doWork(TransitionContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+            final RaftState currentState = raft.state;
+
+            workcount += currentState.doWork();
+
+            if (currentState.isClosed())
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
+    static class TransitionState implements State<TransitionContext>
+    {
+        @Override
+        public int doWork(TransitionContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+            int transition = TRANSITION_DEFAULT;
+
+            if (context.next != null)
+            {
+                final RaftMembershipState nextState = context.next;
+                raft.state = raft.getState(nextState);
+
+                workcount += 1;
+
+                final List<Consumer<Raft>> listeners = raft.stateChangeListeners;
+                for (int i = 0; i < listeners.size(); i++)
+                {
+                    workcount += 1;
+                    listeners.get(i).accept(raft);
+                }
+
+                transition = TRANSITION_OPEN;
+            }
+            else if (context.closeFuture != null)
+            {
+                context.closeFuture.complete(null);
+            }
+
+            workcount += 1;
+            context.take(transition);
+
+            context.next = null;
+            context.closeFuture = null;
+
+            return workcount;
+        }
     }
 }

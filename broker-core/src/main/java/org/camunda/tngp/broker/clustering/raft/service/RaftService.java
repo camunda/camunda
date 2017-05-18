@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.MetaStore;
@@ -59,15 +60,14 @@ public class RaftService implements Service<Raft>
     @Override
     public void stop(ServiceStopContext ctx)
     {
-        ctx.run(() ->
+        final CompletableFuture<Void> closeFuture = raft.closeAsync().thenAccept((v) ->
         {
             final AgentRunnerServices agentRunnerService = agentRunnerInjector.getValue();
             agentRunnerService.raftAgentRunnerService().remove(raft);
-
-            raft.close();
-
             raft.stream().closeAsync();
         });
+
+        ctx.async(closeFuture);
     }
 
     @Override

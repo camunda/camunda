@@ -81,7 +81,7 @@ public abstract class ActiveState extends InactiveState
         }
         else
         {
-            granted = lastVotedFor.equals(candidate);
+            granted = lastVotedFor.equals(candidate.endpoint());
         }
 
         if (granted)

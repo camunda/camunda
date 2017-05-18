@@ -204,6 +204,9 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
             logAppenderAgentRunnerService.close();
             networkSenderAgentRunnerService.close();
             conductorAgentRunnerService.close();
+            gossipAgentRunnerService.close();
+            raftAgentRunnerService.close();
+            clusterAgentRunnerService.close();
         }
         catch (Exception e)
         {

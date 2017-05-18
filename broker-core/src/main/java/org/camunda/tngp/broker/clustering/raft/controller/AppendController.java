@@ -200,7 +200,7 @@ public class AppendController
             final LogStreamListener listener = context.listener;
 
             final LogStream stream = raft.stream();
-            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
+            final LogStreamController logStreamController = stream.getLogStreamController();
 
             int workcount = 0;
 
@@ -223,11 +223,6 @@ public class AppendController
                 context.entryPosition = position;
                 context.take(TRANSITION_DEFAULT);
             }
-            else
-            {
-                workcount += 1;
-                context.take(TRANSITION_FAIL);
-            }
 
             return workcount;
         }
@@ -237,7 +232,7 @@ public class AppendController
         {
             final Raft raft = context.raft;
             final LogStream stream = raft.stream();
-            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
+            final LogStreamController logStreamController = stream.getLogStreamController();
             final LogStreamListener listener = context.listener;
 
             if (logStreamController != null)
@@ -309,7 +304,7 @@ public class AppendController
         {
             final Raft raft = context.raft;
             final LogStream stream = raft.stream();
-            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
+            final LogStreamController logStreamController = stream.getLogStreamController();
             final LogStreamListener listener = context.listener;
 
             if (logStreamController != null)
