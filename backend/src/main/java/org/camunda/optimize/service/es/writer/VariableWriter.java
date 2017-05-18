@@ -71,22 +71,22 @@ public class VariableWriter {
     BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
     //build map first
-    Map<String, Map <String, List<VariableDto>>> processToTypedVariables = new HashMap<>();
+    Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
     for (VariableDto variable : variables) {
       if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
         continue;
       }
 
-      if (!processToTypedVariables.containsKey(variable.getProcessInstanceId())) {
-        processToTypedVariables.put(variable.getProcessInstanceId(), newTypeMap());
+      if (!processInstanceIdToTypedVariables.containsKey(variable.getProcessInstanceId())) {
+        processInstanceIdToTypedVariables.put(variable.getProcessInstanceId(), newTypeMap());
       }
-      Map<String,List<VariableDto>> typedVars = processToTypedVariables.get(variable.getProcessInstanceId());
+      Map<String,List<VariableDto>> typedVars = processInstanceIdToTypedVariables.get(variable.getProcessInstanceId());
 
       typedVars.get(variableTypeToFieldLabel(variable.getType())).add(variable);
       addVariableRequest(variableBulkRequest, variable);
     }
 
-    for (Map.Entry<String, Map <String, List<VariableDto>>> entry : processToTypedVariables.entrySet()) {
+    for (Map.Entry<String, Map <String, List<VariableDto>>> entry : processInstanceIdToTypedVariables.entrySet()) {
       //for every process id
       //for every type execute one upsert
       addImportVariablesRequest(addVariablesToProcessInstanceBulkRequest, entry.getKey(), entry.getValue());
@@ -108,18 +108,17 @@ public class VariableWriter {
   }
 
   private void addImportVariablesRequest(
-      BulkRequestBuilder addVariablesToProcessInstanceBulkRequest,
-      String processInstanceId,
-      Map<String, List<VariableDto>> typeMappedVars
-  ) throws IOException, ParseException {
+    BulkRequestBuilder addVariablesToProcessInstanceBulkRequest,
+    String processInstanceId,
+    Map<String, List<VariableDto>> typeMappedVars) throws IOException, ParseException {
 
     Map<String, Object> params = buildParameters(typeMappedVars);
 
     Script updateScript = new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        createInlineUpdateScript(typeMappedVars),
-        params
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      createInlineUpdateScript(typeMappedVars),
+      params
     );
 
     String newEntryIfAbsent = getNewProcessInstanceRecordString(processInstanceId, typeMappedVars);

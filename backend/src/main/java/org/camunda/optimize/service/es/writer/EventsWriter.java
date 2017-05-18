@@ -42,17 +42,17 @@ public class EventsWriter {
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
-    Map<String, List<EventDto>> processEvents = new HashMap<>();
+    Map<String, List<EventDto>> processInstanceToEvents = new HashMap<>();
     for (EventDto e : events) {
-      if (!processEvents.containsKey(e.getProcessInstanceId())) {
-        processEvents.put(e.getProcessInstanceId(), new ArrayList<>());
+      if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
+        processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
       }
-      processEvents.get(e.getProcessInstanceId()).add(e);
+      processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
       addEventRequest(eventBulkRequest, e);
     }
 
-    for (Map.Entry<String, List<EventDto>> entry : processEvents.entrySet()) {
-      addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
+    for (Map.Entry<String, List<EventDto>> entry : processInstanceToEvents.entrySet()) {
+        addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
     }
     addEventToProcessInstanceBulkRequest.get();
     eventBulkRequest.get();
@@ -68,7 +68,10 @@ public class EventsWriter {
     );
   }
 
-  private void addEventsToProcessInstanceRequest(BulkRequestBuilder addEventToProcessInstanceBulkRequest, List<EventDto> processEvents, String processInstanceId) throws IOException {
+  private void addEventsToProcessInstanceRequest(
+    BulkRequestBuilder addEventToProcessInstanceBulkRequest,
+    List<EventDto> processEvents, String processInstanceId) throws IOException {
+
     List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
     Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
