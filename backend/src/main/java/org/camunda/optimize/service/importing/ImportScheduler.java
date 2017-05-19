@@ -89,7 +89,9 @@ public class ImportScheduler extends Thread {
 
         ImportResult importResult = toExecute.execute();
         pagesPassed = importResult.getPagesPassed();
-        postProcess(toExecute, importResult);
+        if (pagesPassed != 0 && importResult.getIdsToFetch() != null) {
+          postProcess(toExecute, importResult);
+        }
 
       } catch (RejectedExecutionException e) {
         //nothing bad happened, we just have a lot of data to import
