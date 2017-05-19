@@ -92,7 +92,9 @@ public class VariableWriter {
       addImportVariablesRequest(addVariablesToProcessInstanceBulkRequest, entry.getKey(), entry.getValue());
     }
     try {
-      addVariablesToProcessInstanceBulkRequest.get();
+      if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
+        addVariablesToProcessInstanceBulkRequest.get();
+      }
     } catch (NullPointerException e) {
       logger.error("NPE for PID [{}]" , e);
     }
