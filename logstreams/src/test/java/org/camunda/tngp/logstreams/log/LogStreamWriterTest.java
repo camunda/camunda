@@ -13,10 +13,17 @@
 package org.camunda.tngp.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.offset;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamPartitionIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;

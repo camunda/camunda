@@ -1,14 +1,19 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
-import java.util.concurrent.ExecutionException;
+import java.nio.ByteBuffer;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamBatchWriter;
+import org.camunda.tngp.logstreams.log.LogStreamBatchWriterImpl;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
@@ -28,25 +33,16 @@ public class LogIntegrationTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     protected AgentRunnerService agentRunnerService;
+    private LogStream logStream;
 
     @Before
     public void setup()
     {
         agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
-    }
 
-    @After
-    public void destroy() throws Exception
-    {
-        agentRunnerService.close();
-    }
-
-    @Test
-    public void shouldAppend() throws InterruptedException, ExecutionException
-    {
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
-        final LogStream logStream = LogStreams.createFsLogStream(TOPIC_NAME, 0)
+        logStream = LogStreams.createFsLogStream(TOPIC_NAME, 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
@@ -55,19 +51,95 @@ public class LogIntegrationTest
                 .build();
 
         logStream.open();
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        logStream.close();
+
+        agentRunnerService.close();
+    }
+
+    @Test
+    public void shouldWriteEvents()
+    {
+        final int workPerIteration = 10_000;
+
+        writeLogEvents(logStream, workPerIteration, MSG_SIZE, 0);
 
         final LogStreamReader logReader = new BufferedLogStreamReader(logStream, true);
+        readLogAndAssertEvents(logReader, workPerIteration, MSG_SIZE);
+    }
 
-        for (int j = 0; j < 10; j++)
+    @Test
+    public void shouldWriteEventsAsBatch()
+    {
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(MSG_SIZE));
+
+        final int batchSize = 1_000;
+        final int eventSizePerBatch = 100;
+
+        final LogStreamBatchWriter logStreamWriter = new LogStreamBatchWriterImpl(logStream);
+
+        for (int i = 0; i < batchSize; i++)
         {
-            final int workPerIteration = 10_000;
+            for (int j = 0; j < eventSizePerBatch; j++)
+            {
+                final int key = i * eventSizePerBatch + j;
 
-            writeLogEvents(logStream, workPerIteration, MSG_SIZE, 0);
+                msg.putInt(0, key);
 
-            readLogAndAssertEvents(logReader, workPerIteration, MSG_SIZE);
+                logStreamWriter.event()
+                    .key(key)
+                    .value(msg)
+                    .done();
+            }
+
+            while (logStreamWriter.tryWrite() < 0)
+            {
+                // spin
+            }
         }
 
-        logStream.close();
+        final LogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
+        readLogAndAssertEvents(logStreamReader, batchSize * eventSizePerBatch, MSG_SIZE);
+    }
+
+    @Test
+    public void shouldWriteEventBatchesWithDifferentLengths()
+    {
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(MSG_SIZE));
+
+        final int batchSize = 1_000;
+        final int eventSizePerBatch = 100;
+
+        final LogStreamBatchWriter logStreamWriter = new LogStreamBatchWriterImpl(logStream);
+
+        int eventCount = 0;
+        for (int i = 0; i < batchSize; i++)
+        {
+            for (int j = 0; j < 1 + (i % eventSizePerBatch); j++)
+            {
+                final int key = i * eventSizePerBatch + j;
+
+                msg.putInt(0, key);
+
+                logStreamWriter.event()
+                    .key(key)
+                    .value(msg, 0, MSG_SIZE - (j % 8))
+                    .done();
+
+                eventCount += 1;
+            }
+
+            while (logStreamWriter.tryWrite() < 0)
+            {
+                // spin
+            }
+        }
+
+        waitUntilWrittenEvents(logStream, eventCount);
     }
 
 }
