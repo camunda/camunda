@@ -98,7 +98,9 @@ public class VariableWriter {
     } catch (NullPointerException e) {
       logger.error("NPE for PID [{}]" , e);
     }
-    variableBulkRequest.get();
+    if (variableBulkRequest.numberOfActions() != 0) {
+      variableBulkRequest.get();
+    }
   }
 
   private Map<String, List<VariableDto>> newTypeMap() {
