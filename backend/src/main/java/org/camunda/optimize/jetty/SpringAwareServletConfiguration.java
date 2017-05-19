@@ -25,9 +25,7 @@ import java.util.EnumSet;
 public class SpringAwareServletConfiguration implements ApplicationContextAware {
 
   private static final String COMPRESSED_MIME_TYPES = "application/json," +
-      "application/javascript," +
       "text/html," +
-      "text/css," +
       "application/x-font-ttf," +
       "image/svg+xml";
 
