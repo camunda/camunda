@@ -1,5 +1,6 @@
 package org.camunda.optimize.jetty;
 
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -81,13 +82,23 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
       context.setErrorHandler(errorMapper);
 
-      FilterHolder holder = new FilterHolder(GzipFilter.class);
-      holder.setInitParameter("deflateCompressionLevel", "9");
-      holder.setInitParameter("minGzipSize", "0");
-      holder.setInitParameter("mimeTypes", COMPRESSED_MIME_TYPES);
-
-      context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+      initGzipFilterHolder(context);
+      initJSRewriteHandler(context);
     }
+  }
+
+  private void initJSRewriteHandler(ServletContextHandler context) {
+
+    context.addFilter(GzipForwardPatternRule.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
+  }
+
+  private void initGzipFilterHolder(ServletContextHandler context) {
+    FilterHolder gzipFilterHolder = new FilterHolder(GzipFilter.class);
+    gzipFilterHolder.setInitParameter("deflateCompressionLevel", "9");
+    gzipFilterHolder.setInitParameter("minGzipSize", "0");
+    gzipFilterHolder.setInitParameter("mimeTypes", COMPRESSED_MIME_TYPES);
+
+    context.addFilter(gzipFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
   }
 
   public ServletContextHandler getServletContextHandler() {
