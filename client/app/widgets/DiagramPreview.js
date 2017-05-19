@@ -3,6 +3,7 @@ import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
 import {Loader} from './Loader';
 import {createQueue} from 'utils';
+import isEqual from 'lodash.isequal';
 
 const queue = createQueue();
 
@@ -43,7 +44,11 @@ export function createDiagramPreview() {
         });
       };
 
-      return [templateUpdate, updateOnlyWhenStateChanges(update)];
+      function updatePreventionCondition(previousState, newState) {
+        return loaderNode.style.display === 'none' && isEqual(previousState, newState);
+      }
+
+      return [templateUpdate, updateOnlyWhenStateChanges(update, updatePreventionCondition)];
     };
   });
 

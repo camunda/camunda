@@ -101,5 +101,13 @@ describe('<DiagramPreview>', () => {
       //expected
       expect(node.querySelector('.diagram-loading').style.display).to.eql('block');
     });
+
+    it('should import diagram when loading is in progress', () => {
+      DiagramPreview.setLoading(true);
+
+      update(diagramXml);
+
+      expect(viewer.importXML.calledTwice).to.eql(true);
+    });
   });
 });

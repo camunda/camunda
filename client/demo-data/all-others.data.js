@@ -3,6 +3,7 @@ const {getResource, generateInstances} = require('./helpers');
 exports.resources = [
   getResource('lead-qualification-version1.bpmn'),
   getResource('sub-process.bpmn'),
+  getResource('obtain-schufa.bpmn')
 ];
 
 exports.instances =  generateInstances('sub-process.bpmn', 10, (index) => {
