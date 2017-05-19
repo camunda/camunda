@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es;
+package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -33,7 +33,7 @@ public class DurationHeatmapTargetValueIT {
   private final String PROCESS_DEFINITION_ID = "procDef";
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain

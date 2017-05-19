@@ -56,7 +56,7 @@ public class SchemaInitializerIT {
   public ExpectedException thrown = ExpectedException.none();
 
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
+  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @ClassRule
   public static RuleChain chain = RuleChain

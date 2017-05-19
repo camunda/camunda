@@ -42,7 +42,7 @@ public class ProcessDefinitionBaseImportIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath*:import/importApplicationContext.xml");
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;
 
@@ -214,6 +214,7 @@ public class ProcessDefinitionBaseImportIT {
   private String createAndSetProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
     String processDefinitionId = createAndStartProcessDefinition(modelInstance);
     configurationService.setProcessDefinitionsToImport(processDefinitionId);
+    embeddedOptimizeRule.reloadConfiguration();
     embeddedOptimizeRule.updateImportIndexes();
     return processDefinitionId;
   }
@@ -254,9 +255,10 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private void addProcessDefinitionIdToImportList(String processDefinitionId) {
-    String[] procDefsToImport = configurationService.getProcessDefinitionsToImport();
+    String[] procDefsToImport = configurationService.getProcessDefinitionsToImportAsArray();
     if(procDefsToImport.length == 0) {
       configurationService.setProcessDefinitionsToImport(processDefinitionId);
+      embeddedOptimizeRule.reloadConfiguration();
     } else {
       StringBuilder commaSeparatedList = new StringBuilder();
       String commaSeparator = ",";
@@ -265,6 +267,7 @@ public class ProcessDefinitionBaseImportIT {
       }
       commaSeparatedList.append(processDefinitionId);
       configurationService.setProcessDefinitionsToImport(commaSeparatedList.toString());
+      embeddedOptimizeRule.reloadConfiguration();
     }
   }
 

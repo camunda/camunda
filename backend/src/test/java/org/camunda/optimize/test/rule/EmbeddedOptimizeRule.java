@@ -34,26 +34,11 @@ import java.util.Properties;
  */
 public class EmbeddedOptimizeRule extends TestWatcher {
 
-  private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
-  private final String contextLocation;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
 
   private TestEmbeddedCamundaOptimize camundaOptimize;
   private Properties properties;
-  private String propertiesLocation = "it/it-test.properties";
-
-  public EmbeddedOptimizeRule(String contextLocation) {
-    this.contextLocation = contextLocation;
-  }
-
-  public EmbeddedOptimizeRule() {
-    this(DEFAULT_CONTEXT_LOCATION);
-  }
-
-  public void init() {
-
-    properties = PropertyUtil.loadProperties(propertiesLocation);
-  }
+  private final static String propertiesLocation = "it/it-test.properties";
 
   public void importEngineEntities() throws OptimizeException {
     getJobExecutor().startExecutingImportJobs();
@@ -80,13 +65,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void starting(Description description) {
     startOptimize();
+    resetImportStartIndexes();
   }
 
   public void startOptimize() {
-    if (camundaOptimize == null) {
-      camundaOptimize = new TestEmbeddedCamundaOptimize(contextLocation);
-      init();
-    }
+    camundaOptimize = TestEmbeddedCamundaOptimize.getInstance();
+    properties = PropertyUtil.loadProperties(propertiesLocation);
     try {
       camundaOptimize.start();
     } catch (Exception e) {
@@ -95,13 +79,17 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   protected void finished(Description description) {
-    stopOptimize();
+    TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
+    reloadConfiguration();
+  }
+
+  public void reloadConfiguration() {
+    camundaOptimize.reloadConfiguration();
   }
 
   public void stopOptimize() {
     try {
       camundaOptimize.destroy();
-      camundaOptimize = null;
     } catch (Exception e) {
       logger.error("Failed to stop Optimize", e);
     }
@@ -197,7 +185,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
 
   public int getMaxVariableValueListSize() {
-    return Integer.parseInt(properties.getProperty("camunda.optimize.variable.max.valueList.size"));
+    return getConfigurationService().getMaxVariableValueListSize();
   }
 
   public ConfigurationService getConfigurationService() {

@@ -84,7 +84,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
   }
 
   private List<String> getProcessDefinitionsToImport() {
-    String[] procDefs = configurationService.getProcessDefinitionsToImport();
+    String[] procDefs = configurationService.getProcessDefinitionsToImportAsArray();
     ensureNotEmpty(procDefs);
     List<String> allProcDefsToImport = new LinkedList<>();
     Collections.addAll(allProcDefsToImport, procDefs);

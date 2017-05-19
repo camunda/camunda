@@ -189,6 +189,10 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     this.jettyServer.start();
   }
 
+  public boolean isStarted() {
+    return jettyServer.isStarted();
+  }
+
   public void join() throws InterruptedException {
     jettyServer.join();
   }
@@ -228,7 +232,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     jerseyCamundaOptimize.getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
   }
 
-  protected ApplicationContext getApplicationContext() {
+  public ApplicationContext getApplicationContext() {
     return jerseyCamundaOptimize.getApplicationContext();
   }
 }

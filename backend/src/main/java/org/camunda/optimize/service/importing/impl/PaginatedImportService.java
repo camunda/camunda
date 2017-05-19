@@ -6,7 +6,10 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.ImportStrategy;
 import org.camunda.optimize.service.importing.ImportStrategyProvider;
+import org.camunda.optimize.service.util.ConfigurationReloadable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -15,7 +18,8 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService<ENG, OPT> {
+public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto>
+  extends AbstractImportService <ENG, OPT> implements ConfigurationReloadable {
 
   protected ImportStrategy importStrategy;
 
@@ -28,6 +32,14 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   protected void init() {
     importStrategy = importStrategyProvider.getImportStrategyInstance();
     importStrategy.initializeImportIndex(getElasticsearchType(), getEngineImportMaxPageSize());
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getAutowireCapableBeanFactory();
+    beanFactory.destroySingleton("importStrategyProvider");
+    importStrategyProvider = (ImportStrategyProvider) context.getBean("importStrategyProvider");
+    init();
   }
 
   @Override

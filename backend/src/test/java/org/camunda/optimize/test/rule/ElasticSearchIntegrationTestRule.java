@@ -6,11 +6,11 @@ import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -164,7 +164,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       if (exists) {
         DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
             .refresh(true)
-            .filter(matchAllQuery())
+            .filter(queryAllButUserAndImportIndexType())
             .source(indexName)
             .get();
       }
@@ -173,16 +173,20 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public void deleteOptimizeIndex() {
-    esclient.admin().indices()
-        .prepareDelete(this.getOptimizeIndex())
-        .get();
+  private QueryBuilder queryAllButUserAndImportIndexType() {
+    return boolQuery()
+      .mustNot(
+        typeQuery(properties.getProperty("camunda.optimize.es.users.type"))
+      )
+      .mustNot(
+        typeQuery(properties.getProperty("camunda.optimize.es.import.index.type"))
+      );
   }
 
   private void assureElasticsearchIsClean() {
     try {
       SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
-          .setQuery(matchAllQuery())
+          .setQuery(queryAllButUserAndImportIndexType())
           .get();
       Long hits = response.getHits().getTotalHits();
       assertThat("Elasticsearch should be clean after Test!", hits, is(0L));

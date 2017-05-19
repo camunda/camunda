@@ -387,6 +387,14 @@
           <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-duration-adaption</artifactId>
+          <scope>test</scope>
+          <version>${project.version}</version>
+        </dependency>
+
+
       </dependencies>
 
       <build>
@@ -433,6 +441,12 @@
             <version>2.19.1</version>
             <configuration>
               <redirectTestOutputToFile>true</redirectTestOutputToFile>
+              <properties>
+                <property>
+                  <name>listener</name>
+                  <value>org.camunda.optimize.test.rule.StartOptimizeExecutionListener</value>
+                </property>
+              </properties>
             </configuration>
             <executions>
               <execution>
@@ -498,6 +512,12 @@
                 <home>${tomcat.runtime}</home>
                 <timeout>${cargo.timeout}</timeout>
                 <log>${tomcat.runtime}/logs/catalina.out</log>
+                <dependencies>
+                  <dependency>
+                    <groupId>org.camunda.optimize</groupId>
+                    <artifactId>engine-duration-adaption</artifactId>
+                  </dependency>
+                </dependencies>
               </container>
               <configuration>
                 <type>standalone</type>
@@ -507,6 +527,14 @@
                   <cargo.tomcat.ajp.port>${tomcat.connector.ajp.port}</cargo.tomcat.ajp.port>
                   <cargo.start.jvmargs>-Djava.security.egd=file:/dev/./urandom</cargo.start.jvmargs>
                 </properties>
+                <files>
+                    <copy>
+                      <configfile>true</configfile>
+                      <file>${project.basedir}/src/test/resources/tomcat/bpm-platform.xml</file>
+                      <tofile>conf/bpm-platform.xml</tofile>
+                      <overwrite>true</overwrite>
+                    </copy>
+                </files>
               </configuration>
               <deployables>
                 <deployable>

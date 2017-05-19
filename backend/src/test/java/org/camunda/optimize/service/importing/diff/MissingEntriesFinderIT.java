@@ -34,19 +34,6 @@ public class MissingEntriesFinderIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-
-  @Before
-  public void init() {
-    // the id of deleted indices is always stored
-    // and the version increment when a document with the
-    // same id is added. Therefore, we need to delete the whole
-    // index before each test to be sure that all document ids
-    // are wiped out.
-    elasticSearchRule.deleteOptimizeIndex();
-    embeddedOptimizeRule.initializeSchema();
-  }
-
-
   @Test
   public void onlyNewProcessDefinitionsAreImportedToES() throws Exception {
 

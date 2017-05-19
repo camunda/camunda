@@ -318,7 +318,11 @@ public class ConfigurationService {
     return maxVariablesPageSize;
   }
 
-  public String[] getProcessDefinitionsToImport() {
+  public String getProcessDefinitionsToImport() {
+    return processDefinitionsToImport;
+  }
+
+  public String[] getProcessDefinitionsToImportAsArray() {
     String[] processDefinitionArrayToImport = splitStringByComma(processDefinitionsToImport);
     if(processDefinitionArrayToImport.length == 1 && processDefinitionArrayToImport[0].isEmpty()) {
       return new String[]{};
@@ -327,7 +331,7 @@ public class ConfigurationService {
   }
 
   public boolean areProcessDefinitionsToImportDefined() {
-    return getProcessDefinitionsToImport().length > 0;
+    return getProcessDefinitionsToImportAsArray().length > 0;
   }
 
   public static String[] splitStringByComma(String commaSeparatedList) {
@@ -352,5 +356,217 @@ public class ConfigurationService {
 
   public int getEsNumberOfShards() {
     return esNumberOfShards;
+  }
+
+  public void setLifetime(Integer lifetime) {
+    this.lifetime = lifetime;
+  }
+
+  public void setSecret(String secret) {
+    this.secret = secret;
+  }
+
+  public void setDefaultUser(String defaultUser) {
+    this.defaultUser = defaultUser;
+  }
+
+  public void setDefaultPassword(String defaultPassword) {
+    this.defaultPassword = defaultPassword;
+  }
+
+  public void setEngineAuthenticationEnabled(boolean engineAuthenticationEnabled) {
+    this.engineAuthenticationEnabled = engineAuthenticationEnabled;
+  }
+
+  public void setDateFormat(String dateFormat) {
+    this.dateFormat = dateFormat;
+  }
+
+  public void setEngineImportMaxPageSize(int engineImportMaxPageSize) {
+    this.engineImportMaxPageSize = engineImportMaxPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionXmlMaxPageSize(int engineImportProcessDefinitionXmlMaxPageSize) {
+    this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public void setEngineImportProcessInstanceMaxPageSize(int engineImportProcessInstanceMaxPageSize) {
+    this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
+  }
+
+  public void setMaxVariablesPageSize(int maxVariablesPageSize) {
+    this.maxVariablesPageSize = maxVariablesPageSize;
+  }
+
+  public void setMaxJobQueueSize(int maxJobQueueSize) {
+    this.maxJobQueueSize = maxJobQueueSize;
+  }
+
+  public void setImportExecutorThreadCount(int importExecutorThreadCount) {
+    this.importExecutorThreadCount = importExecutorThreadCount;
+  }
+
+  public void setMaxVariableValueListSize(int maxVariableValueListSize) {
+    this.maxVariableValueListSize = maxVariableValueListSize;
+  }
+
+  public void setElasticSearchHost(String elasticSearchHost) {
+    this.elasticSearchHost = elasticSearchHost;
+  }
+
+  public void setElasticSearchPort(Integer elasticSearchPort) {
+    this.elasticSearchPort = elasticSearchPort;
+  }
+
+  public void setElasticsearchConnectionTimeout(int elasticsearchConnectionTimeout) {
+    this.elasticsearchConnectionTimeout = elasticsearchConnectionTimeout;
+  }
+
+  public void setElasticsearchScrollTimeout(int elasticsearchScrollTimeout) {
+    this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
+  }
+
+  public void setOptimizeIndex(String optimizeIndex) {
+    this.optimizeIndex = optimizeIndex;
+  }
+
+  public void setEventType(String eventType) {
+    this.eventType = eventType;
+  }
+
+  public void setProcessInstanceType(String processInstanceType) {
+    this.processInstanceType = processInstanceType;
+  }
+
+  public void setVariableType(String variableType) {
+    this.variableType = variableType;
+  }
+
+  public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
+    this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
+  }
+
+  public void setProcessDefinitionType(String processDefinitionType) {
+    this.processDefinitionType = processDefinitionType;
+  }
+
+  public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
+    this.processDefinitionXmlType = processDefinitionXmlType;
+  }
+
+  public void setElasticSearchUsersType(String elasticSearchUsersType) {
+    this.elasticSearchUsersType = elasticSearchUsersType;
+  }
+
+  public void setImportIndexType(String importIndexType) {
+    this.importIndexType = importIndexType;
+  }
+
+  public void setProcessDefinitionImportIndexType(String processDefinitionImportIndexType) {
+    this.processDefinitionImportIndexType = processDefinitionImportIndexType;
+  }
+
+  public void setEngineRestApiEndpoint(String engineRestApiEndpoint) {
+    this.engineRestApiEndpoint = engineRestApiEndpoint;
+  }
+
+  public void setEngineConnectTimeout(int engineConnectTimeout) {
+    this.engineConnectTimeout = engineConnectTimeout;
+  }
+
+  public void setEngineReadTimeout(int engineReadTimeout) {
+    this.engineReadTimeout = engineReadTimeout;
+  }
+
+  public void setHistoricActivityInstanceEndpoint(String historicActivityInstanceEndpoint) {
+    this.historicActivityInstanceEndpoint = historicActivityInstanceEndpoint;
+  }
+
+  public void setHistoricActivityInstanceCountEndpoint(String historicActivityInstanceCountEndpoint) {
+    this.historicActivityInstanceCountEndpoint = historicActivityInstanceCountEndpoint;
+  }
+
+  public void setHistoricVariableInstanceEndpoint(String historicVariableInstanceEndpoint) {
+    this.historicVariableInstanceEndpoint = historicVariableInstanceEndpoint;
+  }
+
+  public void setHistoricVariableInstanceCountEndpoint(String historicVariableInstanceCountEndpoint) {
+    this.historicVariableInstanceCountEndpoint = historicVariableInstanceCountEndpoint;
+  }
+
+  public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
+    this.processDefinitionEndpoint = processDefinitionEndpoint;
+  }
+
+  public void setProcessDefinitionCountEndpoint(String processDefinitionCountEndpoint) {
+    this.processDefinitionCountEndpoint = processDefinitionCountEndpoint;
+  }
+
+  public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
+    this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
+  }
+
+  public void setHistoricProcessInstanceEndpoint(String historicProcessInstanceEndpoint) {
+    this.historicProcessInstanceEndpoint = historicProcessInstanceEndpoint;
+  }
+
+  public void setHistoricProcessInstanceCountEndpoint(String historicProcessInstanceCountEndpoint) {
+    this.historicProcessInstanceCountEndpoint = historicProcessInstanceCountEndpoint;
+  }
+
+  public void setUserValidationEndpoint(String userValidationEndpoint) {
+    this.userValidationEndpoint = userValidationEndpoint;
+  }
+
+  public void setEngineName(String engineName) {
+    this.engineName = engineName;
+  }
+
+  public void setEngineConnected(boolean engineConnected) {
+    this.engineConnected = engineConnected;
+  }
+
+  public void setAnalyzerName(String analyzerName) {
+    this.analyzerName = analyzerName;
+  }
+
+  public void setTokenizer(String tokenizer) {
+    this.tokenizer = tokenizer;
+  }
+
+  public void setTokenFilter(String tokenFilter) {
+    this.tokenFilter = tokenFilter;
+  }
+
+  public void setImportHandlerWait(long importHandlerWait) {
+    this.importHandlerWait = importHandlerWait;
+  }
+
+  public void setImportResetInterval(double importResetInterval) {
+    this.importResetInterval = importResetInterval;
+  }
+
+  public void setMaximumBackoff(long maximumBackoff) {
+    this.maximumBackoff = maximumBackoff;
+  }
+
+  public void setEsRefreshInterval(int esRefreshInterval) {
+    this.esRefreshInterval = esRefreshInterval;
+  }
+
+  public void setEsNumberOfReplicas(int esNumberOfReplicas) {
+    this.esNumberOfReplicas = esNumberOfReplicas;
+  }
+
+  public void setEsNumberOfShards(int esNumberOfShards) {
+    this.esNumberOfShards = esNumberOfShards;
+  }
+
+  public int getEngineImportProcessDefinitionXmlMaxPageSize() {
+    return engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public String getProcessDefinitionXmlEndpoint() {
+    return processDefinitionXmlEndpoint;
   }
 }

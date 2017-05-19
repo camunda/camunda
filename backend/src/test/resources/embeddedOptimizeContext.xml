@@ -15,10 +15,9 @@
 
   <context:property-placeholder location="classpath:service.properties,classpath:it/service-it.properties" />
 
-  <bean id="engineClient"  class="org.camunda.optimize.rest.engine.EngineClientFactory"/>
+  <bean id="engineClient"  class="org.camunda.optimize.test.factory.SpyEngineClientFactory"/>
 
-  <!--not declared as annotated component to be able to mock-->
-  <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
+  <bean id="transportClient"  class="org.camunda.optimize.test.factory.SpyTransportClientFactory"/>
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
