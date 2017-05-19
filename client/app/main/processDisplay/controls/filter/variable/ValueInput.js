@@ -2,7 +2,7 @@ import {jsx, includes, Attribute, OnEvent} from 'view-utils';
 import {setValue} from './service';
 
 export function ValueInput() {
-  return <div className="value">
+  return <div className="variable-value">
     <input className="form-control" placeholder="Enter value">
       <Attribute attribute="type" selector={getInputType} />
       <Attribute attribute="value" selector={getValue} />

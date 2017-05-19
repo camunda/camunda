@@ -2,7 +2,7 @@ import {jsx, Scope, List, Text, OnEvent} from 'view-utils';
 import {setValue} from './service';
 
 export function ValueSelection() {
-  const template = <div className="value">
+  const template = <div className="variable-value">
     <Scope selector={getVariableList}>
       <List>
         <label className="value-list-label">
