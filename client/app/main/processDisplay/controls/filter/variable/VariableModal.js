@@ -26,6 +26,7 @@ export function createVariableModal(createCallback, getProcessDefinition) {
           </Socket>
           <Socket name="body">
             <form>
+              <OnEvent event="submit" listener={handleFormSubmit} />
               <span className="label">Variable Name</span>
               <select className="form-control">
                 <Reference name="variableDropdown" />
@@ -74,6 +75,11 @@ export function createVariableModal(createCallback, getProcessDefinition) {
           loadVariables(definition);
         }
       }];
+
+      function handleFormSubmit({event, state}) {
+        event.preventDefault();
+        createFilter({state});
+      }
 
       function shouldShowValueSelection(state) {
         return getSelectedVariableProperty(state, 'valuesAreComplete') &&

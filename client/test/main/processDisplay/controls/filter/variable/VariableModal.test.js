@@ -183,6 +183,19 @@ describe('<VariableModal>', () => {
         expect(selectVariableIdx.calledWith(1)).to.eql(true);
       });
 
+      it('should create a filter when the form is submitted', () => {
+        update({variables, selectedIdx: 0, operator: 1, value: 2});
+
+        triggerEvent({
+          node: bodyNode,
+          selector: 'form',
+          eventName: 'submit'
+        });
+
+        expect(createVariableFilter.calledOnce).to.eql(true, 'expected variable filter to be created');
+        expect(createCallback.calledOnce).to.eql(true, 'expected onFilterAdded callback to be called');
+      });
+
       it('should contain an operator selection component', () => {
         expect(bodyNode.textContent).to.contain(OperatorSelection.text);
       });
