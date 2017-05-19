@@ -30,6 +30,7 @@ describe('ProcessDisplay service', () => {
   let filter;
   let get;
   let post;
+  let router;
 
   setupPromiseMocking();
 
@@ -78,6 +79,11 @@ describe('ProcessDisplay service', () => {
       }
     });
     __set__('getLastRoute', getLastRoute);
+
+    router = {
+      goTo: sinon.spy()
+    };
+    __set__('router', router);
   });
 
   afterEach(() => {
@@ -90,6 +96,7 @@ describe('ProcessDisplay service', () => {
     __ResetDependency__('createLoadingTargetValueAction');
     __ResetDependency__('createLoadingTargetValueResultAction');
     __ResetDependency__('getLastRoute');
+    __ResetDependency__('router');
   });
 
   describe('loadData', () => {
@@ -366,6 +373,10 @@ describe('ProcessDisplay service', () => {
       expect(createLoadingDiagramErrorAction.calledOnce).to.eql(true);
       expect(createLoadingDiagramErrorAction.calledWith(ERROR_MSG)).to.eql(true);
       expect(dispatchAction.calledWith(ERROR_ACTION)).to.eql(true);
+    });
+
+    it('should redirect to default view', () => {
+      expect(router.goTo.calledWith('default')).to.eql(true);
     });
   });
 

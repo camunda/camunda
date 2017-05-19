@@ -5,8 +5,10 @@ import {createLoadingDiagramAction, createLoadingDiagramResultAction, createLoad
         createLoadingTargetValueAction, createLoadingTargetValueResultAction, createLoadingTargetValueErrorAction
 } from './diagram';
 import {getFilterQuery} from './query';
-import {getLastRoute} from 'router';
+import {getLastRoute, getRouter} from 'router';
 import {addNotification} from 'notifications';
+
+const router = getRouter();
 
 const viewHeatmapEndpoints = {
   branch_analysis: 'frequency',
@@ -80,6 +82,8 @@ export function loadDiagram(processDefinitionId = getDefinitionId()) {
         isError: true
       });
       dispatchAction(createLoadingDiagramErrorAction(err));
+
+      router.goTo('default');
     });
 }
 
