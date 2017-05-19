@@ -1,6 +1,5 @@
 package org.camunda.optimize.jetty;
 
-import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;

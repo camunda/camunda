@@ -27,6 +27,7 @@ public class GzipForwardPatternRule implements Filter {
   private static final String GZIP = ".gz";
   private static final Logger logger = Log.getLogger(GzipForwardPatternRule.class);
   private static final String JS = ".js";
+  private static final String WOFF = ".woff";
 
 
   @Override
@@ -38,7 +39,7 @@ public class GzipForwardPatternRule implements Filter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
     HttpServletRequest servletRequest = (HttpServletRequest) request;
     HttpServletResponse servletResponse = (HttpServletResponse) response;
-    if (servletRequest.getServletPath().endsWith(JS)) {
+    if (servletRequest.getServletPath().toLowerCase().endsWith(JS)) {
       servletResponse.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
       String gzipTarget = servletRequest.getServletPath() + GZIP;
       servletResponse.setContentType("application/javascript");
@@ -49,6 +50,9 @@ public class GzipForwardPatternRule implements Filter {
         logger.debug(e);
       }
 
+    } else if (servletRequest.getServletPath().toLowerCase().endsWith(WOFF)) {
+      filterChain.doFilter(servletRequest, servletResponse);
+      servletResponse.setContentType(null);
     } else {
       filterChain.doFilter(servletRequest, servletResponse);
     }
