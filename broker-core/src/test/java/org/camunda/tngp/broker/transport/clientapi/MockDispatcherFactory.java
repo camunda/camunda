@@ -67,7 +67,7 @@ public class MockDispatcherFactory
         final Iterator<Answer<Long>> answersIt = answers.iterator();
 
         final Dispatcher dispatcher = mock(Dispatcher.class);
-        when(dispatcher.claim(any(), anyInt(), eq(streamId))).thenAnswer((invocation) -> answersIt.next().answer(invocation));
+        when(dispatcher.claim(any(ClaimedFragment.class), anyInt(), eq(streamId))).thenAnswer((invocation) -> answersIt.next().answer(invocation));
         return dispatcher;
     }
 

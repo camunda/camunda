@@ -1,7 +1,10 @@
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 import java.nio.ByteOrder;
 import java.util.EnumMap;
@@ -41,6 +44,9 @@ import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamBatchWriter;
+import org.camunda.tngp.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import org.camunda.tngp.logstreams.log.LogStreamBatchWriterImpl;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
@@ -131,11 +137,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final ComposedSnapshot composedSnapshot;
 
     protected LogStreamReader logStreamReader;
+    protected LogStreamBatchWriter logStreamBatchWriter;
 
     protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
+    protected int streamProcessorId;
     protected long eventKey;
     protected long eventPosition;
 
@@ -201,8 +209,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         final LogStream sourceStream = context.getSourceStream();
         this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
+        this.streamProcessorId = context.getId();
 
         this.logStreamReader = new BufferedLogStreamReader(sourceStream);
+        this.logStreamBatchWriter = new LogStreamBatchWriterImpl(context.getTargetStream());
 
         this.targetStream = context.getTargetStream();
     }
@@ -862,6 +872,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         private boolean isCanceled;
         private long activityInstanceKey;
+        private long taskKey;
 
         @Override
         public void processEvent()
@@ -881,6 +892,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setWorkflowInstanceKey(eventKey);
 
                 activityInstanceKey = workflowInstanceIndexAccessor.getActivityInstanceKey();
+                taskKey = activityInstanceIndexAccessor.wrapActivityInstanceKey(activityInstanceKey).getTaskKey();
 
                 isCanceled = true;
             }
@@ -893,25 +905,48 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            // TODO write events as batch - see camunda-tngp/logstreams#30
-            if (activityInstanceKey > 0)
+            logStreamBatchWriter
+                .producerId(streamProcessorId)
+                .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
+
+            if (taskKey > 0)
             {
-                activityInstanceIndexAccessor.wrapActivityInstanceKey(activityInstanceKey);
-
-                final long taskKey = activityInstanceIndexAccessor.getTaskKey();
-                if (taskKey > 0)
-                {
-                    writeCancelTaskEvent(writer, taskKey);
-                }
-
-                writeTerminateActivityInstanceEvent(writer, activityInstanceKey);
+                writeCancelTaskEvent(logStreamBatchWriter.event(), taskKey);
             }
 
-            return writeWorkflowEvent(writer.key(eventKey));
+            if (activityInstanceKey > 0)
+            {
+                writeTerminateActivityInstanceEvent(logStreamBatchWriter.event(), activityInstanceKey);
+            }
+
+            writeWorklowInstanceEvent(logStreamBatchWriter.event());
+
+            return logStreamBatchWriter.tryWrite();
         }
 
-        private void writeCancelTaskEvent(LogStreamWriter writer, long taskKey)
+        private void writeWorklowInstanceEvent(LogEntryBuilder logEntryBuilder)
         {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .raftTermId(targetStream.getTerm())
+                    .eventType(WORKFLOW_EVENT);
+
+            logEntryBuilder
+                .key(eventKey)
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(workflowInstanceEvent)
+                .done();
+        }
+
+        private void writeCancelTaskEvent(LogEntryBuilder logEntryBuilder, long taskKey)
+        {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .raftTermId(targetStream.getTerm())
+                .eventType(TASK_EVENT);
+
             taskEvent.reset();
             taskEvent
                 .setEventType(TaskEventType.CANCEL)
@@ -923,16 +958,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setActivityId(activityInstanceIndexAccessor.getActivityId())
                     .setActivityInstanceKey(activityInstanceKey);
 
-            writeTaskEvent(writer.key(taskKey));
+            logEntryBuilder
+                .key(taskKey)
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(taskEvent)
+                .done();
         }
 
-        private void writeTerminateActivityInstanceEvent(LogStreamWriter writer, long activityInstanceKey)
+        private void writeTerminateActivityInstanceEvent(LogEntryBuilder logEntryBuilder, long activityInstanceKey)
         {
             targetEventMetadata.reset();
             targetEventMetadata
                     .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(WORKFLOW_EVENT)
-                    .raftTermId(targetStream.getTerm());
+                    .raftTermId(targetStream.getTerm())
+                    .eventType(WORKFLOW_EVENT);
 
             activityInstanceEvent.reset();
             activityInstanceEvent
@@ -942,11 +981,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setWorkflowInstanceKey(eventKey)
                 .setActivityId(activityInstanceIndexAccessor.getActivityId());
 
-            writer
+            logEntryBuilder
                 .key(activityInstanceKey)
                 .metadataWriter(targetEventMetadata)
                 .valueWriter(activityInstanceEvent)
-                .tryWrite();
+                .done();
         }
 
         @Override
