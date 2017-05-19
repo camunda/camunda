@@ -109,7 +109,7 @@ public class LogBufferAppender
     {
         final int partitionSize = partition.getPartitionSize();
         // reserve enough space for frame alignment because each batch fragment must start on an aligned position
-        final int framedMessageLength = batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT);
+        final int framedMessageLength = batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
         final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
 
         // move the tail of the partition
@@ -121,7 +121,7 @@ public class LogBufferAppender
         {
             final UnsafeBuffer buffer = partition.getDataBuffer();
             // all fragment data are written using the claimed batch
-            batch.wrap(buffer, activePartitionId, frameOffset, framedMessageLength);
+            batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength);
         }
         else
         {

@@ -33,9 +33,6 @@ public class LogBufferAppenderClaimBatchTest
     private static final int SINGLE_BATCH_FRAGMENT_LENGTH = batchFragmentLength(1);
     private static final int BATCH_FRAGMENT_LENGTH = batchFragmentLength(BATCH_FRAGMENT_COUNT);
 
-    private static final int SINGLE_BATCH_LENGTH = batchLength(1);
-    private static final int BATCH_LENGTH = batchLength(BATCH_FRAGMENT_COUNT);
-
     private UnsafeBuffer metadataBufferMock;
     private UnsafeBuffer dataBufferMock;
     private LogBufferAppender logBufferAppender;
@@ -59,7 +56,7 @@ public class LogBufferAppenderClaimBatchTest
 
     private static int batchLength(int fragmentCount)
     {
-        return BATCH_MESSAGE_LENGTH + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT);
+        return BATCH_MESSAGE_LENGTH + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
     }
 
     private static int batchFragmentLength(int fragmentCount)
@@ -81,7 +78,7 @@ public class LogBufferAppenderClaimBatchTest
         // then
         assertThat(newTail).isEqualTo(currentTail + SINGLE_BATCH_FRAGMENT_LENGTH);
 
-        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, SINGLE_BATCH_LENGTH);
+        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, SINGLE_BATCH_FRAGMENT_LENGTH);
 
         verify(metadataBufferMock).getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, SINGLE_BATCH_FRAGMENT_LENGTH);
         verifyNoMoreInteractions(metadataBufferMock);
@@ -101,7 +98,7 @@ public class LogBufferAppenderClaimBatchTest
         // then
         assertThat(newTail).isEqualTo(currentTail + BATCH_FRAGMENT_LENGTH);
 
-        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, BATCH_LENGTH);
+        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, BATCH_FRAGMENT_LENGTH);
 
         verify(metadataBufferMock).getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, BATCH_FRAGMENT_LENGTH);
         verifyNoMoreInteractions(metadataBufferMock);
@@ -121,7 +118,7 @@ public class LogBufferAppenderClaimBatchTest
         // then
         assertThat(newTail).isEqualTo(currentTail + BATCH_FRAGMENT_LENGTH);
 
-        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, BATCH_LENGTH);
+        verify(claimedBatchMock).wrap(dataBufferMock, PARTITION_ID, currentTail, BATCH_FRAGMENT_LENGTH);
 
         verify(metadataBufferMock).getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, BATCH_FRAGMENT_LENGTH);
         verifyNoMoreInteractions(metadataBufferMock);
