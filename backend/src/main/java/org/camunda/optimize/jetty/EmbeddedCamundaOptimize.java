@@ -9,6 +9,7 @@ import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -52,6 +53,17 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   public EmbeddedCamundaOptimize() {
     jerseyCamundaOptimize = new SpringAwareServletConfiguration();
     jettyServer = setUpEmbeddedJetty(jerseyCamundaOptimize);
+    disableServerSignature(jettyServer);
+  }
+
+  private void disableServerSignature(Server jettyServer) {
+    for(Connector y : jettyServer.getConnectors()) {
+      for(ConnectionFactory x  : y.getConnectionFactories()) {
+        if(x instanceof HttpConnectionFactory) {
+          ((HttpConnectionFactory)x).getHttpConfiguration().setSendServerVersion(false);
+        }
+      }
+    }
   }
 
   public EmbeddedCamundaOptimize(String contextLocation) {
@@ -128,6 +140,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   private ServerConnector initHttpsConnector(Properties properties, String host, String keystorePass, String keystoreLocation, Server server) {
     HttpConfiguration https = new HttpConfiguration();
+    https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer());
     SslContextFactory sslContextFactory = new SslContextFactory();
     sslContextFactory.setKeyStorePath(this.getClass().getClassLoader().getResource(keystoreLocation).toExternalForm());
