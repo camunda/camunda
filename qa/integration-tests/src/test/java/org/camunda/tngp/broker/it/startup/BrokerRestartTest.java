@@ -16,7 +16,7 @@ import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.LockedTasksBatch;
+import org.camunda.tngp.client.task.LockedTasksBatch;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestFileUtil;
 import org.camunda.tngp.test.util.TestUtil;

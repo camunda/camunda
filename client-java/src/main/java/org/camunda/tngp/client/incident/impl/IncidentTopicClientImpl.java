@@ -14,7 +14,7 @@ package org.camunda.tngp.client.incident.impl;
 
 import org.camunda.tngp.client.IncidentTopicClient;
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.client.incident.ResolveIncidentCmd;
+import org.camunda.tngp.client.incident.cmd.ResolveIncidentCmd;
 
 public class IncidentTopicClientImpl implements IncidentTopicClient
 {

@@ -5,8 +5,8 @@ import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.ByteArrayInputStream;
 
-import org.camunda.tngp.client.ClientCommandRejectedException;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;

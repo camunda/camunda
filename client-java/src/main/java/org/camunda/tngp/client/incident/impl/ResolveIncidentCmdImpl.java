@@ -20,8 +20,8 @@ import java.io.InputStream;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
-import org.camunda.tngp.client.incident.IncidentResolveResult;
-import org.camunda.tngp.client.incident.ResolveIncidentCmd;
+import org.camunda.tngp.client.incident.cmd.IncidentResolveResult;
+import org.camunda.tngp.client.incident.cmd.ResolveIncidentCmd;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

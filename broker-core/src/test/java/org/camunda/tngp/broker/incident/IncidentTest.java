@@ -25,7 +25,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.incident.data.ErrorType;
 import org.camunda.tngp.broker.incident.data.IncidentEventType;
-import org.camunda.tngp.broker.protocol.clientapi.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.test.EmbeddedBrokerRule;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;

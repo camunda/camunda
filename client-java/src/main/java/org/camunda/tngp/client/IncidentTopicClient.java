@@ -1,6 +1,6 @@
 package org.camunda.tngp.client;
 
-import org.camunda.tngp.client.incident.ResolveIncidentCmd;
+import org.camunda.tngp.client.incident.cmd.ResolveIncidentCmd;
 
 public interface IncidentTopicClient
 {

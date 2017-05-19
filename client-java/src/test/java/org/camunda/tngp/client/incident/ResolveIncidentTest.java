@@ -5,6 +5,7 @@ import static org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule.TES
 import static org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule.TEST_TOPIC_NAME;
 
 import org.camunda.tngp.client.IncidentTopicClient;
+import org.camunda.tngp.client.incident.cmd.IncidentResolveResult;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.junit.Before;

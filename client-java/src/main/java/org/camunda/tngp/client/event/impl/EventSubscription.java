@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.tngp.client.impl.Loggers;
-import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.util.CheckedConsumer;
 import org.slf4j.Logger;
 

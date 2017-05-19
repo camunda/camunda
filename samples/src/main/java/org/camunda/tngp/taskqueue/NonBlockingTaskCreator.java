@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.CreateTaskCmd;
+import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 

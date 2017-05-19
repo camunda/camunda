@@ -16,9 +16,6 @@ import org.camunda.tngp.client.TopicClient;
 import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.client.impl.cmd.AcknowledgeSubscribedEventCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CloseTopicSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
 
 public class TopicClientImpl implements TopicClient
 {

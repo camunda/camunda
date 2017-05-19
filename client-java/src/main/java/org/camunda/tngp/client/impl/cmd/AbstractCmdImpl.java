@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 
-import org.camunda.tngp.client.ClientCommand;
+import org.camunda.tngp.client.cmd.ClientCommand;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.util.buffer.RequestWriter;

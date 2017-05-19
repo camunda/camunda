@@ -20,7 +20,7 @@ import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.incident.impl.IncidentTopicClientImpl;
-import org.camunda.tngp.client.task.impl.SubscriptionManager;
+import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.transport.ClientChannel;

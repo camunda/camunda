@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.camunda.tngp.client.event.PollableTopicSubscription;
 import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.util.CheckedConsumer;
 
 public class TopicSubscriptionImpl

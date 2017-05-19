@@ -5,9 +5,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.Loggers;
-import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
-import org.camunda.tngp.client.task.impl.EventSubscriptions;
-import org.camunda.tngp.client.task.impl.SubscribedEventHandler;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
+import org.camunda.tngp.client.task.impl.subscription.SubscribedEventHandler;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.slf4j.Logger;
 

@@ -3,7 +3,7 @@ package org.camunda.tngp.client.event.impl;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.TopicEvent;
 import org.camunda.tngp.client.event.TopicEventType;
-import org.camunda.tngp.client.task.impl.MsgPackField;
+import org.camunda.tngp.client.task.impl.subscription.MsgPackField;
 
 public class TopicEventImpl implements TopicEvent, EventMetadata
 {

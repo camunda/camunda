@@ -16,7 +16,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
+import org.camunda.tngp.broker.task.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;

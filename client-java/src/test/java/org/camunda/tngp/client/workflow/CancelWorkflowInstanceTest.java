@@ -2,8 +2,8 @@ package org.camunda.tngp.client.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.client.ClientCommandRejectedException;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;

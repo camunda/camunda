@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.it.util.ParallelRequests;
 import org.camunda.tngp.broker.it.util.ParallelRequests.SilentFuture;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.LockedTasksBatch;
+import org.camunda.tngp.client.task.LockedTasksBatch;
 import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestUtil;

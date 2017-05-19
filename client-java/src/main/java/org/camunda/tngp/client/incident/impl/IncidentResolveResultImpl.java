@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.client.incident.impl;
 
-import org.camunda.tngp.client.incident.IncidentResolveResult;
+import org.camunda.tngp.client.incident.cmd.IncidentResolveResult;
 
 public class IncidentResolveResultImpl implements IncidentResolveResult
 {

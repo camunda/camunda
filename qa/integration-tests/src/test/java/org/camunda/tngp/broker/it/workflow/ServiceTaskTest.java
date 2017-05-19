@@ -19,8 +19,8 @@ import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpMod
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.Task;
+import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.junit.After;
 import org.junit.Before;

@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.client.workflow.cmd;
 
-import org.camunda.tngp.client.ClientCommand;
+import org.camunda.tngp.client.cmd.ClientCommand;
 
 /**
  * A command to cancel a running workflow instance.

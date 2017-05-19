@@ -16,9 +16,9 @@ import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.CancelWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateDeploymentCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
-import org.camunda.tngp.client.workflow.cmd.impl.CancelWorkflowInstanceCmdImpl;
-import org.camunda.tngp.client.workflow.cmd.impl.CreateDeploymentCmdImpl;
-import org.camunda.tngp.client.workflow.cmd.impl.CreateWorkflowInstanceCmdImpl;
+import org.camunda.tngp.client.workflow.impl.CancelWorkflowInstanceCmdImpl;
+import org.camunda.tngp.client.workflow.impl.CreateDeploymentCmdImpl;
+import org.camunda.tngp.client.workflow.impl.CreateWorkflowInstanceCmdImpl;
 
 public class WorkflowTopicClientImpl implements WorkflowTopicClient
 {

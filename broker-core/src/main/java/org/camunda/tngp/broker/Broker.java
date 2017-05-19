@@ -6,7 +6,7 @@ import org.camunda.tngp.broker.clustering.ClusterComponent;
 import org.camunda.tngp.broker.logstreams.LogStreamsComponent;
 import org.camunda.tngp.broker.system.SystemComponent;
 import org.camunda.tngp.broker.system.SystemContext;
-import org.camunda.tngp.broker.taskqueue.TaskQueueComponent;
+import org.camunda.tngp.broker.task.TaskQueueComponent;
 import org.camunda.tngp.broker.transport.TransportComponent;
 import org.camunda.tngp.broker.workflow.WorkflowComponent;
 

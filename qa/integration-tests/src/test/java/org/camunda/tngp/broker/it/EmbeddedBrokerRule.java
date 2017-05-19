@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.it;
 
+import static org.camunda.tngp.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_LOG_NAME;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;

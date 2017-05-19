@@ -16,9 +16,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.taskqueue.CreditsRequest;
-import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
-import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
+import org.camunda.tngp.broker.task.CreditsRequest;
+import org.camunda.tngp.broker.task.TaskSubscriptionManager;
+import org.camunda.tngp.broker.task.processor.TaskSubscription;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;

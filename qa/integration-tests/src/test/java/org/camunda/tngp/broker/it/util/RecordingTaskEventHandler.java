@@ -25,7 +25,7 @@ import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.junit.rules.ExternalResource;
 
 public class RecordingTaskEventHandler extends ExternalResource

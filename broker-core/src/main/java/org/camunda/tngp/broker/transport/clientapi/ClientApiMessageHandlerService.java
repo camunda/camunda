@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
-import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
+import org.camunda.tngp.broker.task.TaskSubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;

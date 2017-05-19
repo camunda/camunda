@@ -18,7 +18,7 @@ import java.util.List;
 import org.camunda.tngp.broker.event.handler.RemoveTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
-import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
+import org.camunda.tngp.broker.task.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;

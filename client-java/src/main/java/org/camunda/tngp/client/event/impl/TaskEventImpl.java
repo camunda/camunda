@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 
 import org.camunda.tngp.client.event.TaskEvent;
-import org.camunda.tngp.client.task.impl.MsgPackField;
+import org.camunda.tngp.client.task.impl.subscription.MsgPackField;
 import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEventImpl implements TaskEvent

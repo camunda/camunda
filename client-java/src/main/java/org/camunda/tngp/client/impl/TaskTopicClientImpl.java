@@ -1,22 +1,22 @@
 package org.camunda.tngp.client.impl;
 
 import org.camunda.tngp.client.TaskTopicClient;
-import org.camunda.tngp.client.cmd.CompleteTaskCmd;
-import org.camunda.tngp.client.cmd.CreateTaskCmd;
-import org.camunda.tngp.client.cmd.FailTaskCmd;
-import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
-import org.camunda.tngp.client.cmd.UpdateTaskRetriesCmd;
 import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
-import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.IncreaseTaskSubscriptionCreditsCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateTaskRetriesCmdImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
+import org.camunda.tngp.client.task.cmd.CompleteTaskCmd;
+import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
+import org.camunda.tngp.client.task.cmd.FailTaskCmd;
+import org.camunda.tngp.client.task.cmd.PollAndLockAsyncTasksCmd;
+import org.camunda.tngp.client.task.cmd.UpdateTaskRetriesCmd;
+import org.camunda.tngp.client.task.impl.CloseTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.task.impl.CompleteTaskCmdImpl;
+import org.camunda.tngp.client.task.impl.CreateTaskCmdImpl;
+import org.camunda.tngp.client.task.impl.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.task.impl.FailTaskCmdImpl;
+import org.camunda.tngp.client.task.impl.IncreaseTaskSubscriptionCreditsCmdImpl;
+import org.camunda.tngp.client.task.impl.PollAndLockTasksCmdImpl;
+import org.camunda.tngp.client.task.impl.UpdateTaskRetriesCmdImpl;
 
 public class TaskTopicClientImpl implements TaskTopicClient
 {

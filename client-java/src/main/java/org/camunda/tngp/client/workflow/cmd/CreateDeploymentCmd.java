@@ -3,7 +3,7 @@ package org.camunda.tngp.client.workflow.cmd;
 import java.io.InputStream;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.client.ClientCommand;
+import org.camunda.tngp.client.cmd.ClientCommand;
 
 public interface CreateDeploymentCmd extends ClientCommand<DeploymentResult>
 {
