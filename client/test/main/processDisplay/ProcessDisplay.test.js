@@ -222,6 +222,15 @@ describe('<ProcessDisplay>', () => {
     expect(node.querySelector('.no-data-indicator')).to.exist;
   });
 
+  it('should not display a no data indicator if data are not loaded', () => {
+    selectedView = 'frequency';
+    state.diagram.heatmap.data.piCount = 0;
+    state.diagram.heatmap.state = 'some-not-loaded-state';
+    update(state);
+
+    expect(node.querySelector('.no-data-indicator')).to.not.exist;
+  });
+
   it('should display the normal bpmn diagram when the "none" view mode is selected', () => {
     update(state);
 

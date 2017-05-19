@@ -1,7 +1,7 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
 import {Statistics, resetStatisticData} from './statistics';
-import {isLoading, createDelayedTimePrecisionElement} from 'utils';
+import {isLoading, isLoaded, createDelayedTimePrecisionElement} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
@@ -62,8 +62,10 @@ function Process() {
     return getInstanceCount(diagram);
   }
 
-  function hasNoData({controls, diagram:{heatmap:{data}}}) {
-    return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis', 'target_value']);
+  function hasNoData({controls, diagram:{heatmap}}) {
+    const {data} = heatmap;
+
+    return isLoaded(heatmap) && (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis', 'target_value']);
   }
 
   function shouldDisplay(targetView) {
