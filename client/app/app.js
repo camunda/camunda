@@ -1,6 +1,4 @@
-require.ensure(['./bootstrap'], () => {
-  require('./bootstrap');
-});
+require('./bootstrap');
 
 if (isPolyfillNeeded()) {
   require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
