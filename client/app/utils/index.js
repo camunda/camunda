@@ -15,3 +15,4 @@ export {createQueue} from './createQueue';
 export {createChangeObserver} from './createChangeObserver';
 export {parseParams, stringifyParams} from './params';
 export {interval} from './interval';
+export {isUnique} from './isUnique';

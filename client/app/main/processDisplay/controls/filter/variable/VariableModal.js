@@ -1,5 +1,5 @@
 import {jsx, OnEvent, Socket, Scope, List, Text, Attribute, Match, Case, Default, createReferenceComponent} from 'view-utils';
-import {onNextTick, isInitial} from 'utils';
+import {onNextTick, isInitial, isUnique} from 'utils';
 import {createModal} from 'widgets';
 import {loadVariables, selectVariableIdx, deselectVariableIdx, createVariableFilter} from './service';
 
@@ -91,7 +91,19 @@ export function createVariableModal(createCallback, getProcessDefinition) {
       }
 
       function getVariableNames({variables: {data}}) {
-        return data;
+        if (!data) {
+          return [];
+        }
+
+        const variableNames = data.map(variable => variable.name);
+
+        return data.map(({name, type}) => {
+          if (isUnique(name, variableNames)) {
+            return {name};
+          } else {
+            return {name: name + ' (' + type + ')'};
+          }
+        });
       }
 
       function isFilterInvalid({selectedIdx, operator, value}) {

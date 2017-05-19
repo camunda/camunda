@@ -171,6 +171,15 @@ describe('<VariableModal>', () => {
         expect(bodyNode.querySelector('select')).to.exist;
       });
 
+      it('should show the variable type if the name is not unique', () => {
+        variables.data[0].name = 'a';
+        variables.data[1].name = 'a';
+        update({variables});
+
+        expect(bodyNode.querySelectorAll('option')[1].textContent).to.include('Boolean');
+        expect(bodyNode.querySelectorAll('option')[2].textContent).to.include('String');
+      });
+
       it('should select the variable when the user changes the selection', () => {
         bodyNode.querySelector('select').selectedIndex = 2;
 
