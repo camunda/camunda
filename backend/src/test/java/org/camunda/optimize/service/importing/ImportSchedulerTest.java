@@ -216,7 +216,6 @@ public class ImportSchedulerTest {
     importScheduler.executeJob();
     //initial execution increases backoff and schedules jobs
     assertThat(importScheduler.getBackoffCounter(), is(1L));
-
     importScheduler.executeJob();
     importScheduler.executeJob();
     importScheduler.executeJob();
@@ -227,10 +226,11 @@ public class ImportSchedulerTest {
 
     ImportResult result = new ImportResult();
     result.setPagesPassed(1);
-    when(services.get(0).executeImport()).thenReturn(result);
-    importScheduler.scheduleProcessEngineImport();
+    when(services.get(2).executeImport()).thenReturn(result);
 
     //when
+    importScheduler.executeJob();
+    importScheduler.executeJob();
     importScheduler.executeJob();
 
     //then
