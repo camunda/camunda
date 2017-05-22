@@ -516,11 +516,6 @@ public class Raft implements Agent
 
     public void transition(final RaftMembershipState state)
     {
-        if (this.state == leaderState && state == followerState.state())
-        {
-            new RuntimeException("TEST").printStackTrace();
-        }
-
         if (this.state.state() != state && transitionContext.closeFuture == null)
         {
             transitionContext.next = state;
