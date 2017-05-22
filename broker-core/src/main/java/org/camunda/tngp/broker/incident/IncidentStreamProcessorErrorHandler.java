@@ -18,8 +18,7 @@ import org.camunda.tngp.broker.incident.data.ErrorType;
 import org.camunda.tngp.broker.incident.data.IncidentEvent;
 import org.camunda.tngp.broker.incident.data.IncidentEventType;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.task.data.TaskEvent;
-import org.camunda.tngp.broker.task.data.TaskHeaders;
+import org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.processor.PayloadMappingException;
 import org.camunda.tngp.logstreams.log.LogStream;
@@ -31,8 +30,6 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class IncidentStreamProcessorErrorHandler implements StreamProcessorErrorHandler
 {
-    private final int streamProcessorId;
-
     private final LogStream logStream;
     private final DirectBuffer sourceStreamTopicName;
     private final int sourceStreamPartitionId;
@@ -44,11 +41,9 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
     private final BrokerEventMetadata failureEventMetadata = new BrokerEventMetadata();
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-    private final TaskEvent taskEvent = new TaskEvent();
 
-    public IncidentStreamProcessorErrorHandler(LogStream logStream, int streamProcessorId)
+    public IncidentStreamProcessorErrorHandler(LogStream logStream)
     {
-        this.streamProcessorId = streamProcessorId;
         this.logStream = logStream;
         this.sourceStreamTopicName = logStream.getTopicName();
         this.sourceStreamPartitionId = logStream.getPartitionId();
@@ -102,7 +97,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
         }
 
         final long position = logStreamWriter
-                .producerId(streamProcessorId)
+                .producerId(StreamProcessorIds.INCIDENT_PROCESSOR_ID)
                 .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
                 .metadataWriter(incidentEventMetadata)
                 .valueWriter(incidentEvent)
@@ -124,18 +119,9 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
                 .setActivityId(workflowInstanceEvent.getActivityId())
                 .setActivityInstanceKey(failureEvent.getKey());
         }
-        else if (failureEventMetadata.getEventType() == EventType.TASK_EVENT)
+        else
         {
-            taskEvent.reset();
-            failureEvent.readValue(taskEvent);
-
-            final TaskHeaders taskHeaders = taskEvent.headers();
-
-            incidentEvent
-                .setBpmnProcessId(taskHeaders.getBpmnProcessId())
-                .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
-                .setActivityId(taskHeaders.getActivityId())
-                .setActivityInstanceKey(taskHeaders.getActivityInstanceKey());
+            throw new RuntimeException(String.format("Unsupported failure event type '%s'.", failureEventMetadata.getEventType().name()));
         }
     }
 

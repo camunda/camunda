@@ -36,6 +36,7 @@ public class IncidentEvent extends UnpackedObject
     private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
     private final StringProperty activityIdProp = new StringProperty("activityId", "");
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
+    private final LongProperty taskKeyProp = new LongProperty("taskKey", -1L);
 
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
 
@@ -49,6 +50,7 @@ public class IncidentEvent extends UnpackedObject
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
             .declareProperty(activityInstanceKeyProp)
+            .declareProperty(taskKeyProp)
             .declareProperty(payloadProp);
     }
 
@@ -137,6 +139,17 @@ public class IncidentEvent extends UnpackedObject
     public IncidentEvent setActivityInstanceKey(long activityInstanceKey)
     {
         this.activityInstanceKeyProp.setValue(activityInstanceKey);
+        return this;
+    }
+
+    public long getTaskKey()
+    {
+        return taskKeyProp.getValue();
+    }
+
+    public IncidentEvent setTaskKey(long taskKey)
+    {
+        this.taskKeyProp.setValue(taskKey);
         return this;
     }
 

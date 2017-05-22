@@ -108,7 +108,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", failureEvent.key());
+            .containsEntry("activityInstanceKey", failureEvent.key())
+            .containsEntry("taskKey", -1);
     }
 
     @Test
@@ -134,7 +135,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", failureEvent.key());
+            .containsEntry("activityInstanceKey", failureEvent.key())
+            .containsEntry("taskKey", -1);
     }
 
     @Test
@@ -165,7 +167,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", followUpEvent.key());
+            .containsEntry("activityInstanceKey", followUpEvent.key())
+            .containsEntry("taskKey", -1);
     }
 
     @Test
@@ -198,7 +201,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", followUpEvent.key());
+            .containsEntry("activityInstanceKey", followUpEvent.key())
+            .containsEntry("taskKey", -1);
     }
 
     @Test
@@ -332,7 +336,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", activityEvent.key());
+            .containsEntry("activityInstanceKey", activityEvent.key())
+            .containsEntry("taskKey", failedEvent.key());
     }
 
     @Test
@@ -346,25 +351,10 @@ public class IncidentTest
         failTaskWithNoRetriesLeft();
 
         // when
-        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
-
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
-            .key(taskEvent.key())
-            .eventTypeTask()
-            .command()
-                .put("eventType", "UPDATE_RETRIES")
-                .put("retries", 1)
-                .put("type", "test")
-                .put("lockOwner", taskEvent.event().get("lockOwner"))
-                .put("headers", taskEvent.event().get("headers"))
-                .done()
-            .sendAndAwait();
-
-        assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
+        updateTaskRetries();
 
         // then
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
         final SubscribedEvent activityEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
 
@@ -375,7 +365,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", activityEvent.key());
+            .containsEntry("activityInstanceKey", activityEvent.key())
+            .containsEntry("taskKey", taskEvent.key());
     }
 
     @Test
@@ -394,6 +385,7 @@ public class IncidentTest
         cancelWorkflowInstance(workflowInstanceKey);
 
         // then
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
@@ -403,7 +395,8 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
-            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"));
+            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"))
+            .containsEntry("taskKey", taskEvent.key());
     }
 
     @Test
@@ -427,6 +420,57 @@ public class IncidentTest
         testClient.receiveSingleEvent(incidentEvents("RESOLVE_REJECTED"));
     }
 
+    @Test
+    public void shouldCreateIncidentIfStandaloneTaskHasNoRetriesLeft()
+    {
+        // given
+        createStandaloneTask();
+
+        // when
+        failTaskWithNoRetriesLeft();
+
+        // then
+        final SubscribedEvent failedEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("failureEventPosition", failedEvent.position())
+            .containsEntry("bpmnProcessId", "")
+            .containsEntry("workflowInstanceKey", -1)
+            .containsEntry("activityId", "")
+            .containsEntry("activityInstanceKey", -1)
+            .containsEntry("taskKey", failedEvent.key());
+    }
+
+    @Test
+    public void shouldDeleteStandaloneIncidentIfTaskRetriesIncreased()
+    {
+        // given
+        createStandaloneTask();
+
+        failTaskWithNoRetriesLeft();
+
+        // when
+        updateTaskRetries();
+
+        // then
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("bpmnProcessId", "")
+            .containsEntry("workflowInstanceKey", -1)
+            .containsEntry("activityId", "")
+            .containsEntry("activityInstanceKey", -1)
+            .containsEntry("taskKey", taskEvent.key());
+    }
+
     private void failTaskWithNoRetriesLeft()
     {
         apiRule.openTaskSubscription(ClientApiRule.DEFAULT_TOPIC_NAME, ClientApiRule.DEFAULT_PARTITION_ID, "test").await();
@@ -448,6 +492,43 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.getEvent()).containsEntry("eventType", "FAILED");
+    }
+
+    private void createStandaloneTask()
+    {
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
+            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
+            .eventTypeTask()
+            .command()
+                .put("eventType", "CREATE")
+                .put("type", "test")
+                .put("retries", 3)
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", "CREATED");
+    }
+
+    private void updateTaskRetries()
+    {
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
+
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
+            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
+            .key(taskEvent.key())
+            .eventTypeTask()
+            .command()
+                .put("eventType", "UPDATE_RETRIES")
+                .put("retries", 1)
+                .put("type", "test")
+                .put("lockOwner", taskEvent.event().get("lockOwner"))
+                .put("headers", taskEvent.event().get("headers"))
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
     }
 
     private ExecuteCommandResponse resolveIncident(long incidentKey, byte[] payload)

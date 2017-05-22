@@ -40,12 +40,7 @@ import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.servicecontainer.Injector;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceGroupReference;
-import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.servicecontainer.*;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.FileUtil;
@@ -123,8 +118,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
-        // incident target log stream could be configurable
-        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream, WORKFLOW_INSTANCE_PROCESSOR_ID);
+        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream);
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,

@@ -22,5 +22,7 @@ public enum IncidentEventType
     RESOLVE_REJECTED,
     RESOLVE_FAILED,
 
-    DELETED;
+    DELETE,
+    DELETED,
+    DELETE_REJECTED;
 }
