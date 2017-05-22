@@ -64,4 +64,22 @@ describe('withSelector', () => {
       stopped: false
     })).to.eql(true);
   });
+
+  describe('with custom selector property name', () => {
+    beforeEach(() => {
+      selector = sinon.stub().returns(state);
+      const ChildWithSelector = withSelector(Child, 'selector2');
+
+      ({node, update, eventsBus} = mountTemplate(
+        <ChildWithSelector selector2={selector} other={other}/>
+      ));
+    });
+
+    it('should pass other property to Child', () => {
+      expect(Child.calledWith({
+        children: [],
+        other
+      })).to.eql(true);
+    });
+  });
 });

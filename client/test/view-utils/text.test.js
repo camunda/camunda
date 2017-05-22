@@ -7,20 +7,39 @@ describe('<Text>', () => {
   let update;
   let state;
 
-  beforeEach(() => {
-    ({node, update} = mountTemplate(<Text property="prop" />));
-    state = {
-      prop: 'fff1'
-    };
+  describe('with property selector', () => {
+    beforeEach(() => {
+      ({node, update} = mountTemplate(<Text property="prop" />));
+      state = {
+        prop: 'fff1'
+      };
+    });
+
+    it('should insert empty text node into parent', () => {
+      expect(node.innerText.trim()).to.eql('');
+    });
+
+    it('should set text from state after update', () => {
+      update(state);
+
+      expect(node).to.contain.text(state.prop);
+    });
   });
 
-  it('should insert empty text node into parent', () => {
-    expect(node.innerText.trim()).to.eql('');
-  });
+  describe('without property selector', () => {
+    beforeEach(() => {
+      ({node, update} = mountTemplate(<Text />));
+      state =  'fff1';
+    });
 
-  it('should set text from state after update', () => {
-    update(state);
+    it('should insert empty text node into parent', () => {
+      expect(node.innerText.trim()).to.eql('');
+    });
 
-    expect(node).to.contain.text(state.prop);
+    it('should set text from state after update', () => {
+      update(state);
+
+      expect(node).to.contain.text(state);
+    });
   });
 });

@@ -1,14 +1,18 @@
 import {$document} from './dom';
+import {withSelector} from './withSelector';
 
-export function Text({property}) {
-  return (node) => {
-    const textNode = $document.createTextNode('');
+export const Text = withSelector(
+  () => {
+    return (node) => {
+      const textNode = $document.createTextNode('');
 
-    node.appendChild(textNode);
-    return ({[property] : value = ''}) => {
-      if (value !== null) {
-        textNode.data = value.toString();
-      }
+      node.appendChild(textNode);
+      return (value) => {
+        if (value !== null && value !== undefined) {
+          textNode.data = value.toString();
+        }
+      };
     };
-  };
-}
+  },
+  'property'
+);
