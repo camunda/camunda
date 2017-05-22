@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeD
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,8 @@ public class ProcessDefinitionWriter {
     }
 
     bulkRequest.execute().get();
+    
+    refreshOptimizeIndex();
   }
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) throws Exception {
@@ -57,6 +60,18 @@ public class ProcessDefinitionWriter {
     }
 
     bulkRequest.execute().get();
+
+    refreshOptimizeIndex();
+  }
+
+  private void refreshOptimizeIndex() {
+    try {
+      esclient.admin().indices()
+          .prepareRefresh(configurationService.getOptimizeIndex())
+          .get();
+    } catch (IndexNotFoundException e) {
+      //nothing to do
+    }
   }
 
 }
