@@ -30,7 +30,7 @@ public abstract class IndexedImportService <ENG extends EngineDto, OPT extends O
 
   public ImportResult executeImport() throws OptimizeException {
     ImportResult result = new ImportResult();
-    if (this.getIdsForImport() != null) {
+    if (this.getIdsForImport() != null && !getIdsForImport().isEmpty()) {
       int pagesWithData = 0;
       logger.debug(
           "Importing based on [{}] IDs from type [{}]",
