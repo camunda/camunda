@@ -1,4 +1,4 @@
-import {toggleEndEvent, toggleGateway, hoverElement, addBranchOverlay, showSelectedOverlay, isValidElement} from './service';
+import {toggleEndEvent, toggleGateway, addBranchOverlay, isValidElement} from './service';
 import {removeOverlays} from 'utils';
 import {resetStatisticData} from 'main/processDisplay/statistics';
 
@@ -6,10 +6,21 @@ export function createCreateAnalyticsRendererFunction(integrator) {
   return function createAnalyticsRenderer({viewer}) {
     const canvas = viewer.get('canvas');
     const elementRegistry = viewer.get('elementRegistry');
+    let heatmapData;
+    let elementSelection;
+    let currentlyHovered = false;
 
     viewer.get('eventBus').on('element.hover', ({element}) => {
       // takes care of overlays
-      hoverElement(viewer, element);
+      if (currentlyHovered !== element.id && heatmapData) {
+        currentlyHovered = element.id;
+        removeOverlays(viewer);
+        addBranchOverlay(viewer, element.id, heatmapData);
+
+        if (elementSelection.endEvent) {
+          addBranchOverlay(viewer, elementSelection.endEvent, heatmapData);
+        }
+      }
 
       // takes care of the controls integrator
       integrator.unhover('EndEvent');
@@ -59,12 +70,13 @@ export function createCreateAnalyticsRendererFunction(integrator) {
           }
         });
 
+        heatmapData = data;
+        elementSelection = selection;
         removeOverlays(viewer);
-        addBranchOverlay(viewer, data);
 
         Object.values(selection).forEach(element => {
           highlight(element, 'highlight_selected');
-          showSelectedOverlay(viewer, element);
+          addBranchOverlay(viewer, element, data);
         });
       }
     };

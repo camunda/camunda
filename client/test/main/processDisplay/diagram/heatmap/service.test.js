@@ -1,8 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {getHeatmap, addHeatmapOverlay,
-        VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/service';
+import {getHeatmap, addHeatmapOverlay, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/service';
 
 describe('Heatmap service', () => {
   const heatmap = {
@@ -33,6 +32,7 @@ describe('Heatmap service', () => {
   let hoveredOverlay;
   let getFunction;
   let formatter;
+  let addDiagramTooltip;
 
   setupPromiseMocking();
 
@@ -49,6 +49,9 @@ describe('Heatmap service', () => {
     formatter = sinon.stub().returns(document.createTextNode('0'));
 
     clearFunction = sinon.spy();
+
+    addDiagramTooltip = sinon.spy();
+    __set__('addDiagramTooltip', addDiagramTooltip);
 
     addFunction = sinon.spy();
 
@@ -79,6 +82,7 @@ describe('Heatmap service', () => {
   afterEach(() => {
     __ResetDependency__('dispatchAction');
     __ResetDependency__('generateHeatmap');
+    __ResetDependency__('addDiagramTooltip');
     __ResetDependency__('createHoverElementAction');
   });
 
@@ -101,48 +105,20 @@ describe('Heatmap service', () => {
   });
 
   describe('hover overlays', () => {
-    it('should add overlays on an element', () => {
+    it('should add diagram tooltip', () => {
       addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
 
-      expect(addFunction.calledWith(diagramElement.id)).to.eql(true);
+      expect(addDiagramTooltip.calledWith(viewer, diagramElement.id)).to.eql(true);
     });
 
     it('should add an overlay with the heat value as text content', () => {
-      formatter.returns(document.createTextNode(heatmapData[diagramElement.id].toString()));
+      const overlayValue = document.createTextNode(heatmapData[diagramElement.id].toString());
+
+      formatter.returns(overlayValue);
 
       addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
 
-      const node = addFunction.getCall(0).args[2].html;
-
-      expect(node.textContent.trim()).to.eql(heatmapData[diagramElement.id].toString());
-    });
-
-    it('should add the overlay with the correct type', () => {
-      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
-
-      const type = addFunction.getCall(0).args[1];
-
-      expect(type).to.eql(VALUE_OVERLAY);
-    });
-
-    it('should use formatter to format data', () => {
-      const text = 'text';
-
-      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, () => document.createTextNode(text));
-
-      const node = addFunction.getCall(0).args[2].html;
-
-      expect(node.textContent).to.contain(text);
-    });
-
-    it('should work with non-node formatter return values', () => {
-      const text = 'text';
-
-      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, () => text);
-
-      const node = addFunction.getCall(0).args[2].html;
-
-      expect(node.textContent).to.contain(text);
+      expect(addDiagramTooltip.calledWith(viewer, diagramElement.id, overlayValue)).to.eql(true);
     });
   });
 });

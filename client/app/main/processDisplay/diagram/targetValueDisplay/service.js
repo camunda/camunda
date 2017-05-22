@@ -4,9 +4,9 @@ import {formatNumber, createDelayedTimePrecisionElement} from 'utils';
 import {put} from 'http';
 import {addNotification} from 'notifications';
 import * as timeUtil from 'utils/formatTime';
+import {addDiagramTooltip} from '../service';
 
 const TARGET_VALUE_BADGE = 'TARGET_VALUE_BADGE';
-const TARGET_VALUE_TOOLTIP = 'TARGET_VALUE_TOOLTIP';
 
 const formatTime = timeUtil.formatTime;
 
@@ -105,53 +105,11 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
     percentage = '';
   }
 
-  container.innerHTML =
-  `<div class="tooltip top" role="tooltip" style="opacity: 1; pointer-events:none;">
-  <div class="tooltip-arrow"></div>
-  <div class="tooltip-inner" style="text-align: left;">target:&nbsp;<span class="target"></span><br />actual:&nbsp;<span class="actual"></span><br />${percentage}</div>
-  </div>`;
+  container.innerHTML = `<span>target:&nbsp;<span class="target"></span><br />actual:&nbsp;<span class="actual"></span><br />${percentage}</span>`;
   const overlayHtml = container.firstChild;
 
   overlayHtml.querySelector('.target').appendChild(targetValueElement);
   overlayHtml.querySelector('.actual').appendChild(actualValueElement);
 
-  // calculate overlay width
-  document.body.appendChild(overlayHtml);
-  const overlayWidth = overlayHtml.clientWidth;
-  const overlayHeight = overlayHtml.clientHeight;
-
-  document.body.removeChild(overlayHtml);
-
-  // calculate element width
-  const elementWidth = parseInt(
-    viewer
-    .get('elementRegistry')
-    .getGraphics(element)
-    .querySelector('.djs-hit')
-    .getAttribute('width')
-    , 10);
-
-  // react to changes in the overlay content and reposition it
-  const observer = new MutationObserver(() => {
-    const parent = overlayHtml.parentNode;
-
-    if (parent) {
-      parent.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
-    }
-  });
-
-  observer.observe(overlayHtml, {childList: true, subtree: true});
-
-  // add overlay to viewer
-  return viewer.get('overlays').add(element, TARGET_VALUE_TOOLTIP, {
-    position: {
-      top: -overlayHeight,
-      left: elementWidth / 2 - overlayWidth / 2
-    },
-    show: {
-      minZoom: -Infinity,
-      maxZoom: +Infinity
-    },
-    html: overlayHtml
-  });
+  return addDiagramTooltip(viewer, element.id, overlayHtml);
 }

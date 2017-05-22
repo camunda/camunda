@@ -12,9 +12,7 @@ describe('<Analytics>', () => {
   let leaveGatewayAnalysisMode;
   let addBranchOverlay;
   let $document;
-  let hoverElement;
   let removeOverlays;
-  let showSelectedOverlay;
 
   let heatmapData;
   let diagramElement;
@@ -78,17 +76,11 @@ describe('<Analytics>', () => {
     removeOverlays = sinon.spy();
     __set__('removeOverlays', removeOverlays);
 
-    showSelectedOverlay = sinon.spy();
-    __set__('showSelectedOverlay', showSelectedOverlay);
-
     addBranchOverlay = sinon.spy();
     __set__('addBranchOverlay', addBranchOverlay);
 
     toggleEndEvent = sinon.spy();
     __set__('toggleEndEvent', toggleEndEvent);
-
-    hoverElement = sinon.spy();
-    __set__('hoverElement', hoverElement);
 
     toggleGateway = sinon.spy();
     __set__('toggleGateway', toggleGateway);
@@ -130,22 +122,35 @@ describe('<Analytics>', () => {
     __ResetDependency__('createModal');
     __ResetDependency__('isValidElement');
     __ResetDependency__('removeOverlays');
-    __ResetDependency__('showSelectedOverlay');
     __ResetDependency__('addBranchOverlay');
     __ResetDependency__('toggleEndEvent');
     __ResetDependency__('toggleGateway');
-    __ResetDependency__('hoverElement');
     __ResetDependency__('leaveGatewayAnalysisMode');
     __ResetDependency__('GATEWAY_ANALYSIS_MODE');
     __ResetDependency__('$document');
     __ResetDependency__('resetStatisticData');
   });
 
-  it('should process element hovering', () => {
+  it('should remove overlays when hovering over a new element', () => {
     update(initialState);
     viewer.on.firstCall.args[1]({element: diagramElement});
 
-    expect(hoverElement.calledWith(viewer, diagramElement)).to.eql(true);
+    expect(removeOverlays.calledWith(viewer)).to.eql(true);
+  });
+
+  it('should add overlay for hovered element', () => {
+    update(initialState);
+    viewer.on.firstCall.args[1]({element: diagramElement});
+
+    expect(addBranchOverlay.calledWith(viewer, diagramElement.id)).to.eql(true);
+  });
+
+  it('should add an overlay for a potentially selected endEvent', () => {
+    update(gatewayAnalysisState);
+
+    viewer.on.firstCall.args[1]({element: diagramElement});
+
+    expect(addBranchOverlay.calledWith(viewer, gatewayAnalysisState.state.selection.endEvent)).to.eql(true);
   });
 
   describe('integrator', () => {
@@ -231,14 +236,13 @@ describe('<Analytics>', () => {
     gatewayAnalysisState.state.selection.endEvent = 'act1';
     update(gatewayAnalysisState);
 
-    expect(showSelectedOverlay.calledOnce).to.eql(true);
-    expect(showSelectedOverlay.calledWith(viewer, 'act1')).to.eql(true);
+    expect(addBranchOverlay.calledOnce).to.eql(true);
+    expect(addBranchOverlay.calledWith(viewer, 'act1')).to.eql(true);
   });
 
-  it('should handle overlays', () => {
+  it('should remove previous overlays', () => {
     update(initialState);
 
     expect(removeOverlays.calledWith(viewer)).to.eql(true);
-    expect(addBranchOverlay.calledWith(viewer, heatmapData)).to.eql(true);
   });
 });

@@ -196,16 +196,22 @@ describe('TargetValue service', () => {
     let addFunction;
     let overlayHtml;
     let diagramGraphics;
+    let addDiagramTooltip;
 
     const TARGET_VALUE = 400;
     const ACTUAL_VALUE = 100;
-    const ELEMENT = 'ELEMENT';
+    let element;
 
     beforeEach(() => {
+      element = {id: 'element'};
+
       addFunction = sinon.spy();
 
       diagramGraphics = document.createElement('div');
       diagramGraphics.innerHTML = '<div class="djs-hit" width="20"></div>';
+
+      addDiagramTooltip = sinon.spy();
+      __set__('addDiagramTooltip', addDiagramTooltip);
 
       viewer = {
         get: sinon.stub().returns({
@@ -214,13 +220,17 @@ describe('TargetValue service', () => {
         })
       };
 
-      addTargetValueTooltip(viewer, ELEMENT, ACTUAL_VALUE, TARGET_VALUE);
+      addTargetValueTooltip(viewer, element, ACTUAL_VALUE, TARGET_VALUE);
 
-      overlayHtml = addFunction.firstCall.args[2].html;
+      overlayHtml = addDiagramTooltip.firstCall.args[2];
     });
 
-    it('should add an overlay', () => {
-      expect(addFunction.calledWith(ELEMENT)).to.eql(true);
+    afterEach(() => {
+      __ResetDependency__('addDiagramTooltip');
+    });
+
+    it('should add an tooltip', () => {
+      expect(addDiagramTooltip.calledWith(viewer, element.id)).to.eql(true);
     });
 
     it('should contain the target value in the overlay', () => {
@@ -236,11 +246,9 @@ describe('TargetValue service', () => {
     });
 
     it('should show "no data" when no actual value exists', () => {
-      addTargetValueTooltip(viewer, ELEMENT, undefined, TARGET_VALUE);
+      addTargetValueTooltip(viewer, element.id, undefined, TARGET_VALUE);
 
-      overlayHtml = addFunction.lastCall.args[2].html;
-
-      expect(overlayHtml.textContent).to.contain('actual:\xa0no\xa0data');
+      expect(addDiagramTooltip.lastCall.args[2].textContent).to.contain('actual:\xa0no\xa0data');
     });
   });
 });

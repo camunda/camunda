@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {toggleEndEvent, unsetEndEvent, toggleGateway, unsetGateway, leaveGatewayAnalysisMode,
-        hoverElement, addBranchOverlay, BRANCH_OVERLAY, showSelectedOverlay, isValidElement,
+        addBranchOverlay, BRANCH_OVERLAY, isValidElement,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
@@ -19,9 +19,12 @@ describe('Analytics service', () => {
   let overlayNode;
 
   let viewer;
+  let diagramGraphics;
+  let viewbox;
 
   let overlaysMock;
   let elementRegistryMock;
+  let canvasMock;
 
   beforeEach(() => {
     heatmapData = {
@@ -53,12 +56,30 @@ describe('Analytics service', () => {
       html: document.createElement('div')
     };
 
-    elementRegistryMock = [{id: 'a1'}];
+    diagramGraphics = document.createElement('div');
+    diagramGraphics.innerHTML = '<div class="djs-hit" height="10" width="10"></div>';
+
+    elementRegistryMock = {
+      get: sinon.stub().returns({
+        x: 0,
+        y: 0
+      }),
+      getGraphics: sinon.stub().returns(diagramGraphics)
+    };
     overlaysMock = {
       get: sinon.stub().returnsThis(),
       filter: sinon.stub().returnsThis(),
       forEach: sinon.stub().callsArgWith(0, overlayNode),
       add: sinon.spy()
+    };
+    viewbox = {
+      x: 0,
+      y: 0,
+      width: 1024,
+      height: 768
+    };
+    canvasMock = {
+      viewbox: sinon.stub().returns(viewbox)
     };
 
     viewer = {
@@ -66,6 +87,7 @@ describe('Analytics service', () => {
     };
     viewer.get.withArgs('elementRegistry').returns(elementRegistryMock);
     viewer.get.withArgs('overlays').returns(overlaysMock);
+    viewer.get.withArgs('canvas').returns(canvasMock);
   });
 
   afterEach(() => {
@@ -119,13 +141,53 @@ describe('Analytics service', () => {
 
   describe('hover overlays', () => {
     it('should add overlays on the elements', () => {
-      addBranchOverlay(viewer, heatmapData);
+      addBranchOverlay(viewer, 'a1', heatmapData);
 
       expect(overlaysMock.add.calledWith('a1')).to.eql(true);
     });
 
+    it('should not add an overlay for a non-endEvent element', () => {
+      isBpmnType.returns(false);
+      addBranchOverlay(viewer, 'a1', heatmapData);
+
+      expect(overlaysMock.add.calledWith('a1')).to.eql(false);
+    });
+
+    it('should position the overlay in the lower right edge by default', () => {
+      addBranchOverlay(viewer, 'a1', heatmapData);
+
+      const position = overlaysMock.add.firstCall.args[2].position;
+
+      expect(position.bottom).to.exist;
+      expect(position.right).to.exist;
+    });
+
+    it('should position the overlay in the top right edge if at the bottom of the screen', () => {
+      viewbox.y = -viewbox.height;
+      addBranchOverlay(viewer, 'a1', heatmapData);
+
+      const position = overlaysMock.add.firstCall.args[2].position;
+
+      expect(position.bottom).to.not.exist;
+      expect(position.top).to.exist;
+      expect(position.right).to.exist;
+    });
+
+    it('should position the overlay in the top left edge if at the bottom right of the screen', () => {
+      viewbox.y = -viewbox.height;
+      viewbox.x = -viewbox.width;
+      addBranchOverlay(viewer, 'a1', heatmapData);
+
+      const position = overlaysMock.add.firstCall.args[2].position;
+
+      expect(position.bottom).to.not.exist;
+      expect(position.right).to.not.exist;
+      expect(position.top).to.exist;
+      expect(position.left).to.exist;
+    });
+
     it('should add an overlay with the piCount, element value and percentage as text content', () => {
-      addBranchOverlay(viewer, heatmapData);
+      addBranchOverlay(viewer, 'a1', heatmapData);
 
       const node = overlaysMock.add.getCall(0).args[2].html;
 
@@ -135,7 +197,7 @@ describe('Analytics service', () => {
     });
 
     it('should add the overlay with the correct type', () => {
-      addBranchOverlay(viewer, heatmapData);
+      addBranchOverlay(viewer, 'a1', heatmapData);
 
       const type = overlaysMock.add.getCall(0).args[1];
 
@@ -144,22 +206,9 @@ describe('Analytics service', () => {
 
     it('should add an overlay for endEvents without reached instances', () => {
       heatmapData.flowNodes.a1 = 0;
-      addBranchOverlay(viewer, heatmapData);
+      addBranchOverlay(viewer, 'a1', heatmapData);
 
       expect(overlaysMock.add.calledWith('a1')).to.eql(true);
-    });
-
-    it('should update the overlay visibility on hover', () => {
-      hoverElement(viewer, 'a1');
-
-      expect(updateOverlayVisibility.calledWith(viewer, 'a1', BRANCH_OVERLAY)).to.eql(true);
-    });
-
-    it('should show a selected overlay and keep it open', () => {
-      showSelectedOverlay(viewer, 'a1');
-
-      expect(overlayNode.keepOpen).to.be.true;
-      expect(overlayNode.html.style.display).to.eql('block');
     });
   });
 

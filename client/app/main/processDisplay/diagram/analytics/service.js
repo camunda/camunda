@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {updateOverlayVisibility, isBpmnType} from 'utils';
+import {isBpmnType} from 'utils';
 import {createUnsetElementAction, createToggleElementAction} from './reducer';
 
 export const BRANCH_OVERLAY = 'BRANCH_OVERLAY';
@@ -25,10 +25,6 @@ export function leaveGatewayAnalysisMode() {
   unsetEndEvent();
 }
 
-export function hoverElement(viewer, element) {
-  updateOverlayVisibility(viewer, element, BRANCH_OVERLAY);
-}
-
 export function isValidElement(element, type) {
   if (type === 'Gateway') {
     return isValidGateway(element);
@@ -45,68 +41,82 @@ function isValidEndEvent(element) {
   return isBpmnType(element, 'EndEvent');
 }
 
-export function showSelectedOverlay(viewer, element) {
-  viewer
-    .get('overlays')
-    .get({type: 'BRANCH_OVERLAY'})
-    .filter(({element: {id}}) => {
-      return id === element;
-    })
-    .forEach((node) => {
-      node.keepOpen = true;
-      node.html.style.display = 'block';
-    });
-}
+export function addBranchOverlay(viewer, element, {flowNodes, piCount}) {
+  if (!element || !isBpmnType(viewer.get('elementRegistry').get(element), 'EndEvent')) {
+    return;
+  }
 
-export function addBranchOverlay(viewer, {flowNodes, piCount}) {
   const overlays = viewer.get('overlays');
-  const endEvents = viewer.get('elementRegistry').filter(element => isBpmnType(element, 'EndEvent'));
+  const value = flowNodes[element] || 0;
 
-  endEvents.forEach(endEvent => {
-    const value = flowNodes[endEvent.id] || 0;
+  // create overlay node from html string
+  const container = document.createElement('div');
+  const percentageValue = Math.round(value / piCount * 1000) / 10;
 
-    // create overlay node from html string
-    const container = document.createElement('div');
-    const percentageValue = Math.round(value / piCount * 1000) / 10;
+  container.innerHTML =
+  `<div class="tooltip top" role="tooltip" style="opacity: 1;">
+    <table class="cam-table end-event-statistics">
+      <tbody>
+        <tr>
+          <td>${piCount}</td>
+          <td>Process Instances Total</td>
+        </tr>
+        <tr>
+          <td>${value}</td>
+          <td>Process Instances reached this state</td>
+        </tr>
+        <tr>
+          <td>${percentageValue}%</td>
+          <td>of Process Instances reached this state</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+  const overlayHtml = container.firstChild;
 
-    container.innerHTML =
-    `<div class="tooltip top" role="tooltip" style="display: none; opacity: 1;">
-      <table class="cam-table end-event-statistics">
-        <tbody>
-          <tr>
-            <td>${piCount}</td>
-            <td>Process Instances Total</td>
-          </tr>
-          <tr>
-            <td>${value}</td>
-            <td>Process Instances reached this state</td>
-          </tr>
-          <tr>
-            <td>${percentageValue}%</td>
-            <td>of Process Instances reached this state</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>`;
-    const overlayHtml = container.firstChild;
-
-    // stop propagation of mouse event so that click+drag does not move canvas
-    // when user tries to select text
-    overlayHtml.addEventListener('mousedown', (evt) => {
-      evt.stopPropagation();
-    });
-
-    // add overlay to viewer
-    overlays.add(endEvent.id, BRANCH_OVERLAY, {
-      position: {
-        bottom: 0,
-        right: 0
-      },
-      show: {
-        minZoom: -Infinity,
-        maxZoom: +Infinity
-      },
-      html: overlayHtml
-    });
+  // stop propagation of mouse event so that click+drag does not move canvas
+  // when user tries to select text
+  overlayHtml.addEventListener('mousedown', (evt) => {
+    evt.stopPropagation();
   });
+
+  // calculate overlay dimensions
+  document.body.appendChild(overlayHtml);
+  const overlayWidth = overlayHtml.clientWidth;
+  const overlayHeight = overlayHtml.clientHeight;
+
+  document.body.removeChild(overlayHtml);
+
+  // calculate element dimensions
+  const elementNode = viewer
+    .get('elementRegistry')
+    .getGraphics(element)
+    .querySelector('.djs-hit');
+  const elementWidth = parseInt(elementNode.getAttribute('width'), 10);
+  const elementHeight = parseInt(elementNode.getAttribute('height'), 10);
+
+  const position = {bottom: 0, right: 0};
+
+  const viewbox = viewer.get('canvas').viewbox();
+  const elementPosition = viewer.get('elementRegistry').get(element);
+
+  if (elementPosition.x + elementWidth + overlayWidth > viewbox.x + viewbox.width) {
+    position.right = undefined;
+    position.left = -overlayWidth;
+  }
+  if (elementPosition.y + elementHeight + overlayHeight > viewbox.y + viewbox.height) {
+    position.bottom = undefined;
+    position.top = -overlayHeight;
+  }
+
+  // add overlay to viewer
+  overlays.add(element, BRANCH_OVERLAY, {
+    position,
+    show: {
+      minZoom: -Infinity,
+      maxZoom: +Infinity
+    },
+    html: overlayHtml
+  });
+  // });
 }

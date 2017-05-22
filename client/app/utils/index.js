@@ -7,7 +7,7 @@ export {
   createLoadingReducer, changeData
 } from './loading';
 export {onNextTick} from './onNextTick';
-export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
+export {isBpmnType, removeOverlays} from './bpmn-utils';
 export {formatTime, createDelayedTimePrecisionElement} from './formatTime';
 export {formatNumber} from './formatNumber';
 export {runOnce} from './runOnce';
