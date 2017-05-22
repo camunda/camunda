@@ -5,8 +5,8 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +37,11 @@ public class ProcessDefinitionWriter {
           configurationService.getProcessDefinitionType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(procDef)));
+        .setSource(objectMapper.writeValueAsString(procDef)))
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     }
 
     bulkRequest.execute().get();
-
-    refreshOptimizeIndex();
   }
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) throws Exception {
@@ -56,22 +55,10 @@ public class ProcessDefinitionWriter {
           configurationService.getProcessDefinitionXmlType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(xml)));
+        .setSource(objectMapper.writeValueAsString(xml)))
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     }
 
     bulkRequest.execute().get();
-
-    refreshOptimizeIndex();
   }
-
-  private void refreshOptimizeIndex() {
-    try {
-      esclient.admin().indices()
-          .prepareRefresh(configurationService.getOptimizeIndex())
-          .get();
-    } catch (Exception e) {
-      //nothing to do
-    }
-  }
-
 }
