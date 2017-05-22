@@ -9,6 +9,7 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
@@ -87,6 +88,7 @@ public class ProcessDefinitionWriterTest {
 
   private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, ListenableActionFuture<BulkResponse> getMock) {
     BulkRequestBuilder bulkRequest = Mockito.mock(BulkRequestBuilder.class);
+    Mockito.when(bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)).thenReturn(bulkRequest);
     Mockito.when(transportClient.prepareBulk()).thenReturn(bulkRequest);
     Mockito.when(bulkRequest.add(indexMock)).thenReturn(bulkRequest);
     Mockito.when(bulkRequest.execute()).thenReturn(getMock);

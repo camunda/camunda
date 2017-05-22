@@ -28,7 +28,8 @@ public class ProcessDefinitionWriter {
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) throws Exception {
     logger.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder bulkRequest = esclient.prepareBulk()
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();
       bulkRequest.add(esclient
@@ -37,8 +38,7 @@ public class ProcessDefinitionWriter {
           configurationService.getProcessDefinitionType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(procDef)))
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        .setSource(objectMapper.writeValueAsString(procDef)));
     }
 
     bulkRequest.execute().get();
@@ -46,7 +46,8 @@ public class ProcessDefinitionWriter {
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) throws Exception {
     logger.debug("writing [{}] process definition XMLs to ES", xmls.size());
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder bulkRequest = esclient.prepareBulk()
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     for (ProcessDefinitionXmlOptimizeDto xml : xmls) {
       String id = xml.getId();
       bulkRequest.add(esclient
@@ -55,8 +56,7 @@ public class ProcessDefinitionWriter {
           configurationService.getProcessDefinitionXmlType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(xml)))
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        .setSource(objectMapper.writeValueAsString(xml)));
     }
 
     bulkRequest.execute().get();
