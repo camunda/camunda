@@ -34,7 +34,7 @@ export const ProcessSelection = withSelector(() => {
     return !isLoaded(processDefinitions);
   }
 
-  function areThereNoProcessDefinitions({processDefinitions :{data}}) {
+  function areThereNoProcessDefinitions({processDefinitions: {data}}) {
     return data.length === 0;
   }
 

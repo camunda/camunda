@@ -1,7 +1,10 @@
 import {dispatchAction} from 'view-utils';
 import {get, post} from 'http';
-import {createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
-        createLoadProcessDefinitionsErrorAction, createSetVersionAction} from './reducer';
+import {
+  createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
+  createLoadProcessDefinitionsErrorAction, createSetVersionAction,
+  createSetVersionXmlAction
+} from './reducer';
 import {getRouter} from 'router';
 import {addNotification} from 'notifications';
 
@@ -60,7 +63,10 @@ export function setVersionForProcess({id, key, version, bpmn20Xml}) {
   if (typeof bpmn20Xml !== 'string') {
     return get(`/api/process-definition/${id}/xml`)
       .then(response => response.text())
-      .then(xml => dispatchAction(createSetVersionAction(key, version, xml)));
+      .then(xml => {
+        dispatchAction(createSetVersionXmlAction(key, version, xml));
+        dispatchAction(createSetVersionAction(key, version));
+      });
   }
 
   dispatchAction(createSetVersionAction(key, version));

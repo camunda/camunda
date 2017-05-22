@@ -3,7 +3,8 @@ import {DESTROY_EVENT} from 'view-utils';
 import {
   addLoading, createLoadingActionFunction, createResultActionFunction,
   createResetActionFunction, createErrorActionFunction, addDestroyEventCleanUp,
-  createLoadingReducer, INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE
+  createLoadingReducer, changeData,
+  INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE
 } from 'utils/loading';
 import sinon from 'sinon';
 
@@ -199,5 +200,29 @@ describe('createLoadingReducer', () => {
       .to.eql({
         state: INITIAL_STATE,
       });
+  });
+});
+
+describe('changeData', () => {
+  const property = 'some1';
+
+  it('should pass data to given mapping function and return state with only data changed', () => {
+    const inputState = {
+      a: 1,
+      [property]: {
+        b: 2,
+        data: 3
+      }
+    };
+
+    const outputState = changeData(inputState, property, x => x + 4);
+
+    expect(outputState).to.eql({
+      a: 1,
+      [property]: {
+        b: 2,
+        data: 7
+      }
+    });
   });
 });

@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {reducer, createSetVersionAction} from 'main/processSelection/reducer';
+import {reducer, createSetVersionAction, createSetVersionXmlAction} from 'main/processSelection/reducer';
 
 describe('processSelection reducer', () => {
   const key = 'key-1';
@@ -59,10 +59,10 @@ describe('processSelection reducer', () => {
     });
   });
 
-  it('should be possible to set version in selected process definition with xml', () => {
+  it('should be possible to set xml for version', () => {
     const resultState = reducer(
       inputState,
-      createSetVersionAction(key, version, xml)
+      createSetVersionXmlAction(key, version, xml)
     );
 
     expect(resultState).to.eql({
@@ -70,9 +70,7 @@ describe('processSelection reducer', () => {
         data: [
           {
             current: {
-              version,
-              bpmn20Xml: xml,
-              a: 1
+              key
             },
             versions: [
               {
@@ -80,6 +78,7 @@ describe('processSelection reducer', () => {
               },
               {
                 version,
+                bpmn20Xml: xml,
                 a: 1
               }
             ]

@@ -80,6 +80,18 @@ export function addLoading(next, ...properties) {
   };
 }
 
+export function changeData(state, property, mappingFn) {
+  const {[property]: {data, ...meta}} = state;
+
+  return {
+    ...state,
+    [property]: {
+      ...meta,
+      data: mappingFn(data)
+    }
+  };
+}
+
 function createLoadingState() {
   return createLoaderState(LOADING_STATE);
 }

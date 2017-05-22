@@ -1,49 +1,72 @@
-import {addLoading, createLoadingActionFunction, createResultActionFunction, createErrorActionFunction} from 'utils';
+import {
+  addLoading, createLoadingActionFunction, createResultActionFunction,
+  createErrorActionFunction, changeData
+} from 'utils';
 
 export const SET_VERSION = 'SET_VERSION';
+export const SET_VERSION_XML = 'SET_VERSION_XML';
 export const LOAD_PROCESSDEFINITIONS = 'LOAD_PROCESSDEFINITIONS';
 
 export const LOADING_PROPERTY = 'processDefinitions';
 
 export const reducer = addLoading((state, {type, key, version, xml}) => {
   if (state[LOADING_PROPERTY]) {
-    const {[LOADING_PROPERTY]: {data: definitions, ...meta}} = state;
-
     if (type === SET_VERSION) {
-      return {
-        ...state,
-        [LOADING_PROPERTY]: {
-          ...meta,
-          data: definitions.map(entry => {
-            if (entry.current.key === key) {
-              let current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
+      return changeData(state, LOADING_PROPERTY, definitions => {
+        return definitions.map(entry => {
+          if (entry.current.key === key) {
+            const current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
 
-              if (xml) {
-                current = {
-                  ...current,
-                  bpmn20Xml: xml
-                };
-              }
+            return {
+              current,
+              versions: entry.versions
+            };
+          }
 
-              return {
-                current,
-                versions: entry.versions
-              };
-            }
+          return entry;
+        });
+      });
+    }
 
-            return entry;
-          })
-        }
-      };
+    if (type === SET_VERSION_XML) {
+      return changeData(state, LOADING_PROPERTY, definitions => {
+        return definitions.map(entry => {
+          if (entry.current.key === key) {
+            return {
+              ...entry,
+              versions: entry.versions.map(definition => {
+                if (definition.version === version) {
+                  return {
+                    ...definition,
+                    bpmn20Xml: xml
+                  };
+                }
+
+                return definition;
+              })
+            };
+          }
+
+          return entry;
+        });
+      });
     }
   }
 
   return state;
 }, LOADING_PROPERTY);
 
-export function createSetVersionAction(key, version, xml) {
+export function createSetVersionAction(key, version) {
   return {
     type: SET_VERSION,
+    key,
+    version
+  };
+}
+
+export function createSetVersionXmlAction(key, version, xml) {
+  return {
+    type: SET_VERSION_XML,
     key,
     version,
     xml

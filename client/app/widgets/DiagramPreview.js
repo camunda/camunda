@@ -32,7 +32,7 @@ export function createDiagramPreview() {
       const update = (diagram) => {
         queue.addTask((done) => {
           viewer.importXML(diagram, (err) => {
-            loaderNode.style.display = 'none';
+            DiagramPreview.setLoading(false);
 
             if (err) {
               viewerNode.innerHTML = `Could not load diagram, got error ${err}`;
@@ -53,9 +53,11 @@ export function createDiagramPreview() {
   });
 
   DiagramPreview.setLoading = (loading) => {
+    const viewerNode = Reference.getNode('viewer');
     const loaderNode = Reference.getNode('loader');
 
     loaderNode.style.display = loading ? 'block' : 'none';
+    viewerNode.style.display = loading ? 'none' : 'block';
   };
 
   return DiagramPreview;

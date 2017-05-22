@@ -4,7 +4,7 @@ export {
   addLoading, createLoadingActionFunction, createResultActionFunction,
   createResetActionFunction, createErrorActionFunction,
   addDestroyEventCleanUp, isInitial, isLoading, isLoaded, isError,
-  createLoadingReducer
+  createLoadingReducer, changeData
 } from './loading';
 export {onNextTick} from './onNextTick';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
