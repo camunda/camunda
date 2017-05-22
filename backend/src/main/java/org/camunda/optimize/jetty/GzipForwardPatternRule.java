@@ -17,6 +17,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.MediaType;
+import java.awt.*;
 import java.io.IOException;
 
 /**
@@ -28,6 +30,7 @@ public class GzipForwardPatternRule implements Filter {
   private static final Logger logger = Log.getLogger(GzipForwardPatternRule.class);
   private static final String JS = ".js";
   private static final String WOFF = ".woff";
+  private static final String WOFF_MEDIA_TYPE = "application/font-woff";
 
 
   @Override
@@ -52,7 +55,7 @@ public class GzipForwardPatternRule implements Filter {
 
     } else if (servletRequest.getServletPath().toLowerCase().endsWith(WOFF)) {
       filterChain.doFilter(servletRequest, servletResponse);
-      servletResponse.setContentType(null);
+      servletResponse.setContentType(WOFF_MEDIA_TYPE);
     } else {
       filterChain.doFilter(servletRequest, servletResponse);
     }
