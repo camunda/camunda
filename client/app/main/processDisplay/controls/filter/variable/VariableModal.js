@@ -1,5 +1,5 @@
 import {jsx, OnEvent, Socket, Scope, List, Text, Attribute, Match, Case, Default, createReferenceComponent} from 'view-utils';
-import {onNextTick, isInitial, isUnique} from 'utils';
+import {onNextTick, isInitial} from 'utils';
 import {createModal} from 'widgets';
 import {loadVariables, selectVariableIdx, deselectVariableIdx, createVariableFilter} from './service';
 
@@ -32,10 +32,12 @@ export function createVariableModal(createCallback, getProcessDefinition) {
                 <Reference name="variableDropdown" />
                 <OnEvent event="change" listener={changeVariable} />
                 <option disabled="disabled">Please Select Variable</option>
-                <Scope selector={getVariableNames}>
+                <Scope selector="unambiguousNames">
                   <List>
                     <option>
-                      <Text property="name" />
+                      <Scope selector={(name) => {return {name}; }}>
+                        <Text property="name" />
+                      </Scope>
                     </option>
                   </List>
                 </Scope>
@@ -88,22 +90,6 @@ export function createVariableModal(createCallback, getProcessDefinition) {
 
       function getSelectedVariableProperty({variables: {data}, selectedIdx}, property) {
         return selectedIdx !== undefined && data[selectedIdx][property];
-      }
-
-      function getVariableNames({variables: {data}}) {
-        if (!data) {
-          return [];
-        }
-
-        const variableNames = data.map(variable => variable.name);
-
-        return data.map(({name, type}) => {
-          if (isUnique(name, variableNames)) {
-            return {name};
-          } else {
-            return {name: name + ' (' + type + ')'};
-          }
-        });
       }
 
       function isFilterInvalid({selectedIdx, operator, value}) {

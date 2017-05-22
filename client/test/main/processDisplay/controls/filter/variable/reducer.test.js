@@ -2,7 +2,8 @@ import {expect} from 'chai';
 import {reducer,
   createSelectVariableIdxAction,
   createSetOperatorAction,
-  createSetValueAction
+  createSetValueAction,
+  createStoreUnambiguousVariableNamesAction
 } from 'main/processDisplay/controls/filter/variable/reducer';
 
 describe('variable reducer', () => {
@@ -30,6 +31,14 @@ describe('variable reducer', () => {
     const state = reducer(undefined, action);
 
     expect(state.operator).to.eql('NEW_OP');
+  });
+
+  it('should store unambiguous names', () => {
+    const unambiguousNames = ['a', 'b', 'c'];
+    const action = createStoreUnambiguousVariableNamesAction(unambiguousNames);
+    const state = reducer(undefined, action);
+
+    expect(state.unambiguousNames).to.eql(unambiguousNames);
   });
 
   it('should set the variable value', () => {

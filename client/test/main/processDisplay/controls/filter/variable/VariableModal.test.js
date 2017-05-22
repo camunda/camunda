@@ -158,7 +158,7 @@ describe('<VariableModal>', () => {
       beforeEach(() => {
         bodyNode = Socket.getChildrenNode({name: 'body'});
 
-        update({variables});
+        update({variables, unambiguousNames: ['b', 's', 'd']});
       });
 
       it('should be included', () => {
@@ -174,7 +174,7 @@ describe('<VariableModal>', () => {
       it('should show the variable type if the name is not unique', () => {
         variables.data[0].name = 'a';
         variables.data[1].name = 'a';
-        update({variables});
+        update({variables, unambiguousNames: ['a (Boolean)', 'a (String)', 'd']});
 
         expect(bodyNode.querySelectorAll('option')[1].textContent).to.include('Boolean');
         expect(bodyNode.querySelectorAll('option')[2].textContent).to.include('String');
