@@ -10,7 +10,7 @@ export function reducer(state = [], action) {
 
   if (action.type === REMOVE_NOTIFICATION) {
     return state.filter(
-      notification => notification !== action.notification
+      ({id}) => id !== action.notification.id
     );
   }
 

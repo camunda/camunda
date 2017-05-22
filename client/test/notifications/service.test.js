@@ -44,14 +44,18 @@ describe('notifications service', () => {
     const isError = true;
     const timeout = 1400;
     let remove;
+    let removalId;
 
     beforeEach(() => {
       remove = addNotification({status, text, isError, timeout});
+      ({id: removalId} = createAddNotificationAction.lastCall.args[0]);
     });
 
     it('should dispatch add notification action', () => {
-      expect(createAddNotificationAction.calledWith({status, text, isError}))
-        .to.eql(true, 'expected add notification action to be created');
+      const {id, ...actualNotification} = createAddNotificationAction.lastCall.args[0];
+
+      expect(actualNotification).to.eql({status, text, isError});
+      expect(typeof id).to.eql('number');
       expect(dispatchAction.calledWith(createAddNotificationAction))
         .to.eql(true, 'expected add notification action to be dispatched');
     });
@@ -59,8 +63,10 @@ describe('notifications service', () => {
     it('should return function that removes this notification', () => {
       remove();
 
-      expect(createRemoveNotificationAction.calledWith({status, text, isError}))
-        .to.eql(true, 'expected remove notification action to be created');
+      const {id, ...actualNotification} = createRemoveNotificationAction.lastCall.args[0];
+
+      expect(actualNotification).to.eql({status, text, isError});
+      expect(id).to.eql(removalId);
       expect(dispatchAction.calledWith(createRemoveNotificationAction))
         .to.eql(true, 'expected remove notification action to be dispatched');
     });

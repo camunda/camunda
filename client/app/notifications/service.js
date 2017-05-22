@@ -5,7 +5,8 @@ export function addNotification({status, text, timeout, isError = false}) {
   const notification = {
     status,
     text,
-    isError
+    isError,
+    id: Math.random()
   };
   const remove = removeNotification.bind(null, notification);
 
