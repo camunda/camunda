@@ -2,11 +2,8 @@ package org.camunda.tngp.msgpack.jsonpath;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.msgpack.filter.ArrayIndexFilter;
-import org.camunda.tngp.msgpack.filter.MapValueWithKeyFilter;
-import org.camunda.tngp.msgpack.filter.MsgPackFilter;
-import org.camunda.tngp.msgpack.filter.RootCollectionFilter;
-import org.camunda.tngp.msgpack.filter.WildcardFilter;
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.msgpack.filter.*;
 import org.camunda.tngp.msgpack.query.MsgPackFilterContext;
 import org.junit.Test;
 
@@ -63,6 +60,24 @@ public class JsonPathQueryCompilerTest
         final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
         assertFilterAtPosition(filterInstances, 0, 0);
         assertFilterAtPosition(filterInstances, 1, 3);
+    }
+
+    @Test
+    public void testQueryProvideUnderlyingExpression()
+    {
+        // given
+        final String expression = "$.key1.key2[1].key3";
+        final JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
+
+        // when
+        final JsonPathQuery jsonPathQuery = compiler.compile(expression);
+
+        // then
+        final DirectBuffer expressionBuffer = jsonPathQuery.getExpression();
+        final byte[] expressionBytes = new byte[expressionBuffer.capacity()];
+        expressionBuffer.getBytes(0, expressionBytes);
+
+        assertThat(expressionBytes).isEqualTo(expression.getBytes());
     }
 
     protected static void assertFilterAtPosition(MsgPackFilterContext filterInstances, int position, int expectedFilterId)
