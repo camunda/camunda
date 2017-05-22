@@ -69,11 +69,6 @@
       <source>src/environment/environment-logback.xml</source>
       <outputDirectory>environment/</outputDirectory>
     </file>
-
-    <file>
-      <source>src/config/.java.policy</source>
-      <outputDirectory>server/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
-    </file>
     <file>
       <source>src/config/elasticsearch</source>
       <outputDirectory>server/elasticsearch-${elasticsearch.version}/bin/</outputDirectory>
