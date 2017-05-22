@@ -146,10 +146,32 @@ public class CancelWorkflowInstanceTest
     }
 
     @Test
-    public void shouldRejectCancelWorkflowInstance()
+    public void shouldRejectCancelNonExistingWorkflowInstance()
     {
         // when
         final ExecuteCommandResponse response = cancelWorkflowInstance(-1L);
+
+        // then
+        assertThat(response.getEvent()).containsEntry("eventType", "CANCEL_WORKFLOW_INSTANCE_REJECTED");
+
+        testClient.receiveSingleEvent(workflowInstanceEvents("CANCEL_WORKFLOW_INSTANCE_REJECTED"));
+    }
+
+    @Test
+    public void shouldRejectCancelCompletedWorkflowInstance()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .endEvent()
+                .done());
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+
+        // when
+        final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
         // then
         assertThat(response.getEvent()).containsEntry("eventType", "CANCEL_WORKFLOW_INSTANCE_REJECTED");

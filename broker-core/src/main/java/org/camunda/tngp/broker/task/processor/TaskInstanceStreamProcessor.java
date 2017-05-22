@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.task.processor;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.nio.ByteOrder;
 
@@ -494,7 +494,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    class IndexAccessor
+    private final class IndexAccessor
     {
         static final int MISSING_VALUE = -1;
 
@@ -539,7 +539,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     }
 
-    class IndexWriter
+    private final class IndexWriter
     {
         protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
