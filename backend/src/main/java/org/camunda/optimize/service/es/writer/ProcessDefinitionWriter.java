@@ -41,7 +41,7 @@ public class ProcessDefinitionWriter {
     }
 
     bulkRequest.execute().get();
-    
+
     refreshOptimizeIndex();
   }
 
@@ -69,7 +69,7 @@ public class ProcessDefinitionWriter {
       esclient.admin().indices()
           .prepareRefresh(configurationService.getOptimizeIndex())
           .get();
-    } catch (IndexNotFoundException e) {
+    } catch (Exception e) {
       //nothing to do
     }
   }
