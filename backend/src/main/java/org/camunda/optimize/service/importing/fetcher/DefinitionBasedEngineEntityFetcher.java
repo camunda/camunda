@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.fetcher;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
@@ -50,17 +50,17 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     long requestStart = System.currentTimeMillis();
     try {
       entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricActivityInstanceEndpoint())
-        .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
-        });
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricActivityInstanceEndpoint())
+          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+          .request(MediaType.APPLICATION_JSON)
+          .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+          });
       long requestEnd = System.currentTimeMillis();
       logger.debug("Fetch of [HAI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {
@@ -76,12 +76,12 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     for (String processDefinitionId : processDefinitionIds) {
       try {
         CountDto newCount = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getHistoricActivityInstanceCountEndpoint())
-          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-          .request()
-          .get(CountDto.class);
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+            .path(configurationService.getHistoricActivityInstanceCountEndpoint())
+            .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+            .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+            .request()
+            .get(CountDto.class);
         totalCount += newCount.getCount();
       } catch (RuntimeException e) {
         throw new OptimizeException("Could not fetch historic activity instance count from engine. Please check the connection!", e);
@@ -91,18 +91,18 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
   }
 
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXml(int indexOfFirstResult,
-                                                                  int maxPageSize,
-                                                                  String processDefinitionId) {
+                                                                       int maxPageSize,
+                                                                       String processDefinitionId) {
     List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId);
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>();
     for (ProcessDefinitionEngineDto procDef : procDefs) {
       ProcessDefinitionXmlEngineDto xml;
       try {
         xml = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
-          .request(MediaType.APPLICATION_JSON)
-          .get(ProcessDefinitionXmlEngineDto.class);
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+            .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+            .request(MediaType.APPLICATION_JSON)
+            .get(ProcessDefinitionXmlEngineDto.class);
         xmls.add(xml);
       } catch (RuntimeException e) {
         logError("Could not fetch process definition xmls from engine. Please check the connection!", e);
@@ -118,16 +118,16 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     List<ProcessDefinitionEngineDto> entries;
     try {
       entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getProcessDefinitionEndpoint())
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(SORT_BY, SORT_TYPE_ID)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
-        });
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getProcessDefinitionEndpoint())
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(SORT_BY, SORT_TYPE_ID)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+          .request(MediaType.APPLICATION_JSON)
+          .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
+          });
     } catch (RuntimeException e) {
       logError("Could not fetch process definitions from engine. Please check the connection!", e);
       entries = Collections.emptyList();
@@ -140,11 +140,11 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     for (String processDefinitionId : processDefinitionIds) {
       try {
         CountDto newCount = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getProcessDefinitionCountEndpoint())
-          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-          .request()
-          .get(CountDto.class);
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+            .path(configurationService.getProcessDefinitionCountEndpoint())
+            .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+            .request()
+            .get(CountDto.class);
         totalCount += newCount.getCount();
       } catch (RuntimeException e) {
         throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
@@ -152,9 +152,6 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     }
     return totalCount;
   }
-
-
-
 
 
 }

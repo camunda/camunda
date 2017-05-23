@@ -20,6 +20,7 @@ public interface ImportService {
 
   /**
    * This is used for doc id when persisting the import index.
+   *
    * @return returns the type where the data is stored in elasticsearch.
    */
   String getElasticsearchType();

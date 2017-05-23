@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.job.impl;
+package org.camunda.optimize.service.importing.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
@@ -6,7 +6,7 @@ import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EventImportJob extends ImportJob<EventDto>{
+public class EventImportJob extends ImportJob<EventDto> {
 
   private EventsWriter eventsWriter;
   private Logger logger = LoggerFactory.getLogger(EventImportJob.class);

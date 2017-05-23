@@ -7,7 +7,7 @@ import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
-import org.camunda.optimize.service.importing.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;

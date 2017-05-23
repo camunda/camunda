@@ -7,7 +7,7 @@ import org.camunda.optimize.service.importing.ImportService;
 /**
  * @author Askar Akhmerov
  */
-public abstract class ImportScheduleJob <S extends ImportService> {
+public abstract class ImportScheduleJob<S extends ImportService> {
 
   protected S importService;
   protected boolean pageBased = true;

@@ -7,9 +7,10 @@ import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.DefinitionBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.job.impl.DefinitionBasedImportIndexJob;
+import org.camunda.optimize.service.importing.ImportStrategy;
+import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
+import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
     importIndex = 0;
 
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
-    if(dto.getImportIndex() > 0) {
+    if (dto.getImportIndex() > 0) {
       currentProcessDefinition = dto.getCurrentProcessDefinition();
       alreadyImportProcessDefinitions = dto.getAlreadyImportedProcessDefinitions();
       importIndex = dto.getImportIndex();
@@ -99,7 +100,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
       pagesWithData = pagesWithData + 1;
       persistImportIndexToElasticsearch();
     }
-    return  pagesWithData;
+    return pagesWithData;
   }
 
   @Override
@@ -126,7 +127,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
     dto.setCurrentProcessDefinition(currentProcessDefinition);
     dto.setAlreadyImportedProcessDefinitions(alreadyImportProcessDefinitions);
     DefinitionBasedImportIndexJob indexImportJob =
-      new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
+        new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
     try {
       importJobExecutor.executeImportJob(indexImportJob);
     } catch (InterruptedException e) {

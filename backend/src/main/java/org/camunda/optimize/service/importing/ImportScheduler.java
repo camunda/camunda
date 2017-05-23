@@ -5,6 +5,7 @@ import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ public class ImportScheduler extends Thread {
   private final Logger logger = LoggerFactory.getLogger(ImportScheduler.class);
 
   protected final LinkedBlockingQueue<ImportScheduleJob> importScheduleJobs = new LinkedBlockingQueue<>();
-  
+
   @Autowired
   protected ConfigurationService configurationService;
 
@@ -235,7 +236,7 @@ public class ImportScheduler extends Thread {
     return enabled;
   }
 
-  public void disable () {
+  public void disable() {
     this.enabled = false;
   }
 }

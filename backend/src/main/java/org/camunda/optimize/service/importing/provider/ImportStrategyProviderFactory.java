@@ -1,8 +1,6 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.provider;
 
-import org.camunda.optimize.service.importing.impl.DefinitionBasedImportStrategyProvider;
-import org.camunda.optimize.service.importing.impl.ImportStrategyProvider;
-import org.camunda.optimize.service.importing.impl.TotalQuantityBasedImportStrategyProvider;
+import org.camunda.optimize.service.importing.ImportStrategyProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;

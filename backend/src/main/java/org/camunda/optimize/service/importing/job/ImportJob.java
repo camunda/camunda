@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +39,6 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    * This executes the import and adds all the given entities
    * from {@link #setEntitiesToImport(List)} to elasticsearch.
    */
-  protected  abstract void executeImport();
+  protected abstract void executeImport();
 
 }

@@ -4,6 +4,8 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
+import org.camunda.optimize.service.importing.ImportStrategy;
+import org.camunda.optimize.service.importing.ImportStrategyProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
+public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService<ENG, OPT> {
 
   protected ImportStrategy importStrategy;
 
@@ -40,11 +42,11 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     int pagesWithData = 0;
     int searchedSize;
     logger.debug("Importing page from type [{}] with index starting from [{}].",
-      getElasticsearchType(), importStrategy.getRelativeImportIndex());
+        getElasticsearchType(), importStrategy.getRelativeImportIndex());
 
     List<ENG> pageOfEngineEntities = queryEngineRestPoint();
     List<ENG> newEngineEntities =
-      getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
+        getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
     if (!newEngineEntities.isEmpty()) {
       pagesWithData = pagesWithData + 1;
       List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);

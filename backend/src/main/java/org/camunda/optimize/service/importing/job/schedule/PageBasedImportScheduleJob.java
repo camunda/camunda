@@ -8,14 +8,14 @@ import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 /**
  * @author Askar Akhmerov
  */
-public class PageBasedImportScheduleJob extends ImportScheduleJob <PaginatedImportService> {
+public class PageBasedImportScheduleJob extends ImportScheduleJob<PaginatedImportService> {
 
   private Integer indexBeforeExecution;
   private Integer indexAfterExecution;
 
   public ImportResult execute() throws OptimizeException {
     this.indexBeforeExecution = importService.getImportStartIndex();
-    ImportResult executionResult= importService.executeImport();
+    ImportResult executionResult = importService.executeImport();
     this.indexAfterExecution = importService.getImportStartIndex();
     return executionResult;
   }

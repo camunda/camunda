@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing.job.schedule;
 
-import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,7 @@ public class ScheduleJobFactory {
     List<ImportScheduleJob> jobs = new ArrayList<>();
     if (idsToFetch != null) {
       jobs.add(createHistoricProcessInstanceScheduleJob(idsToFetch));
-      Set <String> hviPage = new HashSet<>();
+      Set<String> hviPage = new HashSet<>();
       for (String id : idsToFetch) {
         hviPage.add(id);
         if (hviPage.size() == configurationService.getMaxVariablesPageSize()) {

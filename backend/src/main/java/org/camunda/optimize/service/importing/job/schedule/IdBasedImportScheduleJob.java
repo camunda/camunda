@@ -9,7 +9,7 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-public class IdBasedImportScheduleJob  extends ImportScheduleJob <IdBasedImportService> {
+public class IdBasedImportScheduleJob extends ImportScheduleJob<IdBasedImportService> {
   private Set<String> idsToFetch;
 
   public Set<String> getIdsToFetch() {

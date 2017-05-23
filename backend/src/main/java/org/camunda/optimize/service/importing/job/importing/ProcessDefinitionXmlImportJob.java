@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.job.impl;
+package org.camunda.optimize.service.importing.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;

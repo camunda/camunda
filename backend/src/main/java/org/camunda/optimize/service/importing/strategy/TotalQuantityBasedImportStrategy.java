@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.impl;
+package org.camunda.optimize.service.importing.strategy;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -7,8 +7,9 @@ import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.TotalQuantityEngineEntityFetcher;
-import org.camunda.optimize.service.importing.job.impl.ImportIndexImportJob;
+import org.camunda.optimize.service.importing.ImportStrategy;
+import org.camunda.optimize.service.importing.fetcher.TotalQuantityEngineEntityFetcher;
+import org.camunda.optimize.service.importing.job.importing.ImportIndexImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +54,7 @@ public class TotalQuantityBasedImportStrategy implements ImportStrategy {
   @Override
   public void persistImportIndexToElasticsearch() {
     ImportIndexImportJob indexImportJob =
-      new ImportIndexImportJob(importIndexWriter, importIndex, elasticsearchType);
+        new ImportIndexImportJob(importIndexWriter, importIndex, elasticsearchType);
     try {
       importJobExecutor.executeImportJob(indexImportJob);
     } catch (InterruptedException e) {

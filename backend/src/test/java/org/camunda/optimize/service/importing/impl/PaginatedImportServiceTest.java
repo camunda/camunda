@@ -2,8 +2,10 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.importing.ImportStrategyProvider;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
-import org.camunda.optimize.service.importing.job.impl.EventImportJob;
+import org.camunda.optimize.service.importing.job.importing.EventImportJob;
+import org.camunda.optimize.service.importing.strategy.TotalQuantityBasedImportStrategy;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
 import org.junit.Test;

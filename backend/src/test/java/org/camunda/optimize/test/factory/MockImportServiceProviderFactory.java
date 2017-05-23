@@ -1,7 +1,6 @@
 package org.camunda.optimize.test.factory;
 
-import org.camunda.optimize.service.importing.ImportServiceProvider;
-import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 

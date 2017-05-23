@@ -1,10 +1,7 @@
 package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.EngineDto;
-import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.EventDto;
-import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
@@ -13,17 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
  * @author Askar Akhmerov
  */
-public abstract class AbstractImportService <ENG extends EngineDto, OPT extends OptimizeDto> implements ImportService {
+public abstract class AbstractImportService<ENG extends EngineDto, OPT extends OptimizeDto> implements ImportService {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,7 +34,7 @@ public abstract class AbstractImportService <ENG extends EngineDto, OPT extends 
 
   /**
    * perform processing of ne entries:
-   *
+   * <p>
    * 1. map entries
    * 2. prepare data for post-processing if required
    *

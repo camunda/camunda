@@ -1,9 +1,7 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.fetcher;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -14,19 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_IDS;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_ID_IN;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_BY;
@@ -52,16 +44,16 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
     long requestStart = System.currentTimeMillis();
     try {
       entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricActivityInstanceEndpoint())
-        .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
-        });
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricActivityInstanceEndpoint())
+          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+          .request(MediaType.APPLICATION_JSON)
+          .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+          });
       long requestEnd = System.currentTimeMillis();
       logger.debug("Fetch of [HAI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {
@@ -76,11 +68,11 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
     CountDto count;
     try {
       count = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricActivityInstanceCountEndpoint())
-        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-        .request()
-        .get(CountDto.class);
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricActivityInstanceCountEndpoint())
+          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+          .request()
+          .get(CountDto.class);
     } catch (RuntimeException e) {
       throw new OptimizeException("Could not fetch historic activity instance count from engine. Please check the connection!", e);
     }
@@ -99,10 +91,10 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
       xmls = new ArrayList<>(entries.size());
       for (ProcessDefinitionEngineDto engineDto : entries) {
         ProcessDefinitionXmlEngineDto xml = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
-          .request(MediaType.APPLICATION_JSON)
-          .get(ProcessDefinitionXmlEngineDto.class);
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+            .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
+            .request(MediaType.APPLICATION_JSON)
+            .get(ProcessDefinitionXmlEngineDto.class);
         xmls.add(xml);
       }
     } catch (RuntimeException e) {
@@ -116,15 +108,15 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
     List<ProcessDefinitionEngineDto> entries;
     try {
       entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getProcessDefinitionEndpoint())
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(SORT_BY, SORT_TYPE_ID)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
-        });
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getProcessDefinitionEndpoint())
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(SORT_BY, SORT_TYPE_ID)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .request(MediaType.APPLICATION_JSON)
+          .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
+          });
     } catch (RuntimeException e) {
       logError("Could not fetch process definitions from engine. Please check the connection!", e);
       entries = Collections.emptyList();
@@ -137,10 +129,10 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
     CountDto count;
     try {
       count = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getProcessDefinitionCountEndpoint())
-        .request()
-        .get(CountDto.class);
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getProcessDefinitionCountEndpoint())
+          .request()
+          .get(CountDto.class);
     } catch (RuntimeException e) {
       throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
     }

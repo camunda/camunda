@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.job.impl;
+package org.camunda.optimize.service.importing.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.writer.ProcessInstanceWriter;
@@ -6,7 +6,7 @@ import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessInstanceImportJob extends ImportJob<ProcessInstanceDto>{
+public class ProcessInstanceImportJob extends ImportJob<ProcessInstanceDto> {
 
   private ProcessInstanceWriter processInstanceWriter;
   private Logger logger = LoggerFactory.getLogger(ProcessInstanceImportJob.class);

@@ -2,8 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.junit.Before;
 import org.junit.Test;

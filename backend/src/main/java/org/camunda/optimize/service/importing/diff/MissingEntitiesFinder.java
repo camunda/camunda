@@ -25,7 +25,7 @@ public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
   @Autowired
   private TransportClient esclient;
 
-  public List<ENG> retrieveMissingEntities(List<ENG> engineEntities ) {
+  public List<ENG> retrieveMissingEntities(List<ENG> engineEntities) {
 
     Set<String> idsAlreadyAddedToOptimize = getIdsOfDocumentsAlreadyInElasticsearch(engineEntities);
     List<ENG> newEngineEntities = removeAlreadyAddedEntities(idsAlreadyAddedToOptimize, engineEntities);
@@ -47,14 +47,14 @@ public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
 
     String[] engineIds = getEngineIds(engineEntities);
     QueryBuilder qb = idsQuery(elasticSearchType())
-      .addIds(engineIds);
+        .addIds(engineIds);
 
     SearchResponse idsResp = esclient.prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(elasticSearchType())
-      .setQuery(qb)
-      .setFetchSource(false)
-      .setSize(configurationService.getEngineImportMaxPageSize())
-      .get();
+        .setTypes(elasticSearchType())
+        .setQuery(qb)
+        .setFetchSource(false)
+        .setSize(configurationService.getEngineImportMaxPageSize())
+        .get();
 
     Set<String> idsAlreadyAddedToOptimize = new HashSet<>();
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
@@ -66,7 +66,7 @@ public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
 
   private String[] getEngineIds(List<ENG> engineEntities) {
     String[] engineIds = new String[engineEntities.size()];
-    for ( int i=0; i<engineEntities.size(); i++ ) {
+    for (int i = 0; i < engineEntities.size(); i++) {
       engineIds[i] = engineEntities.get(i).getId();
     }
     return engineIds;

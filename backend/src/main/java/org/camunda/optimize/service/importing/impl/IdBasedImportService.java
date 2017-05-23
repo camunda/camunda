@@ -3,8 +3,8 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportResult;
+import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcher;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
+public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService<ENG, OPT> {
 
   @Autowired
   protected EngineEntityFetcher engineEntityFetcher;

@@ -1,11 +1,11 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.provider;
 
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
-import org.camunda.optimize.service.importing.impl.VariableImportService;
+import org.camunda.optimize.service.importing.strategy.VariableImportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -52,5 +52,5 @@ public class ImportServiceProvider {
   public List<PaginatedImportService> getPagedServices() {
     return services;
   }
-   
+
 }
