@@ -1,6 +1,7 @@
 var config = require('./webpack.config');
 var webpack = require('webpack');
 var CompressionPlugin = require("compression-webpack-plugin");
+var HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
 
 config.plugins = addProductionPlugins();
 config.module.loaders = correctLoadersForProduction(config.module.loaders);
@@ -15,6 +16,10 @@ module.exports = config;
 
 function addProductionPlugins() {
   return config.plugins.concat([
+    new HtmlWebpackIncludeAssetsPlugin({
+      assets: ['styles.css'],
+      append: false
+    }),
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify('production')
     }),

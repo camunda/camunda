@@ -3340,6 +3340,12 @@ html-minifier@^3.0.1, html-minifier@^3.2.3:
     relateurl "0.2.x"
     uglify-js "2.7.x"
 
+html-webpack-include-assets-plugin@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/html-webpack-include-assets-plugin/-/html-webpack-include-assets-plugin-0.0.5.tgz#ca38767d019189414c0e8cbaa0e8b32557031a8d"
+  dependencies:
+    minimatch "^3.0.3"
+
 html-webpack-plugin@^2.24.1:
   version "2.28.0"
   resolved "https://registry.yarnpkg.com/html-webpack-plugin/-/html-webpack-plugin-2.28.0.tgz#2e7863b57e5fd48fe263303e2ffc934c3064d009"
@@ -4215,7 +4221,7 @@ minimatch@0.3, minimatch@^0.3.0:
     lru-cache "2"
     sigmund "~1.0.0"
 
-minimatch@^3.0.0, minimatch@^3.0.2, minimatch@~3.0.2:
+minimatch@^3.0.0, minimatch@^3.0.2, minimatch@^3.0.3, minimatch@~3.0.2:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.0.3.tgz#2a4e4090b96b2db06a9d7df01055a62a77c9b774"
   dependencies:
