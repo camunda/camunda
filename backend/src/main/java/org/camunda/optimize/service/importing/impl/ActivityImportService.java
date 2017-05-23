@@ -92,7 +92,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   protected Set<String> getIdsForPostProcessing() {
-    if ( (currentHpi != null && currentHpi.isEmpty()) || currentHpiContainsOnlyNullElement()) {
+    if (currentHpi == null || currentHpi.isEmpty() || currentHpiContainsOnlyNullElement()) {
       return null;
     }
     return new HashSet<>(currentHpi);
