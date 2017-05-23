@@ -1,7 +1,11 @@
 import {jsx, OnEvent, Match, Case, Default, withSelector, Attribute, isTruthy} from 'view-utils';
+import {getRouter} from 'router';
+import {getLogin} from 'login';
 import {performLogin} from './service';
 
 export const LoginForm = withSelector(Form);
+
+const router = getRouter();
 
 function Form() {
   const template = <form className="form-horizontal form-signin">
@@ -56,6 +60,10 @@ function Form() {
     return [
       update,
       ({error}) => {
+        if (getLogin()) {
+          router.goTo('default');
+        }
+
         if (error) {
           passwordField.focus();
           passwordField.select();

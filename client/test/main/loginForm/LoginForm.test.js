@@ -12,10 +12,20 @@ describe('<LoginForm>', () => {
   let passwordInput;
   let userInput;
   let loginButton;
+  let router;
+  let getLogin;
 
   beforeEach(() => {
     performLogin = sinon.spy();
     __set__('performLogin', performLogin);
+
+    router = {
+      goTo: sinon.spy()
+    };
+    __set__('router', router);
+
+    getLogin = sinon.stub();
+    __set__('getLogin', getLogin);
 
     ({node, update} = mountTemplate(<LoginForm selector={selector}/>));
 
@@ -26,6 +36,8 @@ describe('<LoginForm>', () => {
 
   afterEach(() => {
     __ResetDependency__('performLogin');
+    __ResetDependency__('router');
+    __ResetDependency__('getLogin');
   });
 
   it('should render form login element', () => {
@@ -140,6 +152,30 @@ describe('<LoginForm>', () => {
     });
 
     expect(document.activeElement).to.eql(passwordInput);
+  });
+
+  it('should redirect to default view if user is logged in', () => {
+    getLogin.returns('something');
+
+    update({
+      [selector]: {
+        inProgress: false
+      }
+    });
+
+    expect(router.goTo.calledWith('default')).to.eql(true);
+  });
+
+  it('should not redirect to default view if user is not logged in', () => {
+    getLogin.returns(false);
+
+    update({
+      [selector]: {
+        inProgress: false
+      }
+    });
+
+    expect(router.goTo.called).to.eql(false);
   });
 
   function getFieldByText(text) {
