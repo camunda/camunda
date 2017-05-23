@@ -1,9 +1,10 @@
+/* eslint no-console: 0 */
+
 const download = require('download');
 const shell = require('shelljs');
 const path = require('path');
 const CamundaClient = require('camunda-bpm-sdk-js').Client;
 const chalk = require('chalk');
-const fs = require('fs');
 const utils = require('./utils');
 let {c7port} = require('./config');
 
@@ -17,6 +18,7 @@ const demoDataDir = path.resolve(__dirname, '..', 'demo-data');
 
 if (process.argv[2] === 'start') {
   const port = +process.argv[3];
+
   if (!isNaN(port)) {
     c7port = port;
   }
@@ -110,7 +112,7 @@ function startServer() {
       });
 
       return utils.waitForServer(engineUrl);
-    })
+    });
 }
 
 function deployDefinitions() {
@@ -198,7 +200,7 @@ function startModuleInstances(module) {
 function completeTasks(modules) {
   return Promise.all(
     modules.map(completeModuleTasks)
-  )
+  );
 }
 
 function completeModuleTasks({instances}) {
@@ -224,14 +226,14 @@ function completeInstanceTasks(instance, iteration = 0) {
           return taskService.complete({
             id: task.id,
             variables
-          })
+          });
         }
 
         skipped = true;
 
         return Promise.resolve();
       }
-    )
+    );
   })
   .then(() => taskService.count({processInstanceId: instance.id}))
   .then(count => {
@@ -248,7 +250,7 @@ function getTaskList(instance) {
     processInstanceId: instance.id,
     maxResults: 9999
   })
-  .then(({_embedded: {task}}) => task)
+  .then(({_embedded: {task}}) => task);
 }
 
 function getVariables(instance) {
@@ -261,5 +263,5 @@ function getVariables(instance) {
 
       return variables;
     }, {});
-  })
+  });
 }

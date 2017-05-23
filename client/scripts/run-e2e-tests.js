@@ -1,3 +1,5 @@
+/* eslint no-console: 0 */
+
 const shell = require('shelljs');
 const path = require('path');
 const chalk = require('chalk');
@@ -5,10 +7,9 @@ const exec = require('child_process').exec;
 
 const selenium = path.resolve(__dirname, '..', 'node_modules', '.bin', 'selenium-standalone');
 const wdio = path.resolve(__dirname, '..', 'node_modules', '.bin', 'wdio');
-const config = path.resolve(__dirname, '..', 'wdio.conf.js')
+const config = path.resolve(__dirname, '..', 'wdio.conf.js');
 
 shell.exec(selenium + ' install');
-const selniumProcess = exec(selenium + ' start');
 
 const wdioArgs = process.argv.slice(2);
 const wdioProcess = shell.exec(wdio + ' ' + config + ' ' + wdioArgs.join(' '), function(code) {

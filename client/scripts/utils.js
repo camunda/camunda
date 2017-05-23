@@ -1,3 +1,5 @@
+/* eslint no-console: 0 */
+
 const fs = require('fs');
 const path = require('path');
 const request = promisify(require('request'));
@@ -40,7 +42,7 @@ function runWithColor(command, name, color, options = {}) {
 function waitForServer(address, retries = 5, waitTime = 5) {
   return delay(waitTime * 1000)
     .then(request.bind(null, address))
-    .catch(function (error) {
+    .catch(error => {
       if (retries > 1) {
         return waitForServer(address, retries - 1, waitTime);
       }
@@ -94,22 +96,22 @@ function findFile(directory, predicate, multiple) {
 }
 
 function promisify(original, thisArg) {
- return function() {
-   const args = Array.prototype.slice.call(arguments);
+  return function() {
+    const args = Array.prototype.slice.call(arguments);
 
-   return new Promise(function(resolve, reject) {
-     original.apply(
-       thisArg,
-       args.concat([function(error, result) {
-         if (error) {
-           reject(error);
-         }
+    return new Promise(function(resolve, reject) {
+      original.apply(
+        thisArg,
+        args.concat([function(error, result) {
+          if (error) {
+            reject(error);
+          }
 
-         resolve(result);
-       }])
+          resolve(result);
+        }])
      );
-   });
- };
+    });
+  };
 }
 
 function runInSequence(values, taskFn, chunkSize = 5) {

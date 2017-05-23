@@ -12,7 +12,7 @@
     "serve-compile": "node scripts/serve-compiled.js",
     "test": "./node_modules/.bin/karma start",
     "test-watch": "./node_modules/.bin/karma start --no-single-run",
-    "eslint": "./node_modules/.bin/eslint app test",
+    "eslint": "./node_modules/.bin/eslint app test scripts demo-data",
     "eslint-fix": "./node_modules/.bin/eslint app test --fix || true",
     "start-backend": "node scripts/run-backend.js",
     "test-e2e": "node scripts/run-e2e-tests.js",
