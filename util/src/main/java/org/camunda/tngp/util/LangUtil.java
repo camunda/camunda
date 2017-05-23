@@ -12,6 +12,9 @@
  */
 package org.camunda.tngp.util;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 public class LangUtil
 {
 
@@ -24,6 +27,11 @@ public class LangUtil
     private static <T extends Throwable> void rethrow(final Throwable t) throws T
     {
         throw (T) t;
+    }
+
+    public static <T> CompletableFuture<Void> allOf(List<T> futures)
+    {
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
     }
 
 }
