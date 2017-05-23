@@ -55,8 +55,11 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
       pagesWithData = importStrategy.adjustIndexWhenNoResultsFound(pagesWithData);
     }
     searchedSize = pageOfEngineEntities.size();
-    importStrategy.moveImportIndex(searchedSize);
-    importStrategy.persistImportIndexToElasticsearch();
+
+    if (pagesWithData != 0) {
+      importStrategy.moveImportIndex(searchedSize);
+      importStrategy.persistImportIndexToElasticsearch();
+    }
 
     result.setPagesPassed(pagesWithData);
     result.setIdsToFetch(getIdsForPostProcessing());
