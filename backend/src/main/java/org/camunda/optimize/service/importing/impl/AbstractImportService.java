@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.EngineDto;
+import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
@@ -12,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -34,10 +39,29 @@ public abstract class AbstractImportService <ENG extends EngineDto, OPT extends 
   protected abstract MissingEntitiesFinder<ENG> getMissingEntitiesFinder();
 
   /**
-   * maps the entities from an engine representation
-   * to an optimize representation.
+   * perform processing of ne entries:
+   *
+   * 1. map entries
+   * 2. prepare data for post-processing if required
+   *
+   * @param entries - new entries obtained from engine
+   * @return list of mapped optimize entities
    */
-  protected abstract List<OPT> mapToOptimizeDto(List<ENG> entries);
+  protected List<OPT> processNewEngineEntries(List<ENG> entries) {
+    List<OPT> result = new ArrayList<>(entries.size());
+    for (ENG entry : entries) {
+      result.add(this.mapToOptimizeDto(entry));
+      prepareDataForPostProcessing(entry);
+    }
+
+    return result;
+  }
+
+  protected void prepareDataForPostProcessing(ENG entry) {
+    //nothing to do by default
+  }
+
+  protected abstract OPT mapToOptimizeDto(ENG entry);
 
   /**
    * imports the given events to optimize by

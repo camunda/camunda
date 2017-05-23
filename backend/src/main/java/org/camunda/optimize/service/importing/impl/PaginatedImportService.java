@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
@@ -18,10 +20,18 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   @Autowired
   protected ImportStrategyProvider importStrategyProvider;
 
+  protected Set<String> idsForPostProcessing;
+
   @PostConstruct
   protected void init() {
     importStrategy = importStrategyProvider.getImportStrategyInstance();
     importStrategy.initializeImportIndex(getElasticsearchType(), getEngineImportMaxPageSize());
+  }
+
+  @Override
+  protected List<OPT> processNewEngineEntries(List<ENG> entries) {
+    this.idsForPostProcessing = new HashSet<>();
+    return super.processNewEngineEntries(entries);
   }
 
   @Override
@@ -37,7 +47,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
       getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
     if (!newEngineEntities.isEmpty()) {
       pagesWithData = pagesWithData + 1;
-      List<OPT> newOptimizeEntities = mapToOptimizeDto(newEngineEntities);
+      List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
       importToElasticSearch(newOptimizeEntities);
     } else {
       pagesWithData = importStrategy.adjustIndexWhenNoResultsFound(pagesWithData);

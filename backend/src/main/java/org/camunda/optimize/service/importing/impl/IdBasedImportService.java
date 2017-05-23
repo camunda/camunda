@@ -13,12 +13,12 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-public abstract class IndexedImportService <ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
+public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
 
   @Autowired
   protected EngineEntityFetcher engineEntityFetcher;
 
-  private Set<String> idsForImport;
+  protected Set<String> idsForImport;
 
   public Set<String> getIdsForImport() {
     return idsForImport;
@@ -43,7 +43,7 @@ public abstract class IndexedImportService <ENG extends EngineDto, OPT extends O
           getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
       if (!newEngineEntities.isEmpty()) {
         pagesWithData = pagesWithData + 1;
-        List<OPT> newOptimizeEntities = mapToOptimizeDto(newEngineEntities);
+        List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
         importToElasticSearch(newOptimizeEntities);
       }
 

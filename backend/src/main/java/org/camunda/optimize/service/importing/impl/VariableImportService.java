@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class VariableImportService extends IndexedImportService<HistoricVariableInstanceDto, VariableDto> {
+public class VariableImportService extends IdBasedImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
 
@@ -37,13 +37,8 @@ public class VariableImportService extends IndexedImportService<HistoricVariable
   }
 
   @Override
-  protected List<VariableDto> mapToOptimizeDto(List<HistoricVariableInstanceDto> entries) {
-    List<VariableDto> result = new ArrayList<>(entries.size());
-    for (HistoricVariableInstanceDto entry : entries) {
-      mapDefaults(entry);
-      result.add(mapDefaults(entry));
-    }
-    return result;
+  protected VariableDto mapToOptimizeDto(HistoricVariableInstanceDto entry) {
+    return mapDefaults(entry);
   }
 
   private VariableDto mapDefaults(HistoricVariableInstanceDto dto) {

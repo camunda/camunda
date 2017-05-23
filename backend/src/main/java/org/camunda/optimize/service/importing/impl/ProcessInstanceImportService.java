@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class ProcessInstanceImportService extends IndexedImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
+public class ProcessInstanceImportService extends IdBasedImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessInstanceImportService.class);
 
@@ -47,15 +47,10 @@ public class ProcessInstanceImportService extends IndexedImportService<HistoricP
   }
 
   @Override
-  public List<ProcessInstanceDto> mapToOptimizeDto(List<HistoricProcessInstanceDto> entries) {
-    List<ProcessInstanceDto> result = new ArrayList<>(entries.size());
-    for (HistoricProcessInstanceDto entry : entries) {
-      final ProcessInstanceDto procInst = new ProcessInstanceDto();
-      mapDefaults(entry, procInst);
-      result.add(procInst);
-
-    }
-    return result;
+  public ProcessInstanceDto mapToOptimizeDto(HistoricProcessInstanceDto entry) {
+    final ProcessInstanceDto procInst = new ProcessInstanceDto();
+    mapDefaults(entry, procInst);
+    return procInst;
   }
 
   private void mapDefaults(HistoricProcessInstanceDto dto, ProcessInstanceDto procInst) {

@@ -52,15 +52,8 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   }
 
   @Override
-  public List<ProcessDefinitionXmlOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionXmlEngineDto> entries) {
-    List<ProcessDefinitionXmlOptimizeDto> result = new ArrayList<>(entries.size());
-    for (ProcessDefinitionXmlEngineDto entry : entries) {
-      mapDefaults(entry);
-
-      result.add(mapDefaults(entry));
-    }
-
-    return result;
+  public ProcessDefinitionXmlOptimizeDto mapToOptimizeDto(ProcessDefinitionXmlEngineDto entry) {
+    return mapDefaults(entry);
   }
 
   private ProcessDefinitionXmlOptimizeDto mapDefaults(ProcessDefinitionXmlEngineDto dto) {

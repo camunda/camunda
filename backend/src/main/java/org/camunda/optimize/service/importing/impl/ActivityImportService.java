@@ -29,7 +29,6 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   private EventsWriter eventsWriter;
   @Autowired
   private MissingActivityFinder missingActivityFinder;
-  private Set<String> currentHpi;
 
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
@@ -58,17 +57,14 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   }
 
   @Override
-  public List<EventDto> mapToOptimizeDto(List<HistoricActivityInstanceEngineDto> entries) {
-    List<EventDto> result = new ArrayList<>(entries.size());
-    currentHpi = new HashSet<>();
-    for (HistoricActivityInstanceEngineDto entry : entries) {
-      final EventDto createEvent = new EventDto();
-      mapDefaults(entry, createEvent);
-      result.add(createEvent);
+  public EventDto mapToOptimizeDto(HistoricActivityInstanceEngineDto entry) {
+    final EventDto createEvent = new EventDto();
+    mapDefaults(entry, createEvent);
+    return createEvent;
+  }
 
-      currentHpi.add(createEvent.getProcessInstanceId());
-    }
-    return result;
+  protected void prepareDataForPostProcessing(HistoricActivityInstanceEngineDto entry) {
+    this.idsForPostProcessing.add(entry.getProcessInstanceId());
   }
 
   private void mapDefaults(HistoricActivityInstanceEngineDto dto, EventDto createEvent) {
@@ -92,13 +88,13 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   protected Set<String> getIdsForPostProcessing() {
-    if (currentHpi == null || currentHpi.isEmpty() || currentHpiContainsOnlyNullElement()) {
+    if (idsForPostProcessing == null || idsForPostProcessing.isEmpty() || currentHpiContainsOnlyNullElement()) {
       return null;
     }
-    return new HashSet<>(currentHpi);
+    return new HashSet<>(idsForPostProcessing);
   }
 
   private boolean currentHpiContainsOnlyNullElement() {
-    return currentHpi.size() == 1 && currentHpi.contains(null);
+    return idsForPostProcessing.size() == 1 && idsForPostProcessing.contains(null);
   }
 }

@@ -53,14 +53,8 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
   }
 
   @Override
-  public List<ProcessDefinitionOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionEngineDto> entries) {
-    List<ProcessDefinitionOptimizeDto> result = new ArrayList<>(entries.size());
-    for (ProcessDefinitionEngineDto entry : entries) {
-      mapDefaults(entry);
-      result.add(mapDefaults(entry));
-    }
-
-    return result;
+  public ProcessDefinitionOptimizeDto mapToOptimizeDto(ProcessDefinitionEngineDto entry) {
+    return mapDefaults(entry);
   }
 
   private ProcessDefinitionOptimizeDto mapDefaults(ProcessDefinitionEngineDto dto) {
