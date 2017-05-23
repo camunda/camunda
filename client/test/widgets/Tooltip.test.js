@@ -7,61 +7,27 @@ describe('<Tooltip>', () => {
   const text = 'tooltip text';
   let node;
 
-  describe('static', () => {
-    beforeEach(() => {
-      ({node} = mountTemplate(<Tooltip text={text} />));
-    });
-
-    it('should not display tooltip by default', () => {
-      expect(document.body).not.to.contain.text(text);
-    });
-
-    it('should display text on hover', () => {
-      triggerEvent({
-        node,
-        eventName: 'mouseenter'
-      });
-
-      expect(document.body).to.contain.text(text);
-
-      triggerEvent({
-        node,
-        eventName: 'mouseleave'
-      });
-
-      expect(document.body).not.to.contain.text(text);
-    });
+  beforeEach(() => {
+    ({node} = mountTemplate(<Tooltip>{text}</Tooltip>));
   });
 
-  describe('dynamic', () => {
-    let update;
+  it('should not display tooltip by default', () => {
+    expect(document.body).not.to.contain.text(text);
+  });
 
-    beforeEach(() => {
-      ({node, update} = mountTemplate(<Tooltip text="text" isStatic={false} />));
-
-      update({
-        text
-      });
+  it('should display text on hover', () => {
+    triggerEvent({
+      node,
+      eventName: 'mouseenter'
     });
 
-    it('should not display tooltip by default', () => {
-      expect(document.body).not.to.contain.text(text);
+    expect(document.body).to.contain.text(text);
+
+    triggerEvent({
+      node,
+      eventName: 'mouseleave'
     });
 
-    it('should display text on hover', () => {
-      triggerEvent({
-        node,
-        eventName: 'mouseenter'
-      });
-
-      expect(document.body).to.contain.text(text);
-
-      triggerEvent({
-        node,
-        eventName: 'mouseleave'
-      });
-
-      expect(document.body).not.to.contain.text(text);
-    });
+    expect(document.body).not.to.contain.text(text);
   });
 });

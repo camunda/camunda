@@ -1,12 +1,10 @@
-import {jsx, $document, $window, DESTROY_EVENT, Text} from 'view-utils';
+import {jsx, $document, $window, DESTROY_EVENT, Children} from 'view-utils';
 import {onNextTick} from 'utils/onNextTick';
 
-export function Tooltip({text, isStatic = true}) {
-  const TooltipContent = isStatic ? StaticTooltipContent : DynamicTooltipContent;
-  const tooltipTemplate = <TooltipContent text={text} />;
-
+export function Tooltip({children}) {
   return (node, eventsBus) => {
     let tooltip = $document.createElement('div');
+    const tooltipTemplate = <TooltipContent children={children} />;
     const update = tooltipTemplate(tooltip, eventsBus);
 
     tooltip = tooltip.querySelector('.tooltip');
@@ -38,16 +36,11 @@ export function Tooltip({text, isStatic = true}) {
   };
 }
 
-function StaticTooltipContent({text}) {
+function TooltipContent({children}) {
   return <div className="tooltip top" role="tooltip" style="opacity: 1;">
     <div className="tooltip-arrow"></div>
-    <div className="tooltip-inner" style="text-align: left;">{text}</div>
-  </div>;
-}
-
-function DynamicTooltipContent({text}) {
-  return <div className="tooltip top" role="tooltip" style="opacity: 1;">
-    <div className="tooltip-arrow"></div>
-    <div className="tooltip-inner" style="text-align: left;"><Text property={text}/></div>
+    <div className="tooltip-inner" style="text-align: left;">
+      <Children children={children} />
+    </div>
   </div>;
 }

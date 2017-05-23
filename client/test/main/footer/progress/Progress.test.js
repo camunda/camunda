@@ -16,7 +16,7 @@ describe('<Progress>', () => {
     __set__('loadProgress', loadProgress);
     Icon = createMockComponent('Icon', true);
     __set__('Icon', Icon);
-    Tooltip = createMockComponent('Tooltip');
+    Tooltip = createMockComponent('Tooltip', true);
     __set__('Tooltip', Tooltip);
 
     ({node, update} = mountTemplate(<Progress />));
@@ -49,7 +49,7 @@ describe('<Progress>', () => {
       }
     });
 
-    expect(Tooltip.appliedWith({text: 'Connected to engine and elastic search'})).to.eql(true);
+    expect(Tooltip.getChildrenNode()).to.contain.text('Connected to engine and elastic search');
   });
 
   it('should create elasticsearch disconnected indicator', () => {
@@ -61,7 +61,7 @@ describe('<Progress>', () => {
       }
     });
 
-    expect(Tooltip.updatedWith({message: 'Disconnected from elastic search'})).to.eql(true);
+    expect(Tooltip.getChildrenNode(1)).to.contain.text('Disconnected from elastic search');
   });
 
   it('should create engine disconnected indicator', () => {
@@ -73,7 +73,19 @@ describe('<Progress>', () => {
       }
     });
 
-    expect(Tooltip.updatedWith({message: 'Disconnected from engine'})).to.eql(true);
+    expect(Tooltip.getChildrenNode(1)).to.contain.text('Disconnected from engine');
+  });
+
+  it('should create engine disconnected indicator', () => {
+    update({
+      data: {
+        progress: 10,
+        connectedToElasticsearch: false,
+        connectedToEngine: false
+      }
+    });
+
+    expect(Tooltip.getChildrenNode(1)).to.contain.text('Disconnected from elastic search and engine');
   });
 
   it('should not show progres when it is 100', () => {

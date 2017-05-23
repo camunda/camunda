@@ -30,13 +30,17 @@ function Indicator() {
   return <Match>
     <Case predicate={isConnected}>
       <Icon icon="ok-sign">
-        <Tooltip text="Connected to engine and elastic search" />
+        <Tooltip>
+          Connected to engine and elastic search
+        </Tooltip>
       </Icon>
     </Case>
     <Default>
       <Scope selector={getErrorMessage}>
         <Icon icon="minus-sign">
-          <Tooltip text="message" isStatic={false} />
+          <Tooltip>
+            <Text />
+          </Tooltip>
         </Icon>
       </Scope>
     </Default>
@@ -48,21 +52,15 @@ function Indicator() {
 
   function getErrorMessage({connectedToElasticsearch, connectedToEngine}) {
     if (!connectedToElasticsearch && !connectedToEngine) {
-      return {
-        message: 'Disconnected from elastic search and engine'
-      };
+      return 'Disconnected from elastic search and engine';
     }
 
     if (!connectedToEngine) {
-      return {
-        message: 'Disconnected from engine'
-      };
+      return 'Disconnected from engine';
     }
 
     if (!connectedToElasticsearch) {
-      return {
-        message: 'Disconnected from elastic search'
-      };
+      return 'Disconnected from elastic search';
     }
   }
 }
