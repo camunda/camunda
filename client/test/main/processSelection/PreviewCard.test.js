@@ -81,6 +81,28 @@ describe('<PreviewCard>', () => {
       expect(openDefinition.calledOnce).to.eql(true);
       expect(openDefinition.calledWith('processId')).to.eql(true);
     });
+
+    it('should disable click listener if diagram is not defined', () => {
+      state.current.bpmn20Xml = null;
+
+      update(state);
+
+      triggerEvent({
+        node: node,
+        selector: '.diagram',
+        eventName: 'click'
+      });
+
+      expect(openDefinition.calledOnce).to.eql(false);
+    });
+
+    it('should add no-xml class to diagram if bpmn20Xml is not defined', () => {
+      state.current.bpmn20Xml = null;
+
+      update(state);
+
+      expect(node.querySelector('.diagram')).to.have.class('no-xml');
+    });
   });
 
   describe('multiple versions', () => {

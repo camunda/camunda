@@ -1,4 +1,4 @@
-import {jsx, OnEvent, Match, Case, Default, Scope, List, Text} from 'view-utils';
+import {jsx, OnEvent, Match, Case, Default, Scope, List, Text, Class, isFalsy} from 'view-utils';
 import {openDefinition, setVersionForProcess} from './service';
 import {createDiagramPreview} from 'widgets';
 
@@ -10,6 +10,7 @@ export function PreviewCard() {
       <Scope selector={({current, versions}) => ({...current, versions})}>
         <div className="process-definition-card">
           <div className="diagram">
+            <Class selector="bpmn20Xml" className="no-xml" predicate={isFalsy} />
             <OnEvent event="click" listener={selectDefinition} />
             <DiagramPreview selector="bpmn20Xml" />
           </div>
@@ -52,8 +53,10 @@ export function PreviewCard() {
       DiagramPreview.setLoading(true);
     }
 
-    function selectDefinition({state:{id}}) {
-      openDefinition(id);
+    function selectDefinition({state:{id, bpmn20Xml}}) {
+      if (bpmn20Xml) {
+        openDefinition(id);
+      }
     }
 
     return template(node, eventsBus);

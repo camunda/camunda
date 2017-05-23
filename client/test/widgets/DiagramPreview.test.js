@@ -77,6 +77,13 @@ describe('<DiagramPreview>', () => {
     expect(viewer.importXML.calledOnce).to.eql(true);
   });
 
+  it('should display error when diagram is not given', () => {
+    update(null);
+
+    expect(node).to.contain.text('No diagram');
+    expect(node.querySelector('.diagram-error').style.display).to.eql('block');
+  });
+
   describe('setLoading', () => {
     it('should hide loader when used with false', () => {
       //given

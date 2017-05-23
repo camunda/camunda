@@ -2,6 +2,7 @@ import {jsx, updateOnlyWhenStateChanges, withSelector,  createReferenceComponent
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
 import {Loader} from './Loader';
+import {Icon} from './Icon';
 import {createQueue} from 'utils';
 import isEqual from 'lodash.isequal';
 
@@ -16,6 +17,13 @@ export function createDiagramPreview() {
         <Loader className="diagram-loading" style="position: absolute">
           <Reference name="loader" />
         </Loader>
+        <div className="diagram-error" style="display: none">
+          <Icon icon="alert" />
+          <div className="text">
+            No diagram
+          </div>
+          <Reference name="error" />
+        </div>
         <div className="diagram__holder" style="position: relative;">
           <Reference name="viewer" />
         </div>
@@ -24,24 +32,32 @@ export function createDiagramPreview() {
       const templateUpdate = template(node, eventsBus);
       const viewerNode = Reference.getNode('viewer');
       const loaderNode = Reference.getNode('loader');
+      const errorNode = Reference.getNode('error');
 
       const viewer = new Viewer({
         container: viewerNode
       });
 
       const update = (diagram) => {
-        queue.addTask((done) => {
-          viewer.importXML(diagram, (err) => {
-            DiagramPreview.setLoading(false);
+        if (diagram) {
+          errorNode.style.display = 'none'; // make sure error isn't displayed
 
-            if (err) {
-              viewerNode.innerHTML = `Could not load diagram, got error ${err}`;
-            }
+          queue.addTask((done) => {
+            viewer.importXML(diagram, (err) => {
+              DiagramPreview.setLoading(false);
 
-            resetZoom(viewer);
-            done();
+              if (err) {
+                viewerNode.innerHTML = `Could not load diagram, got error ${err}`;
+              }
+
+              resetZoom(viewer);
+              done();
+            });
           });
-        });
+        } else {
+          errorNode.style.display = 'block';
+          viewerNode.style.display = 'none';
+        }
       };
 
       function updatePreventionCondition(previousState, newState) {
