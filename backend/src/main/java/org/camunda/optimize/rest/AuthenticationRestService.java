@@ -52,7 +52,9 @@ public class AuthenticationRestService {
       return Response.ok(token).build();
 
     } catch (Exception e) {
-      logger.error("Error during user authentication", e);
+      if (logger.isDebugEnabled()) {
+        logger.error("Error during user authentication", e);
+      }
       return Response.status(Response.Status.UNAUTHORIZED).build();
     }
   }

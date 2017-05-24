@@ -28,7 +28,7 @@ public class AuthenticationService {
     if (!configurationService.isEngineConnected() || !engineAuthenticationProvider.authenticate(credentials)) {
       // Authenticate the user using the credentials provided
       if (!elasticAuthenticationProvider.authenticate(credentials)) {
-        throw new UnauthorizedUserException();
+        throw new UnauthorizedUserException("Can't authorize user [" + credentials.getUsername() + "]");
       }
     }
 
