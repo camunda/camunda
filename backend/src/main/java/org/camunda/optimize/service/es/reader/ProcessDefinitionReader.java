@@ -153,6 +153,7 @@ public class ProcessDefinitionReader {
         configurationService.getOptimizeIndex())
         .setTypes(configurationService.getProcessDefinitionXmlType())
         .setQuery(QueryBuilders.termsQuery(ProcessDefinitionXmlType.ID, ids))
+        .setSize(100)
         .get();
 
     for(SearchHit hit : response.getHits()) {
