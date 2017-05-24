@@ -31,7 +31,7 @@ public class TokenService {
     String username = decoded.getSubject();
     LocalDateTime expiry = tokenExpiry.get(username);
     if (expiry == null || LocalDateTime.now().isAfter(expiry)) {
-      throw new InvalidTokenException();
+      throw new InvalidTokenException("Error while validating authentication token [" + token + "]");
     } else {
       expiry = expiry.plus(configurationService.getLifetime(),ChronoUnit.MINUTES);
       tokenExpiry.put(username, expiry);

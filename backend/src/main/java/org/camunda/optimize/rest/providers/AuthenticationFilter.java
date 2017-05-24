@@ -39,7 +39,9 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       tokenService.validateToken(token);
 
     } catch (Exception e) {
-      logger.error("Error while validating authentication token", e);
+      if (logger.isDebugEnabled()) {
+        logger.debug("Handling authentication token error", e);
+      }
       requestContext.abortWith(
           Response.status(Response.Status.UNAUTHORIZED).build());
     }
