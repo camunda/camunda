@@ -11,6 +11,8 @@ const config = path.resolve(__dirname, '..', 'wdio.conf.js');
 
 shell.exec(selenium + ' install');
 
+exec(selenium + ' start');
+
 const wdioArgs = process.argv.slice(2);
 const wdioProcess = shell.exec(wdio + ' ' + config + ' ' + wdioArgs.join(' '), function(code) {
   console.log('*************************************');
