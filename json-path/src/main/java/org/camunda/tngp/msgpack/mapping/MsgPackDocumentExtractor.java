@@ -51,7 +51,7 @@ import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 public final class MsgPackDocumentExtractor
 {
     public static final String JSON_PATH_SEPARATOR = "\\.";
-    public static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query.";
+    public static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
     public static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE = "JSON path mapping has more than one matching source.";
 
     /**
@@ -179,7 +179,9 @@ public final class MsgPackDocumentExtractor
         }
         else if (queryExecutor.numResults() == 0)
         {
-            throw new MappingException(EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH);
+            final DirectBuffer expression = jsonPathQuery.getExpression();
+            throw new MappingException(String.format(EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH,
+                                                     expression.getStringWithoutLengthUtf8(0, expression.capacity())));
         }
         else
         {

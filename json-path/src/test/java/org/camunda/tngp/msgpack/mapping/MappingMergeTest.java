@@ -1,23 +1,22 @@
 package org.camunda.tngp.msgpack.mapping;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMapping;
+import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMappings;
+import static org.camunda.tngp.msgpack.mapping.MappingProcessor.EXCEPTION_MSG_ROOT_MAPPING_IN_COMBINATION_WITH_OTHER;
+import static org.camunda.tngp.msgpack.mapping.MappingTestUtil.*;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.msgpack.mapping.MappingProcessor.EXCEPTION_MSG_ROOT_MAPPING_IN_COMBINATION_WITH_OTHER;
-import static org.camunda.tngp.msgpack.mapping.MappingTestUtil.*;
-import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMapping;
-import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMappings;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Represents a test class to test the merge documents functionality with help of mappings.
@@ -96,7 +95,7 @@ public class MappingMergeTest
 
         // expect
         expectedException.expect(MappingException.class);
-        expectedException.expectMessage("No data found for query.");
+        expectedException.expectMessage("No data found for query $.foo.");
 
         // when
         processor.merge(sourceDocument, sourceDocument, mapping);

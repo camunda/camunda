@@ -80,7 +80,7 @@ public class MappingExtractTest
 
         // expect
         expectedException.expect(MappingException.class);
-        expectedException.expectMessage("No data found for query.");
+        expectedException.expectMessage("No data found for query $.foo.");
 
         // when
         processor.extract(sourceDocument, mapping);
