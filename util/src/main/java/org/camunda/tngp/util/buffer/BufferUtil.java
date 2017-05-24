@@ -23,6 +23,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferUtil
 {
+    private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
+
     private BufferUtil()
     { // avoid instantiation of util class
     }
@@ -111,6 +113,45 @@ public final class BufferUtil
         {
             throw new RuntimeException("Unable to clone buffer of class " + src.getClass().getSimpleName());
         }
+    }
+
+    public static String bufferAsHexString(final DirectBuffer buffer)
+    {
+        return bufferAsHexString(buffer, 0, buffer.capacity());
+    }
+
+    public static String bufferAsHexString(final DirectBuffer buffer, final int offset, final int length)
+    {
+        final byte[] bytes = new byte[length];
+        buffer.getBytes(offset, bytes, 0, length);
+
+        return bytesAsHexString(bytes);
+    }
+
+    public static String bytesAsHexString(final byte[] bytes)
+    {
+        final StringBuilder builder = new StringBuilder(bytes.length * 3);
+
+        int position = 0;
+        for (final byte b : bytes)
+        {
+            builder
+                .append(HEX_CODE[(b >> 4) & 0xF])
+                .append(HEX_CODE[(b & 0xF)]);
+
+            position++;
+
+            if (position % 4 == 0)
+            {
+                builder.append('\n');
+            }
+            else
+            {
+                builder.append(' ');
+            }
+        }
+
+        return builder.toString();
     }
 
 }
