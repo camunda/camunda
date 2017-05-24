@@ -514,8 +514,7 @@ public class MappingMergeTest
         assertThatNodeContainsTheStartingPayload(testObjNode);
     }
 
-    // TODO json object with the same key and name are not correctly identified
-    @Ignore
+    @Test
     public void shouldMergeAndReplaceObjectWithSameNameInDepth() throws Throwable
     {
         // given payload
@@ -544,6 +543,7 @@ public class MappingMergeTest
         assertThat(valueNode.isTextual()).isTrue();
         assertThat(valueNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
 
+        // first complex obj is the same like before
         final JsonNode complexObject1Node = jsonNode.get("complexObject1");
         assertThatNodeContainsTheStartingPayload(complexObject1Node);
 
@@ -551,10 +551,26 @@ public class MappingMergeTest
         final JsonNode complexObject2Node = jsonNode.get("complexObject2");
         assertThat(complexObject2Node.isObject()).isTrue();
 
+        // contains old content
         final JsonNode fooNode = complexObject2Node.get(NODE_STRING_KEY);
-        assertThat(fooNode.isTextual()).isTrue();
         assertThat(fooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
 
+        final JsonNode booleanNode = complexObject2Node.get(NODE_BOOLEAN_KEY);
+        assertThat(booleanNode.booleanValue()).isEqualTo(NODE_BOOLEAN_VALUE);
+
+        final JsonNode integerNode = complexObject2Node.get(NODE_INTEGER_KEY);
+        assertThat(integerNode.intValue()).isEqualTo(NODE_INTEGER_VALUE);
+
+        final JsonNode longNode = complexObject2Node.get(NODE_LONG_KEY);
+        assertThat(longNode.longValue()).isEqualTo(NODE_LONG_VALUE);
+
+        final JsonNode doubleNode = complexObject2Node.get(NODE_DOUBLE_KEY);
+        assertThat(doubleNode.doubleValue()).isEqualTo(NODE_DOUBLE_VALUE);
+
+        final JsonNode arrayNode = complexObject2Node.get(NODE_ARRAY_KEY);
+        assertThatNodeContainsStartingArray(arrayNode);
+
+        // and json object is replaced with value
         final JsonNode jsonObjNode = complexObject2Node.get(NODE_JSON_OBJECT_KEY);
         assertThat(jsonObjNode.isTextual()).isTrue();
         assertThat(jsonObjNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
