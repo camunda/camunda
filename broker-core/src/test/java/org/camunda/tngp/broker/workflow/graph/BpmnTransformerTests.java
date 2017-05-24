@@ -1,24 +1,24 @@
 package org.camunda.tngp.broker.workflow.graph;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.broker.workflow.graph.model.*;
-import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
-import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
+import org.camunda.tngp.msgpack.mapping.Mapping;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class BpmnTransformerTests
 {
@@ -152,13 +152,10 @@ public class BpmnTransformerTests
         final Mapping[] inputMappings = serviceTask.getIoMapping().getInputMappings();
         assertThat(inputMappings.length).isEqualTo(1);
         assertThat(inputMappings[0].getSource().isValid()).isTrue();
-        assertThat(inputMappings[0].getTarget().isValid()).isTrue();
-
 
         final Mapping[] outputMappings = serviceTask.getIoMapping().getOutputMappings();
         assertThat(outputMappings.length).isEqualTo(1);
         assertThat(outputMappings[0].getSource().isValid()).isTrue();
-        assertThat(outputMappings[0].getTarget().isValid()).isTrue();
     }
 
     @Test
@@ -187,13 +184,11 @@ public class BpmnTransformerTests
         final Mapping[] inputMappings = serviceTask.getIoMapping().getInputMappings();
         assertThat(inputMappings.length).isEqualTo(1);
         assertThat(inputMappings[0].getSource().isValid()).isTrue();
-        assertThat(inputMappings[0].getTarget().isValid()).isTrue();
 
 
         final Mapping[] outputMappings = serviceTask.getIoMapping().getOutputMappings();
         assertThat(outputMappings.length).isEqualTo(1);
         assertThat(outputMappings[0].getSource().isValid()).isTrue();
-        assertThat(outputMappings[0].getTarget().isValid()).isTrue();
     }
 
     protected ExecutableWorkflow transformSingleProcess(BpmnModelInstance bpmnModelInstance)

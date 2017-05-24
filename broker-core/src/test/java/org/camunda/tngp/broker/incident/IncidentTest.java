@@ -39,6 +39,7 @@ import org.junit.rules.RuleChain;
 
 public class IncidentTest
 {
+    public static final String EXPECTED_ERROR_MESSAGE = "No data found for query $.foo.";
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
@@ -103,7 +104,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
@@ -130,7 +131,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
@@ -163,7 +164,7 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
@@ -197,7 +198,7 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
@@ -237,7 +238,7 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
-        assertThat(incidentEvent.event()).containsEntry("errorMessage", "No data found for query '$.foo'.");
+        assertThat(incidentEvent.event()).containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE);
 
         // when
         final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
@@ -246,13 +247,13 @@ public class IncidentTest
         assertThat(response.key()).isEqualTo(incidentEvent.key());
         assertThat(response.getEvent())
             .containsEntry("eventType", IncidentEventType.RESOLVE_FAILED.name())
-            .containsEntry("errorMessage", "No data found for query '$.bar'.");
+            .containsEntry("errorMessage", "No data found for query $.bar.");
 
         final SubscribedEvent resolveFailedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVE_FAILED"));
         assertThat(resolveFailedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(resolveFailedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.bar'.")
+            .containsEntry("errorMessage", "No data found for query $.bar.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask");
@@ -280,7 +281,7 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask");
@@ -305,7 +306,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")

@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.workflow.graph.model.metadata;
 
+import org.camunda.tngp.msgpack.mapping.Mapping;
 /**
  * Represents an IO mapping structure. The IO mapping can consist
  * of a list of different input and output mapping's for a flow element.

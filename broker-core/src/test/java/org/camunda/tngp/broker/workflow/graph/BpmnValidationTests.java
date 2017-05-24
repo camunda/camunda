@@ -465,7 +465,35 @@ public class BpmnValidationTests
     }
 
     @Test
-    public void shouldNotValidIfIOMappingIsInvalidAndProhibited()
+    public void shouldNotValidtIfIOMappingIsInvalidAndProhibited()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+                                                             .startEvent()
+                                                             .serviceTask("foo")
+                                                             .name("bar")
+                                                             .endEvent()
+                                                             .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+            .input("foo", "$")
+            .output("$.*", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code")
+            .contains(ValidationCodes.INVALID_JSON_PATH_EXPRESSION,
+                      ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION);
+    }
+
+    @Test
+    public void shouldNotValidIfIOTargetMappingIsInvalidAndProhibited()
     {
         // given
         final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
@@ -476,8 +504,8 @@ public class BpmnValidationTests
             .done())
             .taskDefinition("foo", "test", 4)
             .ioMapping("foo")
-                .input("foo", "$")
-                .output("$.*", "$")
+                .input("$", "foo")
+                .output("$", "$.*")
             .done();
 
         // when

@@ -6,9 +6,9 @@ import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
-import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
+import org.camunda.tngp.msgpack.mapping.Mapping;
 
 import java.util.List;
 import java.util.regex.Pattern;

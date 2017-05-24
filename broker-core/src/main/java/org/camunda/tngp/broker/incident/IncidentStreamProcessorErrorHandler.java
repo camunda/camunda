@@ -20,12 +20,12 @@ import org.camunda.tngp.broker.incident.data.IncidentEventType;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
-import org.camunda.tngp.broker.workflow.processor.PayloadMappingException;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.StreamProcessorErrorHandler;
+import org.camunda.tngp.msgpack.mapping.MappingException;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class IncidentStreamProcessorErrorHandler implements StreamProcessorErrorHandler
@@ -56,15 +56,15 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     {
         int result = RESULT_REJECT;
 
-        if (error instanceof PayloadMappingException)
+        if (error instanceof MappingException)
         {
-            result = handlePayloadMappingException(failureEvent, (PayloadMappingException) error);
+            result = handlePayloadMappingException(failureEvent, (MappingException) error);
         }
 
         return result;
     }
 
-    private int handlePayloadMappingException(LoggedEvent failureEvent, PayloadMappingException error)
+    private int handlePayloadMappingException(LoggedEvent failureEvent, MappingException error)
     {
 
         incidentEventMetadata.reset()

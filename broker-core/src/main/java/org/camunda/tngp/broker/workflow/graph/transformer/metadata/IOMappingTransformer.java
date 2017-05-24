@@ -1,16 +1,16 @@
 package org.camunda.tngp.broker.workflow.graph.transformer.metadata;
 
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
+
+import java.util.List;
+
 import org.agrona.Strings;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.IOMapping;
-import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
-
-import java.util.List;
-
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
+import org.camunda.tngp.msgpack.mapping.Mapping;
 
 /**
  * Transforms given extension elements to an IOMapping for
@@ -73,7 +73,6 @@ public class IOMappingTransformer
 
         //TODO make json path compiler re-usable!
         return new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
-                           new JsonPathQueryCompiler().compile(targetMapping),
                            targetMapping);
     }
 

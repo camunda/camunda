@@ -10,6 +10,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -26,7 +27,6 @@ import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
 import org.camunda.tngp.broker.workflow.graph.model.*;
-import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
@@ -43,6 +43,8 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.msgpack.mapping.Mapping;
+import org.camunda.tngp.msgpack.mapping.MappingProcessor;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
@@ -110,12 +112,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected long eventKey;
     protected long eventPosition;
 
-    protected final PayloadMappingProcessor payloadMappingProcessor;
-
-    /**
-     * The maxiumum payload size.
-     */
-    protected final int maxPayloadSize;
+    protected final MappingProcessor payloadMappingProcessor;
 
     protected LogStream targetStream;
 
@@ -127,7 +124,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             IndexStore activityInstanceIndexStore,
             IndexStore workflowInstancePayloadIndexStore,
             int cacheSize,
-            int maxPayloadSize)
+            int initialMaxPayloadSize)
     {
         this.responseWriter = responseWriter;
         this.logStreamReader = new BufferedLogStreamReader();
@@ -137,10 +134,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.workflowInstanceIndex = new WorkflowInstanceIndex(workflowPositionIndexStore);
         this.activityInstanceIndex = new ActivityInstanceIndex(activityInstanceIndexStore);
 
-        this.maxPayloadSize = maxPayloadSize;
-        this.payloadMappingProcessor = new PayloadMappingProcessor(maxPayloadSize);
-        this.activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor(maxPayloadSize));
-        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, maxPayloadSize + SIZE_OF_INT);
+        this.payloadMappingProcessor = new MappingProcessor(initialMaxPayloadSize);
+        this.activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor(initialMaxPayloadSize));
+        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, initialMaxPayloadSize + SIZE_OF_INT);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
@@ -457,9 +453,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         private final MutableDirectBuffer tempPayload;
 
-        ActivityReadyEventProcessor(int maxPayload)
+        ActivityReadyEventProcessor(int initialMaxPayloadSize)
         {
-            tempPayload = new UnsafeBuffer(new byte[maxPayload + SIZE_OF_INT]);
+            tempPayload = new ExpandableArrayBuffer(initialMaxPayloadSize + SIZE_OF_INT);
         }
 
         @Override
@@ -487,7 +483,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             tempPayload.putInt(0, sourcePayload.capacity(), ByteOrder.LITTLE_ENDIAN);
             sourcePayload.getBytes(0, tempPayload, SIZE_OF_INT, sourcePayload.capacity());
 
-            final int resultLen = payloadMappingProcessor.extractPayload(mappings, sourcePayload);
+            final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
             workflowInstanceEvent.setPayload(buffer, 0, resultLen);
         }
@@ -788,7 +784,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final Integer payloadLength = tempPayload.getInt(0);
             tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
 
-            final int resultLen = payloadMappingProcessor.mergePayloads(mappings, workflowInstanceEvent.getPayload(), tempPayload);
+            final int resultLen = payloadMappingProcessor.merge(workflowInstanceEvent.getPayload(), tempPayload, mappings);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
             workflowInstanceEvent.setPayload(buffer, 0, resultLen);
         }
