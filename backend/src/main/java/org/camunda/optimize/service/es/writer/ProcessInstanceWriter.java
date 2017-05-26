@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -42,7 +43,8 @@ public class ProcessInstanceWriter {
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     logger.debug("Writing [{}] process instances to elasticsearch", processInstances.size());
 
-    BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk()
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     for (ProcessInstanceDto procInst : processInstances) {
       addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
     }
