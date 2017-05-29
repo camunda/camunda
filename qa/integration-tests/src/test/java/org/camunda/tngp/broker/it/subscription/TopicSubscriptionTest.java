@@ -304,7 +304,7 @@ public class TopicSubscriptionTest
         secondEventHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
 
-    @Test
+    @Ignore
     public void shouldHandleOneEventAtATime() throws InterruptedException
     {
         // given
