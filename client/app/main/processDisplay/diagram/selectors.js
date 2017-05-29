@@ -2,6 +2,6 @@ export function getInstanceCount({heatmap:{data:{piCount}}}) {
   return piCount;
 }
 
-export function getSelection({selection}) {
+export function getSelection({analytics: {selection}}) {
   return selection;
 }

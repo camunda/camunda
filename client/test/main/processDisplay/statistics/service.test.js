@@ -112,8 +112,8 @@ describe('Statistics service', () => {
 
     beforeEach(() => {
       selection = {
-        endEvent: 'EndEvent_0ip3gsn',
-        gateway: 'Gateway_2jc2dh3'
+        EndEvent: 'EndEvent_0ip3gsn',
+        Gateway: 'Gateway_2jc2dh3'
       };
     });
 

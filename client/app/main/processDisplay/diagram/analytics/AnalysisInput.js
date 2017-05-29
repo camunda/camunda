@@ -1,6 +1,7 @@
-import {jsx, OnEvent, Match, Case, Default, Text, withSelector, Children} from 'view-utils';
+import {jsx, OnEvent, Match, Case, Default, Text, withSelector, Class} from 'view-utils';
+import {removeHighlights, addHighlight, unsetElement} from './service';
 
-export const AnalysisInput = withSelector(({children, integrator}) => {
+export const AnalysisInput = withSelector(() => {
   return <td>
     <ul className="list-group">
       <li className="list-group-item" style="padding: 6px; cursor: default;">
@@ -20,7 +21,7 @@ export const AnalysisInput = withSelector(({children, integrator}) => {
             <span>Please Select <Text property="label" /></span>
           </Default>
         </Match>
-        <Children children={children} />
+        <Class className="btn-highlight" selector="hovered" />
       </li>
     </ul>
   </td>;
@@ -30,14 +31,14 @@ export const AnalysisInput = withSelector(({children, integrator}) => {
   }
 
   function unset({state:{type}}) {
-    integrator.unset(type);
+    unsetElement(type);
   }
 
-  function hover({state:{type}}) {
-    integrator.hover(type, true);
+  function hover({state: {type}}) {
+    addHighlight(type);
   }
 
-  function unhover({state:{type}}) {
-    integrator.unhover(type, true);
+  function unhover() {
+    removeHighlights();
   }
 });

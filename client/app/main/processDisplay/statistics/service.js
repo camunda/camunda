@@ -14,11 +14,11 @@ export function setHeight(height) {
   dispatchAction(createSetHeightAction(height));
 }
 
-export function loadStatisticData({endEvent, gateway}) {
+export function loadStatisticData({EndEvent, Gateway}) {
   const filter = getFilter();
   const query = {
-    end: endEvent,
-    gateway,
+    end: EndEvent,
+    gateway: Gateway,
     processDefinitionId: getDefinitionId(),
     filter: getFilterQuery(filter)
   };

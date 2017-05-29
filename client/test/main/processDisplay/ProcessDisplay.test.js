@@ -8,15 +8,16 @@ import {LOADED_STATE, LOADING_STATE} from 'utils/loading';
 describe('<ProcessDisplay>', () => {
   let Controls;
   let createHeatmapRenderer;
-  let createAnalyticsRenderer;
-  let createCreateAnalyticsRendererFunction;
-  let createDiagramControlsIntegrator;
+  let createAnalyticsComponents;
   let Statistics;
   let ProcessInstanceCount;
   let TargetValueDisplay;
   let getDefinitionId;
   let loadData;
+  let createDiagram;
   let Diagram;
+  let AnalyticsDiagram;
+  let AnalysisSelection;
   let node;
   let update;
   let state;
@@ -24,6 +25,7 @@ describe('<ProcessDisplay>', () => {
   let resetStatisticData;
   let selectedView;
   let isViewSelected;
+  let Socket;
 
   const NEW_CRITERIA = 'NEW_CRITERIA';
 
@@ -46,15 +48,24 @@ describe('<ProcessDisplay>', () => {
     createHeatmapRenderer = sinon.spy();
     __set__('createHeatmapRendererFunction', sinon.stub().returns(createHeatmapRenderer));
 
-    createAnalyticsRenderer = sinon.spy();
-    createCreateAnalyticsRendererFunction = sinon.stub().returns(createAnalyticsRenderer);
-    __set__('createCreateAnalyticsRendererFunction', createCreateAnalyticsRendererFunction);
+    Controls = createMockComponent('Controls', true);
+    __set__('Controls', Controls);
 
-    Controls = createMockComponent('Controls');
+    Socket = createMockComponent('Socket', true);
+    __set__('Socket', Socket);
+
     Diagram = createMockComponent('Diagram');
 
-    createDiagramControlsIntegrator = sinon.stub().returns({Controls, Diagram});
-    __set__('createDiagramControlsIntegrator', createDiagramControlsIntegrator);
+    createDiagram = sinon.stub().returns(Diagram);
+    __set__('createDiagram', createDiagram);
+
+    AnalyticsDiagram = createMockComponent('AnalyticsDiagram');
+    AnalyticsDiagram.getViewer = sinon.spy();
+
+    AnalysisSelection = createMockComponent('AnalysisSelection');
+
+    createAnalyticsComponents = sinon.stub().returns({AnalyticsDiagram, AnalysisSelection});
+    __set__('createAnalyticsComponents', createAnalyticsComponents);
 
     Statistics = createMockComponent('Statistics');
     __set__('Statistics', Statistics);
@@ -94,13 +105,15 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('ProcessInstanceCount');
     __ResetDependency__('createHeatmapDiagram');
     __ResetDependency__('createHeatmapRendererFunction');
-    __ResetDependency__('createCreateAnalyticsRendererFunction');
-    __ResetDependency__('createDiagramControlsIntegrator');
+    __ResetDependency__('createAnalyticsComponents');
     __ResetDependency__('loadData');
     __ResetDependency__('resetStatisticData');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('isViewSelected');
     __ResetDependency__('getDefinitionId');
+    __ResetDependency__('Controls');
+    __ResetDependency__('createDiagram');
+    __ResetDependency__('Socket');
   });
 
   it('should load diagram xml on startup', () => {
@@ -207,11 +220,21 @@ describe('<ProcessDisplay>', () => {
     selectedView = 'branch_analysis';
     update(state);
 
-    expect(node.textContent).to.contain('Diagram');
-    expect(Diagram.appliedWith({
-      selector: 'diagram',
-      createOverlaysRenderer: createAnalyticsRenderer
+    expect(node.textContent).to.contain('AnalyticsDiagram');
+    expect(AnalyticsDiagram.appliedWith({
+      selector: 'diagram'
     })).to.eql(true);
+  });
+
+  it('should display a branch analysis controls when the branch analysis view mode is selected', () => {
+    Diagram.reset();
+
+    selectedView = 'branch_analysis';
+    update(state);
+
+    expect(node).to.contain.text('End Event');
+    expect(node).to.contain.text('Gateway');
+    expect(node).to.contain.text('AnalysisSelection');
   });
 
   it('should display a no data indicator if the heatmap data contains no process instances', () => {

@@ -1,7 +1,9 @@
 import {expect} from 'chai';
-import {toggleEndEvent, unsetEndEvent, toggleGateway, unsetGateway, leaveGatewayAnalysisMode,
-        addBranchOverlay, BRANCH_OVERLAY, isValidElement,
-        __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
+import {
+  toggleEndEvent, unsetElement, toggleGateway, leaveGatewayAnalysisMode,
+  addBranchOverlay, BRANCH_OVERLAY, isValidElement,
+  addHighlight, removeHighlights, __set__, __ResetDependency__
+} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
 describe('Analytics service', () => {
@@ -105,7 +107,7 @@ describe('Analytics service', () => {
     toggleEndEvent(element);
 
     expect(dispatchAction.calledWith(TOGGLE_ELEMENT)).to.eql(true);
-    expect(createToggleElementAction.calledWith('element', 'endEvent')).to.eql(true);
+    expect(createToggleElementAction.calledWith('element', 'EndEvent')).to.eql(true);
   });
 
   it('should toggle the gateway', () => {
@@ -114,29 +116,26 @@ describe('Analytics service', () => {
     toggleGateway(element);
 
     expect(dispatchAction.calledWith(TOGGLE_ELEMENT)).to.eql(true);
-    expect(createToggleElementAction.calledWith('element', 'gateway')).to.eql(true);
+    expect(createToggleElementAction.calledWith('element', 'Gateway')).to.eql(true);
   });
 
-  it('should unset the end event', () => {
-    unsetEndEvent();
+  describe('unsetElement', () => {
+    it('should unset the element type', () => {
+      const type = 'some-type';
 
-    expect(dispatchAction.calledWith(UNSET_ELEMENT)).to.eql(true);
-    expect(createUnsetElementAction.calledWith('endEvent')).to.eql(true);
-  });
+      unsetElement(type);
 
-  it('should unset the gateway', () => {
-    unsetGateway();
-
-    expect(dispatchAction.calledWith(UNSET_ELEMENT)).to.eql(true);
-    expect(createUnsetElementAction.calledWith('gateway')).to.eql(true);
+      expect(dispatchAction.calledWith(UNSET_ELEMENT)).to.eql(true);
+      expect(createUnsetElementAction.calledWith(type)).to.eql(true);
+    });
   });
 
   it('should unset the gateway and end event when leaving the gateway analysis mode', () => {
     leaveGatewayAnalysisMode();
 
     expect(dispatchAction.calledTwice).to.eql(true);
-    expect(createUnsetElementAction.calledWith('endEvent')).to.eql(true);
-    expect(createUnsetElementAction.calledWith('gateway')).to.eql(true);
+    expect(createUnsetElementAction.calledWith('EndEvent')).to.eql(true);
+    expect(createUnsetElementAction.calledWith('Gateway')).to.eql(true);
   });
 
   describe('hover overlays', () => {
@@ -246,6 +245,51 @@ describe('Analytics service', () => {
 
     it('should not be valid for gateways with only one outgoing sequence flow', () => {
       expect(isValidElement(gatewayOneOutgoing, 'Gateway')).to.be.false;
+    });
+  });
+
+  describe('addHighlight', () => {
+    const ADD_HIGHLIGHT = 'ADD_HIGHLIGHT';
+    let createAddHighlightAction;
+
+    beforeEach(() => {
+      createAddHighlightAction = sinon.stub().returns(ADD_HIGHLIGHT);
+      __set__('createAddHighlightAction', createAddHighlightAction);
+    });
+
+    afterEach(() => {
+      __ResetDependency__('createAddHighlightAction');
+    });
+
+    it('should dispatch add highlight action', () => {
+      const elementType = 'ty1';
+      const elementId = 'dd';
+
+      addHighlight(elementType, elementId);
+
+      expect(createAddHighlightAction.calledWith(elementType, elementId)).to.eql(true);
+      expect(dispatchAction.calledWith(ADD_HIGHLIGHT)).to.eql(true);
+    });
+  });
+
+  describe('removeHighlights', () => {
+    const REMOVE_HIGHLIGHTS = 'REMOVE_HIGHLIGHTS';
+    let createRemoveHighlightsAction;
+
+    beforeEach(() => {
+      createRemoveHighlightsAction = sinon.stub().returns(REMOVE_HIGHLIGHTS);
+      __set__('createRemoveHighlightsAction', createRemoveHighlightsAction);
+    });
+
+    afterEach(() => {
+      __ResetDependency__('createRemoveHighlightsAction');
+    });
+
+    it('should dispatch remove highlights action', () => {
+      removeHighlights();
+
+      expect(createRemoveHighlightsAction.called).to.eql(true);
+      expect(dispatchAction.calledWith(REMOVE_HIGHLIGHTS)).to.eql(true);
     });
   });
 });

@@ -1,11 +1,10 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {jsx} from 'view-utils';
+import {jsx, Socket} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
-import {createControls, __set__, __ResetDependency__} from 'main/processDisplay/controls/Controls';
+import {Controls, __set__, __ResetDependency__} from 'main/processDisplay/controls/Controls';
 
 describe('<Controls>', () => {
-  let Controls;
   let Filter;
   let View;
   let AnalysisSelection;
@@ -34,9 +33,14 @@ describe('<Controls>', () => {
     onCriteriaChanged = sinon.spy();
     getProcessDefinition = sinon.spy();
 
-    Controls = createControls();
-
-    ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} getProcessDefinition={getProcessDefinition} />));
+    ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} getProcessDefinition={getProcessDefinition}>
+      <Socket name="head">
+        additional head
+      </Socket>
+      <Socket name="body">
+        additional body
+      </Socket>
+    </Controls>));
   });
 
   afterEach(() => {
@@ -45,6 +49,11 @@ describe('<Controls>', () => {
     __ResetDependency__('AnalysisSelection');
     __ResetDependency__('getView');
     __ResetDependency__('getFilter');
+  });
+
+  it('should display additional head and body', () => {
+    expect(node).to.contain.text('additional head');
+    expect(node).to.contain.text('additional body');
   });
 
   it('should call the change callback initially', () => {
@@ -59,30 +68,6 @@ describe('<Controls>', () => {
 
   it('should display View', () => {
     expect(node).to.contain.text(View.text);
-  });
-
-  it('should not display Analysis selection by default', () => {
-    expect(node).to.not.contain.text(AnalysisSelection.text);
-  });
-
-  describe('Branch Analysis View', () => {
-    let state;
-
-    beforeEach(() => {
-      state = {
-        controls: {
-          view: 'branch_analysis'
-        },
-        display: {
-          selection: {}
-        }
-      };
-      update(state);
-    });
-
-    it('should display the analysis selection', () => {
-      expect(node).to.not.contain.text(AnalysisSelection.text);
-    });
   });
 
   it('should pass getDefinitionId function to Filter component', () => {

@@ -2,24 +2,29 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {AnalysisInput} from 'main/processDisplay/controls/analysisSelection/AnalysisInput';
+import {AnalysisInput, __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/AnalysisInput';
 
 describe('<AnalysisInput>', () => {
   let node;
   let update;
   let state;
+  let unsetElement;
+  let addHighlight;
+  let removeHighlights;
 
-  let integrator;
   const type = 'INPUT_TYPE';
   const label = 'INPUT_LABEL';
   const name = 'SELECTION_NAME';
 
   beforeEach(() => {
-    integrator = {
-      unset: sinon.spy(),
-      hover: sinon.spy(),
-      unhover: sinon.spy()
-    };
+    unsetElement = sinon.spy();
+    __set__('unsetElement', unsetElement);
+
+    addHighlight = sinon.spy();
+    __set__('addHighlight', addHighlight);
+
+    removeHighlights = sinon.spy();
+    __set__('removeHighlights', removeHighlights);
 
     state = {
       type,
@@ -27,7 +32,13 @@ describe('<AnalysisInput>', () => {
       label
     };
 
-    ({node, update} = mountTemplate(<AnalysisInput integrator={integrator} />));
+    ({node, update} = mountTemplate(<AnalysisInput />));
+  });
+
+  afterEach(() => {
+    __ResetDependency__('unsetElement');
+    __ResetDependency__('addHighlight');
+    __ResetDependency__('removeHighlights');
   });
 
   it('should display a list item', () => {
@@ -47,7 +58,7 @@ describe('<AnalysisInput>', () => {
     expect(node.textContent).to.contain(name);
   });
 
-  it('should unset the displayed selection through the integrator', () => {
+  it('should unset the displayed selection', () => {
     update(state);
     triggerEvent({
       node,
@@ -55,10 +66,10 @@ describe('<AnalysisInput>', () => {
       eventName: 'click'
     });
 
-    expect(integrator.unset.calledWith(type)).to.eql(true);
+    expect(unsetElement.calledWith(type)).to.eql(true);
   });
 
-  it('should call the hover handler of the integrator when hovering over the field', () => {
+  it('should call the addHighlight when hovering over the field', () => {
     update(state);
     triggerEvent({
       node,
@@ -66,10 +77,10 @@ describe('<AnalysisInput>', () => {
       eventName: 'mouseover'
     });
 
-    expect(integrator.hover.calledWith(type, true)).to.eql(true);
+    expect(addHighlight.calledWith(type)).to.eql(true);
   });
 
-  it('should call the unhover handler of the integrator when no longer hovering over the field', () => {
+  it('should call the removeHighlights when no longer hovering over the field', () => {
     update(state);
     triggerEvent({
       node,
@@ -77,6 +88,6 @@ describe('<AnalysisInput>', () => {
       eventName: 'mouseout'
     });
 
-    expect(integrator.unhover.calledWith(type, true)).to.eql(true);
+    expect(removeHighlights.called).to.eql(true);
   });
 });

@@ -1,28 +1,32 @@
 import {dispatchAction} from 'view-utils';
 import {isBpmnType} from 'utils';
-import {createUnsetElementAction, createToggleElementAction} from './reducer';
+import {createUnsetElementAction, createToggleElementAction, createRemoveHighlightsAction, createAddHighlightAction} from './reducer';
 
 export const BRANCH_OVERLAY = 'BRANCH_OVERLAY';
 
-export function toggleEndEvent({id}) {
-  dispatchAction(createToggleElementAction(id, 'endEvent'));
+export function addHighlight(elementType, elementId) {
+  dispatchAction(createAddHighlightAction(elementType, elementId));
 }
 
-export function unsetEndEvent() {
-  dispatchAction(createUnsetElementAction('endEvent'));
+export function removeHighlights() {
+  dispatchAction(createRemoveHighlightsAction());
+}
+
+export function toggleEndEvent({id}) {
+  dispatchAction(createToggleElementAction(id, 'EndEvent'));
+}
+
+export function unsetElement(type) {
+  dispatchAction(createUnsetElementAction(type));
 }
 
 export function toggleGateway({id}) {
-  dispatchAction(createToggleElementAction(id, 'gateway'));
-}
-
-export function unsetGateway() {
-  dispatchAction(createUnsetElementAction('gateway'));
+  dispatchAction(createToggleElementAction(id, 'Gateway'));
 }
 
 export function leaveGatewayAnalysisMode() {
-  unsetGateway();
-  unsetEndEvent();
+  unsetElement('Gateway');
+  unsetElement('EndEvent');
 }
 
 export function isValidElement(element, type) {
@@ -119,4 +123,17 @@ export function addBranchOverlay(viewer, element, {flowNodes, piCount}) {
     html: overlayHtml
   });
   // });
+}
+
+export function getNameForElement(Diagram, id) {
+  const viewer = Diagram.getViewer();
+
+  if (id && viewer) {
+    return viewer
+    .get('elementRegistry')
+    .get(id)
+    .businessObject
+    .name
+    || id;
+  }
 }

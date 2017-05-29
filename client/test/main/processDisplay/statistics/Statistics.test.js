@@ -20,7 +20,9 @@ describe('<Statistics>', () => {
   beforeEach(() => {
     unopenedState = {
       diagram: {
-        selection: {}
+        analytics: {
+          selection: {}
+        }
       },
       statistics: {
         correlation: {}
@@ -29,9 +31,11 @@ describe('<Statistics>', () => {
 
     openedState = {
       diagram: {
-        selection: {
-          endEvent: 'a',
-          gateway: 'b'
+        analytics: {
+          selection: {
+            EndEvent: 'a',
+            Gateway: 'b'
+          }
         }
       },
       statistics: {
@@ -89,7 +93,7 @@ describe('<Statistics>', () => {
 
     const container = node.querySelector('.statisticsContainer');
 
-    expect(Array.from(container.classList)).to.include('open');
+    expect(container).to.have.class('open');
   });
 
   it('should leave gateway analysis mode when close button is clicked', () => {

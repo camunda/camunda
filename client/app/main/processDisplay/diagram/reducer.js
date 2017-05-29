@@ -5,7 +5,7 @@ import {addLoading, createLoadingActionFunction, createResultActionFunction, cre
 export const reducer = addLoading((state = {}, action) => {
   return {
     ...state,
-    selection: analyticsReducer(state.selection, action),
+    analytics: analyticsReducer(state.analytics, action),
     targetValue: targetValueReducer(state.targetValue, action)
   };
 }, 'bpmnXml', 'heatmap', 'targetValue');

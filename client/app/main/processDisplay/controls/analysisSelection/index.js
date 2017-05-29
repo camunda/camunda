@@ -1,1 +1,0 @@
-export {createAnalysisSelection} from './AnalysisSelection';

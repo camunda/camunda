@@ -9,6 +9,8 @@ export const reducer = addLoading((state = {}, action) => {
       height: action.height
     };
   }
+
+  return state;
 }, 'correlation');
 
 export function createSetHeightAction(height) {

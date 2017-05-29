@@ -1,20 +1,36 @@
-import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
+import {jsx, withSelector, Match, Case, Default, Socket} from 'view-utils';
+import {createHeatmapRendererFunction, createAnalyticsComponents, getInstanceCount, TargetValueDisplay} from './diagram';
 import {Statistics, resetStatisticData} from './statistics';
 import {isLoading, isLoaded, createDelayedTimePrecisionElement} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
-import {isViewSelected} from './controls';
-import {LoadingIndicator} from 'widgets';
-import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
+import {isViewSelected, Controls} from './controls';
+import {LoadingIndicator, createDiagram} from 'widgets';
 import {ProcessInstanceCount} from './ProcessInstanceCount';
 
 export const ProcessDisplay = withSelector(Process);
 
 function Process() {
-  const {Diagram, Controls, integrator} = createDiagramControlsIntegrator();
+  const Diagram = createDiagram();
+  const {AnalyticsDiagram, AnalysisSelection} = createAnalyticsComponents();
 
   const template = <div className="process-display">
-    <Controls selector={createControlsState} onCriteriaChanged={handleCriteriaChange} getProcessDefinition={getDefinitionId} />
+    <Controls selector={createControlsState} onCriteriaChanged={handleCriteriaChange} getProcessDefinition={getDefinitionId} >
+      <Socket name="head">
+        <Match>
+          <Case predicate={shouldDisplay('branch_analysis')}>
+            <td><label>End Event</label></td>
+            <td><label>Gateway</label></td>
+          </Case>
+        </Match>
+      </Socket>
+      <Socket name="body">
+        <Match>
+          <Case predicate={shouldDisplay('branch_analysis')}>
+            <AnalysisSelection selector="analytics" />
+          </Case>
+        </Match>
+      </Socket>
+    </Controls>
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
@@ -34,7 +50,7 @@ function Process() {
             }))} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
+            <AnalyticsDiagram selector="diagram" />
           </Case>
           <Case predicate={shouldDisplay('target_value')}>
             <TargetValueDisplay selector="diagram" getProcessDefinition={getDefinitionId} Diagram={Diagram} />
@@ -50,7 +66,7 @@ function Process() {
         </Match>
       </LoadingIndicator>
     </div>
-    <Statistics getBpmnViewer={Diagram.getViewer} />
+    <Statistics getBpmnViewer={AnalyticsDiagram.getViewer} />
   </div>;
 
   function handleCriteriaChange(newCriteria) {
@@ -73,29 +89,10 @@ function Process() {
   }
 
   function createControlsState({controls, diagram}) {
-    const selection = {};
-
-    Object.keys(diagram.selection).forEach(key => {
-      selection[key] = getName(diagram.selection[key]);
-    });
-
     return {
       ...controls,
-      selection
+      analytics: diagram.analytics
     };
-  }
-
-  function getName(id) {
-    const viewer = Diagram.getViewer();
-
-    if (id && viewer) {
-      return viewer
-      .get('elementRegistry')
-      .get(id)
-      .businessObject
-      .name
-      || id;
-    }
   }
 
   function isLoadingSomething({diagram: {bpmnXml, heatmap, targetValue}}) {

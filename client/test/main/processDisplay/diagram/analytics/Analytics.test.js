@@ -21,7 +21,6 @@ describe('<Analytics>', () => {
   let initialState;
   let gatewayAnalysisState;
   let isValidElement;
-  let integrator;
 
   beforeEach(() => {
     heatmapData = {
@@ -55,15 +54,21 @@ describe('<Analytics>', () => {
       heatmap: {
         data: heatmapData
       },
-      selection: {}
+      analytics: {
+        selection: {},
+        hover: {}
+      }
     }, diagramRendered: true};
 
     gatewayAnalysisState = {state: {
       heatmap: {
         data: heatmapData
       },
-      selection: {
-        endEvent: 'act1'
+      analytics: {
+        selection: {
+          EndEvent: 'act1'
+        },
+        hover: {}
       }
     }, diagramRendered: true};
 
@@ -103,6 +108,9 @@ describe('<Analytics>', () => {
       removeMarker: sinon.spy(),
       forEach: sinon.stub(),
       clear: sinon.spy(),
+      getAll: sinon.stub().returnsThis(),
+      some: sinon.stub(),
+      hasMarker: sinon.stub(),
       getGraphics: sinon.stub().returns({
         querySelector: sinon.stub().returns({
           setAttribute: sinon.spy()
@@ -110,12 +118,7 @@ describe('<Analytics>', () => {
       })
     };
 
-    integrator = {
-      unhover: sinon.spy(),
-      hover: sinon.spy()
-    };
-
-    update = createCreateAnalyticsRendererFunction(integrator)({viewer});
+    update = createCreateAnalyticsRendererFunction()({viewer});
   });
 
   afterEach(() => {
@@ -131,13 +134,6 @@ describe('<Analytics>', () => {
     __ResetDependency__('resetStatisticData');
   });
 
-  it('should remove overlays when hovering over a new element', () => {
-    update(initialState);
-    viewer.on.firstCall.args[1]({element: diagramElement});
-
-    expect(removeOverlays.calledWith(viewer)).to.eql(true);
-  });
-
   it('should add overlay for hovered element', () => {
     update(initialState);
     viewer.on.firstCall.args[1]({element: diagramElement});
@@ -150,28 +146,7 @@ describe('<Analytics>', () => {
 
     viewer.on.firstCall.args[1]({element: diagramElement});
 
-    expect(addBranchOverlay.calledWith(viewer, gatewayAnalysisState.state.selection.endEvent)).to.eql(true);
-  });
-
-  describe('integrator', () => {
-    beforeEach(() => {
-      update(initialState);
-    });
-
-    it('should unhover all previous hovers on hover', () => {
-      viewer.on.firstCall.args[1]({element: diagramElement});
-      expect(integrator.unhover.calledTwice).to.eql(true);
-    });
-
-    it('should call the hover with the appropriate type (EndEvent)', () => {
-      viewer.on.firstCall.args[1]({element: endEvent});
-      expect(integrator.hover.calledWith('EndEvent')).to.eql(true);
-    });
-
-    it('should call the hover with the appropriate type (Gateway)', () => {
-      viewer.on.firstCall.args[1]({element: gateway});
-      expect(integrator.hover.calledWith('Gateway')).to.eql(true);
-    });
+    expect(addBranchOverlay.calledWith(viewer, gatewayAnalysisState.state.analytics.selection.EndEvent)).to.eql(true);
   });
 
   it('should do nothing when a non end event is clicked', () => {
@@ -225,15 +200,63 @@ describe('<Analytics>', () => {
   });
 
   it('should highlight the selected elements with a different class', () => {
-    gatewayAnalysisState.state.selection.gateway = 'act3';
+    const elements = [
+      {id: 'act1'},
+      {id: 'act3'}
+    ];
+
+    gatewayAnalysisState.state.analytics.selection.Gateway = 'act3';
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
     update(gatewayAnalysisState);
 
-    expect(viewer.addMarker.calledWith('act3', 'highlight_selected')).to.eql(true);
-    expect(viewer.addMarker.calledWith('act1', 'highlight_selected')).to.eql(true);
+    expect(viewer.addMarker.calledWith(elements[0], 'highlight_selected')).to.eql(true);
+    expect(viewer.addMarker.calledWith(elements[1], 'highlight_selected')).to.eql(true);
+  });
+
+  it('should highlight the hovered elements with a different class', () => {
+    const elements = [
+      {
+        id: 'act1'
+      },
+      {
+        id: 'act2',
+        type: 'Gateway'
+      },
+      {
+        id: 'act3',
+        type: 'Gateway'
+      }
+    ];
+
+    isValidElement = ({type}, expectedType) => type === expectedType;
+    __set__('isValidElement', isValidElement);
+
+    gatewayAnalysisState.state.analytics.hover = {
+      Gateway: {
+        elementType: 'Gateway'
+      }
+    };
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
+    update(gatewayAnalysisState);
+
+    expect(viewer.addMarker.calledWith(elements[1], 'hover-highlight')).to.eql(true);
+    expect(viewer.addMarker.calledWith(elements[2], 'hover-highlight')).to.eql(true);
   });
 
   it('should show overlays if an element is selected', () => {
-    gatewayAnalysisState.state.selection.endEvent = 'act1';
+    const elements = [
+      {
+        id: 'act1'
+      }
+    ];
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
+    gatewayAnalysisState.state.analytics.selection.EndEvent = 'act1';
     update(gatewayAnalysisState);
 
     expect(addBranchOverlay.calledOnce).to.eql(true);

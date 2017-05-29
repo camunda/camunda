@@ -1,7 +1,8 @@
 import {jsx} from 'view-utils';
+import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
-import {createAnalysisSelection, __set__, __ResetDependency__} from 'main/processDisplay/controls/analysisSelection/AnalysisSelection';
+import {createAnalysisSelection, __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/AnalysisSelection';
 
 describe('<AnalysisSelection>', () => {
   let node;
@@ -10,19 +11,25 @@ describe('<AnalysisSelection>', () => {
 
   let AnalysisSelection;
   let AnalysisInput;
-
-  const integrator = 'INTEGRATOR';
+  let getNameForElement;
 
   beforeEach(() => {
     state = {
-      gateway: 'SomeGateway',
-      endEvent: 'SomeEndEvent'
+      selection: {
+        Gateway: 'SomeGateway',
+        EndEvent: 'SomeEndEvent'
+      },
+      hover: {
+        EndEvent: true
+      }
     };
 
     AnalysisInput = createMockComponent('AnalysisInput', true);
     __set__('AnalysisInput', AnalysisInput);
 
-    AnalysisSelection = createAnalysisSelection(integrator);
+    getNameForElement = sinon.stub().returns('SomeEndEvent');
+
+    AnalysisSelection = createAnalysisSelection(getNameForElement);
 
     ({node, update} = mountTemplate(<AnalysisSelection />));
     update(state);
@@ -36,20 +43,12 @@ describe('<AnalysisSelection>', () => {
     expect(node.textContent).to.eql('AnalysisInputAnalysisInput');
   });
 
-  it('should expose the analysis input nodes', () => {
-    expect(AnalysisSelection.nodes.EndEvent).to.exist;
-    expect(AnalysisSelection.nodes.Gateway).to.exist;
-  });
-
   it('should give a type, a label and the selection to the input', () => {
-    const childState = AnalysisInput.calls[0][0].selector(state);
+    const childState = AnalysisInput.getAttribute('selector')(state);
 
     expect(childState.type).to.eql('EndEvent');
-    expect(childState.label).to.eql('End Event');
+    expect(childState.label.trim()).to.eql('End Event');
     expect(childState.name).to.eql('SomeEndEvent');
-  });
-
-  it('should pass the integrator to AnalysisInput', () => {
-    expect(AnalysisInput.calls[0][0].integrator).to.eql(integrator);
+    expect(childState.hovered).to.eql(true);
   });
 });
