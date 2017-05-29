@@ -117,9 +117,16 @@ public class MappingProcessor
         final MsgPackTree targetTree = documentIndexer.index();
 
         documentExtractor.wrap(targetTree, sourceDocument);
-        final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
 
-        return writeResult(mergedDocumentTree);
+        try
+        {
+            final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
+            return writeResult(mergedDocumentTree);
+        }
+        finally
+        {
+            clear();
+        }
     }
 
     /**
@@ -136,9 +143,15 @@ public class MappingProcessor
         ensureValidParameter(sourceDocument, mappings);
 
         documentExtractor.wrap(sourceDocument);
-        final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
-
-        return writeResult(extractedDocumentTree);
+        try
+        {
+            final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
+            return writeResult(extractedDocumentTree);
+        }
+        finally
+        {
+            clear();
+        }
     }
 
     /**
@@ -152,7 +165,6 @@ public class MappingProcessor
         treeWriter.wrap(resultingTree);
         final int resultLen = treeWriter.write();
 
-        clear();
         return resultLen;
     }
 
