@@ -32,12 +32,10 @@ export function createVariableModal(createCallback, getProcessDefinition) {
                 <Reference name="variableDropdown" />
                 <OnEvent event="change" listener={changeVariable} />
                 <option disabled="disabled">Please Select Variable</option>
-                <Scope selector="unambiguousNames">
+                <Scope selector={getUnambiguosNames}>
                   <List>
                     <option>
-                      <Scope selector={(name) => {return {name}; }}>
-                        <Text property="name" />
-                      </Scope>
+                      <Text />
                     </option>
                   </List>
                 </Scope>
@@ -77,6 +75,10 @@ export function createVariableModal(createCallback, getProcessDefinition) {
           loadVariables(definition);
         }
       }];
+
+      function getUnambiguosNames({variables: {data}}) {
+        return data && data.map(variable => variable.unambiguousName);
+      }
 
       function handleFormSubmit({event, state}) {
         event.preventDefault();

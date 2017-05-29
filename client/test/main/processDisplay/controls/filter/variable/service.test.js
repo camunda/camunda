@@ -12,7 +12,6 @@ describe('Variable Filter service', () => {
   const START_LOADING_ACTION = 'START_LOADING_ACTION';
   const LOADING_RESULT_ACTION = 'LOADING_RESULT_ACTION';
   const LOADING_ERROR_ACTION = 'LOADING_ERROR_ACTION';
-  const STORE_UNAMBIGOUS_NAMES = 'STORE_UNAMBIGOUS_NAMES';
 
   let variablesData;
 
@@ -26,7 +25,6 @@ describe('Variable Filter service', () => {
   let createSetOperatorAction;
   let createSetValueAction;
   let createCreateVariableFilterAction;
-  let createStoreUnambiguousVariableNamesAction;
   let addNotification;
 
   setupPromiseMocking();
@@ -70,9 +68,6 @@ describe('Variable Filter service', () => {
 
     createCreateVariableFilterAction = sinon.stub().returns(CREATE_FILTER_ACTION);
     __set__('createCreateVariableFilterAction', createCreateVariableFilterAction);
-
-    createStoreUnambiguousVariableNamesAction = sinon.stub().returns(STORE_UNAMBIGOUS_NAMES);
-    __set__('createStoreUnambiguousVariableNamesAction', createStoreUnambiguousVariableNamesAction);
   });
 
   afterEach(() => {
@@ -87,7 +82,6 @@ describe('Variable Filter service', () => {
     __ResetDependency__('createSetOperatorAction');
     __ResetDependency__('createSetValueAction');
     __ResetDependency__('createCreateVariableFilterAction');
-    __ResetDependency__('createStoreUnambiguousVariableNamesAction');
   });
 
   describe('loadVariables', () => {
@@ -107,13 +101,16 @@ describe('Variable Filter service', () => {
       expect(get.getCall(0).args[0]).to.include(definition);
     });
 
-    it('should dispatch an action with the returned result', () => {
+    it('should dispatch an action with processed result', () => {
       loadVariables(definition);
 
       Promise.runAll();
 
-      expect(createLoadingVariablesResultAction.calledWith(variablesData)).to.eql(true);
+      const processedResult = createLoadingVariablesResultAction.firstCall.args[0];
+
       expect(dispatchAction.calledWith(LOADING_RESULT_ACTION)).to.eql(true);
+      expect(processedResult[0].name).to.eql(variablesData[0].name);
+      expect(processedResult[1].name).to.eql(variablesData[1].name);
     });
 
     it('should sort the variables by name', () => {
@@ -123,14 +120,6 @@ describe('Variable Filter service', () => {
 
       expect(variablesData[0].name).to.eql('a');
       expect(variablesData[1].name).to.eql('b');
-    });
-
-    it('should dispatch an store unambiguous names action', () => {
-      loadVariables(definition);
-
-      Promise.runAll();
-
-      expect(dispatchAction.calledWith(STORE_UNAMBIGOUS_NAMES)).to.eql(true);
     });
 
     it('should make variable names unambiguous', () => {
@@ -146,10 +135,10 @@ describe('Variable Filter service', () => {
 
       Promise.runAll();
 
-      const calculatedNames = createStoreUnambiguousVariableNamesAction.firstCall.args[0];
+      const processedResult = createLoadingVariablesResultAction.firstCall.args[0];
 
-      expect(calculatedNames).to.include('a (Boolean)');
-      expect(calculatedNames).to.include('a (String)');
+      expect(processedResult[0].unambiguousName).to.eql('a (Boolean)');
+      expect(processedResult[1].unambiguousName).to.eql('a (String)');
     });
 
     it('should show a notification in case anything goes wrong', () => {

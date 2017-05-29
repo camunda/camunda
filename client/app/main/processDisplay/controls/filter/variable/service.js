@@ -1,8 +1,7 @@
 import {dispatchAction} from 'view-utils';
 import {get} from 'http';
 import {createLoadingVariablesAction, createLoadingVariablesResultAction, createLoadingVariablesErrorAction,
-        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction,
-        createStoreUnambiguousVariableNamesAction} from './reducer';
+        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction} from './reducer';
 import {createCreateVariableFilterAction} from './routeReducer';
 import {addNotification} from 'notifications';
 import {dispatch} from '../store';
@@ -14,18 +13,24 @@ export function loadVariables(definition) {
     .then(response => response.json())
     .then(result => result.sort((a, b) => a.name < b.name ? -1 : 1))
     .then(result => {
-      dispatchAction(createLoadingVariablesResultAction(result));
-
       const variableNames = result.map(variable => variable.name);
-      const unambiguousNames = result.map(({name, type}) => {
-        if (isUnique(name, variableNames)) {
-          return name;
+
+      return result.map(variable => {
+        if (isUnique(variable.name, variableNames)) {
+          return {
+            ...variable,
+            unambiguousName: variable.name
+          };
         } else {
-          return name + ' (' + type + ')';
+          return {
+            ...variable,
+            unambiguousName: variable.name + ' (' + variable.type + ')'
+          };
         }
       });
-
-      dispatchAction(createStoreUnambiguousVariableNamesAction(unambiguousNames));
+    })
+    .then(result => {
+      dispatchAction(createLoadingVariablesResultAction(result));
     })
     .catch(err => {
       addNotification({

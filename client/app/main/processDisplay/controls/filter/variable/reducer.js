@@ -4,15 +4,8 @@ import {CHANGE_ROUTE_ACTION} from 'router';
 export const SELECT_VARIABLE_IDX = 'SELECT_VARIABLE_IDX';
 export const SET_OPERATOR = 'SET_OPERATOR';
 export const SET_VALUE = 'SET_VALUE';
-export const STORE_UNAMBIGOUS_NAMES = 'STORE_UNAMBIGOUS_NAMES';
 
 export const reducer = addLoading((state = {operator: '='}, action) => {
-  if (action.type === STORE_UNAMBIGOUS_NAMES) {
-    return {
-      ...state,
-      unambiguousNames: action.names
-    };
-  }
   if (action.type === SELECT_VARIABLE_IDX) {
     return {
       ...state,
@@ -62,12 +55,5 @@ export function createSetValueAction(value) {
   return {
     type: SET_VALUE,
     value
-  };
-}
-
-export function createStoreUnambiguousVariableNamesAction(names) {
-  return {
-    type: STORE_UNAMBIGOUS_NAMES,
-    names
   };
 }
