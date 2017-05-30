@@ -31,6 +31,7 @@ import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -71,6 +72,7 @@ public class ControlMessageHandlerManager implements Agent
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     protected final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
+    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
 
     protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(new byte[1024 * 32]);
@@ -226,6 +228,9 @@ public class ControlMessageHandlerManager implements Agent
                 .reqRequestId(requestHeaderDescriptor.requestId());
 
             offset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+            messageHeaderDecoder.wrap(requestBuffer, 0);
+            offset += messageHeaderDecoder.encodedLength();
 
             requestDecoder.wrap(buffer, offset, requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 

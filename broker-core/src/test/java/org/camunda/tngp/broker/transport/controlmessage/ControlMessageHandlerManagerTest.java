@@ -12,15 +12,12 @@
  */
 package org.camunda.tngp.broker.transport.controlmessage;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.test.util.BufferAssert.*;
+import static org.camunda.tngp.util.StringUtil.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -38,6 +35,7 @@ import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.test.util.FluentMock;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.time.ClockUtil;
@@ -62,6 +60,7 @@ public class ControlMessageHandlerManagerTest
     private final UnsafeBuffer requestWriteBuffer = new UnsafeBuffer(new byte[1024]);
 
     private final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
+    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
 
     @Mock
@@ -316,6 +315,15 @@ public class ControlMessageHandlerManagerTest
                 .requestId(REQ_REQUEST_ID);
 
             offset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+            messageHeaderEncoder
+                .wrap(requestWriteBuffer, offset)
+                .blockLength(requestEncoder.sbeBlockLength())
+                .templateId(requestEncoder.sbeTemplateId())
+                .schemaId(requestEncoder.sbeSchemaId())
+                .version(requestEncoder.sbeSchemaVersion());
+
+            offset += messageHeaderEncoder.encodedLength();
 
             requestEncoder
                 .wrap(requestWriteBuffer, offset)

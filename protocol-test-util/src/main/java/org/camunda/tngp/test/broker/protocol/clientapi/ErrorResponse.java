@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.ErrorResponseDecoder;
@@ -20,6 +21,7 @@ public class ErrorResponse implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
+    protected DirectBuffer failedRequestBuffer = new UnsafeBuffer(0, 0);
     protected Map<String, Object> failedRequest;
     protected String errorData;
 
@@ -40,7 +42,25 @@ public class ErrorResponse implements BufferReader
 
     public Map<String, Object> getFailedRequest()
     {
+        if (failedRequest == null)
+        {
+            try (InputStream is = new DirectBufferInputStream(failedRequestBuffer))
+            {
+                failedRequest = msgPackHelper.readMsgPack(is);
+            }
+            catch (final IOException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+
+        }
+
         return failedRequest;
+    }
+
+    public DirectBuffer getFailedRequestBuffer()
+    {
+        return failedRequestBuffer;
     }
 
     @Override
@@ -64,14 +84,8 @@ public class ErrorResponse implements BufferReader
 
         final int failedRequestLength = bodyDecoder.failedRequestLength();
         final int failedRequestOffset = bodyDecoder.limit() + ErrorResponseDecoder.failedRequestHeaderLength();
-
-        try (final InputStream is = new DirectBufferInputStream(responseBuffer, failedRequestOffset, failedRequestLength))
-        {
-            failedRequest = msgPackHelper.readMsgPack(is);
-        }
-        catch (IOException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
+        failedRequestBuffer.wrap(responseBuffer, failedRequestOffset, failedRequestLength);
+        failedRequest = null;
     }
+
 }

@@ -1,10 +1,8 @@
 package org.camunda.tngp.broker.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_LOG_NAME;
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.logstreams.log.LogStream.*;
+import static org.camunda.tngp.test.util.BufferAssert.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,8 +17,10 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
+import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ErrorResponse;
+import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.RawMessage;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
@@ -197,10 +197,11 @@ public class TopicSubscriptionTest
     @Test
     public void shouldNotOpenSubscriptionForNonExistingTopic()
     {
+        // given
+        final ExecuteCommandRequest request = apiRule.openTopicSubscription("unknown-topic", DEFAULT_PARTITION_ID, "foo", 0);
+
         // when
-        final ErrorResponse errorResponse = apiRule
-                .openTopicSubscription("unknown-topic", DEFAULT_PARTITION_ID, "foo", 0)
-                .awaitError();
+        final ErrorResponse errorResponse = request.awaitError();
 
         // then
         final String expectedMessage = String.format(
@@ -208,16 +209,17 @@ public class TopicSubscriptionTest
 
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-        assertThat(errorResponse.getFailedRequest().get("eventType")).isEqualTo("SUBSCRIBE");
+        assertThatBuffer(errorResponse.getFailedRequestBuffer()).hasBytes(request);
     }
 
     @Test
     public void shouldNotOpenSubscriptionForNonExistingPartition()
     {
+        // given
+        final ExecuteCommandRequest request = apiRule.openTopicSubscription(DEFAULT_TOPIC_NAME, 999, "foo", 0);
+
         // when
-        final ErrorResponse errorResponse = apiRule
-            .openTopicSubscription(DEFAULT_TOPIC_NAME, 999, "foo", 0)
-            .awaitError();
+        final ErrorResponse errorResponse = request.awaitError();
 
         // then
         final String expectedMessage = String.format(
@@ -225,7 +227,7 @@ public class TopicSubscriptionTest
 
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-        assertThat(errorResponse.getFailedRequest().get("eventType")).isEqualTo("SUBSCRIBE");
+        assertThatBuffer(errorResponse.getFailedRequestBuffer()).hasBytes(request);
     }
 
     @Test
@@ -260,10 +262,10 @@ public class TopicSubscriptionTest
         final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-            .put("topicName", DEFAULT_TOPIC_NAME)
-            .put("partitionId", 999)
-            .put("subscriberKey", 0L)
-            .done()
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", 999)
+                .put("subscriberKey", 0L)
+                .done()
             .send().awaitError();
 
         // then

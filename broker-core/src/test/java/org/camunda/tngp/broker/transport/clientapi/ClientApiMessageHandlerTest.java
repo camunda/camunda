@@ -228,6 +228,10 @@ public class ClientApiMessageHandlerTest
 
         offset += ControlMessageRequestHeaderDescriptor.headerLength();
 
+        headerEncoder.wrap(sendBuffer, offset);
+
+        offset += headerEncoder.encodedLength();
+
         controlRequestDecoder.wrap(sendBuffer, offset, controlRequestDecoder.sbeBlockLength(), controlRequestDecoder.sbeSchemaVersion());
 
         final byte[] requestData = readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);

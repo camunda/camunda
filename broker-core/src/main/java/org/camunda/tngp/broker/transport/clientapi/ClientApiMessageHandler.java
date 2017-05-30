@@ -111,10 +111,6 @@ public class ClientApiMessageHandler
         messageHeaderDecoder.wrap(buffer, messageOffset);
 
         final int templateId = messageHeaderDecoder.templateId();
-
-        messageOffset += messageHeaderDecoder.encodedLength();
-        messageLength -= messageHeaderDecoder.encodedLength();
-
         final int clientVersion = messageHeaderDecoder.version();
 
         if (clientVersion > Constants.PROTOCOL_VERSION)
@@ -158,7 +154,7 @@ public class ClientApiMessageHandler
     {
         boolean isHandled = false;
 
-        executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+        executeCommandRequestDecoder.wrap(buffer, messageOffset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
         final int topicNameOffset = executeCommandRequestDecoder.limit() + topicNameHeaderLength();
         final int topicNameLength = executeCommandRequestDecoder.topicNameLength();
@@ -203,7 +199,7 @@ public class ClientApiMessageHandler
                     .metadata(eventMetadata)
                     .errorCode(ErrorCode.TOPIC_NOT_FOUND)
                     .errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", bufferAsString(topicName), partitionId)
-                    .failedRequest(buffer, eventOffset, eventLength)
+                    .failedRequest(buffer, messageOffset, messageLength)
                     .tryWriteResponseOrLogFailure();
         }
         return isHandled;
