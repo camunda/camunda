@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -10,6 +11,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
@@ -30,6 +33,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Component
 public class VariableReader {
 
+  public static final int MAX_VAR_SIZE = 10000;
   private final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
   public static final String NAMES_AGGREGATION = "names";
@@ -55,8 +59,21 @@ public class VariableReader {
         .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_ID, processDefinitionId));
 
     SearchResponse scrollResp = queryElasticsearch(query);
+    List<GetVariablesResponseDto> result = new ArrayList<>();
 
-    return variableExtractor.extractVariables(scrollResp.getAggregations());
+    do {
+      Aggregations aggregations = scrollResp.getAggregations();
+      if (aggregations != null) {
+        result.addAll(variableExtractor.extractVariables(aggregations));
+      }
+
+      scrollResp = esclient
+          .prepareSearchScroll(scrollResp.getScrollId())
+          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+          .get();
+    } while (scrollResp.getHits().getHits().length != 0);
+
+    return result;
   }
 
   private SearchResponse queryElasticsearch(QueryBuilder query) {
@@ -85,6 +102,7 @@ public class VariableReader {
       .subAggregation(
         terms(NAMES_AGGREGATION)
           .field(getNestedVariableNameFieldLabel(variableFieldLabel))
+          .size(MAX_VAR_SIZE)
           .subAggregation(
             createVariableValueAggregation(variableFieldLabel)
           )

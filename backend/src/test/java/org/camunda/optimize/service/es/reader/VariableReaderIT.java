@@ -108,28 +108,22 @@ public class VariableReaderIT {
   @Test
   public void getVariables() {
     // given
-    StringVariableDto variableDto = new StringVariableDto();
-    variableDto.setName("var1");
-    variableDto.setType("String");
-    variableDto.setValue("value1");
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.addVariableInstance(variableDto);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
-
-    variableDto.setName("var2");
-        variableDto.setValue("value2");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "2", procInst);
-
-    variableDto.setName("var3");
-        variableDto.setValue("value3");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "3", procInst);
+    for (int i = 1; i < 12; i ++) {
+      StringVariableDto variableDto = new StringVariableDto();
+      variableDto.setName("var" + i);
+      variableDto.setType("String");
+      variableDto.setValue("value" + i);
+      ProcessInstanceDto procInst = new ProcessInstanceDto();
+      procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+      procInst.addVariableInstance(variableDto);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), String.valueOf(i), procInst);
+    }
 
     // when
     List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
-    assertThat(variables.size(), is(3));
+    assertThat(variables.size(), is(11));
     assertVariableNameValueRelation(variables, "var1", "value1");
     assertVariableNameValueRelation(variables, "var2", "value2");
     assertVariableNameValueRelation(variables, "var3", "value3");
