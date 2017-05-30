@@ -129,4 +129,19 @@ public class FileUtil
             LangUtil.rethrowUnchecked(e);
         }
     }
+
+    public static String getCanonicalDirectoryPath(String directory)
+    {
+
+        String ret = directory;
+        try
+        {
+            ret = new File(directory).getCanonicalPath() + File.separator;
+        }
+        catch (Exception e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+        return ret;
+    }
 }
