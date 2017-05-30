@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.apache.http.client.entity.EntityBuilder;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
@@ -14,15 +15,19 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -182,6 +187,36 @@ public class ProcessDefinitionReaderIT {
 
     // then
     assertThat(actualXml, is(leadXml));
+  }
+
+  @Test
+  public void testGetProcessDefinitionsXml () throws IOException {
+    String leadXml = readDiagram();
+    List <String> ids = new ArrayList<>();
+    for (int i = 0; i < 102; i++) {
+      // given
+      ProcessDefinitionXmlOptimizeDto xmlDto = new ProcessDefinitionXmlOptimizeDto();
+      String id = "123" + i;
+      ids.add(id);
+      xmlDto.setId(id);
+      xmlDto.setBpmn20Xml(leadXml);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), id, xmlDto);
+    }
+
+    // when
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    Entity<List<String>> toPost = Entity.entity(ids, MediaType.APPLICATION_JSON);
+    Response response =
+        embeddedOptimizeRule.target("process-definition/xml")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .post(toPost);
+    Map<String,String> map =
+        response.readEntity(new GenericType<Map<String,String>>(){});
+
+    // then
+    assertThat(map.size(), is(102));
+
   }
 
   private String readDiagram() throws IOException {

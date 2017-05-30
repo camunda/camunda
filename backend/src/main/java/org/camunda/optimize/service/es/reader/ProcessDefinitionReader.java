@@ -149,16 +149,27 @@ public class ProcessDefinitionReader {
 
   public Map<String, String> getProcessDefinitionsXml(List<String> ids) {
     Map<String, String> result = new HashMap<>();
-    SearchResponse response = esclient.prepareSearch(
+    SearchResponse scrollResp = esclient.prepareSearch(
         configurationService.getOptimizeIndex())
         .setTypes(configurationService.getProcessDefinitionXmlType())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(QueryBuilders.termsQuery(ProcessDefinitionXmlType.ID, ids))
         .setSize(100)
         .get();
 
-    for(SearchHit hit : response.getHits()) {
-      result.put(hit.getSource().get(ProcessDefinitionXmlType.ID).toString(), hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
-    }
+    do {
+      for (SearchHit hit : scrollResp.getHits().getHits()) {
+        result.put(
+            hit.getSource().get(ProcessDefinitionXmlType.ID).toString(),
+            hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString()
+        );
+      }
+      scrollResp = esclient
+          .prepareSearchScroll(scrollResp.getScrollId())
+          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+          .get();
+    } while (scrollResp.getHits().getHits().length != 0);
+
     return result;
   }
 }
