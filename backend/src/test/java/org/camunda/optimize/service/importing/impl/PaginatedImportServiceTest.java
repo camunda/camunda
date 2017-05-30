@@ -66,6 +66,35 @@ public class PaginatedImportServiceTest {
   }
 
   @Test
+  public void importDoesNotCrateIndexJobsWithoutResults() throws Exception {
+    // given
+    when(importStrategy.fetchHistoricActivityInstances())
+        .thenReturn(Collections.emptyList());
+
+    // when
+    activityImportService.executeImport();
+
+    // then
+    verify(importStrategy, times(0))
+        .persistImportIndexToElasticsearch();
+  }
+
+  @Test
+  public void importCreatesIndexJobs() throws Exception {
+    // given
+    List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
+    when(importStrategy.fetchHistoricActivityInstances())
+        .thenReturn(resultList.subList(0, 2));
+
+    // when
+    activityImportService.executeImport();
+
+    // then
+    verify(importStrategy, times(1))
+        .persistImportIndexToElasticsearch();
+  }
+
+  @Test
   public void importIsDoneInPages() throws Exception {
     // given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
