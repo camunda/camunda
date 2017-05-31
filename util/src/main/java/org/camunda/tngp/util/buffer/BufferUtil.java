@@ -23,6 +23,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferUtil
 {
+    public static final int NO_WRAP = 0;
+    public static final int DEFAULT_WRAP = 4; // 4 bytes == 32 bits == default wide of a frame diagram
+
     private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
 
     private BufferUtil()
@@ -115,20 +118,50 @@ public final class BufferUtil
         }
     }
 
+    public static String bufferAsHexString(final BufferWriter writer)
+    {
+        return bufferAsHexString(writer, DEFAULT_WRAP);
+    }
+
+    public static String bufferAsHexString(final BufferWriter writer, final int wrap)
+    {
+        final byte[] bytes = new byte[writer.getLength()];
+        final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+
+        writer.write(buffer, 0);
+
+        return bytesAsHexString(bytes, wrap);
+    }
+
     public static String bufferAsHexString(final DirectBuffer buffer)
     {
-        return bufferAsHexString(buffer, 0, buffer.capacity());
+        return bufferAsHexString(buffer, DEFAULT_WRAP);
+    }
+
+    public static String bufferAsHexString(final DirectBuffer buffer, final int wrap)
+    {
+        return bufferAsHexString(buffer, 0, buffer.capacity(), wrap);
     }
 
     public static String bufferAsHexString(final DirectBuffer buffer, final int offset, final int length)
     {
+        return bufferAsHexString(buffer, offset, length, DEFAULT_WRAP);
+    }
+
+    public static String bufferAsHexString(final DirectBuffer buffer, final int offset, final int length, final int wrap)
+    {
         final byte[] bytes = new byte[length];
         buffer.getBytes(offset, bytes, 0, length);
 
-        return bytesAsHexString(bytes);
+        return bytesAsHexString(bytes, wrap);
     }
 
     public static String bytesAsHexString(final byte[] bytes)
+    {
+        return bytesAsHexString(bytes, DEFAULT_WRAP);
+    }
+
+    public static String bytesAsHexString(final byte[] bytes, final int wrap)
     {
         final StringBuilder builder = new StringBuilder(bytes.length * 3);
 
@@ -141,7 +174,7 @@ public final class BufferUtil
 
             position++;
 
-            if (position % 4 == 0)
+            if (wrap > 0 && position % wrap == 0)
             {
                 builder.append('\n');
             }
