@@ -359,15 +359,10 @@ public class TopicSubscriptionTest
         TestUtil.waitUntil(() -> !firstSubscription.isOpen());
         client.disconnect();
 
-        System.out.println("Test: Client disconnected; broker server binding closed");
-
         broker.openServerSocketBinding();
-        System.out.println("Test: Client connecting");
         client.connect();
-        System.out.println("Test: Client connected");
 
         // when
-        // TODO: der hier ist flaky
         final TopicSubscription secondSubscription = clientRule.topic().newSubscription()
                 .startAtHeadOfTopic()
                 .handler((m, e) ->
