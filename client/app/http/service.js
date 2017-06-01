@@ -1,4 +1,4 @@
-import {getLogin} from 'login';
+import {getLogin, clearLoginFromSession} from 'login';
 import {getRouter, getLastRoute} from 'router';
 
 const router = getRouter();
@@ -60,6 +60,7 @@ export function request({url, method, body, query, headers}) {
       const {name, params} = getLastRoute();
 
       if (name !== 'login') {
+        clearLoginFromSession();
         router.goTo('login', {name, params: JSON.stringify(params)}, true);
       }
     }

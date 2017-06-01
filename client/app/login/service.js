@@ -5,7 +5,7 @@ import {get, post} from 'http';
 const localStorage = $window.localStorage;
 const LOGIN_KEY = 'LOGIN_KEY';
 
-function clearLoginFromSession() {
+export function clearLoginFromSession() {
   localStorage.removeItem(LOGIN_KEY);
 
   dispatchAction(createClearLoginAction());

@@ -17,6 +17,7 @@ describe('http service', () => {
     let router;
     let lastRoute;
     let getLastRoute;
+    let clearLoginFromSession;
 
     beforeEach(() => {
       $fetch = sinon
@@ -41,6 +42,9 @@ describe('http service', () => {
         params: {b: 1}
       };
 
+      clearLoginFromSession = sinon.spy();
+      __set__('clearLoginFromSession', clearLoginFromSession);
+
       getLastRoute = sinon.stub().returns(lastRoute);
       __set__('getLastRoute', getLastRoute);
     });
@@ -50,6 +54,7 @@ describe('http service', () => {
       __ResetDependency__('getLogin');
       __ResetDependency__('router');
       __ResetDependency__('getLastRoute');
+      __ResetDependency__('clearLoginFromSession');
     });
 
     it('should open http request with given method and url', () => {
@@ -151,7 +156,7 @@ describe('http service', () => {
       Promise.runAll();
     });
 
-    it('should redirect to login page when response status is 401', (done) => {
+    it('should redirect to login page and clear login state when response status is 401', (done) => {
       $fetch.returns(
         Promise.resolve({
           status: 401
@@ -165,6 +170,7 @@ describe('http service', () => {
 
       Promise.runAll();
 
+      expect(clearLoginFromSession.called).to.eql(true);
       expect(router.goTo.calledWith('login', {
         name: lastRoute.name,
         params: JSON.stringify(lastRoute.params)
