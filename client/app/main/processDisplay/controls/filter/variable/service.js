@@ -1,7 +1,7 @@
 import {dispatchAction} from 'view-utils';
 import {get} from 'http';
 import {createLoadingVariablesAction, createLoadingVariablesResultAction, createLoadingVariablesErrorAction,
-        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction} from './reducer';
+        createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction, createAddValueAction, createRemoveValueAction} from './reducer';
 import {createCreateVariableFilterAction} from './routeReducer';
 import {addNotification} from 'notifications';
 import {dispatch} from '../store';
@@ -41,6 +41,10 @@ export function loadVariables(definition) {
     });
 }
 
+export function operatorCanHaveMultipleValues(operator) {
+  return operator === '=' || operator === '!=';
+}
+
 export function createVariableFilter(filter) {
   dispatch(createCreateVariableFilterAction(filter));
 }
@@ -59,4 +63,12 @@ export function setOperator(operator) {
 
 export function setValue(value) {
   dispatchAction(createSetValueAction(value));
+}
+
+export function addValue(value) {
+  dispatchAction(createAddValueAction(value));
+}
+
+export function removeValue(value) {
+  dispatchAction(createRemoveValueAction(value));
 }

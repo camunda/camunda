@@ -14,14 +14,14 @@ describe('<VariableFilter>', () => {
   const name = 'A';
   const type = 'String';
   const operator = '<';
-  const value = 41;
+  const values = [41];
 
   beforeEach(() => {
     state = [
       name,
       type,
       operator,
-      [value]
+      [values]
     ];
 
     callback = sinon.spy();
@@ -45,7 +45,13 @@ describe('<VariableFilter>', () => {
   });
 
   it('should contain the value', () => {
-    expect(node.textContent).to.contain(value);
+    expect(node.textContent).to.contain(values[0]);
+  });
+
+  it('should contain the number of values if query has multiple values', () => {
+    update([name, type, operator, [1, 2, 3]]);
+
+    expect(node.textContent).to.contain('3 values');
   });
 
   it('should contain the label for the operator', () => {

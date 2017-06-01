@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadVariables, createVariableFilter, selectVariableIdx, deselectVariableIdx, setOperator, setValue,
+import {loadVariables, createVariableFilter, selectVariableIdx, deselectVariableIdx, setOperator, setValue, addValue, removeValue, operatorCanHaveMultipleValues,
         __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/variable/service';
 
 describe('Variable Filter service', () => {
@@ -9,6 +9,8 @@ describe('Variable Filter service', () => {
   const SELECT_VARIABLE_ACTION = 'SELECT_VARIABLE_ACTION';
   const SET_OPERATOR_ACTION = 'SET_OPERATOR_ACTION';
   const SET_VALUE_ACTION = 'SET_VALUE_ACTION';
+  const ADD_VALUE_ACTION = 'ADD_VALUE_ACTION';
+  const REMOVE_VALUE_ACTION = 'REMOVE_VALUE_ACTION';
   const START_LOADING_ACTION = 'START_LOADING_ACTION';
   const LOADING_RESULT_ACTION = 'LOADING_RESULT_ACTION';
   const LOADING_ERROR_ACTION = 'LOADING_ERROR_ACTION';
@@ -24,6 +26,8 @@ describe('Variable Filter service', () => {
   let createSelectVariableIdxAction;
   let createSetOperatorAction;
   let createSetValueAction;
+  let createAddValueAction;
+  let createRemoveValueAction;
   let createCreateVariableFilterAction;
   let addNotification;
 
@@ -66,6 +70,12 @@ describe('Variable Filter service', () => {
     createSetValueAction = sinon.stub().returns(SET_VALUE_ACTION);
     __set__('createSetValueAction', createSetValueAction);
 
+    createAddValueAction = sinon.stub().returns(ADD_VALUE_ACTION);
+    __set__('createAddValueAction', createAddValueAction);
+
+    createRemoveValueAction = sinon.stub().returns(REMOVE_VALUE_ACTION);
+    __set__('createRemoveValueAction', createRemoveValueAction);
+
     createCreateVariableFilterAction = sinon.stub().returns(CREATE_FILTER_ACTION);
     __set__('createCreateVariableFilterAction', createCreateVariableFilterAction);
   });
@@ -81,6 +91,8 @@ describe('Variable Filter service', () => {
     __ResetDependency__('createLoadingVariablesErrorAction');
     __ResetDependency__('createSetOperatorAction');
     __ResetDependency__('createSetValueAction');
+    __ResetDependency__('createAddValueAction');
+    __ResetDependency__('createRemoveValueAction');
     __ResetDependency__('createCreateVariableFilterAction');
   });
 
@@ -242,6 +254,56 @@ describe('Variable Filter service', () => {
 
     it('should dispatch action', () => {
       expect(dispatchAction.calledWith(SET_VALUE_ACTION)).to.eql(true);
+    });
+  });
+
+  describe('addValue', () => {
+    const value = 'some value';
+
+    beforeEach(() => {
+      addValue(value);
+    });
+
+    it('should create action', () => {
+      expect(createAddValueAction.calledOnce).to.eql(true);
+      expect(createAddValueAction.calledWith(value)).to.eql(true);
+    });
+
+    it('should dispatch action', () => {
+      expect(dispatchAction.calledWith(ADD_VALUE_ACTION)).to.eql(true);
+    });
+  });
+
+  describe('removeValue', () => {
+    const value = 'some value';
+
+    beforeEach(() => {
+      removeValue(value);
+    });
+
+    it('should create action', () => {
+      expect(createRemoveValueAction.calledOnce).to.eql(true);
+      expect(createRemoveValueAction.calledWith(value)).to.eql(true);
+    });
+
+    it('should dispatch action', () => {
+      expect(dispatchAction.calledWith(REMOVE_VALUE_ACTION)).to.eql(true);
+    });
+  });
+
+  describe('operatorCanHaveMultipleValues', () => {
+    it('should return true for equals and non-equals', () => {
+      expect(operatorCanHaveMultipleValues('=')).to.eql(true);
+      expect(operatorCanHaveMultipleValues('!=')).to.eql(true);
+    });
+
+    it('should return false for every value other than equals and non-equals', () => {
+      expect(operatorCanHaveMultipleValues('<')).to.eql(false);
+      expect(operatorCanHaveMultipleValues('>=')).to.eql(false);
+      expect(operatorCanHaveMultipleValues('')).to.eql(false);
+      expect(operatorCanHaveMultipleValues(1)).to.eql(false);
+      expect(operatorCanHaveMultipleValues()).to.eql(false);
+      expect(operatorCanHaveMultipleValues(undefined)).to.eql(false);
     });
   });
 });

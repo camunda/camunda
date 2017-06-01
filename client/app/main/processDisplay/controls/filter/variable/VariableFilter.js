@@ -16,13 +16,13 @@ export const VariableFilter = withSelector(({onDelete}) => {
         &nbsp;
         <span className="variable-operator">
           <Scope selector={getHumanReadableLabelForOperator}>
-            <Text property="operator" />
+            <Text />
           </Scope>
         </span>
         &nbsp;
         <span className="variable-value badge">
-          <Scope selector={getFirstValue}>
-            <Text property="value" />
+          <Scope selector={getValueLabel}>
+            <Text />
           </Scope>
         </span>
       </Scope>
@@ -30,10 +30,10 @@ export const VariableFilter = withSelector(({onDelete}) => {
   </span>;
 
   function getHumanReadableLabelForOperator({operator}) {
-    return {operator: operatorLabels[operator]};
+    return operatorLabels[operator];
   }
 
-  function getFirstValue({values}) {
-    return {value: values[0]};
+  function getValueLabel({values}) {
+    return values.length > 1 ? `${values.length} values` : values[0];
   }
 });

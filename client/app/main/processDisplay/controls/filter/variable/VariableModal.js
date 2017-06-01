@@ -112,7 +112,7 @@ export function createVariableModal(createCallback, getProcessDefinition) {
           name: variable.name,
           type: variable.type,
           operator: operator,
-          values: [value]
+          values: value
         });
 
         Modal.close();

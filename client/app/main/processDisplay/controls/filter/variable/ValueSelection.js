@@ -1,17 +1,16 @@
-import {jsx, Scope, List, Text, OnEvent} from 'view-utils';
-import {setValue} from './service';
+import {jsx, Scope, List, Text, OnEvent, includes, Attribute} from 'view-utils';
+import {addValue, removeValue, setValue, operatorCanHaveMultipleValues} from './service';
 
 export function ValueSelection() {
   const template = <div className="variable-value">
     <Scope selector={getVariableList}>
       <List>
         <label className="value-list-label">
-          <input type="radio" name="value">
+          <input name="value">
+            <Attribute attribute="type" selector={getTypeByOperator} />
             <OnEvent event="click" listener={applyValue} />
           </input>
-          <Scope selector={value => {return {value};}}>
-            <Text property="value" />
-          </Scope>
+          <Text property="value" />
         </label>
       </List>
     </Scope>
@@ -24,16 +23,36 @@ export function ValueSelection() {
       const inputs = parentNode.querySelectorAll('.value-list-label input');
 
       inputs.forEach(input => {
-        input.checked = input.labels[0].textContent === value;
+        input.checked = includes(value, input.labels[0].textContent);
       });
     }];
   };
 
-  function getVariableList({variables: {data}, selectedIdx}) {
-    return data[selectedIdx].values;
+  function getTypeByOperator({operator}) {
+    if (operatorCanHaveMultipleValues(operator)) {
+      return 'checkbox';
+    }
+    return 'radio';
   }
 
-  function applyValue({state}) {
-    setValue(state);
+  function getVariableList({variables: {data}, selectedIdx, operator}) {
+    return data[selectedIdx].values.map(value => {
+      return {
+        value,
+        operator
+      };
+    });
+  }
+
+  function applyValue({state: {value, operator}, node: {checked}}) {
+    if (operatorCanHaveMultipleValues(operator)) {
+      if (checked) {
+        addValue(value);
+      } else {
+        removeValue(value);
+      }
+    } else {
+      setValue(value);
+    }
   }
 }

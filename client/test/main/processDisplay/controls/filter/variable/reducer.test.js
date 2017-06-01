@@ -1,11 +1,26 @@
 import {expect} from 'chai';
+import sinon from 'sinon';
 import {reducer,
   createSelectVariableIdxAction,
   createSetOperatorAction,
-  createSetValueAction
+  createSetValueAction,
+  createAddValueAction,
+  createRemoveValueAction,
+  __set__, __ResetDependency__
 } from 'main/processDisplay/controls/filter/variable/reducer';
 
 describe('variable reducer', () => {
+  let operatorCanHaveMultipleValues;
+
+  beforeEach(() => {
+    operatorCanHaveMultipleValues = sinon.stub().returns(true);
+    __set__('operatorCanHaveMultipleValues', operatorCanHaveMultipleValues);
+  });
+
+  afterEach(() => {
+    __ResetDependency__('operatorCanHaveMultipleValues');
+  });
+
   it('should set the selected index when handling select variable action', () => {
     const action = createSelectVariableIdxAction(4);
     const state = reducer(undefined, action);
@@ -18,11 +33,11 @@ describe('variable reducer', () => {
     const state = reducer({
       selectedIdx: 123,
       operator: 'OP',
-      value: 'AAAAAAA'
+      value: ['AAAAAAA']
     }, action);
 
     expect(state.operator).to.eql('=');
-    expect(state.value).to.eql('');
+    expect(state.value).to.eql([]);
   });
 
   it('should set the operator field', () => {
@@ -36,6 +51,39 @@ describe('variable reducer', () => {
     const action = createSetValueAction('NEW_VAL');
     const state = reducer(undefined, action);
 
-    expect(state.value).to.eql('NEW_VAL');
+    expect(state.value).to.eql(['NEW_VAL']);
+  });
+
+  it('should remove other values when a new value is set', () => {
+    const action = createSetValueAction('NEW_VAL');
+    const state = reducer({value: ['a', 'b', 'c']}, action);
+
+    expect(state.value).to.contain('NEW_VAL');
+    expect(state.value).to.not.contain('a');
+    expect(state.value).to.not.contain('b');
+    expect(state.value).to.not.contain('c');
+  });
+
+  it('should remove multiple values if the new operator does not allow multiple values', () => {
+    operatorCanHaveMultipleValues.returns(false);
+
+    const action = createSetOperatorAction('<');
+    const state = reducer({value: ['a', 'b', 'c']}, action);
+
+    expect(state.value).to.have.a.lengthOf(1);
+  });
+
+  it('should add a new value', () => {
+    const action = createAddValueAction('NEW_VAL');
+    const state = reducer({value: ['OLD_VAL']}, action);
+
+    expect(state.value).to.contain('NEW_VAL');
+  });
+
+  it('should remove a value', () => {
+    const action = createRemoveValueAction('a');
+    const state = reducer({value: ['a', 'b', 'c']}, action);
+
+    expect(state.value).to.not.contain('a');
   });
 });
