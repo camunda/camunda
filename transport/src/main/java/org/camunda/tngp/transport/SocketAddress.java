@@ -196,4 +196,36 @@ public class SocketAddress implements Comparable<SocketAddress>
     {
         return "{ host: " + host() + ", port: " + port() + " }";
     }
+
+    /**
+     * Tries to parse a address string to create a new socket address.
+     *
+     * @param address the address string with format host:port
+     * @return the created socket address
+     *
+     * @throws IllegalArgumentException if the address cannot be parsed
+     */
+    public static SocketAddress from(final String address)
+    {
+        final String[] parts = address.split(":", 2);
+        if (parts.length != 2)
+        {
+            throw new IllegalArgumentException("Address has to be in format host:port but was: " + address);
+        }
+
+        final int port;
+
+        final String portString = parts[1];
+        try
+        {
+            port = Integer.valueOf(portString);
+        }
+        catch (final NumberFormatException e)
+        {
+            throw new IllegalArgumentException("Port of address '" + address + "' has to be a number but was: " + portString);
+        }
+
+        return new SocketAddress(parts[0], port);
+    }
+
 }
