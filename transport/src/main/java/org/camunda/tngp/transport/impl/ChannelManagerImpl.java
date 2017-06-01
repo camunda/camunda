@@ -24,7 +24,6 @@ import org.camunda.tngp.util.time.ClockUtil;
 
 public class ChannelManagerImpl implements ChannelManager
 {
-
     protected final DeferredCommandContext commandContext = new DeferredCommandContext();
 
     protected final ObjectPool<ChannelRequest> channelRequestPool;
@@ -42,6 +41,7 @@ public class ChannelManagerImpl implements ChannelManager
             TransportChannelHandler channelHandler,
             int initialCapacity,
             long keepAlivePeriod,
+            boolean reopenChannelsOnException,
             SharedStateMachineBlueprint<ChannelImpl> defaultLifecycle)
     {
         this.keepAlivePeriod = keepAlivePeriod;
@@ -50,6 +50,14 @@ public class ChannelManagerImpl implements ChannelManager
         this.conductor = conductor;
         this.channelLifecycle = defaultLifecycle.copy()
                 .onState(ChannelImpl.STATE_CLOSED, this::removeChannel);
+        if (reopenChannelsOnException)
+        {
+            this.channelLifecycle.onState(ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::reopenChannel);
+        }
+        else
+        {
+            this.channelLifecycle.onState(ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::removeChannel);
+        }
 
         final ToIntFunction<PoolIterator<ChannelImpl>> evictionDecider = it ->
         {
@@ -81,9 +89,18 @@ public class ChannelManagerImpl implements ChannelManager
         this.channelHandler = channelHandler;
     }
 
-    protected void removeChannel(ChannelImpl c)
+    protected void removeChannel(ChannelImpl channel)
     {
-        this.managedChannels.remove(c);
+        this.managedChannels.remove(channel);
+    }
+
+    protected void reopenChannel(ChannelImpl channel)
+    {
+        if (channel.isInUse() && conductor.isOpen())
+        {
+            conductor.connectChannel(channel);
+            channel.setLastKeepAlive(ClockUtil.getCurrentTimeInMillis());
+        }
     }
 
     public PooledFuture<Channel> requestChannelAsync(SocketAddress remoteAddress)
@@ -204,7 +221,6 @@ public class ChannelManagerImpl implements ChannelManager
             managedChannels.add(channel);
         }
 
-        channel.countUsageBegin();
         channel.listenForReady(request);
     }
 

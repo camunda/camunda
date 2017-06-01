@@ -23,12 +23,12 @@ public class SharedStateMachineManager<T>
         this.transitionBuffer = transitionBuffer;
     }
 
-    public void onStateMachineCreation(SharedStateMachine<T> stateMachine)
+    public void register(SharedStateMachine<T> stateMachine)
     {
         stateMachines.put(stateMachine.getId(), stateMachine);
     }
 
-    public void onStateMachineDisposal(SharedStateMachine<T> stateMachine)
+    public void unregister(SharedStateMachine<T> stateMachine)
     {
         stateMachines.remove(stateMachine.getId());
     }

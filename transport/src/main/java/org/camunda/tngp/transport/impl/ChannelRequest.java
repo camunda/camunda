@@ -36,6 +36,7 @@ public class ChannelRequest implements PooledFuture<Channel>
             throw new RuntimeException("Request is already resolved");
         }
         this.channel = channel;
+        ((ChannelImpl) channel).countUsageBegin();
         if (channelFuture != null)
         {
             channelFuture.complete(channel);

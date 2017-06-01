@@ -90,8 +90,6 @@ public class ChannelImpl implements Channel
         this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
 
         this.stateMachine = stateMachineLifecycle.buildStateMachine(streamId, this);
-
-        stateMachine.makeStateTransition(STATE_CONNECTING);
     }
 
     /**
@@ -108,7 +106,7 @@ public class ChannelImpl implements Channel
     {
         this(streamId, remoteAddress, maxMessageLength, controlFrameBuffer, handler, stateMachineLifecycle);
         this.media = media;
-        stateMachine.makeStateTransition(STATE_CONNECTING, STATE_CONNECTED);
+        stateMachine.makeStateTransition(STATE_CONNECTED);
     }
 
     // channel interaction
@@ -459,6 +457,7 @@ public class ChannelImpl implements Channel
 
     public boolean startConnect()
     {
+        stateMachine.makeStateTransition(STATE_CONNECTING);
         try
         {
             media = SocketChannel.open();

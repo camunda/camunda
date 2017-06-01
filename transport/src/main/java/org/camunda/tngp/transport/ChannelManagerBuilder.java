@@ -13,6 +13,7 @@ public class ChannelManagerBuilder
     protected Conductor conductor;
     protected int initialCapacity = 32;
     protected CompositeChannelHandler channelHandler = new CompositeChannelHandler();
+    protected boolean reopenChannelsOnException = true;
 
     public ChannelManagerBuilder(Conductor conductor)
     {
@@ -31,6 +32,15 @@ public class ChannelManagerBuilder
                 new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
     }
 
+    /**
+     * Set to true, if channels should be reopenend whenever they close unexpectedly; true is default.
+     */
+    public ChannelManagerBuilder reopenChannelsOnException(boolean reopenChannelsOnException)
+    {
+        this.reopenChannelsOnException = reopenChannelsOnException;
+        return this;
+    }
+
     public ChannelManagerBuilder initialCapacity(int initialCapacity)
     {
         this.initialCapacity = initialCapacity;
@@ -39,6 +49,9 @@ public class ChannelManagerBuilder
 
     public ChannelManager build()
     {
-        return conductor.newChannelManager(channelHandler, initialCapacity);
+        return conductor.newChannelManager(
+                channelHandler,
+                initialCapacity,
+                reopenChannelsOnException);
     }
 }

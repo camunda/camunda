@@ -2,11 +2,9 @@ package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.agent.Receiver;
+import org.camunda.tngp.transport.util.RecordingChannelListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,10 +41,10 @@ public class TransportChannelListenerTest
     public void shouldInvokeRegisteredListenerOnChannelClose() throws InterruptedException
     {
         // given
-        final LoggingTransportChannelListener clientListener = new LoggingTransportChannelListener();
+        final RecordingChannelListener clientListener = new RecordingChannelListener();
         clientTransport.registerChannelListener(clientListener);
 
-        final LoggingTransportChannelListener serverListener = new LoggingTransportChannelListener();
+        final RecordingChannelListener serverListener = new RecordingChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
@@ -62,8 +60,8 @@ public class TransportChannelListenerTest
         channelManager.closeAllChannelsAsync().join();
 
         // then
-        assertThat(clientListener.closedChannels).hasSize(1);
-        assertThat(clientListener.closedChannels.get(0)).isSameAs(channel);
+        assertThat(clientListener.getClosedChannels()).hasSize(1);
+        assertThat(clientListener.getClosedChannels().get(0)).isSameAs(channel);
 
         // TODO: cannot reliably wait for channel being closed on server-side, since
         //   channel close notification happens asynchronously after client channel close
@@ -75,10 +73,10 @@ public class TransportChannelListenerTest
     public void shouldDeregisterListener()
     {
         // given
-        final LoggingTransportChannelListener clientListener = new LoggingTransportChannelListener();
+        final RecordingChannelListener clientListener = new RecordingChannelListener();
         clientTransport.registerChannelListener(clientListener);
 
-        final LoggingTransportChannelListener serverListener = new LoggingTransportChannelListener();
+        final RecordingChannelListener serverListener = new RecordingChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
@@ -96,20 +94,7 @@ public class TransportChannelListenerTest
         // then
         channelManager.closeAllChannelsAsync().join();
 
-        assertThat(clientListener.closedChannels).hasSize(0);
-        assertThat(serverListener.closedChannels).hasSize(0);
-    }
-
-    public static class LoggingTransportChannelListener implements TransportChannelListener
-    {
-
-        protected List<Channel> closedChannels = new ArrayList<>();
-
-        @Override
-        public void onChannelClosed(Channel channel)
-        {
-            closedChannels.add(channel);
-        }
-
+        assertThat(clientListener.getClosedChannels()).hasSize(0);
+        assertThat(serverListener.getClosedChannels()).hasSize(0);
     }
 }

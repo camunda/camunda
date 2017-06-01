@@ -6,6 +6,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,6 +49,8 @@ public class Conductor implements Agent
     protected int nextStreamId = 1;
     protected final long channelKeepAlivePeriod;
 
+    protected AtomicBoolean isOpen = new AtomicBoolean(true);
+
     public Conductor(
             Sender sender,
             Receiver receiver,
@@ -82,7 +85,7 @@ public class Conductor implements Agent
         makeChannelUnready(channel);
         notifyChannelListenerClosed(channel);
         channel.getHandler().onChannelClosed(channel);
-        channelStateManager.onStateMachineDisposal(channel.getStateMachine());
+        channelStateManager.unregister(channel.getStateMachine());
     }
 
     protected void notifyChannelListenerClosed(ChannelImpl channel)
@@ -152,7 +155,14 @@ public class Conductor implements Agent
             controlFramesBuffer,
             handler,
             channelLifecycle);
-        channelStateManager.onStateMachineCreation(channel.getStateMachine());
+        connectChannel(channel);
+
+        return channel;
+    }
+
+    public void connectChannel(ChannelImpl channel)
+    {
+        channelStateManager.register(channel.getStateMachine());
 
         final boolean success = channel.startConnect();
 
@@ -160,8 +170,6 @@ public class Conductor implements Agent
         {
             connectTransportPoller.addChannel(channel);
         }
-
-        return channel;
     }
 
     public ChannelImpl newChannel(
@@ -189,18 +197,19 @@ public class Conductor implements Agent
             handler,
             channelLifecycle);
 
-        channelStateManager.onStateMachineCreation(channel.getStateMachine());
+        channelStateManager.register(channel.getStateMachine());
 
         return channel;
     }
 
-    public ChannelManagerImpl newChannelManager(TransportChannelHandler handler, int initialCapacity)
+    public ChannelManagerImpl newChannelManager(TransportChannelHandler handler, int initialCapacity, boolean reopenChannelsOnException)
     {
         final ChannelManagerImpl manager = new ChannelManagerImpl(
                 this,
                 handler,
                 initialCapacity,
                 channelKeepAlivePeriod,
+                reopenChannelsOnException,
                 channelLifecycle);
 
         commandContext.runAsync(() ->
@@ -302,35 +311,47 @@ public class Conductor implements Agent
 
     public CompletableFuture<Void> closeAsync()
     {
-        return commandContext.runAsync((future) ->
+        if (isOpen.compareAndSet(true, false))
         {
-            acceptTransportPoller.close();
-            connectTransportPoller.close();
-
-            final List<ChannelManagerImpl> channelManagers = new ArrayList<>(managers);
-            final List<ServerSocketBinding> serverBindings = new ArrayList<>(serverSocketBindings);
-
-            final List<CompletableFuture<Void>> clientCloseFutures = new ArrayList<>();
-            for (int i = 0; i < channelManagers.size(); i++)
+            return commandContext.runAsync((future) ->
             {
-                clientCloseFutures.add(channelManagers.get(i).closeAllChannelsAsync());
-            }
+                acceptTransportPoller.close();
+                connectTransportPoller.close();
 
-            LangUtil.allOf(clientCloseFutures)
-                .whenComplete((v, t) ->
+                final List<ChannelManagerImpl> channelManagers = new ArrayList<>(managers);
+                final List<ServerSocketBinding> serverBindings = new ArrayList<>(serverSocketBindings);
+
+                final List<CompletableFuture<Void>> clientCloseFutures = new ArrayList<>();
+                for (int i = 0; i < channelManagers.size(); i++)
                 {
-                    final List<CompletableFuture<ServerSocketBinding>> serverCloseFutures = new ArrayList<>();
-                    for (int i = 0; i < serverBindings.size(); i++)
-                    {
-                        serverCloseFutures.add(serverBindings.get(i).closeAsync());
-                    }
+                    clientCloseFutures.add(channelManagers.get(i).closeAllChannelsAsync());
+                }
 
-                    LangUtil.allOf(serverCloseFutures).whenComplete((v1, t1) ->
+                LangUtil.allOf(clientCloseFutures)
+                    .whenComplete((v, t) ->
                     {
-                        future.complete(null);
+                        final List<CompletableFuture<ServerSocketBinding>> serverCloseFutures = new ArrayList<>();
+                        for (int i = 0; i < serverBindings.size(); i++)
+                        {
+                            serverCloseFutures.add(serverBindings.get(i).closeAsync());
+                        }
+
+                        LangUtil.allOf(serverCloseFutures).whenComplete((v1, t1) ->
+                        {
+                            future.complete(null);
+                        });
                     });
-                });
-        });
+            });
+        }
+        else
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public boolean isOpen()
+    {
+        return isOpen.get();
     }
 
     @Override

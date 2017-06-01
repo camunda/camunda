@@ -3,6 +3,7 @@ package org.camunda.tngp.transport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletionException;
@@ -10,6 +11,9 @@ import java.util.concurrent.CompletionException;
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.ChannelImpl;
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.transport.util.RecordingChannelHandler;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -237,7 +241,7 @@ public class ClientChannelPoolingTest
     }
 
     @Test
-    public void shouldFailToServeWhenChannelConenctFails()
+    public void shouldFailToServeWhenChannelConnectFails()
     {
         // given
         final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
@@ -328,6 +332,139 @@ public class ClientChannelPoolingTest
         // then
         assertThat(future1.isFailed()).isTrue();
         assertThat(future2.isFailed()).isTrue();
+    }
+
+    /**
+     * Reproducing a deadlock bug when a channel is attempted to be reopened while the transport is closing down
+     */
+    @Test
+    public void shouldCloseTransportWithFailingChannel() throws IOException, InterruptedException
+    {
+        // given
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport.createServerSocketBinding(addr).bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
+
+        // when
+        clientTransport.close();
+
+        // then
+        assertThat(channel.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldReopenChannelOnUnexpectedClose() throws IOException
+    {
+        // given
+        final RecordingChannelHandler listener = new RecordingChannelHandler();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport.createServerSocketBinding(addr).bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // when closing the channel unexpectedly
+        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
+        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
+
+        // then
+        TestUtil.waitUntil(() -> channel.isReady());
+        assertThat(channel.isReady()).isTrue();
+        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel, channel);
+    }
+
+    @Test
+    public void shouldNotReopenChannelOnExpectedClose()
+    {
+        // given
+        final RecordingChannelHandler listener = new RecordingChannelHandler();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport.createServerSocketBinding(addr).bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // when closing the channel unexpectedly
+        ((ChannelImpl) channel).initiateClose();
+        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
+
+        // then
+        TestUtil.waitUntil(() -> channel.isClosed());
+        assertThat(channel.isClosed()).isTrue();
+        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel);
+    }
+
+    @Test
+    public void shouldBeAbleToSendOnReopenedChannel() throws IOException
+    {
+        // given
+        final RecordingChannelHandler clientListener = new RecordingChannelHandler();
+        final RecordingChannelHandler serverListener = new RecordingChannelHandler();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, clientListener)
+                .build();
+
+        final DataFramePool dataFramePool = DataFramePool.newBoundedPool(2, clientTransport.getSendBuffer());
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport
+            .createServerSocketBinding(addr)
+            .transportChannelHandler(serverListener)
+            .bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // reopening the channel
+        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
+        TestUtil.waitUntil(() -> clientListener.getChannelOpenInvocations().size() == 2);
+
+        // when
+        dataFramePool.openFrame(channel.getStreamId(), 10).commit();
+
+        // then
+        TestUtil.waitUntil(() -> !serverListener.getChannelReceiveMessageInvocations().isEmpty());
+        assertThat(serverListener.getChannelReceiveMessageInvocations()).hasSize(1);
+    }
+
+    @Test
+    public void shouldNotReopenChannelIfNotConfigured() throws IOException
+    {
+        // given
+        final RecordingChannelHandler listener = new RecordingChannelHandler();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .reopenChannelsOnException(false)
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
+                .build();
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        serverTransport.createServerSocketBinding(addr).bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // when closing the channel unexpectedly
+        ((ChannelImpl) channel).getSocketChannel().socket().shutdownInput();
+        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
+
+        // then
+        TestUtil.waitUntil(() -> channel.isClosed());
+        assertThat(channel.isClosed()).isTrue();
+        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel);
     }
 
     protected Channel[] openStreamsInPortRange(ChannelManager pool, int firstPort, int range)

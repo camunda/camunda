@@ -51,7 +51,10 @@ public class ChannelLifecycleTest
     public void shouldCloseChannelOnReceiveException() throws IOException
     {
         // given
-        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .reopenChannelsOnException(false)
+                .build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
@@ -73,7 +76,10 @@ public class ChannelLifecycleTest
     public void shouldCloseChannelOnWriteException() throws IOException
     {
         // given
-        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .reopenChannelsOnException(false)
+                .build();
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();

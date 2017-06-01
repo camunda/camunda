@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -22,7 +20,7 @@ import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
-import org.camunda.tngp.transport.spi.TransportChannelHandler;
+import org.camunda.tngp.transport.util.RecordingChannelHandler;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -71,6 +69,7 @@ public class TransportChannelHandlerTest
 
         clientChannelManager = clientTransport
                 .createClientChannelPool()
+                .reopenChannelsOnException(false)
                 .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, clientHandler)
                 .build();
 
@@ -249,84 +248,5 @@ public class TransportChannelHandlerTest
         assertThat(serverHandler.getChannelReceiveMessageInvocations()).hasSize(1);
         assertThat(serverHandler.getChannelSendErrorInvocations()).isEmpty();
         assertThat(serverHandler.getKeepAliveInvocations()).isEmpty();
-    }
-
-    protected static class RecordingChannelHandler implements TransportChannelHandler
-    {
-
-        protected List<Channel> openInvocations = new CopyOnWriteArrayList<>();
-        protected List<Channel> closeInvocations = new CopyOnWriteArrayList<>();
-        protected List<Channel> sendErrorInvocations = new CopyOnWriteArrayList<>();
-        protected List<Channel> receiveMessageInvocations = new CopyOnWriteArrayList<>();
-        protected List<Channel> receiveControlFrameInvocations = new CopyOnWriteArrayList<>();
-        protected List<Channel> keepAliveInvocations = new CopyOnWriteArrayList<>();
-
-        public List<Channel> getChannelCloseInvocations()
-        {
-            return closeInvocations;
-        }
-
-        public List<Channel> getChannelOpenInvocations()
-        {
-            return openInvocations;
-        }
-
-        public List<Channel> getChannelReceiveControlFrameInvocations()
-        {
-            return receiveControlFrameInvocations;
-        }
-
-        public List<Channel> getChannelReceiveMessageInvocations()
-        {
-            return receiveMessageInvocations;
-        }
-
-        public List<Channel> getChannelSendErrorInvocations()
-        {
-            return sendErrorInvocations;
-        }
-
-        public List<Channel> getKeepAliveInvocations()
-        {
-            return keepAliveInvocations;
-        }
-
-        @Override
-        public void onChannelOpened(Channel transportChannel)
-        {
-            openInvocations.add(transportChannel);
-        }
-
-        @Override
-        public void onChannelClosed(Channel transportChannel)
-        {
-            closeInvocations.add(transportChannel);
-        }
-
-        @Override
-        public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            sendErrorInvocations.add(transportChannel);
-        }
-
-        @Override
-        public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            receiveMessageInvocations.add(transportChannel);
-            return true;
-        }
-
-        @Override
-        public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            receiveControlFrameInvocations.add(transportChannel);
-            return true;
-        }
-
-        @Override
-        public void onChannelKeepAlive(Channel channel)
-        {
-            keepAliveInvocations.add(channel);
-        }
     }
 }
