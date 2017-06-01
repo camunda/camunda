@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.junit.Before;
@@ -18,8 +19,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeferredResponsePoolTest
 {
@@ -43,7 +42,7 @@ public class DeferredResponsePoolTest
         // TODO: this smells; perhaps DeferredResponsePool/DeferredResponse should not be handed a full-blown Dispatcher
         //   but a small interface that defines the operation it needs (i.e. providing a buffer of a certain length with
         //   return value true or false if this has worked or not)
-        when(dispatcher.claim(any(), anyInt(), anyInt())).thenAnswer(new Answer<Long>()
+        when(dispatcher.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(new Answer<Long>()
         {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable
