@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,7 @@ public class StatusRestService {
   @GET
   @Path("/import-progress")
   @Produces(MediaType.APPLICATION_JSON)
+  @Secured
   public Response getImportProgress() {
     try {
       ProgressDto progressDto = new ProgressDto();

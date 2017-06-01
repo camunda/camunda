@@ -2,6 +2,7 @@ package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.TokenService;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,19 @@ import java.io.IOException;
 @Component
 public class AuthenticationFilter implements ContainerRequestFilter {
   private final Logger logger = LoggerFactory.getLogger(AuthenticationFilter.class);
+  private static final String STATUS = "status";
 
   @Autowired
   private TokenService tokenService;
 
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
+    //an exception, do not perform any checks and refreshes
+    String path = ((ContainerRequest) requestContext).getPath(false);
+    if (path != null && path.startsWith(STATUS)) {
+      return;
+    }
+
     String token = AuthenticationUtil.getToken(requestContext);
 
     try {
