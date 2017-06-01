@@ -187,4 +187,25 @@ public final class BufferUtil
         return builder.toString();
     }
 
+    public static byte[] bufferAsArray(DirectBuffer buffer)
+    {
+        byte[] array = null;
+
+        if (buffer.byteArray() != null)
+        {
+            array = buffer.byteArray();
+        }
+        else
+        {
+            array = new byte[buffer.capacity()];
+            buffer.getBytes(0, array);
+        }
+        return array;
+    }
+
+    public static DirectBuffer wrapArray(byte[] array)
+    {
+        return new UnsafeBuffer(array);
+    }
+
 }
