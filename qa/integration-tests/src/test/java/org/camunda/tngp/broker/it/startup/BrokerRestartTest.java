@@ -240,9 +240,9 @@ public class BrokerRestartTest
 
     protected void restartBroker()
     {
-        client.disconnect();
+        clientRule.closeClient();
         brokerRule.restartBroker();
-        client.connect();
+        client = clientRule.getClient();
     }
 
 

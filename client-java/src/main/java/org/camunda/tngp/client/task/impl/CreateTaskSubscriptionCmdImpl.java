@@ -8,10 +8,11 @@ import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageCmd;
+import org.camunda.tngp.client.impl.cmd.TopicCommand;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
-public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<TaskSubscription, EventSubscriptionCreationResult>
+public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<TaskSubscription, EventSubscriptionCreationResult> implements TopicCommand
 {
     protected final TaskSubscription subscription = new TaskSubscription();
 
@@ -51,6 +52,18 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     {
         this.taskType = taskType;
         return this;
+    }
+
+    @Override
+    public String getTopicName()
+    {
+        return topicName;
+    }
+
+    @Override
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
     @Override

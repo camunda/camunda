@@ -31,13 +31,9 @@ public abstract class MaxRateThroughputTest
 
         printProperties(properties);
 
-        TngpClient client = null;
 
-        try
+        try (TngpClient client = TngpClient.create(properties))
         {
-            client = TngpClient.create(properties);
-            client.connect();
-
             executeSetup(properties, client);
             executeWarmup(properties, client);
             executeTest(properties, client);
@@ -45,10 +41,6 @@ public abstract class MaxRateThroughputTest
         catch (Exception e)
         {
             e.printStackTrace();
-        }
-        finally
-        {
-            client.close();
         }
 
     }
@@ -71,7 +63,7 @@ public abstract class MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected void executeWarmup(Properties properties, TngpClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        try (TransportConnection conection = client.openConnection())
         {
             System.out.format("Executing warmup\n");
 
@@ -96,7 +88,7 @@ public abstract class MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected void executeTest(Properties properties, TngpClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        try (TransportConnection conection = client.openConnection())
         {
             System.out.format("Executing test\n");
 
@@ -107,15 +99,7 @@ public abstract class MaxRateThroughputTest
             final FileReportWriter fileReportWriter = new FileReportWriter();
             final RateReporter rateReporter = new RateReporter(1, TimeUnit.SECONDS, fileReportWriter);
 
-            new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    rateReporter.doReport();
-                }
-
-            }.start();
+            new Thread(() -> rateReporter.doReport()).start();
 
             final Supplier<Future> requestFn = requestFn(client, conection);
 

@@ -1,8 +1,7 @@
 package org.camunda.tngp.client.impl;
 
 import static org.camunda.tngp.client.ClientProperties.*;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import java.util.Properties;
 
@@ -14,36 +13,20 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.transport.*;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.protocol.Protocols;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.transport.SocketAddress;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class TngpClientImpl implements TngpClient
 {
-    public static final int DEFAULT_RESOURCE_ID = 0;
-    public static final int DEFAULT_SHARD_ID = 0;
 
     protected final Properties initializationProperties;
 
-    protected final Transport transport;
-    protected final TransportConnectionPool connectionPool;
-    protected final DataFramePool dataFramePool;
-    protected Channel channel;
-    protected SocketAddress contactPoint;
-    protected Dispatcher dataFrameReceiveBuffer;
-
-    protected ClientCmdExecutor cmdExecutor;
-
+    protected final TransportManager transportManager;
+    protected final SubscriptionManager subscriptionManager;
+    protected final ClientCmdExecutor cmdExecutor;
     protected final ObjectMapper objectMapper;
 
-    protected SubscriptionManager subscriptionManager;
-
-    protected ChannelManager channelManager;
 
     public TngpClientImpl(final Properties properties)
     {
@@ -52,50 +35,21 @@ public class TngpClientImpl implements TngpClient
 
         final String brokerContactPoint = properties.getProperty(BROKER_CONTACTPOINT);
 
-        String hostName = brokerContactPoint;
-        int port = -1;
+        final SocketAddress contactPoint = SocketAddress.from(brokerContactPoint);
 
-        final int portDelimiter = hostName.indexOf(":");
-        if (portDelimiter != -1)
-        {
-            hostName = hostName.substring(0, portDelimiter);
-            port = Integer.parseInt(brokerContactPoint.substring(portDelimiter + 1, brokerContactPoint.length()));
-        }
-        else
-        {
-            final String errorMessage = String.format("Tngp Client config properts %s has wrong value: '%s' Needs to have format [hostname]:[port]", BROKER_CONTACTPOINT, brokerContactPoint);
-            throw new RuntimeException(errorMessage);
-        }
+        transportManager =
+            TransportManager.create()
+                .maxConnections(properties.getProperty(CLIENT_MAXCONNECTIONS))
+                .maxRequests(properties.getProperty(CLIENT_MAXREQUESTS))
+                .maxMessageSize(1024 * 1024)
+                .sendBufferSize(properties.getProperty(CLIENT_SENDBUFFER_SIZE))
+                .threadingMode(properties.getProperty(CLIENT_THREADINGMODE))
+                .keepAlivePeriod(properties.getProperty(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
+                .build();
 
-        contactPoint = new SocketAddress(hostName, port);
-        final int maxConnections = Integer.parseInt(properties.getProperty(CLIENT_MAXCONNECTIONS));
-        final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
-        final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
-        final ThreadingMode threadingMode = ThreadingMode.valueOf(properties.getProperty(CLIENT_THREADINGMODE));
+        transportManager.registerBroker(contactPoint);
 
-        final TransportBuilder transportBuilder = Transports.createTransport("tngp.client")
-            .sendBufferSize(1024 * 1024 * sendBufferSize)
-            .maxMessageLength(1024 * 1024)
-            .threadingMode(threadingMode);
-
-        if (properties.containsKey(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
-        {
-            transportBuilder.channelKeepAlivePeriod(Long.parseLong(properties.getProperty(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD)));
-        }
-
-        transport = transportBuilder
-            .build();
-
-        dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-            .bufferSize(1024 * 1024 * sendBufferSize)
-            .modePubSub()
-            .frameMaxLength(1024 * 1024)
-            .build();
-
-        connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
-        dataFramePool = DataFramePool.newBoundedPool(maxRequests, transport.getSendBuffer());
-
-        cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool);
+        cmdExecutor = new ClientCmdExecutor(transportManager);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -110,88 +64,20 @@ public class TngpClientImpl implements TngpClient
                 numExecutionThreads,
                 autoCompleteTasks,
                 prefetchCapacity,
-                dataFrameReceiveBuffer.openSubscription("task-acquisition"));
-        transport.registerChannelListener(subscriptionManager);
+                transportManager.openSubscription("task-acquisition"));
 
-        channelManager = transport.createClientChannelPool()
-                .requestResponseProtocol(connectionPool)
-                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
-                .build();
-    }
-
-    @Override
-    public void connect()
-    {
-        channel = channelManager.requestChannel(contactPoint);
-
-        cmdExecutor.setChannel(channel);
+        transportManager.registerChannelListener(subscriptionManager);
 
         subscriptionManager.start();
     }
 
     @Override
-    public void disconnect()
-    {
-        subscriptionManager.closeAllSubscriptions();
-
-        subscriptionManager.stop();
-
-        cmdExecutor.setChannel(null);
-        channelManager.closeAllChannelsAsync().join();
-        channel = null;
-    }
-
-    @Override
     public void close()
     {
-        if (isConnected())
-        {
-            disconnect();
-        }
+        subscriptionManager.closeAllSubscriptions();
+        subscriptionManager.stop();
 
-        try
-        {
-            connectionPool.close();
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        try
-        {
-            transport.close();
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        try
-        {
-            dataFrameReceiveBuffer.close();
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    protected boolean isConnected()
-    {
-        return channel != null;
-    }
-
-
-    @Override
-    public TransportConnectionPool getConnectionPool()
-    {
-        return connectionPool;
-    }
-
-    public DataFramePool getDataFramePool()
-    {
-        return dataFramePool;
+        transportManager.close();
     }
 
     @Override
@@ -218,9 +104,20 @@ public class TngpClientImpl implements TngpClient
         return new TopicClientImpl(this, topicName, partitionId);
     }
 
+    @Override
+    public TransportConnection openConnection()
+    {
+        return transportManager.openConnection();
+    }
+
     public ClientCmdExecutor getCmdExecutor()
     {
         return cmdExecutor;
+    }
+
+    public TransportManager getTransportManager()
+    {
+        return transportManager;
     }
 
     public SubscriptionManager getSubscriptionManager()
@@ -238,8 +135,4 @@ public class TngpClientImpl implements TngpClient
         return initializationProperties;
     }
 
-    public Channel getChannel()
-    {
-        return channel;
-    }
 }

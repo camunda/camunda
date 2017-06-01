@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.it;
 
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.logstreams.log.LogStream.*;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -25,36 +24,54 @@ public class ClientRule extends ExternalResource
 
     public ClientRule()
     {
-        this(() -> new Properties());
+        this(Properties::new);
     }
 
-    public ClientRule(Supplier<Properties> propertiesProvider)
+    public ClientRule(final Supplier<Properties> propertiesProvider)
     {
         this.properties = propertiesProvider.get();
 
     }
 
+    protected TngpClient createTngpClient()
+    {
+        return TngpClient.create(properties);
+    }
+
+    public void closeClient()
+    {
+        if (client != null)
+        {
+            client.close();
+            client = null;
+        }
+    }
+
     @Override
     protected void before() throws Throwable
     {
-        client = TngpClient.create(properties);
-        client.connect();
+        client = createTngpClient();
     }
 
     @Override
     protected void after()
     {
-        client.close();
+        closeClient();
     }
 
     public TngpClient getClient()
     {
+        if (client == null)
+        {
+            client = createTngpClient();
+        }
+
         return client;
     }
 
     public void interruptBrokerConnection()
     {
-        final Channel channel = ((TngpClientImpl) client).getChannel();
+        final Channel channel = ((TngpClientImpl) client).getTransportManager().getChannelForCommand(null);
         try
         {
             ((ChannelImpl) channel).getSocketChannel().shutdownOutput();

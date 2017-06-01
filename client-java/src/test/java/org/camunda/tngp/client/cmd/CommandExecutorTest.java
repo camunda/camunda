@@ -1,15 +1,11 @@
 package org.camunda.tngp.client.cmd;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -18,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.client.impl.TransportManager;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
@@ -29,8 +26,6 @@ import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.util.buffer.RequestWriter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -107,11 +102,12 @@ public class CommandExecutorTest
             .blockLength(ExecuteCommandResponseEncoder.BLOCK_LENGTH)
             .version(ExecuteCommandResponseEncoder.SCHEMA_VERSION);
 
-        commandExecutor = new ClientCmdExecutor(
-                mock(TransportConnectionPool.class),
-                mock(DataFramePool.class));
+        final TransportManager transportManager = mock(TransportManager.class);
+        when(transportManager.openConnection()).thenReturn(connection);
+        when(transportManager.getChannelForTopic(any())).thenReturn(channel);
+        when(transportManager.getChannelForCommand(any())).thenReturn(channel);
 
-        commandExecutor.setChannel(channel);
+        commandExecutor = new ClientCmdExecutor(transportManager);
     }
 
     @Test

@@ -35,7 +35,7 @@ import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
-public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>
+public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>, TopicCommand
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandRequestEncoder commandRequestEncoder = new ExecuteCommandRequestEncoder();
@@ -76,6 +76,18 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     public RequestWriter getRequestWriter()
     {
         return this;
+    }
+
+    @Override
+    public String getTopicName()
+    {
+        return topicName;
+    }
+
+    @Override
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
     @Override

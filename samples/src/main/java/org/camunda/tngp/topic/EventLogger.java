@@ -30,10 +30,8 @@ public class EventLogger
         final Properties clientProperties = new Properties();
         clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);
 
-        final TngpClient tngpClient = new TngpClientImpl(clientProperties);
-
         System.out.println(String.format("> Connecting to %s ...", brokerContactPoint));
-        tngpClient.connect();
+        final TngpClient tngpClient = new TngpClientImpl(clientProperties);
 
         System.out.println("> Connected.");
 

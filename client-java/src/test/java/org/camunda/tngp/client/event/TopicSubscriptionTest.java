@@ -1,6 +1,6 @@
 package org.camunda.tngp.client.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 import java.util.Set;
@@ -313,7 +313,7 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        client.disconnect();
+        clientRule.closeClient();
 
         // then
         assertThat(subscription.isClosed());
@@ -357,10 +357,10 @@ public class TopicSubscriptionTest
 
         broker.closeServerSocketBinding();
         TestUtil.waitUntil(() -> !firstSubscription.isOpen());
-        client.disconnect();
+        clientRule.closeClient();
 
         broker.openServerSocketBinding();
-        client.connect();
+        client = clientRule.getClient();
 
         // when
         final TopicSubscription secondSubscription = clientRule.topic().newSubscription()

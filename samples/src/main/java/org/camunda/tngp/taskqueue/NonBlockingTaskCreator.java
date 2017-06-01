@@ -10,12 +10,11 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.ClientProperties;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class NonBlockingTaskCreator
 {
@@ -39,16 +38,14 @@ public class NonBlockingTaskCreator
         final String topicName = "default-topic";
         final int partitionId = 0;
 
-        try (final TngpClient client = TngpClient.create(properties))
+        try (TngpClient client = TngpClient.create(properties))
         {
-            client.connect();
 
-            final TransportConnectionPool connectionPool = client.getConnectionPool();
             final TaskTopicClient asyncTaskService = client.taskTopic(topicName, partitionId);
 
             final String payload = "{}";
 
-            try (final TransportConnection connection = connectionPool.openConnection())
+            try (TransportConnection connection = client.openConnection())
             {
                 final long time = System.currentTimeMillis();
 
