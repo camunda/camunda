@@ -122,6 +122,7 @@ public class WorkflowDeploymentCache
         {
             final LoggedEvent workflowEvent = logStreamReader.next();
 
+            deploymentEvent.reset();
             workflowEvent.readValue(deploymentEvent);
 
             // currently, it can only be one

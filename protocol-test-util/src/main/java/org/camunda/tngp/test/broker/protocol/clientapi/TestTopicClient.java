@@ -12,15 +12,17 @@
  */
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.test.util.collection.MapBuilder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsArray;
 
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.agrona.DirectBuffer;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.test.util.collection.MapBuilder;
 
 public class TestTopicClient
 {
@@ -71,6 +73,11 @@ public class TestTopicClient
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
 
         return response.key();
+    }
+
+    public long createWorkflowInstance(String bpmnProcessId, DirectBuffer payload)
+    {
+        return createWorkflowInstance(bpmnProcessId, bufferAsArray(payload));
     }
 
     public long createWorkflowInstance(String bpmnProcessId, byte[] payload)
@@ -125,7 +132,12 @@ public class TestTopicClient
 
     public void completeTaskOfType(String taskType)
     {
-        completeTaskOfType(taskType, null);
+        completeTaskOfType(taskType, (byte[]) null);
+    }
+
+    public void completeTaskOfType(String taskType, DirectBuffer payload)
+    {
+        completeTaskOfType(taskType, bufferAsArray(payload));
     }
 
     public void completeTaskOfType(String taskType, byte[] payload)
@@ -135,6 +147,7 @@ public class TestTopicClient
         final SubscribedEvent taskEvent = apiRule
             .subscribedEvents()
             .filter(taskEvents("LOCKED"))
+            .filter(e -> e.event().get("type").equals(taskType))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
@@ -144,10 +157,10 @@ public class TestTopicClient
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
-            .put(PROP_EVENT, "COMPLETE")
-            .put("type", taskType)
-            .put("lockOwner", taskEvent.event().get("lockOwner"))
-            .put("headers", taskEvent.event().get("headers"));
+                .put(PROP_EVENT, "COMPLETE")
+                .put("type", taskType)
+                .put("lockOwner", taskEvent.event().get("lockOwner"))
+                .put("headers", taskEvent.event().get("headers"));
 
         if (payload != null)
         {

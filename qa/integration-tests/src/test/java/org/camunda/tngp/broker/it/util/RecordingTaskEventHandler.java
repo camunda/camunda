@@ -88,6 +88,11 @@ public class RecordingTaskEventHandler extends ExternalResource
         return task -> task.getEventType().equals(type.name());
     }
 
+    public static Predicate<TaskEvent> taskType(final String type)
+    {
+        return task -> task.getType().equals(type);
+    }
+
     public static Predicate<TaskEvent> retries(final int retries)
     {
         return task -> task.getRetries() == retries;

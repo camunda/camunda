@@ -136,8 +136,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 workflowInstanceIndexStore,
                 activityInstanceIndexStore,
                 workflowInstancePayloadIndexStore,
-                workflowCfg.cacheSize,
-                workflowCfg.maxPayloadSize);
+                workflowCfg.deploymentCacheSize,
+                workflowCfg.payloadCacheSize);
 
         final StreamProcessorService workflowStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
@@ -167,10 +167,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
-
-        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(responseWriter, incidentInstanceIndex, activityInstanceIndex, incidentTaskIndex);
+        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(incidentInstanceIndex, activityInstanceIndex, incidentTaskIndex);
 
         final StreamProcessorService incidentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,

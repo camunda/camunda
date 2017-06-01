@@ -1,43 +1,27 @@
 package org.camunda.tngp.client.impl;
 
-import static org.camunda.tngp.client.ClientProperties.BROKER_CONTACTPOINT;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
+import static org.camunda.tngp.client.ClientProperties.*;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.util.Properties;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.ClientProperties;
-import org.camunda.tngp.client.IncidentTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
-import org.camunda.tngp.client.incident.impl.IncidentTopicClientImpl;
 import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.transport.Channel;
-import org.camunda.tngp.transport.ChannelManager;
-import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
-import org.camunda.tngp.transport.SocketAddress;
-import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.TransportBuilder;
+import org.camunda.tngp.transport.*;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TngpClientImpl implements TngpClient
 {
@@ -224,14 +208,6 @@ public class TngpClientImpl implements TngpClient
         ensureNotNullOrEmpty("topic name", topicName);
         ensureGreaterThanOrEqual("partition id", partitionId, 0);
         return new WorkflowTopicClientImpl(this, topicName, partitionId);
-    }
-
-    @Override
-    public IncidentTopicClient incidentTopic(String topicName, int partitionId)
-    {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
-        return new IncidentTopicClientImpl(this, topicName, partitionId);
     }
 
     @Override

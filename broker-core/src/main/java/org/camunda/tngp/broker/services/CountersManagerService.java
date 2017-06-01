@@ -43,10 +43,12 @@ public class CountersManagerService implements Service<Counters>
         ctx.run(() ->
         {
             final File countersFile = new File(countersFileName);
+            countersFile.mkdirs();
 
             System.out.format("Using %s for counters.\n", countersFile.getAbsolutePath());
 
             IoUtil.deleteIfExists(countersFile);
+
             mappedCountersFile = IoUtil.mapNewFile(countersFile, COUNTERS_FILE_SIZE);
 
             final UnsafeBuffer labelsBuffer = new UnsafeBuffer(mappedCountersFile, LABELS_BUFFER_OFFSET, LABELS_BUFFER_SIZE);

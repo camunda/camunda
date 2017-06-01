@@ -12,7 +12,6 @@
  */
 package org.camunda.tngp.broker.incident.index;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -30,20 +29,14 @@ import org.camunda.tngp.logstreams.spi.SnapshotSupport;
  * <li>incident state
  * <li>incident event position
  * <li>failure event position
- * <li>channel id
- * <li>connection id
- * <li>request id
  */
 public class IncidentIndex
 {
     private static final int STATE_OFFSET = 0;
     private static final int INCIDENT_EVENT_POSITION_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
     private static final int FAILURE_EVENT_POSITION_OFFSET = INCIDENT_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
-    private static final int CHANNEL_ID_OFFSET = FAILURE_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
-    private static final int CONNECTION_ID_OFFSET = CHANNEL_ID_OFFSET + SIZE_OF_INT;
-    private static final int REQUEST_ID_OFFSET = CONNECTION_ID_OFFSET + SIZE_OF_LONG;
 
-    private static final int INDEX_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + 4 * SIZE_OF_LONG;
+    private static final int INDEX_VALUE_SIZE = SIZE_OF_SHORT + 2 * SIZE_OF_LONG;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
@@ -105,21 +98,6 @@ public class IncidentIndex
         return isRead ? buffer.getLong(FAILURE_EVENT_POSITION_OFFSET, BYTE_ORDER) : -1L;
     }
 
-    public int getChannelId()
-    {
-        return isRead ? buffer.getInt(CHANNEL_ID_OFFSET, BYTE_ORDER) : -1;
-    }
-
-    public long getConnectionId()
-    {
-        return isRead ? buffer.getLong(CONNECTION_ID_OFFSET, BYTE_ORDER) : -1L;
-    }
-
-    public long getRequestId()
-    {
-        return isRead ? buffer.getLong(REQUEST_ID_OFFSET, BYTE_ORDER) : -1L;
-    }
-
     public IncidentIndex newIncident(long incidentKey)
     {
         key = incidentKey;
@@ -151,27 +129,6 @@ public class IncidentIndex
     {
         ensureRead();
         buffer.putLong(FAILURE_EVENT_POSITION_OFFSET, position, BYTE_ORDER);
-        return this;
-    }
-
-    public IncidentIndex setChannelId(int channelId)
-    {
-        ensureRead();
-        buffer.putInt(CHANNEL_ID_OFFSET, channelId, BYTE_ORDER);
-        return this;
-    }
-
-    public IncidentIndex setConnectionId(long requestId)
-    {
-        ensureRead();
-        buffer.putLong(CONNECTION_ID_OFFSET, requestId, BYTE_ORDER);
-        return this;
-    }
-
-    public IncidentIndex setRequestId(long connectionId)
-    {
-        ensureRead();
-        buffer.putLong(REQUEST_ID_OFFSET, connectionId, BYTE_ORDER);
         return this;
     }
 

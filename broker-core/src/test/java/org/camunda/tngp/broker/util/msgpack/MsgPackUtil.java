@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.util.msgpack;
 
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapArray;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import java.nio.charset.StandardCharsets;
@@ -13,6 +14,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.msgpack.spec.MsgPackReader;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
+import org.camunda.tngp.test.util.collection.MapBuilder;
 
 
 public class MsgPackUtil
@@ -52,11 +54,26 @@ public class MsgPackUtil
     public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
+        encodeMsgPack(buffer, arg);
+        return buffer;
+    }
+
+    private static void encodeMsgPack(MutableDirectBuffer buffer, Consumer<MsgPackWriter> arg)
+    {
         final MsgPackWriter writer = new MsgPackWriter();
         writer.wrap(buffer, 0);
         arg.accept(writer);
         buffer.wrap(buffer, 0, writer.getOffset());
-        return buffer;
+    }
+
+    public static Map<String, Object> asMap(byte[] array)
+    {
+        return asMap(wrapArray(array));
+    }
+
+    public static Map<String, Object> asMap(DirectBuffer buffer)
+    {
+        return asMap(buffer, 0, buffer.capacity());
     }
 
     @SuppressWarnings("unchecked")
@@ -67,7 +84,7 @@ public class MsgPackUtil
         return (Map<String, Object>) deserializeElement(reader);
     }
 
-    protected static Object deserializeElement(MsgPackReader reader)
+    private static Object deserializeElement(MsgPackReader reader)
     {
 
         final MsgPackToken token = reader.readToken();
@@ -107,5 +124,63 @@ public class MsgPackUtil
             default:
                 throw new RuntimeException("Not implemented yet");
         }
+    }
+
+    public static DirectBuffer fromMap(Map<String, Object> entries)
+    {
+        return fromMap(new UnsafeBuffer(new byte[1024]), entries);
+    }
+
+    private static DirectBuffer fromMap(MutableDirectBuffer buffer, Map<String, Object> entries)
+    {
+        encodeMsgPack(buffer, c ->
+        {
+            c.writeMapHeader(entries.size());
+
+            entries.entrySet().stream().forEach(e ->
+            {
+                c.writeString(wrapString(e.getKey()));
+
+                // simple mapping - can be extended if needed
+                final Object value = e.getValue();
+                if (value instanceof String)
+                {
+                    c.writeString(wrapString((String) value));
+                }
+                else if (value instanceof Integer)
+                {
+                    c.writeInteger((int) value);
+                }
+                else if (value instanceof Long)
+                {
+                    c.writeInteger((long) value);
+                }
+                else if (value instanceof Double)
+                {
+                    c.writeFloat((double) value);
+                }
+                else if (value instanceof Boolean)
+                {
+                    c.writeBoolean((boolean) value);
+                }
+                else if (value instanceof byte[])
+                {
+                    c.writeBinary(wrapArray((byte[]) value));
+                }
+                else
+                {
+                    throw new UnsupportedOperationException();
+                }
+            });
+        });
+
+        return buffer;
+    }
+
+    public static MapBuilder<DirectBuffer> createMsgPack()
+    {
+        final MutableDirectBuffer buf = new UnsafeBuffer(new byte[1024]);
+
+        return new MapBuilder<>(buf, m -> fromMap(buf, m));
     }
 }

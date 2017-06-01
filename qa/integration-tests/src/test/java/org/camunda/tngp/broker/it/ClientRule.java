@@ -6,7 +6,6 @@ import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import java.util.Properties;
 import java.util.function.Supplier;
 
-import org.camunda.tngp.client.IncidentTopicClient;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.TopicClient;
@@ -62,11 +61,6 @@ public class ClientRule extends ExternalResource
     public WorkflowTopicClient workflowTopic()
     {
         return client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
-    }
-
-    public IncidentTopicClient incidentTopic()
-    {
-        return client.incidentTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
     }
 
 }

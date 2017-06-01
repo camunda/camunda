@@ -16,9 +16,11 @@ import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.CancelWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateDeploymentCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
+import org.camunda.tngp.client.workflow.cmd.UpdatePayloadCmd;
 import org.camunda.tngp.client.workflow.impl.CancelWorkflowInstanceCmdImpl;
 import org.camunda.tngp.client.workflow.impl.CreateDeploymentCmdImpl;
 import org.camunda.tngp.client.workflow.impl.CreateWorkflowInstanceCmdImpl;
+import org.camunda.tngp.client.workflow.impl.UpdatePayloadCmdImpl;
 
 public class WorkflowTopicClientImpl implements WorkflowTopicClient
 {
@@ -49,6 +51,12 @@ public class WorkflowTopicClientImpl implements WorkflowTopicClient
     public CancelWorkflowInstanceCmd cancel()
     {
         return new CancelWorkflowInstanceCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+    }
+
+    @Override
+    public UpdatePayloadCmd updatePayload()
+    {
+        return new UpdatePayloadCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
 }

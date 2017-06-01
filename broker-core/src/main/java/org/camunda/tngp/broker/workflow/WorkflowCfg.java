@@ -4,6 +4,7 @@ import org.camunda.tngp.broker.system.ComponentConfiguration;
 
 public class WorkflowCfg extends ComponentConfiguration
 {
-    public int cacheSize = 512;
-    public int maxPayloadSize = 1024 * 2;
+    public int deploymentCacheSize = 32;
+
+    public int payloadCacheSize = 64;
 }

@@ -1,16 +1,13 @@
 package org.camunda.tngp.broker.workflow.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
-import java.nio.ByteOrder;
 import java.util.EnumMap;
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -31,10 +28,10 @@ import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.index.ActivityInstanceIndex;
+import org.camunda.tngp.broker.workflow.index.PayloadCache;
 import org.camunda.tngp.broker.workflow.index.WorkflowDeploymentCache;
 import org.camunda.tngp.broker.workflow.index.WorkflowInstanceIndex;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
@@ -59,8 +56,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
     protected final CancelWorkflowInstanceProcessor cancelWorkflowInstanceProcessor = new CancelWorkflowInstanceProcessor();
 
+    protected final UpdatePayloadProcessor updatePayloadProcessor = new UpdatePayloadProcessor();
+
     protected final EventProcessor sequenceFlowTakenEventProcessor = new ActiveWorkflowInstanceProcessor(new SequenceFlowTakenEventProcessor());
-    protected final EventProcessor activityReadyEventProcessor;
+    protected final EventProcessor activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor());
     protected final EventProcessor activityActivatedEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityActivatedEventProcessor());
     protected final EventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
     protected final EventProcessor activityCompletingEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityCompletingEventProcessor());
@@ -89,17 +88,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowInstanceIndex workflowInstanceIndex;
     protected final ActivityInstanceIndex activityInstanceIndex;
     protected final WorkflowDeploymentCache workflowDeploymentCache;
+    protected final PayloadCache payloadCache;
 
     /**
      * An hash index which contains as key the BPMN process id and as value the corresponding latest definition version.
      */
     protected final Bytes2LongHashIndex latestWorkflowVersionIndex;
-
-    /**
-     * An hash index which contains as key the workflow instance key and as value the
-     * last payload.
-     */
-    protected final Long2BytesHashIndex workflowInstancePayloadIndex;
 
     protected final ComposedSnapshot composedSnapshot;
 
@@ -122,28 +116,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             IndexStore workflowVersionIndexStore,
             IndexStore workflowInstanceIndexStore,
             IndexStore activityInstanceIndexStore,
-            IndexStore workflowInstancePayloadIndexStore,
-            int cacheSize,
-            int initialMaxPayloadSize)
+            IndexStore payloadIndexStore,
+            int deploymentCacheSize,
+            int payloadCacheSize)
     {
         this.responseWriter = responseWriter;
         this.logStreamReader = new BufferedLogStreamReader();
 
         this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
-        this.workflowDeploymentCache = new WorkflowDeploymentCache(workflowPositionIndexStore, cacheSize, logStreamReader);
+
+        this.workflowDeploymentCache = new WorkflowDeploymentCache(workflowPositionIndexStore, deploymentCacheSize, logStreamReader);
+        this.payloadCache = new PayloadCache(payloadIndexStore, payloadCacheSize, logStreamReader);
+
         this.workflowInstanceIndex = new WorkflowInstanceIndex(workflowPositionIndexStore);
         this.activityInstanceIndex = new ActivityInstanceIndex(activityInstanceIndexStore);
 
-        this.payloadMappingProcessor = new MappingProcessor(initialMaxPayloadSize);
-        this.activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor(initialMaxPayloadSize));
-        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, initialMaxPayloadSize + SIZE_OF_INT);
+        this.payloadMappingProcessor = new MappingProcessor(4096);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
-                new HashIndexSnapshotSupport<>(workflowInstancePayloadIndex, workflowInstancePayloadIndexStore),
                 workflowInstanceIndex.getSnapshotSupport(),
                 activityInstanceIndex.getSnapshotSupport(),
-                workflowDeploymentCache.getSnapshotSupport());
+                workflowDeploymentCache.getSnapshotSupport(),
+                payloadCache.getSnapshotSupport());
 
     }
 
@@ -279,6 +274,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = aspectHandlers.get(currentActivity.getBpmnAspect());
                 break;
             }
+
+            case UPDATE_PAYLOAD:
+                eventProcessor = updatePayloadProcessor;
+                break;
 
             default:
                 break;
@@ -451,13 +450,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityReadyEventProcessor implements EventProcessor
     {
-        private final MutableDirectBuffer tempPayload;
-
-        ActivityReadyEventProcessor(int initialMaxPayloadSize)
-        {
-            tempPayload = new ExpandableArrayBuffer(initialMaxPayloadSize + SIZE_OF_INT);
-        }
-
         @Override
         public void processEvent()
         {
@@ -480,8 +472,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
             final DirectBuffer sourcePayload = workflowInstanceEvent.getPayload();
-            tempPayload.putInt(0, sourcePayload.capacity(), ByteOrder.LITTLE_ENDIAN);
-            sourcePayload.getBytes(0, tempPayload, SIZE_OF_INT, sourcePayload.capacity());
 
             final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
@@ -497,7 +487,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            workflowInstancePayloadIndex.put(workflowInstanceEvent.getWorkflowInstanceKey(), tempPayload.byteArray());
+            payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition);
         }
     }
 
@@ -675,7 +665,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             if (isCompleted)
             {
                 workflowInstanceIndex.remove(workflowInstanceEvent.getWorkflowInstanceKey());
-                workflowInstancePayloadIndex.remove(workflowInstanceEvent.getWorkflowInstanceKey());
+                payloadCache.remove(workflowInstanceEvent.getWorkflowInstanceKey());
             }
             else
             {
@@ -765,8 +755,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityCompletingEventProcessor implements EventProcessor
     {
-        protected final DirectBuffer tempPayload = new UnsafeBuffer(0, 0);
-
         @Override
         public void processEvent()
         {
@@ -779,12 +767,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
-            final byte payload[] = workflowInstancePayloadIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
-            tempPayload.wrap(payload);
-            final Integer payloadLength = tempPayload.getInt(0);
-            tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
+            final DirectBuffer workflowInstancePayload = payloadCache.getPayload(workflowInstanceEvent.getWorkflowInstanceKey());
 
-            final int resultLen = payloadMappingProcessor.merge(workflowInstanceEvent.getPayload(), tempPayload, mappings);
+            final int resultLen = payloadMappingProcessor.merge(workflowInstanceEvent.getPayload(), workflowInstancePayload, mappings);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
             workflowInstanceEvent.setPayload(buffer, 0, resultLen);
         }
@@ -939,7 +924,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             if (isCanceled)
             {
                 workflowInstanceIndex.remove(eventKey);
-                workflowInstancePayloadIndex.remove(eventKey);
+                payloadCache.remove(eventKey);
                 activityInstanceIndex.remove(activityInstanceKey);
             }
         }
@@ -987,6 +972,53 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             if (isActive)
             {
                 processor.updateState();
+            }
+        }
+    }
+
+    private final class UpdatePayloadProcessor implements EventProcessor
+    {
+        private boolean isUpdated;
+
+        @Override
+        public void processEvent()
+        {
+            isUpdated = false;
+
+            final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey()).getActivityInstanceKey();
+
+            // the index contains the activity when it is ready, activated or completing
+            // in this cases, the payload can be updated and it is taken for the next workflow instance event
+            if (currentActivityInstanceKey > 0 && currentActivityInstanceKey == eventKey)
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.PAYLOAD_UPDATED);
+
+                isUpdated = true;
+            }
+            else
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.UPDATE_PAYLOAD_REJECTED);
+            }
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            return sendWorkflowInstanceResponse();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.key(eventKey));
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isUpdated)
+            {
+                payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition);
             }
         }
     }

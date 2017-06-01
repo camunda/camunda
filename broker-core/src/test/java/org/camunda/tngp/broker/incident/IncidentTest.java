@@ -24,8 +24,8 @@ import org.agrona.MutableDirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.incident.data.ErrorType;
-import org.camunda.tngp.broker.incident.data.IncidentEventType;
 import org.camunda.tngp.broker.test.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
@@ -39,7 +39,6 @@ import org.junit.rules.RuleChain;
 
 public class IncidentTest
 {
-    public static final String EXPECTED_ERROR_MESSAGE = "No data found for query $.foo.";
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
@@ -104,7 +103,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
@@ -131,7 +130,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("failureEventPosition", failureEvent.position())
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
@@ -148,15 +147,13 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
         // when
-        final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        assertThat(response.key()).isEqualTo(incidentEvent.key());
-        assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVED.name());
-
         final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         assertThat(followUpEvent.event()).containsEntry("payload", PAYLOAD);
 
@@ -164,7 +161,7 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
@@ -182,15 +179,13 @@ public class IncidentTest
 
         testClient.completeTaskOfType("test");
 
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
         // when
-        final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        assertThat(response.key()).isEqualTo(incidentEvent.key());
-        assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVED.name());
-
         final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
         assertThat(followUpEvent.event()).containsEntry("payload", PAYLOAD);
 
@@ -198,24 +193,12 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
             .containsEntry("activityInstanceKey", followUpEvent.key())
             .containsEntry("taskKey", -1);
-    }
-
-    @Test
-    public void shouldRejectToResolveNotExistingIncident() throws Exception
-    {
-        // when
-        final ExecuteCommandResponse response = resolveIncident(-1L, PAYLOAD);
-
-        // then
-        assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVE_REJECTED.name());
-
-        testClient.receiveSingleEvent(incidentEvents("RESOLVE_REJECTED"));
     }
 
     @Test
@@ -237,18 +220,14 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
+        final  SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
-        assertThat(incidentEvent.event()).containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE);
+        assertThat(incidentEvent.event()).containsEntry("errorMessage", "No data found for query $.foo.");
 
         // when
-        final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        assertThat(response.key()).isEqualTo(incidentEvent.key());
-        assertThat(response.getEvent())
-            .containsEntry("eventType", IncidentEventType.RESOLVE_FAILED.name())
-            .containsEntry("errorMessage", "No data found for query $.bar.");
-
         final SubscribedEvent resolveFailedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVE_FAILED"));
         assertThat(resolveFailedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(resolveFailedEvent.event())
@@ -267,21 +246,22 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
-        resolveIncident(incidentEvent.key(), MsgPackHelper.EMTPY_OBJECT);
+        updatePayload(workflowInstanceKey, failureEvent.key(), MsgPackHelper.EMTPY_OBJECT);
 
         testClient.receiveSingleEvent(incidentEvents("RESOLVE_FAILED"));
 
         // when
-        resolveIncident(incidentEvent.key(), PAYLOAD);
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
         final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask");
@@ -306,7 +286,7 @@ public class IncidentTest
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", EXPECTED_ERROR_MESSAGE)
+            .containsEntry("errorMessage", "No data found for query $.foo.")
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask")
@@ -398,27 +378,6 @@ public class IncidentTest
             .containsEntry("activityId", "failingTask")
             .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"))
             .containsEntry("taskKey", taskEvent.key());
-    }
-
-    @Test
-    public void shouldRejectToResolveTaskIncident() throws Exception
-    {
-        // given
-        testClient.deploy(WORKFLOW_INPUT_MAPPING);
-
-        testClient.createWorkflowInstance("process", PAYLOAD);
-
-        failTaskWithNoRetriesLeft();
-
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
-
-        // when
-        final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
-
-        // then
-        assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVE_REJECTED.name());
-
-        testClient.receiveSingleEvent(incidentEvents("RESOLVE_REJECTED"));
     }
 
     @Test
@@ -532,18 +491,21 @@ public class IncidentTest
         assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
     }
 
-    private ExecuteCommandResponse resolveIncident(long incidentKey, byte[] payload)
+    private void updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload)
     {
-        return apiRule.createCmdRequest()
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
             .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
-            .eventType(EventType.INCIDENT_EVENT)
-            .key(incidentKey)
+            .eventType(EventType.WORKFLOW_EVENT)
+            .key(activityInstanceKey)
             .command()
-                .put("eventType", IncidentEventType.RESOLVE)
+                .put("eventType", WorkflowInstanceEventType.UPDATE_PAYLOAD)
+                .put("workflowInstanceKey", workflowInstanceKey)
                 .put("payload", payload)
                 .done()
             .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", WorkflowInstanceEventType.PAYLOAD_UPDATED.name());
     }
 
     private void cancelWorkflowInstance(final long workflowInstanceKey)

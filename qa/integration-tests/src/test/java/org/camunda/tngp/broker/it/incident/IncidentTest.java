@@ -29,12 +29,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
-import org.camunda.tngp.client.event.EventMetadata;
-import org.camunda.tngp.client.event.TopicEvent;
-import org.camunda.tngp.client.event.TopicEventHandler;
-import org.camunda.tngp.client.event.TopicEventType;
-import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.incident.cmd.IncidentResolveResult;
+import org.camunda.tngp.client.event.*;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.impl.TaskEventType;
@@ -91,14 +86,14 @@ public class IncidentTest
     }
 
     @Test
-    public void shouldResolveIncidentForFailedInputMapping()
+    public void shouldResolveInputMappingIncident()
     {
         // given
         clientRule.workflowTopic().deploy()
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        clientRule.workflowTopic().create()
+        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
             .bpmnProcessId("process")
             .execute();
 
@@ -106,14 +101,13 @@ public class IncidentTest
         assertThat(incidentEventRecorder.getEventTypes()).contains("CREATED");
 
         // when
-        final IncidentResolveResult result = clientRule.incidentTopic().resolve()
-            .incidentKey(incidentEventRecorder.getIncidentKey())
-            .modifiedPayload(PAYLOAD)
+        clientRule.workflowTopic().updatePayload()
+            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
+            .activityInstanceKey(incidentEventRecorder.getActivityInstanceKey())
+            .payload(PAYLOAD)
             .execute();
 
         // then
-        assertThat(result.isIncidentResolved()).isTrue();
-
         assertThat(taskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
         waitUntil(() -> incidentEventRecorder.getEventTypes().contains("RESOLVED"));
     }
@@ -188,8 +182,10 @@ public class IncidentTest
     private static final class IncidentEventRecoder implements TopicEventHandler
     {
         private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("\"eventType\":\"(\\w+)\"");
+        private static final Pattern ACTIVITY_INSTANCE_KEY_PATTERN = Pattern.compile("\"activityInstanceKey\":(\\d+)");
 
         private long incidentKey = -1;
+        private long activityInstanceKey = -1;
         private List<String> eventTypes = Collections.synchronizedList(new ArrayList<>());
 
         @Override
@@ -199,11 +195,18 @@ public class IncidentTest
             {
                 incidentKey = metadata.getEventKey();
 
-                final Matcher matcher = EVENT_TYPE_PATTERN.matcher(event.getJson());
-                if (matcher.find())
+                final Matcher typeMatcher = EVENT_TYPE_PATTERN.matcher(event.getJson());
+                if (typeMatcher.find())
                 {
-                    final String eventType = matcher.group(1);
+                    final String eventType = typeMatcher.group(1);
                     eventTypes.add(eventType);
+                }
+
+                final Matcher activityMatcher = ACTIVITY_INSTANCE_KEY_PATTERN.matcher(event.getJson());
+                if (activityMatcher.find())
+                {
+                    final String key = activityMatcher.group(1);
+                    activityInstanceKey = Long.valueOf(key);
                 }
             }
         }
@@ -216,6 +219,11 @@ public class IncidentTest
         public List<String> getEventTypes()
         {
             return Collections.unmodifiableList(eventTypes);
+        }
+
+        public long getActivityInstanceKey()
+        {
+            return activityInstanceKey;
         }
     }
 
