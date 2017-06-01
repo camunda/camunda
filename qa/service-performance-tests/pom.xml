@@ -151,7 +151,6 @@
               <transportPort>9300</transportPort>
               <httpPort>9200</httpPort>
               <timeout>60</timeout>
-              <pathScripts>${project.basedir}/../../backend/src/main/scripts</pathScripts>
             </configuration>
             <executions>
               <!--

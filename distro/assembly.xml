@@ -27,13 +27,6 @@
     </dependencySet>
   </dependencySets>
 
-  <fileSets>
-    <fileSet>
-      <outputDirectory>/server/elasticsearch-${elasticsearch.version}/config/scripts</outputDirectory>
-      <directory>${project.basedir}/../backend/src/main/scripts</directory>
-    </fileSet>
-  </fileSets>
-
   <files>
     <file>
       <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
