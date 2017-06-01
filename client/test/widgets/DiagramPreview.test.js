@@ -81,32 +81,32 @@ describe('<DiagramPreview>', () => {
     update(null);
 
     expect(node).to.contain.text('No diagram');
-    expect(node.querySelector('.diagram-error').style.display).to.eql('block');
+    expect(node.querySelector('.diagram-error')).not.to.have.class('hidden');
   });
 
   describe('setLoading', () => {
     it('should hide loader when used with false', () => {
       //given
       DiagramPreview.setLoading(true);
-      expect(node.querySelector('.diagram-loading').style.display).to.eql('block');
+      expect(node.querySelector('.diagram-loading')).not.to.have.class('hidden');
 
       //when
       DiagramPreview.setLoading(false);
 
       //expected
-      expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+      expect(node.querySelector('.diagram-loading')).to.have.class('hidden');
     });
 
     it('should show loader when used with true', () => {
       //given
       DiagramPreview.setLoading(false);
-      expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+      expect(node.querySelector('.diagram-loading')).to.have.class('hidden');
 
       //when
       DiagramPreview.setLoading(true);
 
       //expected
-      expect(node.querySelector('.diagram-loading').style.display).to.eql('block');
+      expect(node.querySelector('.diagram-loading')).not.to.have.class('hidden');
     });
 
     it('should import diagram when loading is in progress', () => {
