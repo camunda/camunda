@@ -17,7 +17,6 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
-import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ErrorResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandRequest;
