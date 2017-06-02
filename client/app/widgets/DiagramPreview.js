@@ -1,6 +1,6 @@
 import {
   jsx, updateOnlyWhenStateChanges, withSelector,
-  createReferenceComponent, setElementVisibility, hasClass
+  createReferenceComponent, setElementVisibility, isElementVisible
 } from 'view-utils';
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
@@ -68,7 +68,7 @@ export function createDiagramPreview() {
       };
 
       function updatePreventionCondition(previousState, newState) {
-        return hasClass(loaderNode, 'hidden') && isEqual(previousState, newState);
+        return !isElementVisible(loaderNode) && isEqual(previousState, newState);
       }
 
       return [templateUpdate, updateOnlyWhenStateChanges(update, updatePreventionCondition)];

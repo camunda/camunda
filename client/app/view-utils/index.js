@@ -24,4 +24,4 @@ export {createReferenceComponent} from './createReferenceComponent';
 export {withSockets, Socket} from './withSockets';
 export {createStateComponent} from './createStateComponent';
 export {Class} from './Class';
-export {setElementVisibility} from './setElementVisibility';
+export {setElementVisibility, isElementVisible} from './elementVisibility';
