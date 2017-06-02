@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.CompletionException;
 
@@ -35,6 +36,7 @@ public class ClientChannelPoolingTest
     {
         clientTransport = Transports.createTransport("client")
             .threadingMode(ThreadingMode.SHARED)
+            .channelKeepAlivePeriod(Integer.MAX_VALUE)
             .build();
 
         serverTransport = Transports.createTransport("server")
@@ -465,6 +467,39 @@ public class ClientChannelPoolingTest
         TestUtil.waitUntil(() -> channel.isClosed());
         assertThat(channel.isClosed()).isTrue();
         assertThat(listener.getChannelOpenInvocations()).containsExactly(channel);
+    }
+
+    @Test
+    public void shouldEvictOldestUnusedChannelWhenManagerCapacityIsReached()
+    {
+        // given
+        ClockUtil.setCurrentTime(Instant.now());
+        final int portRangeStart = 51115;
+        final int managerCapacity = 4;
+        final ChannelManager channelManager = clientTransport.createClientChannelPool()
+            .initialCapacity(managerCapacity)
+            .build();
+
+        bindServerSocketsInPortRange(portRangeStart, managerCapacity + 1);
+        final Channel[] channels = openStreamsInPortRange(channelManager, portRangeStart, managerCapacity);
+
+        // releasing all channels but the first one
+        for (int i = 1; i < channels.length; i++)
+        {
+            ClockUtil.addTime(Duration.ofSeconds(1));
+            channelManager.returnChannel(channels[i]);
+        }
+
+        // when opening a new channel such that the capacity is exceeded
+        openStreamsInPortRange(channelManager, portRangeStart + managerCapacity, 1);
+
+        // then the oldest unused channel is closed
+        TestUtil.waitUntil(() -> channels[1].isClosed());
+
+        assertThat(channels[0].isReady()).isTrue();
+        assertThat(channels[1].isClosed()).isTrue();
+        assertThat(channels[2].isReady()).isTrue();
+        assertThat(channels[3].isReady()).isTrue();
     }
 
     protected Channel[] openStreamsInPortRange(ChannelManager pool, int firstPort, int range)

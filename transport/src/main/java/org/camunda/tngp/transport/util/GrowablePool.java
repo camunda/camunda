@@ -75,6 +75,7 @@ public class GrowablePool<T> implements Iterable<T>
             if (values[i] == element)
             {
                 elementIndex = i;
+                break;
             }
         }
         if (elementIndex >= 0)

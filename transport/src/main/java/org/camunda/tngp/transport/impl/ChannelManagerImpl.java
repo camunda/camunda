@@ -61,15 +61,18 @@ public class ChannelManagerImpl implements ChannelManager
 
         final ToIntFunction<PoolIterator<ChannelImpl>> evictionDecider = it ->
         {
-            final long minimalLastUsedTime = Long.MAX_VALUE;
+            long minimalLastUsedTime = Long.MAX_VALUE;
             int channelToEvict = -1;
 
             while (it.hasNext())
             {
                 final ChannelImpl channel = it.next();
-                if (!channel.isInUse() && channel.getLastUsed() < minimalLastUsedTime)
+                final long currentLastUsedTime = channel.getLastUsed();
+
+                if (!channel.isInUse() && currentLastUsedTime < minimalLastUsedTime)
                 {
                     channelToEvict = it.getCurrentElementIndex();
+                    minimalLastUsedTime = currentLastUsedTime;
                 }
             }
 
@@ -105,14 +108,7 @@ public class ChannelManagerImpl implements ChannelManager
 
     public PooledFuture<Channel> requestChannelAsync(SocketAddress remoteAddress)
     {
-        final ChannelRequest channelRequest = scheduleChannelRequest(remoteAddress, null);
-
-        if (channelRequest == null)
-        {
-            return null; // for backpressure
-        }
-
-        return channelRequest;
+        return scheduleChannelRequest(remoteAddress, null);
     }
 
     public Channel requestChannel(SocketAddress remoteAddress)
