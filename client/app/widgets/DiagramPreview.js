@@ -20,7 +20,7 @@ export function createDiagramPreview() {
         <Loader className="diagram-loading" style="position: absolute">
           <Reference name="loader" />
         </Loader>
-        <div className="diagram-error hidden">
+        <div className="diagram-error">
           <Icon icon="alert" />
           <div className="text">
             No diagram
@@ -36,6 +36,8 @@ export function createDiagramPreview() {
       const viewerNode = Reference.getNode('viewer');
       const loaderNode = Reference.getNode('loader');
       const errorNode = Reference.getNode('error');
+
+      setElementVisibility(errorNode, false);
 
       const viewer = new Viewer({
         container: viewerNode
