@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.it;
 import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
+import java.io.IOException;
 import java.util.Properties;
 import java.util.function.Supplier;
 
@@ -10,6 +11,9 @@ import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.TopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
+import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.transport.Channel;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -46,6 +50,19 @@ public class ClientRule extends ExternalResource
     public TngpClient getClient()
     {
         return client;
+    }
+
+    public void interruptBrokerConnection()
+    {
+        final Channel channel = ((TngpClientImpl) client).getChannel();
+        try
+        {
+            ((ChannelImpl) channel).getSocketChannel().shutdownOutput();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public TopicClient topic()

@@ -64,7 +64,6 @@ public class ClientCmdExecutor
         final RequestWriter requestWriter = cmd.getRequestWriter();
         requestWriter.validate();
 
-        System.out.println("Client: executing command " + cmd);
         ensureStreamConnected();
 
         final PooledTransportRequest request = connection.openRequest(channel.getStreamId(), requestWriter.getLength());

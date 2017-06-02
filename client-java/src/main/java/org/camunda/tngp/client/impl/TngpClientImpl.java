@@ -238,4 +238,8 @@ public class TngpClientImpl implements TngpClient
         return initializationProperties;
     }
 
+    public Channel getChannel()
+    {
+        return channel;
+    }
 }
