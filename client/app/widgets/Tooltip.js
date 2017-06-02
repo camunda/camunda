@@ -12,13 +12,14 @@ export function Tooltip({children}) {
     node.addEventListener('mouseenter', () => {
       $document.body.appendChild(tooltip);
 
-      const {top, left} = node.getBoundingClientRect();
-
       onNextTick(() => {
+        const {top, left} = node.getBoundingClientRect();
         const {clientWidth: width, clientHeight: height} = tooltip;
+        const scrollLeft = $window.pageXOffset || $document.documentElement.scrollLeft;
+        const scrollTop = $window.pageYOffset || $document.documentElement.scrollTop;
 
-        tooltip.style.left = `${left + $window.scrollX - width/2 + 6}px`;
-        tooltip.style.top = `${top + $window.scrollY - height}px`;
+        tooltip.style.left = `${left + scrollLeft - width/2 + 6}px`;
+        tooltip.style.top = `${top + scrollTop - height}px`;
         tooltip.style.position = 'absolute';
       });
     });
