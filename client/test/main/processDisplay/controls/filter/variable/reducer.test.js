@@ -37,7 +37,7 @@ describe('variable reducer', () => {
     }, action);
 
     expect(state.operator).to.eql('=');
-    expect(state.values).to.eql([]);
+    expect(state.values).to.eql(['']);
   });
 
   it('should set the operator field', () => {
@@ -49,19 +49,17 @@ describe('variable reducer', () => {
 
   it('should set the variable value', () => {
     const action = createSetValueAction('NEW_VAL');
-    const state = reducer(undefined, action);
+    const state = reducer({values: ['']}, action);
 
     expect(state.values).to.eql(['NEW_VAL']);
   });
 
-  it('should remove other values when a new value is set', () => {
-    const action = createSetValueAction('NEW_VAL');
+  it('should replace previous value when a new value is set', () => {
+    const action = createSetValueAction('NEW_VAL', 1);
     const state = reducer({values: ['a', 'b', 'c']}, action);
 
     expect(state.values).to.contain('NEW_VAL');
-    expect(state.values).to.not.contain('a');
     expect(state.values).to.not.contain('b');
-    expect(state.values).to.not.contain('c');
   });
 
   it('should remove multiple values if the new operator does not allow multiple values', () => {

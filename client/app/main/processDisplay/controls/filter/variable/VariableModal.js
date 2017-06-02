@@ -98,7 +98,8 @@ export function createVariableModal(createCallback, getProcessDefinition) {
         return selectedIdx === undefined ||
           operator === undefined ||
           values === undefined ||
-          values.length === 0;
+          values.length === 0 ||
+          values[0] === '';
       }
 
       function changeVariable({event:{target:{selectedIndex}}}) {

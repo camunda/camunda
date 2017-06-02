@@ -61,8 +61,8 @@ export function setOperator(operator) {
   dispatchAction(createSetOperatorAction(operator));
 }
 
-export function setValue(value) {
-  dispatchAction(createSetValueAction(value));
+export function setValue(value, idx) {
+  dispatchAction(createSetValueAction(value, idx));
 }
 
 export function addValue(value) {

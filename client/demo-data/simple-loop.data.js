@@ -26,6 +26,11 @@ function handleTask(index, task, variables) {
 
   return {
     someVar: getEngineValue('whatever'),
+    randomString: getEngineValue(
+      Math.random()
+          .toString(36)
+          .substr(2)
+    ),
     var1: getEngineValue(variables.var1 + 100)
   };
 }
