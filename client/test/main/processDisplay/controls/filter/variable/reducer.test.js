@@ -33,11 +33,11 @@ describe('variable reducer', () => {
     const state = reducer({
       selectedIdx: 123,
       operator: 'OP',
-      value: ['AAAAAAA']
+      values: ['AAAAAAA']
     }, action);
 
     expect(state.operator).to.eql('=');
-    expect(state.value).to.eql([]);
+    expect(state.values).to.eql([]);
   });
 
   it('should set the operator field', () => {
@@ -51,39 +51,39 @@ describe('variable reducer', () => {
     const action = createSetValueAction('NEW_VAL');
     const state = reducer(undefined, action);
 
-    expect(state.value).to.eql(['NEW_VAL']);
+    expect(state.values).to.eql(['NEW_VAL']);
   });
 
   it('should remove other values when a new value is set', () => {
     const action = createSetValueAction('NEW_VAL');
-    const state = reducer({value: ['a', 'b', 'c']}, action);
+    const state = reducer({values: ['a', 'b', 'c']}, action);
 
-    expect(state.value).to.contain('NEW_VAL');
-    expect(state.value).to.not.contain('a');
-    expect(state.value).to.not.contain('b');
-    expect(state.value).to.not.contain('c');
+    expect(state.values).to.contain('NEW_VAL');
+    expect(state.values).to.not.contain('a');
+    expect(state.values).to.not.contain('b');
+    expect(state.values).to.not.contain('c');
   });
 
   it('should remove multiple values if the new operator does not allow multiple values', () => {
     operatorCanHaveMultipleValues.returns(false);
 
     const action = createSetOperatorAction('<');
-    const state = reducer({value: ['a', 'b', 'c']}, action);
+    const state = reducer({values: ['a', 'b', 'c']}, action);
 
-    expect(state.value).to.have.a.lengthOf(1);
+    expect(state.values).to.have.a.lengthOf(1);
   });
 
   it('should add a new value', () => {
     const action = createAddValueAction('NEW_VAL');
-    const state = reducer({value: ['OLD_VAL']}, action);
+    const state = reducer({values: ['OLD_VAL']}, action);
 
-    expect(state.value).to.contain('NEW_VAL');
+    expect(state.values).to.contain('NEW_VAL');
   });
 
   it('should remove a value', () => {
     const action = createRemoveValueAction('a');
-    const state = reducer({value: ['a', 'b', 'c']}, action);
+    const state = reducer({values: ['a', 'b', 'c']}, action);
 
-    expect(state.value).to.not.contain('a');
+    expect(state.values).to.not.contain('a');
   });
 });

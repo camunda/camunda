@@ -16,7 +16,7 @@ describe('<ValueSelection>', () => {
   beforeEach(() => {
     variables = {
       data: [
-        {values:['a', 'b', 'c']}
+        {values: ['a', 'b', 'c']}
       ]
     };
 
@@ -34,7 +34,7 @@ describe('<ValueSelection>', () => {
 
     ({node, update} = mountTemplate(<ValueSelection />));
 
-    update({variables, selectedIdx: 0, operator: '=', value: []});
+    update({variables, selectedIdx: 0, operator: '=', values: []});
   });
 
   afterEach(() => {
@@ -49,7 +49,7 @@ describe('<ValueSelection>', () => {
   });
 
   it('should have the current value checked', () => {
-    update({variables, selectedIdx: 0, operator: '=', value: ['b']});
+    update({variables, selectedIdx: 0, operator: '=', values: ['b']});
 
     const checkboxes = node.querySelectorAll('input[type="checkbox"]');
 
@@ -83,7 +83,7 @@ describe('<ValueSelection>', () => {
   it('should display radio buttons if multiple values are not allowed', () => {
     operatorCanHaveMultipleValues.returns(false);
 
-    update({variables, selectedIdx: 0, operator: '=', value: ['b']});
+    update({variables, selectedIdx: 0, operator: '=', values: ['b']});
 
     const radios = node.querySelectorAll('input[type="radio"]');
 
@@ -93,7 +93,7 @@ describe('<ValueSelection>', () => {
   it('should set selected value when the user clicks the radio button', () => {
     operatorCanHaveMultipleValues.returns(false);
 
-    update({variables, selectedIdx: 0, operator: '=', value: ['b']});
+    update({variables, selectedIdx: 0, operator: '=', values: ['b']});
 
     const cRadio = node.querySelectorAll('input[type="radio"]')[2];
 

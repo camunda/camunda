@@ -21,8 +21,8 @@ export function ValueInput() {
     setValue(parsedValue);
   }
 
-  function getValue({value}) {
-    return value || '';
+  function getValue({values}) {
+    return values && values[0] || '';
   }
 
   function getInputType({variables: {data}, selectedIdx}) {

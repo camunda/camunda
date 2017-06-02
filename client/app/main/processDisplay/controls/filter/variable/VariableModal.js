@@ -94,25 +94,25 @@ export function createVariableModal(createCallback, getProcessDefinition) {
         return selectedIdx !== undefined && data[selectedIdx][property];
       }
 
-      function isFilterInvalid({selectedIdx, operator, value}) {
+      function isFilterInvalid({selectedIdx, operator, values}) {
         return selectedIdx === undefined ||
           operator === undefined ||
-          value === undefined ||
-          value === '';
+          values === undefined ||
+          values.length === 0;
       }
 
       function changeVariable({event:{target:{selectedIndex}}}) {
         selectVariableIdx(selectedIndex - 1); // -1 to deal with the "please select variable" entry
       }
 
-      function createFilter({state: {variables: {data}, selectedIdx, operator, value}}) {
+      function createFilter({state: {variables: {data}, selectedIdx, operator, values}}) {
         const variable = data[selectedIdx];
 
         createVariableFilter({
           name: variable.name,
           type: variable.type,
-          operator: operator,
-          values: value
+          operator,
+          values
         });
 
         Modal.close();

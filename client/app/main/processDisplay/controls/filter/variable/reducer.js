@@ -8,52 +8,44 @@ export const SET_VALUE = 'SET_VALUE';
 export const ADD_VALUE = 'ADD_VALUE';
 export const REMOVE_VALUE = 'REMOVE_VALUE';
 
-export const reducer = addLoading((state = {operator: '=', value: []}, action) => {
+export const reducer = addLoading((state = {operator: '=', values: []}, action) => {
   if (action.type === SELECT_VARIABLE_IDX) {
     return {
       ...state,
       selectedIdx: action.idx,
       operator: '=',
-      value: []
+      values: []
     };
   }
   if (action.type === SET_OPERATOR) {
-    let newValue = state.value;
+    let newValues = state.values;
 
     if (!operatorCanHaveMultipleValues(action.operator)) {
-      newValue = [state.value[0]];
+      newValues = [state.values[0]];
     }
 
     return {
       ...state,
       operator: action.operator,
-      value: newValue
+      values: newValues
     };
   }
   if (action.type === SET_VALUE) {
     return {
       ...state,
-      value: [action.value]
+      values: [action.value]
     };
   }
   if (action.type === ADD_VALUE) {
-    const valueCopy = [...state.value];
-
-    valueCopy.push(action.value);
-
     return {
       ...state,
-      value: valueCopy
+      values: state.values.concat(action.value)
     };
   }
   if (action.type === REMOVE_VALUE) {
-    const valueCopy = [...state.value];
-
-    valueCopy.splice(valueCopy.indexOf(action.value), 1);
-
     return {
       ...state,
-      value: valueCopy
+      values: state.values.filter(value => value !== action.value)
     };
   }
   if (action.type === CHANGE_ROUTE_ACTION && !action.route.params.definition) {

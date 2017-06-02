@@ -68,11 +68,11 @@ describe('<ValueInput>', () => {
   });
 
   it('should reflect the state value in the input field', () => {
-    const value = 'AAAAA';
+    const values = ['AAAAA'];
 
-    update({variables, value});
+    update({variables, values});
 
-    expect(node.querySelector('input').value).to.eql(value);
+    expect(node.querySelector('input').value).to.eql(values[0]);
   });
 
   it('should set the value if the user changes it', () => {
