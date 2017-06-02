@@ -82,8 +82,6 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[writer.getLength()]);
         writer.write(buffer, 0);
 
-        System.out.println("Expected:\n" + bufferAsHexString(buffer));
-        System.out.println("Actual:\n" + bufferAsHexString(actual));
         return hasBytes(buffer);
     }
 
