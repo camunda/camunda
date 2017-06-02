@@ -25,9 +25,9 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
           data={getChartData(relativeData)}
           chartConfig={{absoluteScale: false, onHoverChange}}>
           <Scope selector={getHeader(relativeHeader)}>
-            Gateway:&nbsp;<Text property="Gateway" />
+            Gateway:&nbsp;<Text property="gateway" />
             &nbsp;/
-            EndEvent:&nbsp;<Text property="EndEvent" />
+            EndEvent:&nbsp;<Text property="endEvent" />
             &nbsp;- Amount:&nbsp;
             <Text property="amount" />
           </Scope>
@@ -91,7 +91,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
 
         if (hovered) {
           const {diagram, statistics:{correlation:{data:{followingNodes}}}} = State.getState();
-          const gateway = getSelection(diagram).gateway;
+          const gateway = getSelection(diagram).Gateway;
           const activity = Object.keys(followingNodes)[index];
 
           const sequenceFlow = findSequenceFlowBetweenGatewayAndActivity(elementRegistry, gateway, activity);

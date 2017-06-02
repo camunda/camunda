@@ -134,6 +134,70 @@ describe('<Analytics>', () => {
     __ResetDependency__('resetStatisticData');
   });
 
+  it('should add branch analysis overlay for hovered end event element', () => {
+    const hoveredState = {
+      state: {
+        heatmap: {
+          data: heatmapData
+        },
+        analytics: {
+          selection: {},
+          hover: {
+            EndEvent: {
+              elementId: 'act-1'
+            }
+          }
+        }
+      },
+      diagramRendered: true
+    };
+
+    const elements = [
+      {id: 'act-1'}
+    ];
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
+    update(hoveredState);
+
+    expect(addBranchOverlay.calledWith(viewer, 'act-1', heatmapData)).to.eql(true);
+  });
+
+  it('should not add branch analysis overlay for hovered end event type', () => {
+    const hoveredState = {
+      state: {
+        heatmap: {
+          data: heatmapData
+        },
+        analytics: {
+          selection: {},
+          hover: {
+            EndEvent: {
+              elementType: 'EndEvent'
+            }
+          }
+        }
+      },
+      diagramRendered: true
+    };
+
+    const elements = [
+      {
+        id: 'act-1',
+        type: 'EndEvent'
+      }
+    ];
+
+    isValidElement = ({type}, expectedType) => type === expectedType;
+    __set__('isValidElement', isValidElement);
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
+    update(hoveredState);
+
+    expect(addBranchOverlay.called).to.eql(false);
+  });
+
   it('should add overlay for hovered element', () => {
     update(initialState);
     viewer.on.firstCall.args[1]({element: diagramElement});
