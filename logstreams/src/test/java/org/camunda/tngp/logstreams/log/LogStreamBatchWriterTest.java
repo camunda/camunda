@@ -14,19 +14,11 @@ package org.camunda.tngp.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamPartitionIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -523,7 +515,8 @@ public class LogStreamBatchWriterTest
             final int fragmentCount = (int) invocation.getArguments()[1];
             final int length = (int) invocation.getArguments()[2];
 
-            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedLength(length + fragmentCount * HEADER_LENGTH));
+            final int batchLength = length + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
+            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedLength(batchLength));
 
             return alignedLength(length);
         };
