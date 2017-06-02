@@ -2,22 +2,14 @@ package org.camunda.tngp.dispatcher.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragmentBatch;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ClaimedFragmentBatchTest
 {
@@ -30,6 +22,9 @@ public class ClaimedFragmentBatchTest
 
     private UnsafeBuffer underlyingBuffer;
     private ClaimedFragmentBatch claimedBatch;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void init()
@@ -190,6 +185,82 @@ public class ClaimedFragmentBatchTest
         assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH) - HEADER_LENGTH);
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo((byte) 0);
+    }
+
+    @Test
+    public void shouldFillBatchCompletely()
+    {
+        // given
+        claimedBatch.wrap(underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH);
+
+        claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
+
+        // when
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int fragmentLength = remainingCapacity - HEADER_LENGTH;
+
+        claimedBatch.nextFragment(fragmentLength, 2);
+        claimedBatch.commit();
+
+        // then
+        final int bufferOffset = PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(fragmentLength);
+    }
+
+    @Test
+    public void shouldAddFragmentIfRemainingCapacityIsLessThanAlignment()
+    {
+        // given
+        claimedBatch.wrap(underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH);
+
+        claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
+
+        // when
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int fragmentLength = remainingCapacity - HEADER_LENGTH - FRAME_ALIGNMENT + 1;
+
+        claimedBatch.nextFragment(fragmentLength, 2);
+        claimedBatch.commit();
+
+        // then
+        final int bufferOffset = PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(fragmentLength);
+    }
+
+    @Test
+    public void shouldFailToAddFragmentIfGreaterThanRemainingCapacity()
+    {
+        // given
+        claimedBatch.wrap(underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH);
+
+        claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
+
+        // then
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("The given fragment length is greater than the remaining capacity");
+
+        // when
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+
+        claimedBatch.nextFragment(remainingCapacity - HEADER_LENGTH + 1, 2);
+    }
+
+    @Test
+    public void shouldFailToAddFragmentIfRemainingCapacityIsLessThanPaddingMessage()
+    {
+        // given
+        claimedBatch.wrap(underlyingBuffer, PARTITION_ID, PARTITION_OFFSET, FRAGMENT_LENGTH);
+
+        claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
+
+        // then
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("The given fragment length is greater than the remaining capacity");
+
+        // when
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+
+        claimedBatch.nextFragment(remainingCapacity - HEADER_LENGTH - FRAME_ALIGNMENT, 2);
     }
 
 }

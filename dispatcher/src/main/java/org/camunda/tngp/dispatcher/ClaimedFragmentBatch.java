@@ -14,15 +14,7 @@ package org.camunda.tngp.dispatcher;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,6 +32,8 @@ import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
  */
 public class ClaimedFragmentBatch
 {
+    private static final String ERROR_MESSAGE = "The given fragment length is greater than the remaining capacity. offset: %d, length: %d, capacity: %d";
+
     private static final int FIRST_FRAGMENT_OFFSET = 0;
 
     private final UnsafeBuffer buffer;
@@ -90,19 +84,31 @@ public class ClaimedFragmentBatch
      * @param streamId
      *            the stream id of the fragment
      * @return the position of the fragment
+     *
+     * @throws IllegalArgumentException
+     *             if the given length is greater than the remaining capacity.
+     *             In this case, you should try with smaller length, or abort
+     *             the whole batch.
      */
     @SuppressWarnings("restriction")
     public long nextFragment(int length, int streamId)
     {
         currentOffset = nextOffset;
 
+        nextOffset += DataFrameDescriptor.alignedLength(length);
+
+        // ensure that there is enough capacity for padding message, or less than frame alignment which omits the padding message
+        final int remainingCapacity = buffer.capacity() - nextOffset;
+        if (remainingCapacity < 0 || (FRAME_ALIGNMENT <= remainingCapacity && remainingCapacity < HEADER_LENGTH))
+        {
+            throw new IllegalArgumentException(String.format(ERROR_MESSAGE, currentOffset, length, buffer.capacity()));
+        }
+
         // set negative length => uncommitted fragment
         buffer.putIntOrdered(lengthOffset(currentOffset), -length);
         UNSAFE.storeFence();
         buffer.putShort(typeOffset(currentOffset), TYPE_MESSAGE);
         buffer.putInt(streamIdOffset(currentOffset), streamId);
-
-        nextOffset += DataFrameDescriptor.alignedLength(length);
 
         return position(partitionId, partitionOffset + nextOffset);
     }
@@ -173,7 +179,7 @@ public class ClaimedFragmentBatch
         // since the claimed batch size can be longer than the written fragment
         // size, we need to fill the rest with a padding fragment
         final int remainingLength = buffer.capacity() - nextOffset - HEADER_LENGTH;
-        if (remainingLength > 0)
+        if (remainingLength >= 0)
         {
             buffer.putInt(lengthOffset(nextOffset), remainingLength);
             buffer.putShort(typeOffset(nextOffset), TYPE_PADDING);
