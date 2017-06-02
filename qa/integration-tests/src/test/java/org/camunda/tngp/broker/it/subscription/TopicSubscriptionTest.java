@@ -304,7 +304,7 @@ public class TopicSubscriptionTest
         secondEventHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
 
-    @Ignore
+    @Test
     public void shouldHandleOneEventAtATime() throws InterruptedException
     {
         // given
@@ -328,7 +328,8 @@ public class TopicSubscriptionTest
         final int numExpectedEvents = 2;
         Thread.sleep(handlingIntervalLength.toMillis() * numExpectedEvents);
 
-        TestUtil.waitUntil(() -> handler.numInvocations() == numExpectedEvents);
+        // at least CREATE and CREATED of the task, but we may have already handled a third event (e.g. raft)
+        TestUtil.waitUntil(() -> handler.numInvocations() >= numExpectedEvents);
         assertThat(handler.hasDetectedParallelism()).isFalse();
     }
 
