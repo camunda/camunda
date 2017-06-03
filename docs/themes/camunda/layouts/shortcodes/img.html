@@ -1,7 +1,0 @@
-<figure class="image{{ with .Get "class" }} {{.}}{{ end }}">
-  <span><img
-      src="{{ .Get "src" }}"
-      {{ if (.Get "title") }}
-          title="{{ with .Get "title"}}{{.}}{{ end }}"
-      {{ end }} /></span>
-</figure>

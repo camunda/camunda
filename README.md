@@ -1,66 +1,29 @@
-TNGP - The Next Generation Process Engine
-=========================================
+# Zeebe.io
 
-TNGP is a system capable of executing BPMN-based workflows that is optimized for high throughput and scalability. It follows a client-server model. The server is also called the *broker* in this context.
+Zeebe (or "zb") is a modern, distributed Workflow System that scales orchestration of workers, functions & microservices using visual workflows. With Zeebe, you can reliably processes all your transactions as they happen. [Learn More](/docs/src/introduction/why-zeebe.md)
 
-Maven coordinates
------------------
+**Features**
+​
+* High Throughput​
+* Horizontal Scalability​
+* Durability & Fault Tolerance​
+* Predictable Response Times​
+* Fully Message-Driven​
+* Easy to operate​
+* Language agnostic​
 
-### TNGP release repository
+## Documentation
 
-```
-<repository>
-  <id>tngp-releases</id>
-  <name>TNGP Releases</name>
-  <url>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</url>
-</repository>
-```
+* [Introduction](/docs/src/introduction/README.md)
+* [Basics](/docs/src/basics/README.md)
+* [Configuration](/docs/src/operations/the-zbcfgtoml-file.md)
+* [Java Client](/docs/src/java-client/README.md)
+* [BPMN Workflows](/docs/src/bpmn-workflows/README.md)
 
-### TNGP snapshot repository
+## Getting Help
 
-```
-<repository>
-  <id>tngp-releases</id>
-  <name>TNGP Releases</name>
-  <url>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</url>
-</repository>
-```
+TODO: Forum Link
 
-### Broker distribution
+## Contributing
 
-```
-<dependency>
-  <groupId>org.camunda.tngp</groupId>
-  <artifactId>tngp-distribution</artifactId>
-  <version>1.0.0-alpha3</version>
-  <type>zip</type>
-</dependency>
-```
-
-### Java Client
-
-```
-<dependency>
-  <groupId>org.camunda.tngp</groupId>
-  <artifactId>tngp-client-java</artifactId>
-  <version>1.0.0-alpha3</version>
-</dependency>
-```
-
-Get Started
------------
-
-1. [Run the broker](docs/content/get-started/broker.md)
-1. [Make your BPMN TNGP-ready](docs/content/get-started/bpmn.md)
-1. [Build a Java client application](docs/content/get-started/java-client-library.md)
-
-
-Build from source
------------------
-
-Run `mvn clean install` from root folder. Obtain snapshots from local Maven repo.
-
-Feedback
---------
-
-Please use github issues.
+Read the [Contributions Guide](/CONTRIBUTING.md)
