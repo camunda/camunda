@@ -76,14 +76,14 @@
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
-    <field name="partitionId" id="1" type="int32" />
+    <field name="partitionId" id="1" type="uint16" />
     <field name="key" id="2" type="uint64" />
     <data name="topicName" id="3" type="varDataEncoding" />
     <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="SubscribedEvent" id="30">
-    <field name="partitionId" id="1" type="int32" />
+    <field name="partitionId" id="1" type="uint16" />
     <field name="position" id="2" type="uint64" />
     <field name="key" id="3" type="uint64" />
     <field name="subscriberKey" id="4" type="uint64" />
