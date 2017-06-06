@@ -7,28 +7,23 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda</groupId>
-    <artifactId>camunda-release-parent</artifactId>
-    <version>2.5</version>
+    <groupId>org.camunda.tngp</groupId>
+    <artifactId>tngp-parent</artifactId>
+    <version>1.0.0-alpha1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
 
 
   <properties>
-    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
-    <additionalparam>-Xdoclint:none</additionalparam>
-    <version.util>1.0.0-SNAPSHOT</version.util>
+    <version.util>1.0.0-alpha6</version.util>
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>dispatcher</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>1.0.0-alpha4</version>
     </dependency>
 
     <dependency>
@@ -46,27 +41,23 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-      <version>0.9.6</version>
     </dependency>
 
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -76,7 +67,6 @@
       <version>${version.util}</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
