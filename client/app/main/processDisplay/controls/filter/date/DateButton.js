@@ -48,8 +48,8 @@ function getDateRange(type) {
       const start = new Date();
       const end = new Date();
 
-      start.setMonth(start.getMonth() - 1);
       start.setDate(1);
+      start.setMonth(start.getMonth() - 1);
       end.setDate(0);
       return {start, end};
     }

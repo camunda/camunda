@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DateButton, TODAY, YESTERDAY, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateButton';
+import {DateButton, TODAY, YESTERDAY, LAST_MONTH, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateButton';
 
 describe('<DateButton>', () => {
   let node;
@@ -12,8 +12,11 @@ describe('<DateButton>', () => {
   let end;
   let datepickerFct;
   let $;
+  let clock;
 
   beforeEach(() => {
+    clock = sinon.useFakeTimers(new Date('2017-03-30').getTime());
+
     formatDate = sinon.stub().returnsArg(0);
     __set__('formatDate', formatDate);
 
@@ -39,6 +42,8 @@ describe('<DateButton>', () => {
   afterEach(() => {
     __ResetDependency__('formatDate');
     __ResetDependency__('$');
+
+    clock.restore();
   });
 
   it('should contain a button', () => {
@@ -67,5 +72,22 @@ describe('<DateButton>', () => {
 
     expect(datepickerFct.args[0][1]).to.not.eql(datepickerFct.args[2][1]);
     expect(datepickerFct.args[1][1]).to.not.eql(datepickerFct.args[3][1]);
+  });
+
+  it('should correctly set the last month and not overflow', () => {
+    ({node, update} = mountTemplate(<DateButton dateLabel={LAST_MONTH} />));
+    update({start, end});
+
+    triggerEvent({
+      node,
+      selector: 'button',
+      eventName: 'click'
+    });
+
+    const appliedStart = datepickerFct.args[2][1].toISOString().substr(0, 10);
+    const appliedEnd = datepickerFct.args[3][1].toISOString().substr(0, 10);
+
+    expect(appliedStart).to.eql('2017-02-01');
+    expect(appliedEnd).to.eql('2017-02-28');
   });
 });
