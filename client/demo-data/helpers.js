@@ -47,3 +47,19 @@ exports.getEngineValue = (value, type) => {
 
   return {value, type};
 };
+
+exports.getRandomValue = (values, type) => {
+  const index = Math.floor(Math.random() * values.length);
+
+  return exports.getEngineValue(values[index], type);
+};
+
+exports.range = (start, end) => {
+  const values = [];
+
+  for (let i = start; i <= end; i++) {
+    values.push(i);
+  }
+
+  return values;
+};

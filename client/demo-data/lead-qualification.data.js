@@ -1,4 +1,4 @@
-const {getResource, generateInstances, getEngineValue} = require('./helpers');
+const {getResource, generateInstances, getEngineValue, getRandomValue, range} = require('./helpers');
 
 const resource = 'lead-qualification.bpmn';
 
@@ -6,7 +6,7 @@ exports.resources = [
   getResource(resource)
 ];
 
-exports.instances = generateInstances(resource, 10, (index) => {
+exports.instances = generateInstances(resource, 70, (index) => {
   return {
     variables: {
       var1: {
@@ -39,6 +39,6 @@ function handleTask() {
     budget: getEngineValue(4000),
     amUser: getEngineValue('demo'),
     sdrUser: getEngineValue('sdrUser'),
-    sdrAssigner: getEngineValue('sdrAssigner}')
+    sdrAssigner: getRandomValue(range(1, 5).map(x => `s-${x}`))
   };
 }
