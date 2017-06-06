@@ -44,16 +44,6 @@ describe('<ValueInput>', () => {
     expect(node.querySelector('input')).to.exist;
   });
 
-  it('should have a number typed input field for numbers', () => {
-    update({
-      variables,
-      selectedIdx: 2,
-      values: ['']
-    });
-
-    expect(node.querySelector('input').getAttribute('type')).to.eql('number');
-  });
-
   it('should have a text input field by default', () => {
     update({
       variables,
@@ -148,19 +138,6 @@ describe('<ValueInput>', () => {
     });
 
     expect(setValue.calledWith(newValue)).to.eql(true);
-  });
-
-  it('should parse numbers for numeric variables', () => {
-    update({variables, selectedIdx: 2, values: ['']});
-    node.querySelector('input').value = '1234';
-
-    triggerEvent({
-      node,
-      selector: 'input',
-      eventName: 'input'
-    });
-
-    expect(setValue.calledWith(1234)).to.eql(true);
   });
 
   it('should not parse numbers for string variables', () => {

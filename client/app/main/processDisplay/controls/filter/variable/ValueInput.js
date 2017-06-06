@@ -1,4 +1,4 @@
-import {jsx, includes, Attribute, OnEvent, Class, Scope, List} from 'view-utils';
+import {jsx, Attribute, OnEvent, Class, Scope, List} from 'view-utils';
 import {onNextTick} from 'utils';
 import {setValue, addValue} from './service';
 
@@ -32,9 +32,6 @@ export function ValueInput() {
       if (!variableType || variableType === 'Boolean') {
         type = 'hidden';
       }
-      if (includes(['Short', 'Integer', 'Long', 'Double'], variableType)) {
-        type = 'number';
-      }
 
       // should always have at least one entry
       const processedValues = values.length === 0 ? [''] : values;
@@ -61,14 +58,7 @@ export function ValueInput() {
     }
 
     function changeValue({event: {target: {value}}, state}) {
-      const inputType = state.type;
-      let parsedValue = value;
-
-      if (inputType === 'number') {
-        parsedValue = parseFloat(parsedValue);
-      }
-
-      setValue(parsedValue, state.idx);
+      setValue(value, state.idx);
 
       // setValue will cause a state update that updates the template so that
       // the original input will be unfocussed. We need to re-focus it manually.

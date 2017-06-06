@@ -22,9 +22,11 @@ export function ValueSelection() {
     return [templateUpdate, ({values}) => {
       const inputs = parentNode.querySelectorAll('.value-list-label input');
 
-      inputs.forEach(input => {
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+
         input.checked = includes(values, input.parentNode.textContent);
-      });
+      }
     }];
   };
 
