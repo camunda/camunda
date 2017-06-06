@@ -58,7 +58,7 @@ public class ProcessDefinitionReader {
         .setTypes(types.toArray(new String[types.size()]))
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
-        .setSize(100)
+        .setSize(20)
         .get();
 
     HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult = new HashMap<>();
