@@ -107,8 +107,6 @@ mavenJob(jobName) {
       evenIfUnstable false
     }
 
-    archiveJunit '**/target/surefire-reports/*.xml'
-
     extendedEmail {
       triggers {
         firstFailure {
