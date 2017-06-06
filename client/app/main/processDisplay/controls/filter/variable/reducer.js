@@ -51,7 +51,10 @@ export const reducer = addLoading((state = {operator: '=', values: []}, action) 
     };
   }
   if (action.type === CHANGE_ROUTE_ACTION && !action.route.params.definition) {
-    return {};
+    return {
+      operator: '=',
+      values: []
+    };
   }
 
   return state;
