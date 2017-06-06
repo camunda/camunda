@@ -57,13 +57,19 @@ export function ValueInput() {
              data[selectedIdx].type !== 'String';
     }
 
-    function changeValue({event: {target: {value}}, state}) {
-      setValue(value, state.idx);
+    function changeValue({event: {target}, state}) {
+      const selectionStart = target.selectionStart;
+      const selectionEnd = target.selectionEnd;
+
+      setValue(target.value, state.idx);
 
       // setValue will cause a state update that updates the template so that
       // the original input will be unfocussed. We need to re-focus it manually.
       onNextTick(() => {
-        document.querySelectorAll('.variable-value input')[state.idx].focus();
+        const element = document.querySelectorAll('.variable-value input')[state.idx];
+
+        element.focus();
+        element.setSelectionRange(selectionStart, selectionEnd);
       });
     }
   };
