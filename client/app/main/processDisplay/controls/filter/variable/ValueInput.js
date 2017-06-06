@@ -1,4 +1,4 @@
-import {jsx, Attribute, OnEvent, Class, Scope, List} from 'view-utils';
+import {jsx, OnEvent, Class, Scope, List} from 'view-utils';
 import {onNextTick} from 'utils';
 import {setValue, addValue} from './service';
 
@@ -9,7 +9,6 @@ export function ValueInput() {
         <List>
           <input className="form-control" placeholder="Enter value" type="text">
             <Class className="hidden" predicate={shouldNotDisplayInput} />
-            <Attribute attribute="value" selector="value" />
             <OnEvent event="input" listener={changeValue} />
           </input>
         </List>
@@ -23,7 +22,13 @@ export function ValueInput() {
 
     const templateUpdate = template(node, eventBus);
 
-    return templateUpdate;
+    return [templateUpdate, ({values}) => {
+      const nodes = node.querySelectorAll('input');
+
+      for (let i = 0; i < nodes.length; i++) {
+        nodes[i].value = typeof values[i] === 'undefined' ? '' : values[i];
+      }
+    }];
 
     function getValueList({variables: {data}, selectedIdx, values}) {
       const variableType = data && selectedIdx !== undefined && data[selectedIdx].type;
