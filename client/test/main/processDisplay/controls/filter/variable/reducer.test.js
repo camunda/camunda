@@ -37,7 +37,7 @@ describe('variable reducer', () => {
     }, action);
 
     expect(state.operator).to.eql('=');
-    expect(state.values).to.eql(['']);
+    expect(state.values).to.eql([]);
   });
 
   it('should set the operator field', () => {
@@ -50,6 +50,13 @@ describe('variable reducer', () => {
   it('should set the variable value', () => {
     const action = createSetValueAction('NEW_VAL');
     const state = reducer({values: ['']}, action);
+
+    expect(state.values).to.eql(['NEW_VAL']);
+  });
+
+  it('should create value entry if necessary', () => {
+    const action = createSetValueAction('NEW_VAL');
+    const state = reducer({values: []}, action);
 
     expect(state.values).to.eql(['NEW_VAL']);
   });

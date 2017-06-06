@@ -36,7 +36,10 @@ export function ValueInput() {
         type = 'number';
       }
 
-      return values.map((value, idx) => {
+      // should always have at least one entry
+      const processedValues = values.length === 0 ? [''] : values;
+
+      return processedValues.map((value, idx) => {
         return {
           value,
           idx,

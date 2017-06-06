@@ -14,7 +14,7 @@ export const reducer = addLoading((state = {operator: '=', values: []}, action) 
       ...state,
       selectedIdx: action.idx,
       operator: '=',
-      values: ['']
+      values: []
     };
   }
   if (action.type === SET_OPERATOR) {
@@ -31,11 +31,13 @@ export const reducer = addLoading((state = {operator: '=', values: []}, action) 
     };
   }
   if (action.type === SET_VALUE) {
+    const valuesCopy = [...state.values];
+
+    valuesCopy[action.idx] = action.value;
+
     return {
       ...state,
-      values: state.values.map((value, idx) => {
-        return idx === action.idx ? action.value : value;
-      })
+      values: valuesCopy
     };
   }
   if (action.type === ADD_VALUE) {

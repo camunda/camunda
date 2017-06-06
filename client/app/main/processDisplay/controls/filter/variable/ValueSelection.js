@@ -23,7 +23,7 @@ export function ValueSelection() {
       const inputs = parentNode.querySelectorAll('.value-list-label input');
 
       inputs.forEach(input => {
-        input.checked = includes(values, input.labels[0].textContent);
+        input.checked = includes(values, input.parentNode.textContent);
       });
     }];
   };
