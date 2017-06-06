@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.camunda.tngp</groupId>
   <artifactId>log</artifactId>
-  <version>1.0.0-alpha5</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -133,7 +133,7 @@
     <url>https://github.com/camunda-tngp/log</url>
     <connection>scm:git:git@github.com:camunda-tngp/log.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/log.git</developerConnection>
-    <tag>1.0.0-alpha5</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
