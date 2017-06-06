@@ -11,14 +11,18 @@ import {reducer,
 
 describe('variable reducer', () => {
   let operatorCanHaveMultipleValues;
+  const CHANGE_ROUTE_ACTION = 'CHANGE_ROUTE_ACTION';
 
   beforeEach(() => {
     operatorCanHaveMultipleValues = sinon.stub().returns(true);
     __set__('operatorCanHaveMultipleValues', operatorCanHaveMultipleValues);
+
+    __set__('CHANGE_ROUTE_ACTION', CHANGE_ROUTE_ACTION);
   });
 
   afterEach(() => {
     __ResetDependency__('operatorCanHaveMultipleValues');
+    __ResetDependency__('CHANGE_ROUTE_ACTION');
   });
 
   it('should set the selected index when handling select variable action', () => {
@@ -90,5 +94,15 @@ describe('variable reducer', () => {
     const state = reducer({values: ['a', 'b', 'c']}, action);
 
     expect(state.values).to.not.contain('a');
+  });
+
+  it('should reset filter back to defaults when switching route', () => {
+    const state = reducer({values: ['a', 'b', 'c']}, {
+      type: CHANGE_ROUTE_ACTION,
+      route: {params: {}}
+    });
+
+    expect(state.values).to.eql([]);
+    expect(state.operator).to.eql('=');
   });
 });
