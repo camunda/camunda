@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {TargetValueDisplay, __set__, __ResetDependency__} from 'main/processDisplay/diagram/targetValueDisplay/TargetValueDisplay';
+import {TargetValueDisplay, __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/TargetValueDisplay';
 
 describe('<TargetValueDisplay>', () => {
   let node;

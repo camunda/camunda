@@ -1,6 +1,6 @@
 import {isBpmnType, removeOverlays} from 'utils';
 import {prepareFlowNodes, addTargetValueBadge, addTargetValueTooltip, getTargetValue} from './service';
-import {getHeatmap} from 'main/processDisplay/diagram/heatmap/service';
+import {getHeatmap} from 'main/processDisplay/views/heatmap/service';
 
 export function createOverlaysRenderer(State, TargetValueModal) {
   return ({viewer}) => {

@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {addDiagramTooltip} from 'main/processDisplay/diagram/service';
+import {addDiagramTooltip} from 'main/processDisplay/views/service';
 
 describe('Diagram service', () => {
   const diagramElement = 'act1';

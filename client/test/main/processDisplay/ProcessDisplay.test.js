@@ -34,7 +34,7 @@ describe('<ProcessDisplay>', () => {
       controls: {
         view: 'none'
       },
-      diagram: {
+      views: {
         targetValue: {state: LOADED_STATE},
         bpmnXml: {state: LOADED_STATE},
         heatmap: {state: LOADED_STATE, data: {
@@ -173,15 +173,15 @@ describe('<ProcessDisplay>', () => {
   });
 
   it('should display a loading indicator while loading', () => {
-    state.diagram.bpmnXml.state = LOADING_STATE;
-    state.diagram.heatmap.state = LOADING_STATE;
+    state.views.bpmnXml.state = LOADING_STATE;
+    state.views.heatmap.state = LOADING_STATE;
     update(state);
 
     expect(node.querySelector('.loading_indicator')).to.not.be.null;
   });
 
   it('should display a loading indicator while loading target value', () => {
-    state.diagram.targetValue.state = LOADING_STATE;
+    state.views.targetValue.state = LOADING_STATE;
 
     update(state);
 
@@ -222,7 +222,7 @@ describe('<ProcessDisplay>', () => {
 
     expect(node.textContent).to.contain('AnalyticsDiagram');
     expect(AnalyticsDiagram.appliedWith({
-      selector: 'diagram'
+      selector: 'views'
     })).to.eql(true);
   });
 
@@ -239,7 +239,7 @@ describe('<ProcessDisplay>', () => {
 
   it('should display a no data indicator if the heatmap data contains no process instances', () => {
     selectedView = 'frequency';
-    state.diagram.heatmap.data.piCount = 0;
+    state.views.heatmap.data.piCount = 0;
     update(state);
 
     expect(node.querySelector('.no-data-indicator')).to.exist;
@@ -247,8 +247,8 @@ describe('<ProcessDisplay>', () => {
 
   it('should not display a no data indicator if data are not loaded', () => {
     selectedView = 'frequency';
-    state.diagram.heatmap.data.piCount = 0;
-    state.diagram.heatmap.state = 'some-not-loaded-state';
+    state.views.heatmap.data.piCount = 0;
+    state.views.heatmap.state = 'some-not-loaded-state';
     update(state);
 
     expect(node.querySelector('.no-data-indicator')).to.not.exist;

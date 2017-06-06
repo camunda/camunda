@@ -19,7 +19,7 @@ describe('<Statistics>', () => {
 
   beforeEach(() => {
     unopenedState = {
-      diagram: {
+      views: {
         analytics: {
           selection: {}
         }
@@ -30,7 +30,7 @@ describe('<Statistics>', () => {
     };
 
     openedState = {
-      diagram: {
+      views: {
         analytics: {
           selection: {
             EndEvent: 'a',

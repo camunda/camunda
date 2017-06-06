@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction} from 'main/processDisplay/diagram/reducer';
+import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction} from 'main/processDisplay/views/reducer';
 import {INITIAL_STATE} from 'utils/loading';
 
 describe('diagram reducer', () => {

@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {createHeatmapRendererFunction, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/Heatmap';
+import {createHeatmapRendererFunction, __set__, __ResetDependency__} from 'main/processDisplay/views/heatmap/Heatmap';
 
 describe('<Heatmap>', () => {
   const diagramXml = 'diagram-xml';

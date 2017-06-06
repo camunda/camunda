@@ -1,7 +1,7 @@
 import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
-import {TargetValueInput} from 'main/processDisplay/diagram/targetValueDisplay/TargetValueInput';
+import {TargetValueInput} from 'main/processDisplay/views/targetValueDisplay/TargetValueInput';
 
 describe('<TargetValueInput>', () => {
   it('should contain an input field', () => {

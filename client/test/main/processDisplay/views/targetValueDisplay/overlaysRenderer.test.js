@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {createOverlaysRenderer, __set__, __ResetDependency__} from 'main/processDisplay/diagram/targetValueDisplay/overlaysRenderer';
+import {createOverlaysRenderer, __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/overlaysRenderer';
 
 describe('target value overlays renderer', () => {
   const heatmapNode = document.createElement('img');

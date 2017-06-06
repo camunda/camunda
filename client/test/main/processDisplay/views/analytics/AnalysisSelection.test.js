@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
-import {createAnalysisSelection, __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/AnalysisSelection';
+import {createAnalysisSelection, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/AnalysisSelection';
 
 describe('<AnalysisSelection>', () => {
   let node;

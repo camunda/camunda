@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {
   reducer, createUnsetElementAction, createToggleElementAction,
   createAddHighlightAction, createRemoveHighlightsAction
-} from 'main/processDisplay/diagram/analytics/reducer';
+} from 'main/processDisplay/views/analytics/reducer';
 
 describe('Analytics reducer', () => {
   const elementType = 'gateway';

@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {AnalysisInput, __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/AnalysisInput';
+import {AnalysisInput, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/AnalysisInput';
 
 describe('<AnalysisInput>', () => {
   let node;

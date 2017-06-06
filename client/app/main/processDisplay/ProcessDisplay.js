@@ -1,5 +1,5 @@
 import {jsx, withSelector, Match, Case, Default, Socket} from 'view-utils';
-import {createHeatmapRendererFunction, createAnalyticsComponents, getInstanceCount, TargetValueDisplay} from './diagram';
+import {createHeatmapRendererFunction, createAnalyticsComponents, getInstanceCount, TargetValueDisplay} from './views';
 import {Statistics, resetStatisticData} from './statistics';
 import {isLoading, isLoaded, createDelayedTimePrecisionElement} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
@@ -35,28 +35,28 @@ function Process() {
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
           <Case predicate={hasNoData}>
-            <Diagram selector="diagram" />
+            <Diagram selector="views" />
             <div className="no-data-indicator">
               No Data
             </div>
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
+            <Diagram selector="views" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => createDelayedTimePrecisionElement(x, {
+            <Diagram selector="views" createOverlaysRenderer={createHeatmapRendererFunction(x => createDelayedTimePrecisionElement(x, {
               initialPrecision: 2,
               delay: 1500
             }))} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
-            <AnalyticsDiagram selector="diagram" />
+            <AnalyticsDiagram selector="views" />
           </Case>
           <Case predicate={shouldDisplay('target_value')}>
-            <TargetValueDisplay selector="diagram" getProcessDefinition={getDefinitionId} Diagram={Diagram} />
+            <TargetValueDisplay selector="views" getProcessDefinition={getDefinitionId} Diagram={Diagram} />
           </Case>
           <Default>
-            <Diagram selector="diagram" />
+            <Diagram selector="views" />
           </Default>
         </Match>
         <Match>
@@ -74,11 +74,11 @@ function Process() {
     loadData(newCriteria);
   }
 
-  function getProcessInstanceCount({diagram}) {
-    return getInstanceCount(diagram);
+  function getProcessInstanceCount({views}) {
+    return getInstanceCount(views);
   }
 
-  function hasNoData({controls, diagram:{heatmap}}) {
+  function hasNoData({controls, views:{heatmap}}) {
     const {data} = heatmap;
 
     return isLoaded(heatmap) && (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis', 'target_value']);
@@ -88,14 +88,14 @@ function Process() {
     return () => isViewSelected(targetView);
   }
 
-  function createControlsState({controls, diagram}) {
+  function createControlsState({controls, views}) {
     return {
       ...controls,
-      analytics: diagram.analytics
+      analytics: views.analytics
     };
   }
 
-  function isLoadingSomething({diagram: {bpmnXml, heatmap, targetValue}}) {
+  function isLoadingSomething({views: {bpmnXml, heatmap, targetValue}}) {
     return isLoading(bpmnXml) || isLoading(heatmap) || isLoading(targetValue);
   }
 

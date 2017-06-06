@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {reducer, createSetTargetValueAction, SET_TARGET_VALUE} from 'main/processDisplay/diagram/targetValueDisplay/reducer';
+import {reducer, createSetTargetValueAction, SET_TARGET_VALUE} from 'main/processDisplay/views/targetValueDisplay/reducer';
 
 describe('target value reducer', () => {
   const ELEMENT_ID = 'ELEMENT_ID';

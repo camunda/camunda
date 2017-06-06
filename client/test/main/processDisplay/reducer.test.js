@@ -5,7 +5,7 @@ describe('processDisplay reducer', () => {
   it('should produce state with correct properties', () => {
     const state = reducer(undefined, {type: '@@INIT'});
 
-    expect(state.diagram).to.exist;
+    expect(state.views).to.exist;
     expect(state.statistics).to.exist;
     expect(state.controls).to.exist;
   });

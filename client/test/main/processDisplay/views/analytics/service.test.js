@@ -3,7 +3,7 @@ import {
   toggleEndEvent, unsetElement, toggleGateway, leaveGatewayAnalysisMode,
   addBranchOverlay, BRANCH_OVERLAY, isValidElement,
   addHighlight, removeHighlights, __set__, __ResetDependency__
-} from 'main/processDisplay/diagram/analytics/service';
+} from 'main/processDisplay/views/analytics/service';
 import sinon from 'sinon';
 
 describe('Analytics service', () => {

@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking, triggerEvent} from 'testHelpers';
 import {setTargetValue, getTargetValue, getTargetDurationFromForm, setTargetDurationToForm, saveTargetValues, addTargetValueBadge, addTargetValueTooltip, prepareFlowNodes,
-        __set__, __ResetDependency__} from 'main/processDisplay/diagram/targetValueDisplay/service';
+        __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/service';
 
 describe('TargetValue service', () => {
   setupPromiseMocking();

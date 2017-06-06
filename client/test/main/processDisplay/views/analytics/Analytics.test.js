@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {createCreateAnalyticsRendererFunction,
-        __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/Analytics';
+        __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/Analytics';
 
 describe('<Analytics>', () => {
   let viewer;

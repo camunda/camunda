@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {default as generateHeatmap, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/generateHeatmap';
+import {default as generateHeatmap, __set__, __ResetDependency__} from 'main/processDisplay/views/heatmap/generateHeatmap';
 
 describe('Heatmap Generator', () => {
   const BOUNDING_BOX = {

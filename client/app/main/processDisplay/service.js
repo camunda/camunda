@@ -1,9 +1,10 @@
 import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
-import {createLoadingDiagramAction, createLoadingDiagramResultAction, createLoadingDiagramErrorAction,
-        createLoadingHeatmapAction, createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,
-        createLoadingTargetValueAction, createLoadingTargetValueResultAction, createLoadingTargetValueErrorAction
-} from './diagram';
+import {
+  createLoadingDiagramAction, createLoadingDiagramResultAction, createLoadingDiagramErrorAction,
+  createLoadingHeatmapAction, createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,
+  createLoadingTargetValueAction, createLoadingTargetValueResultAction, createLoadingTargetValueErrorAction
+} from './views';
 import {getFilterQuery} from './query';
 import {getLastRoute, getRouter} from 'router';
 import {addNotification} from 'notifications';
