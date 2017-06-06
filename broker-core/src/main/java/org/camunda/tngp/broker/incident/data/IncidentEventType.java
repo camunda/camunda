@@ -16,6 +16,7 @@ public enum IncidentEventType
 {
     CREATE,
     CREATED,
+    CREATE_REJECTED,
 
     RESOLVE,
     RESOLVED,

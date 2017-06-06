@@ -40,6 +40,9 @@ public class IncidentStreamProcessor implements StreamProcessor
 {
     private static final short STATE_CREATED = 1;
     private static final short STATE_RESOLVING = 2;
+    private static final short STATE_DELETING = 3;
+
+    private static final long NON_PERSISTENT_INCIDENT = -2L;
 
     private final Long2LongHashIndex activityInstanceIndex;
     private final Long2LongHashIndex failedTaskIndex;
@@ -232,10 +235,24 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private final class CreateIncidentProcessor implements EventProcessor
     {
+        private boolean isCreated;
+        private boolean isTaskIncident;
+
         @Override
         public void processEvent()
         {
-            incidentEvent.setEventType(IncidentEventType.CREATED);
+            isTaskIncident = incidentEvent.getTaskKey() > 0;
+            // ensure that the task is not resolved yet
+            isCreated = isTaskIncident ? failedTaskIndex.get(incidentEvent.getTaskKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
+
+            if (isCreated)
+            {
+                incidentEvent.setEventType(isCreated ? IncidentEventType.CREATED : IncidentEventType.CREATE_REJECTED);
+            }
+            else
+            {
+                incidentEvent.setEventType(IncidentEventType.CREATE_REJECTED);
+            }
         }
 
         @Override
@@ -247,14 +264,24 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            incidentIndex
-                .newIncident(eventKey)
-                .setState(STATE_CREATED)
-                .setIncidentEventPosition(eventPosition)
-                .setFailureEventPosition(incidentEvent.getFailureEventPosition())
-                .write();
+            if (isCreated)
+            {
+                incidentIndex
+                    .newIncident(eventKey)
+                    .setState(STATE_CREATED)
+                    .setIncidentEventPosition(eventPosition)
+                    .setFailureEventPosition(incidentEvent.getFailureEventPosition())
+                    .write();
 
-            activityInstanceIndex.put(incidentEvent.getActivityInstanceKey(), eventKey);
+                if (isTaskIncident)
+                {
+                    failedTaskIndex.put(incidentEvent.getTaskKey(), eventKey);
+                }
+                else
+                {
+                    activityInstanceIndex.put(incidentEvent.getActivityInstanceKey(), eventKey);
+                }
+            }
         }
     }
 
@@ -519,6 +546,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isTerminated)
             {
+                incidentIndex.setState(STATE_DELETING).write();
                 activityInstanceIndex.remove(eventKey, -1L);
             }
         }
@@ -527,7 +555,6 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final class TaskFailedProcessor implements EventProcessor
     {
         private boolean hasRetries;
-        private long incidentPosition;
 
         @Override
         public void processEvent()
@@ -540,7 +567,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 incidentEvent.reset();
                 incidentEvent
-                    .setEventType(IncidentEventType.CREATED)
+                    .setEventType(IncidentEventType.CREATE)
                     .setErrorType(ErrorType.TASK_NO_RETRIES)
                     .setErrorMessage("No more retries left.")
                     .setFailureEventPosition(eventPosition)
@@ -555,29 +582,15 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            incidentPosition = 0;
-
-            if (!hasRetries)
-            {
-                incidentPosition = writeIncidentEvent(writer.positionAsKey());
-            }
-            return incidentPosition;
+            return hasRetries ? 0L : writeIncidentEvent(writer.positionAsKey());
         }
 
         @Override
         public void updateState()
         {
-            // this can lead to inconsistent index - see #281
             if (!hasRetries)
             {
-                incidentIndex
-                    .newIncident(incidentPosition)
-                    .setState(STATE_CREATED)
-                    .setIncidentEventPosition(incidentPosition)
-                    .setFailureEventPosition(eventPosition)
-                    .write();
-
-                failedTaskIndex.put(eventKey, incidentPosition);
+                failedTaskIndex.put(eventKey, NON_PERSISTENT_INCIDENT);
             }
         }
     }
@@ -620,7 +633,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            if (isResolved)
+            if (isResolved || incidentKey == NON_PERSISTENT_INCIDENT)
             {
                 failedTaskIndex.remove(eventKey, -1L);
             }
