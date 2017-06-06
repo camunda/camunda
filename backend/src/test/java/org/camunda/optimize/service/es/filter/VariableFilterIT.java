@@ -371,6 +371,35 @@ public class VariableFilterIT {
   }
 
   @Test
+  public void multipleNumericEqualityVariableFilter() throws Exception {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    String processDefinitionId = deploySimpleProcessDefinition();
+
+    // given
+    for (String variableType : NUMERIC_TYPES) {
+      Map<String, Object> variables = new HashMap<>();
+      variables.put("var", changeNumericValueToType(1, variableType));
+      engineRule.startProcessInstance(processDefinitionId, variables);
+      variables.put("var", changeNumericValueToType(2, variableType));
+      engineRule.startProcessInstance(processDefinitionId, variables);
+      variables.put("var", changeNumericValueToType(3, variableType));
+      engineRule.startProcessInstance(processDefinitionId, variables);
+      embeddedOptimizeRule.importEngineEntities();
+      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+      // when
+      VariableFilterDto filter = createVariableFilter("=", "var", variableType, "1");
+      filter.getValues().add("2");
+      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+      // then
+      assertResults(testDefinition, 2, 2L);
+      elasticSearchRule.cleanAndVerify();
+    }
+  }
+
+  @Test
   public void multipleNumericInequalityVariableFilter() throws Exception {
     String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
