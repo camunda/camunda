@@ -3,7 +3,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -20,7 +19,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,21 +37,35 @@ public class StatusRestServiceIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private Client engineClient;
-  private TokenService tokenService;
 
   @Before
   public void initClients() throws InvalidTokenException {
     engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
-    tokenService = embeddedOptimizeRule.getApplicationContext().getBean(TokenService.class);
-    //in case this is not the first test to use the spy
-    Mockito.reset(tokenService);
   }
 
   @After
   public void resetMocks() throws InvalidTokenException {
     Mockito.reset(engineClient);
-    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
+  }
+
+  @Test
+  public void verifySecurityBypass() throws Exception {
+    TokenService tokenService = embeddedOptimizeRule.getApplicationContext().getBean(TokenService.class);
+    //in case this is not the first test to use the spy
     Mockito.reset(tokenService);
+    // when
+    embeddedOptimizeRule.target("status/connection")
+        .request()
+        .get();
+    //then
+    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
+
+    // when
+    embeddedOptimizeRule.target("status/import-progress")
+        .request()
+        .get();
+    //then
+    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
   }
 
   @Test
