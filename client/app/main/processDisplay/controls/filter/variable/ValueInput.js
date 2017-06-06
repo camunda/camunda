@@ -14,7 +14,7 @@ export function ValueInput() {
           </input>
         </List>
       </Scope>
-      <button className="btn btn-link add-another-btn">
+      <button type="button" className="btn btn-link add-another-btn">
         <Class className="hidden" predicate={shouldNotDisplayAddValueButton} />
         <OnEvent event="click" listener={addValueField} />
         + Add another value
