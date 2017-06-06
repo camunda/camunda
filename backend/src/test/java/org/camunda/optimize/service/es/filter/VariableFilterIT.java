@@ -246,6 +246,31 @@ public class VariableFilterIT {
   }
 
   @Test
+  public void multipleStringInequalityVariableFilter() throws Exception {
+    // given
+    String processDefinitionId = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "1");
+    engineRule.startProcessInstance(processDefinitionId, variables);
+    variables.put("var", "2");
+    engineRule.startProcessInstance(processDefinitionId, variables);
+    variables.put("var", "3");
+    engineRule.startProcessInstance(processDefinitionId, variables);
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    VariableFilterDto filter = createVariableFilter("!=", "var", STRING_TYPE, "1");
+    filter.getValues().add("2");
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+    // then
+    assertResults(testDefinition, 2, 1L);
+  }
+
+  @Test
   public void booleanTrueVariableFilter() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();

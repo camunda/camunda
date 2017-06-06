@@ -83,13 +83,14 @@ public class VariableFilterHelper {
       }
     } else if (dto.getOperator().equals("!=")) {
       for (String value : dto.getValues()) {
-        boolQueryBuilder.should(
-          boolQuery().mustNot(nestedQuery(
+        boolQueryBuilder.mustNot(
+          nestedQuery(
             STRING_VARIABLES,
             boolQuery()
                 .must(termQuery(variableNameFieldLabel, dto.getName()))
                 .must(termQuery(variableValueFieldLabel, value)),
-            ScoreMode.None))
+            ScoreMode.None
+          )
         );
       }
     } else {
