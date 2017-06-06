@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,10 @@ public class TokenService {
     JWT decoded = JWT.decode(token);
     String username = decoded.getSubject();
     LocalDateTime expiry = tokenExpiry.get(username);
-    if (expiry == null || LocalDateTime.now().isAfter(expiry)) {
+    if (expiry == null || LocalDateUtil.getCurrentDateTime().isAfter(expiry)) {
       throw new InvalidTokenException("Error while validating authentication token [" + token + "]");
     } else {
-      expiry = expiry.plus(configurationService.getLifetime(),ChronoUnit.MINUTES);
+      expiry = LocalDateUtil.getCurrentDateTime().plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
       tokenExpiry.put(username, expiry);
     }
   }
@@ -41,7 +42,7 @@ public class TokenService {
   public String issueToken(String username) {
     String token = null;
     try {
-      LocalDateTime expiryDate = LocalDateTime.now()
+      LocalDateTime expiryDate = LocalDateUtil.getCurrentDateTime()
           .plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
       token = JWT.create()
           .withSubject(username)
