@@ -54,20 +54,20 @@ describe('<ValueInput>', () => {
     expect(node.querySelector('input').getAttribute('type')).to.eql('text');
   });
 
-  it('should have a hidden input field for booleans', () => {
+  it('should not display input field for booleans', () => {
     update({
       variables,
       selectedIdx: 0,
       values: ['']
     });
 
-    expect(node.querySelector('input').getAttribute('type')).to.eql('hidden');
+    expect(node.querySelector('input').classList.contains('hidden')).to.eql(true);
   });
 
-  it('should have a hidden input field if no variable is selected', () => {
+  it('should not display input field if no variable is selected', () => {
     update({variables, values: ['']});
 
-    expect(node.querySelector('input').getAttribute('type')).to.eql('hidden');
+    expect(node.querySelector('input').classList.contains('hidden')).to.eql(true);
   });
 
   it('should reflect the state value in the input field', () => {

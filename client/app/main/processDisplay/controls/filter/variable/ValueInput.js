@@ -7,8 +7,8 @@ export function ValueInput() {
     const template = <div className="variable-value">
       <Scope selector={getValueList}>
         <List>
-          <input className="form-control" placeholder="Enter value">
-            <Attribute attribute="type" selector="type" />
+          <input className="form-control" placeholder="Enter value" type="text">
+            <Class className="hidden" predicate={shouldNotDisplayInput} />
             <Attribute attribute="value" selector="value" />
             <OnEvent event="input" listener={changeValue} />
           </input>
@@ -48,6 +48,10 @@ export function ValueInput() {
     function addValueField({event}) {
       event.preventDefault();
       addValue('');
+    }
+
+    function shouldNotDisplayInput({type}) {
+      return type === 'hidden';
     }
 
     function shouldNotDisplayAddValueButton({variables: {data}, selectedIdx, values}) {
