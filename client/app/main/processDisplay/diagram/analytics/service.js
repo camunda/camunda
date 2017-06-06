@@ -45,7 +45,7 @@ function isValidEndEvent(element) {
   return isBpmnType(element, 'EndEvent');
 }
 
-export function addBranchOverlay(viewer, element, {flowNodes, piCount}) {
+export function addBranchOverlay(viewer, element, {flowNodes, piCount}, onTop) {
   if (!element || !isBpmnType(viewer.get('elementRegistry').get(element), 'EndEvent')) {
     return;
   }
@@ -58,7 +58,7 @@ export function addBranchOverlay(viewer, element, {flowNodes, piCount}) {
   const percentageValue = Math.round(value / piCount * 1000) / 10;
 
   container.innerHTML =
-  `<div class="tooltip top" role="tooltip" style="opacity: 1;">
+  `<div class="tooltip top" role="tooltip" style="opacity: 1; z-index: ${onTop ? 2 : 1}">
     <table class="cam-table end-event-statistics">
       <tbody>
         <tr>

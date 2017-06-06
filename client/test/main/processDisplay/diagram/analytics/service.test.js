@@ -209,6 +209,16 @@ describe('Analytics service', () => {
 
       expect(overlaysMock.add.calledWith('a1')).to.eql(true);
     });
+
+    it('should set the z-index property depending on the onTop parameter', () => {
+      addBranchOverlay(viewer, 'a1', heatmapData, false);
+      addBranchOverlay(viewer, 'a1', heatmapData, true);
+
+      const zIndexBelow = overlaysMock.add.getCall(0).args[2].html.style.zIndex;
+      const zIndexAbove = overlaysMock.add.getCall(1).args[2].html.style.zIndex;
+
+      expect(zIndexBelow).to.be.below(zIndexAbove);
+    });
   });
 
   describe('isValidElement', () => {

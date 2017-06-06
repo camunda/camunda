@@ -18,10 +18,10 @@ export function createCreateAnalyticsRendererFunction() {
       if (currentlyHovered !== element.id && heatmapData) {
         currentlyHovered = element.id;
         removeOverlays(viewer);
-        addBranchOverlay(viewer, element.id, heatmapData);
+        addBranchOverlay(viewer, element.id, heatmapData, true);
 
         if (elementSelection.EndEvent) {
-          addBranchOverlay(viewer, elementSelection.EndEvent, heatmapData);
+          addBranchOverlay(viewer, elementSelection.EndEvent, heatmapData, false);
         }
       }
 
@@ -124,13 +124,13 @@ export function createCreateAnalyticsRendererFunction() {
 
         updateElementsHighlights('highlight_selected', isSelected.bind(null, selection), (element, isHighlitNeeded) => {
           if (isHighlitNeeded) {
-            addBranchOverlay(viewer, element.id, data);
+            addBranchOverlay(viewer, element.id, data, false);
           }
         });
         updateElementsHighlights('hover-highlight', isHovered.bind(null, hover), (element, isHighlitNeeded) => {
           if (isHighlitNeeded) {
             if (hover.EndEvent && hover.EndEvent.elementId === element.id) {
-              addBranchOverlay(viewer, element.id, data);
+              addBranchOverlay(viewer, element.id, data, true);
             }
           }
         });
