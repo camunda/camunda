@@ -121,9 +121,9 @@
   </profiles>
 
   <scm>
-    <url>https://github.com/camunda-tngp/log</url>
-    <connection>scm:git:git@github.com:camunda-tngp/log.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/log.git</developerConnection>
+    <url>https://github.com/camunda-tngp/parent</url>
+    <connection>scm:git:git@github.com:camunda-tngp/parent.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/parent.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
