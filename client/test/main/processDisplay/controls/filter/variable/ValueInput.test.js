@@ -152,4 +152,25 @@ describe('<ValueInput>', () => {
 
     expect(setValue.calledWith(1234)).to.eql(false);
   });
+
+  it('should retain the input field selection', () => {
+    update({variables, selectedIdx: 1, values: ['']});
+    const input = node.querySelector('input');
+
+    input.value = '1234';
+
+    const selectionBefore = input.selectionStart;
+
+    triggerEvent({
+      node,
+      selector: 'input',
+      eventName: 'input'
+    });
+
+    onNextTick.getCall(0).args[0]();
+
+    const selectionAfter = node.querySelector('input').selectionStart;
+
+    expect(selectionBefore).to.eql(selectionAfter);
+  });
 });
