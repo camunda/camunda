@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>tngp-parent</artifactId>
+  <artifactId>tngp-core-parent</artifactId>
   <packaging>pom</packaging>
 
   <parent>
@@ -11,14 +11,22 @@
   </parent>
 
   <properties>
-    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <util.version>1.0.0-SNAPSHOT</util.version>
-    <msgpack.version>0.8.11</msgpack.version>
     <sbe.version>1.5.6</sbe.version>
-    <agrona.version>0.9.6</agrona.version>
     <jmh.version>1.11.2</jmh.version>
     <slf4j.version>1.7.23</slf4j.version>
     <log4j.version>2.8.1</log4j.version>
+    <msgpack.version>0.8.11</msgpack.version>
+    <toml.version>0.5.1</toml.version>
+    <model.version>7.7.0</model.version>
+    <hamcrest.version>1.3</hamcrest.version>
+
+    <!-- SUB PROJECTS -->
+    <util.version>1.0.0-alpha6</util.version>
+    <log.version>1.0.0-alpha5</log.version>
+    <tngp.msgpack.version>1.0.0-alpha3</tngp.msgpack.version>
+    <service.version>1.0.0-alpha4</service.version>
+    <dispatcher.version>1.0.0-alpha4</dispatcher.version>
+    <transport.version>1.0.0-alpha7</transport.version>
   </properties>
 
   <dependencyManagement>
@@ -52,25 +60,25 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>dispatcher</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${dispatcher.version}</version>
       </dependency>
 
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>log</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${log.version}</version>
       </dependency>
 
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>transport</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${transport.version}</version>
       </dependency>
 
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>service-container</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${service.version}</version>
       </dependency>
 
       <dependency>
@@ -94,25 +102,19 @@
       <dependency>
         <groupId>org.camunda.tngp.msgpack</groupId>
         <artifactId>msgpack-json-path</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${tngp.msgpack.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.moandjiezana.toml</groupId>
         <artifactId>toml4j</artifactId>
-        <version>0.5.1</version>
+        <version>${toml.version}</version>
       </dependency>
 
       <dependency>
         <groupId>uk.co.real-logic</groupId>
         <artifactId>sbe-tool</artifactId>
         <version>${sbe.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.agrona</groupId>
-        <artifactId>agrona</artifactId>
-        <version>${agrona.version}</version>
       </dependency>
 
       <dependency>
@@ -130,7 +132,7 @@
       <dependency>
         <groupId>org.camunda.bpm.model</groupId>
         <artifactId>camunda-bpmn-model</artifactId>
-        <version>7.6.0</version>
+        <version>${model.version}</version>
       </dependency>
 
       <dependency>
@@ -151,29 +153,23 @@
         <version>${log4j.version}</version>
       </dependency>
 
-      <dependency>
+       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.12</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>1.8.5</version>
+        <version>${version.junit}</version>
       </dependency>
 
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.3.0</version>
+        <version>${version.assertj}</version>
       </dependency>
 
       <dependency>
-  	    <groupId>org.hamcrest</groupId>
-  	    <artifactId>hamcrest-library</artifactId>
-  	    <version>1.3</version>
-	    </dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>${hamcrest.version}</version>
+       </dependency>
 
     </dependencies>
 
