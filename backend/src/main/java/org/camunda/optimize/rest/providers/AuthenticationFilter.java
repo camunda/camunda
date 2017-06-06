@@ -35,7 +35,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
   public void filter(ContainerRequestContext requestContext) throws IOException {
     //an exception, do not perform any checks and refreshes
     String path = ((ContainerRequest) requestContext).getPath(false);
-    if (path != null && path.startsWith(STATUS)) {
+    if (path != null && path.toLowerCase().startsWith(STATUS)) {
       return;
     }
 

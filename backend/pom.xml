@@ -444,7 +444,7 @@
               <properties>
                 <property>
                   <name>listener</name>
-                  <value>org.camunda.optimize.test.rule.StartOptimizeExecutionListener</value>
+                  <value>org.camunda.optimize.test.it.rule.StartOptimizeExecutionListener</value>
                 </property>
               </properties>
             </configuration>

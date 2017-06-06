@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

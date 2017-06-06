@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
-import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.Rule;
 import org.junit.Test;

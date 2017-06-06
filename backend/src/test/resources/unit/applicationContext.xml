@@ -14,17 +14,17 @@
 
   <context:property-placeholder location="classpath:service.properties,classpath:unit/service-unit.properties" />
 
-  <bean id="engineClient" class="org.camunda.optimize.test.factory.MockEngineClientFactory"/>
+  <bean id="engineClient" class="org.camunda.optimize.test.unit.factory.MockEngineClientFactory"/>
 
-  <bean id="transportClient"  class="org.camunda.optimize.test.factory.MockTransportClientFactory"/>
+  <bean id="transportClient"  class="org.camunda.optimize.test.unit.factory.MockTransportClientFactory"/>
 
   <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.provider.ImportStrategyProviderFactory"/>
 
-  <bean id="schemaInitializer"  class="org.camunda.optimize.test.factory.MockSchemaInitializerFactory"/>
+  <bean id="schemaInitializer"  class="org.camunda.optimize.test.unit.factory.MockSchemaInitializerFactory"/>
 
-  <bean id="importServiceProvider"  class="org.camunda.optimize.test.factory.MockImportServiceProviderFactory"/>
+  <bean id="importServiceProvider"  class="org.camunda.optimize.test.unit.factory.MockImportServiceProviderFactory"/>
 
-  <bean id="importJobExecutor" class="org.camunda.optimize.test.factory.MockImportJobExecutorFactory" />
+  <bean id="importJobExecutor" class="org.camunda.optimize.test.unit.factory.MockImportJobExecutorFactory" />
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
@@ -35,11 +35,11 @@
   <!-- provide a bean, but do not start it -->
   <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
-  <bean id="processDefinitionReader" class="org.camunda.optimize.test.factory.MockProcessDefinitionReaderFactory"/>
-  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.test.factory.MockFrequencyHeatMapReaderFactory"/>
-  <bean id="durationHeatMapReader" class="org.camunda.optimize.test.factory.MockDurationHeatMapReaderFactory"/>
-  <bean id="correlationReader" class="org.camunda.optimize.test.factory.MockBranchAnalysisReaderFactory"/>
-  <bean id="statusCheckingService" class="org.camunda.optimize.test.factory.MockStatusCheckingServiceFactory"/>
-  <bean id="importProgressReporter" class="org.camunda.optimize.test.factory.MockImportProgressReporterFactory"/>
+  <bean id="processDefinitionReader" class="org.camunda.optimize.test.unit.factory.MockProcessDefinitionReaderFactory"/>
+  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.test.unit.factory.MockFrequencyHeatMapReaderFactory"/>
+  <bean id="durationHeatMapReader" class="org.camunda.optimize.test.unit.factory.MockDurationHeatMapReaderFactory"/>
+  <bean id="correlationReader" class="org.camunda.optimize.test.unit.factory.MockBranchAnalysisReaderFactory"/>
+  <bean id="statusCheckingService" class="org.camunda.optimize.test.unit.factory.MockStatusCheckingServiceFactory"/>
+  <bean id="importProgressReporter" class="org.camunda.optimize.test.unit.factory.MockImportProgressReporterFactory"/>
 
 </beans>

@@ -1,14 +1,14 @@
-package org.camunda.optimize.test.rule;
+package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;

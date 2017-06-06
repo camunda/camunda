@@ -1,4 +1,4 @@
-package org.camunda.optimize.test.rule;
+package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;

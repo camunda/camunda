@@ -1,4 +1,4 @@
-package org.camunda.optimize.test.factory;
+package org.camunda.optimize.test.unit.factory;
 
 import org.camunda.optimize.service.importing.provider.DefinitionBasedImportStrategyProvider;
 import org.camunda.optimize.service.importing.ImportStrategyProvider;

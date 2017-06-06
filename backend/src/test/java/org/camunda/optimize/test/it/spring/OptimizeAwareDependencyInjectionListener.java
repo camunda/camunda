@@ -1,6 +1,6 @@
-package org.camunda.optimize.test.spring;
+package org.camunda.optimize.test.it.spring;
 
-import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;

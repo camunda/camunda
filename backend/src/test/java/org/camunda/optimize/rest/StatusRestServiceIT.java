@@ -2,10 +2,12 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.rule.EngineIntegrationRule;
+import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,19 +39,25 @@ public class StatusRestServiceIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private Client engineClient;
+  private TokenService tokenService;
 
   @Before
-  public void initClients() {
+  public void initClients() throws InvalidTokenException {
     engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
+    tokenService = embeddedOptimizeRule.getApplicationContext().getBean(TokenService.class);
+    //in case this is not the first test to use the spy
+    Mockito.reset(tokenService);
   }
 
   @After
-  public void resetMocks() {
+  public void resetMocks() throws InvalidTokenException {
     Mockito.reset(engineClient);
+    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
+    Mockito.reset(tokenService);
   }
 
   @Test
-  public void getConnectionStatusOk() {
+  public void getConnectionStatusOk() throws Exception {
     // when
     Response response = embeddedOptimizeRule.target("status/connection")
       .request()
@@ -65,10 +73,14 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getConnectionStatusForMissingEngineConnection() throws IOException {
+  public void getConnectionStatusForMissingEngineConnection() throws Exception {
     // given
     String errorMessage = "Error";
-    Mockito.when(engineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
+    Mockito.when(
+        engineClient.target(Mockito.anyString())
+    ).thenThrow(
+        new RuntimeException(errorMessage)
+    );
 
     // when
     Response response = embeddedOptimizeRule.target("status/connection")
@@ -85,7 +97,7 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getImportProgressStatus() throws OptimizeException {
+  public void getImportProgressStatus() throws Exception {
     // given
     int expectedCount = 0;
 
@@ -103,7 +115,7 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws OptimizeException {
+  public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws Exception {
     // given
     String errorMessage = "Error";
     Mockito.when(engineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));

@@ -1,4 +1,4 @@
-package org.camunda.optimize.test.rule;
+package org.camunda.optimize.test.it.rule;
 
 import org.junit.runner.Description;
 import org.junit.runner.Result;

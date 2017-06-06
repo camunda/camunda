@@ -61,4 +61,12 @@ public class TokenService {
     String username = decoded.getSubject();
     tokenExpiry.remove(username);
   }
+
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  public void setConfigurationService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 }

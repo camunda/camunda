@@ -1,4 +1,4 @@
-package org.camunda.optimize.test.rule;
+package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
