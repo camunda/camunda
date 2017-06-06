@@ -327,6 +327,29 @@ describe('<Analytics>', () => {
     expect(addBranchOverlay.calledWith(viewer, 'act1')).to.eql(true);
   });
 
+  it('should show hover overlays over the selection overlays', () => {
+    const elements = [
+      {
+        id: 'act1'
+      },
+      {
+        id: 'act2'
+      }
+    ];
+
+    viewer.forEach = Array.prototype.forEach.bind(elements);
+
+    gatewayAnalysisState.state.analytics.selection.EndEvent = 'act2';
+    gatewayAnalysisState.state.analytics.hover.EndEvent = {
+      elementId: 'act1'
+    };
+    update(gatewayAnalysisState);
+
+    expect(addBranchOverlay.calledTwice).to.eql(true);
+    expect(addBranchOverlay.getCall(0).args[1]).to.eql('act2');
+    expect(addBranchOverlay.getCall(1).args[1]).to.eql('act1');
+  });
+
   it('should remove previous overlays', () => {
     update(initialState);
 

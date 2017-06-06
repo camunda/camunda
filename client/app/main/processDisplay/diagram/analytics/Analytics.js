@@ -122,16 +122,16 @@ export function createCreateAnalyticsRendererFunction() {
 
         removeOverlays(viewer);
 
+        updateElementsHighlights('highlight_selected', isSelected.bind(null, selection), (element, isHighlitNeeded) => {
+          if (isHighlitNeeded) {
+            addBranchOverlay(viewer, element.id, data);
+          }
+        });
         updateElementsHighlights('hover-highlight', isHovered.bind(null, hover), (element, isHighlitNeeded) => {
           if (isHighlitNeeded) {
             if (hover.EndEvent && hover.EndEvent.elementId === element.id) {
               addBranchOverlay(viewer, element.id, data);
             }
-          }
-        });
-        updateElementsHighlights('highlight_selected', isSelected.bind(null, selection), (element, isHighlitNeeded) => {
-          if (isHighlitNeeded) {
-            addBranchOverlay(viewer, element.id, data);
           }
         });
       }
