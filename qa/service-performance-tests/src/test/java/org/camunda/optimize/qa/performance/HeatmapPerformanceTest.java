@@ -1,5 +1,6 @@
 package org.camunda.optimize.qa.performance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
@@ -25,7 +26,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   private PerfTest test;
 
   @Before
-  public void setUp() {
+  public void setUp() throws JsonProcessingException {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());

@@ -2,27 +2,19 @@ package org.camunda.optimize.qa.performance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.bpm.engine.impl.util.IoUtil;
-import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public abstract class OptimizePerformanceTestCase {
 
