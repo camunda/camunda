@@ -140,8 +140,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void addDemoUser() throws JsonProcessingException {
     CredentialsDto user = new CredentialsDto();
-    user.setUsername(properties.getProperty("demo"));
-    user.setPassword(properties.getProperty("demo"));
+    user.setUsername("demo");
+    user.setPassword("demo");
 
     esclient
       .prepareIndex(
