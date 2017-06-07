@@ -12,10 +12,10 @@ public class Main {
   public static void main(String[] args) throws Exception {
     jettyCamundaOptimize = new EmbeddedCamundaOptimize();
     try {
-      jettyCamundaOptimize.start();
+      jettyCamundaOptimize.startOptimize();
       jettyCamundaOptimize.join();
     } finally {
-      jettyCamundaOptimize.destroy();
+      jettyCamundaOptimize.destroyOptimize();
     }
   }
 

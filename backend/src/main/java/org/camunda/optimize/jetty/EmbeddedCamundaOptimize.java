@@ -8,7 +8,6 @@ import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.util.ConfigurationService;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -164,7 +163,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   /**
    * Since spring context is not loaded yet, just hook up properties manually.
-   * @return
    */
   private Properties getProperties() {
     Properties result = new Properties();
@@ -185,11 +183,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return result;
   }
 
-  public void start() throws Exception {
+  public void startOptimize() throws Exception {
     this.jettyServer.start();
   }
 
-  public boolean isStarted() {
+  public boolean isOptimizeStarted() {
     return jettyServer.isStarted();
   }
 
@@ -197,7 +195,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     jettyServer.join();
   }
 
-  public void destroy() throws Exception {
+  public void destroyOptimize() throws Exception {
     jettyServer.stop();
     jettyServer.destroy();
   }
@@ -208,10 +206,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public ImportServiceProvider getImportServiceProvider() {
     return jerseyCamundaOptimize.getApplicationContext().getBean(ImportServiceProvider.class);
-  }
-
-  public ConfigurationService getConfigurationService() {
-    return jerseyCamundaOptimize.getApplicationContext().getBean(ConfigurationService.class);
   }
 
   @Override
@@ -228,11 +222,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     getImportScheduler().disable();
   }
 
-  public void initializeIndex() {
+  protected void initializeIndex() {
     jerseyCamundaOptimize.getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
   }
 
-  public ApplicationContext getApplicationContext() {
+  protected ApplicationContext getOptimizeApplicationContext() {
     return jerseyCamundaOptimize.getApplicationContext();
   }
 }

@@ -34,8 +34,11 @@ public class AuthenticationRestServiceIT {
 
   @Test
   public void authenticateUserUsingES() throws Exception {
+    // given
+    elasticSearchRule.addDemoUser();
+
     //when
-    Response response = embeddedOptimizeRule.authenticateAdminRequest();
+    Response response = embeddedOptimizeRule.authenticateDemoRequest();
 
     //then
     assertThat(response.getStatus(),is(200));
@@ -46,7 +49,8 @@ public class AuthenticationRestServiceIT {
   @Test
   public void logout() throws Exception {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    elasticSearchRule.addDemoUser();
+    String token = embeddedOptimizeRule.authenticateDemo();
 
     //when
     Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
@@ -63,7 +67,8 @@ public class AuthenticationRestServiceIT {
   @Test
   public void securingRestApiWorksWithProxy() throws Exception {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    elasticSearchRule.addDemoUser();
+    String token = embeddedOptimizeRule.authenticateDemo();
 
     //when
     Response testResponse = embeddedOptimizeRule.target("authentication/test")
@@ -89,17 +94,6 @@ public class AuthenticationRestServiceIT {
 
     //then
     assertThat(logoutResponse.getStatus(),is(401));
-  }
-
-  @Test
-  public void testAuthenticateUserUsingEngine () {
-    //when
-    Response response = embeddedOptimizeRule.authenticateAdminRequest();
-
-    //then
-    assertThat(response.getStatus(),is(200));
-    String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
   }
 
 }

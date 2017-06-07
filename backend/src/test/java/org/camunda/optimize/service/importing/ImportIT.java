@@ -211,7 +211,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     String procDefId = engineRule.getProcessDefinitionId();
     List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
@@ -240,7 +240,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-     String token = embeddedOptimizeRule.authenticateAdmin();
+     String token = embeddedOptimizeRule.getAuthenticationToken();
     List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
         .request()
@@ -377,7 +377,7 @@ public class ImportIT  {
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
         .request()

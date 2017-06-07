@@ -77,10 +77,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -99,10 +98,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "stringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 0, 0L);
@@ -121,10 +119,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -145,10 +142,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "anotherStringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -168,11 +164,10 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
     filter.getValues().add("anotherValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -190,10 +185,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -212,10 +206,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "1");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -236,10 +229,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -260,11 +252,10 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "var", STRING_TYPE, "1");
     filter.getValues().add("2");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -285,10 +276,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "var", BOOLEAN_TYPE, "false");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -309,10 +299,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "var", BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -333,10 +322,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "var", BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 3L);
@@ -344,7 +332,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericLessThanVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -362,7 +349,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter("<", "var", variableType, "5");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -372,7 +359,6 @@ public class VariableFilterIT {
 
   @Test
   public void multipleNumericEqualityVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     // given
@@ -391,7 +377,7 @@ public class VariableFilterIT {
       VariableFilterDto filter = createVariableFilter("=", "var", variableType, "1");
       filter.getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -401,7 +387,6 @@ public class VariableFilterIT {
 
   @Test
   public void multipleNumericInequalityVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     // given
@@ -420,7 +405,7 @@ public class VariableFilterIT {
       VariableFilterDto filter = createVariableFilter("!=", "var", variableType, "1");
       filter.getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 1L);
@@ -431,7 +416,6 @@ public class VariableFilterIT {
   @Test
   public void numericLessThanEqualVariableFilter() throws Exception {
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -449,7 +433,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter("<=", "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -459,7 +443,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericGreaterThanVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -477,7 +460,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(">", "var", variableType, "1");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -487,7 +470,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericGreaterThanEqualVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -505,7 +487,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(">=", "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -515,7 +497,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericEqualVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -533,7 +514,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter("=", "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 1L);
@@ -543,7 +524,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericUnequalVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -561,7 +541,7 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter("!=", "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 2L);
@@ -571,7 +551,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericWithinRangeVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -590,7 +569,7 @@ public class VariableFilterIT {
       VariableFilterDto filter = createVariableFilter(">", "var", variableType, "1");
       VariableFilterDto filter2 = createVariableFilter("<", "var", variableType, "10");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 2, 1L);
@@ -600,7 +579,6 @@ public class VariableFilterIT {
 
   @Test
   public void numericOffRangeVariableFilter() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
     String processDefinitionId = deploySimpleProcessDefinition();
 
     for (String variableType : NUMERIC_TYPES) {
@@ -619,7 +597,7 @@ public class VariableFilterIT {
       VariableFilterDto filter = createVariableFilter("<", "var", variableType, "2");
       VariableFilterDto filter2 = createVariableFilter(">", "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
       assertResults(testDefinition, 0, 0L);
@@ -642,10 +620,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("<", "var", DATE_TYPE, nowDateAsString());
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -668,10 +645,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("<=", "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -693,10 +669,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, nowDateMinusSecondsAsString(2));
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -716,12 +691,11 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
     VariableFilterDto filter = createVariableFilter(">=", "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -744,10 +718,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("=", "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -771,10 +744,9 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter("!=", "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 2L);
@@ -797,11 +769,10 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
     VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, sdf.format(nowMinus2Seconds));
     VariableFilterDto filter2 = createVariableFilter("<", "var", DATE_TYPE, sdf.format(nowPlus10Seconds));
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 2, 1L);
@@ -822,13 +793,12 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
     VariableFilterDto filter = createVariableFilter("<", "var", DATE_TYPE, nowAsString);
     VariableFilterDto filter2 = createVariableFilter(">", "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
     assertResults(testDefinition, 0, 0L);
@@ -849,10 +819,9 @@ public class VariableFilterIT {
     variables.add(variableFilter);
     filter.setVariables(variables);
     dto.setFilter(filter);
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    Response response = getResponse(token, dto);
+    Response response = getResponse(dto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -873,10 +842,9 @@ public class VariableFilterIT {
     variables.add(variableFilter);
     filter.setVariables(variables);
     dto.setFilter(filter);
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    Response response = getResponse(token, dto);
+    Response response = getResponse(dto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -897,10 +865,9 @@ public class VariableFilterIT {
     variables.add(variableFilter);
     filter.setVariables(variables);
     dto.setFilter(filter);
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    Response response = getResponse(token, dto);
+    Response response = getResponse(dto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -921,10 +888,9 @@ public class VariableFilterIT {
     variables.add(variableFilter);
     filter.setVariables(variables);
     dto.setFilter(filter);
-    String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    Response response = getResponse(token, dto);
+    Response response = getResponse(dto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -999,8 +965,8 @@ public class VariableFilterIT {
     assertThat(resultMap.getPiCount(), is(piCount));
   }
 
-  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
-    Response response = getResponse(token, dto);
+  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
+    Response response = getResponse(dto);
 
     // then the status code is okay
     return response.readEntity(HeatMapResponseDto.class);
@@ -1015,7 +981,8 @@ public class VariableFilterIT {
     return processDefinitionId;
   }
 
-  private Response getResponse(String token, HeatMapQueryDto dto) {
+  private Response getResponse(HeatMapQueryDto dto) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
     return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
         .request()

@@ -80,7 +80,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitions() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     createProcessDefinition(ID, KEY);
 
     // when
@@ -102,7 +102,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionsWithXml() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
 
     createProcessDefinition(expectedProcessDefinitionId, KEY);
@@ -156,7 +156,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXml() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
@@ -180,7 +180,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXmlWithNonsenseIdReturns404Code() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
@@ -219,7 +219,7 @@ public class ProcessDefinitionRestServiceIT {
     insert10ActivitiesWithDifferentPis();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
             .request()
@@ -266,7 +266,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getFrequencyHeatPostMap() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     insert10ActivitiesWithDifferentPis();
 
     // when
@@ -303,7 +303,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getDurationHeatMap() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     insert10ActivitiesWithDifferentPis();
 
     // when
@@ -337,7 +337,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getDurationHeatMapAsPost() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     insert10ActivitiesWithDifferentPis();
 
     // when
@@ -375,7 +375,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getCorrelation() throws IOException {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     setupFullInstanceFlow();
 
     // when
@@ -402,7 +402,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void testGetProcessDefinitionsGroupedByKey() {
     //given
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
 
     createProcessDefinition(expectedProcessDefinitionId, KEY);
@@ -429,7 +429,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getProcessDefinitionsXml() throws Exception {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
 
     createProcessDefinition(expectedProcessDefinitionId, KEY);

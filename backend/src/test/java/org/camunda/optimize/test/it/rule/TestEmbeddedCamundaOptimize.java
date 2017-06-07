@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
@@ -8,10 +9,18 @@ import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationReloadable;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.test.util.PropertyUtil;
+import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -20,11 +29,15 @@ import java.util.Map;
  *
  * @author Askar Akhmerov
  */
-public class TestEmbeddedCamundaOptimize {
+public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private final static String contextLocation = "classpath:embeddedOptimizeContext.xml";
+  private final static String propertiesLocation = "it/it-test.properties";
 
-  private static EmbeddedCamundaOptimize optimize;
+  private static String authenticationToken;
+  private Properties properties;
+
+  private static TestEmbeddedCamundaOptimize optimize;
 
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
 
@@ -52,13 +65,19 @@ public class TestEmbeddedCamundaOptimize {
     return testOptimizeInstance;
   }
 
+  private TestEmbeddedCamundaOptimize(String contextLocation) {
+    super(contextLocation);
+  }
+
   private TestEmbeddedCamundaOptimize() {
-    optimize = new EmbeddedCamundaOptimize(contextLocation);
+    optimize = new TestEmbeddedCamundaOptimize(contextLocation);
+    properties = PropertyUtil.loadProperties(propertiesLocation);
   }
 
   public void start() throws Exception {
-    if (!optimize.isStarted()) {
-      optimize.start();
+    if (!optimize.isOptimizeStarted()) {
+      optimize.startOptimize();
+      storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
         defaultConfiguration = new ConfigurationService();
@@ -72,7 +91,7 @@ public class TestEmbeddedCamundaOptimize {
   }
 
   public boolean isStarted() {
-    return optimize.isStarted();
+    return optimize.isOptimizeStarted();
   }
 
   private boolean isThisTheFirstTimeOptimizeWasStarted() {
@@ -81,7 +100,7 @@ public class TestEmbeddedCamundaOptimize {
 
   public void destroy() throws Exception {
     BeanUtils.copyProperties(optimize.getConfigurationService(), perTestConfiguration);
-    optimize.destroy();
+    optimize.destroyOptimize();
     testOptimizeInstance = null;
   }
 
@@ -102,8 +121,8 @@ public class TestEmbeddedCamundaOptimize {
     }
   }
 
-  public ApplicationContext getApplicationContext() {
-    return optimize.getApplicationContext();
+  protected ApplicationContext getApplicationContext() {
+    return optimize.getOptimizeApplicationContext();
   }
 
   public ScheduleJobFactory getImportScheduleFactory() {
@@ -122,8 +141,56 @@ public class TestEmbeddedCamundaOptimize {
     return getApplicationContext().getBean(ConfigurationService.class);
   }
 
+  /**
+   * The actual storing is only performed once, when this class is the first time initialized.
+   */
+  private void storeAuthenticationToken() {
+    if(authenticationToken == null) {
+      authenticationToken = this.authenticateAdmin();
+    }
+  }
+
+  public String getAuthenticationToken() {
+    return authenticationToken;
+  }
+
   public void initializeIndex() {
     getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
+  }
+
+  private String authenticateAdmin() {
+    Response tokenResponse = authenticateAdminRequest();
+    return tokenResponse.readEntity(String.class);
+  }
+
+  private Response authenticateAdminRequest() {
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername("admin");
+    entity.setPassword("admin");
+
+    return target()
+      .path("authentication")
+      .request()
+      .post(Entity.json(entity));
+  }
+
+  public WebTarget target() {
+    return getClient().target(getEmbeddedOptimizeEndpoint());
+  }
+
+  public final WebTarget target(String path) {
+    return this.target().path(path);
+  }
+
+  private String getEmbeddedOptimizeEndpoint() {
+    return properties.getProperty("camunda.optimize.test.embedded-optimize");
+  }
+
+  private Client getClient() {
+    Client client = ClientBuilder.newClient();
+    client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
+    client.property(ClientProperties.READ_TIMEOUT,    10000);
+    return client;
   }
 
   public void startImportScheduler() {

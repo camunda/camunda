@@ -130,7 +130,7 @@ public class FrequencyHeatMapQueryIT {
   }
 
   private HeatMapResponseDto getHeatMapResponseDto(String id) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/" + id + "/heatmap/frequency")
             .request()
@@ -166,36 +166,36 @@ public class FrequencyHeatMapQueryIT {
     String operator = ">";
     String type = "start_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
   }
 
-  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
-    Response response = getResponse(token, dto);
+  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
+
+    Response response = getResponse(dto);
 
     // then the status code is okay
     return response.readEntity(HeatMapResponseDto.class);
   }
 
-  private Response getResponse(String token, HeatMapQueryDto dto) {
+  private Response getResponse(HeatMapQueryDto dto) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
     return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
         .request()
@@ -214,24 +214,22 @@ public class FrequencyHeatMapQueryIT {
     String operator = ">=";
     String type = "start_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
   }
@@ -247,24 +245,22 @@ public class FrequencyHeatMapQueryIT {
     String operator = ">=";
     String type = "end_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
   }
@@ -280,24 +276,22 @@ public class FrequencyHeatMapQueryIT {
     String operator = "<";
     String type = "start_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -318,10 +312,8 @@ public class FrequencyHeatMapQueryIT {
     type = "end_date";
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, 1L);
@@ -335,7 +327,7 @@ public class FrequencyHeatMapQueryIT {
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
@@ -352,24 +344,22 @@ public class FrequencyHeatMapQueryIT {
     String operator = "<";
     String type = "end_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -385,24 +375,22 @@ public class FrequencyHeatMapQueryIT {
     String operator = "<=";
     String type = "start_date";
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
-
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -427,16 +415,14 @@ public class FrequencyHeatMapQueryIT {
   @Test
   public void testValidationExceptionOnNullDto() {
     //when
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    assertThat(getResponse(token, null).getStatus(),is(500));
+    assertThat(getResponse(null).getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
 
     //when
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    assertThat(getResponse(token, new HeatMapQueryDto()).getStatus(),is(500));
+    assertThat(getResponse( new HeatMapQueryDto()).getStatus(),is(500));
   }
 
   @Test
@@ -452,8 +438,7 @@ public class FrequencyHeatMapQueryIT {
     dates.add(dateFilter);
     filter.setDates(dates);
     dto.setFilter(filter);
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    assertThat(getResponse(token, dto).getStatus(),is(500));
+    assertThat(getResponse(dto).getStatus(),is(500));
   }
 
 }

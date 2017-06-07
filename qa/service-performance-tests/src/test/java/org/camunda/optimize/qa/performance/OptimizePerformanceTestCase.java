@@ -1,5 +1,6 @@
 package org.camunda.optimize.qa.performance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestBuilder;
@@ -48,14 +49,15 @@ public abstract class OptimizePerformanceTestCase {
   }
 
   @Before
-  public void setUp() {
+  public void setUp() throws JsonProcessingException {
     authenticate(configuration);
     configuration.setClient(elasticSearchRule.getClient());
     testBuilder = createPerformanceTest();
   }
 
-  private void authenticate(PerfTestConfiguration configuration) {
-    String authorizationToken = embeddedOptimizeRule.authenticateAdmin();
+  private void authenticate(PerfTestConfiguration configuration) throws JsonProcessingException {
+    elasticSearchRule.addDemoUser();
+    String authorizationToken = embeddedOptimizeRule.authenticateDemo();
     configuration.setAuthorizationToken(authorizationToken);
   }
 

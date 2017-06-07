@@ -264,21 +264,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
   }
@@ -297,21 +296,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
   }
@@ -330,21 +328,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
   }
@@ -363,21 +360,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -400,8 +396,7 @@ public class DurationHeatMapQueryIT {
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 1000), dto);
 
     //when
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, 1L);
@@ -415,7 +410,7 @@ public class DurationHeatMapQueryIT {
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 0, 0L);
@@ -435,21 +430,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 20L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -468,21 +462,20 @@ public class DurationHeatMapQueryIT {
 
     //when
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
-    String token = embeddedOptimizeRule.authenticateAdmin();
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    resultMap = getHeatMapResponseDto(token, dto);
+    resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -521,13 +514,6 @@ public class DurationHeatMapQueryIT {
     assertThat(resultMap.getFlowNodes().get(activity), is(averageDuration));
   }
 
-  // necessary because there is always some offset during the duration calculation within the engine
-  private void roundAverageResult(HeatMapResponseDto resultMap, String activity) {
-    long averageDuration = resultMap.getFlowNodes().get(activity);
-    averageDuration = Math.round(averageDuration/10.0) * 10L;
-    resultMap.getFlowNodes().replace(activity, averageDuration);
-  }
-
   private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
@@ -536,7 +522,7 @@ public class DurationHeatMapQueryIT {
   }
 
   private HeatMapResponseDto getHeatMapResponseDto(String testDefinition) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/" + testDefinition + "/heatmap/duration")
             .request()
@@ -545,7 +531,8 @@ public class DurationHeatMapQueryIT {
     return response.readEntity(HeatMapResponseDto.class);
   }
 
-  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
+  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response = getResponse(token, dto);
 
     // then the status code is okay

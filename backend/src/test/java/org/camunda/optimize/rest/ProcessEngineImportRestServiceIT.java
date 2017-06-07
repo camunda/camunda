@@ -52,7 +52,7 @@ public class ProcessEngineImportRestServiceIT {
     //when
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     //when
     Response response = embeddedOptimizeRule.target("process-definition")

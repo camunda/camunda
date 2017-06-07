@@ -2,6 +2,7 @@ package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -10,7 +11,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
@@ -26,8 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.typeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -139,6 +138,22 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     addEntryToTracker(type, id);
   }
 
+  public void addDemoUser() throws JsonProcessingException {
+    CredentialsDto user = new CredentialsDto();
+    user.setUsername(properties.getProperty("demo"));
+    user.setPassword(properties.getProperty("demo"));
+
+    esclient
+      .prepareIndex(
+        getOptimizeIndex(),
+        getUserType(),
+        "1"
+      )
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setSource(objectMapper.writeValueAsString(user), XContentType.JSON)
+      .get();
+  }
+
   private void addEntryToTracker(String type, String id) {
     if(!documentEntriesTracker.containsKey(type)){
       List<String> idList = new LinkedList<>();
@@ -165,7 +180,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       if (exists) {
         DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
             .refresh(true)
-            .filter(queryAllButUserAndImportIndexType())
+            .filter(matchAllQuery())
             .source(indexName)
             .get();
       }
@@ -174,20 +189,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  private QueryBuilder queryAllButUserAndImportIndexType() {
-    return boolQuery()
-      .mustNot(
-        typeQuery(properties.getProperty("camunda.optimize.es.users.type"))
-      )
-      .mustNot(
-        typeQuery(properties.getProperty("camunda.optimize.es.import.index.type"))
-      );
+  private String getUserType() {
+    return properties.getProperty("camunda.optimize.es.users.type");
   }
 
   private void assureElasticsearchIsClean() {
     try {
       SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
-          .setQuery(queryAllButUserAndImportIndexType())
+          .setQuery(matchAllQuery())
           .get();
       Long hits = response.getHits().getTotalHits();
       assertThat("Elasticsearch should be clean after Test!", hits, is(0L));

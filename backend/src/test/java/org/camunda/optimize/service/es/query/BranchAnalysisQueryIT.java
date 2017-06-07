@@ -589,7 +589,7 @@ public class BranchAnalysisQueryIT {
 
 
   private BranchAnalysisDto getBranchAnalysisDto(BranchAnalysisQueryDto dto) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response = getResponse(token, dto);
 
     // then the status code is okay
@@ -605,7 +605,7 @@ public class BranchAnalysisQueryIT {
   }
 
   private Response getResponse(BranchAnalysisQueryDto request) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     return getResponse(token, request);
   }
 

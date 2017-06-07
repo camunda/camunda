@@ -69,7 +69,7 @@ public class DurationHeatmapTargetValueIT {
   }
 
   private DurationHeatmapTargetValueDto getDurationHeatmapTargetValueDto(String processDefinitionId) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response = embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/heatmap/duration/target-value-comparison")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
@@ -78,7 +78,7 @@ public class DurationHeatmapTargetValueIT {
   }
 
   private void persistValue(DurationHeatmapTargetValueDto targetValueDto) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Entity<DurationHeatmapTargetValueDto> entity = Entity.entity(targetValueDto, MediaType.APPLICATION_JSON);
     Response response = embeddedOptimizeRule.target("process-definition/heatmap/duration/target-value")
         .request()

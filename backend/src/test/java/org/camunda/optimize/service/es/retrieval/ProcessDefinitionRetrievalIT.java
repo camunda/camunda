@@ -50,7 +50,7 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
@@ -71,7 +71,7 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
@@ -101,7 +101,7 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
@@ -128,7 +128,7 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
@@ -158,7 +158,7 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/xml")
         .request()
@@ -183,7 +183,7 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Entity<List<String>> toPost = Entity.entity(ids, MediaType.APPLICATION_JSON);
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")

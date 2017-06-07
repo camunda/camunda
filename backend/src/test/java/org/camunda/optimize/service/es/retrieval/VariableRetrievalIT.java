@@ -253,7 +253,7 @@ public class VariableRetrievalIT {
   }
 
   private List<GetVariablesResponseDto> getGetVariablesResponseDtos(String processDefinition) {
-    String token = embeddedOptimizeRule.authenticateAdmin();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/" + processDefinition + "/variables")
             .request()
