@@ -1,17 +1,15 @@
-import {jsx, OnEvent, Class, Scope, List, createReferenceComponent} from 'view-utils';
+import {jsx, OnEvent, Class, Scope, List, SetInputFieldValue} from 'view-utils';
 import {onNextTick} from 'utils';
 import {setValue, addValue} from './service';
 
 export function ValueInput() {
   return (node, eventBus) => {
-    const Reference = createReferenceComponent();
-
     const template = <div className="variable-value">
-      <Reference name="variableValue" />
       <Scope selector={getValueList}>
         <List>
           <input className="form-control" placeholder="Enter value" type="text">
             <Class className="hidden" predicate={shouldNotDisplayInput} />
+            <SetInputFieldValue getValue="value" />
             <OnEvent event="input" listener={changeValue} />
           </input>
         </List>
@@ -23,15 +21,7 @@ export function ValueInput() {
       </button>
     </div>;
 
-    const templateUpdate = template(node, eventBus);
-
-    return [templateUpdate, ({values}) => {
-      const nodes = Reference.getNode('variableValue').querySelectorAll('input');
-
-      for (let i = 0; i < nodes.length; i++) {
-        nodes[i].value = typeof values[i] === 'undefined' ? '' : values[i];
-      }
-    }];
+    return template(node, eventBus);
 
     function getValueList({variables: {data}, selectedIdx, values}) {
       const variableType = data && selectedIdx !== undefined && data[selectedIdx].type;
