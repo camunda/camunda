@@ -18,7 +18,7 @@ menu:
 
 ## Start the Broker Distribution
 
-1. Download the latest broker distribution from the [releases page](https://github.com/camunda-tngp/camunda-tngp/releases) or the [Nexus snapshot repository](https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/org/camunda/tngp/tngp-distribution/).
+1. Download the latest broker distribution from the [Nexus repository](https://app.camunda.com/nexus/content/repositories/camunda-tngp/org/camunda/tngp/tngp-distribution/).
 1. Extract its contents. We call it `${BROKER_HOME}` in the following.
 1. To start up the broker, run the script `${BROKER_HOME}/bin/broker` (Linux, Mac) or `${BROKER_HOME}/bin/broker.bat` (Windows).
 
