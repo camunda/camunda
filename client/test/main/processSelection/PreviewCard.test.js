@@ -149,6 +149,10 @@ describe('<PreviewCard>', () => {
       expect(setVersionForProcess.calledWith(state.versions[1])).to.eql(true);
     });
 
+    it('should set the version from state', () => {
+      expect(node.querySelector('select').value).to.eql(state.current.version.toString());
+    });
+
     it('should trigger loading of diagram preview when switching the version', () => {
       node.querySelector('select').selectedIndex = 1;
       triggerEvent({

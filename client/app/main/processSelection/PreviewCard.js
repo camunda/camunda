@@ -1,11 +1,11 @@
-import {jsx, OnEvent, Match, Case, Default, Scope, List, Text, Class, isFalsy} from 'view-utils';
+import {jsx, OnEvent, Match, Case, Default, Scope, List, Text, Class, isFalsy, createReferenceComponent, Attribute} from 'view-utils';
 import {openDefinition, setVersionForProcess} from './service';
 import {createDiagramPreview} from 'widgets';
 
 export function PreviewCard() {
   return (node, eventsBus) => {
     const DiagramPreview = createDiagramPreview();
-
+    const Reference = createReferenceComponent();
     const template = <div className="col-lg-3 col-md-4 col-sm-6 col-xs-12" style="margin-bottom: 20px;">
       <Scope selector={({current, versions}) => ({...current, versions})}>
         <div className="process-definition-card">
@@ -26,9 +26,11 @@ export function PreviewCard() {
                 <Default>
                   <Scope selector="versions">
                     <select>
+                      <Reference name="version-select" />
                       <OnEvent event="change" listener={selectDefinitionVersion} />
                       <List>
                         <option>
+                          <Attribute attribute="value" selector="version" />
                           v<Text property="version" />
                         </option>
                       </List>
@@ -46,8 +48,8 @@ export function PreviewCard() {
       return versions.length === 1;
     }
 
-    function selectDefinitionVersion({state, event: {target: {selectedIndex}}}) {
-      const selected = state[selectedIndex];
+    function selectDefinitionVersion({state, event: {target}}) {
+      const selected = state[target.selectedIndex];
 
       setVersionForProcess(selected);
       DiagramPreview.setLoading(true);
@@ -59,6 +61,15 @@ export function PreviewCard() {
       }
     }
 
-    return template(node, eventsBus);
+    return [
+      template(node, eventsBus),
+      ({current: {version}}) => {
+        const versionSelect = Reference.getNode('version-select');
+
+        if (versionSelect) {
+          versionSelect.value = version;
+        }
+      }
+    ];
   };
 }
