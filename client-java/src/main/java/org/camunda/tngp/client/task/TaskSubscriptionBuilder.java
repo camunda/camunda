@@ -34,7 +34,7 @@ public interface TaskSubscriptionBuilder
      *
      * @param lockOwner owner of which tasks are being locked
      */
-    TaskSubscriptionBuilder lockOwner(int lockOwner);
+    TaskSubscriptionBuilder lockOwner(String lockOwner);
 
     /**
      * Sets the number of tasks which will be locked at the same time.

@@ -17,20 +17,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.TopicEventImpl;
@@ -68,7 +61,7 @@ public class TaskSubscriptionUnitTest
     public static final int PARTITION_ID = 3;
     public static final long SUBSCRIPTION_ID = 123L;
     private static final String TASK_TYPE = "foo";
-    private static final int LOCK_OWNER = 1;
+    private static final String LOCK_OWNER = "owner";
     private static final long LOCK_TIME = 123L;
 
     protected final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());

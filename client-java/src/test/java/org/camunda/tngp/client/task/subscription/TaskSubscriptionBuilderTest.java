@@ -9,20 +9,13 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
-import org.camunda.tngp.client.task.PollableTaskSubscription;
-import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
-import org.camunda.tngp.client.task.TaskHandler;
-import org.camunda.tngp.client.task.TaskSubscription;
-import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
+import org.camunda.tngp.client.task.*;
 import org.camunda.tngp.client.task.impl.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
-import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
-import org.camunda.tngp.client.task.impl.subscription.PollableTaskSubscriptionBuilderImpl;
-import org.camunda.tngp.client.task.impl.subscription.TaskSubscriptionBuilderImpl;
-import org.camunda.tngp.client.task.impl.subscription.TaskSubscriptionImpl;
+import org.camunda.tngp.client.task.impl.subscription.*;
 import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,8 +24,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TaskSubscriptionBuilderTest
 {
@@ -82,7 +73,7 @@ public class TaskSubscriptionBuilderTest
         builder
             .handler(handler)
             .lockTime(654L)
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("fooo");
 
         // when
@@ -99,7 +90,7 @@ public class TaskSubscriptionBuilderTest
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscriptionImpl);
 
         verify(client).brokerTaskSubscription();
-        verify(openSubscriptionCmd).lockOwner(2);
+        verify(openSubscriptionCmd).lockOwner("owner");
         verify(openSubscriptionCmd).lockDuration(654L);
         verify(openSubscriptionCmd).taskType("fooo");
         verify(openSubscriptionCmd).execute();
@@ -113,7 +104,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(654L)
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("fooo");
 
         // when
@@ -130,7 +121,7 @@ public class TaskSubscriptionBuilderTest
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscriptionImpl);
 
         verify(client).brokerTaskSubscription();
-        verify(openSubscriptionCmd).lockOwner(2);
+        verify(openSubscriptionCmd).lockOwner("owner");
         verify(openSubscriptionCmd).lockDuration(654L);
         verify(openSubscriptionCmd).taskType("fooo");
         verify(openSubscriptionCmd).execute();
@@ -161,7 +152,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(654L)
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("foo");
 
         // then
@@ -180,7 +171,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(0L)
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("foo")
             .handler((t) ->
             { });
@@ -202,7 +193,7 @@ public class TaskSubscriptionBuilderTest
         builder
             .handler(mock(TaskHandler.class))
             .lockTime(Duration.ofDays(10))
-            .lockOwner(2)
+            .lockOwner("ownre")
             .taskType("fooo");
 
         // when
@@ -222,7 +213,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(Duration.ofDays(10))
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("fooo");
 
         // when
@@ -244,7 +235,7 @@ public class TaskSubscriptionBuilderTest
         builder
             .handler(handler)
             .lockTime(654L)
-            .lockOwner(2)
+            .lockOwner("owner")
             .taskType("fooo");
 
         when(openSubscriptionCmd.execute()).thenThrow(new RuntimeException("foo"));

@@ -2,43 +2,30 @@ package org.camunda.tngp.broker.task.data;
 
 public enum TaskEventType
 {
-    CREATE(0),
-    CREATED(1),
+    CREATE,
+    CREATED,
 
-    LOCK(2),
-    LOCKED(3),
-    LOCK_REJECTED(4),
+    LOCK,
+    LOCKED,
+    LOCK_REJECTED,
 
-    COMPLETE(5),
-    COMPLETED(6),
-    COMPLETE_REJECTED(7),
+    COMPLETE,
+    COMPLETED,
+    COMPLETE_REJECTED,
 
-    EXPIRE_LOCK(8),
-    LOCK_EXPIRED(9),
-    LOCK_EXPIRATION_REJECTED(10),
+    EXPIRE_LOCK,
+    LOCK_EXPIRED,
+    LOCK_EXPIRATION_REJECTED,
 
-    FAIL(11),
-    FAILED(12),
-    FAIL_REJECTED(13),
+    FAIL,
+    FAILED,
+    FAIL_REJECTED,
 
-    UPDATE_RETRIES(14),
-    RETRIES_UPDATED(15),
-    UPDATE_RETRIES_REJECTED(16),
+    UPDATE_RETRIES,
+    RETRIES_UPDATED,
+    UPDATE_RETRIES_REJECTED,
 
-    CANCEL(17),
-    CANCELED(18),
-    CANCEL_REJECTED(19);
-
-    // don't change the ids because the task stream processor use them for the index
-    private final int id;
-
-    TaskEventType(int id)
-    {
-        this.id = id;
-    }
-
-    public int id()
-    {
-        return id;
-    }
+    CANCEL,
+    CANCELED,
+    CANCEL_REJECTED;
 }

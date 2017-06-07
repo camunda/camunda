@@ -10,42 +10,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.workflow.index;
+package org.camunda.tngp.broker.task.index;
 
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
-import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
+import org.camunda.tngp.broker.task.processor.TaskSubscription;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 
 /**
- * Index that maps <b>activity instance key</b> to
+ * Index that maps <b>task instance key</b> to
  *
- * <li>task instance key
- * <li>activity id length
- * <li>activity id (max 255 chars)
+ * <li> state
+ * <li> lock owner length
+ * <li> lock owner (max 64 chars)
  */
-public class ActivityInstanceIndex
+public class TaskInstanceIndex
 {
-    private static final int SIZE_OF_ACTIVITY_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
-    private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
+    private static final int INDEX_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * TaskSubscription.LOCK_OWNER_MAX_LENGTH;
 
-    private static final int TASK_KEY_OFFSET = 0;
-    private static final int ACTIVITY_ID_LENGTH_OFFSET = TASK_KEY_OFFSET + SIZE_OF_LONG;
-    private static final int ACTIVITY_ID_OFFSET = ACTIVITY_ID_LENGTH_OFFSET + SIZE_OF_INT;
+    private static final int STATE_OFFSET = 0;
+    private static final int LOCK_OWNER_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
+    private static final int LOCK_OWNER_OFFSET = LOCK_OWNER_LENGTH_OFFSET + SIZE_OF_INT;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
-    private final UnsafeBuffer activityIdBuffer = new UnsafeBuffer(new byte[SIZE_OF_ACTIVITY_ID]);
+    private final UnsafeBuffer lockOwnerBuffer = new UnsafeBuffer(0, 0);
 
     private final Long2BytesHashIndex index;
     private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
@@ -53,7 +52,7 @@ public class ActivityInstanceIndex
     private long key;
     private boolean isRead = false;
 
-    public ActivityInstanceIndex(final IndexStore indexStore)
+    public TaskInstanceIndex(final IndexStore indexStore)
     {
         this.index = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
@@ -69,12 +68,12 @@ public class ActivityInstanceIndex
         isRead = false;
     }
 
-    public void remove(long activityInstanceKey)
+    public void remove(long workflowInstanceKey)
     {
-        index.remove(activityInstanceKey);
+        index.remove(workflowInstanceKey);
     }
 
-    public ActivityInstanceIndex wrapActivityInstanceKey(long key)
+    public TaskInstanceIndex wrapTaskInstanceKey(long key)
     {
         isRead = false;
 
@@ -89,29 +88,28 @@ public class ActivityInstanceIndex
         return this;
     }
 
-    public long getTaskKey()
+    public short getState()
     {
-        return isRead ? buffer.getLong(TASK_KEY_OFFSET, BYTE_ORDER) : -1L;
+        return isRead ? buffer.getShort(STATE_OFFSET, BYTE_ORDER) : -1;
     }
 
-    public DirectBuffer getActivityId()
+    public DirectBuffer getLockOwner()
     {
         if (isRead)
         {
-            final int length = buffer.getInt(ACTIVITY_ID_LENGTH_OFFSET, BYTE_ORDER);
-
-            activityIdBuffer.wrap(buffer, ACTIVITY_ID_OFFSET, length);
+            final int length = buffer.getInt(LOCK_OWNER_LENGTH_OFFSET, BYTE_ORDER);
+            lockOwnerBuffer.wrap(buffer, LOCK_OWNER_OFFSET, length);
         }
         else
         {
-            activityIdBuffer.wrap(0, 0);
+            lockOwnerBuffer.wrap(0, 0);
         }
-        return activityIdBuffer;
+        return lockOwnerBuffer;
     }
 
-    public ActivityInstanceIndex newActivityInstance(long activityInstanceKey)
+    public TaskInstanceIndex newTaskInstance(long taskInstanceKey)
     {
-        key = activityInstanceKey;
+        key = taskInstanceKey;
         isRead = true;
         return this;
     }
@@ -122,18 +120,18 @@ public class ActivityInstanceIndex
         index.put(key, buffer.byteArray());
     }
 
-    public ActivityInstanceIndex setActivityId(DirectBuffer activityId)
+    public TaskInstanceIndex setState(short state)
     {
         ensureRead();
-        buffer.putInt(ACTIVITY_ID_LENGTH_OFFSET, activityId.capacity(), BYTE_ORDER);
-        buffer.putBytes(ACTIVITY_ID_OFFSET, activityId, 0, activityId.capacity());
+        buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
         return this;
     }
 
-    public ActivityInstanceIndex setTaskKey(long taskKey)
+    public TaskInstanceIndex setLockOwner(DirectBuffer lockOwner)
     {
         ensureRead();
-        buffer.putLong(TASK_KEY_OFFSET, taskKey, BYTE_ORDER);
+        buffer.putInt(LOCK_OWNER_LENGTH_OFFSET, lockOwner.capacity(), BYTE_ORDER);
+        buffer.putBytes(LOCK_OWNER_OFFSET, lockOwner, 0, lockOwner.capacity());
         return this;
     }
 
@@ -144,4 +142,5 @@ public class ActivityInstanceIndex
             throw new IllegalStateException("must call wrap() before");
         }
     }
+
 }

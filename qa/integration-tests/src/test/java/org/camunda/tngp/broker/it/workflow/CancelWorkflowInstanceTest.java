@@ -112,7 +112,7 @@ public class CancelWorkflowInstanceTest
 
         final PollableTaskSubscription taskSubscription = clientRule.taskTopic().newPollableTaskSubscription()
             .taskType("test")
-            .lockOwner(1)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(1))
             .open();
 
@@ -148,7 +148,7 @@ public class CancelWorkflowInstanceTest
 
         final PollableTaskSubscription taskSubscription = clientRule.taskTopic().newPollableTaskSubscription()
                 .taskType("test")
-                .lockOwner(1)
+                .lockOwner("owner")
                 .lockTime(Duration.ofMinutes(1))
                 .open();
 

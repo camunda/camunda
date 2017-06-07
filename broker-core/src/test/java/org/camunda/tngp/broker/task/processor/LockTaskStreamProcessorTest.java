@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
@@ -74,7 +77,7 @@ public class LockTaskStreamProcessorTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(1)
+                .setLockOwner(wrapString("owner-1"))
                 .setCredits(3);
 
         anotherSubscription = new TaskSubscription()
@@ -82,7 +85,7 @@ public class LockTaskStreamProcessorTest
                 .setChannelId(12)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(10).toMillis())
-                .setLockOwner(2)
+                .setLockOwner(wrapString("owner-2"))
                 .setCredits(2);
 
         final StreamProcessorContext context = new StreamProcessorContext();
@@ -115,7 +118,7 @@ public class LockTaskStreamProcessorTest
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
-        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
+        assertThat(taskEvent.getLockOwner()).isEqualTo(wrapString("owner-1"));
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
@@ -426,6 +429,29 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
+    public void shouldFailToAddSubscriptionIfEmptyLockOwner()
+    {
+        final TaskSubscription subscription = anotherSubscription.setLockOwner(wrapString(""));
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("length of lock owner must be greater than 0");
+
+        streamProcessor.addSubscription(subscription);
+    }
+
+    @Test
+    public void shouldFailToAddSubscriptionIfLockOwnerTooLong()
+    {
+        final String lockOwner = IntStream.range(0, TaskSubscription.LOCK_OWNER_MAX_LENGTH + 1).mapToObj(i -> "a").collect(Collectors.joining());
+        final TaskSubscription subscription = anotherSubscription.setLockOwner(wrapString(lockOwner));
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("length of lock owner must be less than or equal to 64");
+
+        streamProcessor.addSubscription(subscription);
+    }
+
+    @Test
     public void shouldFailToAddSubscriptionIfWrongType()
     {
         final TaskSubscription subscription = anotherSubscription.setTaskType(ANOTHER_TASK_TYPE_BUFFER);
@@ -443,17 +469,6 @@ public class LockTaskStreamProcessorTest
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("lock duration must be greater than 0");
-
-        streamProcessor.addSubscription(subscription);
-    }
-
-    @Test
-    public void shouldFailToAddSubscriptionIfNotValidLockOwner()
-    {
-        final TaskSubscription subscription = anotherSubscription.setLockOwner(-1);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("lock owner must be greater than or equal to 0");
 
         streamProcessor.addSubscription(subscription);
     }

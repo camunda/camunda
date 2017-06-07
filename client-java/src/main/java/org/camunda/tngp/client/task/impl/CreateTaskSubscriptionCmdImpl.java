@@ -20,7 +20,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     private final int partitionId;
     private String taskType;
     private long lockDuration = -1L;
-    private long lockOwner = -1L;
+    private String lockOwner;
     private int initialCredits = -1;
 
     public CreateTaskSubscriptionCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
@@ -30,7 +30,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
         this.partitionId = partitionId;
     }
 
-    public CreateTaskSubscriptionCmdImpl lockOwner(final int lockOwner)
+    public CreateTaskSubscriptionCmdImpl lockOwner(final String lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
@@ -72,8 +72,8 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
         ensureNotNullOrEmpty("topic name", topicName);
         ensureGreaterThanOrEqual("partition id", partitionId, 0);
         ensureNotNull("task type", taskType);
+        ensureNotNull("lock owner", lockOwner);
         ensureGreaterThan("lock duration", lockDuration, 0);
-        ensureGreaterThanOrEqual("lock owner", lockOwner, 0);
         ensureGreaterThan("initial credits", initialCredits, 0);
     }
 
@@ -82,7 +82,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     {
         taskType = null;
         lockDuration = -1L;
-        lockOwner = -1L;
+        lockOwner = null;
         initialCredits = -1;
     }
 

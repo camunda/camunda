@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
@@ -21,7 +20,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
-    protected int lockOwner = -1;
+    protected String lockOwner;
     protected int retries = -1;
     protected String taskType;
     protected byte[] payload;
@@ -41,7 +40,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     }
 
     @Override
-    public FailTaskCmd lockOwner(int lockOwner)
+    public FailTaskCmd lockOwner(String lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
@@ -108,7 +107,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     {
         super.validate();
         ensureGreaterThanOrEqual("task key", taskKey, 0);
-        ensureGreaterThanOrEqual("lock owner", lockOwner, 0);
+        ensureNotNullOrEmpty("lock owner", lockOwner);
         ensureGreaterThanOrEqual("retries", retries, 0);
         ensureNotNullOrEmpty("task type", taskType);
     }
@@ -130,7 +129,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     protected void reset()
     {
         taskKey = -1L;
-        lockOwner = -1;
+        lockOwner = null;
         retries = -1;
         taskType = null;
         payload = null;

@@ -25,11 +25,7 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
@@ -211,7 +207,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(1)
+                .setLockOwner(wrapString("owner"))
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -241,7 +237,7 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(0);
-        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(1);
+        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(wrapString("owner"));
 
         assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(PAYLOAD.length)
@@ -264,7 +260,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -296,7 +292,7 @@ public class TaskStreamProcessorIntegrationTest
 
         taskEvent
             .setEventType(TaskEventType.COMPLETE)
-            .setLockOwner(3)
+            .setLockOwner(wrapString("owner"))
             .setPayload(new UnsafeBuffer(modifiedPayload));
 
         position = logStreamWriter
@@ -326,7 +322,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -356,7 +352,7 @@ public class TaskStreamProcessorIntegrationTest
         // when
         taskEvent
             .setEventType(TaskEventType.FAIL)
-            .setLockOwner(3)
+            .setLockOwner(wrapString("owner"))
             .setRetries(2);
 
         position = logStreamWriter
@@ -393,7 +389,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(lockDuration.toMillis())
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -441,7 +437,7 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(now.plus(lockDuration).toEpochMilli());
-        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(3);
+        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(wrapString("owner"));
 
         assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(PAYLOAD.length)
@@ -460,7 +456,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -489,7 +485,7 @@ public class TaskStreamProcessorIntegrationTest
 
         taskEvent
             .setEventType(TaskEventType.FAIL)
-            .setLockOwner(3)
+            .setLockOwner(wrapString("owner"))
             .setRetries(0);
 
         position = logStreamWriter

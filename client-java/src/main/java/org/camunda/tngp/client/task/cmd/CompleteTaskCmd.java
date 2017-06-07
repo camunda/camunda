@@ -12,9 +12,9 @@ public interface CompleteTaskCmd extends SetPayloadCmd<Long, CompleteTaskCmd>
     CompleteTaskCmd taskKey(long taskKey);
 
     /**
-     * Set the id of the owner who complete the task.
+     * Set the owner who complete the task.
      */
-    CompleteTaskCmd lockOwner(int lockOwner);
+    CompleteTaskCmd lockOwner(String lockOwner);
 
     /**
      * Set the type of the task.

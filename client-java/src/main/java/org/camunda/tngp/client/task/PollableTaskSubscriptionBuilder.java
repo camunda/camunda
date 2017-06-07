@@ -34,7 +34,7 @@ public interface PollableTaskSubscriptionBuilder
      *
      * @param lockOwner owner of which tasks are being locked
      */
-    PollableTaskSubscriptionBuilder lockOwner(int lockOwner);
+    PollableTaskSubscriptionBuilder lockOwner(String lockOwner);
 
     /**
      * Sets the number of tasks which will be locked at the same time.

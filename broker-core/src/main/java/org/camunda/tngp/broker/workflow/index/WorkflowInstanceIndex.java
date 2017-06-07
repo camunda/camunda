@@ -77,6 +77,7 @@ public class WorkflowInstanceIndex
         if (indexValue != null)
         {
             buffer.wrap(indexValue);
+            this.key = key;
             isRead = true;
         }
 

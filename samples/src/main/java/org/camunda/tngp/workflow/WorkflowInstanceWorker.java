@@ -30,7 +30,7 @@ public class WorkflowInstanceWorker
         final String topicName = "default-topic";
         final int partitionId = 0;
         final String taskType = "foo";
-        final int lockOwner = 24;
+        final String lockOwner = "worker-1";
 
         final Properties clientProperties = new Properties();
         clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);

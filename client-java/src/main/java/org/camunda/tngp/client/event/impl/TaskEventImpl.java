@@ -13,7 +13,7 @@ public class TaskEventImpl implements TaskEvent
     protected String eventType;
     protected Map<String, Object> headers;
     protected Long lockTime;
-    protected Integer lockOwner;
+    protected String lockOwner;
     protected Integer retries;
     protected String type;
     protected final MsgPackField payload = new MsgPackField();
@@ -70,12 +70,12 @@ public class TaskEventImpl implements TaskEvent
     }
 
     @Override
-    public Integer getLockOwner()
+    public String getLockOwner()
     {
         return lockOwner;
     }
 
-    public void setLockOwner(Integer lockOwner)
+    public void setLockOwner(String lockOwner)
     {
         this.lockOwner = lockOwner;
     }

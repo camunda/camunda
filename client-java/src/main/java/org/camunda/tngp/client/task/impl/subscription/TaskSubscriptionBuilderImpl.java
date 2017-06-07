@@ -15,7 +15,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 
     protected String taskType;
     protected long lockTime = Duration.ofMinutes(1).toMillis();
-    protected int lockOwner = -1;
+    protected String lockOwner;
     protected TaskHandler taskHandler;
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
@@ -71,7 +71,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     }
 
     @Override
-    public TaskSubscriptionBuilder lockOwner(int lockOwner)
+    public TaskSubscriptionBuilder lockOwner(String lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
@@ -81,9 +81,9 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public TaskSubscriptionImpl open()
     {
         EnsureUtil.ensureNotNull("taskHandler", taskHandler);
+        EnsureUtil.ensureNotNull("lockOwner", lockOwner);
         EnsureUtil.ensureNotNullOrEmpty("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
-        EnsureUtil.ensureGreaterThanOrEqual("lockOwner", lockOwner, 0);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
         final TaskSubscriptionImpl subscription =

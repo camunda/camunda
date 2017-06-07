@@ -12,9 +12,9 @@ public interface FailTaskCmd extends SetPayloadCmd<Long, FailTaskCmd>
     FailTaskCmd taskKey(long taskKey);
 
     /**
-     * Set the id of the owner who worked on the task.
+     * Set the owner who worked on the task.
      */
-    FailTaskCmd lockOwner(int lockOwner);
+    FailTaskCmd lockOwner(String lockOwner);
 
     /**
      * Set the type of the task.

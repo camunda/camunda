@@ -155,7 +155,7 @@ public class IncidentTest
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("test")
-            .lockOwner(0)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
             .handler(taskHandler)
             .open();

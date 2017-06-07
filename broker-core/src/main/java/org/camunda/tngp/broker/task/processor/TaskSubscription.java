@@ -20,6 +20,8 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class TaskSubscription extends UnpackedObject
 {
+    public static final int LOCK_OWNER_MAX_LENGTH = 64;
+
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
 
     protected StringProperty topicNameProp = new StringProperty("topicName");
@@ -27,7 +29,7 @@ public class TaskSubscription extends UnpackedObject
     protected StringProperty taskTypeProp = new StringProperty("taskType", "");
 
     protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
-    protected IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
+    protected StringProperty lockOwnerProp = new StringProperty("lockOwner", "default");
 
     protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
@@ -87,7 +89,7 @@ public class TaskSubscription extends UnpackedObject
         return this;
     }
 
-    public TaskSubscription setLockOwner(int lockOwner)
+    public TaskSubscription setLockOwner(DirectBuffer lockOwner)
     {
         this.lockOwnerProp.setValue(lockOwner);
         return this;
@@ -128,7 +130,7 @@ public class TaskSubscription extends UnpackedObject
         return partitionIdProp.getValue();
     }
 
-    public int getLockOwner()
+    public DirectBuffer getLockOwner()
     {
         return lockOwnerProp.getValue();
     }

@@ -25,9 +25,9 @@ public interface TaskEvent
     Map<String, Object> getHeaders();
 
     /**
-     * @return id of the lock owner
+     * @return the lock owner
      */
-    Integer getLockOwner();
+    String getLockOwner();
 
     /**
      * @return remaining retries

@@ -3,12 +3,7 @@ package org.camunda.tngp.broker.task.data;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
-import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
-import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
-import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
-import org.camunda.tngp.broker.util.msgpack.property.ObjectProperty;
-import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
+import org.camunda.tngp.broker.util.msgpack.property.*;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.Protocol;
 
@@ -18,7 +13,7 @@ public class TaskEvent extends UnpackedObject
 
     private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
-    private final IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
+    private final StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final ObjectProperty<TaskHeaders> headersProp = new ObjectProperty<>("headers", new TaskHeaders());
@@ -57,14 +52,19 @@ public class TaskEvent extends UnpackedObject
         return this;
     }
 
-    public int getLockOwner()
+    public DirectBuffer getLockOwner()
     {
         return lockOwnerProp.getValue();
     }
 
-    public TaskEvent setLockOwner(int lockOwer)
+    public TaskEvent setLockOwner(DirectBuffer lockOwer)
     {
-        lockOwnerProp.setValue(lockOwer);
+        return setLockOwner(lockOwer, 0, lockOwer.capacity());
+    }
+
+    public TaskEvent setLockOwner(DirectBuffer lockOwer, int offset, int length)
+    {
+        lockOwnerProp.setValue(lockOwer, offset, length);
         return this;
     }
 

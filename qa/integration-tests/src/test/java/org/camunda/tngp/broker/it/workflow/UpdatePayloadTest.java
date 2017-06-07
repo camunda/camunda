@@ -106,7 +106,7 @@ public class UpdatePayloadTest
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("task-1")
-            .lockOwner(1)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
             .handler(task ->
             {
@@ -131,7 +131,7 @@ public class UpdatePayloadTest
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("task-1")
-            .lockOwner(1)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
             .handler(task ->
             {

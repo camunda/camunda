@@ -57,7 +57,7 @@ public class TaskSubscriptionTest
 
         final TaskSubscription subscription = clientRule.taskTopic().newTaskSubscription()
             .handler((t) -> t.complete())
-            .lockOwner(0)
+            .lockOwner("owner")
             .lockTime(1000L)
             .taskFetchSize(5)
             .taskType("foo")
@@ -107,7 +107,7 @@ public class TaskSubscriptionTest
 
         clientRule.taskTopic().newTaskSubscription()
             .handler(handler)
-            .lockOwner(0)
+            .lockOwner("owner")
             .lockTime(1000L)
             .taskFetchSize(taskCapacity)
             .taskType("foo")
@@ -157,7 +157,7 @@ public class TaskSubscriptionTest
 
         clientRule.taskTopic().newTaskSubscription()
             .handler(taskHandler)
-            .lockOwner(0)
+            .lockOwner("owner")
             .lockTime(1000L)
             .taskFetchSize(subscriptionCapacity)
             .taskType("foo")

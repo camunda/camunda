@@ -22,7 +22,7 @@ public class TaskSubscriptionImpl
 
     protected final String taskType;
     protected final long lockTime;
-    protected final int lockOwner;
+    protected final String lockOwner;
 
     protected boolean autoComplete;
     protected MsgPackMapper msgPackMapper;
@@ -32,7 +32,7 @@ public class TaskSubscriptionImpl
             TaskHandler taskHandler,
             String taskType,
             long lockTime,
-            int lockOwner,
+            String lockOwner,
             int capacity,
             EventAcquisition<TaskSubscriptionImpl> acquisition,
             MsgPackMapper msgPackMapper,
@@ -58,7 +58,7 @@ public class TaskSubscriptionImpl
         return lockTime;
     }
 
-    public int getLockOwner()
+    public String getLockOwner()
     {
         return lockOwner;
     }

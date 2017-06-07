@@ -211,7 +211,7 @@ public class FailTaskCmdTest
     {
         failTaskCommand
             .taskType("foo")
-            .lockOwner(3)
+            .lockOwner("owner")
             .retries(2);
 
         thrown.expect(RuntimeException.class);
@@ -229,7 +229,7 @@ public class FailTaskCmdTest
             .retries(2);
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("lock owner must be greater than or equal to 0");
+        thrown.expectMessage("lock owner must not be null");
 
         failTaskCommand.validate();
     }
@@ -239,7 +239,7 @@ public class FailTaskCmdTest
     {
         failTaskCommand
             .taskKey(2L)
-            .lockOwner(3)
+            .lockOwner("owner")
             .retries(2);
 
         thrown.expect(RuntimeException.class);
@@ -253,7 +253,7 @@ public class FailTaskCmdTest
     {
         failTaskCommand
             .taskKey(2L)
-            .lockOwner(3)
+            .lockOwner("owner")
             .taskType("foo");
 
         thrown.expect(RuntimeException.class);

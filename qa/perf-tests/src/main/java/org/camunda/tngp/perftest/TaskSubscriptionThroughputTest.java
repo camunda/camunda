@@ -89,7 +89,7 @@ public class TaskSubscriptionThroughputTest
 
         final TaskSubscription subscription = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).newTaskSubscription()
             .lockTime(10000)
-            .lockOwner(0)
+            .lockOwner("test")
             .taskFetchSize(10000)
             .taskType(TASK_TYPE)
             .handler((t) ->

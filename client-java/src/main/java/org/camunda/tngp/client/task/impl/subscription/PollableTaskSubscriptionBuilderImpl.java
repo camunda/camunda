@@ -15,7 +15,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected int taskFetchSize = TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE;
     protected String taskType;
     protected long lockTime = Duration.ofMinutes(1).toMillis();
-    protected int lockOwner = -1;
+    protected String lockOwner;
 
     protected final TaskTopicClientImpl taskClient;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
@@ -55,7 +55,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     }
 
     @Override
-    public PollableTaskSubscriptionBuilder lockOwner(int lockOwner)
+    public PollableTaskSubscriptionBuilder lockOwner(String lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
@@ -73,7 +73,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     {
         EnsureUtil.ensureNotNullOrEmpty("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
-        EnsureUtil.ensureGreaterThanOrEqual("lockOwner", lockOwner, 0);
+        EnsureUtil.ensureNotNull("lockOwner", lockOwner);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
         final TaskSubscriptionImpl subscription =

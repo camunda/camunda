@@ -79,7 +79,7 @@ public class TaskExpireLockStreamProcessorTest
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(TaskEvent.class, event -> event
             .setType(TASK_TYPE_BUFFER)
             .setLockTime(LOCK_TIME)
-            .setLockOwner(3),
+            .setLockOwner(wrapString("owner")),
             TASK_EVENT,
             INITIAL_POSITION);
 

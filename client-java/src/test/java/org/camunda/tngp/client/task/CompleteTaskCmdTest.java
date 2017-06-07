@@ -83,7 +83,7 @@ public class CompleteTaskCmdTest
         completeTaskCommand
             .taskKey(2)
             .taskType("foo")
-            .lockOwner(3)
+            .lockOwner("owner")
             .addHeader("a", "b")
             .addHeader("c", "d")
             .payload("{ \"bar\" : 4 }");
@@ -129,7 +129,7 @@ public class CompleteTaskCmdTest
         completeTaskCommand
             .taskKey(2)
             .taskType("foo")
-            .lockOwner(3)
+            .lockOwner("owner")
             .headers(headers)
             .payload(new ByteArrayInputStream(payload));
 
@@ -213,7 +213,7 @@ public class CompleteTaskCmdTest
     {
         completeTaskCommand
             .taskType("foo")
-            .lockOwner(3)
+            .lockOwner("owner")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
 
@@ -233,7 +233,7 @@ public class CompleteTaskCmdTest
             .payload("{ \"bar\" : 4 }");
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("lock owner must be greater than or equal to 0");
+        thrown.expectMessage("lock owner must not be null");
 
         completeTaskCommand.validate();
     }
@@ -243,7 +243,7 @@ public class CompleteTaskCmdTest
     {
         completeTaskCommand
             .taskKey(2L)
-            .lockOwner(3)
+            .lockOwner("owner")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
 

@@ -27,20 +27,13 @@ import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
-import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
-import org.camunda.tngp.protocol.clientapi.ErrorCode;
-import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
-import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.clientapi.*;
 import org.camunda.tngp.test.util.FluentMock;
+import org.camunda.tngp.test.util.agent.ControllableAgentRunnerService;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.agent.SharedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,6 +87,9 @@ public class ClientApiMessageHandlerTest
     @Rule
     public Timeout testTimeout = Timeout.seconds(5);
 
+    @Rule
+    public ControllableAgentRunnerService agentRunnerService = new ControllableAgentRunnerService();
+
     @Before
     public void setup()
     {
@@ -101,15 +97,13 @@ public class ClientApiMessageHandlerTest
 
         when(mockTransportChannel.getStreamId()).thenReturn(TRANSPORT_CHANNEL_ID);
 
-        final AgentRunnerService agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
-
         logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
             .build();
 
-        logStream.open();
+        logStream.openAsync();
 
         messageHandler = new ClientApiMessageHandler(
                 mockSendBuffer,
@@ -120,12 +114,16 @@ public class ClientApiMessageHandlerTest
 
         messageHandler.addStream(logStream);
         logStream.setTerm(RAFT_TERM);
+
+        agentRunnerService.waitUntilDone();
     }
 
     @After
     public void cleanUp()
     {
-        logStream.close();
+        logStream.closeAsync();
+
+        agentRunnerService.waitUntilDone();
     }
 
     @Test
@@ -422,6 +420,8 @@ public class ClientApiMessageHandlerTest
 
     protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader)
     {
+        agentRunnerService.waitUntilDone();
+
         while (!logStreamReader.hasNext())
         {
             // wait for event

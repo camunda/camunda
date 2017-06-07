@@ -124,7 +124,7 @@ public class ServiceTaskTest
 
         taskClient.newTaskSubscription()
             .taskType("foo")
-            .lockOwner(1)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
             .handler(recordingTaskHandler)
             .open();
@@ -161,7 +161,7 @@ public class ServiceTaskTest
         // when
         taskClient.newTaskSubscription()
             .taskType("foo")
-            .lockOwner(1)
+            .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
             .handler(Task::complete)
             .open();

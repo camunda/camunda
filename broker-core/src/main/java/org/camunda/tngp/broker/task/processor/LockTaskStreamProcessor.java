@@ -12,8 +12,10 @@
  */
 package org.camunda.tngp.broker.task.processor;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
-import static org.camunda.tngp.util.EnsureUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
+import static org.camunda.tngp.util.EnsureUtil.ensureLessThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -123,8 +125,10 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         ensureNotNull("subscription", subscription);
         ensureNotNull("lock task type", subscription.getLockTaskType());
+        ensureNotNull("lock owner", subscription.getLockOwner());
+        ensureGreaterThan("length of lock owner", subscription.getLockOwner().capacity(), 0);
+        ensureLessThanOrEqual("length of lock owner", subscription.getLockOwner().capacity(), TaskSubscription.LOCK_OWNER_MAX_LENGTH);
         ensureGreaterThan("lock duration", subscription.getLockDuration(), 0);
-        ensureGreaterThanOrEqual("lock owner", subscription.getLockOwner(), 0);
         ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
 
         if (!BufferUtil.equals(subscription.getLockTaskType(), subscriptedTaskType))

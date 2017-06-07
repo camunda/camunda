@@ -29,7 +29,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
             .handler((t) ->
             { })
             .lockTime(10000L)
-            .lockOwner(0)
+            .lockOwner("test")
             .open();
     }
 

@@ -119,7 +119,7 @@ public class TaskInstanceStreamProcessorTest
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner")),
             metadata -> metadata
                 .reqChannelId(4)
                 .subscriberKey(5L));
@@ -147,21 +147,21 @@ public class TaskInstanceStreamProcessorTest
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner")),
             metadata -> metadata
                 .reqChannelId(4)
                 .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner")),
             metadata -> metadata
                 .reqChannelId(6)
                 .subscriberKey(7L));
@@ -188,21 +188,21 @@ public class TaskInstanceStreamProcessorTest
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner")),
             metadata -> metadata
                 .reqChannelId(4)
                 .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner")),
             metadata -> metadata
                 .reqChannelId(6)
                 .subscriberKey(7L));
@@ -228,12 +228,12 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
@@ -252,16 +252,16 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
@@ -280,12 +280,12 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAILED);
@@ -304,7 +304,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         ClockUtil.setCurrentTime(lockTime);
@@ -330,16 +330,15 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setRetries(0));
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.UPDATE_RETRIES)
-                .setLockOwner(2)
                 .setRetries(2));
 
         // then
@@ -361,7 +360,7 @@ public class TaskInstanceStreamProcessorTest
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3),
+                .setLockOwner(wrapString("owner-1")),
             metadata -> metadata
                 .subscriberKey(1L));
 
@@ -370,7 +369,7 @@ public class TaskInstanceStreamProcessorTest
             event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(4),
+                .setLockOwner(wrapString("owner-2")),
             metadata -> metadata
                 .subscriberKey(2L));
 
@@ -406,7 +405,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -427,11 +426,11 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -529,7 +528,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(4L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
@@ -548,16 +547,16 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
@@ -576,7 +575,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
@@ -595,12 +594,12 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner-1")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(5));
+                .setLockOwner(wrapString("owner-2")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
@@ -615,7 +614,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(4L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
@@ -634,16 +633,16 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
@@ -662,7 +661,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
@@ -681,16 +680,16 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
@@ -709,12 +708,12 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner-1")));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(5));
+                .setLockOwner(wrapString("owner-2")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
@@ -747,7 +746,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK));
@@ -773,7 +772,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
@@ -792,11 +791,11 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -819,11 +818,11 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -861,11 +860,11 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -888,7 +887,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -912,16 +911,16 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
-                .setLockOwner(3)
+                .setLockOwner(wrapString("owner"))
                 .setRetries(0));
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.UPDATE_RETRIES)
-                .setLockOwner(2)
+                .setLockOwner(wrapString("owner-2"))
                 .setRetries(0));
 
         // then
@@ -941,11 +940,11 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(lockTime)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.COMPLETE)
-                .setLockOwner(3));
+                .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -955,5 +954,4 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCEL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
     }
-
 }

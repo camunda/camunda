@@ -17,7 +17,7 @@ public class TaskImpl implements Task
     protected final long key;
     protected final String type;
     protected final long lockExpirationTime;
-    protected final int lockOwner;
+    protected final String lockOwner;
     protected final int retries;
     protected final MsgPackField payload = new MsgPackField();
     protected final Map<String, Object> headers;

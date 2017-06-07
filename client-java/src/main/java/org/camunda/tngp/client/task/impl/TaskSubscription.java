@@ -21,7 +21,7 @@ public class TaskSubscription
     private String taskType;
 
     private long lockDuration;
-    private long lockOwner;
+    private String lockOwner;
     private int credits;
 
     public long getSubscriberKey()
@@ -84,12 +84,12 @@ public class TaskSubscription
         this.credits = credits;
     }
 
-    public long getLockOwner()
+    public String getLockOwner()
     {
         return lockOwner;
     }
 
-    public void setLockOwner(final long lockOwner)
+    public void setLockOwner(final String lockOwner)
     {
         this.lockOwner = lockOwner;
     }

@@ -81,7 +81,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(1)
+            .lockOwner("test")
             .open();
 
         // then
@@ -109,7 +109,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(5)
+            .lockOwner("test")
             .open();
 
         waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
@@ -117,7 +117,7 @@ public class TaskSubscriptionTest
         // when
         final Long result = topicClient.complete()
             .taskKey(taskKey)
-            .lockOwner(5)
+            .lockOwner("test")
             .taskType("foo")
             .payload("{ \"a\" : 2 }")
             .addHeader("b", "3")
@@ -134,11 +134,10 @@ public class TaskSubscriptionTest
 
         taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.CREATED)).get(0);
         assertThat(taskEvent.getLockExpirationTime()).isNull();
-        assertThat(taskEvent.getLockOwner()).isEqualTo(-1);
 
         taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.LOCKED)).get(0);
         assertThat(taskEvent.getLockExpirationTime()).isNotNull();
-        assertThat(taskEvent.getLockOwner()).isEqualTo(5);
+        assertThat(taskEvent.getLockOwner()).isEqualTo("test");
     }
 
     @Test
@@ -164,7 +163,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(2)
+            .lockOwner("test")
             .open();
 
         // then
@@ -196,7 +195,7 @@ public class TaskSubscriptionTest
                 .handler(taskHandler)
                 .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
-                .lockOwner(1)
+                .lockOwner("test")
                 .open();
 
         // when
@@ -217,7 +216,6 @@ public class TaskSubscriptionTest
     public void shouldFetchAndHandleTasks()
     {
         // given
-
         final int numTasks = 50;
         for (int i = 0; i < numTasks; i++)
         {
@@ -232,7 +230,7 @@ public class TaskSubscriptionTest
             .handler(handler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(1)
+            .lockOwner("test")
             .taskFetchSize(10)
             .open();
 
@@ -266,7 +264,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(1)
+            .lockOwner("test")
             .open();
 
         // then the subscription is not broken and other tasks are still handled
@@ -299,7 +297,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(1)
+            .lockOwner("test")
             .open();
 
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED).and(retries(0))));
@@ -329,7 +327,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(1)
+            .lockOwner("test")
             .open();
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
@@ -368,7 +366,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(5)
+            .lockOwner("test")
             .open();
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
@@ -406,7 +404,7 @@ public class TaskSubscriptionTest
         clientRule.taskTopic().newTaskSubscription()
                 .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
-                .lockOwner(1)
+                .lockOwner("test")
                 .handler(taskHandler)
                 .open();
 
@@ -424,14 +422,14 @@ public class TaskSubscriptionTest
         clientRule.taskTopic().newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(1))
-            .lockOwner(1)
+            .lockOwner("test")
             .handler(taskHandler)
             .open();
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(2))
-            .lockOwner(1)
+            .lockOwner("test")
             .handler(taskHandler)
             .open();
 
@@ -456,7 +454,7 @@ public class TaskSubscriptionTest
         final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(3)
+            .lockOwner("test")
             .open();
 
         final Long taskKey = topicClient.create()
@@ -503,14 +501,14 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(5)
+            .lockOwner("test")
             .open();
 
         topicClient.newTaskSubscription()
             .handler(taskHandler)
             .taskType("bar")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(5)
+            .lockOwner("test")
             .open();
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
@@ -537,7 +535,7 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
-            .lockOwner(5)
+            .lockOwner("test")
             .open();
 
         // then

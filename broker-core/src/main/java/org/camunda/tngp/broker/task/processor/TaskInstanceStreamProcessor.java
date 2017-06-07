@@ -1,23 +1,18 @@
 package org.camunda.tngp.broker.task.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
-import java.nio.ByteOrder;
-
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.task.CreditsRequest;
 import org.camunda.tngp.broker.task.TaskSubscriptionManager;
 import org.camunda.tngp.broker.task.data.TaskEvent;
 import org.camunda.tngp.broker.task.data.TaskEventType;
+import org.camunda.tngp.broker.task.index.TaskInstanceIndex;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
-import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
@@ -28,13 +23,15 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
+import org.camunda.tngp.util.buffer.BufferUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
-    protected static final int INDEX_VALUE_LENGTH = 2 * SIZE_OF_INT;
-    protected static final int INDEX_STATE_OFFSET = 0;
-    protected static final int INDEX_LOCK_OWNER_OFFSET = INDEX_STATE_OFFSET + SIZE_OF_INT;
+    protected static final short STATE_CREATED = 1;
+    protected static final short STATE_LOCKED = 2;
+    protected static final short STATE_FAILED = 3;
+    protected static final short STATE_LOCK_EXPIRED = 4;
 
     protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -52,11 +49,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final UpdateRetriesTaskProcessor updateRetriesTaskProcessor = new UpdateRetriesTaskProcessor();
     protected final CancelTaskProcessor cancelTaskProcessor = new CancelTaskProcessor();
 
-    protected final Long2BytesHashIndex taskIndex;
-    protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
-
-    protected final IndexAccessor indexAccessor = new IndexAccessor();
-    protected final IndexWriter indexWriter = new IndexWriter();
+    protected final TaskInstanceIndex taskIndex;
 
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
@@ -77,14 +70,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.indexStore = indexStore;
         this.taskSubscriptionManager = taskSubscriptionManager;
 
-        taskIndex = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_LENGTH);
-        indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
+        taskIndex = new TaskInstanceIndex(indexStore);
     }
 
     @Override
     public SnapshotSupport getStateResource()
     {
-        return indexSnapshotSupport;
+        return taskIndex.getSnapshotSupport();
     }
 
     public void onOpen(StreamProcessorContext context)
@@ -208,7 +200,10 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            indexWriter.write(eventKey, TaskEventType.CREATED, -1, -1L);
+            taskIndex
+                .newTaskInstance(eventKey)
+                .setState(STATE_CREATED)
+                .write();
         }
     }
 
@@ -222,10 +217,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isLocked = false;
 
-            indexAccessor.wrapIndexKey(eventKey);
-            final int typeId = indexAccessor.getTypeId();
+            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
 
-            final boolean isLockable = typeId == TaskEventType.CREATED.id() || typeId == TaskEventType.FAILED.id() || typeId == TaskEventType.LOCK_EXPIRED.id();
+            final boolean isLockable = state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED;
 
             if (isLockable && taskEvent.getLockTime() > ClockUtil.getCurrentTimeInMillis())
             {
@@ -282,7 +276,10 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isLocked)
             {
-                indexWriter.write(eventKey, TaskEventType.LOCKED, taskEvent.getLockOwner(), writtenEventPosition);
+                taskIndex
+                    .setState(STATE_LOCKED)
+                    .setLockOwner(taskEvent.getLockOwner())
+                    .write();
             }
         }
     }
@@ -296,13 +293,12 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isCompleted = false;
 
-            indexAccessor.wrapIndexKey(eventKey);
-            final int typeId = indexAccessor.getTypeId();
-            final int lockOwner = indexAccessor.getLockOwner();
+            taskIndex.wrapTaskInstanceKey(eventKey);
+            final short state = taskIndex.getState();
 
-            final boolean isCompletable = typeId == TaskEventType.LOCKED.id() || typeId == TaskEventType.LOCK_EXPIRED.id();
+            final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
 
-            if (isCompletable && lockOwner == taskEvent.getLockOwner())
+            if (isCompletable && BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
             {
                 taskEvent.setEventType(TaskEventType.COMPLETED);
                 isCompleted = true;
@@ -345,11 +341,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isFailed = false;
 
-            indexAccessor.wrapIndexKey(eventKey);
-            final int typeId = indexAccessor.getTypeId();
-            final int lockOwner = indexAccessor.getLockOwner();
-
-            if (typeId == TaskEventType.LOCKED.id() && lockOwner == taskEvent.getLockOwner())
+            taskIndex.wrapTaskInstanceKey(eventKey);
+            if (taskIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
             {
                 taskEvent.setEventType(TaskEventType.FAILED);
                 isFailed = true;
@@ -378,7 +371,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isFailed)
             {
-                indexWriter.write(eventKey, TaskEventType.FAILED, -1, -1);
+                taskIndex
+                    .setState(STATE_FAILED)
+                    .write();
             }
         }
     }
@@ -392,10 +387,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isExpired = false;
 
-            indexAccessor.wrapIndexKey(eventKey);
-            final int typeId = indexAccessor.getTypeId();
-
-            if (typeId == TaskEventType.LOCKED.id())
+            taskIndex.wrapTaskInstanceKey(eventKey);
+            if (taskIndex.getState() == STATE_LOCKED)
             {
                 taskEvent.setEventType(TaskEventType.LOCK_EXPIRED);
                 isExpired = true;
@@ -418,9 +411,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isExpired)
             {
-                final int lockOwner = indexAccessor.getLockOwner();
-
-                indexWriter.write(eventKey, TaskEventType.LOCK_EXPIRED, lockOwner, -1);
+                taskIndex
+                    .setState(STATE_LOCK_EXPIRED)
+                    .write();
             }
         }
     }
@@ -430,10 +423,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            indexAccessor.wrapIndexKey(eventKey);
-            final int typeId = indexAccessor.getTypeId();
+            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
 
-            if (typeId == TaskEventType.FAILED.id() && taskEvent.getRetries() > 0)
+            if (state == STATE_FAILED && taskEvent.getRetries() > 0)
             {
                 taskEvent.setEventType(TaskEventType.RETRIES_UPDATED);
             }
@@ -465,9 +457,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isCanceled = false;
 
-            indexAccessor.wrapIndexKey(eventKey);
+            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
 
-            if (indexAccessor.getTypeId() > 0)
+            if (state > 0)
             {
                 taskEvent.setEventType(TaskEventType.CANCELED);
                 isCanceled = true;
@@ -493,63 +485,4 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             }
         }
     }
-
-    private final class IndexAccessor
-    {
-        static final int MISSING_VALUE = -1;
-
-        protected final UnsafeBuffer indexValueReadBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
-
-        protected boolean isRead = false;
-
-        void wrapIndexKey(long key)
-        {
-            isRead = false;
-
-            final byte[] indexValue = taskIndex.get(key);
-            if (indexValue != null)
-            {
-                indexValueReadBuffer.wrap(indexValue);
-
-                isRead = true;
-            }
-        }
-
-        public int getLockOwner()
-        {
-            int lockOwner = MISSING_VALUE;
-
-            if (isRead)
-            {
-                lockOwner = indexValueReadBuffer.getInt(INDEX_LOCK_OWNER_OFFSET, ByteOrder.LITTLE_ENDIAN);
-            }
-            return lockOwner;
-        }
-
-        public int getTypeId()
-        {
-            int typeId = MISSING_VALUE;
-
-            if (isRead)
-            {
-                typeId = indexValueReadBuffer.getInt(INDEX_STATE_OFFSET, ByteOrder.LITTLE_ENDIAN);
-            }
-            return typeId;
-        }
-
-    }
-
-    private final class IndexWriter
-    {
-        protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
-
-        protected void write(long eventKey, TaskEventType eventType, int lockOwner, long position)
-        {
-            indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id(), ByteOrder.LITTLE_ENDIAN);
-            indexValueWriteBuffer.putInt(INDEX_LOCK_OWNER_OFFSET, lockOwner, ByteOrder.LITTLE_ENDIAN);
-
-            taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
-        }
-    }
-
 }

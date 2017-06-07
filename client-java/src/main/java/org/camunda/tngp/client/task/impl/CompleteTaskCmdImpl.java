@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
@@ -21,7 +20,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
-    protected int lockOwner = -1;
+    protected String lockOwner;
     protected String taskType;
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
@@ -39,7 +38,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     }
 
     @Override
-    public CompleteTaskCmd lockOwner(int lockOwner)
+    public CompleteTaskCmd lockOwner(String lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
@@ -92,7 +91,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     {
         super.validate();
         ensureGreaterThanOrEqual("task key", taskKey, 0);
-        ensureGreaterThanOrEqual("lock owner", lockOwner, 0);
+        ensureNotNullOrEmpty("lock owner", lockOwner);
         ensureNotNullOrEmpty("task type", taskType);
     }
 
@@ -112,7 +111,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected void reset()
     {
         taskKey = -1L;
-        lockOwner = -1;
+        lockOwner = null;
         taskType = null;
         payload = null;
         headers.clear();

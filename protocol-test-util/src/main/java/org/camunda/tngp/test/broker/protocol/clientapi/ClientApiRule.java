@@ -9,12 +9,8 @@ import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
-import org.camunda.tngp.transport.Channel;
-import org.camunda.tngp.transport.ChannelManager;
-import org.camunda.tngp.transport.SocketAddress;
-import org.camunda.tngp.transport.Transport;
+import org.camunda.tngp.transport.*;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -155,7 +151,7 @@ public class ClientApiRule extends ExternalResource
                 .put("partitionId", partitionId)
                 .put("taskType", type)
                 .put("lockDuration", 1000L)
-                .put("lockOwner", 0)
+                .put("lockOwner", "test")
                 .put("credits", 10)
                 .done()
             .send();

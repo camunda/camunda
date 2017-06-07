@@ -75,7 +75,7 @@ public class CreateTaskSubscriptionCmdTest
         command
             .taskType("foo")
             .lockDuration(1000)
-            .lockOwner(2)
+            .lockOwner("owner")
             .initialCredits(5);
 
         // when
@@ -101,7 +101,7 @@ public class CreateTaskSubscriptionCmdTest
         assertThat(taskSubscription.getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
         assertThat(taskSubscription.getLockDuration()).isEqualTo(1000);
-        assertThat(taskSubscription.getLockOwner()).isEqualTo(2);
+        assertThat(taskSubscription.getLockOwner()).isEqualTo("owner");
         assertThat(taskSubscription.getCredits()).isEqualTo(5);
     }
 
@@ -136,7 +136,7 @@ public class CreateTaskSubscriptionCmdTest
     {
         command
             .lockDuration(1000)
-            .lockOwner(2)
+            .lockOwner("owner")
             .initialCredits(5);
 
         thrown.expect(RuntimeException.class);
@@ -150,7 +150,7 @@ public class CreateTaskSubscriptionCmdTest
     {
         command
             .taskType("foo")
-            .lockOwner(2)
+            .lockOwner("owner")
             .initialCredits(5);
 
         thrown.expect(RuntimeException.class);
@@ -168,7 +168,7 @@ public class CreateTaskSubscriptionCmdTest
             .initialCredits(5);
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("lock owner must be greater than or equal to 0");
+        thrown.expectMessage("lock owner must not be null");
 
         command.validate();
     }
@@ -179,7 +179,7 @@ public class CreateTaskSubscriptionCmdTest
         command
             .taskType("foo")
             .lockDuration(1000)
-            .lockOwner(2);
+            .lockOwner("owner");
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("initial credits must be greater than 0");
