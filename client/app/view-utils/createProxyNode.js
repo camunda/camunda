@@ -121,17 +121,12 @@ function createWithIteration(parent, proxyProperties, proxyMethods) {
     const value = parent[property];
 
     if (typeof value === 'function') {
-      descriptors[property] = {
-        enumerable: true,
-        configurable: false,
-        writable: false,
-        value: proxyMethods[property] ? proxyMethods[property] : value.bind(parent)
-      };
+      proxyNode[property] = proxyMethods[property] ? proxyMethods[property] : value.bind(parent);
     } else {
       descriptors[property] = {
         enumerable: true,
         configurable: false,
-        get: () => proxyProperties[property] ? proxyProperties[property] : parent[property],
+        get: () => proxyProperties[property] ? proxyProperties[property]() : parent[property],
         set: value => parent[property] = value
       };
     }

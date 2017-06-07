@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiDom from 'chai-dom';
-import {createProxyNode} from 'view-utils/createProxyNode';
+import {createProxyNode, __set__, __ResetDependency__} from 'view-utils/createProxyNode';
 
 chai.use(chaiDom);
 
@@ -194,6 +194,24 @@ describe('createProxyNode', () => {
       expect(targetNode.childNodes[0]).to.eql(header);
       expect(targetNode.childNodes[1]).to.eql(child);
       expect(targetNode.childNodes[2]).to.eql(startMarker);
+    });
+  });
+
+  describe('without Proxy support', () => {
+    const isProxySupported = false;
+
+    beforeEach(() => {
+      __set__('isProxySupported', isProxySupported);
+    });
+
+    afterEach(() => {
+      __ResetDependency__('isProxySupported');
+    });
+
+    it('should return childNodes array', () => {
+      proxyNode.appendChild(child);
+
+      expect(proxyNode.childNodes).to.eql([child]);
     });
   });
 });

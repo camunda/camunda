@@ -1,4 +1,4 @@
-const {getResource, generateInstances, getEngineValue} = require('./helpers');
+const {getResource, generateInstances, getEngineValue, getRandomValue, range} = require('./helpers');
 
 const resource = 'simple-condition.bpmn';
 
@@ -10,7 +10,8 @@ exports.instances = generateInstances(resource, 40, (index) => {
   return {
     variables: {
       var1: getEngineValue(index + 1),
-      var2: getEngineValue(Math.random())
+      var2: getEngineValue(Math.random()),
+      rangeValue: getRandomValue(range(1, 4))
     },
     handleTask: handleTask.bind(null, index)
   };
