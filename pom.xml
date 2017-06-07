@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.camunda.tngp</groupId>
   <artifactId>tngp-root</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-alpha5</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -47,7 +47,7 @@
     <url>https://github.com/camunda-tngp/camunda-tngp</url>
     <connection>scm:git:git@github.com:camunda-tngp/camunda-tngp.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/camunda-tngp.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>1.0.0-alpha5</tag>
   </scm>
 
 </project>
