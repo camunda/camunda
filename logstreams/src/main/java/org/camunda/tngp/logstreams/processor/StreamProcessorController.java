@@ -19,25 +19,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.agrona.concurrent.Agent;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
-import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
-import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
-import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.state.ComposedState;
-import org.camunda.tngp.util.state.SimpleStateMachineContext;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
-import org.camunda.tngp.util.state.TransitionState;
-import org.camunda.tngp.util.state.WaitState;
+import org.camunda.tngp.util.state.*;
 
 public class StreamProcessorController implements Agent
 {
@@ -394,7 +380,7 @@ public class StreamProcessorController implements Agent
             }
             else
             {
-                System.err.println("The log stream processor failed to process event. It stop processing further events.");
+                System.err.println(String.format("The log stream processor '%s' failed to process event. It stop processing further events.", streamProcessorContext.getName()));
                 context.getFailure().printStackTrace();
 
                 context.take(TRANSITION_FAIL);
@@ -510,7 +496,9 @@ public class StreamProcessorController implements Agent
                 }
                 else
                 {
-                    throw new IllegalStateException("Cannot find event with the snapshot position in target log stream.");
+                    throw new IllegalStateException(
+                            String.format("Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.",
+                                          streamProcessorContext.getName()));
                 }
             }
             context.setSnapshotPosition(snapshotPosition);
@@ -582,7 +570,8 @@ public class StreamProcessorController implements Agent
                 else
                 {
                     // source or target log is maybe corrupted
-                    throw new IllegalStateException("Cannot find source event of written event: " + targetEvent);
+                    throw new IllegalStateException(String.format("Stream processor '%s' failed to reprocess. Cannot find source event of written event: %s",
+                                                                  streamProcessorContext.getName(), targetEvent));
                 }
             }
         }
