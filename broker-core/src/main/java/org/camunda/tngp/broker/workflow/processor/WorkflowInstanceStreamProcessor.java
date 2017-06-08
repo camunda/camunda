@@ -450,6 +450,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityReadyEventProcessor implements EventProcessor
     {
+        private DirectBuffer sourcePayload;
+
         @Override
         public void processEvent()
         {
@@ -471,7 +473,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
-            final DirectBuffer sourcePayload = workflowInstanceEvent.getPayload();
+            sourcePayload = workflowInstanceEvent.getPayload();
 
             final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
@@ -487,7 +489,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition);
+            payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, sourcePayload);
         }
     }
 
@@ -1018,7 +1020,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             if (isUpdated)
             {
-                payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition);
+                payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, workflowInstanceEvent.getPayload());
             }
         }
     }

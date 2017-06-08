@@ -247,7 +247,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
             if (isCreated)
             {
-                incidentEvent.setEventType(isCreated ? IncidentEventType.CREATED : IncidentEventType.CREATE_REJECTED);
+                incidentEvent.setEventType(IncidentEventType.CREATED);
             }
             else
             {

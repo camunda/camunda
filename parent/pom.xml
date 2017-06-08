@@ -21,7 +21,7 @@
     <hamcrest.version>1.3</hamcrest.version>
 
     <!-- SUB PROJECTS -->
-    <util.version>1.0.0-alpha6</util.version>
+    <util.version>1.0.0-SNAPSHOT</util.version>
     <log.version>1.0.0-alpha5</log.version>
     <tngp.msgpack.version>1.0.0-alpha3</tngp.msgpack.version>
     <service.version>1.0.0-alpha4</service.version>

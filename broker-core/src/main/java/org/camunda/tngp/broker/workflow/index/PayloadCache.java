@@ -22,6 +22,7 @@ import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.util.cache.ExpandableBufferCache;
 
 /**
  * Cache of workflow instance payload. It contains an LRU cache of the payload
@@ -38,7 +39,7 @@ public class PayloadCache
     private final Long2LongHashIndex index;
     private final HashIndexSnapshotSupport<Long2LongHashIndex> snapshotSupport;
 
-    private final ExpandableBufferLruCache cache;
+    private final ExpandableBufferCache cache;
     private final LogStreamReader logStreamReader;
 
     public PayloadCache(IndexStore indexStore, int cacheSize, LogStreamReader logStreamReader)
@@ -47,7 +48,7 @@ public class PayloadCache
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
 
         this.logStreamReader = logStreamReader;
-        this.cache = new ExpandableBufferLruCache(cacheSize, 1024, this::lookupPayload);
+        this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
     }
 
     private DirectBuffer lookupPayload(long position)
@@ -76,16 +77,17 @@ public class PayloadCache
 
         if (position > 0)
         {
-            payload = cache.lookupBuffer(position);
+            payload = cache.get(position);
         }
 
         ensureNotNull("payload", payload);
         return payload;
     }
 
-    public void addPayload(long workflowInstanceKey, long payloadEventPosition)
+    public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)
     {
         index.put(workflowInstanceKey, payloadEventPosition);
+        cache.put(payloadEventPosition, payload);
     }
 
     public void remove(long workflowInstanceKey)
