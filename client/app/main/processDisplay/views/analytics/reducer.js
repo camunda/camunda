@@ -1,4 +1,5 @@
 import {CHANGE_ROUTE_ACTION} from 'router';
+import {reducer as statisticsReducer} from './statistics';
 
 export const UNSET_ELEMENT = 'UNSET_ELEMENT';
 export const TOGGLE_ELEMENT = 'TOGGLE_ELEMENT';
@@ -66,7 +67,10 @@ export const reducer = (state = {selection: {}, hover: {}}, action) => {
     };
   }
 
-  return state;
+  return {
+    ...state,
+    statistics: statisticsReducer(state.statistics, action)
+  };
 };
 
 export function createUnsetElementAction(elementType) {

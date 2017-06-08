@@ -1,9 +1,9 @@
 import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction, createSetHeightAction} from './reducer';
 import {dispatchAction} from 'view-utils';
 import {post} from 'http';
-import {getFilterQuery} from '../query';
+import {getFilterQuery} from 'main/processDisplay/query';
 import {addNotification} from 'notifications';
-import {getDefinitionId} from '../service';
+import {getDefinitionId} from 'main/processDisplay/service';
 import {getFilter} from 'main/processDisplay/controls/filter';
 
 export function resetStatisticData() {

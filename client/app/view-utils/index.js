@@ -26,3 +26,4 @@ export {createStateComponent} from './createStateComponent';
 export {Class} from './Class';
 export {setElementVisibility, isElementVisible} from './elementVisibility';
 export {TemplateDebug} from './TemplateDebug';
+export {decorateWithSelector} from './decorateWithSelector';

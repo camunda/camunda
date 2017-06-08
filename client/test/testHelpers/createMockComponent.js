@@ -138,13 +138,17 @@ export function createMockComponent(text, applyChildren) {
 
 function buildPredicateFunction(predicate) {
   if (typeof predicate === 'object') {
-    return (attributes) => {
+    return attributes => {
       return Object
         .keys(predicate)
         .reduce((result, key) => {
           return result && attributes[key] === predicate[key];
         }, true);
     };
+  }
+
+  if (typeof predicate !== 'function') {
+    return state => state === predicate;
   }
 
   return predicate;

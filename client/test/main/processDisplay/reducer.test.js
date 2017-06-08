@@ -6,7 +6,6 @@ describe('processDisplay reducer', () => {
     const state = reducer(undefined, {type: '@@INIT'});
 
     expect(state.views).to.exist;
-    expect(state.statistics).to.exist;
     expect(state.controls).to.exist;
   });
 });

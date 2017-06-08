@@ -1,6 +1,8 @@
 import {jsx, withSelector, Match, Case, Default, Socket} from 'view-utils';
-import {createHeatmapRendererFunction, createAnalyticsComponents, getInstanceCount, TargetValueDisplay} from './views';
-import {Statistics, resetStatisticData} from './statistics';
+import {
+  createHeatmapRendererFunction, createAnalyticsComponents, getInstanceCount,
+  TargetValueDisplay, Statistics, resetStatisticData
+} from './views';
 import {isLoading, isLoaded, createDelayedTimePrecisionElement} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected, Controls} from './controls';
@@ -66,7 +68,7 @@ function Process() {
         </Match>
       </LoadingIndicator>
     </div>
-    <Statistics getBpmnViewer={AnalyticsDiagram.getViewer} />
+    <Statistics selector="views" getBpmnViewer={AnalyticsDiagram.getViewer} />
   </div>;
 
   function handleCriteriaChange(newCriteria) {

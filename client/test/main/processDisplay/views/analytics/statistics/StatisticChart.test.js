@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {StatisticChart, __set__, __ResetDependency__} from 'main/processDisplay/statistics/StatisticChart';
+import {StatisticChart, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/StatisticChart';
 
 describe('<StatisticChart>', () => {
   let node;

@@ -1,10 +1,9 @@
 import {jsx, withSelector, Class, OnEvent, Scope, Text, createStateComponent, createReferenceComponent, updateOnlyWhenStateChanges} from 'view-utils';
 import {StatisticChart} from './StatisticChart';
-import {leaveGatewayAnalysisMode, getSelection} from '../views';
+import {leaveGatewayAnalysisMode} from '../';
 import {loadStatisticData, resetStatisticData, findSequenceFlowBetweenGatewayAndActivity} from './service';
 import {DragHandle} from './DragHandle';
 import {isInitial, isLoading} from 'utils';
-import isEqual from 'lodash.isequal';
 
 export const Statistics = withSelector(({getBpmnViewer}) => {
   return (parentNode, eventsBus) => {
@@ -15,7 +14,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
       <div className="statisticsContainer">
         <Reference name="statisticsContainer" />
         <DragHandle />
-        <Class className="open" selector="views" predicate={isSelectionComplete} />
+        <Class className="open" selector="selection" predicate={isSelectionComplete} />
         <button type="button" className="close">
           <OnEvent event="click" listener={leaveGatewayAnalysisMode} />
           <span>×</span>
@@ -49,35 +48,24 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
 
     return [
       templateUpdate,
-      updateOnlyWhenStateChanges(({views, statistics: {correlation, height}}) => {
+      updateOnlyWhenStateChanges(({selection, correlation, height}) => {
         const node = Reference.getNode('statisticsContainer');
 
-        if (isSelectionComplete(views)) {
+        if (isSelectionComplete(selection)) {
           node.style.height = (height || 350) + 'px';
         } else {
           node.style.height = '0px';
         }
 
-        if (!isSelectionComplete(views) && !isInitial(correlation)) {
+        if (!isSelectionComplete(selection) && !isInitial(correlation)) {
           resetStatisticData();
         }
 
-        if (isSelectionComplete(views) && isInitial(correlation)) {
-          loadStatisticData(getSelection(views));
+        if (isSelectionComplete(selection) && isInitial(correlation)) {
+          loadStatisticData(selection);
         }
-      }, areStatisticsStatesEqual)
+      })
     ];
-
-    function areStatisticsStatesEqual(firstState, secondState) {
-      if (!firstState || !secondState) {
-        return false;
-      }
-
-      const firstSelection = getSelection(firstState.views);
-      const secondSelection = getSelection(secondState.views);
-
-      return isEqual(firstSelection, secondSelection) && isEqual(firstState.statistics, secondState.statistics);
-    }
 
     function onHoverChange(hovered) {
       return (bar, index) => {
@@ -90,8 +78,8 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
         });
 
         if (hovered) {
-          const {views, statistics:{correlation:{data:{followingNodes}}}} = State.getState();
-          const gateway = getSelection(views).Gateway;
+          const {correlation: {data:{followingNodes}}, selection} = State.getState();
+          const gateway = selection.Gateway;
           const activity = Object.keys(followingNodes)[index];
 
           const sequenceFlow = findSequenceFlowBetweenGatewayAndActivity(elementRegistry, gateway, activity);
@@ -102,7 +90,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
     }
   };
 
-  function isLoadingSomething({statistics: {correlation}}) {
+  function isLoadingSomething({correlation}) {
     return isLoading(correlation);
   }
 
@@ -117,8 +105,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
   }
 
   function getHeader(amountFct) {
-    return ({views, statistics: {correlation}}) => {
-      const selection = getSelection(views);
+    return ({correlation, selection}) => {
       const gateway = selection && selection.Gateway;
       const endEvent = selection && selection.EndEvent;
 
@@ -136,9 +123,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
     };
   }
 
-  function isSelectionComplete(views) {
-    const selection = getSelection(views);
-
+  function isSelectionComplete(selection) {
     return selection && selection.EndEvent && selection.Gateway;
   }
 
@@ -157,8 +142,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
   }
 
   function getChartData(valueFct) {
-    return ({statistics: {correlation}, views}) => {
-      const selection = getSelection(views);
+    return ({selection, correlation}) => {
       const gateway = selection && selection.Gateway;
 
       if (!correlation.data || !gateway) {

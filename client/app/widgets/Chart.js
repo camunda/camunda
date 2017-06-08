@@ -1,6 +1,9 @@
 import {withSelector, DESTROY_EVENT, noop} from 'view-utils';
-import {getChartDimensions, createScales, createAxes, createTooltip, createChartOn, createContainer,
-        updateScales, updateAxes, collectBars, updateBars, createNewBars, removeOldBars} from 'utils/chart-utils';
+import {
+  getChartDimensions, createScales, createAxes, createTooltip, createChartOn,
+  createContainer, updateScales, updateAxes, collectBars, updateBars,
+  createNewBars, removeOldBars
+} from 'utils/chart-utils';
 
 export const Chart = withSelector(({config}) => {
   return (parentNode, eventsBus) => {

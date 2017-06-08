@@ -3,7 +3,7 @@ import {
   removeHighlights, addHighlight
 } from './service';
 import {removeOverlays} from 'utils';
-import {resetStatisticData} from 'main/processDisplay/statistics';
+import {resetStatisticData} from './statistics';
 
 export function createCreateAnalyticsRendererFunction() {
   return function createAnalyticsRenderer({viewer}) {

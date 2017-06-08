@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {Statistics, __set__, __ResetDependency__} from 'main/processDisplay/statistics/Statistics';
+import {Statistics, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/Statistics';
 
 describe('<Statistics>', () => {
   let node;
@@ -19,32 +19,20 @@ describe('<Statistics>', () => {
 
   beforeEach(() => {
     unopenedState = {
-      views: {
-        analytics: {
-          selection: {}
-        }
-      },
-      statistics: {
-        correlation: {}
-      }
+      selection: {},
+      correlation: {}
     };
 
     openedState = {
-      views: {
-        analytics: {
-          selection: {
-            EndEvent: 'a',
-            Gateway: 'b'
-          }
-        }
+      selection: {
+        EndEvent: 'a',
+        Gateway: 'b'
       },
-      statistics: {
-        correlation: {
-          data: {
-            followingNodes: {
-              foo: 12,
-              bar: 1
-            }
+      correlation: {
+        data: {
+          followingNodes: {
+            foo: 12,
+            bar: 1
           }
         }
       }
@@ -121,7 +109,7 @@ describe('<Statistics>', () => {
   });
 
   it('should set its height based on the state', () => {
-    openedState.statistics.height = 1234;
+    openedState.height = 1234;
 
     update(openedState);
 

@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {reducer, createSetHeightAction, SET_HEIGHT} from 'main/processDisplay/statistics/reducer';
+import {reducer, createSetHeightAction, SET_HEIGHT} from 'main/processDisplay/views/analytics/statistics/reducer';
 
 describe('statistics reducer', () => {
   it('should create a set height action', () => {

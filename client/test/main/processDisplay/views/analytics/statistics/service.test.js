@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
 import {resetStatisticData, loadStatisticData, findSequenceFlowBetweenGatewayAndActivity, setHeight,
-        __set__, __ResetDependency__} from 'main/processDisplay/statistics/service';
+        __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/service';
 
 describe('Statistics service', () => {
   setupPromiseMocking();

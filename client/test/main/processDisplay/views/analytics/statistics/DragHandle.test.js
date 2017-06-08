@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DragHandle, __set__, __ResetDependency__} from 'main/processDisplay/statistics/DragHandle';
+import {DragHandle, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/DragHandle';
 
 describe('<DragHandle>', () => {
   let setHeight;
