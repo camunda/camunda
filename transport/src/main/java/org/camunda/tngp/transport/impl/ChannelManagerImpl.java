@@ -279,4 +279,10 @@ public class ChannelManagerImpl implements ChannelManager
 
         return workCount;
     }
+
+    public Iterable<ChannelImpl> getManagedChannels()
+    {
+        return managedChannels;
+    }
+
 }
