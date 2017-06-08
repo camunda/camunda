@@ -86,6 +86,10 @@ public class MsgPackTree
 
     public void addMapNode(String nodeId)
     {
+        if (isLeaf(nodeId))
+        {
+            leafMap.remove(nodeId);
+        }
         addParentNode(nodeId, MsgPackNodeType.MAP_NODE);
     }
 

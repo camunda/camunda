@@ -43,8 +43,8 @@ public class MsgPackQueryValueFormatsTest
         });
     }
 
-    // TODO: test different String types (str8, str16, str32)
-    // TODO: test different map and array types
+    // TODO: test different String lastTypeStack (str8, str16, str32)
+    // TODO: test different map and array lastTypeStack
 
     // helping the compiler with recognizing lamdas
     protected static CheckedConsumer<MessagePacker> function(CheckedConsumer<MessagePacker> arg)

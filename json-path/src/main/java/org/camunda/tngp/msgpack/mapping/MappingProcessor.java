@@ -1,49 +1,68 @@
 package org.camunda.tngp.msgpack.mapping;
 
-import java.util.Arrays;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.msgpack.spec.MsgPackFormat;
+import org.camunda.tngp.msgpack.spec.MsgPackType;
 
 /**
+ * <p>
  * Represents an processor, which executes/process the given mapping on the given message pack documents.
  * Uses message pack tree data structure to rewrite/merge the message pack document.
- * <p>
+ * </p>
  *
+ * <p>
  * There exist two methods to process the mappings, {@link #merge(DirectBuffer, DirectBuffer, Mapping...)} and
  * {@link #extract(DirectBuffer, Mapping...)}.
  * The first one merges two documents with the help of the given mapping into one. The second method extracts
  * content of the given document, with help of the given mapping and writes the result into a buffer.
  * The result is stored into a buffer, which is available via {@link #getResultBuffer()}.
+ * </p>
  *
+ * <p>
  * On merge the target document will be as first indexed with help of the {@link MsgPackDocumentIndexer}.
  * The indexer construct's a message pack tree object ({@link MsgPackTree}), which corresponds to the given target document.
  * To extract content and merge (add or replace content) into the already create message pack tree,
  * the {@link MsgPackDocumentExtractor} is used.
+ * </p>
  *
+ * <p>
  * On the extract method only the {@link MsgPackDocumentExtractor} is used to extract content from the given source document
  * and store it into a message pack tree object.
+ * </p>
  *
+ * <p>
  * Afterwards (on merge or extract) the message pack document, which corresponds to the
  * constructed message pack tree object, is written with help of the {@link MsgPackDocumentTreeWriter} to a result buffer.
+ * </p>
  *
+ * <p>
  * The result is available via {@link #getResultBuffer()}.
+ * </p>
  *
- *
+ *<p>
  * Example:
- * Given source document:           Given target document:
- * {                                {
+ * <pre>
+ *{@code Given source document:           Given target document:
+ *  {                                {
  *     "sourceObject":{                 "targetObject":{
  *         "foo":"bar"                      "value1":2
  *     },                               },
  *     "value1":1                       "value1":3
- * }                                }
+ *  }                                }
+ *}
+ * </pre>
+ *
  * Mappings:
+ * <pre>
+ * {@code
  *  $.sourceObject -> $.targetObject.value1
  *  $.value1 -> $.newValue1
- *
- * Result on merge(sourceDocument, targetDocument, mappings):
- *
+ * }
+ * </pre>
+ * Result on {@link #merge(DirectBuffer, DirectBuffer, Mapping...)}:
+ * <pre>
+ * {@code
  * {
  *     "targetObject":{
  *         "value1":{
@@ -53,12 +72,17 @@ import org.agrona.MutableDirectBuffer;
  *     "value1":3,
  *     "newValue1":1
  * }
+ * }
+ * </pre>
+ * </p>
  *
+ * <p>
  * On merge:
  * targetObject.value1 is overwritten, newValue1 is created and value1 is kept.
  *
- * Result on extract(sourceDocument, mappings):
- *
+ * Result on {@link #extract(DirectBuffer, Mapping...)}:
+ * <pre>
+ *{@code
  * {
  *     "targetObject":{
  *         "value1":{
@@ -67,10 +91,15 @@ import org.agrona.MutableDirectBuffer;
  *     },
  *     "newValue1":1
  * }
+ * }
+ * </pre>
+ * </p>
  *
+ * <p>
  * On extract:
  * targetObject.value1 and newValue is created (renamed), since it does not exist before.
  * The value1 is not known in the extracting context.
+ * </p>
  */
 public class MappingProcessor
 {
@@ -79,8 +108,26 @@ public class MappingProcessor
      */
     public static final int MAX_JSON_KEY_LEN = 256;
 
-    public static final String EXCEPTION_MSG_ROOT_MAPPING_IN_COMBINATION_WITH_OTHER = "Target root mapping in combination with other mapping is not permitted.";
-    public static final String EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY = "Mapping must not be neither null nor empty!";
+    /**
+     * The message for the exception, which is thrown if the source document is not a map (json object).
+     */
+    public static final String EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Can't extract from source document, since it is not a map (json object).";
+
+    /**
+     * The message for the exception, which is thrown if the target document is not a map (json object).
+     */
+    public static final String EXCEPTION_MSG_TARGET_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Can't merge into the target document, since it is not a map (json object).";
+
+    /**
+     * The message for the exception, which is thrown if the resulting document is not a map (json object).
+     */
+    public static final String EXCEPTION_MSG_RESULTING_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Processing failed, since mapping will result in a non map object (json object).";
+
+
+    /**
+     * The message for the exception which is thrown if the mapping is either null or empty.
+     */
+    public static final String EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY = "Mapping must be neither null nor empty!";
 
     protected final MsgPackDocumentIndexer documentIndexer;
     protected final MsgPackDocumentExtractor documentExtractor;
@@ -112,21 +159,16 @@ public class MappingProcessor
             throw new IllegalArgumentException("Target document must not be null!");
         }
         ensureValidParameter(sourceDocument, mappings);
+        ensureDocumentIsAMsgPackMap(sourceDocument, EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP);
+        ensureDocumentIsAMsgPackMap(targetDocument, EXCEPTION_MSG_TARGET_DOCUMENT_IS_NOT_OF_TYPE_MAP);
 
         documentIndexer.wrap(targetDocument);
         final MsgPackTree targetTree = documentIndexer.index();
 
         documentExtractor.wrap(targetTree, sourceDocument);
+        final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
 
-        try
-        {
-            final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
-            return writeResult(mergedDocumentTree);
-        }
-        finally
-        {
-            clear();
-        }
+        return writeMsgPackTree(mergedDocumentTree);
     }
 
     /**
@@ -141,31 +183,12 @@ public class MappingProcessor
     public int extract(DirectBuffer sourceDocument, Mapping... mappings)
     {
         ensureValidParameter(sourceDocument, mappings);
+        ensureDocumentIsAMsgPackMap(sourceDocument, EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP);
 
         documentExtractor.wrap(sourceDocument);
-        try
-        {
-            final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
-            return writeResult(extractedDocumentTree);
-        }
-        finally
-        {
-            clear();
-        }
-    }
+        final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
 
-    /**
-     * Writes the document, which corresponds to the resulting message pack tree, into the result buffer.
-     *
-     * @param resultingTree the resulting message pack tree
-     * @return the length of the written message pack document
-     */
-    private int writeResult(MsgPackTree resultingTree)
-    {
-        treeWriter.wrap(resultingTree);
-        final int resultLen = treeWriter.write();
-
-        return resultLen;
+        return writeMsgPackTree(extractedDocumentTree);
     }
 
     /**
@@ -181,16 +204,34 @@ public class MappingProcessor
         {
             throw new IllegalArgumentException("Source document must not be null!");
         }
+
         if (mappings == null || mappings.length == 0)
         {
-            throw new MappingException(EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY);
+            throw new IllegalArgumentException(EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY);
         }
+    }
 
-        final boolean hasRootMapping = Arrays.stream(mappings)
-                                             .anyMatch(mapping -> mapping.isRootTargetMapping());
-        if (hasRootMapping && mappings.length > 1)
+    private void ensureDocumentIsAMsgPackMap(DirectBuffer document, String exceptionMsg)
+    {
+        final byte b = document.getByte(0);
+        final MsgPackFormat format = MsgPackFormat.valueOf(b);
+        if (format.getType() != MsgPackType.MAP)
         {
-            throw new MappingException(EXCEPTION_MSG_ROOT_MAPPING_IN_COMBINATION_WITH_OTHER);
+            throw new MappingException(exceptionMsg);
+        }
+    }
+
+    private int writeMsgPackTree(MsgPackTree msgPackTree)
+    {
+        try
+        {
+            final int resultLen = treeWriter.write(msgPackTree);
+            ensureDocumentIsAMsgPackMap(getResultBuffer(), EXCEPTION_MSG_RESULTING_DOCUMENT_IS_NOT_OF_TYPE_MAP);
+            return resultLen;
+        }
+        finally
+        {
+            clear();
         }
     }
 

@@ -49,7 +49,7 @@ public class MsgPackTreeTest
         jsonMap.put("aObject", innerMap);
         jsonMap.put("string", "stringValue");
 
-        final byte[] bytes = OBJECT_MAPPER.writeValueAsBytes(jsonMap);
+        final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(jsonMap);
         final DirectBuffer extractBuffer = new UnsafeBuffer(bytes);
         msgPackTree.setExtractDocument(extractBuffer);
 
@@ -68,6 +68,6 @@ public class MsgPackTreeTest
         assertThatIsLeafNode(msgPackTree, "$underlying", MSG_PACK_BYTES);
 
         // and
-        assertThatIsLeafNode(msgPackTree, "$extract", OBJECT_MAPPER.writeValueAsBytes(innerMap));
+        assertThatIsLeafNode(msgPackTree, "$extract", MSGPACK_MAPPER.writeValueAsBytes(innerMap));
     }
 }

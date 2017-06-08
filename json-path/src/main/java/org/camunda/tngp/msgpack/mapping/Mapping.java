@@ -12,6 +12,7 @@ import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 public class Mapping
 {
     public static final String JSON_ROOT_PATH = "$";
+    public static final String MAPPING_STRING = "%s -> %s";
 
     private JsonPathQuery source;
     private String targetQueryString;
@@ -33,8 +34,11 @@ public class Mapping
         return this.targetQueryString;
     }
 
-    public boolean isRootTargetMapping()
+    @Override
+    public String toString()
     {
-        return JSON_ROOT_PATH.equals(targetQueryString);
+        return String.format(MAPPING_STRING,
+                             new String(source.getExpression().byteArray()),
+                             targetQueryString);
     }
 }

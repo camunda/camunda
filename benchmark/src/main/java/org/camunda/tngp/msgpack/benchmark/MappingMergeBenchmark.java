@@ -21,7 +21,7 @@ public class MappingMergeBenchmark
     protected static final int LEVELS_OF_NESTING = 5;
     protected static final int NUM_VALUES_PER_LEVEL = 12;
     protected static final int MAPPING_COUNT = 5;
-    protected static final int RUN_COUNT = 10;
+    protected static final int RUN_COUNT = 100;
 
     public static void main(String[] args) throws Exception
     {

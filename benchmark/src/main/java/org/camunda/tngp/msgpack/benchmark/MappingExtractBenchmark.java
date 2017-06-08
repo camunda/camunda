@@ -91,6 +91,17 @@ public class MappingExtractBenchmark
         {
             sb.append(".");
             sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
+            sb.append((char) (r.nextInt(numValuesPerLevel) + 65));
             //            sb.append((char) (numValuesPerLevel - 1 + 65));
         }
 

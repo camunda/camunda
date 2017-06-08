@@ -1,5 +1,7 @@
 package org.camunda.tngp.msgpack.mapping;
 
+import static org.camunda.tngp.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+
 import java.util.Set;
 
 import org.agrona.DirectBuffer;
@@ -10,13 +12,10 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 /**
  * Represents an message pack document tree writer.
- *
- * The writer can wrap an existing {@link MsgPackTree} object with the
- * {@link #wrap(MsgPackTree)} method.
- *
- * On calling the {@link #write()} method the writer will write the corresponding
+ * <p>
+ * On calling the {@link #write(MsgPackTree)} method the writer will write the corresponding
  * message pack document into a result buffer and return the size of the written document.
- *
+ * </p>
  * The result buffer is available via the {@link #getResult()} method.
  *
  */
@@ -34,20 +33,17 @@ public class MsgPackDocumentTreeWriter
         this.nodeName = new UnsafeBuffer(0, 0);
     }
 
-    public void wrap(MsgPackTree documentTree)
-    {
-        this.documentTree = documentTree;
-    }
-
     /**
-     * Writes the wrapped message pack tree into the result buffer.
+     * Writes the message pack tree into the result buffer.
      * Returns the size of the written message pock document.
      * The result buffer is available via the {@link #getResult()} method.
      *
+     * @param documentTree the tree which should be written
      * @return the size of the message pack document
      */
-    public int write()
+    public int write(MsgPackTree documentTree)
     {
+        this.documentTree = documentTree;
         final String startNode = Mapping.JSON_ROOT_PATH;
         msgPackWriter.wrap(resultingBuffer, 0);
 
@@ -57,10 +53,10 @@ public class MsgPackDocumentTreeWriter
 
     /**
      * Recursive method to write the message pack document tree into the result buffer.
-     *
+     * <p>
      * The writing will start with parentId "" and "$" as nodeName, which represents the root.
      * The parentId and the nodeName is equal to the node identifier.
-     *
+     * </p>
      * With help of the tree it can be determined if the current node
      * is of type MAP, ARRAY or LEAF. If the node is of type MAP or ARRAY the map or array header will be writen
      * with the size of existing child's. After that the child's are recursively written.
@@ -79,7 +75,7 @@ public class MsgPackDocumentTreeWriter
             msgPackWriter.writeString(this.nodeName);
         }
 
-        final String nodeId = parentId + nodeName;
+        final String nodeId = parentId.isEmpty() ? nodeName : construct(parentId, nodeName);
         if (documentTree.isLeaf(nodeId))
         {
             documentTree.writeLeafMapping(msgPackWriter, nodeId);

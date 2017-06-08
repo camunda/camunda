@@ -1,17 +1,17 @@
 package org.camunda.tngp.msgpack.mapping;
 
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
 
 class MappingBuilder
 {
     private List<Mapping> mappings = new ArrayList<>();
 
-    protected static Mapping createMapping(String source, String target)
+    protected static Mapping[] createMapping(String source, String target)
     {
-        return createMappings().mapping(source, target).build()[0];
+        return createMappings().mapping(source, target).build();
     }
 
     protected static MappingBuilder createMappings()

@@ -15,7 +15,7 @@ public class MsgPackDocumentTreeWriterBenchmark
 
     protected static final int LEVELS_OF_NESTING = 5;
     protected static final int NUM_VALUES_PER_LEVEL = 12;
-    protected static final int RUN_COUNT = 10;
+    protected static final int RUN_COUNT = 100;
 
     public static void main(String[] args) throws Exception
     {
@@ -45,9 +45,8 @@ public class MsgPackDocumentTreeWriterBenchmark
         long avgWrittenBytes = 0;
         for (int i = 0; i < RUN_COUNT; i++)
         {
-            writer.wrap(msgPackTree);
             final long startWrite = System.currentTimeMillis();
-            final int resultLen = writer.write();
+            final int resultLen = writer.write(msgPackTree);
             final long endWrite = System.currentTimeMillis();
             final long diff = endWrite - startWrite;
 

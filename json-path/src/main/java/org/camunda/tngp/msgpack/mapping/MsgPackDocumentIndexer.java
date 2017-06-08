@@ -1,9 +1,11 @@
 package org.camunda.tngp.msgpack.mapping;
 
+import static org.camunda.tngp.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR;
+import static org.camunda.tngp.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.msgpack.query.MsgPackTokenVisitor;
@@ -12,52 +14,66 @@ import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackType;
 
 /**
+ * <p>
  * Represents an message pack document indexer. During the indexing of
  * an existing message pack document an {@link MsgPackTree} object will be constructed,
  * which corresponds to the structure of the message pack document.
- *
+ * </p>
+ * <p>
+ * <p>
  * Example:
- *
+ * <pre>
+ * {@code
  * Say we have the following json as message pack document:
  * {
- *     "object1":{
- *         "field1": true,
- *         "array":[ 1,2,3]
- *     }
- *     "field2" : "String"
+ *   "object1":{ "field1": true, "array":[ 1,2,3]},
+ *   "field2" : "String"
  * }
- *
- * The {@link #index()} method will return an {@link MsgPackTree} object which has the following structure:
- *
+ * }
+ * </pre>
+ * <p>
+ * <pre>
+ * The {@link #index()} method will return an {@link MsgPackTree} object,
+ * which has the following structure:
+ * {@code
  *          $
- *       /     \
+ *        /   \
  *   field2   object1
  *     |     /       \
- *  String  field1   array
- *           |      /  |  \
- *          true    1  2   3
- *
+ * String  field1   array
+ *          |      /  |  \
+ *         true   1   2   3
+ * }
+ * </pre>
+ * <p>
  * Then this correspond to the following message pack tree structure:
- *
- * <p>NodeTypes:</p>
+ * <pre>NodeTypes:
+ * {@code
  *
  * 1object1 : MAP_NODE
  * 2field1 : LEAF
  * 2array : ARRAY_NODE
  * 1field2: LEAF
- *
- * <p>NodeChildsMap:</p>
+ * }
+ * </pre>
+ * <pre>NodeChildsMap:
+ * {@code
  *
  * 1object1: field1, array
  * 2array : 2array1, 2array2, 2array3,
+ * }
+ * </pre>
+ * <pre>LeafMap:
+ * {@code
  *
- * <p>LeafMap:</p>
  * 2field1: mapping
  * 2array1: mapping
  * 2array2: mapping
  * 2array3: mapping
  * 1field2: mapping
- *
+ * }
+ * </pre>
+ * </p>
  */
 public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
 {
@@ -78,39 +94,38 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     protected int lastKeyLen;
 
     /**
-     *  Contains the current parents of the current node.
-     *  A node become a parent if the node is of type MAP or ARRAY.
-     *  This node will be added several times, corresponding to the size of the MsgPackToken#size of this node.
+     * The type of the last processed node.
+     */
+    protected MsgPackType lastType;
+
+    /**
+     * Contains the current parents of the current node.
+     * A node become a parent if the node is of type MAP or ARRAY.
+     * This node will be added several times, corresponding to the size of the MsgPackToken#size of this node.
      */
     protected Deque<String> parentsStack = new ArrayDeque<>();
 
     /**
-     * Indicates if the next MsgPackToken is a value.
-     */
-    protected boolean nextIsValue;
-
-    /**
      * Indicates if the current value belongs to an array.
      */
-    protected boolean isArrayValue = false;
+    protected Deque<Boolean> arrayValueStack = new ArrayDeque<>();
 
     /**
-     * The current index of the value, which belongs to an array.
+     * Contains the type of the last msg pack token.
      */
-    protected final AtomicLong currentIndex = new AtomicLong(0);
+    protected Deque<MsgPackType> lastTypeStack = new ArrayDeque<>();
 
     /**
      * The traverser which is used to index the message pack document.
      */
     protected final MsgPackTraverser traverser = new MsgPackTraverser();
 
+
     public MsgPackDocumentIndexer()
     {
         msgPackTree = new MsgPackTree();
-
         lastKey[0] = '$';
         lastKeyLen = 1;
-        nextIsValue = true;
     }
 
     public void wrap(DirectBuffer msgPackDocument)
@@ -129,79 +144,41 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     public void visitElement(int position, MsgPackToken currentValue)
     {
         final MsgPackType currentValueType = currentValue.getType();
-        if (nextIsValue)
+        lastType = getLastNodeType();
+
+        if (lastType == MsgPackType.MAP)
         {
-            if (currentValueType == MsgPackType.MAP)
+            final DirectBuffer valueBuffer = currentValue.getValueBuffer();
+            lastKeyLen = valueBuffer.capacity();
+            valueBuffer.getBytes(0, lastKey, 0, lastKeyLen);
+            lastTypeStack.push(MsgPackType.EXTENSION);
+        }
+        else
+        {
+            if (currentValueType == MsgPackType.MAP || currentValueType == MsgPackType.ARRAY)
             {
-                processObjectNode(currentValue);
-            }
-            else if (currentValueType == MsgPackType.ARRAY)
-            {
-                processArrayNode(currentValue);
+                final int childSize = currentValue.getSize();
+                addNewParent(childSize, currentValueType);
             }
             else
             {
                 processValueNode(position, currentValue);
             }
         }
-        else if (currentValueType == MsgPackType.STRING)
+    }
+
+    private MsgPackType getLastNodeType()
+    {
+        MsgPackType lastType;
+        if (lastTypeStack.isEmpty())
         {
-            final DirectBuffer valueBuffer = currentValue.getValueBuffer();
-            lastKeyLen = valueBuffer.capacity();
-            valueBuffer.getBytes(0, lastKey, 0, lastKeyLen);
-            nextIsValue = true;
+            lastType = MsgPackType.EXTENSION;
         }
-    }
-
-    /**
-     * The current node is a array and the currentValue references the ARRAY token.
-     * The string value, which identifies the node, was read before.
-     *
-     * This method process the array node and inserts the node properties
-     * into the tree. It will add the nodeType (type = array), create
-     * a new entry in the node childs map with a empty list, since this node represents a new parent node.
-     *
-     * If necessary it will add this node to his parent child list and pops a parent from the stack.
-     * It will also push the current node identifier several times to the parent stack.
-     * The count is related to the child count which is equal to the MsgPackToken#size if the current token is of
-     * type ARRAY.
-     *
-     * An flag will be toggled, which indicates that the next elements are belong to an array.
-     * This is necessary since arrays contains no names for there values.
-     *
-     * @param currentValue the message pack token which represents an array
-     */
-    private void processArrayNode(MsgPackToken currentValue)
-    {
-        final int childSize = currentValue.getSize();
-        addNewParent(childSize, true);
-
-        currentIndex.set(0);
-        // no keys in arrays
-        nextIsValue = true;
-        isArrayValue = true;
-    }
-
-    /**
-     * The current node is a map and the currentValue references the MAP token.
-     * The string value, which identifies the node, was read before.
-     *
-     * This method process the object node and inserts the node properties
-     * into the tree data structure. It will add the nodeType (type = map), create
-     * a new entry in the node childs map with a empty list, since this node represents a new parent node.
-     *
-     * If necessary it will add this node to his parent child list and pops a parent from the stack.
-     * It will also push the current node identifier several times to the parent stack.
-     * The count is related to the child count which is equal to the MsgPackToken#size if the current token is of
-     * type MAP.
-     *
-     * @param currentValue the message pack token which represents a map
-     */
-    private void processObjectNode(MsgPackToken currentValue)
-    {
-        final int childSize = currentValue.getSize();
-        addNewParent(childSize, false);
-        nextIsValue = false;
+        else
+        {
+            lastType = lastTypeStack.pop();
+        }
+        return lastType;
     }
 
     /**
@@ -215,7 +192,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
         if (!parentsStack.isEmpty())
         {
             final String parentId = parentsStack.peek();
-            return parentId + nodeName;
+            return construct(parentId, nodeName);
         }
         return nodeName;
     }
@@ -223,16 +200,38 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     /**
      * Adds a new parent of the given type with the given child size to the internal data structure.
      *
-     * @param childCount the count of child's
-     * @param isArray indicates if the current parent node represents an array or not
+     * @param childCount         the count of child's
+     * @param currentMsgPackType the message pack type of the current node
      */
-    private void addNewParent(int childCount, boolean isArray)
+    private void addNewParent(int childCount, MsgPackType currentMsgPackType)
     {
-        final String nodeName = isArrayValue
-                        ? "" + currentIndex.getAndIncrement()
-                        : getNodeName(lastKey, lastKeyLen);
-        final String nodeId = createNodeId(nodeName);
+        final String nodeName = getNodeName(lastKey, lastKeyLen);
+        String nodeId;
+        final boolean isArrayValue;
+        if (!arrayValueStack.isEmpty())
+        {
+            isArrayValue = arrayValueStack.pop();
+            nodeId = parentsStack.pop();
 
+            if (lastType != MsgPackType.ARRAY)
+            {
+                parentsStack.push(nodeId);
+                nodeId = construct(nodeId, nodeName);
+            }
+        }
+        else
+        {
+            nodeId = createNodeId(nodeName);
+            isArrayValue = false;
+        }
+
+        addParentNodeToTree(currentMsgPackType == MsgPackType.ARRAY, nodeName, nodeId);
+
+        addParentForChildCountToStacks(childCount, currentMsgPackType, nodeId, isArrayValue);
+    }
+
+    private void addParentNodeToTree(boolean isArray, String nodeName, String nodeId)
+    {
         if (isArray)
         {
             msgPackTree.addArrayNode(nodeId);
@@ -242,56 +241,80 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
             msgPackTree.addMapNode(nodeId);
         }
 
-        if (!parentsStack.isEmpty())
+        if (!parentsStack.isEmpty() && lastType != MsgPackType.ARRAY)
         {
             final String parentId = parentsStack.pop();
             msgPackTree.addChildToNode(nodeName, parentId);
         }
+    }
 
+    private void addParentForChildCountToStacks(int childCount, MsgPackType currentMsgPackType,
+                                                String nodeId, boolean isArrayValue)
+    {
         for (int i = 0; i < childCount; i++)
         {
-            parentsStack.push(nodeId);
+            if (currentMsgPackType == MsgPackType.ARRAY)
+            {
+                msgPackTree.addChildToNode("" + i, nodeId);
+                parentsStack.push(construct(nodeId, "" + (childCount - 1 - i)));
+                arrayValueStack.push(true);
+            }
+            else
+            {
+                parentsStack.push(nodeId);
+                if (isArrayValue)
+                {
+                    arrayValueStack.push(true);
+                }
+            }
+            lastTypeStack.push(currentMsgPackType);
         }
     }
 
     /**
      * The current node is a simple value and the currentValue reference to a token
      * of another type except MAP and ARRAY.
-     *
+     * <p>
      * This method process the value node and inserts the node properties into the
      * tree data structure. It will add the nodeType ( type = leaf), pops a
      * parent of the stack and add this node to his child list. Also the leaf mapping will be
      * created and inserted.
      *
-     *
-     * @param position the position of the token in the payload
+     * @param position     the position of the token in the payload
      * @param currentValue the message pack token which represents a simple value
      */
     private void processValueNode(long position, MsgPackToken currentValue)
     {
-        final String parentId = parentsStack.pop();
+        String parentId = parentsStack.pop();
         String nodeName;
-        if (isArrayValue)
+        final String nodeId;
+
+        if (!arrayValueStack.isEmpty())
         {
-            final long index = currentIndex.getAndIncrement();
             nodeName = getNodeName(lastKey, lastKeyLen);
-            if (parentId.contains(nodeName))
+            if (lastType != MsgPackType.ARRAY)
             {
-                nodeName = "" + index;
+                // object in array
+                nodeId = construct(parentId, nodeName);
             }
-            if (!(parentId).equals(parentsStack.peek()))
+            else
             {
-                isArrayValue = false;
-                nextIsValue = false;
+                // plain array value
+                nodeId = parentId;
+                // parent id is without idx
+                final int indexOfLastSeparator = parentId.lastIndexOf(JSON_PATH_SEPARATOR);
+                nodeName = parentId.substring(indexOfLastSeparator + 1, parentId.length());
+                parentId = parentId.substring(0, indexOfLastSeparator);
             }
+
+            arrayValueStack.pop();
         }
         else
         {
             nodeName = getNodeName(lastKey, lastKeyLen);
-            nextIsValue = false;
+            nodeId = construct(parentId, nodeName);
         }
 
-        final String nodeId = parentId + nodeName;
         msgPackTree.addChildToNode(nodeName, parentId);
         msgPackTree.addLeafNode(nodeId, position, currentValue.getTotalLength());
     }
@@ -303,14 +326,15 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     {
         lastKey[0] = '$';
         lastKeyLen = 1;
-        nextIsValue = true;
-        currentIndex.set(0);
         parentsStack.clear();
+        arrayValueStack.clear();
+        lastTypeStack.clear();
     }
 
     /**
      * Returns the node name.
-     * @param bytes the bytes which contains the name
+     *
+     * @param bytes  the bytes which contains the name
      * @param length the length of the name
      * @return the name as string
      */

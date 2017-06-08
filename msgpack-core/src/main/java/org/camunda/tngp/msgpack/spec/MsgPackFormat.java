@@ -57,6 +57,11 @@ public enum MsgPackFormat
         this.type = type;
     }
 
+    public MsgPackType getType()
+    {
+        return type;
+    }
+
     private static final MsgPackFormat[] FORMAT_TABLE = new MsgPackFormat[256];
 
     static

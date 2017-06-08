@@ -1,43 +1,65 @@
 package org.camunda.tngp.msgpack.mapping;
 
+import static org.camunda.tngp.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
 import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 
 /**
+ * <p>
  * Represents an message pack document extractor.
+ * </p>
  *
+ * <p>
  * The extractor can wrap a message pack document, which is stored in a {@link DirectBuffer} and
  * extract parts of this wrapped document with help of the given {@link Mapping} objects.
  * The extracted parts are stored in a {@link MsgPackTree} object,
  * which is returned after calling {@link #extract(Mapping...)}.
+ * </p>
  *
+ * <p>
  * It is also possible that the extractor wraps an already existing {@link MsgPackTree} object and a
  * message pack document on which the extracting should be done. The extracted parts are stored in the wrapped
  * tree. This means nodes can be added or replaced in the wrapped message pack tree.
+ * </p>
  *
+ * <p>
  * A {@link Mapping} consist of a source json query and a target json path mapping. The source json query must match
  * on the wrapped message pack document. The matching value will be stored in the resulting {@link MsgPackTree}
  * object, the tree is either the wrapped tree or a tree which only consists of the extracted values.
+ * </p>
  *
+ * <p>
  * The resulting {@link MsgPackTree} consist of nodes for each part in the target json path mapping
  * and leafs, which corresponds to the leaf in the target json path mapping.
  * These leafs contains the values of the matched source json query, form the wrapped message pack document.
+ * </p>
  *
+ * <p>
  * Example:
  *
- * Wrapped document:
- * {
+ * <pre>
+ *{@code Wrapped document:
+ *  {
  *     "sourceObject":{
  *         "foo":"bar"
  *     },
  *     "value1":1
- * }
- * Mappings:
+ *  }
+ *}
+ * </pre>
+ *
+ * <pre>
+ *{@code Mappings:
  *  $.sourceObject -> $.targetObject.value1
  *  $.value1 -> $.newValue1
+ *}
+ * </pre>
  *
+ * <pre>
+ *{@code
  * Then the resulting tree will look like the following:
  *
  *           $
@@ -47,10 +69,12 @@ import org.camunda.tngp.msgpack.query.MsgPackTraverser;
  *    1           value1
  *                 \
  *                 {"foo":"bar"}
+ *}
+ * </pre>
+ *</p>
  */
 public final class MsgPackDocumentExtractor
 {
-    public static final String JSON_PATH_SEPARATOR = "\\.";
     public static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
     public static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE = "JSON path mapping has more than one matching source.";
 
@@ -97,40 +121,21 @@ public final class MsgPackDocumentExtractor
         for (Mapping mapping : mappings)
         {
             final String targetPath[] = mapping.getTargetQueryString()
-                                               .split(JSON_PATH_SEPARATOR);
-            String parent, nodeId, parentId = "";
+                                               .split(MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR_REGEX);
+            String nodeId, parentId = "";
             int index = 0;
             for (String nodeName : targetPath)
             {
-                final int indexOfOpeningBracket = nodeName.indexOf('[');
-                final boolean isArrayNode = indexOfOpeningBracket != -1;
-                final boolean isLeaf;
+                nodeId = createParentRelation(parentId, nodeName);
 
-                if (isArrayNode)
+                final boolean isLeaf = index + 1 >= targetPath.length;
+                if (isLeaf)
                 {
-                    parent = nodeName.substring(0, indexOfOpeningBracket);
-                    final String lastParent = parentId;
-                    parentId = parentId + parent;
-                    documentTreeReference.addChildToNode(parent, lastParent);
-                    documentTreeReference.addArrayNode(parentId);
-
-                    final int indexOfClosingBracket = nodeName.indexOf(']');
-                    nodeName = nodeName.substring(indexOfOpeningBracket + 1, indexOfClosingBracket);
-                    nodeId = parentId + nodeName;
-                    documentTreeReference.addChildToNode(nodeName, parentId);
-                    isLeaf = (++index >= targetPath.length);
+                    executeLeafMapping(mapping.getSource());
+                    documentTreeReference.addLeafNode(nodeId,
+                                                      (long) queryExecutor.currentResultPosition(),
+                                                      queryExecutor.currentResultLength());
                 }
-                else
-                {
-                    nodeId = parentId + nodeName;
-                    if (index != 0)
-                    {
-                        documentTreeReference.addChildToNode(nodeName, parentId);
-                    }
-                    isLeaf = (index + 1 >= targetPath.length);
-                }
-
-                addNode(nodeId, isLeaf, mapping);
                 parentId = nodeId;
                 index++;
             }
@@ -139,27 +144,59 @@ public final class MsgPackDocumentExtractor
     }
 
     /**
-     * Adds the a node to the resulting tree.
-     * The isLeaf flag indicates if the current node is a map or leaf. For leafs
-     * the mapping will be executed and the corresponding leaf mapping will be added to the tree.
+     * Creates the parent relation for the given node.
+     * <p>
+     * If the nodeName is an integer, this indicates that the parent node is an array, the nodeName
+     * is in this case the index in the array. For that the a array parent node will be created and the
+     * node will be added as child.
+     * <p>
+     * Is the nodeName not a integer this means the parent is a map
+     * (or if the parent is empty the current node is root which has no parent). A map parent node is
+     * added and the current node will added to the map node.
      *
-     * @param nodeId  the id of the node
-     * @param isLeaf  the flag which indicates whether the node is a leaf or not
-     * @param mapping the mapping which is executed for a leaf node
+     * Returns the constructed new node id for the current node.
+     *
+     * @param parentId the id of the parent
+     * @param nodeName the name of the current node
+     * @return the new node id consist of the parent id and the node name
      */
-    private void addNode(String nodeId, boolean isLeaf, Mapping mapping)
+    private String createParentRelation(String parentId, String nodeName)
     {
-        if (isLeaf)
+        final String nodeId;
+
+        if (parentId.isEmpty())
         {
-            executeLeafMapping(mapping.getSource());
-            documentTreeReference.addLeafNode(nodeId,
-                                              (long) queryExecutor.currentResultPosition(),
-                                              queryExecutor.currentResultLength());
+            nodeId = nodeName;
         }
         else
         {
-            documentTreeReference.addMapNode(nodeId);
+            final boolean isArrayNode = isIndex(nodeName);
+            if (isArrayNode)
+            {
+                documentTreeReference.addArrayNode(parentId);
+            }
+            else
+            {
+                documentTreeReference.addMapNode(parentId);
+            }
+            nodeId = construct(parentId, nodeName);
+            documentTreeReference.addChildToNode(nodeName, parentId);
         }
+        return nodeId;
+    }
+
+    private boolean isIndex(String nodeName)
+    {
+        final int len = nodeName.length();
+        for (int i = 0; i < len; i++)
+        {
+            final char currentChar = nodeName.charAt(0);
+            if (currentChar < '0' || currentChar > '9')
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
