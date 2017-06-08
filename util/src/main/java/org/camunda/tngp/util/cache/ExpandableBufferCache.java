@@ -6,7 +6,6 @@ import java.util.function.LongFunction;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -15,7 +14,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * expanded.
  *
  * <p>
- * Inspired by agrona's {@link LongLruCache}.
+ * Inspired by agrona's LongLruCache.
  */
 public class ExpandableBufferCache
 {
