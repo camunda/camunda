@@ -3,13 +3,13 @@
 Zeebe provides a set of APIs and Protocols which allow the clients to interact with the brokers. Zeebe supports two different styles of interactions:
 
 * Command APIs: the client sends a particular command to the broker and expects a response. Example: completing a task.
-* Subscription APIs: the broker streams data to the clients. Example: worker streams tasks to the clients to work on.
+* Subscription APIs: the broker streams data to the clients. Example: broker streams tasks to the clients to work on.
 
 All interactions are done using a binary protocol over TCP/IP.
 
 ## Non-Blocking
 
-Zeebe protocols are non-blocking, including Command APIs. _Command_ and _Reply_ are always separate, independent messages. A client can send multiple commands using the same TCP connection before receiving a reply. For correlation, the reply to a specific command contains the same request-id as the command.
+Zeebe protocols are non-blocking, including Command APIs. _Command_ and _Reply_ are always separate, independent messages. A client can send multiple commands using the same TCP connection before receiving a reply.
 
 ## Streaming
 
