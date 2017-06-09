@@ -11,7 +11,7 @@ In order to use the Java client library, declare the following Maven dependency 
 ```xml
 <dependency>
   <groupId>io.zeebe</groupId>
-  <artifactId>zb-client-java</artifactId>
+  <artifactId>zeebe-client-java</artifactId>
   <version>${zeebe.version}</version>
 </dependency>
 ```
@@ -25,9 +25,9 @@ In Java code, instantiate the client as follows:
 
 ```java
 Properties clientProperties = new Properties();
-clientProperties.put(ZbClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
+clientProperties.put(ZeebeClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
 
-ZbClient client = ZbClient.create(clientProperties);
+ZeebeClient client = ZeebeClient.create(clientProperties);
 ```
 
-See the class `io.zeebe.ZbClientProperties` for a description of all client configuration properties.
+See the class `io.zeebe.ZeebeClientProperties` for a description of all client configuration properties.

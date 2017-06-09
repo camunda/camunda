@@ -27,5 +27,5 @@
     * [Logging](java-client/logging.md)
     * [Apis](java-client/apis.md)
 * [Operations](operations/README.md)
-    * [The zb.cfg.toml file](operations/the-zbcfgtoml-file.md)
+    * [The zeebe.cfg.toml file](operations/the-zeebecfgtoml-file.md)
     * [Setting up a cluster](operations/setting-up-a-cluster.md)    
