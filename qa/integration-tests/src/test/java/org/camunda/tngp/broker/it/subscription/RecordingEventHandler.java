@@ -7,13 +7,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.TopicEvent;
 import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicEventType;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class RecordingEventHandler implements TopicEventHandler
 {

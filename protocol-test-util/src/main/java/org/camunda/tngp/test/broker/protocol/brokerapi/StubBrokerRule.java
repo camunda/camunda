@@ -226,12 +226,17 @@ public class StubBrokerRule extends ExternalResource
 
     public void pushTopicEvent(int channelId, long subscriberKey, long key, long position)
     {
+        pushTopicEvent(channelId, subscriberKey, key, position, EventType.RAFT_EVENT);
+    }
+
+    public void pushTopicEvent(int channelId, long subscriberKey, long key, long position, EventType eventType)
+    {
         newSubscribedEvent()
             .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(DEFAULT_PARTITION_ID)
             .key(key)
             .position(position)
-            .eventType(EventType.RAFT_EVENT)
+            .eventType(eventType)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event()

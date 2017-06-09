@@ -9,7 +9,6 @@ import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEventImpl implements TaskEvent
 {
-
     protected String eventType;
     protected Map<String, Object> headers;
     protected Long lockTime;
@@ -101,4 +100,25 @@ public class TaskEventImpl implements TaskEvent
         this.retries = retries;
     }
 
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("TaskEventImpl [eventType=");
+        builder.append(eventType);
+        builder.append(", type=");
+        builder.append(type);
+        builder.append(", retries=");
+        builder.append(retries);
+        builder.append(", lockOwner=");
+        builder.append(lockOwner);
+        builder.append(", lockTime=");
+        builder.append(lockTime);
+        builder.append(", headers=");
+        builder.append(headers);
+        builder.append(", payload=");
+        builder.append(payload.getAsJson());
+        builder.append("]");
+        return builder.toString();
+    }
 }

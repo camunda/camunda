@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.it.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.retries;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskRetries;
 import static org.camunda.tngp.test.util.TestUtil.doRepeatedly;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
@@ -12,8 +12,8 @@ import java.util.Properties;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
@@ -21,7 +21,6 @@ import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskSubscription;
-import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
@@ -44,13 +43,13 @@ public class TaskSubscriptionTest
         return properties;
     });
 
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule)
-        .around(recordingTaskEventHandler);
+        .around(eventRecorder);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -126,16 +125,16 @@ public class TaskSubscriptionTest
 
         // then
         assertThat(result).isEqualTo(taskKey);
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
 
-        TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.CREATE)).get(0);
+        TaskEvent taskEvent = eventRecorder.getTaskEvents(taskEvent("CREATE")).get(0).getEvent();
         assertThat(taskEvent.getLockExpirationTime()).isNull();
         assertThat(taskEvent.getLockOwner()).isNull();
 
-        taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.CREATED)).get(0);
+        taskEvent = eventRecorder.getTaskEvents(taskEvent("CREATED")).get(0).getEvent();
         assertThat(taskEvent.getLockExpirationTime()).isNull();
 
-        taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.LOCKED)).get(0);
+        taskEvent = eventRecorder.getTaskEvents(taskEvent("LOCKED")).get(0).getEvent();
         assertThat(taskEvent.getLockExpirationTime()).isNotNull();
         assertThat(taskEvent.getLockOwner()).isEqualTo("test");
     }
@@ -176,9 +175,9 @@ public class TaskSubscriptionTest
         assertThat(task.getType()).isEqualTo("foo");
         assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
 
-        final TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.COMPLETED)).get(0);
+        final TaskEvent taskEvent = eventRecorder.getTaskEvents(taskEvent("COMPLETED")).get(0).getEvent();
         assertThat(taskEvent.getPayload()).isEqualTo("{\"a\":3}");
         assertThat(task.getHeaders()).containsEntry("b", "2");
     }
@@ -206,10 +205,10 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .execute();
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         assertThat(taskHandler.getHandledTasks()).isEmpty();
-        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK))).isFalse();
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("LOCK"))).isFalse();
     }
 
     @Test
@@ -271,8 +270,8 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
 
         assertThat(taskHandler.getHandledTasks()).extracting("key").contains(taskKey, taskKey);
-        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED))).isTrue();
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("FAILED"))).isTrue();
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
 
     @Test
@@ -300,7 +299,7 @@ public class TaskSubscriptionTest
             .lockOwner("test")
             .open();
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED).and(retries(0))));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("FAILED").and(taskRetries(0))));
 
         assertThat(taskHandler.getHandledTasks()).hasSize(1);
     }
@@ -331,7 +330,7 @@ public class TaskSubscriptionTest
             .open();
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED).and(retries(0))));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("FAILED").and(taskRetries(0))));
 
         // when
         final Long result = topicClient.updateRetries()
@@ -344,7 +343,7 @@ public class TaskSubscriptionTest
         assertThat(result).isEqualTo(taskKey);
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
 
     @Test
@@ -381,7 +380,7 @@ public class TaskSubscriptionTest
             .hasSize(2)
             .extracting("key").contains(taskKey, taskKey);
 
-        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK_EXPIRED))).isTrue();
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED"))).isTrue();
     }
 
     @Test
@@ -478,7 +477,7 @@ public class TaskSubscriptionTest
         assertThat(task.getPayload()).isEqualTo("{\"a\":1}");
         assertThat(task.getHeaders()).containsEntry("b", "2");
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
 
     @Test

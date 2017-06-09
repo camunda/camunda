@@ -1,10 +1,13 @@
 package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.wfEvent;
+import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
@@ -18,13 +21,14 @@ public class CreateWorkflowInstanceTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
     public ClientRule clientRule = new ClientRule();
+    public TopicEventRecorder wfEventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
-        .around(clientRule);
+        .around(clientRule)
+        .around(wfEventRecorder);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -67,8 +71,9 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
         assertThat(workflowInstance.getVersion()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-    }
 
+        waitUntil(() -> wfEventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
+    }
 
     @Test
     public void shouldCreateBpmnProcessByIdAndVersion()
@@ -88,6 +93,8 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
+
+        waitUntil(() -> wfEventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
     @Test

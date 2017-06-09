@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.wfEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
@@ -12,17 +13,13 @@ import java.util.Map;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
-import org.camunda.tngp.broker.it.util.WorkflowInstanceEventRecorder;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.task.Task;
-import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,13 +31,13 @@ public class ServiceTaskTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule)
-        .around(recordingTaskEventHandler);
+        .around(eventRecorder);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -48,28 +45,11 @@ public class ServiceTaskTest
     private WorkflowTopicClient workflowClient;
     private TaskTopicClient taskClient;
 
-    private WorkflowInstanceEventRecorder workflowInstanceEventRecoder;
-    private TopicSubscription workflowInstanceSubscription;
-
     @Before
     public void init()
     {
         workflowClient = clientRule.workflowTopic();
         taskClient = clientRule.taskTopic();
-
-        workflowInstanceEventRecoder = new WorkflowInstanceEventRecorder();
-
-        workflowInstanceSubscription = clientRule.topic().newSubscription()
-            .name("workflow")
-            .startAtHeadOfTopic()
-            .handler(workflowInstanceEventRecoder)
-            .open();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        workflowInstanceSubscription.close();
     }
 
     private static TngpModelInstance oneTaskProcess(String taskType)
@@ -85,8 +65,6 @@ public class ServiceTaskTest
     @Test
     public void shouldStartWorkflowInstanceWithServiceTask()
     {
-        Bpmn.writeModelToStream(System.out, oneTaskProcess("foo"));
-
         // given
         workflowClient.deploy()
             .bpmnModelInstance(oneTaskProcess("foo"))
@@ -99,6 +77,7 @@ public class ServiceTaskTest
 
         // then
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
     @Test
@@ -167,9 +146,8 @@ public class ServiceTaskTest
             .open();
 
         // then
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
-
-        waitUntil(() -> workflowInstanceEventRecoder.getEventTypes().contains("WORKFLOW_INSTANCE_COMPLETED"));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
 }

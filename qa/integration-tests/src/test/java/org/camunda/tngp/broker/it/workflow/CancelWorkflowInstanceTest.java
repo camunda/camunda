@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.wfEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
@@ -10,16 +11,12 @@ import java.time.Duration;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
-import org.camunda.tngp.broker.it.util.WorkflowInstanceEventRecorder;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
-import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
-import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,19 +34,16 @@ public class CancelWorkflowInstanceTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule)
-        .around(recordingTaskEventHandler);
+        .around(eventRecorder);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
-    private WorkflowInstanceEventRecorder workflowInstanceEventRecoder;
-    private TopicSubscription workflowInstanceSubscription;
 
     @Before
     public void init()
@@ -57,20 +51,6 @@ public class CancelWorkflowInstanceTest
         clientRule.workflowTopic().deploy()
             .bpmnModelInstance(WORKFLOW)
             .execute();
-
-        workflowInstanceEventRecoder = new WorkflowInstanceEventRecorder();
-
-        workflowInstanceSubscription = clientRule.topic().newSubscription()
-            .name("workflow")
-            .startAtHeadOfTopic()
-            .handler(workflowInstanceEventRecoder)
-            .open();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        workflowInstanceSubscription.close();
     }
 
     @Test
@@ -87,7 +67,7 @@ public class CancelWorkflowInstanceTest
             .execute();
 
         // then
-        waitUntil(() -> workflowInstanceEventRecoder.getEventTypes().contains("WORKFLOW_INSTANCE_CANCELED"));
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
     @Test
@@ -116,7 +96,7 @@ public class CancelWorkflowInstanceTest
             .lockTime(Duration.ofMinutes(1))
             .open();
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCKED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCKED")));
 
         clientRule.workflowTopic().cancel()
             .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
@@ -126,10 +106,10 @@ public class CancelWorkflowInstanceTest
         taskSubscription.poll(Task::complete);
 
         // then
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETE_REJECTED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETE_REJECTED")));
 
-        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CANCELED)));
-        assertThat(workflowInstanceEventRecoder.getEventTypes()).contains("WORKFLOW_INSTANCE_CANCELED");
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("CANCELED")));
+        assertThat(eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
     @Test
@@ -140,7 +120,7 @@ public class CancelWorkflowInstanceTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         clientRule.workflowTopic().cancel()
             .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
@@ -158,10 +138,10 @@ public class CancelWorkflowInstanceTest
         // then
         assertThat(completedTasks).isEqualTo(0);
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK_REJECTED)));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCK_REJECTED")));
 
-        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CANCELED)));
-        assertThat(workflowInstanceEventRecoder.getEventTypes()).contains("WORKFLOW_INSTANCE_CANCELED");
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("CANCELED")));
+        assertThat(eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
 }

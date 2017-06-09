@@ -1,6 +1,7 @@
 package org.camunda.tngp.client.event;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.util.List;
 import java.util.Set;
@@ -20,7 +21,6 @@ import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,12 +43,6 @@ public class TopicSubscriptionTest
     public void setUp()
     {
         this.client = clientRule.getClient();
-    }
-
-    @After
-    public void tearDown()
-    {
-        System.out.println("Test: after invoked");
     }
 
     @Test
@@ -375,5 +369,144 @@ public class TopicSubscriptionTest
         assertThat(secondSubscription.isOpen()).isTrue();
     }
 
+    @Test
+    public void shouldInvokeDefaultHandlerForTopicEvent()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
 
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topic().newSubscription()
+            .startAtHeadOfTopic()
+            .handler(eventHandler)
+            .taskEventHandler(eventHandler)
+            .workflowInstanceEventHandler(eventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.RAFT_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.RAFT_EVENT);
+
+        // then
+        waitUntil(() -> eventHandler.numTopicEvents == 2);
+
+        assertThat(eventHandler.numTopicEvents).isEqualTo(2);
+        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldInvokeTasktHandlerForTaskEvent()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topic().newSubscription()
+            .startAtHeadOfTopic()
+            .handler(eventHandler)
+            .taskEventHandler(eventHandler)
+            .workflowInstanceEventHandler(eventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.TASK_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.TASK_EVENT);
+
+        // then
+        waitUntil(() -> eventHandler.numTaskEvents >= 2);
+
+        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents).isEqualTo(2);
+        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldInvokeWorkflowInstancetHandlerForWorkflowInstanceEvent()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topic().newSubscription()
+            .startAtHeadOfTopic()
+            .handler(eventHandler)
+            .taskEventHandler(eventHandler)
+            .workflowInstanceEventHandler(eventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.WORKFLOW_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
+
+        // then
+        waitUntil(() -> eventHandler.numWorkflowEvents >= 2);
+
+        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldInvokeDefaultHandlerIfNoHandlerIsRegistered()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler defaultEventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topic().newSubscription()
+            .startAtHeadOfTopic()
+            .handler(defaultEventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.TASK_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
+
+        // then
+        waitUntil(() -> defaultEventHandler.numTopicEvents == 2);
+
+        assertThat(defaultEventHandler.numTopicEvents).isEqualTo(2);
+    }
+
+    private class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler
+    {
+        public int numTopicEvents = 0;
+        public int numTaskEvents = 0;
+        public int numWorkflowEvents = 0;
+
+        @Override
+        public void handle(EventMetadata metadata, TopicEvent event) throws Exception
+        {
+            numTopicEvents += 1;
+        }
+
+        @Override
+        public void handle(EventMetadata metadata, TaskEvent event) throws Exception
+        {
+            numTaskEvents += 1;
+        }
+
+        @Override
+        public void handle(EventMetadata metadata, WorkflowInstanceEvent event) throws Exception
+        {
+            numWorkflowEvents += 1;
+        }
+    }
 }

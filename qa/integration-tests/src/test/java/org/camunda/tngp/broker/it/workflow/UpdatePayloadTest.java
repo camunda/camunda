@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.taskType;
-import static org.camunda.tngp.broker.it.util.WorkflowInstanceEventRecorder.eventType;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskType;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.wfEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
@@ -11,15 +11,11 @@ import java.time.Duration;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
-import org.camunda.tngp.broker.it.util.WorkflowInstanceEventRecorder;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
 import org.camunda.tngp.client.event.TaskEvent;
-import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.camunda.tngp.client.workflow.impl.WorkflowInstanceEventType;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,19 +40,16 @@ public class UpdatePayloadTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule)
-        .around(recordingTaskEventHandler);
+        .around(eventRecorder);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
-    private WorkflowInstanceEventRecorder workflowInstanceEventRecoder;
-    private TopicSubscription workflowInstanceSubscription;
 
     @Before
     public void init()
@@ -64,20 +57,6 @@ public class UpdatePayloadTest
         clientRule.workflowTopic().deploy()
             .bpmnModelInstance(WORKFLOW)
             .execute();
-
-        workflowInstanceEventRecoder = new WorkflowInstanceEventRecorder();
-
-        workflowInstanceSubscription = clientRule.topic().newSubscription()
-            .name("workflow")
-            .startAtHeadOfTopic()
-            .handler(workflowInstanceEventRecoder)
-            .open();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        workflowInstanceSubscription.close();
     }
 
     @Test
@@ -88,11 +67,12 @@ public class UpdatePayloadTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> workflowInstanceEventRecoder.hasWorkflowEvent(eventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED)));
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_ACTIVATED")));
 
-        final long activtyInstanceKey = workflowInstanceEventRecoder
-                .getSingleWorkflowEvent(eventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED))
-                .getKey();
+        final long activtyInstanceKey = eventRecorder
+                .getSingleWorkflowEvent(wfEvent("ACTIVITY_ACTIVATED"))
+                .getMetadata()
+                .getEventKey();
 
         // when
         clientRule.workflowTopic().updatePayload()
@@ -102,7 +82,7 @@ public class UpdatePayloadTest
             .execute();
 
         // then
-        waitUntil(() -> workflowInstanceEventRecoder.hasWorkflowEvent(eventType(WorkflowInstanceEventType.PAYLOAD_UPDATED)));
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("PAYLOAD_UPDATED")));
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("task-1")
@@ -115,9 +95,9 @@ public class UpdatePayloadTest
             })
             .open();
 
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(taskType("task-2")));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskType("task-2")));
 
-        final TaskEvent task2 = recordingTaskEventHandler.getTaskEvents(taskType("task-2")).get(0);
+        final TaskEvent task2 = eventRecorder.getTaskEvents(taskType("task-2")).get(0).getEvent();
         assertThat(task2.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
     }
 
@@ -140,11 +120,12 @@ public class UpdatePayloadTest
             })
             .open();
 
-        waitUntil(() -> workflowInstanceEventRecoder.hasWorkflowEvent(eventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)));
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
 
-        final long activityInstanceKey = workflowInstanceEventRecoder
-                .getSingleWorkflowEvent(eventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED))
-                .getKey();
+        final long activityInstanceKey = eventRecorder
+                .getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"))
+                .getMetadata()
+                .getEventKey();
 
         // then
         thrown.expect(ClientCommandRejectedException.class);

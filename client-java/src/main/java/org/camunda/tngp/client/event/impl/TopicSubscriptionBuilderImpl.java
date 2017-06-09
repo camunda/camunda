@@ -1,80 +1,117 @@
 package org.camunda.tngp.client.event.impl;
 
-import org.camunda.tngp.client.event.TopicEventHandler;
-import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
-import org.camunda.tngp.util.CheckedConsumer;
+import org.camunda.tngp.client.event.*;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.util.EnsureUtil;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 {
+    protected TopicEventHandler defaultEventHandler;
+    protected TaskEventHandler taskEventHandler;
+    protected WorkflowInstanceEventHandler wfEventHandler;
 
-    protected TopicSubscriptionImplBuilder implBuilder;
+    protected final TopicSubscriptionImplBuilder builder;
+    protected final MsgPackMapper msgPackMapper;
 
     public TopicSubscriptionBuilderImpl(
             TopicClientImpl client,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
+            MsgPackMapper msgPackMapper,
             int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
+        builder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
+        this.msgPackMapper = msgPackMapper;
     }
 
     @Override
     public TopicSubscriptionBuilder handler(TopicEventHandler handler)
     {
-        return handler((e) -> handler.handle(e, e));
+        this.defaultEventHandler = handler;
+        return this;
     }
 
-    public TopicSubscriptionBuilder handler(CheckedConsumer<TopicEventImpl> handler)
+    @Override
+    public TopicSubscriptionBuilder taskEventHandler(TaskEventHandler handler)
     {
-        EnsureUtil.ensureNotNull("handler", handler);
-        implBuilder.handler(handler);
+        this.taskEventHandler = handler;
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder workflowInstanceEventHandler(WorkflowInstanceEventHandler handler)
+    {
+        this.wfEventHandler = handler;
         return this;
     }
 
     @Override
     public TopicSubscription open()
     {
-        EnsureUtil.ensureNotNull("handler", implBuilder.getHandler());
-        EnsureUtil.ensureNotNull("name", implBuilder.getName());
+        EnsureUtil.ensureNotNull("name", builder.getName());
+        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null)
+        {
+            throw new RuntimeException("at least one handler must be set");
+        }
 
-        final TopicSubscriptionImpl subscription = implBuilder.build();
+        builder.handler(this::dispatchEvent);
+
+        final TopicSubscriptionImpl subscription = builder.build();
         subscription.open();
         return subscription;
+    }
+
+    protected void dispatchEvent(TopicEventImpl event) throws Exception
+    {
+        final TopicEventType eventType = event.getEventType();
+
+        if (TopicEventType.TASK == eventType && taskEventHandler != null)
+        {
+            final TaskEventImpl taskEvent = msgPackMapper.convert(event.getAsMsgPack(), TaskEventImpl.class);
+            taskEventHandler.handle(event, taskEvent);
+        }
+        else if (TopicEventType.WORKFLOW_INSTANCE == eventType && wfEventHandler != null)
+        {
+            final WorkflowInstanceEventImpl wfEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
+            wfEventHandler.handle(event, wfEvent);
+        }
+        else if (defaultEventHandler != null)
+        {
+            defaultEventHandler.handle(event, event);
+        }
     }
 
     @Override
     public TopicSubscriptionBuilder startAtPosition(long position)
     {
-        implBuilder.startPosition(position);
+        builder.startPosition(position);
         return this;
     }
 
     @Override
     public TopicSubscriptionBuilder startAtTailOfTopic()
     {
-        implBuilder.startAtTailOfTopic();
+        builder.startAtTailOfTopic();
         return this;
     }
 
     @Override
     public TopicSubscriptionBuilder startAtHeadOfTopic()
     {
-        implBuilder.startAtHeadOfTopic();
+        builder.startAtHeadOfTopic();
         return this;
     }
 
     @Override
     public TopicSubscriptionBuilder name(String name)
     {
-        implBuilder.name(name);
+        builder.name(name);
         return this;
     }
 
     @Override
     public TopicSubscriptionBuilder forcedStart()
     {
-        implBuilder.forceStart();
+        builder.forceStart();
         return this;
     }
 }

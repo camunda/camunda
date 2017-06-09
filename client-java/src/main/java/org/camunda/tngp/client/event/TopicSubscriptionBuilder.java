@@ -1,12 +1,24 @@
 package org.camunda.tngp.client.event;
 
 /**
- * <p>Builder used to subscribed to all events of any kind of topic. Builds a <code>managed</code> subscription,
- * i.e. where a supplied event handler is invoked whenever events are received.
+ * <p>
+ * Builder used to subscribed to all events of any kind of topic. Builds a
+ * <code>managed</code> subscription, i.e. where a supplied event handler is
+ * invoked whenever events are received.
  *
- * <p>By default, a subscription starts at the current tail of the topic (see {@link #startAtTailOfTopic()}).
+ * <p>
+ * The builder allows to register multiple handlers for different event types.
+ * When an event is received then the handler for this event type is invoked. If
+ * no handler is registered for this type then the general topic event handler
+ * is invoked, if available.
  *
- * <p>When an event handler invocation fails, invoking it is retried two times before the subscription is closed.
+ * <p>
+ * By default, a subscription starts at the current tail of the topic (see
+ * {@link #startAtTailOfTopic()}).
+ *
+ * <p>
+ * When an event handler invocation fails, invoking it is retried two times
+ * before the subscription is closed.
  */
 public interface TopicSubscriptionBuilder
 {
@@ -18,6 +30,22 @@ public interface TopicSubscriptionBuilder
      * @return this builder
      */
     TopicSubscriptionBuilder handler(TopicEventHandler handler);
+
+    /**
+     * Registers a handler that handles all task events.
+     *
+     * @param handler the handler to register
+     * @return this builder
+     */
+    TopicSubscriptionBuilder taskEventHandler(TaskEventHandler handler);
+
+    /**
+     * Registers a handler that handles all workflow instance events.
+     *
+     * @param handler the handler to register
+     * @return this builder
+     */
+    TopicSubscriptionBuilder workflowInstanceEventHandler(WorkflowInstanceEventHandler handler);
 
     /**
      * Defines the position at which to start receiving events from.

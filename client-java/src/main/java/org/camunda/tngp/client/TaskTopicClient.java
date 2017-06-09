@@ -1,6 +1,5 @@
 package org.camunda.tngp.client;
 
-import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
@@ -46,12 +45,5 @@ public interface TaskTopicClient
      * to execute the locked tasks.
      */
     PollableTaskSubscriptionBuilder newPollableTaskSubscription();
-
-    /**
-     * @return a builder for an event subscription on a task topic that allows
-     *         registering specific event handlers for well known task events.
-     *         Handler invocation is managed.
-     */
-    TaskTopicSubscriptionBuilder newSubscription();
 
 }

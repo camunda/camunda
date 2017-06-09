@@ -23,8 +23,6 @@ import org.junit.rules.Timeout;
 
 public class TaskTopicSubscriptionTest
 {
-    public static final String SUBSCRIPTION_NAME = "subscription";
-
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
@@ -62,10 +60,10 @@ public class TaskTopicSubscriptionTest
         final RecordingTaskPOJOEventHandler handler = new RecordingTaskPOJOEventHandler();
 
         // when
-        clientRule.taskTopic().newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .taskEventHandler(handler)
-            .name(SUBSCRIPTION_NAME)
+            .name("sub-1")
             .open();
 
         // then
@@ -98,10 +96,10 @@ public class TaskTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.taskTopic().newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
-            .defaultHandler(handler)
-            .name(SUBSCRIPTION_NAME)
+            .handler(handler)
+            .name("sub-2")
             .open();
 
         // then

@@ -13,7 +13,7 @@
 package org.camunda.tngp.broker.it.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
@@ -28,11 +28,10 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
+import org.camunda.tngp.broker.it.util.TopicEventRecorder;
 import org.camunda.tngp.client.event.*;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
-import org.camunda.tngp.client.task.impl.TaskEventType;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.junit.After;
 import org.junit.Before;
@@ -56,13 +55,13 @@ public class IncidentTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
-    public RecordingTaskEventHandler taskEventHandler = new RecordingTaskEventHandler(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule)
-        .around(taskEventHandler);
+        .around(eventRecorder);
 
     private IncidentEventRecoder incidentEventRecorder;
     private TopicSubscription incidentTopicSubscription;
@@ -98,7 +97,7 @@ public class IncidentTest
             .execute();
 
         waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        assertThat(incidentEventRecorder.getEventTypes()).contains("CREATED");
+        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
 
         // when
         clientRule.workflowTopic().updatePayload()
@@ -108,7 +107,7 @@ public class IncidentTest
             .execute();
 
         // then
-        assertThat(taskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
+        assertThat(eventRecorder.hasTaskEvent(taskEvent("CREATED")));
         waitUntil(() -> incidentEventRecorder.getEventTypes().contains("RESOLVED"));
     }
 
@@ -125,7 +124,7 @@ public class IncidentTest
             .execute();
 
         waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        assertThat(incidentEventRecorder.getEventTypes()).contains("CREATED");
+        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
 
         // when
         clientRule.workflowTopic().cancel()
@@ -162,7 +161,7 @@ public class IncidentTest
 
         // then an incident is created
         waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        assertThat(incidentEventRecorder.getEventTypes()).contains("CREATED");
+        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
 
         // when the task retries are increased
         taskHandler.failTask = false;

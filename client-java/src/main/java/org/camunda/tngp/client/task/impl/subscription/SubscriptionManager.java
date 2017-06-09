@@ -7,14 +7,8 @@ import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.CompositeAgent;
 import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
-import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
-import org.camunda.tngp.client.event.impl.EventAcquisition;
-import org.camunda.tngp.client.event.impl.PollableTopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TaskTopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TopicClientImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
+import org.camunda.tngp.client.event.impl.*;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
@@ -149,17 +143,12 @@ public class SubscriptionManager implements TransportChannelListener
 
     public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client)
     {
-        return new TopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
+        return new TopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
     public PollableTopicSubscriptionBuilder newPollableTopicSubscription(TopicClientImpl client)
     {
         return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
-    }
-
-    public TaskTopicSubscriptionBuilder newTaskTopicSubscription(final String topicName, final int partitionId)
-    {
-        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicName, partitionId), topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
     public void onChannelClosed(int channelId)

@@ -5,12 +5,9 @@ import static org.mockito.AdditionalMatchers.lt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.client.event.impl.CreateTopicSubscriptionCmdImpl;
-import org.camunda.tngp.client.event.impl.EventAcquisition;
-import org.camunda.tngp.client.event.impl.PollableTopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TopicClientImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.tngp.client.event.impl.*;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
 import org.camunda.tngp.client.task.subscription.SyncContext;
@@ -21,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class TopicSubscriptionBuilderTest
 {
@@ -38,9 +36,11 @@ public class TopicSubscriptionBuilderTest
     protected CreateTopicSubscriptionCmdImpl openSubscriptionCmd;
 
     protected EventAcquisition<TopicSubscriptionImpl> acquisition;
+    protected MsgPackMapper msgPackMapper;
 
     protected TopicEventHandler noOpHandler = (m, e) ->
     { };
+
 
     @Before
     public void setUp()
@@ -56,13 +56,14 @@ public class TopicSubscriptionBuilderTest
                 asyncContext = new SyncContext();
             }
         };
+        msgPackMapper = new MsgPackMapper(new ObjectMapper(new MessagePackFactory()));
     }
 
     @Test
     public void shouldBuildManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .handler(noOpHandler);
 
         // when
@@ -86,7 +87,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtHeadOfTopic()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtHeadOfTopic();
 
@@ -105,7 +106,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtTailOfTopic()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtTailOfTopic();
 
@@ -124,7 +125,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtPosition()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtPosition(123L);
 
@@ -222,11 +223,12 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateEventHandlerForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY);
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
+                .name("sub");
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("handler must not be null");
+        exception.expectMessage("at least one handler must be set");
 
         // when
         builder.open();
@@ -236,7 +238,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateNameForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .handler(noOpHandler);
 
         // then

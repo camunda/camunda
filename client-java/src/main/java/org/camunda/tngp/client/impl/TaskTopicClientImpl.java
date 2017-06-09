@@ -1,20 +1,13 @@
 package org.camunda.tngp.client.impl;
 
 import org.camunda.tngp.client.TaskTopicClient;
-import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
 import org.camunda.tngp.client.task.cmd.FailTaskCmd;
 import org.camunda.tngp.client.task.cmd.UpdateTaskRetriesCmd;
-import org.camunda.tngp.client.task.impl.CloseTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.task.impl.CompleteTaskCmdImpl;
-import org.camunda.tngp.client.task.impl.CreateTaskCmdImpl;
-import org.camunda.tngp.client.task.impl.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.task.impl.FailTaskCmdImpl;
-import org.camunda.tngp.client.task.impl.IncreaseTaskSubscriptionCreditsCmdImpl;
-import org.camunda.tngp.client.task.impl.UpdateTaskRetriesCmdImpl;
+import org.camunda.tngp.client.task.impl.*;
 
 public class TaskTopicClientImpl implements TaskTopicClient
 {
@@ -64,12 +57,6 @@ public class TaskTopicClientImpl implements TaskTopicClient
     public PollableTaskSubscriptionBuilder newPollableTaskSubscription()
     {
         return client.getSubscriptionManager().newPollableTaskSubscription(this);
-    }
-
-    @Override
-    public TaskTopicSubscriptionBuilder newSubscription()
-    {
-        return client.getSubscriptionManager().newTaskTopicSubscription(topicName, partitionId);
     }
 
     public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
