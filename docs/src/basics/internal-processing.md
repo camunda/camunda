@@ -1,18 +1,18 @@
 # Internal Processing
 
-Internally, Zeebe is implemented as a collection of _stream processors_ working on top of Zeebe's persistent, replicated streams \(topics\). The stream processing model is chosen since it allows to unify
+Internally, Zeebe is implemented as a collection of _stream processors_ working on top of Zeebe's persistent, replicated streams \(topics\). The stream processing model is chosen since it allows you to unify:
 
 * Command-Oriented APIs \(Request-Response Style\),
 * Subscription Protocols \(Streaming\),
-* Asynchronous Background / Batch Processing  \(Continuations in Workflows, Timers, etc...\).
+* Asynchronous Background \ Batch Processing  \(Continuations in Workflows, Timers, etc...\).
 
-In addition, it solves the history problem: the streams of commands and events provides exactly the kind of exhaustive audit log a workflow engine needs to produce.
+In addition, it solves the history problem: The streams of commands and events provides exactly the kind of exhaustive audit log a workflow engine needs to produce.
 
 ## State Machines
 
-Primarily, Zeebe manages stateful entities: Tasks, Workflows, Timers, ... Internally, these entities are modeled as _State Machines_ which live inside the broker.
+Primarily, Zeebe manages stateful entities: Tasks, Workflows, Timers, ...Internally, these entities are modeled as _State Machines_ which live inside the broker.
 
-The concept of the state machine is simple \(in fact it is so simple yet fundamental that it is usually one of the first things undergraduate students in computer science learn\): state machines are used to describe entities which can be one one of several logical _states_. From each state, there is a set \(possibly empty\) of transitions allowing it to go into another state. Transitioning into a new state may also produce outputs / side effects.
+The concept of the state machine is simple \(in fact it is so simple yet fundamental that it is usually one of the first things undergraduate students in computer science learn\): State machines are used to describe entities which can be one of several logical _states_. From each state, there is a set \(possibly empty\) of transitions allowing it to go into another state. Transitioning into a new state may also produce outputs\side effects.
 
 In Zeebe, a client or the broker itself can create a new entity \(state machine\) or request an existing entity to transition into a new state. This request is called a _Command_ in Zeebe lingo.
 
@@ -24,7 +24,7 @@ Let's look at the example of the state machine for tasks. Simplified, it looks a
 | **Lock** | - | Locked | - | - |
 | **Complete** | - | - | Completed | - |
 
-\(The left column contains commands. The other columns describe in which states the command is applicable and if it is, which is the new state into which it causes the state machine to transition.\)
+\(The left column contains commands. The other columns describe in which states the command is applicable and if it is which is the new state into which it causes the state machine to transition.\)
 
 ## Commands & Streams
 
@@ -47,7 +47,7 @@ Stream processors are responsible for processing streams of commands. A stream p
 
 ## State, Replay and Snapshots
 
-As pointed out, stream processors internally keep the state of state machines. The state descibes the result of applying all the commands in the order in which whey occur in the stream. State is usually structured in the form of a \(Hash\) Map: entries are indexed by key, the key describing the identity of the entity \(task, workflow instance ...\).
+As pointed out, stream processors internally maintain the state of state machines. The state describes the result of applying all the commands in the order in which they occur in the stream. State is usually structured in the form of a \(Hash\) Map: entries are indexed by key, the key describing the identity of the entity \(task, workflow instance ...\).
 
 The state can be reconstructed by replaying the commands from the stream. When replaying, only the state is updated, no side effects or other outputs are produced.
 
@@ -59,5 +59,5 @@ Events are produced by some stream processors to report on the outcome of applyi
 
 ## Event -&gt; Command Translation
 
-An event which occurred in one entity can lead to a command being created for another entity. Example: the Event _Task Completed_ is translated into an _Complete Activity_ command requesting the current step in a workfow to be completed as well such that the workflow processing can continue. The event-&gt;command translation is done by a special kind of stream processor consuming the stream of events produced by the task processor and producing a stream of commands for the workflow stream processor.
+An event which occurred in one entity can lead to a command being created for another entity. Example: the Event _Task Completed_ is translated into an _Complete Activity_ command requesting the current step in a workfow to be completed as well so that the workflow processing can continue. The event-&gt;command translation is done by a special kind of stream processor consuming the stream of events produced by the task processor and producing a stream of commands for the workflow stream processor.
 

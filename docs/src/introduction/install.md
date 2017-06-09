@@ -2,11 +2,11 @@
 
 This page guides you through the initial install of your Zeebe broker. In case you are looking for more detailed information on how to setup and operate Zeebe in production, make sure to check out the [Operations Guide](/operations/README.html) as well.
 
-There is different ways to install Zeebe:
+There are different ways to install Zeebe:
 
 * Download a distribution
-* Using Docker
-* Using a Linux Distribution package manager _\(coming soon\)_
+* Use Docker
+* Use a Linux Distribution package manager _\(coming soon\)_
 
 ## Prerequisites
 
@@ -18,9 +18,9 @@ There is different ways to install Zeebe:
 
 ## Download a distribution
 
-You can always download the latest Zeebe release from the Github Release page.
+You can always download the latest Zeebe release from the Github release page.
 
-Once you have downloaded a distribution, extract it into a folder of you choice. In order to extract the Zeebe distribution and start the broker, **Linux users** can type
+Once you have downloaded a distribution, extract it into a folder of your choice. In order to extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
 $ tar -xzf Zeebe-VERSION.tar.gz -C Zeebe/

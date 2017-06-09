@@ -1,9 +1,9 @@
 # APIs and Protocols
 
-Zeebe provides a set of APIs and Protocols which allow the clients to interact with the brokers. Zeebe supports two different styles of interactions:
+Zeebe provides a set of APIs and protocols which allow the clients to interact with the brokers. Zeebe supports two different styles of interactions:
 
-* Command APIs: the client sends a particular command to the broker and expects a response. Example: completing a task.
-* Subscription APIs: the broker streams data to the clients. Example: broker streams tasks to the clients to work on.
+* Command APIs: The client sends a particular command to the broker and expects a response. Example: completing a task.
+* Subscription APIs: The broker streams data to the clients. Example: broker streams tasks to the clients to work on.
 
 All interactions are done using a binary protocol over TCP/IP.
 
@@ -17,7 +17,7 @@ The subscription protocols work in streaming mode: the broker pushes out tasks a
 
 ## Backpressure
 
-The subscription protocols embedd a backpressure protocol to prevent the broker from overwhelming the clients with more tasks or evens then they can handle. The backpressure protocol is credit based.
+The subscription protocols embed a backpressure protocol to prevent the broker from overwhelming the clients with more tasks or evens then they can handle. The backpressure protocol is credit based.
 
-The effect of backpressure is that the system automatically adjusts flow rates to the available resources. For example, a fast consumer running on a powerful machine can process tasks at a very high rate, while a slower consumer is automatically throtteled. This works without user configuration.
+The effect of backpressure is the system automatically adjusting flow rates to the available resources. For example, a fast consumer running on a powerful machine can process tasks at a very high rate while a slower consumer is automatically throtteled. This works without user configuration.
 
