@@ -7,7 +7,6 @@ import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
 import org.camunda.tngp.client.task.cmd.FailTaskCmd;
-import org.camunda.tngp.client.task.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.task.cmd.UpdateTaskRetriesCmd;
 import org.camunda.tngp.client.task.impl.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.CompleteTaskCmdImpl;
@@ -15,7 +14,6 @@ import org.camunda.tngp.client.task.impl.CreateTaskCmdImpl;
 import org.camunda.tngp.client.task.impl.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.FailTaskCmdImpl;
 import org.camunda.tngp.client.task.impl.IncreaseTaskSubscriptionCreditsCmdImpl;
-import org.camunda.tngp.client.task.impl.PollAndLockTasksCmdImpl;
 import org.camunda.tngp.client.task.impl.UpdateTaskRetriesCmdImpl;
 
 public class TaskTopicClientImpl implements TaskTopicClient
@@ -48,12 +46,6 @@ public class TaskTopicClientImpl implements TaskTopicClient
     public UpdateTaskRetriesCmd updateRetries()
     {
         return new UpdateTaskRetriesCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
-    }
-
-    @Override
-    public PollAndLockAsyncTasksCmd pollAndLock()
-    {
-        return new PollAndLockTasksCmdImpl(client.getCmdExecutor());
     }
 
     @Override

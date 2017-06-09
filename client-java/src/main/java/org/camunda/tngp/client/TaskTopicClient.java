@@ -7,7 +7,6 @@ import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
 import org.camunda.tngp.client.task.cmd.FailTaskCmd;
-import org.camunda.tngp.client.task.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.task.cmd.UpdateTaskRetriesCmd;
 
 /**
@@ -54,7 +53,5 @@ public interface TaskTopicClient
      *         Handler invocation is managed.
      */
     TaskTopicSubscriptionBuilder newSubscription();
-
-    PollAndLockAsyncTasksCmd pollAndLock();
 
 }

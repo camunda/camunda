@@ -16,7 +16,6 @@ import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.task.LockedTasksBatch;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestFileUtil;
 import org.camunda.tngp.test.util.TestUtil;
@@ -74,74 +73,6 @@ public class BrokerRestartTest
             .deploy()
             .bpmnModelInstance(modelInstance)
             .execute();
-    }
-
-    @Test
-    public void shouldNotReReadWorkflowExecutionEvents()
-    {
-
-        // given
-        TestUtil.doRepeatedly(() ->
-            clientRule.workflowTopic()
-                .create()
-                .bpmnProcessId("anId")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        TestUtil.doRepeatedly(() ->
-                clientRule.taskTopic()
-                    .pollAndLock()
-                    .taskType("foo")
-                    .lockTime(1234L)
-                    .execute())
-            .until((b) -> !b.getLockedTasks().isEmpty());
-
-        // when
-        restartBroker();
-
-        // then
-        final LockedTasksBatch tasksBatchAfterRestart = TestUtil.doRepeatedly(() ->
-                clientRule.taskTopic()
-                    .pollAndLock()
-                    .taskType("foo")
-                    .lockTime(1234L)
-                    .execute())
-            .whileConditionHolds((b) -> b.getLockedTasks().isEmpty());
-
-        assertThat(tasksBatchAfterRestart.getLockedTasks()).isEmpty();
-
-    }
-
-    @Test
-    public void shouldCompleteTaskAfterRestart()
-    {
-        // given
-        clientRule.workflowTopic()
-            .create()
-            .bpmnProcessId("anId")
-            .execute();
-
-        final LockedTasksBatch taskBatch = TestUtil.doRepeatedly(() ->
-                clientRule.taskTopic()
-                    .pollAndLock()
-                    .taskType("foo")
-                    .lockTime(1234L)
-                    .execute())
-            .until((b) -> !b.getLockedTasks().isEmpty());
-
-        final long taskId = taskBatch.getLockedTasks().get(0).getId();
-
-        // when
-        restartBroker();
-
-        // then
-        final Long result = clientRule.taskTopic().complete()
-                .taskKey(taskId)
-                .execute();
-
-        assertThat(result).isEqualTo(taskId);
     }
 
     @Test
