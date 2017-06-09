@@ -79,14 +79,24 @@ public class ExpendableBufferCacheTest
     @Test
     public void shouldRemove()
     {
-        cache.put(1L, wrapString("foo"));
-        cache.put(2L, wrapString("bar"));
+        cache.put(1L, wrapString("one"));
+        cache.put(2L, wrapString("two"));
+        cache.put(3L, wrapString("three"));
 
-        cache.remove(1L);
+        cache.remove(2L);
 
-        assertThat(cache.getSize()).isEqualTo(1);
+        assertThat(cache.getSize()).isEqualTo(2);
+
+        // insert more values => drop key:1
+        cache.put(4L, wrapString("four"));
+        cache.put(5L, wrapString("five"));
+
+        assertThat(cache.getSize()).isEqualTo(3);
         assertThat(cache.get(1L)).isNull();
-        assertThat(cache.get(2L)).isEqualTo(wrapString("bar"));
+        assertThat(cache.get(2L)).isNull();
+        assertThat(cache.get(3L)).isEqualTo(wrapString("three"));
+        assertThat(cache.get(4L)).isEqualTo(wrapString("four"));
+        assertThat(cache.get(5L)).isEqualTo(wrapString("five"));
     }
 
     @Test

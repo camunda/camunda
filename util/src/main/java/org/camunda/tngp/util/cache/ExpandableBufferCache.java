@@ -46,7 +46,7 @@ public class ExpandableBufferCache
         size = 0;
         keys = new long[cacheCapacity];
 
-        values = new MutableDirectBuffer[cacheCapacity + 1];
+        values = new MutableDirectBuffer[cacheCapacity];
         for (int i = 0; i < values.length; i++)
         {
             values[i] = new ExpandableDirectByteBuffer(initialBufferCapacity);
@@ -93,14 +93,20 @@ public class ExpandableBufferCache
 
     private void insert(long key, final DirectBuffer buffer)
     {
-        final MutableDirectBuffer value = values[size];
+        final MutableDirectBuffer value;
         if (size == capacity)
         {
             // drop the least recently used
-            recycle(value);
+            value = values[size - 1];
+            if (buffer.capacity() < value.byteBuffer().limit())
+            {
+                recycle(value);
+            }
         }
         else
         {
+            value = values[size];
+
             size += 1;
         }
 
@@ -112,6 +118,7 @@ public class ExpandableBufferCache
     private void copyBuffer(final DirectBuffer source, final MutableDirectBuffer target)
     {
         final ByteBuffer byteBuffer = target.byteBuffer();
+        byteBuffer.clear();
 
         source.getBytes(0, byteBuffer, source.capacity());
         // use the limit to indicate the buffer length
@@ -134,7 +141,6 @@ public class ExpandableBufferCache
     private void recycle(MutableDirectBuffer buffer)
     {
         buffer.setMemory(0, buffer.capacity(), (byte) 0);
-        buffer.byteBuffer().clear();
     }
 
     public void put(long key, DirectBuffer buffer)
@@ -144,7 +150,10 @@ public class ExpandableBufferCache
         {
             final MutableDirectBuffer value = values[index];
 
-            recycle(value);
+            if (buffer.capacity() < value.byteBuffer().limit())
+            {
+                recycle(value);
+            }
             copyBuffer(buffer, value);
 
             makeMostRecent(key, value, index);
@@ -160,7 +169,8 @@ public class ExpandableBufferCache
         final int index = indexOf(key);
         if (index >= 0)
         {
-            recycle(values[index]);
+            final MutableDirectBuffer value = values[index];
+            recycle(value);
 
             size -= 1;
 
@@ -170,6 +180,9 @@ public class ExpandableBufferCache
                 keys[i] = keys[i + 1];
                 values[i] = values[i + 1];
             }
+
+            keys[size] = 0;
+            values[size] = value;
         }
     }
 
