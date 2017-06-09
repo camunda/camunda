@@ -2,7 +2,7 @@
 
 This section contains the necessary information to understand the basic principles behind Zeebe.
 
-* [Client / Server](basics/client-server.md)
+* [Client / Server](client-server.md)
 * [APIs & Protocols](apis.md)
 * [Json](json.md)
 * [Workflows](workflows.md)
