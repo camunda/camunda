@@ -12,12 +12,13 @@
  */
 package org.camunda.tngp.util.buffer;
 
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.StringUtil.*;
 
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 
@@ -203,7 +204,7 @@ public final class BufferUtil
         return array;
     }
 
-    public static DirectBuffer wrapArray(byte[] array)
+    public static MutableDirectBuffer wrapArray(byte[] array)
     {
         return new UnsafeBuffer(array);
     }
