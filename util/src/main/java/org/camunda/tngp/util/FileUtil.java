@@ -115,6 +115,22 @@ public class FileUtil
         return fileChannel;
     }
 
+    public static File createTempDirectory(String prefix)
+    {
+        Path path = null;
+
+        try
+        {
+            path = Files.createTempDirectory(prefix);
+        }
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        return path.toFile();
+    }
+
     public static void moveFile(String source, String target, CopyOption... options)
     {
         final Path sourcePath = Paths.get(source);
@@ -130,18 +146,26 @@ public class FileUtil
         }
     }
 
-    public static String getCanonicalDirectoryPath(String directory)
+    public static String getCanonicalPath(String directory)
     {
+        final File file = new File(directory);
+        String path = null;
 
-        String ret = directory;
         try
         {
-            ret = new File(directory).getCanonicalPath() + File.separator;
+            path = file.getCanonicalPath();
+
+            if (!path.endsWith(File.separator))
+            {
+                path += File.separator;
+            }
+
         }
         catch (Exception e)
         {
             LangUtil.rethrowUnchecked(e);
         }
-        return ret;
+
+        return path;
     }
 }
