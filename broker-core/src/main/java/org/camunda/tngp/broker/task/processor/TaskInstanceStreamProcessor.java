@@ -212,7 +212,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     private class LockTaskProcessor implements EventProcessor
     {
         protected boolean isLocked;
-        protected long writtenEventPosition;
 
         @Override
         public void processEvent()
@@ -268,9 +267,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            writtenEventPosition = writeEventToLogStream(writer);
-
-            return writtenEventPosition;
+            return writeEventToLogStream(writer);
         }
 
         @Override
