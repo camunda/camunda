@@ -20,11 +20,11 @@ import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.media.AcceptTransportPoller;
 import org.camunda.tngp.transport.impl.media.ConnectTransportPoller;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
-import org.camunda.tngp.transport.util.SharedStateMachineManager;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.LangUtil;
 import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineBlueprint;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineManager;
 
 public class Conductor implements Actor
 {
@@ -71,13 +71,21 @@ public class Conductor implements Actor
         final ManyToOneRingBuffer channelStateChangeBuffer =
                 new ManyToOneRingBuffer(new UnsafeBuffer(new byte[RingBufferDescriptor.TRAILER_LENGTH + stateDispatchBufferSize]));
 
-        this.channelLifecycle = new SharedStateMachineBlueprint<>(channelStateChangeBuffer);
+        this.channelLifecycle = new SharedStateMachineBlueprint<>();
         this.channelLifecycle
             .onState(ChannelImpl.STATE_CONNECTED, this::makeChannelReady)
-            .onState(ChannelImpl.STATE_READY, c -> c.getHandler().onChannelOpened(c))
+            .onState(ChannelImpl.STATE_READY, this::onChannelReady)
+            .onState(ChannelImpl.STATE_INTERRUPTED, this::onChannelInterrupted)
             .onState(ChannelImpl.STATE_CLOSED | ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::onChannelClose);
 
         this.channelStateManager = new SharedStateMachineManager<>(channelStateChangeBuffer);
+    }
+
+    protected void onChannelReady(ChannelImpl channel)
+    {
+        channel.resetReconnectAttempts();
+        channel.getHandler().onChannelOpened(channel);
+        notifyChannelListenerOpened(channel);
     }
 
     protected void onChannelClose(ChannelImpl channel)
@@ -88,6 +96,14 @@ public class Conductor implements Actor
         channelStateManager.unregister(channel.getStateMachine());
     }
 
+
+    protected void onChannelInterrupted(ChannelImpl channel)
+    {
+        makeChannelUnready(channel);
+        notifyChannelListenerInterrupted(channel);
+        channel.getHandler().onChannelInterrupted(channel);
+    }
+
     protected void notifyChannelListenerClosed(ChannelImpl channel)
     {
         for (int i = 0; i < listeners.size(); i++)
@@ -96,6 +112,21 @@ public class Conductor implements Actor
         }
     }
 
+    protected void notifyChannelListenerInterrupted(ChannelImpl channel)
+    {
+        for (int i = 0; i < listeners.size(); i++)
+        {
+            listeners.get(i).onChannelInterrupted(channel);
+        }
+    }
+
+    protected void notifyChannelListenerOpened(ChannelImpl channel)
+    {
+        for (int i = 0; i < listeners.size(); i++)
+        {
+            listeners.get(i).onChannelOpened(channel);
+        }
+    }
     public CompletableFuture<Void> registerChannelListenerAsync(TransportChannelListener listener)
     {
         return this.commandContext.runAsync((future) ->
@@ -121,11 +152,8 @@ public class Conductor implements Actor
 
         workCount += commandContext.doWork();
 
-        if (isOpen())
-        {
-            workCount += connectTransportPoller.pollNow();
-            workCount += acceptTransportPoller.pollNow();
-        }
+        workCount += connectTransportPoller.pollNow();
+        workCount += acceptTransportPoller.pollNow();
 
         workCount += maintainChannels();
         workCount += maintainChannelManagers();
@@ -151,30 +179,39 @@ public class Conductor implements Actor
     public ChannelImpl newChannel(
             SocketAddress remoteAddress,
             TransportChannelHandler handler,
+            int reconnectAttempts,
             SharedStateMachineBlueprint<ChannelImpl> channelLifecycle)
     {
         final ChannelImpl channel = new ChannelImpl(
             ++nextStreamId,
             remoteAddress,
             maxMessageLength,
+            reconnectAttempts,
             controlFramesBuffer,
             handler,
-            channelLifecycle);
+            c -> channelStateManager.buildStateMachine(channelLifecycle, c));
+
         connectChannel(channel);
 
         return channel;
     }
 
-    public void connectChannel(ChannelImpl channel)
+    public boolean connectChannel(ChannelImpl channel)
     {
-        channelStateManager.register(channel.getStateMachine());
+        if (!isOpen())
+        {
+            return false;
+        }
 
+        channelStateManager.register(channel.getStateMachine());
         final boolean success = channel.startConnect();
 
         if (success)
         {
             connectTransportPoller.addChannel(channel);
         }
+
+        return success;
     }
 
     public ChannelImpl newChannel(
@@ -200,7 +237,7 @@ public class Conductor implements Actor
             maxMessageLength,
             controlFramesBuffer,
             handler,
-            channelLifecycle);
+            c -> channelStateManager.buildStateMachine(channelLifecycle, c));
 
         channelStateManager.register(channel.getStateMachine());
 
@@ -254,7 +291,7 @@ public class Conductor implements Actor
     {
         if (channel.isConnecting())
         {
-            channel.listenFor(ChannelImpl.STATE_CONNECTED | ChannelImpl.STATE_CLOSED | ChannelImpl.STATE_CLOSED_UNEXPECTEDLY,
+            channel.listenFor(ChannelImpl.STATE_CONNECTED | ChannelImpl.STATE_INTERRUPTED,
                 (s, c) ->
                 {
                     if (s == ChannelImpl.STATE_CONNECTED)
@@ -277,6 +314,7 @@ public class Conductor implements Actor
                 localAddress,
                 handler,
                 this,
+                commandContext,
                 channelLifecycle);
 
         return commandContext.runAsync((future) ->
@@ -320,9 +358,6 @@ public class Conductor implements Actor
         {
             return commandContext.runAsync((future) ->
             {
-                acceptTransportPoller.close();
-                connectTransportPoller.close();
-
                 final List<ChannelManagerImpl> channelManagers = new ArrayList<>(managers);
                 final List<ServerSocketBinding> serverBindings = new ArrayList<>(serverSocketBindings);
 
@@ -335,6 +370,11 @@ public class Conductor implements Actor
                 LangUtil.allOf(clientCloseFutures)
                     .whenComplete((v, t) ->
                     {
+                        // it is important to close the pollers only after all client channels have been closed
+                        // as they may still be in progress of connecting when the conductor starts closing
+                        acceptTransportPoller.close();
+                        connectTransportPoller.close();
+
                         final List<CompletableFuture<ServerSocketBinding>> serverCloseFutures = new ArrayList<>();
                         for (int i = 0; i < serverBindings.size(); i++)
                         {

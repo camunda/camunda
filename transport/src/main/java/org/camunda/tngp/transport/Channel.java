@@ -24,8 +24,9 @@ public interface Channel
     boolean isReady();
 
     /**
-     * @return true if channel is currently closed (either expectedly due to request
-     *   or unexpectedly due to io errors)
+     * @return true if channel is closed (either expectedly due to request
+     *   or unexpectedly due to io errors); closed is a terminal state, i.e. once closed,
+     *   a channel will never leave the state again
      */
     boolean isClosed();
 

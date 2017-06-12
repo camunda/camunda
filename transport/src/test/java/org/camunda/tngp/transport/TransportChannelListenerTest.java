@@ -2,6 +2,10 @@ package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+
+import org.camunda.tngp.test.util.TestUtil;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.util.RecordingChannelListener;
 import org.camunda.tngp.util.actor.ActorScheduler;
@@ -75,6 +79,64 @@ public class TransportChannelListenerTest
     }
 
     @Test
+    public void shouldInvokeRegisteredListenerOnChannelOpened() throws InterruptedException
+    {
+        // given
+        final RecordingChannelListener clientListener = new RecordingChannelListener();
+        clientTransport.registerChannelListener(clientListener);
+
+        final RecordingChannelListener serverListener = new RecordingChannelListener();
+        serverTransport.registerChannelListener(serverListener);
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        serverTransport.createServerSocketBinding(addr).bind();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        // when
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // then
+        TestUtil.waitUntil(() -> !clientListener.getOpenedChannels().isEmpty());
+        TestUtil.waitUntil(() -> !serverListener.getOpenedChannels().isEmpty());
+
+        assertThat(clientListener.getOpenedChannels()).containsExactly(channel);
+        assertThat(serverListener.getOpenedChannels()).hasSize(1);
+    }
+
+    @Test
+    public void shouldInvokeRegisteredListenerOnChannelInterrupted() throws InterruptedException, IOException
+    {
+        // given
+        final RecordingChannelListener clientListener = new RecordingChannelListener();
+        clientTransport.registerChannelListener(clientListener);
+
+        final RecordingChannelListener serverListener = new RecordingChannelListener();
+        serverTransport.registerChannelListener(serverListener);
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        serverTransport.createServerSocketBinding(addr).bind();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // when
+        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
+        TestUtil.waitUntil(() -> !clientListener.getInterruptedChannels().isEmpty());
+        TestUtil.waitUntil(() -> !serverListener.getInterruptedChannels().isEmpty());
+
+        // then
+        assertThat(clientListener.getInterruptedChannels()).containsExactly(channel);
+        assertThat(serverListener.getInterruptedChannels()).hasSize(1);
+
+    }
+
+    @Test
     public void shouldDeregisterListener()
     {
         // given
@@ -102,4 +164,5 @@ public class TransportChannelListenerTest
         assertThat(clientListener.getClosedChannels()).hasSize(0);
         assertThat(serverListener.getClosedChannels()).hasSize(0);
     }
+
 }

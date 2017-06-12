@@ -2,6 +2,8 @@ package org.camunda.tngp.transport;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.camunda.tngp.util.PooledFuture;
+
 public interface ChannelManager
 {
 

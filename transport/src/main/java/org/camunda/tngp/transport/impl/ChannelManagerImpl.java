@@ -10,20 +10,22 @@ import java.util.function.ToIntFunction;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.ChannelManager;
-import org.camunda.tngp.transport.PooledFuture;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 import org.camunda.tngp.transport.util.GrowablePool;
-import org.camunda.tngp.transport.util.ObjectPool;
-import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
 import org.camunda.tngp.transport.util.GrowablePool.PoolIterator;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.LangUtil;
+import org.camunda.tngp.util.PooledFuture;
+import org.camunda.tngp.util.collection.ObjectPool;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineBlueprint;
 import org.camunda.tngp.util.time.ClockUtil;
 
 public class ChannelManagerImpl implements ChannelManager
 {
+    protected static final int CHANNEL_RECONNECT_ATTEMPTS = 3;
+
     protected final DeferredCommandContext commandContext = new DeferredCommandContext();
 
     protected final ObjectPool<ChannelRequest> channelRequestPool;
@@ -49,14 +51,14 @@ public class ChannelManagerImpl implements ChannelManager
         this.pendingChannelRequests = new ManyToOneConcurrentArrayQueue<>(64);
         this.conductor = conductor;
         this.channelLifecycle = defaultLifecycle.copy()
-                .onState(ChannelImpl.STATE_CLOSED, this::removeChannel);
+                .onState(ChannelImpl.STATE_CLOSED | ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::removeChannel);
         if (reopenChannelsOnException)
         {
-            this.channelLifecycle.onState(ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::reopenChannel);
+            this.channelLifecycle.onState(ChannelImpl.STATE_INTERRUPTED, this::tryReopenChannel);
         }
         else
         {
-            this.channelLifecycle.onState(ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::removeChannel);
+            this.channelLifecycle.onState(ChannelImpl.STATE_INTERRUPTED, c -> c.setClosedUnexpectedly());
         }
 
         final ToIntFunction<PoolIterator<ChannelImpl>> evictionDecider = it ->
@@ -97,12 +99,27 @@ public class ChannelManagerImpl implements ChannelManager
         this.managedChannels.remove(channel);
     }
 
-    protected void reopenChannel(ChannelImpl channel)
+    protected void tryReopenChannel(ChannelImpl channel)
     {
-        if (channel.isInUse() && conductor.isOpen())
+        if (channel.isInUse() && channel.hasReconnectAttemptsLeft())
         {
-            conductor.connectChannel(channel);
+            channel.consumeReconnectAttempt();
             channel.setLastKeepAlive(ClockUtil.getCurrentTimeInMillis());
+
+            final boolean success = conductor.connectChannel(channel);
+
+            if (success)
+            {
+                channel.setLastKeepAlive(ClockUtil.getCurrentTimeInMillis());
+            }
+            else
+            {
+                channel.interrupt();
+            }
+        }
+        else
+        {
+            channel.setClosedUnexpectedly();
         }
     }
 
@@ -212,7 +229,7 @@ public class ChannelManagerImpl implements ChannelManager
 
         if (channel == null)
         {
-            channel = conductor.newChannel(remoteAddress, channelHandler, channelLifecycle);
+            channel = conductor.newChannel(remoteAddress, channelHandler, CHANNEL_RECONNECT_ATTEMPTS, channelLifecycle);
             channel.setLastKeepAlive(ClockUtil.getCurrentTimeInMillis());
             managedChannels.add(channel);
         }

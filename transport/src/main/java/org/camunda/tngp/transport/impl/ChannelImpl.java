@@ -22,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -29,12 +30,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.transport.Channel;
-import org.camunda.tngp.transport.PooledFuture;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-import org.camunda.tngp.transport.util.IntObjectBiConsumer;
-import org.camunda.tngp.transport.util.SharedStateMachine;
-import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
+import org.camunda.tngp.util.IntObjectBiConsumer;
+import org.camunda.tngp.util.PooledFuture;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachine;
 import org.camunda.tngp.util.time.ClockUtil;
 
 public class ChannelImpl implements Channel
@@ -45,12 +45,20 @@ public class ChannelImpl implements Channel
     // states
     public static final int STATE_CONNECTING = 1 << 0;
     public static final int STATE_CONNECTED = 1 << 1;
+
     // ready to use, i.e. connected and successfully registered with sender and receiver
-    public static final int STATE_READY = 1 << 6;
-    public static final int STATE_CLOSE_INITIATED = 1 << 2;
-    public static final int STATE_CLOSE_RECEIVED = 1 << 3;
-    public static final int STATE_CLOSED = 1 << 4;
-    public static final int STATE_CLOSED_UNEXPECTEDLY = 1 << 5;
+    public static final int STATE_READY = 1 << 2;
+
+    // states representing regular closing of channel (e.g. on request)
+    public static final int STATE_CLOSE_INITIATED = 1 << 3;
+    public static final int STATE_CLOSE_RECEIVED = 1 << 4;
+    public static final int STATE_CLOSED = 1 << 5;
+
+    // States representing closing the channel in an unexpected condition (e.g. connection lost).
+    // Interrupted means the physical connection is closed, but the channel can be reopened.
+    // Closed unexpectedly is a terminal state.
+    public static final int STATE_INTERRUPTED = 1 << 6;
+    public static final int STATE_CLOSED_UNEXPECTEDLY = 1 << 7;
 
     // state management
     protected final SharedStateMachine<ChannelImpl> stateMachine;
@@ -70,6 +78,9 @@ public class ChannelImpl implements Channel
     protected AtomicInteger references = new AtomicInteger(0);
     protected long lastKeepAlive;
 
+    protected final int maxReconnectAttempts;
+    protected int remainingReconnectAttempts;
+
     /**
      * creates a not yet connected channel (in case of client)
      */
@@ -77,9 +88,10 @@ public class ChannelImpl implements Channel
             int streamId,
             SocketAddress remoteAddress,
             int maxMessageLength,
+            int maxReconnectAttempts,
             ManyToOneRingBuffer controlFrameBuffer,
             TransportChannelHandler handler,
-            SharedStateMachineBlueprint<ChannelImpl> stateMachineLifecycle)
+            Function<ChannelImpl, SharedStateMachine<ChannelImpl>> stateMachineFactory)
     {
         this.controlFramesBuffer = controlFrameBuffer;
         this.streamId = streamId;
@@ -89,7 +101,8 @@ public class ChannelImpl implements Channel
         this.channelReadBuffer = ByteBuffer.allocateDirect(maxMessageLength * 2);
         this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
 
-        this.stateMachine = stateMachineLifecycle.buildStateMachine(streamId, this);
+        this.maxReconnectAttempts = maxReconnectAttempts;
+        this.stateMachine = stateMachineFactory.apply(this);
     }
 
     /**
@@ -102,9 +115,9 @@ public class ChannelImpl implements Channel
             int maxMessageLength,
             ManyToOneRingBuffer controlFrameBuffer,
             TransportChannelHandler handler,
-            SharedStateMachineBlueprint<ChannelImpl> stateMachineLifecycle)
+            Function<ChannelImpl, SharedStateMachine<ChannelImpl>> stateMachineFactory)
     {
-        this(streamId, remoteAddress, maxMessageLength, controlFrameBuffer, handler, stateMachineLifecycle);
+        this(streamId, remoteAddress, maxMessageLength, 0, controlFrameBuffer, handler, stateMachineFactory);
         this.media = media;
         stateMachine.makeStateTransition(STATE_CONNECTED);
     }
@@ -134,7 +147,7 @@ public class ChannelImpl implements Channel
         catch (IOException e)
         {
             e.printStackTrace();
-            closeUnexpectedly();
+            interrupt();
             return false;
         }
     }
@@ -206,7 +219,7 @@ public class ChannelImpl implements Channel
             // stream closed (either on the other side or unexpectedly)
             if (stateMachine.isInAnyState(STATE_CONNECTED | STATE_READY))
             {
-                closeUnexpectedly();
+                interrupt();
             }
             else
             {
@@ -320,7 +333,7 @@ public class ChannelImpl implements Channel
         catch (IOException e)
         {
             e.printStackTrace();
-            closeUnexpectedly();
+            interrupt();
         }
 
         return bytesWritten;
@@ -337,10 +350,15 @@ public class ChannelImpl implements Channel
         mediaClose();
     }
 
-    protected void closeUnexpectedly()
+    public void interrupt()
     {
-        stateMachine.makeStateTransition(STATE_CLOSED_UNEXPECTEDLY);
+        stateMachine.makeStateTransition(STATE_INTERRUPTED);
         mediaClose();
+    }
+
+    public boolean setClosedUnexpectedly()
+    {
+        return stateMachine.makeStateTransition(STATE_INTERRUPTED, STATE_CLOSED_UNEXPECTEDLY);
     }
 
     protected void mediaClose()
@@ -383,7 +401,7 @@ public class ChannelImpl implements Channel
         }
         else
         {
-            stateMachine.listenFor(STATE_CLOSED, -1, future);
+            stateMachine.listenFor(STATE_CLOSED | STATE_CLOSED_UNEXPECTEDLY, -1, future);
         }
     }
 
@@ -399,20 +417,17 @@ public class ChannelImpl implements Channel
         }
     }
 
-    public void setConnected()
-    {
-        stateMachine.makeStateTransition(STATE_CONNECTING, STATE_CONNECTED);
-    }
-
+    /**
+     * @return true if the underlying tcp channel is currently believed to be connected
+     */
     public boolean isConnected()
     {
-        return stateMachine.isInState(STATE_CONNECTED);
+        return stateMachine.isInAnyState(STATE_CONNECTED | STATE_READY | STATE_CLOSE_INITIATED | STATE_CLOSE_RECEIVED);
     }
 
     public boolean isClosed()
     {
-        final int currentState = stateMachine.getCurrentState();
-        return currentState == STATE_CLOSED || currentState == STATE_CLOSED_UNEXPECTEDLY;
+        return stateMachine.isInAnyState(STATE_CLOSED | STATE_CLOSED_UNEXPECTEDLY);
     }
 
     public boolean isReady()
@@ -448,7 +463,7 @@ public class ChannelImpl implements Channel
             final boolean controlFrameScheduled = scheduleControlFrame(CLOSE_FRAME, 0, CLOSE_FRAME.capacity());
             if (!controlFrameScheduled)
             {
-                closeUnexpectedly();
+                interrupt();
             }
         }
 
@@ -469,7 +484,7 @@ public class ChannelImpl implements Channel
         catch (Exception e)
         {
             e.printStackTrace();
-            closeUnexpectedly();
+            interrupt();
             return false;
         }
     }
@@ -484,13 +499,28 @@ public class ChannelImpl implements Channel
         catch (IOException e)
         {
             e.printStackTrace();
-            closeUnexpectedly();
+            interrupt();
         }
     }
 
     public boolean setReady()
     {
         return stateMachine.makeStateTransition(STATE_CONNECTED, STATE_READY);
+    }
+
+    public void resetReconnectAttempts()
+    {
+        this.remainingReconnectAttempts = maxReconnectAttempts;
+    }
+
+    public boolean hasReconnectAttemptsLeft()
+    {
+        return remainingReconnectAttempts > 0;
+    }
+
+    public void consumeReconnectAttempt()
+    {
+        remainingReconnectAttempts--;
     }
 
     public void countUsageBegin()
@@ -525,13 +555,13 @@ public class ChannelImpl implements Channel
         this.lastKeepAlive = lastKeepAlive;
     }
 
-    public TransportChannelHandler getHandler()
-    {
-        return handler;
-    }
-
     public SharedStateMachine<ChannelImpl> getStateMachine()
     {
         return stateMachine;
+    }
+
+    public TransportChannelHandler getHandler()
+    {
+        return handler;
     }
 }

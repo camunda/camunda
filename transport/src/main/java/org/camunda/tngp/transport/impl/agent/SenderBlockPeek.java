@@ -29,7 +29,7 @@ public class SenderBlockPeek extends BlockPeek
 
                 currentChannel = channelMap.get(channelId);
 
-                if (currentChannel == null || currentChannel.isClosed())
+                if (currentChannel == null || !currentChannel.isReady())
                 {
                     markFailed();
                     System.err.println("Channel with id " + channelId + " not open.");

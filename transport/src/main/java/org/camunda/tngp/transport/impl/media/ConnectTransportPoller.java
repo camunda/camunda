@@ -18,7 +18,7 @@ public class ConnectTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if (channelCount > 0)
+        if (channelCount > 0 && selector.isOpen())
         {
 
             try

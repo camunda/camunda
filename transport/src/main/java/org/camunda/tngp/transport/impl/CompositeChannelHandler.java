@@ -41,6 +41,16 @@ public class CompositeChannelHandler implements TransportChannelHandler
         }
     }
 
+
+    @Override
+    public void onChannelInterrupted(Channel transportChannel)
+    {
+        for (int i = 0; i < handlers.length; i++)
+        {
+            handlers[i].onChannelInterrupted(transportChannel);
+        }
+    }
+
     @Override
     public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {

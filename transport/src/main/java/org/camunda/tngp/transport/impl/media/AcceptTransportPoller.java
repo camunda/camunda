@@ -7,6 +7,7 @@ import java.util.function.ToIntFunction;
 
 import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
+import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.agent.Conductor;
 
@@ -26,7 +27,7 @@ public class AcceptTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if (bindingCount > 0)
+        if (bindingCount > 0 && selector.isOpen())
         {
             try
             {
@@ -53,7 +54,7 @@ public class AcceptTransportPoller extends TransportPoller
             final ServerSocketBindingImpl serverSocketBinding = (ServerSocketBindingImpl) key.attachment();
             final SocketChannel serverChannel = serverSocketBinding.accept();
 
-            conductor.newChannel(
+            final ChannelImpl channel = conductor.newChannel(
                     serverChannel,
                     serverSocketBinding.getChannelHandler(),
                     serverSocketBinding.getChannelLifecycle());

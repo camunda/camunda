@@ -25,7 +25,7 @@ public class ReadTransportPoller extends TransportPoller
             for (int i = 0; i < channels.size(); i++)
             {
                 final ChannelImpl channel = channels.get(i);
-                if (!channel.isClosed())
+                if (channel.isConnected())
                 {
                     workCount += channel.receive();
                 }
@@ -33,15 +33,18 @@ public class ReadTransportPoller extends TransportPoller
         }
         else
         {
-            try
+            if (selector.isOpen())
             {
-                selector.selectNow();
-                workCount = selectedKeySet.forEach(processKeyFn);
-            }
-            catch (IOException e)
-            {
-                selectedKeySet.reset();
-                LangUtil.rethrowUnchecked(e);
+                try
+                {
+                    selector.selectNow();
+                    workCount = selectedKeySet.forEach(processKeyFn);
+                }
+                catch (IOException e)
+                {
+                    selectedKeySet.reset();
+                    LangUtil.rethrowUnchecked(e);
+                }
             }
         }
 

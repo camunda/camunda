@@ -10,6 +10,11 @@ public interface TransportChannelHandler
     void onChannelOpened(Channel transportChannel);
 
     // invoked in the conductor thread
+    default void onChannelInterrupted(Channel transportChannel)
+    {
+    }
+
+    // invoked in the conductor thread
     void onChannelClosed(Channel transportChannel);
 
     // invoked in the receiver thread

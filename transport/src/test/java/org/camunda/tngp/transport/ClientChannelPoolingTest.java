@@ -11,14 +11,18 @@ import java.util.concurrent.CompletionException;
 
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.transport.impl.ChannelImpl;
+import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.util.RecordingChannelHandler;
+import org.camunda.tngp.transport.util.RecordingChannelListener;
+import org.camunda.tngp.util.PooledFuture;
 import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -367,28 +371,61 @@ public class ClientChannelPoolingTest
     }
 
     @Test
-    public void shouldReopenChannelOnUnexpectedClose() throws IOException
+    public void shouldReopenChannelOnInterruption() throws IOException
     {
         // given
-        final RecordingChannelHandler listener = new RecordingChannelHandler();
+        final RecordingChannelListener listener = new RecordingChannelListener();
         final ChannelManager channelManager = clientTransport
                 .createClientChannelPool()
-                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
                 .build();
+
+        clientTransport.registerChannelListener(listener);
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         serverTransport.createServerSocketBinding(addr).bind();
 
         final Channel channel = channelManager.requestChannel(addr);
 
-        // when closing the channel unexpectedly
+        // when interrupting the channel
         ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
+        TestUtil.waitUntil(() -> !listener.getInterruptedChannels().isEmpty());
 
         // then
         TestUtil.waitUntil(() -> channel.isReady());
         assertThat(channel.isReady()).isTrue();
-        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel, channel);
+        assertThat(listener.getOpenedChannels()).containsExactly(channel, channel);
+    }
+    /**
+     * This test does not work reliably due to timing issues. The timeout at which a failing
+     * connection is detected is platform-specific, so the test cannot make an assumption
+     * how long three failing reconnect attempts take.
+     */
+    @Test
+    @Ignore("can be resolved with https://github.com/camunda-tngp/zb-transport/issues/20")
+    public void shouldMakeAtMostThreeConsecutiveFailingAttemptsToReopen() throws Exception
+    {
+        // given
+        final RecordingChannelListener listener = new RecordingChannelListener();
+        final ChannelManager channelManager = clientTransport
+                .createClientChannelPool()
+                .build();
+
+        clientTransport.registerChannelListener(listener);
+
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        final ServerSocketBinding serverSocketBinding = serverTransport.createServerSocketBinding(addr).bind();
+
+        final Channel channel = channelManager.requestChannel(addr);
+
+        // when interrupting the channel permanently
+        ((ServerSocketBindingImpl) serverSocketBinding).closeMedia();
+        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
+
+        // then
+        TestUtil.waitUntil(() -> listener.getInterruptedChannels().size() == 4); // initial failure and three failed reopening attempts
+        Thread.sleep(500L); // wait a bit for additional reopen tries
+        assertThat(listener.getInterruptedChannels()).containsExactly(channel, channel, channel, channel);
+        assertThat(channel.isClosed()).isTrue();
     }
 
     @Test

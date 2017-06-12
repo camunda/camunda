@@ -3,9 +3,9 @@ package org.camunda.tngp.transport.impl;
 import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.transport.Channel;
-import org.camunda.tngp.transport.PooledFuture;
 import org.camunda.tngp.transport.SocketAddress;
-import org.camunda.tngp.transport.util.ObjectPool;
+import org.camunda.tngp.util.PooledFuture;
+import org.camunda.tngp.util.collection.ObjectPool;
 
 public class ChannelRequest implements PooledFuture<Channel>
 {

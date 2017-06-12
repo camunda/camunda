@@ -16,8 +16,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.LangUtil;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineBlueprint;
 
 public class ServerSocketBindingImpl implements ServerSocketBinding
 {
@@ -39,11 +40,13 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
 
     protected ServerSocketChannel media;
     protected TransportChannelHandler channelHandler;
+    protected final DeferredCommandContext asyncContext;
 
     public ServerSocketBindingImpl(
             final InetSocketAddress bindAddress,
             final TransportChannelHandler channelHandler,
             final Conductor conductor,
+            DeferredCommandContext asyncContext,
             SharedStateMachineBlueprint<ChannelImpl> defaultLifecycle)
     {
         this.channelHandler = channelHandler;
@@ -51,7 +54,9 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         this.conductor = conductor;
         this.channelLifecycle = defaultLifecycle.copy()
                 .onState(ChannelImpl.STATE_READY, this::onChannelConnected)
+                .onState(ChannelImpl.STATE_INTERRUPTED, this::onChannelInterrupted)
                 .onState(ChannelImpl.STATE_CLOSED | ChannelImpl.STATE_CLOSED_UNEXPECTEDLY, this::onChannelClosed);
+        this.asyncContext = asyncContext;
 
         if (bindAddress == null)
         {
@@ -85,6 +90,11 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
     protected void onChannelConnected(ChannelImpl channel)
     {
         openChannels.add(channel);
+    }
+
+    protected void onChannelInterrupted(ChannelImpl channel)
+    {
+        channel.setClosedUnexpectedly();
     }
 
     public SharedStateMachineBlueprint<ChannelImpl> getChannelLifecycle()
@@ -156,6 +166,30 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         {
             return CompletableFuture.completedFuture(this);
         }
+    }
+
+    /**
+     * For testing
+     */
+    public CompletableFuture<Void> interruptAllChannels()
+    {
+        return asyncContext.runAsync((future) ->
+        {
+            for (int i = 0; i < openChannels.size(); i++)
+            {
+                try
+                {
+                    openChannels.get(i).getSocketChannel().shutdownInput();
+                }
+                catch (IOException e)
+                {
+                    // ignore
+                    System.err.println("Could not interrupt channel");
+                }
+            }
+
+            future.complete(null);
+        });
     }
 
     @Override

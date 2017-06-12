@@ -30,6 +30,11 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
     {
     }
 
+    @Override
+    public void onChannelInterrupted(Channel transportChannel)
+    {
+        onChannelClosed(transportChannel);
+    }
 
     @Override
     public void onChannelClosed(Channel transportChannel)
