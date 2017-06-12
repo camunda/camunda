@@ -63,4 +63,14 @@ public class ClientRule extends ExternalResource
         return client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
     }
 
+    public String getDefaultTopicName()
+    {
+        return DEFAULT_TOPIC_NAME;
+    }
+
+    public int getDefaultPartitionId()
+    {
+        return DEFAULT_PARTITION_ID;
+    }
+
 }

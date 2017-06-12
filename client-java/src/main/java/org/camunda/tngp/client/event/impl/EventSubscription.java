@@ -7,6 +7,7 @@ import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.util.CheckedConsumer;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachine;
 import org.slf4j.Logger;
 
 public abstract class EventSubscription<T extends EventSubscription<T>>
@@ -16,39 +17,50 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
-    public static final int STATE_NEW = 0;
-    public static final int STATE_OPENING = 1;
-    public static final int STATE_OPEN = 2;
+    public static final int STATE_NEW = 1 << 0;
+    public static final int STATE_OPENING = 1 << 1;
+    public static final int STATE_OPEN = 1 << 2;
 
     // semantics of closing: subscription is currently open on broker-side and we want to close it and clean up on client side
-    public static final int STATE_CLOSING = 3;
-    public static final int STATE_CLOSED = 4;
+    public static final int STATE_CLOSING = 1 << 3;
+    public static final int STATE_CLOSED = 1 << 4; // terminal state
 
     // semantics of aborting: subscription is closed on broker side and we want to clean up on client side
-    public static final int STATE_ABORTING = 5;
-    public static final int STATE_ABORTED = 6;
+    public static final int STATE_ABORTING = 1 << 5;
+    public static final int STATE_ABORTED = 1 << 6; // terminal state
+
+    // subscription is closed on broker side, but can be reopened later
+    public static final int STATE_SUSPENDED = 1 << 7;
 
     protected long subscriberKey;
-    protected final EventAcquisition<T> eventAcquisition;
     protected final ManyToManyConcurrentArrayQueue<TopicEventImpl> pendingEvents;
     protected final int capacity;
+
+    protected SharedStateMachine<T> stateMachine;
 
     /*
      * The channel that events are received on
      */
     protected int receiveChannelId;
 
-    protected final AtomicInteger state = new AtomicInteger(STATE_NEW);
-
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
     protected final AtomicInteger eventsProcessedSinceLastReplenishment = new AtomicInteger(0);
-    protected CompletableFuture<Void> closeFuture;
 
-    public EventSubscription(EventAcquisition<T> eventAcquisition, int capacity)
+    public EventSubscription(int capacity)
     {
-        this.eventAcquisition = eventAcquisition;
         this.pendingEvents = new ManyToManyConcurrentArrayQueue<>(capacity);
         this.capacity = capacity;
+    }
+
+    public void initStateManagement(SharedStateMachine<T> stateMachine)
+    {
+        this.stateMachine = stateMachine;
+        this.stateMachine.makeStateTransition(STATE_NEW);
+    }
+
+    public SharedStateMachine<T> getStateMachine()
+    {
+        return stateMachine;
     }
 
     public long getSubscriberKey()
@@ -91,20 +103,26 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return eventsInProcessing.get() > 0;
     }
 
+    public void resetProcessingState()
+    {
+        pendingEvents.clear();
+        eventsInProcessing.set(0);
+        eventsProcessedSinceLastReplenishment.set(0);
+    }
+
     public boolean isOpen()
     {
-        return state.get() == STATE_OPEN;
+        return stateMachine.isInState(STATE_OPEN);
     }
 
     public boolean isClosing()
     {
-        return state.get() == STATE_CLOSING;
+        return stateMachine.isInAnyState(STATE_CLOSING);
     }
 
     public boolean isClosed()
     {
-        final int currentState = state.get();
-        return currentState == STATE_CLOSED || currentState == STATE_ABORTED;
+        return stateMachine.isInAnyState(STATE_CLOSED | STATE_ABORTED);
     }
 
     public abstract boolean isManagedSubscription();
@@ -121,16 +139,16 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
-    public CompletableFuture<Void> closeAsync()
+    public CompletableFuture<T> closeAsync()
     {
-        if (state.compareAndSet(STATE_OPEN, STATE_CLOSING))
+        final CompletableFuture<T> closeFuture = new CompletableFuture<>();
+        if (stateMachine.makeStateTransitionAndDo(STATE_OPEN, STATE_CLOSING, (s) -> s.listenFor(STATE_CLOSED | STATE_ABORTED, 0, closeFuture)))
         {
-            closeFuture = new CompletableFuture<>();
             return closeFuture;
         }
         else
         {
-            return CompletableFuture.completedFuture(null);
+            throw new RuntimeException("Could not close subscription");
         }
     }
 
@@ -146,30 +164,34 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public CompletableFuture<Void> openAsync()
+    public CompletableFuture<T> openAsync()
     {
-        if (state.compareAndSet(STATE_NEW, STATE_OPENING))
+        final CompletableFuture<T> openFuture = new CompletableFuture<>();
+        if (stateMachine.makeStateTransitionAndDo(STATE_NEW, STATE_OPENING, (s) -> s.listenFor(STATE_OPEN, STATE_CLOSED | STATE_ABORTED, openFuture)))
         {
-            return eventAcquisition
-                .openSubscriptionAsync((T) this)
-                .thenAccept((v) -> state.compareAndSet(STATE_OPENING, STATE_OPEN));
-
+            return openFuture;
         }
         else
         {
-            return CompletableFuture.completedFuture(null);
+            throw new RuntimeException("Could not open channel");
         }
     }
 
-    @SuppressWarnings("unchecked")
+    public boolean reopenAsync()
+    {
+        return stateMachine.makeStateTransition(STATE_SUSPENDED, STATE_OPENING);
+    }
+
     public void abortAsync()
     {
-        if (state.compareAndSet(STATE_OPEN, STATE_ABORTING))
-        {
-            eventAcquisition.abort((T) this);
-        }
+        stateMachine.makeStateTransition(STATE_ABORTING);
     }
+
+    public void suspendAsync()
+    {
+        stateMachine.makeStateTransition(STATE_SUSPENDED);
+    }
+
 
     public boolean addEvent(TopicEventImpl event)
     {
@@ -194,7 +216,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
         // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
-        while (handledEvents < currentlyAvailableEvents)
+        while (handledEvents < currentlyAvailableEvents && isOpen())
         {
             event = pendingEvents.poll();
             if (event == null)
@@ -256,20 +278,26 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public void onClose()
     {
-        state.compareAndSet(STATE_CLOSING, STATE_CLOSED);
-        closeFuture.complete(null);
+        stateMachine.makeStateTransition(STATE_CLOSED);
     }
 
     public void onCloseFailed(Exception e)
     {
-        // setting this to closed anyway for now
-        state.compareAndSet(STATE_CLOSING, STATE_CLOSED);
-        closeFuture.completeExceptionally(e);
+        stateMachine.makeStateTransition(STATE_CLOSED);
     }
 
     public void onAbort()
     {
-        state.compareAndSet(STATE_ABORTING, STATE_ABORTED);
+        stateMachine.makeStateTransition(STATE_ABORTED);
+    }
+
+    public void onOpen()
+    {
+        if (stateMachine.makeStateTransition(STATE_OPENING, STATE_OPEN))
+        {
+            resetProcessingState(); // in case subscription is reopened
+        }
+
     }
 
     public void replenishEventSource()

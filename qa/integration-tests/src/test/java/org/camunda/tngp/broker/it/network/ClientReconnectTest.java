@@ -32,6 +32,7 @@ public class ClientReconnectTest
     {
         // given
         final long initialTaskKey = createTask();
+
         clientRule.interruptBrokerConnection();
 
         // when
@@ -44,11 +45,13 @@ public class ClientReconnectTest
 
     protected long createTask()
     {
-        return clientRule.taskTopic().create()
+        final long taskKey = clientRule.taskTopic().create()
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
             .payload("{ \"payload\" : 123 }")
             .execute();
+
+        return taskKey;
     }
 }

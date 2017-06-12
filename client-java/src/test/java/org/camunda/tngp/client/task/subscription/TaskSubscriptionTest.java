@@ -1,15 +1,27 @@
 package org.camunda.tngp.client.task.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
@@ -17,17 +29,28 @@ import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
+import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
+import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TaskSubscriptionTest
 {
+
+    protected static final TaskHandler DO_NOTHING = t ->
+    { };
 
     public ClientRule clientRule = new ClientRule();
     public StubBrokerRule broker = new StubBrokerRule();
@@ -36,6 +59,9 @@ public class TaskSubscriptionTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     protected TngpClient client;
 
@@ -49,6 +75,451 @@ public class TaskSubscriptionTest
     public void after()
     {
         continueTaskHandlingThreads();
+    }
+
+    @Test
+    public void shouldOpenSubscription()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // when
+        final TaskSubscription subscription = clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+
+        // then
+        assertThat(subscription.isOpen()).isTrue();
+        assertThat(subscription.isClosed()).isFalse();
+
+        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_TASK_SUBSCRIPTION);
+
+        assertThat(subscriptionRequest.getData()).contains(
+                entry("lockOwner", "foo"),
+                entry("lockDuration", 10000),
+                entry("taskType", "bar"));
+    }
+
+    @Test
+    public void shouldCloseSubscription()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        final TaskSubscription subscription = clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+
+        // when
+        subscription.close();
+
+        // then
+        assertThat(subscription.isClosed()).isTrue();
+        assertThat(subscription.isOpen()).isFalse();
+
+        final ControlMessageRequest subscriptionRequest = getUnsubscribeRequests().findFirst().get();
+        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
+
+        assertThat(subscriptionRequest.getData()).contains(
+                entry("subscriberKey", 123),
+                entry("topicName", clientRule.getDefaultTopicName()),
+                entry("partitionId", clientRule.getDefaultPartitionId()));
+    }
+
+    @Test
+    public void shouldOpenPollableSubscription()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // when
+        final PollableTaskSubscription subscription = clientRule.taskTopic().newPollableTaskSubscription()
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+
+        // then
+        assertThat(subscription.isOpen()).isTrue();
+
+        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+        assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_TASK_SUBSCRIPTION);
+
+        assertThat(subscriptionRequest.getData()).contains(
+                entry("lockOwner", "foo"),
+                entry("lockDuration", 10000),
+                entry("taskType", "bar"));
+    }
+
+    @Test
+    public void shouldValidateMissingTaskType()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("taskType must not be null");
+
+        // when
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .open();
+    }
+
+
+    @Test
+    public void shouldValidateMissingTaskHandler()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("taskHandler must not be null");
+
+        // when
+        clientRule.taskTopic().newTaskSubscription()
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+    }
+
+    @Test
+    public void shouldValidateLockTimePositive()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("lockTime must be greater than 0");
+
+        // when
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(0L)
+            .taskType("bar")
+            .open();
+    }
+
+    @Test
+    public void shouldOpenSubscriptionWithLockTimeAsDuration()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // when
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(Duration.ofDays(10))
+            .taskType("bar")
+            .open();
+
+        // then
+        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+
+        assertThat(subscriptionRequest.getData()).contains(
+                entry("lockDuration", (int) TimeUnit.DAYS.toMillis(10L)));
+    }
+
+    @Test
+    public void shouldOpenPollableSubscriptionWithLockTimeAsDuration()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        // when
+        clientRule.taskTopic().newPollableTaskSubscription()
+            .lockOwner("foo")
+            .lockTime(Duration.ofDays(10))
+            .taskType("bar")
+            .open();
+
+        // then
+        final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
+
+        assertThat(subscriptionRequest.getData()).contains(
+                entry("lockDuration", (int) TimeUnit.DAYS.toMillis(10L)));
+    }
+
+
+    @Test
+    public void shouldThrowExceptionWhenSubscriptionCannotBeOpened()
+    {
+        // given
+        broker.onControlMessageRequest(r -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .respondWithError()
+            .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+            .errorData("does not compute")
+            .register();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Exception while opening subscription");
+
+        // when
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+    }
+
+    @Test
+    public void shouldInvokeTaskHandler() throws JsonParseException, JsonMappingException, IOException
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        broker.onExecuteCommandRequest(isTaskCompleteCommand())
+            .respondWith()
+            .event()
+                .allOf(r -> r.getCommand())
+                .put("eventType", "COMPLETED")
+                .done()
+            .register();
+
+        final RecordingTaskHandler handler = new RecordingTaskHandler();
+        clientRule.taskTopic().newTaskSubscription()
+                .handler(handler)
+                .lockOwner("owner")
+                .lockTime(10000L)
+                .taskType("type")
+                .open();
+
+        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+
+        final MsgPackHelper msgPackHelper = new MsgPackHelper();
+        final Map<String, Object> taskPayload = new HashMap<>();
+        taskPayload.put("payloadKey", "payloadValue");
+
+        final Map<String, Object> taskHeaders = new HashMap<>();
+        taskPayload.put("headerKey", "headerValue");
+        final long lockTime = System.currentTimeMillis();
+
+        // when
+        broker.newSubscribedEvent()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .key(4L)
+            .position(5L)
+            .eventType(EventType.TASK_EVENT)
+            .subscriberKey(123L)
+            .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
+            .event()
+                .put("type", "type")
+                .put("lockTime", lockTime)
+                .put("retries", 3)
+                .put("payload", msgPackHelper.encodeAsMsgPack(taskPayload))
+                .put("headers", taskHeaders)
+                .done()
+            .push(subscriptionChannelId);
+
+        // then
+        TestUtil.waitUntil(() -> !handler.getHandledTasks().isEmpty());
+
+        assertThat(handler.getHandledTasks()).hasSize(1);
+
+        final Task task = handler.getHandledTasks().get(0);
+
+        assertThat(task.getKey()).isEqualTo(4L);
+        assertThat(task.getType()).isEqualTo("type");
+        assertThat(task.getHeaders()).isEqualTo(taskHeaders);
+        assertThat(task.getLockExpirationTime()).isEqualTo(Instant.ofEpochMilli(lockTime));
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final Map<String, Object> receivedPayload = objectMapper.readValue(task.getPayload(), Map.class);
+        assertThat(receivedPayload).isEqualTo(taskPayload);
+    }
+
+    @Test
+    public void shouldInvokeTaskHandlerWithTwoSubscriptions()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        broker.onExecuteCommandRequest(isTaskCompleteCommand())
+            .respondWith()
+            .event()
+                .allOf(r -> r.getCommand())
+                .put("eventType", "COMPLETED")
+                .done()
+            .register();
+
+        final RecordingTaskHandler handler1 = new RecordingTaskHandler();
+        clientRule.taskTopic().newTaskSubscription()
+                .handler(handler1)
+                .lockOwner("foo")
+                .lockTime(10000L)
+                .taskType("type1")
+                .open();
+
+        final RecordingTaskHandler handler2 = new RecordingTaskHandler();
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(handler2)
+            .lockOwner("bar")
+            .lockTime(10000L)
+            .taskType("type2")
+            .open();
+
+        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+
+        // when
+        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "type1");
+        broker.pushLockedTask(subscriptionChannelId, 124L, 5L, 6L, "type2");
+
+        // then
+        TestUtil.waitUntil(() -> !handler1.getHandledTasks().isEmpty());
+        TestUtil.waitUntil(() -> !handler2.getHandledTasks().isEmpty());
+
+        assertThat(handler1.getHandledTasks()).hasSize(1);
+        assertThat(handler2.getHandledTasks()).hasSize(1);
+
+        final Task task1 = handler1.getHandledTasks().get(0);
+
+        assertThat(task1.getKey()).isEqualTo(4L);
+        assertThat(task1.getType()).isEqualTo("type1");
+
+        final Task task2 = handler2.getHandledTasks().get(0);
+
+        assertThat(task2.getKey()).isEqualTo(5L);
+        assertThat(task2.getType()).isEqualTo("type2");
+    }
+
+    @Test
+    public void shouldInvokeTaskHandlerForPollableSubscription()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        broker.onExecuteCommandRequest(isTaskCompleteCommand())
+            .respondWith()
+            .event()
+                .allOf(r -> r.getCommand())
+                .put("eventType", "COMPLETED")
+                .done()
+            .register();
+
+        final RecordingTaskHandler handler = new RecordingTaskHandler();
+        final PollableTaskSubscription subscription = clientRule.taskTopic().newPollableTaskSubscription()
+                .lockOwner("foo")
+                .lockTime(10000L)
+                .taskType("bar")
+                .open();
+
+        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+
+        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "type");
+
+        // when
+        final Integer handledTasks = TestUtil.doRepeatedly(() -> subscription.poll(handler))
+                .until(numTasks -> numTasks > 0);
+
+        // then
+        assertThat(handledTasks).isEqualTo(1);
+        assertThat(handler.getHandledTasks()).hasSize(1);
+
+        final Task task = handler.getHandledTasks().get(0);
+
+        assertThat(task.getKey()).isEqualTo(4L);
+        assertThat(task.getType()).isEqualTo("type");
+    }
+
+    @Test
+    public void shouldAutocompleteTask()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        broker.onExecuteCommandRequest(isTaskCompleteCommand())
+            .respondWith()
+            .event()
+                .allOf(r -> r.getCommand())
+                .put("eventType", "COMPLETED")
+                .done()
+            .register();
+
+        final RecordingTaskHandler handler = new RecordingTaskHandler();
+        clientRule.taskTopic().newTaskSubscription()
+                .handler(handler)
+                .lockOwner("foo")
+                .lockTime(10000L)
+                .taskType("bar")
+                .open();
+
+        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+
+        // when
+        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+
+        // then
+        final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
+                .filter(r -> r.eventType() == EventType.TASK_EVENT)
+                .findFirst())
+            .until(r -> r.isPresent())
+            .get();
+
+        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
+        assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+        assertThat(taskRequest.key()).isEqualTo(4L);
+        assertThat(taskRequest.getCommand())
+            .containsEntry("eventType", "COMPLETE")
+            .containsEntry("type", "bar")
+            .containsEntry("lockOwner", "foo");
+    }
+
+    @Test
+    public void shouldMarkTaskAsFailedOnExpcetion()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        broker.onExecuteCommandRequest(isTaskFailCommand())
+            .respondWith()
+            .event()
+                .allOf(r -> r.getCommand())
+                .put("eventType", "FAILED")
+                .done()
+            .register();
+
+        clientRule.taskTopic().newTaskSubscription()
+                .handler(t ->
+                {
+                    throw new RuntimeException("expected failure");
+                })
+                .lockOwner("foo")
+                .lockTime(10000L)
+                .taskType("bar")
+                .open();
+
+        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+
+        // when
+        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+
+        // then
+        final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
+                .filter(r -> r.eventType() == EventType.TASK_EVENT)
+                .findFirst())
+            .until(r -> r.isPresent())
+            .get();
+
+        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
+        assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+        assertThat(taskRequest.key()).isEqualTo(4L);
+        assertThat(taskRequest.getCommand())
+            .containsEntry("eventType", "FAIL")
+            .containsEntry("type", "bar")
+            .containsEntry("lockOwner", "foo");
     }
 
     @Test
@@ -73,6 +544,7 @@ public class TaskSubscriptionTest
         assertThat(subscription.isClosed()).isTrue();
     }
 
+
     protected void continueTaskHandlingThreads()
     {
         synchronized (monitor)
@@ -80,6 +552,7 @@ public class TaskSubscriptionTest
             monitor.notifyAll();
         }
     }
+
 
     /**
      * This tests a case that should not occur under normal circumstances, but might occur
@@ -188,6 +661,32 @@ public class TaskSubscriptionTest
         assertThat(numSubmittedCredits).isGreaterThan(0);
     }
 
+    @Test
+    public void shouldReopenSubscriptionAfterChannelInterruption()
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(DO_NOTHING)
+            .lockOwner("foo")
+            .lockTime(10000L)
+            .taskType("bar")
+            .open();
+
+        // when
+        broker.interruptAllServerChannels();
+
+        // then
+        TestUtil.waitUntil(() -> getSubscribeRequests().count() == 2);
+
+        final ControlMessageRequest reopenRequest = getSubscribeRequests().skip(1).findFirst().get();
+        assertThat(reopenRequest.getData()).contains(
+            entry("lockOwner", "foo"),
+            entry("lockDuration", 10000),
+            entry("taskType", "bar"));
+    }
+
     protected void failTaskFailure()
     {
         broker.onExecuteCommandRequest((r) ->
@@ -196,6 +695,28 @@ public class TaskSubscriptionTest
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorData("failed to fail task")
             .register();
+    }
+
+    protected Stream<ControlMessageRequest> getSubscribeRequests()
+    {
+        return broker.getReceivedControlMessageRequests().stream()
+                .filter((r) -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION);
+    }
+
+    protected Stream<ControlMessageRequest> getUnsubscribeRequests()
+    {
+        return broker.getReceivedControlMessageRequests().stream()
+                .filter((r) -> r.messageType() == ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
+    }
+
+    protected Predicate<ExecuteCommandRequest> isTaskCompleteCommand()
+    {
+        return r -> r.eventType() == EventType.TASK_EVENT && "COMPLETE".equals(r.getCommand().get("eventType"));
+    }
+
+    protected Predicate<ExecuteCommandRequest> isTaskFailCommand()
+    {
+        return r -> r.eventType() == EventType.TASK_EVENT && "FAIL".equals(r.getCommand().get("eventType"));
     }
 
     protected class WaitingTaskHandler implements TaskHandler

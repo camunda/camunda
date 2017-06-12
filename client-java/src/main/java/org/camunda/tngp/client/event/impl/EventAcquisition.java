@@ -3,29 +3,47 @@ package org.camunda.tngp.client.event.impl;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.subscription.SubscribedEventHandler;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachine;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineBlueprint;
+import org.camunda.tngp.util.state.concurrent.SharedStateMachineManager;
 import org.slf4j.Logger;
 
 public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Actor
 {
 
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
+    protected static final int STATE_BUFFER_SIZE = 1024 * 1024 * 2;
 
     protected final EventSubscriptions<T> subscriptions;
     protected DeferredCommandContext asyncContext;
     protected String name;
 
+    protected final SharedStateMachineBlueprint<T> subscriptionLifecycle;
+    protected final SharedStateMachineManager<T> stateMachineManager;
 
     public EventAcquisition(String name, EventSubscriptions<T> subscriptions)
     {
         this.name = name;
         this.asyncContext = new DeferredCommandContext();
         this.subscriptions = subscriptions;
+        this.subscriptionLifecycle = new SharedStateMachineBlueprint<T>()
+                .onState(EventSubscription.STATE_OPENING, this::openSubscription)
+                .onState(EventSubscription.STATE_CLOSED, this::removeSubscription)
+                .onState(EventSubscription.STATE_ABORTING, this::abortSubscription)
+                .onState(EventSubscription.STATE_SUSPENDED,  s -> subscriptions.onSubscriptionClosed(s))
+                .onState(EventSubscription.STATE_ABORTED, this::removeSubscription);
+
+        final ManyToOneRingBuffer stateChangeBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(new byte[STATE_BUFFER_SIZE + RingBufferDescriptor.TRAILER_LENGTH]));
+        this.stateMachineManager = new SharedStateMachineManager<>(stateChangeBuffer);
     }
 
     public EventAcquisition(EventSubscriptions<T> subscriptions)
@@ -49,22 +67,48 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     public int doWork() throws Exception
     {
         int workCount = asyncContext.doWork();
+        workCount += stateMachineManager.dispatchTransitionEvents();
         workCount += manageSubscriptions();
 
         return workCount;
     }
 
-    public CompletableFuture<Void> openSubscriptionAsync(T subscription)
+    public CompletableFuture<T> newSubscriptionAsync(T subscription)
     {
         return asyncContext.runAsync((future) ->
         {
-            final EventSubscriptionCreationResult result = subscription.requestNewSubscription();
-
-            subscription.setSubscriberKey(result.getSubscriberKey());
-            subscription.setReceiveChannelId(result.getReceiveChannelId());
+            final SharedStateMachine<T> stateMachine = stateMachineManager.buildStateMachine(subscriptionLifecycle, subscription);
+            stateMachineManager.register(stateMachine);
             subscriptions.addSubscription(subscription);
-            future.complete(null);
+            subscription.initStateManagement(stateMachine);
+            future.complete(subscription);
         });
+    }
+
+    protected void openSubscription(T subscription)
+    {
+        final EventSubscriptionCreationResult result;
+
+        try
+        {
+            result = subscription.requestNewSubscription();
+        }
+        catch (Exception e)
+        {
+            abortSubscription(subscription);
+            return;
+        }
+
+        subscription.setSubscriberKey(result.getSubscriberKey());
+        subscription.setReceiveChannelId(result.getReceiveChannelId());
+        subscription.onOpen();
+        subscriptions.onSubscriptionOpened(subscription);
+    }
+
+    protected void removeSubscription(T subscription)
+    {
+        subscriptions.removeSubscription(subscription);
+        stateMachineManager.unregister(subscription.getStateMachine());
     }
 
     protected void closeSubscription(T subscription)
@@ -72,7 +116,6 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         try
         {
             subscription.requestSubscriptionClose();
-            subscriptions.removeSubscription(subscription);
             subscription.onClose();
         }
         catch (Exception e)
@@ -82,10 +125,8 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
     }
 
-    protected void abort(T subscription)
+    protected void abortSubscription(T subscription)
     {
-        // don't try to send any further requests regarding this subscription
-        subscriptions.removeSubscription(subscription);
         subscription.onAbort();
     }
 

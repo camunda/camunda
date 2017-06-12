@@ -159,12 +159,6 @@ public class SubscriptionManager implements TransportChannelListener
         return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
     }
 
-    public void onChannelClosed(int channelId)
-    {
-        taskSubscriptions.abortSubscriptionsOnChannel(channelId);
-        topicSubscriptions.abortSubscriptionsOnChannel(channelId);
-    }
-
     @Override
     public void onChannelClosed(Channel channel)
     {
@@ -172,4 +166,17 @@ public class SubscriptionManager implements TransportChannelListener
         topicSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
     }
 
+    @Override
+    public void onChannelInterrupted(Channel channel)
+    {
+        taskSubscriptions.suspendSubscriptionsOnChannel(channel.getStreamId());
+        topicSubscriptions.suspendSubscriptionsOnChannel(channel.getStreamId());
+    }
+
+    @Override
+    public void onChannelOpened(Channel channel)
+    {
+        taskSubscriptions.reopenSubscriptionsOnChannel(channel.getStreamId());
+        topicSubscriptions.reopenSubscriptionsOnChannel(channel.getStreamId());
+    }
 }

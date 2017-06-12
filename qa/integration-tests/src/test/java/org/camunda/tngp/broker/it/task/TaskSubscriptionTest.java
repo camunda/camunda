@@ -43,7 +43,7 @@ public class TaskSubscriptionTest
         return properties;
     });
 
-    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -94,6 +94,8 @@ public class TaskSubscriptionTest
     public void shouldCompleteTask() throws InterruptedException
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
@@ -143,6 +145,8 @@ public class TaskSubscriptionTest
     public void shouldCompletionTaskInHandler() throws InterruptedException
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
@@ -173,7 +177,7 @@ public class TaskSubscriptionTest
         final Task task = taskHandler.getHandledTasks().get(0);
         assertThat(task.getKey()).isEqualTo(taskKey);
         assertThat(task.getType()).isEqualTo("foo");
-        assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
+        assertThat(task.getLockExpirationTime()).isAfter(Instant.now());
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
 
@@ -186,6 +190,8 @@ public class TaskSubscriptionTest
     public void shouldCloseSubscription() throws InterruptedException
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
@@ -244,6 +250,8 @@ public class TaskSubscriptionTest
     public void shouldMarkTaskAsFailedAndRetryIfHandlerThrowsException()
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
@@ -278,6 +286,8 @@ public class TaskSubscriptionTest
     public void shouldNotLockTaskIfRetriesAreExhausted()
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         topicClient.create()
@@ -308,6 +318,8 @@ public class TaskSubscriptionTest
     public void shouldUpdateTaskRetries()
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
@@ -350,6 +362,8 @@ public class TaskSubscriptionTest
     public void shouldExpireTaskLock() throws InterruptedException
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
@@ -448,6 +462,8 @@ public class TaskSubscriptionTest
     public void shouldPollTasks()
     {
         // given
+        eventRecorder.startRecordingEvents();
+
         final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
@@ -473,7 +489,7 @@ public class TaskSubscriptionTest
         final Task task = taskHandler.getHandledTasks().get(0);
         assertThat(task.getKey()).isEqualTo(taskKey);
         assertThat(task.getType()).isEqualTo("foo");
-        assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
+        assertThat(task.getLockExpirationTime()).isAfter(Instant.now());
         assertThat(task.getPayload()).isEqualTo("{\"a\":1}");
         assertThat(task.getHeaders()).containsEntry("b", "2");
 

@@ -18,9 +18,9 @@ public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteComma
     protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
     protected final MsgPackHelper msgPackHelper;
 
-    protected Function<ExecuteCommandRequest, Long> keyFunction;
-    protected Function<ExecuteCommandRequest, String> topicNameFunction;
-    protected Function<ExecuteCommandRequest, Integer> partitionIdFunction;
+    protected Function<ExecuteCommandRequest, Long> keyFunction = r -> r.key();
+    protected Function<ExecuteCommandRequest, String> topicNameFunction = r -> r.topicName();
+    protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
     protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
 
     protected long key;

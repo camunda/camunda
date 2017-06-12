@@ -30,13 +30,12 @@ public class TopicSubscriptionImpl
     public TopicSubscriptionImpl(
             TopicClientImpl client,
             CheckedConsumer<TopicEventImpl> handler,
-            EventAcquisition<TopicSubscriptionImpl> eventAcquisition,
             int prefetchCapacity,
             long startPosition,
             boolean forceStart,
             String name)
     {
-        super(eventAcquisition, prefetchCapacity);
+        super(prefetchCapacity);
         this.prefetchCapacity = prefetchCapacity;
         this.client = client;
         if (handler != null)

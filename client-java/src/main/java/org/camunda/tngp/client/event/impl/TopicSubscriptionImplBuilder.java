@@ -69,13 +69,14 @@ public class TopicSubscriptionImplBuilder
 
     public TopicSubscriptionImpl build()
     {
-        return new TopicSubscriptionImpl(
-            client,
-            handler,
-            acquisition,
-            prefetchCapacity,
-            startPosition,
-            forceStart,
-            name);
+        final TopicSubscriptionImpl subscription = new TopicSubscriptionImpl(
+                client,
+                handler,
+                prefetchCapacity,
+                startPosition,
+                forceStart,
+                name);
+
+        return acquisition.newSubscriptionAsync(subscription).join();
     }
 }

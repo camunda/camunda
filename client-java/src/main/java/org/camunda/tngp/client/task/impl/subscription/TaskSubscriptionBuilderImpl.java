@@ -86,19 +86,20 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
-        final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(
-                        client,
-                        taskHandler,
-                        taskType,
-                        lockTime,
-                        lockOwner,
-                        taskFetchSize,
-                        taskAcquisition,
-                        msgPackMapper,
-                        autoCompleteTasks);
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
+                client,
+                taskHandler,
+                taskType,
+                lockTime,
+                lockOwner,
+                taskFetchSize,
+                msgPackMapper,
+                autoCompleteTasks);
+
+        taskAcquisition.newSubscriptionAsync(subscription).join();
 
         subscription.open();
+
         return subscription;
     }
 

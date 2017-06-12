@@ -76,19 +76,20 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         EnsureUtil.ensureNotNullOrEmpty("lockOwner", lockOwner);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
-        final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(
-                        taskClient,
-                        null,
-                        taskType,
-                        lockTime,
-                        lockOwner,
-                        taskFetchSize,
-                        taskAcquisition,
-                        msgPackMapper,
-                        autoCompleteTasks);
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
+                taskClient,
+                null,
+                taskType,
+                lockTime,
+                lockOwner,
+                taskFetchSize,
+                msgPackMapper,
+                autoCompleteTasks);
+
+        taskAcquisition.newSubscriptionAsync(subscription).join();
 
         subscription.open();
+
         return subscription;
     }
 }

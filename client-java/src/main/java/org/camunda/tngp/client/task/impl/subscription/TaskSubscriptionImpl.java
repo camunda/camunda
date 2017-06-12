@@ -1,6 +1,5 @@
 package org.camunda.tngp.client.task.impl.subscription;
 
-import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.EventSubscription;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
@@ -34,11 +33,10 @@ public class TaskSubscriptionImpl
             long lockTime,
             String lockOwner,
             int capacity,
-            EventAcquisition<TaskSubscriptionImpl> acquisition,
             MsgPackMapper msgPackMapper,
             boolean autoComplete)
     {
-        super(acquisition, capacity);
+        super(capacity);
         this.taskClient = client;
         this.taskHandler = taskHandler;
         this.taskType = taskType;

@@ -18,6 +18,7 @@ import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.Transports;
+import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.rules.ExternalResource;
 
@@ -88,6 +89,11 @@ public class StubBrokerRule extends ExternalResource
         serverSocketBinding = null;
     }
 
+    public void interruptAllServerChannels()
+    {
+        ((ServerSocketBindingImpl) serverSocketBinding).interruptAllChannels().join();
+    }
+
     public void openServerSocketBinding()
     {
         if (serverSocketBinding != null)
@@ -130,14 +136,16 @@ public class StubBrokerRule extends ExternalResource
                 new ErrorResponseBuilder<>(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction));
     }
 
-    public ControlMessageResponseBuilder onControlMessageRequest()
+    public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest()
     {
         return onControlMessageRequest((r) -> true);
     }
 
-    public ControlMessageResponseBuilder onControlMessageRequest(Predicate<ControlMessageRequest> activationFunction)
+    public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest(Predicate<ControlMessageRequest> activationFunction)
     {
-        return new ControlMessageResponseBuilder(channelHandler::addControlMessageRequestStub, msgPackHelper, activationFunction);
+        return new ResponseBuilder<>(
+                new ControlMessageResponseBuilder(channelHandler::addControlMessageRequestStub, msgPackHelper, activationFunction),
+                new ErrorResponseBuilder<>(channelHandler::addControlMessageRequestStub, msgPackHelper, activationFunction));
     }
 
     public List<ControlMessageRequest> getReceivedControlMessageRequests()
@@ -205,7 +213,7 @@ public class StubBrokerRule extends ExternalResource
             .respondWith()
             .data()
                 .allOf((r) -> r.getData())
-                .put("subscriberKey", subscriberKeyProvider.getAndIncrement())
+                .put("subscriberKey", (r) -> subscriberKeyProvider.getAndIncrement())
                 .done()
             .register();
 

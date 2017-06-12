@@ -40,35 +40,71 @@ public class TopicEventRecorder extends ExternalResource
     private final int partitionId;
 
     protected TopicSubscription subscription;
+    protected final boolean autoRecordEvents;
 
     public TopicEventRecorder(final ClientRule clientRule)
     {
-        this(clientRule, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        this(clientRule, true);
     }
 
-    public TopicEventRecorder(final ClientRule clientRule, final String topicName, final int partitionId)
+
+    public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents)
+    {
+        this(clientRule, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, autoRecordEvents);
+    }
+
+    public TopicEventRecorder(
+            final ClientRule clientRule,
+            final String topicName,
+            final int partitionId,
+            boolean autoRecordEvents)
     {
         this.clientRule = clientRule;
         this.topicName = topicName;
         this.partitionId = partitionId;
+        this.autoRecordEvents = autoRecordEvents;
     }
 
     @Override
     protected void before() throws Throwable
     {
-        final TopicClient client = clientRule.getClient().topic(topicName, partitionId);
-
-        subscription = client.newSubscription()
-            .name(SUBSCRIPTION_NAME)
-            .taskEventHandler((m, e) -> taskEvents.add(new ReceivedTaskEvent(m, e)))
-            .workflowInstanceEventHandler((m, e) -> wfEvents.add(new ReceivedWorkflowEvent(m, e)))
-            .open();
+        if (autoRecordEvents)
+        {
+            startRecordingEvents();
+        }
     }
 
     @Override
     protected void after()
     {
-        subscription.close();
+        stopRecordingEvents();
+    }
+
+    public void startRecordingEvents()
+    {
+        if (subscription == null)
+        {
+            final TopicClient client = clientRule.getClient().topic(topicName, partitionId);
+
+            subscription = client.newSubscription()
+                .name(SUBSCRIPTION_NAME)
+                .taskEventHandler((m, e) -> taskEvents.add(new ReceivedTaskEvent(m, e)))
+                .workflowInstanceEventHandler((m, e) -> wfEvents.add(new ReceivedWorkflowEvent(m, e)))
+                .open();
+        }
+        else
+        {
+            throw new RuntimeException("Subscription already open");
+        }
+    }
+
+    public void stopRecordingEvents()
+    {
+        if (subscription != null)
+        {
+            subscription.close();
+            subscription = null;
+        }
     }
 
     public boolean hasWorkflowEvent(final Predicate<ReceivedWorkflowEvent> matcher)

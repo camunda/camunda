@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -11,6 +12,7 @@ import org.camunda.tngp.client.event.impl.EventSubscription;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
+
     // topicName => partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
     protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> subscriptions = new HashMap<>();
 
@@ -31,22 +33,12 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     protected void addPollableSubscription(final T subscription)
     {
-        addSubscriptionForTopic(subscription);
         this.pollableSubscriptions.add(subscription);
     }
 
     protected void addManagedSubscription(final T subscription)
     {
-        addSubscriptionForTopic(subscription);
         this.managedSubscriptions.add(subscription);
-    }
-
-    protected void addSubscriptionForTopic(final T subscription)
-    {
-        this.subscriptions
-            .computeIfAbsent(subscription.getTopicName(), topicName -> new Int2ObjectHashMap<>())
-            .computeIfAbsent(subscription.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
-            .put(subscription.getSubscriberKey(), subscription);
     }
 
     public void closeAll()
@@ -64,19 +56,30 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     public void abortSubscriptionsOnChannel(final int channelId)
     {
-        for (final T subscription : pollableSubscriptions)
-        {
-            if (subscription.getReceiveChannelId() == channelId)
-            {
-                subscription.abortAsync();
-            }
-        }
+        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.abortAsync());
+        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.abortAsync());
+    }
 
-        for (final T subscription : managedSubscriptions)
+    public void suspendSubscriptionsOnChannel(final int channelId)
+    {
+        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.suspendAsync());
+        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.suspendAsync());
+    }
+
+    public void reopenSubscriptionsOnChannel(int channelId)
+    {
+        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.reopenAsync());
+        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.reopenAsync());
+    }
+
+    protected void doForSubscriptionsOnChannel(List<T> subscriptions, int channelId, Consumer<T> action)
+    {
+        for (int i = 0; i < subscriptions.size(); i++)
         {
+            final T subscription = subscriptions.get(i);
             if (subscription.getReceiveChannelId() == channelId)
             {
-                subscription.abortAsync();
+                action.accept(subscription);
             }
         }
     }
@@ -93,28 +96,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     public void removeSubscription(final T subscription)
     {
-        final String topicName = subscription.getTopicName();
-        final int partitionId = subscription.getPartitionId();
-
-        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
-        if (subscriptionsForTopic != null)
-        {
-            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
-            if (subscriptionsForPartition != null)
-            {
-                subscriptionsForPartition.remove(subscription.getSubscriberKey());
-
-                if (subscriptionsForPartition.isEmpty())
-                {
-                    subscriptionsForTopic.remove(partitionId);
-                }
-
-                if (subscriptionsForTopic.isEmpty())
-                {
-                    subscriptions.remove(topicName);
-                }
-            }
-        }
+        onSubscriptionClosed(subscription);
 
         pollableSubscriptions.remove(subscription);
         managedSubscriptions.remove(subscription);
@@ -138,5 +120,38 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         return null;
     }
 
+    public void onSubscriptionOpened(T subscription)
+    {
+        this.subscriptions
+            .computeIfAbsent(subscription.getTopicName(), topicName -> new Int2ObjectHashMap<>())
+            .computeIfAbsent(subscription.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
+            .put(subscription.getSubscriberKey(), subscription);
+    }
+
+    public void onSubscriptionClosed(T subscription)
+    {
+        final String topicName = subscription.getTopicName();
+        final int partitionId = subscription.getPartitionId();
+
+        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
+        if (subscriptionsForTopic != null)
+        {
+            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
+            if (subscriptionsForPartition != null)
+            {
+                subscriptionsForPartition.remove(subscription.getSubscriberKey());
+
+                if (subscriptionsForPartition.isEmpty())
+                {
+                    subscriptionsForTopic.remove(partitionId);
+                }
+
+                if (subscriptionsForTopic.isEmpty())
+                {
+                    subscriptions.remove(topicName);
+                }
+            }
+        }
+    }
 
 }
