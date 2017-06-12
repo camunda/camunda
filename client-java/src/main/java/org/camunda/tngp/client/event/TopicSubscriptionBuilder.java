@@ -48,6 +48,14 @@ public interface TopicSubscriptionBuilder
     TopicSubscriptionBuilder workflowInstanceEventHandler(WorkflowInstanceEventHandler handler);
 
     /**
+     * Registers a handler that handles all incident events.
+     *
+     * @param handler the handler to register
+     * @return this builder
+     */
+    TopicSubscriptionBuilder incidentEventHandler(IncidentEventHandler handler);
+
+    /**
      * Defines the position at which to start receiving events from.
      * A <code>position</code> greater than the current tail position
      * of the topic is equivalent to starting at the tail position. In this case,

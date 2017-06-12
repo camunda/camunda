@@ -382,6 +382,7 @@ public class TopicSubscriptionTest
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
             .workflowInstanceEventHandler(eventHandler)
+            .incidentEventHandler(eventHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
@@ -397,6 +398,7 @@ public class TopicSubscriptionTest
         assertThat(eventHandler.numTopicEvents).isEqualTo(2);
         assertThat(eventHandler.numTaskEvents).isEqualTo(0);
         assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
     }
 
     @Test
@@ -412,6 +414,7 @@ public class TopicSubscriptionTest
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
             .workflowInstanceEventHandler(eventHandler)
+            .incidentEventHandler(eventHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
@@ -427,6 +430,7 @@ public class TopicSubscriptionTest
         assertThat(eventHandler.numTopicEvents).isEqualTo(0);
         assertThat(eventHandler.numTaskEvents).isEqualTo(2);
         assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
     }
 
     @Test
@@ -442,6 +446,7 @@ public class TopicSubscriptionTest
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
             .workflowInstanceEventHandler(eventHandler)
+            .incidentEventHandler(eventHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
@@ -457,6 +462,39 @@ public class TopicSubscriptionTest
         assertThat(eventHandler.numTopicEvents).isEqualTo(0);
         assertThat(eventHandler.numTaskEvents).isEqualTo(0);
         assertThat(eventHandler.numWorkflowEvents).isEqualTo(2);
+        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldInvokeIncidentEventHandlerForIncidentEvent()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topic().newSubscription()
+            .startAtHeadOfTopic()
+            .handler(eventHandler)
+            .taskEventHandler(eventHandler)
+            .workflowInstanceEventHandler(eventHandler)
+            .incidentEventHandler(eventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.INCIDENT_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.INCIDENT_EVENT);
+
+        // then
+        waitUntil(() -> eventHandler.numIncidentEvents >= 2);
+
+        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents).isEqualTo(2);
     }
 
     @Test
@@ -478,18 +516,20 @@ public class TopicSubscriptionTest
         // when pushing two events
         broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.TASK_EVENT);
         broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 3L, EventType.INCIDENT_EVENT);
 
         // then
-        waitUntil(() -> defaultEventHandler.numTopicEvents == 2);
+        waitUntil(() -> defaultEventHandler.numTopicEvents == 3);
 
-        assertThat(defaultEventHandler.numTopicEvents).isEqualTo(2);
+        assertThat(defaultEventHandler.numTopicEvents).isEqualTo(3);
     }
 
-    private class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler
+    private class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler, IncidentEventHandler
     {
         public int numTopicEvents = 0;
         public int numTaskEvents = 0;
         public int numWorkflowEvents = 0;
+        public int numIncidentEvents = 0;
 
         @Override
         public void handle(EventMetadata metadata, TopicEvent event) throws Exception
@@ -507,6 +547,12 @@ public class TopicSubscriptionTest
         public void handle(EventMetadata metadata, WorkflowInstanceEvent event) throws Exception
         {
             numWorkflowEvents += 1;
+        }
+
+        @Override
+        public void handle(EventMetadata metadata, IncidentEvent event) throws Exception
+        {
+            numIncidentEvents += 1;
         }
     }
 }

@@ -20,9 +20,7 @@ import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class WorkflowInstanceTopicSubscriptionTest
 {
@@ -34,12 +32,6 @@ public class WorkflowInstanceTopicSubscriptionTest
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule);
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(20);
 
     protected TngpClient client;
 

@@ -9,6 +9,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     protected TopicEventHandler defaultEventHandler;
     protected TaskEventHandler taskEventHandler;
     protected WorkflowInstanceEventHandler wfEventHandler;
+    protected IncidentEventHandler incidentEventHandler;
 
     protected final TopicSubscriptionImplBuilder builder;
     protected final MsgPackMapper msgPackMapper;
@@ -45,10 +46,17 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     }
 
     @Override
+    public TopicSubscriptionBuilder incidentEventHandler(IncidentEventHandler handler)
+    {
+        this.incidentEventHandler = handler;
+        return this;
+    }
+
+    @Override
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("name", builder.getName());
-        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null)
+        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && incidentEventHandler == null)
         {
             throw new RuntimeException("at least one handler must be set");
         }
@@ -73,6 +81,11 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         {
             final WorkflowInstanceEventImpl wfEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
             wfEventHandler.handle(event, wfEvent);
+        }
+        else if (TopicEventType.INCIDENT == eventType && incidentEventHandler != null)
+        {
+            final IncidentEvent incidentEvent = msgPackMapper.convert(event.getAsMsgPack(), IncidentEventImpl.class);
+            incidentEventHandler.handle(event, incidentEvent);
         }
         else if (defaultEventHandler != null)
         {

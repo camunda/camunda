@@ -12,24 +12,24 @@
  */
 package org.camunda.tngp.broker.it.incident;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.TopicEventRecorder;
-import org.camunda.tngp.client.event.*;
+import org.camunda.tngp.client.event.EventMetadata;
+import org.camunda.tngp.client.event.IncidentEvent;
+import org.camunda.tngp.client.event.IncidentEventHandler;
+import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
@@ -74,7 +74,7 @@ public class IncidentTest
         incidentTopicSubscription = clientRule.topic().newSubscription()
             .name("incident")
             .startAtHeadOfTopic()
-            .handler(incidentEventRecorder)
+            .incidentEventHandler(incidentEventRecorder)
             .open();
     }
 
@@ -85,30 +85,31 @@ public class IncidentTest
     }
 
     @Test
-    public void shouldResolveInputMappingIncident()
+    public void shouldCreateAndResolveInputMappingIncident()
     {
         // given
         clientRule.workflowTopic().deploy()
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        clientRule.workflowTopic().create()
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
+
+        final IncidentEvent incident = incidentEventRecorder.getSingleIncidentEvent(eventType("CREATED"));
 
         // when
         clientRule.workflowTopic().updatePayload()
-            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
-            .activityInstanceKey(incidentEventRecorder.getActivityInstanceKey())
+            .workflowInstanceKey(incident.getWorkflowInstanceKey())
+            .activityInstanceKey(incident.getActivityInstanceKey())
             .payload(PAYLOAD)
             .execute();
 
         // then
-        assertThat(eventRecorder.hasTaskEvent(taskEvent("CREATED")));
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("RESOLVED"));
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("RESOLVED")));
     }
 
     @Test
@@ -123,8 +124,7 @@ public class IncidentTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
 
         // when
         clientRule.workflowTopic().cancel()
@@ -132,11 +132,11 @@ public class IncidentTest
             .execute();
 
         // then
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("DELETED"));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("DELETED")));
     }
 
     @Test
-    public void shouldCreateIncidentWhenTaskHasNoRetriesLeft()
+    public void shouldCreateAndResolveTaskIncident()
     {
         // given a workflow instance with an open task
         clientRule.workflowTopic().deploy()
@@ -160,8 +160,7 @@ public class IncidentTest
             .open();
 
         // then an incident is created
-        waitUntil(() -> incidentEventRecorder.getIncidentKey() > 0);
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("CREATED"));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
 
         // when the task retries are increased
         taskHandler.failTask = false;
@@ -175,55 +174,33 @@ public class IncidentTest
             .execute();
 
         // then the incident is deleted
-        waitUntil(() -> incidentEventRecorder.getEventTypes().contains("DELETED"));
+        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("DELETED")));
     }
 
-    private static final class IncidentEventRecoder implements TopicEventHandler
+    private static final class IncidentEventRecoder implements IncidentEventHandler
     {
-        private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("\"eventType\":\"(\\w+)\"");
-        private static final Pattern ACTIVITY_INSTANCE_KEY_PATTERN = Pattern.compile("\"activityInstanceKey\":(\\d+)");
-
-        private long incidentKey = -1;
-        private long activityInstanceKey = -1;
-        private List<String> eventTypes = Collections.synchronizedList(new ArrayList<>());
+        private final List<IncidentEvent> events = new CopyOnWriteArrayList<>();
 
         @Override
-        public void handle(EventMetadata metadata, TopicEvent event) throws Exception
+        public void handle(EventMetadata metadata, IncidentEvent event) throws Exception
         {
-            if (metadata.getEventType() == TopicEventType.INCIDENT)
-            {
-                incidentKey = metadata.getEventKey();
-
-                final Matcher typeMatcher = EVENT_TYPE_PATTERN.matcher(event.getJson());
-                if (typeMatcher.find())
-                {
-                    final String eventType = typeMatcher.group(1);
-                    eventTypes.add(eventType);
-                }
-
-                final Matcher activityMatcher = ACTIVITY_INSTANCE_KEY_PATTERN.matcher(event.getJson());
-                if (activityMatcher.find())
-                {
-                    final String key = activityMatcher.group(1);
-                    activityInstanceKey = Long.valueOf(key);
-                }
-            }
+            events.add(event);
         }
 
-        public long getIncidentKey()
+        public IncidentEvent getSingleIncidentEvent(Predicate<IncidentEvent> filter)
         {
-            return incidentKey;
+            return events.stream().filter(filter).findFirst().orElseThrow(() -> new AssertionError("no event found"));
         }
 
-        public List<String> getEventTypes()
+        public boolean hasIncident(Predicate<IncidentEvent> filter)
         {
-            return Collections.unmodifiableList(eventTypes);
+            return events.stream().anyMatch(filter);
         }
+    }
 
-        public long getActivityInstanceKey()
-        {
-            return activityInstanceKey;
-        }
+    private static Predicate<IncidentEvent> eventType(String type)
+    {
+        return incident -> incident.getEventType().equals(type);
     }
 
     private static final class ControllableTaskHandler implements TaskHandler
