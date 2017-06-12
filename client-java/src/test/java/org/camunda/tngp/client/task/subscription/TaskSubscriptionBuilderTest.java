@@ -185,6 +185,27 @@ public class TaskSubscriptionBuilderTest
     }
 
     @Test
+    public void shouldValidateLockOwner()
+    {
+        // given
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
+
+        builder
+            .lockTime(123L)
+            .lockOwner("")
+            .taskType("foo")
+            .handler((t) ->
+            { });
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("lockOwner must not be empty");
+
+        // when
+        builder.open();
+    }
+
+    @Test
     public void shouldSetLockTimeWithTimeUnit()
     {
         // given

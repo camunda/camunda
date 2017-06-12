@@ -96,6 +96,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
+        taskIndex.reset();
+
         eventPosition = event.getPosition();
         eventKey = event.getKey();
         sourceEventPosition = event.getSourceEventPosition();

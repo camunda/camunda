@@ -72,7 +72,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
         ensureNotNullOrEmpty("topic name", topicName);
         ensureGreaterThanOrEqual("partition id", partitionId, 0);
         ensureNotNull("task type", taskType);
-        ensureNotNull("lock owner", lockOwner);
+        ensureNotNullOrEmpty("lock owner", lockOwner);
         ensureGreaterThan("lock duration", lockDuration, 0);
         ensureGreaterThan("initial credits", initialCredits, 0);
     }

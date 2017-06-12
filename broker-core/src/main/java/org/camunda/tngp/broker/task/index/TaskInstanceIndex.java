@@ -139,7 +139,7 @@ public class TaskInstanceIndex
     {
         if (!isRead)
         {
-            throw new IllegalStateException("must call wrap() before");
+            throw new IllegalStateException("must call wrapTaskInstanceKey() before");
         }
     }
 

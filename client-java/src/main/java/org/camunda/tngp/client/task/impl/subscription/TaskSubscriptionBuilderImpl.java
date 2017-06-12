@@ -81,7 +81,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public TaskSubscriptionImpl open()
     {
         EnsureUtil.ensureNotNull("taskHandler", taskHandler);
-        EnsureUtil.ensureNotNull("lockOwner", lockOwner);
+        EnsureUtil.ensureNotNullOrEmpty("lockOwner", lockOwner);
         EnsureUtil.ensureNotNullOrEmpty("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
