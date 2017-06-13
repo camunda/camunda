@@ -86,4 +86,10 @@ public class Gossip implements Agent
     {
         return gossipController.onProbeRequest(buffer, offset, length, channelId, connectionId, requestId);
     }
+
+    public static String fileName(String directory)
+    {
+        return directory + GOSSIP_FILE_NAME;
+    }
+
 }

@@ -1,17 +1,16 @@
 package org.camunda.tngp.broker.clustering.gossip.config;
 
-import org.camunda.tngp.broker.system.ComponentConfiguration;
-import org.camunda.tngp.broker.system.GlobalConfiguration;
-import org.camunda.tngp.util.FileUtil;
+import org.camunda.tngp.broker.system.DirectoryConfiguration;
 
-public class GossipConfiguration extends ComponentConfiguration
+public class GossipConfiguration extends DirectoryConfiguration
 {
+    private static final String GOSSIP_FILE_NAME_PATTERN = "%sgossip.tngp";
+
     public String[] initialContactPoints = new String[0];
 
     public int peerCapacity = 1000;
 
     public int peersStorageInterval = 1;
-    public String directory = "/tmp/gossip/";
 
     public int disseminatorCapacity = 16;
     public int disseminationInterval = 1;
@@ -29,16 +28,14 @@ public class GossipConfiguration extends ComponentConfiguration
     public int numClientChannelMax = disseminatorCapacity + (failureDetectionCapacity * failureDetectionProbeCapacity) + 1;
 
     @Override
-    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
+    protected String componentDirectoryName()
     {
-        this.directory = (String) new Rules("first")
-             .setGlobalObj(global.directory)
-             .setLocalObj(directory, "directory")
-             .setRule((r) ->
-             { return r + "gossip/"; }).execute();
+        return "gossip";
+    }
 
-        this.directory = FileUtil.getCanonicalDirectoryPath(this.directory);
-        System.out.println(directory);
+    public String fileName()
+    {
+        return String.format(GOSSIP_FILE_NAME_PATTERN, directory);
     }
 
 }

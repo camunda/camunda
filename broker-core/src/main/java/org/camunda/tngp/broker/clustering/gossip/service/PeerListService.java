@@ -6,8 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.clustering.gossip.Gossip;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
@@ -39,7 +39,7 @@ public class PeerListService implements Service<PeerList>
         {
             peers = new PeerList(config.peerCapacity);
 
-            addStoredPeers(peers, config.directory + Gossip.GOSSIP_FILE_NAME);
+            addStoredPeers(peers, config.fileName());
 
             addContacts(peers, config.initialContactPoints);
             addLocalPeer(peers, localPeer);

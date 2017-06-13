@@ -1,25 +1,12 @@
 package org.camunda.tngp.broker.logstreams.cfg;
 
-import org.camunda.tngp.broker.system.ComponentConfiguration;
-import org.camunda.tngp.broker.system.GlobalConfiguration;
+import org.camunda.tngp.broker.system.DirectoryConfiguration;
 
-public class StreamProcessorCfg extends ComponentConfiguration
+public class StreamProcessorCfg extends DirectoryConfiguration
 {
-
-
-    public String directory = "/tmp/index/";
-
     @Override
-    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
+    protected String componentDirectoryName()
     {
-
-
-        this.directory = (String) new Rules("first")
-             .setGlobalObj(global.directory)
-             .setLocalObj(directory, "directory")
-             .setRule((r) ->
-             { return r + "index/"; }).execute();
-
+        return "index";
     }
-
 }

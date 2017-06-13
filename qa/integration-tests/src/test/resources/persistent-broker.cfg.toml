@@ -3,7 +3,7 @@
 # Global configuration --------------------------------
 
 [global]
-
+directory = "${brokerFolder}/persistent-broker/"
 
 # Networking configuration ----------------------------
 
@@ -26,9 +26,6 @@ host = "localhost"
 port = 51017
 receiveBufferSize = 16
 
-[network.gossip]
-useTempFile = true
-
 # System Configuration --------------------------------
 
 [threading]
@@ -36,20 +33,7 @@ numberOfThreads = 2
 maxIdleTimeMs = 200
 idleStrategy = "BACKOFF"
 
-[metrics]
-directory = "${brokerFolder}/persistent-broker/metrics/"
-
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-directories = [ "${brokerFolder}/persistent-broker/logs/" ]
-directory = "${brokerFolder}/persistent-broker/index/"
-
-[snapshot]
-directory = "${brokerFolder}/persistent-broker/snapshots/"
-
-# Topic Subscriptions ------------------------------------------
-
-[subscriptions]
-directory = "${brokerFolder}/persistent-broker/subscription-snapshots/"

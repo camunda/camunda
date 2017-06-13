@@ -1,41 +1,35 @@
 package org.camunda.tngp.broker.logstreams.cfg;
 
-import org.camunda.tngp.broker.system.ComponentConfiguration;
+import org.camunda.tngp.broker.system.DirectoryConfiguration;
 import org.camunda.tngp.broker.system.GlobalConfiguration;
 import org.camunda.tngp.util.FileUtil;
 
-public class LogStreamsCfg extends ComponentConfiguration
+public class LogStreamsCfg extends DirectoryConfiguration
 {
-
     public int defaultLogSegmentSize = 512;
 
     public String[] directories = null;
 
-
     @Override
-    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfig)
     {
-
-
-
-
-        this.directories = (String[]) new Rules("first")
-                .setGlobalObj(global.directory)
-                .setLocalObj(directories, "directories")
-                .setRule((r) ->
-                {
-                    final String[] ret = new String[1];
-                    ret[0] = r + "logs/";
-                    return ret;
-                }).execute();
-
-        for (String each : this.directories)
+        if (directories == null || directories.length == 0)
         {
-            each = FileUtil.getCanonicalDirectoryPath(each);
+            super.applyGlobalConfiguration(globalConfig);
+            directories = new String[] { directory };
+            return;
         }
 
+        for (int i = 0; i < directories.length; i++)
+        {
+            directories[i] = FileUtil.getCanonicalPath(directories[i]);
+        }
+    }
 
-
+    @Override
+    protected String componentDirectoryName()
+    {
+        return "logs";
     }
 
 }

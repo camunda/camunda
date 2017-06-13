@@ -12,17 +12,11 @@
  */
 package org.camunda.tngp.broker.workflow;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
-import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
-import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.*;
 
-import java.io.File;
 import java.nio.channels.FileChannel;
 
 import org.agrona.concurrent.Agent;
@@ -40,7 +34,12 @@ import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.servicecontainer.*;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
+import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.FileUtil;
@@ -191,7 +190,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final String indexDirectory = streamProcessorCfg.directory;
         if (indexDirectory != null && !indexDirectory.isEmpty())
         {
-            final String indexFile = indexDirectory + File.separator + indexName + ".idx";
+            final String indexFile = indexDirectory + indexName + ".idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             indexStore = new FileChannelIndexStore(indexFileChannel);
         }

@@ -1,69 +1,44 @@
-
 package org.camunda.tngp.broker.system;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import org.camunda.tngp.util.FileUtil;
+import static org.camunda.tngp.util.FileUtil.*;
 
-public class GlobalConfiguration extends ComponentConfiguration
+import java.io.File;
+
+public class GlobalConfiguration extends DirectoryConfiguration
 {
-    public static final String DEFAULT_DATA_PATH = "./tngp-data";
-    public String directory = null;
-    public Boolean useTempDirectory = null;
-    private Boolean useCurrentPath = false;
+    public static final String GLOBAL_DIRECTORY_DEFAULT = "./data";
+    public static final String GLOBAL_DIRECTORY_TEMP = "tngp-data-";
+
+    public boolean useTempDirectory;
 
     public void init()
     {
-        if (useTempDirectory != null && this.directory != null)
+        if (directory == null || directory.isEmpty())
         {
-            throw new RuntimeException("'directory' and 'useTempDirectory' cannot exist at the same time, please delete one");
-        }
-
-        if (useTempDirectory == null && this.directory == null)
-        {
-            System.out.println("No specific temporary nor data path, will use '" + DEFAULT_DATA_PATH + "' to store data.");
-            useCurrentPath = true;
-            this.directory = DEFAULT_DATA_PATH;
-        }
-
-        if (this.useTempDirectory != null && this.useTempDirectory)
-        {
-            try
+            if (!useTempDirectory)
             {
-                this.directory = Files.createTempDirectory("tngp-temp-").toString();
+                directory = GLOBAL_DIRECTORY_DEFAULT;
             }
-            catch (IOException e)
+            else
             {
-                e.printStackTrace();
+                final File tmp = createTempDirectory(GLOBAL_DIRECTORY_TEMP);
+                directory = tmp.toString();
+
             }
-            System.out.println("Using Temp Dir: " + this.directory);
         }
-
-
-        this.directory = FileUtil.getCanonicalDirectoryPath(this.directory);
-    }
-
-    public String getGlobalDataDirectory()
-    {
-        return this.directory;
-    }
-
-    public Boolean getGlobalUseTemp()
-    {
-        return this.useTempDirectory;
-    }
-
-    public void cleanTempFolder()
-    {
-        if (this.useTempDirectory != null && this.useTempDirectory && new File(this.directory).exists())
+        else if (useTempDirectory)
         {
-            FileUtil.deleteFolder(this.directory);
+            throw new RuntimeException("Can't use attribute 'directory' and element 'useTempDirectory' together as global configuration, only use one.");
         }
-        if (useCurrentPath && new File(this.directory).exists())
-        {
-            FileUtil.deleteFolder(this.directory);
-        }
+
+        directory = getCanonicalPath(directory);
+
+        System.out.println(String.format("Using directory: %s", directory));
+    }
+
+    public boolean isTempDirectory()
+    {
+        return useTempDirectory;
     }
 
 }

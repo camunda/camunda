@@ -1,0 +1,31 @@
+# Default TNGP Config File. Used if no config file is provided to the broker.
+
+# Global configuration --------------------------------
+
+[global]
+directory = "/tmp/tngp-testing/global-data-path"
+
+[network.gossip]
+directory = "/tmp/my-local-path/my-gossip"
+
+[network.management]
+directory = "/tmp/my-local-path/my-meta"
+
+[metrics]
+directory = "/tmp/my-local-path/my-metrics"
+
+[snapshot]
+directory = "/tmp/my-local-path/my-snapshot"
+
+[index]
+directory = "/tmp/my-local-path/my-index"
+
+[subscriptions]
+directory = "/tmp/my-local-path/my-subscription"
+
+[logs]
+directories = [
+    "/tmp/my-local-path/my-log-1",
+    "/tmp/my-local-path/my-log-2",
+    "/tmp/my-local-path/my-log-3"
+]

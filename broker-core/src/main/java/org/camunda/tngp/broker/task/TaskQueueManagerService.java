@@ -12,16 +12,11 @@
  */
 package org.camunda.tngp.broker.task;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.task.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static org.camunda.tngp.broker.task.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
-import static org.camunda.tngp.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.task.TaskQueueServiceNames.*;
 
-import java.io.File;
 import java.nio.channels.FileChannel;
 import java.time.Duration;
 
@@ -92,7 +87,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final String indexDirectory = streamProcessorCfg.directory;
         if (indexDirectory != null && !indexDirectory.isEmpty())
         {
-            final String indexFile = indexDirectory + File.separator + "default.idx";
+            final String indexFile = indexDirectory + "default.idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             indexStore = new FileChannelIndexStore(indexFileChannel);
         }

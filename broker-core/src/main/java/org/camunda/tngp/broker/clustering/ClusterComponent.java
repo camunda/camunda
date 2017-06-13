@@ -1,22 +1,9 @@
 package org.camunda.tngp.broker.clustering;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_CONTEXT_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_CONTEXT_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_PEER_SELECTOR_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LIST_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.MANAGEMENT_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManagerService;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
@@ -125,7 +112,7 @@ public class ClusterComponent implements Component
             .dependency(subscriptionServiceName, gossipContextService.getSubscriptionInjector())
             .install();
 
-        final GossipService gossipService = new GossipService(systemContext);
+        final GossipService gossipService = new GossipService();
         serviceContainer.createService(GOSSIP_SERVICE, gossipService)
             .dependency(AGENT_RUNNER_SERVICE, gossipService.getAgentRunnerInjector())
             .dependency(GOSSIP_CONTEXT_SERVICE, gossipService.getGossipContextInjector())

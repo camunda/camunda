@@ -5,12 +5,14 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.camunda.tngp.util.ReflectUtil;
+
 import com.moandjiezana.toml.Toml;
 
 public class ConfigurationManagerImpl implements ConfigurationManager
 {
     protected Toml toml;
-    public GlobalConfiguration globalConfiguration;
+    protected GlobalConfiguration globalConfiguration;
 
     public ConfigurationManagerImpl(final String filePath)
     {
@@ -53,43 +55,16 @@ public class ConfigurationManagerImpl implements ConfigurationManager
 
     private void initGlobalConfiguration()
     {
-
-        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
-        if (this.globalConfiguration == null)
-        {
-            this.globalConfiguration = new GlobalConfiguration();
-        }
-        this.globalConfiguration.init();
+        globalConfiguration = createConfiguration("global", GlobalConfiguration.class);
+        globalConfiguration.init();
     }
 
     @Override
-    public <T> T readEntry(final String key, final Class<T> configObjectType)
+    public <T> T readEntry(final String key, final Class<T> configurationType)
     {
-        final Toml componentConfig = toml.getTable(key);
-        final T configObject;
-
-        if (componentConfig != null)
-        {
-            configObject = componentConfig.to(configObjectType);
-        }
-        else
-        {
-            try
-            {
-                configObject = configObjectType.newInstance();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Configuration class should have public default ctor!", e);
-            }
-        }
-
-        if (configObject instanceof ComponentConfiguration)
-        {
-            ((ComponentConfiguration) configObject).applyGlobalConfiguration(componentConfig, this.globalConfiguration);
-        }
-
-        return configObject;
+        final T configuration = createConfiguration(key, configurationType);
+        applyGlobalConfiguration(configuration);
+        return configuration;
     }
 
     @Override
@@ -102,17 +77,42 @@ public class ConfigurationManagerImpl implements ConfigurationManager
             for (final Toml toml : tables)
             {
                 final T configObject = toml.to(type);
-                ((ComponentConfiguration) configObject).applyGlobalConfiguration(toml, this.globalConfiguration);
-                result.add(configObject);
+
+                applyGlobalConfiguration(configObject);
             }
         }
         return result;
     }
 
+    private <T> T createConfiguration(final String key, final Class<T> configurationType)
+    {
+        final Toml componentConfig = toml.getTable(key);
+        final T configObject;
+
+        if (componentConfig != null)
+        {
+            configObject = componentConfig.to(configurationType);
+        }
+        else
+        {
+            configObject = ReflectUtil.newInstance(configurationType);
+        }
+
+        return configObject;
+    }
+
+    private <T> void applyGlobalConfiguration(T configuration)
+    {
+        if (configuration instanceof ComponentConfiguration)
+        {
+            final ComponentConfiguration componentConfig = (ComponentConfiguration) configuration;
+            componentConfig.applyGlobalConfiguration(globalConfiguration);
+        }
+    }
+
     public GlobalConfiguration getGlobalConfiguration()
     {
-        //for writing test case
-        return this.globalConfiguration;
+        return globalConfiguration;
     }
 
 }

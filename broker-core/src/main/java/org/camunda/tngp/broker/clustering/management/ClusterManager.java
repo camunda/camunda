@@ -1,17 +1,8 @@
 package org.camunda.tngp.broker.clustering.management;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftContextServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,22 +84,7 @@ public class ClusterManager implements Agent
 
     public void open()
     {
-        String metaDirectory = config.directory;
-
-        if (metaDirectory == null || metaDirectory.isEmpty())
-        {
-            try
-            {
-                final File tempDir = Files.createTempDirectory("tngp-meta-").toFile();
-                metaDirectory = tempDir.getAbsolutePath();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException("Could not create temp directory for meta data", e);
-            }
-        }
-
-        config.directory = metaDirectory;
+        final String metaDirectory = config.directory;
 
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
 
@@ -262,7 +238,7 @@ public class ClusterManager implements Agent
         final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
         final String path = logStorage.getConfig().getPath();
 
-        final MetaStore meta = new MetaStore(this.config.directory + File.separator + String.format("%s.meta", logStream.getLogName()));
+        final MetaStore meta = new MetaStore(String.format("%s%s.meta", config.directory, logStream.getLogName()));
         meta.storeTopicNameAndPartitionIdAndDirectory(logStream.getTopicName(), logStream.getPartitionId(), path);
 
         createRaft(logStream, meta, members, bootstrap);

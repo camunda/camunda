@@ -5,7 +5,6 @@ import java.io.File;
 import org.camunda.tngp.broker.clustering.gossip.Gossip;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
-import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -19,13 +18,7 @@ public class GossipService implements Service<Gossip>
     private final Injector<GossipContext> gossipContextInjector = new Injector<>();
 
     private Gossip gossip;
-    private SystemContext systemContext;
     private GossipContext gossipContext;
-
-    public GossipService(SystemContext context)
-    {
-        this.systemContext = context;
-    }
 
     @Override
     public void start(ServiceStartContext startContext)
@@ -36,19 +29,7 @@ public class GossipService implements Service<Gossip>
         {
             //create a gossip folder
             final GossipConfiguration configuration = gossipContext.getConfig();
-            final File f = new File(configuration.directory + Gossip.GOSSIP_FILE_NAME);
-            if (!f.exists())
-            {
-                try
-                {
-                    f.getParentFile().mkdirs();
-                    f.createNewFile();
-                }
-                catch (Exception e)
-                {
-                    LangUtil.rethrowUnchecked(e);
-                }
-            }
+            createFile(configuration.fileName());
 
             this.gossip = new Gossip(gossipContext);
             gossip.open();
@@ -79,4 +60,20 @@ public class GossipService implements Service<Gossip>
         return agentRunnerInjector;
     }
 
+    private void createFile(String file)
+    {
+        final File f = new File(file);
+        if (!f.exists())
+        {
+            try
+            {
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+            }
+            catch (Exception e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+        }
+    }
 }

@@ -23,7 +23,6 @@ public class CountersManagerService implements Service<Counters>
     public static final String COUNTERS_FILE_NAME = "metrics.tngp";
 
     protected final String countersFileName;
-    protected boolean deleteCountersFileOnExit;
     protected CountersManager countersManager;
     protected MappedByteBuffer mappedCountersFile;
     protected Counters counters;
@@ -31,10 +30,7 @@ public class CountersManagerService implements Service<Counters>
     public CountersManagerService(ConfigurationManager configurationManager)
     {
         final MetricsCfg metricsCfg = configurationManager.readEntry("metrics", MetricsCfg.class);
-
         countersFileName = metricsCfg.directory + COUNTERS_FILE_NAME;
-
-
     }
 
     @Override
@@ -72,11 +68,6 @@ public class CountersManagerService implements Service<Counters>
             });
 
             IoUtil.unmap(mappedCountersFile);
-
-            if (deleteCountersFileOnExit)
-            {
-                IoUtil.delete(new File(countersFileName), true);
-            }
         });
     }
 

@@ -1,10 +1,9 @@
 package org.camunda.tngp.broker.event.processor;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
-import java.io.File;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -135,7 +134,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     {
         if (config.directory != null && !config.directory.isEmpty())
         {
-            final String indexFile = config.directory + File.separator + "ack-index." + logName + ".idx";
+            final String indexFile = String.format("%sack-index.%s.idx", config.directory, logName);
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             return new FileChannelIndexStore(indexFileChannel);
         }

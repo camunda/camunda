@@ -1,21 +1,12 @@
 package org.camunda.tngp.broker.clustering.management.config;
 
-import org.camunda.tngp.broker.system.ComponentConfiguration;
-import org.camunda.tngp.broker.system.GlobalConfiguration;
+import org.camunda.tngp.broker.system.DirectoryConfiguration;
 
-public class ClusterManagementConfig extends ComponentConfiguration
+public class ClusterManagementConfig extends DirectoryConfiguration
 {
-    public String directory;
-
     @Override
-    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
+    protected String componentDirectoryName()
     {
-
-        this.directory = (String) new Rules("first")
-             .setGlobalObj(global.directory)
-             .setLocalObj(directory, "directory")
-             .setRule((r) ->
-             { return r + "meta/"; }).execute();
-
+        return "meta";
     }
 }

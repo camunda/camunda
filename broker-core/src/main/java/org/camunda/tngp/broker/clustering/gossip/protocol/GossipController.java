@@ -9,7 +9,6 @@ import java.security.MessageDigest;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.gossip.Gossip;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Heartbeat;
@@ -45,6 +44,8 @@ public class GossipController
 
     private Probe[] proberHandlers;
 
+    private final String gossipFileName;
+
     public GossipController(final GossipContext context)
     {
         this.localPeer = context.getLocalPeer();
@@ -56,6 +57,7 @@ public class GossipController
         this.gossipRequest = new GossipRequest();
         this.gossipResponse = new GossipResponse();
         this.responseWriter = new MessageWriter(context.getSendBuffer());
+        this.gossipFileName = config.fileName();
 
         this.tmp = new Peer();
         this.tmp.reset();
@@ -215,7 +217,7 @@ public class GossipController
         {
             workcount += 1;
 
-            final File file = new File(config.directory + Gossip.GOSSIP_FILE_NAME);
+            final File file = new File(gossipFileName);
             final MessageDigest messageDigest = StreamUtil.getSha1Digest();
 
             try (InputStream is = peers.toInputStream())

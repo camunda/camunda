@@ -1,5 +1,10 @@
 # Default TNGP Config File. Used if no config file is provided to the broker.
 
+# Global configuration --------------------------------
+
+[global]
+useTempDirectory = true
+
 # Networking configuration ----------------------------
 
 [network]
@@ -21,9 +26,6 @@ host = "localhost"
 port = 51017
 receiveBufferSize = 16
 
-[network.gossip]
-useTempFile = true
-
 # System Configuration --------------------------------
 
 [threading]
@@ -31,20 +33,7 @@ numberOfThreads = 2
 maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
-[metrics]
-useTempCountersFile = true
-
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-useTempLogDirectory = true
-useTempIndexFile = true
-
-[snapshot]
-useTempSnapshotDirectory = true
-
-# Topic Subscriptions ------------------------------------------
-
-[subscriptions]
-useTempSnapshotFile = true

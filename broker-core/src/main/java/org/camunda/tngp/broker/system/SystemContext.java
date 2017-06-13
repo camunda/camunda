@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException;
 import org.agrona.LangUtil;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
+import org.camunda.tngp.util.FileUtil;
 
 public class SystemContext implements AutoCloseable
 {
@@ -92,7 +93,6 @@ public class SystemContext implements AutoCloseable
         try
         {
             serviceContainer.close(10, TimeUnit.SECONDS);
-            this.configurationManager.getGlobalConfiguration().cleanTempFolder();
         }
         catch (TimeoutException e)
         {
@@ -102,6 +102,15 @@ public class SystemContext implements AutoCloseable
         {
             System.err.println("Exception while closing broker:");
             e.printStackTrace();
+        }
+        finally
+        {
+            final GlobalConfiguration config = configurationManager.getGlobalConfiguration();
+            final String directory = config.getDirectory();
+            if (config.isTempDirectory())
+            {
+                FileUtil.deleteFolder(directory);
+            }
         }
     }
 

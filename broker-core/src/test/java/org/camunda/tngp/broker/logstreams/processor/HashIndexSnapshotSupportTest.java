@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.broker.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,6 +34,12 @@ public class HashIndexSnapshotSupportTest
     public void init()
     {
         indexStore = FileChannelIndexStore.tempFileIndexStore();
+    }
+
+    @After
+    public void cleanup()
+    {
+        indexStore.close();
     }
 
     protected void initIndex(int indexSize, int blockLength)
