@@ -10,8 +10,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +26,6 @@ public class LicenseManager {
 
   private final String licenseDocumentId = "license";
   private LicenseKey licenseKey = new OptimizeLicenseKey();
-
-  private Logger logger = LoggerFactory.getLogger(LicenseManager.class);
 
   @Autowired
   public LicenseManager(ConfigurationService configurationService, TransportClient esclient) {
@@ -72,7 +68,7 @@ public class LicenseManager {
         licenseDocumentId)
       .get();
 
-    String licenseAsString = null;
+    String licenseAsString;
     if (response.isExists()) {
       licenseAsString = response.getSource().get(LICENSE).toString();
     } else {
