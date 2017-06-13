@@ -114,6 +114,14 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return camundaOptimize.target();
   }
 
+  public final WebTarget rootTarget(String path) {
+    return camundaOptimize.rootTarget(path);
+  }
+
+  public final WebTarget rootTarget() {
+    return camundaOptimize.rootTarget();
+  }
+
   public String getProcessDefinitionEndpoint() {
     return getConfigurationService().getProcessDefinitionEndpoint();
   }

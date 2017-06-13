@@ -70,6 +70,8 @@ public class ConfigurationService {
   private String importIndexType;
   @Value("${camunda.optimize.es.procdef.import.index.type}")
   private String processDefinitionImportIndexType;
+  @Value("${camunda.optimize.es.license.type}")
+  private String licenseType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
@@ -568,5 +570,13 @@ public class ConfigurationService {
 
   public String getProcessDefinitionXmlEndpoint() {
     return processDefinitionXmlEndpoint;
+  }
+
+  public String getLicenseType() {
+    return licenseType;
+  }
+
+  public void setLicenseType(String licenseType) {
+    this.licenseType = licenseType;
   }
 }

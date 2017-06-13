@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,7 @@ public class StatusRestService {
       progressDto.setProgress(importProgressReporter.computeImportProgress());
       return Response.ok(objectMapper.writeValueAsString(progressDto), MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
-      return buildServerErrorResponse(e);
+      return buildServerErrorResponse("It was not possible to compute the import progress!");
     }
   }
 

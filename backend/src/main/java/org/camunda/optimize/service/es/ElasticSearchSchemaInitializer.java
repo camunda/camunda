@@ -5,6 +5,7 @@ import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueTyp
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.DefinitionImportIndexType;
+import org.camunda.optimize.service.es.schema.type.LicenseType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -38,6 +39,9 @@ public class ElasticSearchSchemaInitializer {
   private UsersType usersType;
 
   @Autowired
+  private LicenseType licenseType;
+
+  @Autowired
   private ProcessInstanceType processInstanceType;
 
   @Autowired
@@ -65,6 +69,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(targetValueType);
     schemaManager.addMapping(processInstanceType);
     schemaManager.addMapping(definitionImportIndexType);
+    schemaManager.addMapping(licenseType);
   }
 
 }

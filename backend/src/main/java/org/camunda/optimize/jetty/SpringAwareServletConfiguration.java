@@ -77,6 +77,10 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       holderPwd.setInitParameter("dirAllowed","true");
       context.addServlet(holderPwd,"/");
 
+      FilterHolder filterHolder = new FilterHolder();
+      filterHolder.setFilter(new LicenseFilter(this));
+      context.addFilter(filterHolder, "/*",
+        EnumSet.of(DispatcherType.REQUEST));
 
       NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
       context.setErrorHandler(errorMapper);

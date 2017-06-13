@@ -178,12 +178,24 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getClient().target(getEmbeddedOptimizeEndpoint());
   }
 
+  public WebTarget rootTarget() {
+    return getClient().target(getEmbeddedOptimizeRootEndpoint());
+  }
+
+  public final WebTarget rootTarget(String path) {
+    return this.rootTarget().path(path);
+  }
+
   public final WebTarget target(String path) {
     return this.target().path(path);
   }
 
   private String getEmbeddedOptimizeEndpoint() {
     return properties.getProperty("camunda.optimize.test.embedded-optimize");
+  }
+
+  private String getEmbeddedOptimizeRootEndpoint() {
+    return properties.getProperty("camunda.optimize.test.embedded-optimize.root");
   }
 
   private Client getClient() {

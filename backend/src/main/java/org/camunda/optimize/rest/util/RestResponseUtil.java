@@ -9,9 +9,12 @@ public class RestResponseUtil {
   }
 
   public static Response buildServerErrorResponse(Exception e) {
+    return buildServerErrorResponse(e.getMessage());
+  }
+
+  public static Response buildServerErrorResponse(String message) {
     return Response
         .serverError()
-        .entity("{ \"errorMessage\" : \"It was not possible to compute the import progress. Reason: " +
-          e.getMessage() + "\"}").build();
+        .entity("{ \"errorMessage\" : \"" + message + "\"}").build();
   }
 }
