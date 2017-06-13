@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.task.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -45,6 +45,8 @@ public class LockTaskStreamProcessorTest
     private static final byte[] ANOTHER_TASK_TYPE = getBytes("another-task");
     private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(ANOTHER_TASK_TYPE);
 
+    private static final int TERM = 3;
+
     private TaskSubscription subscription;
     private TaskSubscription anotherSubscription;
 
@@ -66,6 +68,8 @@ public class LockTaskStreamProcessorTest
     public void setup() throws InterruptedException, ExecutionException
     {
         MockitoAnnotations.initMocks(this);
+
+        when(mockLogStream.getTerm()).thenReturn(TERM);
 
         // fix the current time to calculate lock time
         ClockUtil.setCurrentTime(Instant.now());
@@ -125,6 +129,7 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -149,6 +154,7 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -174,6 +180,7 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -200,6 +207,7 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test

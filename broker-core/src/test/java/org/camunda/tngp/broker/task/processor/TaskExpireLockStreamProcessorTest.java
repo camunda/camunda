@@ -12,13 +12,12 @@
  */
 package org.camunda.tngp.broker.task.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.test.util.BufferAssert.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -51,6 +50,7 @@ public class TaskExpireLockStreamProcessorTest
     private static final DirectBuffer TARGET_LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
     private static final int TARGET_LOG_STREAM_PARTITION_ID = 3;
     private static final long INITIAL_POSITION = 10L;
+    private static final int TARGET_LOG_STREAM_TERM = 3;
 
     private static final byte[] TASK_TYPE = getBytes("test-task");
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
@@ -90,6 +90,7 @@ public class TaskExpireLockStreamProcessorTest
 
         when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
         when(mockTargetLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
+        when(mockTargetLogStream.getTerm()).thenReturn(TARGET_LOG_STREAM_TERM);
 
         streamProcessor = new TaskExpireLockStreamProcessor();
 
@@ -139,6 +140,7 @@ public class TaskExpireLockStreamProcessorTest
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+        assertThat(metadata.getRaftTermId()).isEqualTo(TARGET_LOG_STREAM_TERM);
 
         verify(mockLogStreamWriter).key(2L);
         verify(mockLogStreamWriter).producerId(STREAM_PROCESSOR_ID);
