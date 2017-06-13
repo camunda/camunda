@@ -12,13 +12,11 @@
  */
 package org.camunda.tngp.client.impl.cmd;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
-import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.commandHeaderLength;
-import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.topicNameHeaderLength;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.VarDataUtil.readBytes;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.*;
+import static org.camunda.tngp.util.EnsureUtil.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.VarDataUtil.*;
 
 import java.io.IOException;
 
@@ -31,8 +29,6 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
-import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>, TopicCommand
@@ -95,9 +91,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     {
         ensureCommandInitialized();
 
-        return TransportHeaderDescriptor.headerLength() +
-                RequestResponseProtocolHeaderDescriptor.headerLength() +
-                headerEncoder.encodedLength() +
+        return headerEncoder.encodedLength() +
                 commandRequestEncoder.sbeBlockLength() +
                 topicNameHeaderLength() +
                 getBytes(topicName).length +
