@@ -3,12 +3,9 @@ export {
   createLoadingDiagramErrorAction, createLoadingHeatmapAction,
   createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,
   createLoadingTargetValueAction, createLoadingTargetValueResultAction,
-  createLoadingTargetValueErrorAction,
+  createLoadingTargetValueErrorAction
 } from './reducer';
-export {createHeatmapRendererFunction} from './heatmap';
-export {
-  createAnalyticsComponents, leaveGatewayAnalysisMode,
-  Statistics, resetStatisticData, getSelection
-} from './analytics';
-export {getInstanceCount} from './selectors';
-export {TargetValueDisplay} from './targetValueDisplay';
+export {resetStatisticData} from './analytics';
+export {ViewsDiagramArea} from './ViewsDiagramArea';
+export {ViewsArea} from './ViewsArea';
+export {definitions} from './viewDefinitions';

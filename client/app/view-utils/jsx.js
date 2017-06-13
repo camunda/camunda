@@ -1,12 +1,15 @@
 import {createEventsBus} from './events';
 import {$document} from './dom';
+import {flatten} from './flatten';
 
 export function jsx(element, attributes, ...children) {
+  const flatChildren = flatten(children);
+
   if (typeof element === 'function') {
-    return handleComponent(element, attributes, children);
+    return handleComponent(element, attributes, flatChildren);
   }
 
-  return handleHtml(element, attributes, children);
+  return handleHtml(element, attributes, flatChildren);
 }
 
 function handleComponent(component, attributes, children) {

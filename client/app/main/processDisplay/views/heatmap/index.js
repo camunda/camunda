@@ -1,1 +1,1 @@
-export {createHeatmapRendererFunction} from './Heatmap';
+export {frequencyDefinition, durationDefinition} from './definition';

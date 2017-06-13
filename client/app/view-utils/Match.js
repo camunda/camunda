@@ -7,7 +7,9 @@ import {createProxyNode} from './createProxyNode';
 const truePredicate = () => true;
 
 export function Match({didStateChange, children}) {
-  assertAllChildrenAreCase(children);
+  if (!assertAllChildrenAreCase(children)) {
+    throw new Error('Expected all Match component children to be templates with predicate function');
+  }
 
   return (parentNode, eventsBus) => {
     let lastChild;

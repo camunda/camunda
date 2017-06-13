@@ -3,11 +3,16 @@ import {FilterBar} from './FilterBar';
 import {CreateFilter} from './CreateFilter';
 import {getFilter} from './service';
 import {onHistoryStateChange} from './store';
+import {ControlsElement} from '../ControlsElement';
 
 export const Filter = ({onFilterChanged, getProcessDefinition}) => {
   const template = <Scope selector={createFilterState}>
-    <FilterBar onFilterDeleted={onFilterChanged}  />
-    <CreateFilter onFilterAdded={onFilterChanged} getProcessDefinition={getProcessDefinition}  />
+    <ControlsElement name="Filter">
+      <div className="filter">
+        <FilterBar onFilterDeleted={onFilterChanged}  />
+        <CreateFilter onFilterAdded={onFilterChanged} getProcessDefinition={getProcessDefinition}  />
+      </div>
+    </ControlsElement>
   </Scope>;
 
   return (node, eventsBus) => {

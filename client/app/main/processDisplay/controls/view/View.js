@@ -4,34 +4,33 @@ import {Link} from 'router';
 import {getDefinitionId} from 'main/processDisplay/service';
 import {getView} from './service';
 import {getLastRoute} from 'router';
+import {ControlsElement} from '../ControlsElement';
+import {definitions} from 'main/processDisplay/views';
 
 export function View({onViewChanged}) {
-  return <td>
+  return <ControlsElement name="View">
     <div className="form-group">
       <Select onValueSelected={handleChange} getSelectValue={getView}>
         <Option value="none" isDefault>
           <Link selector={createRouteSelectorForView('none')} />
           None
         </Option>
-        <Option value="frequency">
-          <Link selector={createRouteSelectorForView('frequency')} />
-          Frequency
-        </Option>
-        <Option value="duration">
-          <Link selector={createRouteSelectorForView('duration')} />
-          Duration
-        </Option>
-        <Option value="branch_analysis">
-          <Link selector={createRouteSelectorForView('branch_analysis')} />
-          Branch Analysis
-        </Option>
-        <Option value="target_value">
-          <Link selector={createRouteSelectorForView('target_value')} />
-          Target Value Comparison
-        </Option>
+        {
+          Object
+            .keys(definitions)
+            .sort() // alphabetic order should be bit more intuitive
+            .map((view, index) => {
+              const {name} = definitions[view];
+
+              return <Option value={view}>
+                <Link selector={createRouteSelectorForView(view)} />
+                {name}
+              </Option>;
+            })
+        }
       </Select>
     </div>
-  </td>;
+  </ControlsElement>;
 
   function handleChange({value}) {
     onViewChanged(value);

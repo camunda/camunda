@@ -1,14 +1,23 @@
 import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
-import {ProcessInstanceCount} from 'main/processDisplay/ProcessInstanceCount';
+import sinon from 'sinon';
+import {ProcessInstanceCount, __set__, __ResetDependency__} from 'main/processDisplay/views/ProcessInstanceCount';
 
 describe('<ProcessInstanceCount>', () => {
+  let getInstanceCount;
   let node;
   let update;
 
   beforeEach(() => {
+    getInstanceCount = sinon.stub().returnsArg(0);
+    __set__('getInstanceCount', getInstanceCount);
+
     ({node, update} = mountTemplate(<ProcessInstanceCount />));
+  });
+
+  afterEach(() => {
+    __ResetDependency__('getInstanceCount');
   });
 
   it('should display the instance count', () => {

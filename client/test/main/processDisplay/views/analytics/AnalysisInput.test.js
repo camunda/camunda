@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
+import {mountTemplate, triggerEvent, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {AnalysisInput, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/AnalysisInput';
@@ -11,6 +11,7 @@ describe('<AnalysisInput>', () => {
   let unsetElement;
   let addHighlight;
   let removeHighlights;
+  let ControlsElement;
 
   const type = 'INPUT_TYPE';
   const label = 'INPUT_LABEL';
@@ -26,6 +27,9 @@ describe('<AnalysisInput>', () => {
     removeHighlights = sinon.spy();
     __set__('removeHighlights', removeHighlights);
 
+    ControlsElement = createMockComponent('ControlsElement', true);
+    __set__('ControlsElement', ControlsElement);
+
     state = {
       type,
       name,
@@ -39,6 +43,7 @@ describe('<AnalysisInput>', () => {
     __ResetDependency__('unsetElement');
     __ResetDependency__('addHighlight');
     __ResetDependency__('removeHighlights');
+    __ResetDependency__('Controls');
   });
 
   it('should display a list item', () => {

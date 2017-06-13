@@ -57,6 +57,20 @@ pipeline {
         }
       }
     }
+    stage('JS-Unit') {
+      steps {
+        sh '''
+          cd ./client
+          yarn
+          yarn run test
+        '''
+      }
+      post {
+        always {
+          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+        }
+      }
+    }
     stage('IT') {
       steps {
         sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'

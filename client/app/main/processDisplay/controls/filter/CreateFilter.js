@@ -8,7 +8,7 @@ export function CreateFilter({onFilterAdded, getProcessDefinition}) {
     const DateModal = createDateModal(onFilterAdded);
     const VariableModal = createVariableModal(onFilterAdded, getProcessDefinition);
 
-    const template = <td>
+    const template = <div className="create-filter">
       <Dropdown>
         <Socket name="label">
           +
@@ -25,7 +25,7 @@ export function CreateFilter({onFilterAdded, getProcessDefinition}) {
 
       <DateModal />
       <VariableModal />
-    </td>;
+    </div>;
 
     return template(parentNode, eventsBus);
   };

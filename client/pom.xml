@@ -15,28 +15,6 @@
     <skip.fe.build>false</skip.fe.build>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.kelveden</groupId>
-        <artifactId>maven-karma-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>start</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <browsers>Chrome</browsers>
-          <karmaExecutable>${basedir}/node_modules/.bin/karma</karmaExecutable>
-          <configFile>${basedir}/karma.conf.js</configFile>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>skip.fe.build</id>
@@ -44,7 +22,7 @@
         <skip.fe.build>true</skip.fe.build>
       </properties>
     </profile>
-    
+
     <profile>
       <id>platform-linux</id>
       <activation>

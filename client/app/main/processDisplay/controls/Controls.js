@@ -1,30 +1,13 @@
-import {jsx, withSelector, withSockets, Children} from 'view-utils';
+import {jsx, withSelector, Children} from 'view-utils';
 import {runOnce} from 'utils';
 import {Filter, getFilter} from './filter';
 import {View, getView} from './view';
 
-export const Controls = withSockets(withSelector(({onCriteriaChanged, getBpmnViewer, getProcessDefinition, sockets: {head, body}}) => {
-  const template = <div className="controls row">
-    <div className="col-xs-12">
-      <form>
-        <table>
-          <thead>
-            <tr>
-              <td><label>View</label></td>
-              <td colspan="2"><label>Filter</label></td>
-              <Children children={head} />
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <View onViewChanged={onViewChanged}/>
-              <Filter onFilterChanged={onControlsChange} getProcessDefinition={getProcessDefinition} />
-              <Children children={body} />
-            </tr>
-          </tbody>
-        </table>
-      </form>
-    </div>
+export const Controls = withSelector(({onCriteriaChanged, getBpmnViewer, getProcessDefinition, children}) => {
+  const template = <div className="controls">
+    <View onViewChanged={onViewChanged}/>
+    <Filter onFilterChanged={onControlsChange} getProcessDefinition={getProcessDefinition} />
+    <Children children={children} />
   </div>;
 
   function onViewChanged(view) {
@@ -46,4 +29,4 @@ export const Controls = withSockets(withSelector(({onCriteriaChanged, getBpmnVie
 
     return [templateUpdate, runOnce(onControlsChange)];
   };
-}));
+});

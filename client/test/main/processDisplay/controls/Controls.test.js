@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {jsx, Socket} from 'view-utils';
+import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {Controls, __set__, __ResetDependency__} from 'main/processDisplay/controls/Controls';
 
@@ -34,12 +34,7 @@ describe('<Controls>', () => {
     getProcessDefinition = sinon.spy();
 
     ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} getProcessDefinition={getProcessDefinition}>
-      <Socket name="head">
-        additional head
-      </Socket>
-      <Socket name="body">
-        additional body
-      </Socket>
+      additional controls
     </Controls>));
   });
 
@@ -51,9 +46,8 @@ describe('<Controls>', () => {
     __ResetDependency__('getFilter');
   });
 
-  it('should display additional head and body', () => {
-    expect(node).to.contain.text('additional head');
-    expect(node).to.contain.text('additional body');
+  it('should display additional controls', () => {
+    expect(node).to.contain.text('additional controls');
   });
 
   it('should call the change callback initially', () => {

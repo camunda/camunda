@@ -1,4 +1,11 @@
 import {$document} from 'view-utils';
+import {isLoaded} from 'utils';
+
+export function hasNoHeatmapData({heatmap}) {
+  const {data} = heatmap;
+
+  return isLoaded(heatmap) && (!data || !data.piCount);
+}
 
 export function addDiagramTooltip(viewer, element, tooltipContent) {
   // create overlay node from html string

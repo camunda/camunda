@@ -5,24 +5,22 @@ import {VariableFilter} from './variable/VariableFilter';
 import {deleteFilter as deleteFilterService} from './service';
 
 export function FilterBar({onFilterDeleted}) {
-  return <td>
-    <ul className="list-group filter-list">
-      <Scope selector="filter">
-        <List>
-          <li className="list-group-item">
-            <Match>
-              <Case predicate={isType('startDate')}>
-                <DateFilter selector="data" onDelete={deleteFilter}/>
-              </Case>
-              <Case predicate={isType('variable')}>
-                <VariableFilter selector="data" onDelete={deleteFilter}/>
-              </Case>
-            </Match>
-          </li>
-        </List>
-      </Scope>
-    </ul>
-  </td>;
+  return <ul className="list-group filter-list">
+    <Scope selector="filter">
+      <List>
+        <li className="list-group-item">
+          <Match>
+            <Case predicate={isType('startDate')}>
+              <DateFilter selector="data" onDelete={deleteFilter}/>
+            </Case>
+            <Case predicate={isType('variable')}>
+              <VariableFilter selector="data" onDelete={deleteFilter}/>
+            </Case>
+          </Match>
+        </li>
+      </List>
+    </Scope>
+  </ul>;
 
   function deleteFilter({state}) {
     deleteFilterService(state);

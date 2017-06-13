@@ -1,11 +1,11 @@
-import {jsx, withSelector, Children} from 'view-utils';
+import {jsx, Children} from 'view-utils';
 import {AnalysisInput} from './AnalysisInput';
 
 export function createAnalysisSelection(getNameForElement) {
-  const AnalysisSelection = withSelector(() => {
+  const AnalysisSelection = () => {
     return <Children>
-      <AnalysisInput selector={formatSelection('EndEvent')} />
-      <AnalysisInput selector={formatSelection('Gateway')} />
+      <AnalysisInput name="End Event" selector={formatSelection('EndEvent')} />
+      <AnalysisInput name="Gateway" selector={formatSelection('Gateway')} />
     </Children>;
 
     function formatSelection(type) {
@@ -18,7 +18,7 @@ export function createAnalysisSelection(getNameForElement) {
         };
       };
     }
-  });
+  };
 
   return AnalysisSelection;
 }

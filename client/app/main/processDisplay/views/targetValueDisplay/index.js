@@ -1,2 +1,2 @@
 export {reducer} from './reducer';
-export {TargetValueDisplay} from './TargetValueDisplay';
+export {definition} from './definition';

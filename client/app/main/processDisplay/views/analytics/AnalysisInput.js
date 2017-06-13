@@ -1,8 +1,9 @@
 import {jsx, OnEvent, Match, Case, Default, Text, withSelector, Class} from 'view-utils';
 import {removeHighlights, addHighlight, unsetElement} from './service';
+import {ControlsElement} from 'main/processDisplay/controls';
 
-export const AnalysisInput = withSelector(() => {
-  return <td>
+export const AnalysisInput = withSelector(({name}) => {
+  return <ControlsElement name={name}>
     <ul className="list-group">
       <li className="list-group-item" style="padding: 6px; cursor: default;">
         <OnEvent event="mouseover" listener={hover} />
@@ -24,7 +25,7 @@ export const AnalysisInput = withSelector(() => {
         <Class className="btn-highlight" selector="hovered" />
       </li>
     </ul>
-  </td>;
+  </ControlsElement>;
 
   function isSelected({name}) {
     return name;
