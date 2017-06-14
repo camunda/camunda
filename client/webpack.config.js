@@ -8,6 +8,7 @@ module.exports = {
   target: 'web',
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
+    license: path.resolve(__dirname, 'app', 'license.js'),
   },
   output: {
     publicPath: '/',
@@ -99,7 +100,15 @@ module.exports = {
     new HtmlWebpackPlugin({
       title: 'Camunda Optimize',
       template: 'app/index.html',
-      favicon: 'app/favicon.ico'
+      favicon: 'app/favicon.ico',
+      chunks: ['app']
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'license.html',
+      title: 'Camunda Optimize',
+      template: 'app/license.html',
+      favicon: 'app/favicon.ico',
+      chunks: ['license']
     })
   ],
   devServer: {
@@ -107,7 +116,11 @@ module.exports = {
     port: 9000,
     inline: true,
     open: true,
-    historyApiFallback: true,
+    historyApiFallback: {
+      rewrites: [
+        {from: /^\/license/, to: '/license.html'},
+      ]
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8090/'
