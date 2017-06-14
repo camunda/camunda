@@ -85,19 +85,19 @@ pipeline {
       }
 
     }
-    stage('E2E') {
-      steps {
-        sh 'sh ./start-e2e.sh'
-      }
-      post {
-        always {
-          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-        }
-        failure {
-          archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
-        }
-      }
-    }
+    // stage('E2E') {
+    //   steps {
+    //     sh 'sh ./start-e2e.sh'
+    //   }
+    //   post {
+    //     always {
+    //       junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+    //     }
+    //     failure {
+    //       archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
+    //     }
+    //   }
+    // }
     stage('Docs') {
       steps {
         sh 'mvn -s settings.xml -f ' + backendModuleName + '/pom.xml -DskipTests -Pdocs clean package'
