@@ -5,10 +5,10 @@ if (isPolyfillNeeded()) {
     require('babel-polyfill');
     require('whatwg-fetch');
 
-    require('./init');
+    initialize();
   });
 } else {
-  require('./init');
+  initialize();
 }
 
 require.ensure(['./styles.less'], () => {
@@ -17,4 +17,11 @@ require.ensure(['./styles.less'], () => {
 
 function isPolyfillNeeded() {
   return !window.Symbol || !Array.prototype.find;
+}
+
+function initialize() {
+  const {Main, reducer} = require('main');
+  const {init} = require('./init');
+
+  init(Main, reducer);
 }

@@ -8,7 +8,7 @@ module.exports = {
   target: 'web',
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
-    license: path.resolve(__dirname, 'app', 'license.js'),
+    license: path.resolve(__dirname, 'app', 'licenseApp.js'),
   },
   output: {
     publicPath: '/',
