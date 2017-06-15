@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
+import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
@@ -361,10 +362,15 @@ public class EngineIntegrationRule extends TestWatcher {
   private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("value", nameToValue.getValue());
-      fields.put("type", nameToValue.getValue().getClass().getSimpleName());
-      variables.put(nameToValue.getKey(), fields);
+      Object value = nameToValue.getValue();
+      if(value instanceof ComplexVariableDto) {
+        variables.put(nameToValue.getKey(), value);
+      } else {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("value", nameToValue.getValue());
+        fields.put("type", nameToValue.getValue().getClass().getSimpleName());
+        variables.put(nameToValue.getKey(), fields);
+      }
     }
     Map<String, Object> variableWrapper = new HashMap<>();
     variableWrapper.put("variables", variables);

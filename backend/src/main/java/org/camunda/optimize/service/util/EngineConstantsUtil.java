@@ -7,6 +7,7 @@ public class EngineConstantsUtil {
 
   public static final String INCLUDE_PROCESS_INSTANCE_IDS = "processInstanceIds";
   public static final String INCLUDE_PROCESS_INSTANCE_ID_IN = "processInstanceIdIn";
+  public static final String INCLUDE_VARIABLE_TYPE_IN = "variableTypeIn";
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
 

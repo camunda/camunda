@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -224,6 +225,35 @@ public class ImportIT  {
   }
 
   @Test
+  public void variablesWithComplexTypeAreNotImported() throws OptimizeException {
+    // given
+    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
+    complexVariableDto.setType("Object");
+    complexVariableDto.setValue(null);
+    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+    info.setObjectTypeName("java.util.ArrayList");
+    info.setSerializationDataFormat("application/x-java-serialized-object");
+    complexVariableDto.setValueInfo(info);
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var", complexVariableDto);
+    deployAndStartSimpleServiceTaskWithVariables(variables);
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String procDefId = engineRule.getProcessDefinitionId();
+    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(new GenericType<List<GetVariablesResponseDto>>(){});
+
+    //then
+    assertThat(variablesResponseDtos.size(),is(0));
+  }
+
+  @Test
   public void variableFilterWorks() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -240,7 +270,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-     String token = embeddedOptimizeRule.getAuthenticationToken();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
     List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
         .request()
@@ -407,6 +437,12 @@ public class ImportIT  {
   }
 
   private void deployAndStartSimpleServiceTask() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("aVariable", "aStringVariables");
+    deployAndStartSimpleServiceTaskWithVariables(variables);
+  }
+
+  private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
         .startEvent()
@@ -414,8 +450,6 @@ public class ImportIT  {
           .camundaExpression("${true}")
         .endEvent()
       .done();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("aVariable", "aStringVariables");
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 

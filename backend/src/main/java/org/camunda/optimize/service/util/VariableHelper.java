@@ -27,6 +27,10 @@ public class VariableHelper {
     {STRING_VARIABLES, INTEGER_VARIABLES, LONG_VARIABLES, SHORT_VARIABLES,
       DOUBLE_VARIABLES, DATE_VARIABLES, BOOLEAN_VARIABLES};
 
+  public static final String[] ALL_SUPPORTED_VARIABLE_TYPES =
+    {STRING_TYPE, INTEGER_TYPE, LONG_TYPE, SHORT_TYPE,
+      DOUBLE_TYPE, DATE_TYPE, BOOLEAN_TYPE};
+
   private static Map<String, String> typeToVariableFieldLabel = initTypeToVariableFieldLabel();
   private static Map<String, String> variableFieldLabelToType = initVariableFieldLabelToType();
 

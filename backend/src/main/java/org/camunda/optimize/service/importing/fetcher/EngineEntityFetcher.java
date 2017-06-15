@@ -13,13 +13,17 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_ID_IN;
+import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_VARIABLE_TYPE_IN;
+import static org.camunda.optimize.service.util.VariableHelper.ALL_SUPPORTED_VARIABLE_TYPES;
 
 @Component
 public class EngineEntityFetcher {
@@ -59,6 +63,8 @@ public class EngineEntityFetcher {
     long requestStart = System.currentTimeMillis();
     Map<String, Set<String>> pids = new HashMap<>();
     pids.put(INCLUDE_PROCESS_INSTANCE_ID_IN, processInstanceIds);
+    Set<String> supportedVariableTypes = new HashSet<>(Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES));
+    pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
     try {
       entries = client
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
