@@ -9,6 +9,7 @@ node_modules
 terraform.tfstate
 # ansible
 hosts
+.aws/ansible/group_vars/all/vault.yml
 *.retry
 nohup.out
 errorShots/
