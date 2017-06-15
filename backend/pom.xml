@@ -297,6 +297,21 @@
     </profile>
 
     <profile>
+      <id>add-license-key</id>
+      <build>
+        <resources>
+          <resource>
+            <directory>src/main/license</directory>
+            <includes>
+              <include>**/*.txt</include>
+            </includes>
+            <filtering>false</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+
+    <profile>
       <id>production</id>
       <build>
         <resources>

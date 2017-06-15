@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,12 +35,12 @@ public class LicenseCheckingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response validateOptimizeLicenseAndStoreIt(String license) {
     try {
-      licenseManager.validateOptimizeLicense(license);
+      LicenseInformationDto licenseInformationDto = licenseManager.validateOptimizeLicense(license);
       licenseManager.storeLicense(license);
+      return buildOkResponse(licenseInformationDto);
     } catch (Exception e) {
       return buildServerErrorResponse(e);
     }
-    return buildOkResponse();
   }
 
   @GET
@@ -49,10 +50,10 @@ public class LicenseCheckingRestService {
   public Response validateLicenseStoredOptimizeLicense() {
     try {
       String license = licenseManager.retrieveStoredOptimizeLicense();
-      licenseManager.validateOptimizeLicense(license);
+      LicenseInformationDto licenseInformationDto = licenseManager.validateOptimizeLicense(license);
+      return buildOkResponse(licenseInformationDto);
     } catch (InvalidLicenseException e) {
       return buildServerErrorResponse(e);
     }
-    return buildOkResponse();
   }
 }

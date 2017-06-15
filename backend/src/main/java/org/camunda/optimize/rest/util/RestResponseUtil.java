@@ -8,6 +8,10 @@ public class RestResponseUtil {
     return Response.status(200).entity("OK").build();
   }
 
+  public static Response buildOkResponse(Object dtoMessage) {
+    return Response.status(200).entity(dtoMessage).build();
+  }
+
   public static Response buildServerErrorResponse(Exception e) {
     return buildServerErrorResponse(e.getMessage());
   }

@@ -1,7 +1,10 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -10,30 +13,44 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class LicenseCheckingRestServiceIT {
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
+  private static final String CUSTOMER_ID = "schrottis inn";
+  private static Date VALID_UNTIL;
+
+  private static SimpleDateFormat sdf = new SimpleDateFormat(elasticSearchRule.getDateFormat());
 
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
+  @BeforeClass
+  public static void init() throws ParseException {
+    VALID_UNTIL = sdf.parse("9999-01-01T01:00:00");
+  }
+
   @Test
-  public void validLicenseShouldBeAccepted() throws IOException, URISyntaxException {
+  public void validLicenseShouldBeAccepted() throws IOException, URISyntaxException, ParseException {
 
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
@@ -47,10 +64,11 @@ public class LicenseCheckingRestServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
+    assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
   }
 
   @Test
-  public void unlimitedValidLicenseShouldBeAccepted() throws IOException, URISyntaxException {
+  public void unlimitedValidLicenseShouldBeAccepted() throws IOException, URISyntaxException, ParseException {
 
     // given
     String license = readFileToString("/license/UnlimitedTestLicense.txt");
@@ -64,6 +82,7 @@ public class LicenseCheckingRestServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
+    assertResult(response, CUSTOMER_ID, null, true);
   }
 
   @Test
@@ -157,6 +176,14 @@ public class LicenseCheckingRestServiceIT {
 
   private String readFileToString(String filePath) throws IOException, URISyntaxException {
     return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())));
+  }
+
+  private void assertResult(Response response, String customerId, Date validUntil, boolean isUnlimited) throws ParseException {
+    LicenseInformationDto licenseInfo =
+      response.readEntity(new GenericType<LicenseInformationDto>() { });
+    assertThat(licenseInfo.getCustomerId(), is(customerId));
+    assertThat(licenseInfo.getValidUntil(), is(validUntil));
+    assertThat(licenseInfo.isUnlimited(), is(isUnlimited));
   }
 
 }

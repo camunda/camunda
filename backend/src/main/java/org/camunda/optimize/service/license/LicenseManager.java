@@ -3,6 +3,7 @@ package org.camunda.optimize.service.license;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -88,12 +89,23 @@ public class LicenseManager {
     return isValid;
   }
 
-  public void validateOptimizeLicense(String licenseAsString) throws InvalidLicenseException {
+  public LicenseInformationDto validateOptimizeLicense(String licenseAsString) throws InvalidLicenseException {
     if (licenseAsString == null) {
       throw new InvalidLicenseException("Could not validate given license. Please try to provide another license!");
     }
     licenseKey.createLicenseKey(licenseAsString);
     licenseKey.validate();
+    return licenseKeyToDto(licenseKey);
+  }
+
+  private LicenseInformationDto licenseKeyToDto(LicenseKey licenseKey) {
+    LicenseInformationDto dto = new LicenseInformationDto();
+    dto.setCustomerId(licenseKey.getCustomerId());
+    dto.setUnlimited(licenseKey.isUnlimited());
+    if(!licenseKey.isUnlimited()) {
+      dto.setValidUntil(licenseKey.getValidUntil());
+    }
+    return dto;
   }
 
 }
