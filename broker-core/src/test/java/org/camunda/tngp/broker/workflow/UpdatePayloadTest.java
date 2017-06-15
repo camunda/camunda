@@ -1,13 +1,12 @@
 package org.camunda.tngp.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.asMap;
 import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.createMsgPack;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
-import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsArray;
 
-import org.agrona.DirectBuffer;
+import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.test.EmbeddedBrokerRule;
@@ -19,6 +18,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class UpdatePayloadTest
 {
@@ -36,7 +36,31 @@ public class UpdatePayloadTest
                     .output("$.a", "$.a")
                     .done();
 
-    private static final DirectBuffer PAYLOAD = createMsgPack().put("a", "foo").done();
+    protected static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
+    protected static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
+    private static final byte[] MSG_PACK_BYTES;
+
+    public static final String JSON_DOCUMENT = "{'a':'foo'}";
+
+    static
+    {
+        JSON_MAPPER.configure(Feature.ALLOW_SINGLE_QUOTES, true);
+        byte[] bytes = null;
+        try
+        {
+            bytes = MSGPACK_MAPPER.writeValueAsBytes(
+                JSON_MAPPER.readTree(JSON_DOCUMENT));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            MSG_PACK_BYTES = bytes;
+        }
+    }
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -53,7 +77,7 @@ public class UpdatePayloadTest
     }
 
     @Test
-    public void shouldUpdatePayload()
+    public void shouldUpdatePayload() throws Exception
     {
         // given
         testClient.deploy(WORKFLOW);
@@ -63,7 +87,9 @@ public class UpdatePayloadTest
         final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
 
         // when
-        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), createMsgPack().put("foo", "bar").done());
+        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey,
+                                                              activityInstanceEvent.key(),
+                                                              MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then
         assertThat(response.getEvent()).containsEntry("eventType", "PAYLOAD_UPDATED");
@@ -73,11 +99,14 @@ public class UpdatePayloadTest
         assertThat(updatedEvent.key()).isEqualTo(activityInstanceEvent.key());
         assertThat(updatedEvent.event()).containsEntry("workflowInstanceKey", workflowInstanceKey);
 
-        assertThat(asMap((byte[]) updatedEvent.event().get("payload"))).containsEntry("foo", "bar");
+        final byte[] payload = (byte[]) updatedEvent.event().get("payload");
+
+        assertThat(MSGPACK_MAPPER.readTree(payload))
+            .isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
     }
 
     @Test
-    public void shouldUpdatePayloadWhenActivityActivated()
+    public void shouldUpdatePayloadWhenActivityActivated() throws Exception
     {
         // given
         testClient.deploy(WORKFLOW);
@@ -87,7 +116,8 @@ public class UpdatePayloadTest
         final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
 
         // when
-        updatePayload(workflowInstanceKey, activityInstanceEvent.key(), createMsgPack().put("b", "wf").done());
+        updatePayload(workflowInstanceKey, activityInstanceEvent.key(),
+                      MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'b':'wf'}")));
 
         testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
 
@@ -97,25 +127,25 @@ public class UpdatePayloadTest
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
         final byte[] payload = (byte[]) activityCompletedEvent.event().get("payload");
-        assertThat(asMap(payload))
-            .containsEntry("a", "task")
-            .containsEntry("b", "wf");
+
+        assertThat(MSGPACK_MAPPER.readTree(payload))
+            .isEqualTo(JSON_MAPPER.readTree("{'a':'task', 'b':'wf'}"));
     }
 
     @Test
-    public void shouldRejectUpdateForCompletedActivity()
+    public void shouldRejectUpdateForCompletedActivity() throws Exception
     {
         // given
         testClient.deploy(WORKFLOW);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        testClient.completeTaskOfType("task-1", PAYLOAD);
+        testClient.completeTaskOfType("task-1", MSG_PACK_BYTES);
 
         final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
         // when
-        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), PAYLOAD);
+        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSG_PACK_BYTES);
 
         // then
         assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
@@ -124,10 +154,10 @@ public class UpdatePayloadTest
     }
 
     @Test
-    public void shouldRejectUpdateForNonExistingWorkflowInstance()
+    public void shouldRejectUpdateForNonExistingWorkflowInstance() throws Exception
     {
         // when
-        final ExecuteCommandResponse response = updatePayload(-1L, -1L, PAYLOAD);
+        final ExecuteCommandResponse response = updatePayload(-1L, -1L, MSG_PACK_BYTES);
 
         // then
         assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
@@ -136,7 +166,7 @@ public class UpdatePayloadTest
     }
 
     @Test
-    public void shouldRejectUpdateForCompletedWorkflowInstance()
+    public void shouldRejectUpdateForCompletedWorkflowInstance() throws Exception
     {
         // given
         testClient.deploy(WORKFLOW);
@@ -145,7 +175,7 @@ public class UpdatePayloadTest
 
         final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
 
-        testClient.completeTaskOfType("task-1", PAYLOAD);
+        testClient.completeTaskOfType("task-1", MSG_PACK_BYTES);
 
         testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
         testClient.completeTaskOfType("task-2");
@@ -153,7 +183,7 @@ public class UpdatePayloadTest
         testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
 
         // when
-        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), PAYLOAD);
+        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSG_PACK_BYTES);
 
         // then
         assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
@@ -161,7 +191,7 @@ public class UpdatePayloadTest
         testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
     }
 
-    private ExecuteCommandResponse updatePayload(final long workflowInstanceKey, final long activityInstanceKey, DirectBuffer payload)
+    private ExecuteCommandResponse updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) throws Exception
     {
         return apiRule.createCmdRequest()
             .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
@@ -171,7 +201,7 @@ public class UpdatePayloadTest
             .command()
                 .put("eventType", "UPDATE_PAYLOAD")
                 .put("workflowInstanceKey", workflowInstanceKey)
-                .put("payload", bufferAsArray(payload))
+                .put("payload", payload)
             .done()
             .sendAndAwait();
     }

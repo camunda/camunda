@@ -23,7 +23,7 @@
     <!-- SUB PROJECTS -->
     <util.version>1.0.0-SNAPSHOT</util.version>
     <log.version>1.0.0-alpha5</log.version>
-    <tngp.msgpack.version>1.0.0-alpha3</tngp.msgpack.version>
+    <tngp.msgpack.version>1.0.0-SNAPSHOT</tngp.msgpack.version>
     <service.version>1.0.0-alpha4</service.version>
     <dispatcher.version>1.0.0-alpha4</dispatcher.version>
     <transport.version>1.0.0-alpha7</transport.version>

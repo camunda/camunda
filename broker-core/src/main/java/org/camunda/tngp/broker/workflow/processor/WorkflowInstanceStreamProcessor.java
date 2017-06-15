@@ -463,7 +463,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
                 workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
 
-                setWorkflowInstancePayload(serviceTask.getIoMapping().getInputMappings());
+                setWorkflowInstancePayload(serviceTask.getIoMapping()
+                                                      .getInputMappings());
             }
             else
             {
@@ -474,10 +475,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
             sourcePayload = workflowInstanceEvent.getPayload();
-
-            final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
-            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+            // only if we have no default mapping we have to use the mapping processor
+            if (mappings.length > 1 ||
+                (mappings.length == 1 &&
+                   (mappings[0].getSource().getExpression().capacity() > 1 ||
+                    mappings[0].getTargetQueryString().length() > 1)))
+            {
+                final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
+                final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+                workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+            }
+            else
+            {
+                workflowInstanceEvent.setPayload(sourcePayload, 0, sourcePayload.capacity());
+            }
         }
 
         @Override
