@@ -36,13 +36,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>provided</scope>
