@@ -9,7 +9,6 @@ describe('<License>', () => {
   let Header;
   let Footer;
   let Notifications;
-  let readFile;
   let get;
   let post;
   let node;
@@ -22,9 +21,6 @@ describe('<License>', () => {
     Header = createMockComponent('Header');
     Footer = createMockComponent('Footer');
     Notifications = createMockComponent('Notifications');
-    readFile = sinon.stub().returns(Promise.resolve({
-      content: license
-    }));
     get = sinon.stub();
     post = sinon.stub();
 
@@ -43,7 +39,6 @@ describe('<License>', () => {
     __set__('Header', Header);
     __set__('Footer', Footer);
     __set__('Notifications', Notifications);
-    __set__('readFile', readFile);
     __set__('get', get);
     __set__('post', post);
   });
@@ -52,7 +47,6 @@ describe('<License>', () => {
     __ResetDependency__('Header');
     __ResetDependency__('Footer');
     __ResetDependency__('Notifications');
-    __ResetDependency__('readFile');
     __ResetDependency__('get');
     __ResetDependency__('post');
   });
@@ -203,18 +197,6 @@ describe('<License>', () => {
 
       expect(node.querySelector('.alert')).to.contain.text(errorMessage);
       expect(node.querySelector('.alert')).not.to.have.class('hidden');
-    });
-
-    it('should be possible to upload file content', () => {
-      triggerEvent({
-        node,
-        selector: 'input[type="file"]',
-        eventName: 'change'
-      });
-
-      Promise.runAll();
-
-      expect(node.querySelector('textarea').value).to.eql(license);
     });
   });
 });

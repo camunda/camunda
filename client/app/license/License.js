@@ -1,8 +1,7 @@
 import {jsx, Children, createReferenceComponent, addClass, removeClass, setElementVisibility} from 'view-utils';
-import {readFile} from 'utils/readFiles';
 import {Header} from 'main/header';
 import {Footer} from 'main/footer';
-import {Notifications, addNotification} from 'notifications';
+import {Notifications} from 'notifications';
 import {get, post} from 'http';
 
 export function License() {
@@ -26,9 +25,6 @@ export function License() {
                   <textarea class="form-control" rows="12" placeholder="Please enter license key">
                     <Reference name="key" />
                   </textarea>
-                  <input class="form-control" type="file">
-                    <Reference name="file" />
-                  </input>
                 </div>
                 <button type="submit" class="btn btn-default">Submit</button>
               </form>
@@ -41,7 +37,6 @@ export function License() {
 
     const templateUpdate = template(node, eventsBus);
 
-    const fileNode = Reference.getNode('file');
     const keyNode = Reference.getNode('key');
     const formNode = Reference.getNode('form');
     const messageNode = Reference.getNode('message');
@@ -52,21 +47,6 @@ export function License() {
       .then(response => response.json())
       .then(displaySucccess)
       .catch(response => response.json().then(displayError));
-
-    fileNode.addEventListener('change', () => {
-      readFile(fileNode.files[0])
-        .then(({content}) => {
-          keyNode.value = content;
-          fileNode.value = null; // clears file input
-        })
-        .catch(error => {
-          addNotification({
-            status: 'Could not read file',
-            text: error.toString(),
-            isError: true
-          });
-        });
-    });
 
     formNode.addEventListener('submit', event => {
       const key = keyNode.value;
