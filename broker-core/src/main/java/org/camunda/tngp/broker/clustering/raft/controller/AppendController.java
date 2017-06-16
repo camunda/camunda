@@ -223,6 +223,10 @@ public class AppendController
                 context.entryPosition = position;
                 context.take(TRANSITION_DEFAULT);
             }
+            else
+            {
+                logStreamController.removeFailureListener(listener);
+            }
 
             return workcount;
         }
