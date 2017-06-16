@@ -202,6 +202,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     Client client = ClientBuilder.newClient();
     client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
     client.property(ClientProperties.READ_TIMEOUT,    10000);
+    client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
     return client;
   }
 

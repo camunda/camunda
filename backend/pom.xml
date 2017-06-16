@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -245,7 +246,7 @@
                     <Class-Path>environment/</Class-Path>
                   </manifestEntries>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
             </configuration>
           </execution>
@@ -293,21 +294,6 @@
             </executions>
           </plugin>
         </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>add-license-key</id>
-      <build>
-        <resources>
-          <resource>
-            <directory>src/main/license</directory>
-            <includes>
-              <include>**/*.txt</include>
-            </includes>
-            <filtering>false</filtering>
-          </resource>
-        </resources>
       </build>
     </profile>
 
@@ -549,12 +535,12 @@
                   <cargo.start.jvmargs>-Djava.security.egd=file:/dev/./urandom</cargo.start.jvmargs>
                 </properties>
                 <files>
-                    <copy>
-                      <configfile>true</configfile>
-                      <file>${project.basedir}/src/test/resources/tomcat/bpm-platform.xml</file>
-                      <tofile>conf/bpm-platform.xml</tofile>
-                      <overwrite>true</overwrite>
-                    </copy>
+                  <copy>
+                    <configfile>true</configfile>
+                    <file>${project.basedir}/src/test/resources/tomcat/bpm-platform.xml</file>
+                    <tofile>conf/bpm-platform.xml</tofile>
+                    <overwrite>true</overwrite>
+                  </copy>
                 </files>
               </configuration>
               <deployables>
@@ -601,8 +587,23 @@
               <wait>false</wait>
             </configuration>
           </plugin>
-
         </plugins>
+        <resources>
+          <resource>
+            <directory>${project.build.outputDirectory}/../../../client/dist</directory>
+            <targetPath>webapp</targetPath>
+          </resource>
+          <resource>
+            <directory>src/main/java</directory>
+            <includes>
+              <include>**/*.xml</include>
+            </includes>
+          </resource>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
       </build>
     </profile>
 

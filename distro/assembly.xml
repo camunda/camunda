@@ -27,6 +27,18 @@
     </dependencySet>
   </dependencySets>
 
+  <fileSets>
+    <fileSet>
+      <directory>src/environment/</directory>
+      <excludes>
+        <exclude>
+          ${exclude.from.environment}
+        </exclude>
+      </excludes>
+      <outputDirectory>environment/</outputDirectory>
+    </fileSet>
+  </fileSets>
+
   <files>
     <file>
       <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
@@ -52,15 +64,6 @@
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
-    </file>
-    <file>
-      <source>src/environment/environment.properties</source>
-      <filtered>true</filtered>
-      <outputDirectory>environment/</outputDirectory>
-    </file>
-    <file>
-      <source>src/environment/environment-logback.xml</source>
-      <outputDirectory>environment/</outputDirectory>
     </file>
     <file>
       <source>src/config/elasticsearch</source>

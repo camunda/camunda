@@ -3,7 +3,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -175,7 +175,7 @@ public class LicenseCheckingRestServiceIT {
   }
 
   private String readFileToString(String filePath) throws IOException, URISyntaxException {
-    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())));
+    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
   }
 
   private void assertResult(Response response, String customerId, Date validUntil, boolean isUnlimited) throws ParseException {

@@ -1,61 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.camunda.optimize</groupId>
-        <artifactId>parent</artifactId>
-        <version>1.1.0-SNAPSHOT</version>
-    </parent>
-
+  <parent>
     <groupId>org.camunda.optimize</groupId>
-    <artifactId>camunda-optimize</artifactId>
+    <artifactId>parent</artifactId>
     <version>1.1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+  </parent>
+
+  <groupId>org.camunda.optimize</groupId>
+  <artifactId>camunda-optimize</artifactId>
+  <version>1.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <exclude.from.environment>OptimizeLicense.txt</exclude.from.environment>
+  </properties>
 
 
-    <dependencies>
-        <dependency>
-            <groupId>org.elasticsearch.distribution.zip</groupId>
-            <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch.version}</version>
-            <type>zip</type>
-        </dependency>
-        <dependency>
-            <groupId>org.camunda.optimize</groupId>
-            <artifactId>optimize-backend</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>org.elasticsearch.distribution.zip</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>${elasticsearch.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 
-    <build>
-        <finalName>camunda-optimize-${project.version}</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4.1</version>
-                <executions>
-                    <execution>
-                        <id>assemble</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly.xml</descriptor>
-                            </descriptors>
-                            <attach>true</attach>
-                            <finalName>camunda-optimize-${project.version}</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>target/</outputDirectory>
-                            <workDirectory>target/assembly/work</workDirectory>
-                            <tarLongFileMode>gnu</tarLongFileMode>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <profiles>
+    <profile>
+      <id>add-license-key</id>
+      <properties>
+        <exclude.from.environment/>
+      </properties>
+    </profile>
+  </profiles>
+
+  <build>
+    <finalName>camunda-optimize-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4.1</version>
+        <executions>
+          <execution>
+            <id>assemble</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly.xml</descriptor>
+              </descriptors>
+              <attach>true</attach>
+              <finalName>camunda-optimize-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <outputDirectory>target/</outputDirectory>
+              <workDirectory>target/assembly/work</workDirectory>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

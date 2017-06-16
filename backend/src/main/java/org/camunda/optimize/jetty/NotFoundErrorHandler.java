@@ -17,7 +17,6 @@ import java.io.IOException;
 public class NotFoundErrorHandler extends ErrorHandler {
   private static final String INDEX_PAGE = "/";
   private static final String API_PATH = "/api";
-  private static final Logger logger = Log.getLogger(NotFoundErrorHandler.class);
 
   @Override
   public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -25,13 +24,7 @@ public class NotFoundErrorHandler extends ErrorHandler {
         !request.getServletPath().startsWith(API_PATH) &&
             HttpServletResponse.SC_NOT_FOUND == response.getStatus()
         ) {
-      response.setStatus(200);
-      Dispatcher dispatcher = (Dispatcher) request.getServletContext().getRequestDispatcher(INDEX_PAGE);
-      try {
-        dispatcher.forward(request, response);
-      } catch (ServletException e) {
-        logger.debug(e);
-      }
+      response.sendRedirect(INDEX_PAGE);
     }
   }
 
