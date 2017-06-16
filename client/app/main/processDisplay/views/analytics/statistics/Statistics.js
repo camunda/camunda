@@ -1,11 +1,11 @@
-import {jsx, withSelector, Class, OnEvent, Scope, Text, createStateComponent, createReferenceComponent, updateOnlyWhenStateChanges} from 'view-utils';
+import {jsx, Class, OnEvent, Scope, Text, createStateComponent, createReferenceComponent, updateOnlyWhenStateChanges} from 'view-utils';
 import {StatisticChart} from './StatisticChart';
 import {leaveGatewayAnalysisMode} from '../';
 import {loadStatisticData, resetStatisticData, findSequenceFlowBetweenGatewayAndActivity} from './service';
 import {DragHandle} from './DragHandle';
 import {isInitial, isLoading} from 'utils';
 
-export const Statistics = withSelector(({getBpmnViewer}) => {
+export function Statistics({getBpmnViewer}) {
   return (parentNode, eventsBus) => {
     const State = createStateComponent();
     const Reference = createReferenceComponent();
@@ -163,4 +163,4 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
       });
     };
   }
-});
+}
