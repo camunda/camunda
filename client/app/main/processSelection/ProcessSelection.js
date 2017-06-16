@@ -14,7 +14,7 @@ export const ProcessSelection = withSelector(() => {
           <div className="no-definitions">
             <span className="indicator glyphicon glyphicon-info-sign"></span>
             <div className="title">No Process Definitions</div>
-            <div className="text"><a href="https://github.com/camunda/camunda-optimize/wiki/Installation-guide">Find out how to import your data</a></div>
+            <div className="text"><a href="https://github.com/camunda/camunda-optimize-docs/blob/master/installation.md">Find out how to import your data</a></div>
           </div>
         </Case>
         <Default>
