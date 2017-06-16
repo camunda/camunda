@@ -485,10 +485,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
                 workflowInstanceEvent.setPayload(buffer, 0, resultLen);
             }
-            else
-            {
-                workflowInstanceEvent.setPayload(sourcePayload, 0, sourcePayload.capacity());
-            }
         }
 
         @Override
