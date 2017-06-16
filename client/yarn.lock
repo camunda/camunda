@@ -936,12 +936,12 @@ bootstrap@3.3.6:
   version "3.3.6"
   resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-3.3.6.tgz#8de8f749dc8a743f2ac5b510d988371e3daa6589"
 
-bpmn-js@^0.20.4:
-  version "0.20.4"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-0.20.4.tgz#ffffb8c78cca27dc2c26fa9b48a70d2e89c3b23e"
+bpmn-js@^0.20.7:
+  version "0.20.7"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-0.20.7.tgz#7920d3972e191ffa41d8ab944b083503f4b409aa"
   dependencies:
     bpmn-moddle "^0.14.0"
-    diagram-js "^0.19.2"
+    diagram-js "^0.19.6"
     diagram-js-direct-editing "^0.17.1"
     diagram-js-origin "^0.15.1"
     ids "^0.2.0"
@@ -2175,9 +2175,9 @@ diagram-js-origin@^0.15.1:
   dependencies:
     tiny-svg "^0.1.0"
 
-diagram-js@^0.19.2:
-  version "0.19.2"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-0.19.2.tgz#386175e09180d7657ad32cbc91d05b5377a80ef0"
+diagram-js@^0.19.6:
+  version "0.19.6"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-0.19.6.tgz#ef565d5d36d0198d0535b3ec1b7217ac39e0692b"
   dependencies:
     didi "^0.1.0"
     hammerjs "^2.0.1"

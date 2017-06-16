@@ -58,8 +58,15 @@ export function createDiagramPreview() {
                 setElementVisibility(loaderNode, false);
               }
 
-              resetZoom(viewer);
-              done();
+              try {
+                resetZoom(viewer);
+              } catch (error) {
+                // Do nothing it is fine. Sometimes reset zoom throws error in FF
+                // But it seems like nothing brakes, so let's just ignore it
+                // This is knows issue: https://github.com/bpmn-io/bpmn-js/issues/665
+              } finally {
+                done();
+              }
             });
           });
         } else {
