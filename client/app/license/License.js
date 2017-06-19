@@ -1,8 +1,14 @@
-import {jsx, Children, createReferenceComponent, addClass, removeClass, setElementVisibility} from 'view-utils';
+import {
+  jsx, Children, createReferenceComponent, addClass,
+  removeClass, setElementVisibility, $window
+} from 'view-utils';
 import {Header} from 'main/header';
 import {Footer} from 'main/footer';
 import {Notifications} from 'notifications';
 import {get, post} from 'http';
+
+// Given in seconds
+const redirectionTimeout = 10;
 
 export function License() {
   return (node, eventsBus) => {
@@ -59,7 +65,13 @@ export function License() {
         }
       })
       .then(response => response.json())
-      .then(displaySucccess)
+      .then(licenseData => {
+        displaySucccess(licenseData, true);
+
+        $window.setTimeout(() => {
+          $window.location.pathname = '/';
+        }, redirectionTimeout * 1000);
+      })
       .catch(error => {
         return error
           .json()
@@ -76,13 +88,17 @@ export function License() {
       addClass(messageNode, 'alert-danger');
     }
 
-    function displaySucccess({customerId, validUntil, unlimited}) {
-      let message = `Licensed for ${customerId}. `;
+    function displaySucccess({customerId, validUntil, unlimited}, redirection) {
+      let message = `Licensed for ${customerId}.`;
 
       if (!unlimited) {
         const date = new Date(validUntil);
 
-        message += `Valid until ${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+        message += ` Valid until ${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}.`;
+      }
+
+      if (redirection) {
+        message += ' You will be redirected to main page shortly';
       }
 
       setElementVisibility(messageNode, true);

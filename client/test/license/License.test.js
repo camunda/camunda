@@ -14,6 +14,7 @@ describe('<License>', () => {
   let node;
   let unlimitedLicenseResponse;
   let limitedLicenseResponse;
+  let $window;
 
   setupPromiseMocking();
 
@@ -36,11 +37,17 @@ describe('<License>', () => {
       unlimited: false
     };
 
+    $window = {
+      setTimeout: sinon.stub().callsArg(0),
+      location: {}
+    };
+
     __set__('Header', Header);
     __set__('Footer', Footer);
     __set__('Notifications', Notifications);
     __set__('get', get);
     __set__('post', post);
+    __set__('$window', $window);
   });
 
   afterEach(() => {
@@ -49,6 +56,7 @@ describe('<License>', () => {
     __ResetDependency__('Notifications');
     __ResetDependency__('get');
     __ResetDependency__('post');
+    __ResetDependency__('$window');
   });
 
   describe('with invalid license', () => {
@@ -117,6 +125,29 @@ describe('<License>', () => {
 
       expect(node.querySelector('.alert')).to.contain.text('Licensed for schrottis inn. Valid until 9999-12-31');
       expect(node.querySelector('.alert')).not.to.have.class('hidden');
+    });
+
+    it('should redirected to main page after timeout', () => {
+      post.returns(
+        Promise.resolve({
+          json: sinon.stub().returns(Promise.resolve(limitedLicenseResponse))
+        })
+      );
+
+      Promise.runAll(); // run initial successful promise
+
+      node.querySelector('textarea').value = license;
+
+      triggerEvent({
+        node,
+        selector: 'form',
+        eventName: 'submit'
+      });
+
+      Promise.runAll();
+
+      expect($window.setTimeout.called).to.eql(true);
+      expect($window.location.pathname).to.eql('/');
     });
   });
 
