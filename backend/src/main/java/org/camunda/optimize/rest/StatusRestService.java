@@ -32,6 +32,8 @@ public class StatusRestService {
   @Autowired
   private ObjectMapper objectMapper;
 
+  private final String FAILED_TO_COMPUTE_PROGRESS_MESSAGE = "It was not possible to compute the import progress!";
+
   /**
    * Get the status of the connection from Optimize to Elasticsearch and Camunda.
    *
@@ -60,7 +62,7 @@ public class StatusRestService {
       progressDto.setProgress(importProgressReporter.computeImportProgress());
       return Response.ok(objectMapper.writeValueAsString(progressDto), MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
-      return buildServerErrorResponse("It was not possible to compute the import progress!");
+      return buildServerErrorResponse(FAILED_TO_COMPUTE_PROGRESS_MESSAGE);
     }
   }
 

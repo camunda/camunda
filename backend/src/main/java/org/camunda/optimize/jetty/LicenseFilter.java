@@ -99,7 +99,7 @@ public class LicenseFilter implements Filter {
   }
 
   private boolean isIndexPage(String requestPath) {
-    return requestPath.equals(INDEX_PAGE) || requestPath.startsWith(INDEX_HTML_PAGE);
+    return (INDEX_PAGE).equals(requestPath) || requestPath.startsWith(INDEX_HTML_PAGE);
   }
 
   private boolean isLoginPage(String requestPath) {

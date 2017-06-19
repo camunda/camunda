@@ -22,12 +22,8 @@ import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorRe
 @Component
 public class LicenseCheckingRestService {
 
-  private final LicenseManager licenseManager;
-
   @Autowired
-  public LicenseCheckingRestService(LicenseManager licenseManager) {
-    this.licenseManager = licenseManager;
-  }
+  private LicenseManager licenseManager;
 
   @POST
   @Path("/validate-and-store")

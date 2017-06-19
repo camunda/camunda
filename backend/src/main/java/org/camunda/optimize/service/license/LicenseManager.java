@@ -22,17 +22,13 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 @Component
 public class LicenseManager {
 
+  @Autowired
   private ConfigurationService configurationService;
+  @Autowired
   private TransportClient esclient;
 
   private final String licenseDocumentId = "license";
   private LicenseKey licenseKey = new OptimizeLicenseKey();
-
-  @Autowired
-  public LicenseManager(ConfigurationService configurationService, TransportClient esclient) {
-    this.configurationService = configurationService;
-    this.esclient = esclient;
-  }
 
   public void storeLicense(String licenseAsString) throws OptimizeException {
     XContentBuilder builder;
