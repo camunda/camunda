@@ -15,7 +15,7 @@ export function License() {
     const Reference = createReferenceComponent();
 
     const template = <Children>
-        <Header />
+        <Header redirect="true" />
         <div className="site-wrap">
           <div className="page-wrap">
             <div style="margin: 2% 15%">
