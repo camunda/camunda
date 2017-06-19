@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.task.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.MSGPACK_PAYLOAD;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.StringUtil.getBytes;
@@ -48,7 +51,6 @@ public class TaskStreamProcessorIntegrationTest
     private static final int PARTITION_ID = 1;
 
     private static final byte[] TASK_TYPE = getBytes("test-task");
-    private static final byte[] PAYLOAD = getBytes("payload");
 
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
 
@@ -173,7 +175,7 @@ public class TaskStreamProcessorIntegrationTest
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         // when
         final long position = logStreamWriter
@@ -189,8 +191,8 @@ public class TaskStreamProcessorIntegrationTest
         assertThatBuffer(followUpTaskEvent.getType()).hasBytes(TASK_TYPE_BUFFER.byteArray());
 
         assertThatBuffer(followUpTaskEvent.getPayload())
-            .hasCapacity(PAYLOAD.length)
-            .hasBytes(PAYLOAD);
+            .hasCapacity(MSGPACK_PAYLOAD.length)
+            .hasBytes(MSGPACK_PAYLOAD);
 
         verify(mockResponseWriter).topicName(TOPIC_NAME);
         verify(mockResponseWriter).partitionId(PARTITION_ID);
@@ -216,7 +218,7 @@ public class TaskStreamProcessorIntegrationTest
             .setEventType(TaskEventType.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         // when
         final long position = logStreamWriter
@@ -240,8 +242,8 @@ public class TaskStreamProcessorIntegrationTest
         assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(wrapString("owner"));
 
         assertThatBuffer(followUpTaskEvent.getPayload())
-            .hasCapacity(PAYLOAD.length)
-            .hasBytes(PAYLOAD);
+            .hasCapacity(MSGPACK_PAYLOAD.length)
+            .hasBytes(MSGPACK_PAYLOAD);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
 
@@ -252,7 +254,7 @@ public class TaskStreamProcessorIntegrationTest
     }
 
     @Test
-    public void shouldCompleteTask() throws InterruptedException, ExecutionException
+    public void shouldCompleteTask() throws Exception
     {
         // given
         final TaskSubscription subscription = new TaskSubscription()
@@ -269,7 +271,7 @@ public class TaskStreamProcessorIntegrationTest
             .setEventType(TaskEventType.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         long position = logStreamWriter
             .key(2L)
@@ -288,7 +290,7 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(event.getPosition());
 
         // when
-        final byte[] modifiedPayload = getBytes("modified payload");
+        final byte[] modifiedPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}"));
 
         taskEvent
             .setEventType(TaskEventType.COMPLETE)
@@ -331,7 +333,7 @@ public class TaskStreamProcessorIntegrationTest
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setRetries(3)
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         long position = logStreamWriter
             .key(2L)
@@ -398,7 +400,7 @@ public class TaskStreamProcessorIntegrationTest
             .setEventType(TaskEventType.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         final long position = logStreamWriter
             .key(2L)
@@ -440,8 +442,8 @@ public class TaskStreamProcessorIntegrationTest
         assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(wrapString("owner"));
 
         assertThatBuffer(followUpTaskEvent.getPayload())
-            .hasCapacity(PAYLOAD.length)
-            .hasBytes(PAYLOAD);
+            .hasCapacity(MSGPACK_PAYLOAD.length)
+            .hasBytes(MSGPACK_PAYLOAD);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
         verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
@@ -465,7 +467,7 @@ public class TaskStreamProcessorIntegrationTest
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setRetries(1)
-            .setPayload(new UnsafeBuffer(PAYLOAD));
+            .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
         long position = logStreamWriter
             .key(2L)

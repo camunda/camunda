@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.task.processor;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
 import static org.camunda.tngp.protocol.clientapi.EventType.*;
 import static org.camunda.tngp.util.buffer.BufferUtil.*;
 import static org.mockito.Mockito.*;
@@ -10,6 +12,7 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.task.CreditsRequest;
 import org.camunda.tngp.broker.task.TaskSubscriptionManager;
@@ -545,6 +548,34 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectCompleteTaskIfPayloadIsInvalid() throws Exception
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+            .setEventType(TaskEventType.LOCK)
+            .setLockTime(lockTime)
+            .setLockOwner(wrapString("owner")));
+
+        // when
+        final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
+        final DirectBuffer buffer = new UnsafeBuffer(bytes);
+        mockController.processEvent(2L, event -> event
+            .setEventType(TaskEventType.COMPLETE)
+            .setLockOwner(wrapString("owner"))
+            .setPayload(buffer));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
 
     @Test

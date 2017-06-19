@@ -218,7 +218,7 @@ public class TaskSubscriptionUnitTest
         verify(completeCmd).taskType(TASK_TYPE);
         verify(completeCmd).lockOwner(LOCK_OWNER);
         verify(completeCmd).headers(eq(new HashMap<>()));
-        verify(completeCmd).payload("{}");
+        verify(completeCmd, never()).payload(anyString());
         verify(completeCmd).execute();
     }
 

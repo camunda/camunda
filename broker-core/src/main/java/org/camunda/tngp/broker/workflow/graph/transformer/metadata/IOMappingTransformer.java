@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.workflow.graph.transformer.metadata;
 
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
+import static org.camunda.tngp.msgpack.mapping.Mapping.JSON_ROOT_PATH;
 
 import java.util.List;
 
@@ -19,9 +20,6 @@ import org.camunda.tngp.msgpack.mapping.Mapping;
 public class IOMappingTransformer
 {
     private static final String DEFAULT_MAPPING = "$";
-
-    private static final int SINGLE_MAPPING_COUNT = 1;
-    private static final int FIRST_MAPPING_IDX = 0;
 
     public static IOMapping transform(ExtensionElements extensionElements)
     {
@@ -50,8 +48,12 @@ public class IOMappingTransformer
 
         if (mappingElements == null || mappingElements.isEmpty())
         {
-            mappings = new Mapping[SINGLE_MAPPING_COUNT];
-            mappings[FIRST_MAPPING_IDX] = createMapping(null);
+            mappings = new Mapping[0];
+            // need no mappings
+        }
+        else if (mappingElements.size() == 1)
+        {
+            mappings = createNonRootMapping(mappingElements.get(0));
         }
         else
         {
@@ -63,6 +65,25 @@ public class IOMappingTransformer
                 mappings[i] = createMapping(mappingElement);
             }
         }
+        return mappings;
+    }
+
+    private static Mapping[] createNonRootMapping(DomElement mappingElement)
+    {
+        final String sourceMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_SOURCE);
+        final String targetMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_TARGET);
+
+        final Mapping[] mappings;
+        if (sourceMapping.equals(JSON_ROOT_PATH) && targetMapping.equals(JSON_ROOT_PATH))
+        {
+            mappings = new Mapping[0];
+        }
+        else
+        {
+            mappings = new Mapping[]{new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
+                                                 targetMapping)};
+        }
+
         return mappings;
     }
 

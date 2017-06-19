@@ -13,12 +13,16 @@
 package org.camunda.tngp.broker.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.*;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
+import java.io.IOException;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -39,6 +43,8 @@ import org.junit.rules.RuleChain;
 
 public class IncidentTest
 {
+    private static final String PROP_PAYLOAD = "payload";
+
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
@@ -199,6 +205,145 @@ public class IncidentTest
             .containsEntry("activityId", "failingTask")
             .containsEntry("activityInstanceKey", followUpEvent.key())
             .containsEntry("taskKey", -1);
+    }
+
+
+    @Test
+    public void shouldCreateIncidentForInvalidResultOnInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.string", "$")
+                                           .done());
+
+        // when
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                         .containsEntry("errorMessage", "Processing failed, since mapping will result in a non map object (json object).");
+    }
+
+    @Test
+    public void shouldResolveIncidentForInvalidResultOnInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.string", "$")
+                                           .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // then incident is created
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent, "{'string':{'obj':'test'}}");
+
+        // then
+        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        final byte[] result = (byte[]) followUpEvent.event()
+                                                    .get(PROP_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+
+        final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
+        assertThat(incidentResolvedEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                                 .containsEntry("errorMessage",
+                                                                "Processing failed, since mapping will result in a non map object (json object).")
+                                                 .containsEntry("bpmnProcessId", "process")
+                                                 .containsEntry("workflowInstanceKey", workflowInstanceKey)
+                                                 .containsEntry("activityId", "service")
+                                                 .containsEntry("activityInstanceKey", followUpEvent.key())
+                                                 .containsEntry("taskKey", -1);
+    }
+
+    @Test
+    public void shouldCreateIncidentForInvalidResultOnOutputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.jsonObject", "$")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
+        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                         .containsEntry("errorMessage", "Processing failed, since mapping will result in a non map object (json object).");
+    }
+
+    @Test
+    public void shouldResolveIncidentForInvalidResultOnOutputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.jsonObject", "$")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
+        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        // then incident is created
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
+
+        // then
+        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        final byte[] result = (byte[]) followUpEvent.event()
+                                                    .get(PROP_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+
+        final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
+        assertThat(incidentResolvedEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                                 .containsEntry("errorMessage",
+                                                                "Processing failed, since mapping will result in a non map object (json object).")
+                                                 .containsEntry("bpmnProcessId", "process")
+                                                 .containsEntry("workflowInstanceKey", workflowInstanceKey)
+                                                 .containsEntry("activityId", "service")
+                                                 .containsEntry("activityInstanceKey", followUpEvent.key())
+                                                 .containsEntry("taskKey", -1);
     }
 
     @Test
@@ -431,6 +576,8 @@ public class IncidentTest
             .containsEntry("taskKey", taskEvent.key());
     }
 
+
+
     private void failTaskWithNoRetriesLeft()
     {
         apiRule.openTaskSubscription(ClientApiRule.DEFAULT_TOPIC_NAME, ClientApiRule.DEFAULT_PARTITION_ID, "test").await();
@@ -506,6 +653,12 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.getEvent()).containsEntry("eventType", WorkflowInstanceEventType.PAYLOAD_UPDATED.name());
+    }
+
+
+    private void updatePayload(long workflowInstanceKey, SubscribedEvent activityInstanceEvent, String payload) throws IOException
+    {
+        updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(payload)));
     }
 
     private void cancelWorkflowInstance(final long workflowInstanceKey)

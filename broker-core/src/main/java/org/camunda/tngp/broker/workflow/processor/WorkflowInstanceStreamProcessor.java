@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.workflow.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.camunda.tngp.broker.util.payload.PayloadUtil.isNilPayload;
+import static org.camunda.tngp.broker.util.payload.PayloadUtil.isValidPayload;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
@@ -387,10 +389,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 version = (int) latestWorkflowVersionIndex.get(bpmnProcessId, 0, bpmnProcessId.capacity(), -1);
             }
 
-            final WorkflowInstanceEventType newEventType =
-                    workflowDeploymentCache.hasDeployedWorkflow(bpmnProcessId, version)
-                    ? WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED
-                    : WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED;
+            WorkflowInstanceEventType newEventType = WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED;
+
+            final DirectBuffer payload = workflowInstanceEvent.getPayload();
+            if (isNilPayload(payload) || isValidPayload(payload))
+            {
+                if (workflowDeploymentCache.hasDeployedWorkflow(bpmnProcessId, version))
+                {
+                    newEventType = WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
+                }
+            }
 
             workflowInstanceEvent
                     .setEventType(newEventType)
@@ -476,10 +484,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             sourcePayload = workflowInstanceEvent.getPayload();
             // only if we have no default mapping we have to use the mapping processor
-            if (mappings.length > 1 ||
-                (mappings.length == 1 &&
-                   (mappings[0].getSource().getExpression().capacity() > 1 ||
-                    mappings[0].getTargetQueryString().length() > 1)))
+            if (mappings.length > 0)
             {
                 final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
                 final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
@@ -777,10 +782,23 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
             final DirectBuffer workflowInstancePayload = payloadCache.getPayload(workflowInstanceEvent.getWorkflowInstanceKey());
-
-            final int resultLen = payloadMappingProcessor.merge(workflowInstanceEvent.getPayload(), workflowInstancePayload, mappings);
-            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+            DirectBuffer taskPayload = workflowInstanceEvent.getPayload();
+            final boolean isNilPayload = isNilPayload(taskPayload);
+            if (mappings.length > 0)
+            {
+                if (isNilPayload)
+                {
+                    taskPayload = workflowInstancePayload;
+                }
+                final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, mappings);
+                final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+                workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+            }
+            else if (isNilPayload)
+            {
+                // no payload from task complete
+                workflowInstanceEvent.setPayload(workflowInstancePayload, 0, workflowInstancePayload.capacity());
+            }
         }
 
         @Override
@@ -822,7 +840,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
                 workflowInstanceEvent
                     .setEventType(WorkflowInstanceEventType.WORKFLOW_INSTANCE_CANCELED)
-                    .setPayload(WorkflowInstanceEvent.EMPTY_PAYLOAD);
+                    .setPayload(WorkflowInstanceEvent.NO_PAYLOAD);
 
                 activityInstanceKey = workflowInstanceIndex.getActivityInstanceKey();
                 taskKey = activityInstanceIndex.wrapActivityInstanceKey(activityInstanceKey).getTaskKey();
@@ -998,16 +1016,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             // the index contains the activity when it is ready, activated or completing
             // in this cases, the payload can be updated and it is taken for the next workflow instance event
+            WorkflowInstanceEventType workflowInstanceEventType = WorkflowInstanceEventType.UPDATE_PAYLOAD_REJECTED;
             if (currentActivityInstanceKey > 0 && currentActivityInstanceKey == eventKey)
             {
-                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.PAYLOAD_UPDATED);
-
-                isUpdated = true;
+                final DirectBuffer payload = workflowInstanceEvent.getPayload();
+                if (isValidPayload(payload))
+                {
+                    workflowInstanceEventType = WorkflowInstanceEventType.PAYLOAD_UPDATED;
+                    isUpdated = true;
+                }
             }
-            else
-            {
-                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.UPDATE_PAYLOAD_REJECTED);
-            }
+            workflowInstanceEvent.setEventType(workflowInstanceEventType);
         }
 
         @Override
@@ -1031,5 +1050,4 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
     }
-
 }

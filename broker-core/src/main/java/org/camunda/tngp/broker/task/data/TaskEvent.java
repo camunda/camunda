@@ -9,7 +9,7 @@ import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEvent extends UnpackedObject
 {
-    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+    protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
 
     private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
@@ -17,7 +17,7 @@ public class TaskEvent extends UnpackedObject
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final ObjectProperty<TaskHeaders> headersProp = new ObjectProperty<>("headers", new TaskHeaders());
-    private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
+    private final BinaryProperty payloadProp = new BinaryProperty("payload", NO_PAYLOAD);
 
     public TaskEvent()
     {

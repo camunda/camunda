@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.task.processor;
 
+import static org.camunda.tngp.broker.util.payload.PayloadUtil.isNilPayload;
+import static org.camunda.tngp.broker.util.payload.PayloadUtil.isValidPayload;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import org.agrona.DirectBuffer;
@@ -295,18 +297,23 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             taskIndex.wrapTaskInstanceKey(eventKey);
             final short state = taskIndex.getState();
 
+            TaskEventType taskEventType = TaskEventType.COMPLETE_REJECTED;
+
             final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
-
-            if (isCompletable && BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
+            if (isCompletable)
             {
-                taskEvent.setEventType(TaskEventType.COMPLETED);
-                isCompleted = true;
+                final DirectBuffer payload = taskEvent.getPayload();
+                if (isNilPayload(payload) || isValidPayload(payload))
+                {
+                    if (BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
+                    {
+                        taskEventType = TaskEventType.COMPLETED;
+                        isCompleted = true;
+                    }
+                }
             }
 
-            if (!isCompleted)
-            {
-                taskEvent.setEventType(TaskEventType.COMPLETE_REJECTED);
-            }
+            taskEvent.setEventType(taskEventType);
         }
 
         @Override

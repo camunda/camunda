@@ -1,12 +1,13 @@
 package org.camunda.tngp.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.*;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUNDANT_MAPPING;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.NIL;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
@@ -14,8 +15,6 @@ import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.incident.data.ErrorType;
 import org.camunda.tngp.broker.test.EmbeddedBrokerRule;
@@ -30,7 +29,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -48,33 +46,6 @@ public class WorkflowTaskIOMappingTest
     private static final String NODE_STRING_PATH = "$.string";
     private static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
     private static final String NODE_ROOT_PATH = "$";
-
-
-    protected static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
-    protected static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
-    private static final byte[] MSG_PACK_BYTES;
-
-    public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
-
-    static
-    {
-        JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        byte[] bytes = null;
-        try
-        {
-            bytes = MSGPACK_MAPPER.writeValueAsBytes(
-                JSON_MAPPER.readTree(JSON_DOCUMENT));
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            MSG_PACK_BYTES = bytes;
-        }
-    }
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -173,7 +144,7 @@ public class WorkflowTaskIOMappingTest
             .taskDefinition("service", "external", 5));
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
@@ -200,7 +171,7 @@ public class WorkflowTaskIOMappingTest
                         .ioMapping("service", null, null));
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
@@ -232,7 +203,7 @@ public class WorkflowTaskIOMappingTest
             .done());
 
         // when
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
         // then payload is expected as
@@ -242,7 +213,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseEmptyMapIfCreatedWithNoPayload() throws Throwable
+    public void shouldUseNILIfCreatedWithNoPayload() throws Throwable
     {
         // given
         testClient.deploy(wrap(
@@ -260,7 +231,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
         // then
-        assertThat(event.event()).containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+        assertThat(event.event()).containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, NIL);
     }
 
 
@@ -280,7 +251,7 @@ public class WorkflowTaskIOMappingTest
             .done());
 
         // when
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
 
         // then incident is created
@@ -307,7 +278,7 @@ public class WorkflowTaskIOMappingTest
             .done());
 
         // when
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
 
         // then incident is created
@@ -356,10 +327,10 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5));
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeTaskOfType("external", MSG_PACK_BYTES);
+        testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
@@ -388,10 +359,10 @@ public class WorkflowTaskIOMappingTest
 //            .taskDefinition("service", "external", 5));
 //
 //        testClient.createWorkflowInstance("process", MSGPACK_MAPPER.writeValueAsBytes(jsonObject));
-//        final Long workflowInstanceKey = testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+//        final Long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 //
 //        // when
-//        testClient.completeAllTaskOfType("external", new byte[][]{ MSGPACK_MAPPER.writeValueAsBytes(jsonObject), MSG_PACK_BYTES});
+//        testClient.completeAllTaskOfType("external", new byte[][]{ MSGPACK_MAPPER.writeValueAsBytes(jsonObject), MSGPACK_PAYLOAD});
 //
 //        // then
 //        SubscribedEvent activityActivatedEvent =
@@ -413,7 +384,7 @@ public class WorkflowTaskIOMappingTest
 //        assertThat(jsonNode).isNotNull().isNotEmpty();
 //        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
 //        assertThat(activityCompletedEvent.event())
-//            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, MSG_PACK_BYTES);
+//            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
 //    }
 
     @Test
@@ -431,10 +402,10 @@ public class WorkflowTaskIOMappingTest
             .taskDefinition("service", "external", 5)
             .ioMapping("service", inputMapping, null));
 
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeTaskOfType("external", MSG_PACK_BYTES);
+        testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
@@ -445,7 +416,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseEmptyMapIfCompleteWithNoPayload() throws Throwable
+    public void shouldUseWFPayloadIfCompleteWithNoPayload() throws Throwable
     {
         // given
         testClient.deploy(wrap(
@@ -456,7 +427,7 @@ public class WorkflowTaskIOMappingTest
                 .done())
             .taskDefinition("service", "external", 5));
 
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
         testClient.completeTaskOfType("external");
@@ -465,7 +436,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
         assertThat(activityCompletedEvent.event())
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
     }
 
     @Test
@@ -483,10 +454,10 @@ public class WorkflowTaskIOMappingTest
                 .output(NODE_STRING_PATH, "$.newFoo")
                 .output(NODE_JSON_OBJECT_PATH, "$.newObj")
             .done());
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeTaskOfType("external", MSG_PACK_BYTES);
+        testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
         // then payload contains old objects
@@ -511,10 +482,10 @@ public class WorkflowTaskIOMappingTest
             .ioMapping("service")
                 .output("$.notExisting", "$.notExist")
             .done());
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
-        testClient.completeTaskOfType("external", MSG_PACK_BYTES);
+        testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
         testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
 
@@ -523,163 +494,6 @@ public class WorkflowTaskIOMappingTest
         assertThat(incidentEvent.event())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
             .containsEntry("errorMessage", "No data found for query $.notExisting.");
-    }
-
-    @Test
-    public void shouldCreateIncidentForInvalidSourcePayloadOnInputMapping() throws Throwable
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-                .taskDefinition("service", "external", 5)
-                .ioMapping("service")
-                    .input("$.notExisting", "$.notExist")
-                .done());
-
-        // when
-        testClient.createWorkflowInstance("process",
-                                          MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
-
-        // then incident is created
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
-
-        assertThat(incidentEvent.key()).isGreaterThan(0);
-        assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Can't extract from source document, since it is not a map (json object).");
-    }
-
-    @Test
-    public void shouldCreateIncidentForInvalidSourcePayloadOnOutputMapping() throws Throwable
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-                .taskDefinition("service", "external", 5));
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
-
-        // when
-        testClient.completeTaskOfType("external",
-                                      MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
-        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
-
-        // then incident is created
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
-
-        assertThat(incidentEvent.key()).isGreaterThan(0);
-        assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Can't extract from source document, since it is not a map (json object).");
-    }
-
-    @Test
-    public void shouldCreateIncidentForInvalidResultOnInputMapping() throws Throwable
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-                .taskDefinition("service", "external", 5)
-                .ioMapping("service")
-                    .input("$.string", "$")
-                .done());
-
-        // when
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
-
-        // then incident is created
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
-
-        assertThat(incidentEvent.key()).isGreaterThan(0);
-        assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Processing failed, since mapping will result in a non map object (json object).");
-    }
-
-    @Test
-    public void shouldCreateIncidentForInvalidResultOnOutputMapping() throws Throwable
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-                .taskDefinition("service", "external", 5)
-                .ioMapping("service")
-                    .input("$.jsonObject", "$")
-                    .output("$.testAttr", "$")
-                .done());
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
-
-        // when
-        testClient.completeTaskOfType("external",
-                                      MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
-        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
-
-        // then incident is created
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
-
-        assertThat(incidentEvent.key()).isGreaterThan(0);
-        assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Processing failed, since mapping will result in a non map object (json object).");
-    }
-
-    @Test
-    public void shouldCreateIncidentIfTargetPayloadIsInvalid() throws Exception
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-                .taskDefinition("service", "external", 5)
-                .ioMapping("service")
-                    .input("$", "$")
-                .done());
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
-
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
-
-        // when update
-        apiRule.createCmdRequest()
-               .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-               .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
-               .eventTypeWorkflow()
-               .key(activityInstanceEvent.key())
-               .command()
-               .put("eventType", "UPDATE_PAYLOAD")
-               .put("workflowInstanceKey", workflowInstanceKey)
-               .put("payload", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")))
-               .done()
-               .sendAndAwait();
-
-        testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
-
-        testClient.completeTaskOfType("external");
-
-        // then
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
-
-        assertThat(incidentEvent.key()).isGreaterThan(0);
-        assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-            .containsEntry("errorMessage", "Can't merge into the target document, since it is not a map (json object).");
     }
 
     @Test
@@ -734,7 +548,7 @@ public class WorkflowTaskIOMappingTest
              .done());
 
         // when
-        testClient.createWorkflowInstance("process", MSG_PACK_BYTES);
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
         // then payload is expected as

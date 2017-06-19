@@ -8,6 +8,7 @@ import java.util.Map;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHeaders;
+import org.camunda.tngp.client.task.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.task.impl.TaskEvent;
 
 public class TaskImpl implements Task
@@ -26,6 +27,8 @@ public class TaskImpl implements Task
     protected static final int STATE_LOCKED = 0;
     protected static final int STATE_COMPLETED = 1;
     protected static final int STATE_FAILED = 2;
+
+    protected boolean payloadUpdated = false;
 
     public TaskImpl(
             TaskTopicClient tasksClient,
@@ -80,13 +83,16 @@ public class TaskImpl implements Task
     @Override
     public void complete()
     {
-        tasksClient.complete()
-            .taskKey(key)
-            .taskType(type)
-            .lockOwner(lockOwner)
-            .headers(headers)
-            .payload(payload.getAsJson())
-            .execute();
+        final CompleteTaskCmd completeTaskCmd = tasksClient.complete()
+                                                           .taskKey(key)
+                                                           .taskType(type)
+                                                           .lockOwner(lockOwner)
+                                                           .headers(headers);
+        if (payloadUpdated)
+        {
+            completeTaskCmd.payload(payload.getAsJson());
+        }
+        completeTaskCmd.execute();
 
         state = STATE_COMPLETED;
     }
@@ -138,6 +144,7 @@ public class TaskImpl implements Task
     @Override
     public void setPayload(String updatedPayload)
     {
+        payloadUpdated = true;
         payload.setJson(updatedPayload);
     }
 

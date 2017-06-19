@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -15,10 +17,34 @@ import org.camunda.tngp.msgpack.spec.MsgPackReader;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.camunda.tngp.test.util.collection.MapBuilder;
-
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackUtil
 {
+    public static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
+    public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
+    public static final byte[] MSGPACK_PAYLOAD;
+
+    static
+    {
+        JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        byte[] bytes = null;
+        try
+        {
+            bytes = MSGPACK_MAPPER.writeValueAsBytes(
+                JSON_MAPPER.readTree(JSON_DOCUMENT));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            MSGPACK_PAYLOAD = bytes;
+        }
+    }
+
 
     public static DirectBuffer utf8(String value)
     {

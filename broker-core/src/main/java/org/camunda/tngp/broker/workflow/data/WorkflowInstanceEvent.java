@@ -12,7 +12,7 @@ import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
 public class WorkflowInstanceEvent extends UnpackedObject
 {
-    public static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+    public static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
 
     public static final String PROP_EVENT_TYPE = "eventType";
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
@@ -26,7 +26,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
     private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
-    private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, EMPTY_PAYLOAD);
+    private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, NO_PAYLOAD);
 
     public WorkflowInstanceEvent()
     {

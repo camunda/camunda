@@ -1,18 +1,13 @@
 package org.camunda.tngp.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.*;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.*;
 import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
 import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
-import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.test.EmbeddedBrokerRule;
@@ -28,8 +23,6 @@ import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest
 {
-    private static final byte[] PAYLOAD = getBytes("payload");
-
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientApiRule apiRule = new ClientApiRule();
@@ -148,7 +141,7 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = testClient
-            .sendCreateWorkflowInstanceRequest("process", PAYLOAD);
+            .sendCreateWorkflowInstanceRequest("process", MSGPACK_PAYLOAD);
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -159,8 +152,29 @@ public class CreateWorkflowInstanceTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_PAYLOAD, PAYLOAD);
+            .containsEntry(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
     }
 
+    @Test
+    public void shouldRejectWorkflowInstanceWithInvalidPayload() throws Exception
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                              .startEvent()
+                              .endEvent()
+                              .done());
+
+        // when
+        final ExecuteCommandResponse resp = testClient
+            .sendCreateWorkflowInstanceRequest("process", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
+
+        // then
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.getEvent())
+            .containsEntry(PROP_EVENT_TYPE, "WORKFLOW_INSTANCE_REJECTED")
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+    }
 
 }

@@ -92,7 +92,7 @@ public class MsgPackConverter
         final JsonParser parser = inFormat.createParser(in);
         final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING);
         final JsonToken token = parser.nextToken();
-        if (token != JsonToken.START_OBJECT && token != JsonToken.START_ARRAY)
+        if (token != JsonToken.START_OBJECT && token != JsonToken.START_ARRAY && token != JsonToken.VALUE_NULL)
         {
             throw new RuntimeException("Document does not begin with an object or array");
         }

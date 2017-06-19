@@ -58,13 +58,13 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         if (error instanceof MappingException)
         {
-            result = handlePayloadMappingException(failureEvent, (MappingException) error);
+            result = handlePayloadException(failureEvent, ErrorType.IO_MAPPING_ERROR, error);
         }
 
         return result;
     }
 
-    private int handlePayloadMappingException(LoggedEvent failureEvent, MappingException error)
+    private int handlePayloadException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
     {
 
         incidentEventMetadata.reset()
@@ -74,7 +74,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         incidentEvent.reset();
         incidentEvent
-            .setErrorType(ErrorType.IO_MAPPING_ERROR)
+            .setErrorType(errorType)
             .setErrorMessage(error.getMessage())
             .setFailureEventPosition(failureEvent.getPosition());
 

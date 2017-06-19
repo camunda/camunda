@@ -131,7 +131,7 @@ public class BpmnTransformerTests
     }
 
     @Test
-    public void shouldTransformDefaultTaskMapping()
+    public void shouldNotCreateDefaultTaskMapping()
     {
         // given task without specified io mapping
         final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
@@ -150,16 +150,14 @@ public class BpmnTransformerTests
 
         assertThat(serviceTask.getIoMapping()).isNotNull();
         final Mapping[] inputMappings = serviceTask.getIoMapping().getInputMappings();
-        assertThat(inputMappings.length).isEqualTo(1);
-        assertThat(inputMappings[0].getSource().isValid()).isTrue();
+        assertThat(inputMappings.length).isEqualTo(0);
 
         final Mapping[] outputMappings = serviceTask.getIoMapping().getOutputMappings();
-        assertThat(outputMappings.length).isEqualTo(1);
-        assertThat(outputMappings[0].getSource().isValid()).isTrue();
+        assertThat(outputMappings.length).isEqualTo(0);
     }
 
     @Test
-    public void shouldTransformTaskMapping()
+    public void shouldDiscardTaskRootMapping()
     {
         // given
         final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
@@ -182,13 +180,44 @@ public class BpmnTransformerTests
 
         assertThat(serviceTask.getIoMapping()).isNotNull();
         final Mapping[] inputMappings = serviceTask.getIoMapping().getInputMappings();
+        assertThat(inputMappings.length).isEqualTo(0);
+
+
+        final Mapping[] outputMappings = serviceTask.getIoMapping().getOutputMappings();
+        assertThat(outputMappings.length).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldTransformTaskMapping()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+                                                             .startEvent()
+                                                             .serviceTask("foo")
+                                                             .name("bar")
+                                                             .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+            .input("$.foo", "$.bar")
+            .output("$.bar", "$.foo")
+            .done();
+
+        // when
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
+
+        // then
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("foo"));
+        final ExecutableServiceTask serviceTask = (ExecutableServiceTask) element;
+
+        assertThat(serviceTask.getIoMapping()).isNotNull();
+        final Mapping[] inputMappings = serviceTask.getIoMapping().getInputMappings();
         assertThat(inputMappings.length).isEqualTo(1);
         assertThat(inputMappings[0].getSource().isValid()).isTrue();
-
 
         final Mapping[] outputMappings = serviceTask.getIoMapping().getOutputMappings();
         assertThat(outputMappings.length).isEqualTo(1);
         assertThat(outputMappings[0].getSource().isValid()).isTrue();
+
     }
 
     protected ExecutableWorkflow transformSingleProcess(BpmnModelInstance bpmnModelInstance)
