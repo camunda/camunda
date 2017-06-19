@@ -6,11 +6,7 @@ import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 
 import java.nio.ByteBuffer;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getFragmentLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 /**
@@ -18,8 +14,6 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
  */
 public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 {
-    public static final int POSITION_LENGTH = positionOffset(messageOffset(0)) + SIZE_OF_LONG;
-
     protected final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
     protected long lastReadEventPosition = -1;
 
@@ -31,7 +25,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
     @Override
     public int process(ByteBuffer byteBuffer, int readResult)
     {
-        if (byteBuffer.capacity() < POSITION_LENGTH)
+        if (byteBuffer.capacity() < HEADER_BLOCK_LENGTH)
         {
             readResult = (int) OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
         }
@@ -40,7 +34,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 
         readResult = calculateCorrectReadResult(readResult, byteBuffer.position() - readResult);
 
-        if (readResult >= POSITION_LENGTH)
+        if (readResult >= HEADER_BLOCK_LENGTH)
         {
             byteBuffer.position(readResult);
             byteBuffer.limit(readResult);
@@ -64,7 +58,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
     private int calculateCorrectReadResult(int readResult, int position)
     {
         int remainingBytes = readResult;
-        while (remainingBytes >= POSITION_LENGTH)
+        while (remainingBytes >= HEADER_BLOCK_LENGTH)
         {
             final int fragmentLength = getFragmentLength(directBuffer, position);
 

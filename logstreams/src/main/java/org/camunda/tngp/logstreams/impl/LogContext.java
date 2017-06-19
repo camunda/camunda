@@ -12,21 +12,21 @@ import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 public class LogContext extends SimpleStateMachineContext
 {
     private long currentBlockAddress = INVALID_ADDRESS;
-    private long lastPosition = 0;
+    private long firstEventPosition = 0;
 
     LogContext(StateMachine<?> stateMachine)
     {
         super(stateMachine);
     }
 
-    public long getLastPosition()
+    public long getFirstEventPosition()
     {
-        return lastPosition;
+        return firstEventPosition;
     }
 
-    public void setLastPosition(long lastPosition)
+    public void setFirstEventPosition(long lastPosition)
     {
-        this.lastPosition = lastPosition;
+        this.firstEventPosition = lastPosition;
     }
 
     public long getCurrentBlockAddress()
@@ -51,12 +51,12 @@ public class LogContext extends SimpleStateMachineContext
 
     public void resetLastPosition()
     {
-        setLastPosition(0);
+        setFirstEventPosition(0);
     }
 
     public void reset()
     {
-        this.lastPosition = 0;
+        this.firstEventPosition = 0;
         resetCurrentBlockAddress();
     }
 }

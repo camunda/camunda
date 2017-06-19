@@ -192,52 +192,63 @@ public class LogBlockIndexController implements Agent
         @Override
         public int doWork(LogContext logContext)
         {
-            // open state
-            if (nextAddress == INVALID_ADDRESS)
-            {
-                nextAddress = logStorage.getFirstBlockAddress();
-            }
-
             int result = 0;
             if (nextAddress != INVALID_ADDRESS)
             {
                 final long currentAddress = nextAddress;
 
                 // read buffer with only complete events
-                final long opResult = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
-                if (opResult == OP_RESULT_INVALID_ADDR)
+                final long nextAddressToRead = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
+                if (nextAddressToRead > currentAddress)
+                {
+                    tryToCreateBlockIndex(logContext, currentAddress);
+                    // set next address
+                    nextAddress = nextAddressToRead;
+                    result = 1;
+                }
+                else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
                 {
                     System.err.println(String.format("Can't read from illegal address: %d", currentAddress));
                 }
-                else
+                else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
                 {
-                    if (opResult == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
-                    {
-                        increaseBufferSize();
-                        result = 1;
-                    }
-                    else if (opResult > currentAddress)
-                    {
-                        tryToCreateBlockIndex(logContext, currentAddress);
-                        // set next address
-                        nextAddress = opResult;
-                        result = 1;
-                    }
+                    increaseBufferSize();
+                    result = 1;
                 }
+            }
+            else
+            {
+                nextAddress = resolveLastValidAddress();
             }
             return result;
         }
 
+        private long resolveLastValidAddress()
+        {
+            long newAddress = 0;
+            if (blockIndex.size() > 0)
+            {
+                newAddress = blockIndex.getAddress(blockIndex.size());
+            }
+            if (newAddress <= 0)
+            {
+                newAddress = logStorage.getFirstBlockAddress();
+            }
+            return newAddress;
+        }
+
         private void tryToCreateBlockIndex(LogContext logContext, long currentAddress)
         {
+            if (!logContext.hasCurrentBlockAddress())
+            {
+                logContext.setCurrentBlockAddress(currentAddress);
+                logContext.setFirstEventPosition(getPosition(buffer, 0));
+            }
+
             currentBlockSize += ioBuffer.position();
             // if block size is greater then or equals to index block size we will create an index
             if (currentBlockSize >= indexBlockSize)
             {
-                if (!logContext.hasCurrentBlockAddress())
-                {
-                    logContext.setCurrentBlockAddress(currentAddress);
-                }
                 logContext.take(TRANSITION_CREATE);
                 currentBlockSize = 0;
             }
@@ -246,13 +257,6 @@ public class LogBlockIndexController implements Agent
                 // block was not filled enough
                 // read next events into buffer after the current read events
                 ioBuffer.clear();
-
-                // cache address of block begin
-                if (!logContext.hasCurrentBlockAddress())
-                {
-                    logContext.setCurrentBlockAddress(currentAddress);
-                    logContext.setLastPosition(getPosition(buffer, 0));
-                }
             }
         }
 
@@ -284,7 +288,7 @@ public class LogBlockIndexController implements Agent
                 // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
                 logStorage.flush();
 
-                snapshotWriter = snapshotStorage.createSnapshot(name, logContext.getLastPosition());
+                snapshotWriter = snapshotStorage.createSnapshot(name, logContext.getFirstEventPosition());
 
                 snapshotWriter.writeSnapshot(blockIndex);
                 snapshotWriter.commit();
@@ -300,7 +304,7 @@ public class LogBlockIndexController implements Agent
             }
             finally
             {
-                logContext.setLastPosition(0);
+                logContext.setFirstEventPosition(0);
                 // regardless whether the writing of the snapshot was successful or not we go to the open state
                 logContext.take(TRANSITION_DEFAULT);
             }
@@ -420,20 +424,13 @@ public class LogBlockIndexController implements Agent
 
         private void createBlockIdx(LogContext logContext, long addressOfFirstEventInBlock)
         {
-            // wrap buffer to access first event
-            buffer.wrap(ioBuffer);
-
             // write block IDX
-            final long contextPosition = logContext.getLastPosition();
-            final long position = contextPosition == 0
-                ? getPosition(buffer, 0)
-                : contextPosition;
+            final long position = logContext.getFirstEventPosition();
             blockIndex.addBlock(position, addressOfFirstEventInBlock);
 
             // check if snapshot should be created
             if (snapshotPolicy.apply(position))
             {
-                logContext.setLastPosition(position);
                 logContext.take(TRANSITION_SNAPSHOT);
             }
             else

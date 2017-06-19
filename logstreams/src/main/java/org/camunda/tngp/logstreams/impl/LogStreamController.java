@@ -138,7 +138,7 @@ public class LogStreamController implements Agent
                 final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
                 final long position = buffer.getLong(positionOffset(messageOffset(0)));
-                context.setLastPosition(position);
+                context.setFirstEventPosition(position);
 
                 final long address = logStorage.append(nioBuffer);
 
@@ -172,7 +172,7 @@ public class LogStreamController implements Agent
                 final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
                 try
                 {
-                    logStreamWriteErrorListener.onFailed(context.getLastPosition());
+                    logStreamWriteErrorListener.onFailed(context.getFirstEventPosition());
                 }
                 catch (Exception e)
                 {

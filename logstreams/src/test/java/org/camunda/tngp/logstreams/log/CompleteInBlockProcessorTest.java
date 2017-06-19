@@ -22,7 +22,7 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
  */
-public class CompleteAndCommittedEventsInBlockProcessorTest
+public class CompleteInBlockProcessorTest
 {
     private static final int SEGMENT_SIZE = 1024 * 16;
 
@@ -67,7 +67,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(idx, headerLength(0, 96)); // aligned size: 48
+        directBuffer.putInt(idx, headerLength(0, 256)); // aligned size: 48
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         fsLogStorage.open();
@@ -184,7 +184,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldInsufficientBufferCapacityForLessThenHalfFullBuffer()
     {
         // given buffer
-        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN / 2);
+        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN);
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
@@ -199,7 +199,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     public void shouldTruncateBufferOnHalfBufferWasRead()
     {
         // given buffer
-        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(0, 96)));
+        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(0, 256)));
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);

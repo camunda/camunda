@@ -387,6 +387,12 @@ public class LogBlockIndexControllerTest
         // read again from LOG_ADDRESS
         when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
             .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        // resolve last valid address -> first block address == LOG_ADDRESS
+        blockIdxController.doWork();
+        assertThat(blockIdxController.getNextAddress()).isEqualTo(LOG_ADDRESS);
+
+        // read
         blockIdxController.doWork();
         assertThat(blockIdxController.getNextAddress()).isGreaterThan(READ_BLOCK_SIZE);
     }
