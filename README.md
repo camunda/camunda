@@ -3,14 +3,18 @@
 Zeebe (or "zb") is a modern, distributed Workflow System that scales orchestration of workers, functions & microservices using visual workflows. With Zeebe, you can reliably processes all your transactions as they happen. [Learn More](/docs/src/introduction/why-zeebe.md)
 
 **Features**
-​
-* High Throughput​
-* Horizontal Scalability​
-* Durability & Fault Tolerance​
-* Predictable Response Times​
-* Fully Message-Driven​
-* Easy to operate​
-* Language agnostic​
+
+* High Throughput
+* Horizontal Scalability
+* Durability & Fault Tolerance
+* Predictable Response Times
+* Fully Message-Driven
+* Easy to operate
+* Language agnostic
+
+## DISCLAIMER
+
+This project is work in progress and currently NOT meant for production use!
 
 ## Documentation
 
