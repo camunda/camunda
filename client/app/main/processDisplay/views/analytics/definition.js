@@ -9,6 +9,7 @@ const Statistics = decorateWithSelector(InnerStatistics, getStatisticsState);
 const {AnalyticsDiagram, AnalysisSelection} = createAnalyticsComponents();
 
 export const definition = {
+  id: 'branch_analysis',
   name: 'Branch Analysis',
   Diagram: () => <Children>
     <AnalyticsDiagram />

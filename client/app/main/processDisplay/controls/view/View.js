@@ -16,14 +16,12 @@ export function View({onViewChanged}) {
           None
         </Option>
         {
-          Object
-            .keys(definitions)
-            .sort() // alphabetic order should be bit more intuitive
-            .map((view, index) => {
-              const {name} = definitions[view];
+          definitions
+            .map((definition, index) => {
+              const {name, id} = definition;
 
-              return <Option value={view}>
-                <Link selector={createRouteSelectorForView(view)} />
+              return <Option value={id}>
+                <Link selector={createRouteSelectorForView(id)} />
                 {name}
               </Option>;
             })

@@ -14,14 +14,16 @@ describe('main/processDisplay/views createDefinitionCases', () => {
     currentView = 'd1';
     shouldDisplay = view => view === currentView;
 
-    definitions = {
-      d1: {
+    definitions = [
+      {
+        id: 'd1',
         Component: createMockComponent('d1')
       },
-      d2: {
+      {
+        id: 'd2',
         Component: createMockComponent('d2')
       }
-    };
+    ];
 
     __set__('definitions', definitions);
 
@@ -39,13 +41,13 @@ describe('main/processDisplay/views createDefinitionCases', () => {
   it('should display d1 Component when d1 view is choosen', () => {
     update();
 
-    expect(node).to.contain.text(definitions.d1.Component.text);
+    expect(node).to.contain.text(definitions[0].Component.text);
   });
 
   it('should display d2 Component when d2 view is choosen', () => {
     currentView = 'd2';
     update();
 
-    expect(node).to.contain.text(definitions.d2.Component.text);
+    expect(node).to.contain.text(definitions[1].Component.text);
   });
 });

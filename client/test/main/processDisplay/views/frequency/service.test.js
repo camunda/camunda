@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {getHeatmap, addHeatmapOverlay, __set__, __ResetDependency__} from 'main/processDisplay/views/heatmap/service';
+import {getHeatmap, addHeatmapOverlay, __set__, __ResetDependency__} from 'main/processDisplay/views/frequency/service';
 
 describe('Heatmap service', () => {
   const heatmap = {

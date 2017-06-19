@@ -11,11 +11,11 @@ export const AnalysisInput = withSelector(({name}) => {
         <Match>
           <Case predicate={isSelected}>
             <span>
-              <button type="button" className="btn btn-link btn-xs pull-right" style="padding-top: 0; padding-bottom: 0;">
+              <Text property="name" />
+              <button type="button" className="btn btn-link btn-xs" style="padding-top: 0; padding-bottom: 0;">
                 <OnEvent event="click" listener={unset} />
                 ×
               </button>
-              <Text property="name" />
             </span>
           </Case>
           <Default>
