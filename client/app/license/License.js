@@ -98,12 +98,14 @@ export function License() {
       }
 
       if (redirection) {
-        message += ' You will be redirected to main page shortly';
+        message += ` You will be redirected to login page shortly.
+          <a href="/">Click here to go to login page immediately</a>
+        `;
       }
 
       setElementVisibility(messageNode, true);
 
-      messageNode.innerText = message;
+      messageNode.innerHTML = message;
 
       removeClass(messageNode, 'alert-danger');
       addClass(messageNode, 'alert-success');
