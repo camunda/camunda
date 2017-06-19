@@ -329,7 +329,7 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public CompletableFuture<Void> truncate(long position)
+    public void truncate(long position)
     {
         if (logStreamController != null)
         {
@@ -345,15 +345,11 @@ public final class LogStreamImpl implements LogStream
         if (truncateAddress != INVALID_ADDRESS)
         {
             logStorage.truncate(truncateAddress);
-            return logBlockIndexController.truncate();
+            logBlockIndexController.truncate();
         }
         else
         {
-            final CompletableFuture completableFuture = new CompletableFuture();
-            completableFuture.completeExceptionally(
-                new IllegalArgumentException(
-                    String.format(EXCEPTION_MSG_TRUNCATE_FAILED, position)));
-            return completableFuture;
+            throw  new IllegalArgumentException(String.format(EXCEPTION_MSG_TRUNCATE_FAILED, position));
         }
     }
 

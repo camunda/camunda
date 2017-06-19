@@ -112,7 +112,7 @@ public class LogStreamUtil
                 else
                 {
                     hasNext = false;
-                    if (currentPosition == position)
+                    if (currentPosition >= position)
                     {
                         address = currentAddress;
                     }
@@ -140,15 +140,6 @@ public class LogStreamUtil
         }
 
         protected boolean readMessage(final int fragmentLength)
-        {
-            if (fragmentLength >= buffer.capacity())
-            {
-                return readParts(fragmentLength);
-            }
-            return read(fragmentLength);
-        }
-
-        protected boolean readParts(final int fragmentLength)
         {
             int remainingBytes = fragmentLength;
             while (remainingBytes > 0)

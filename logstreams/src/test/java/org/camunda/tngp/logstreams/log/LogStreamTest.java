@@ -611,18 +611,16 @@ public class LogStreamTest
         stream.getLogBlockIndexController().doWork();
 
         // when
-        final CompletableFuture<Void> truncateFuture = stream.truncate(TRUNCATE_POSITION);
+        stream.truncate(TRUNCATE_POSITION);
 
         // then
         verify(storage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(truncateFuture.isDone()).isFalse();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
 
         // when
         stream.getLogBlockIndexController().doWork();
 
         // then
-        assertThat(truncateFuture.isDone()).isTrue();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
     }
 
@@ -649,18 +647,16 @@ public class LogStreamTest
         stream.getLogBlockIndexController().doWork();
 
         // when
-        final CompletableFuture<Void> truncateFuture = stream.truncate(TRUNCATE_POSITION);
+        stream.truncate(TRUNCATE_POSITION);
 
         // then
         verify(storage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(truncateFuture.isDone()).isFalse();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
 
         // when
         stream.getLogBlockIndexController().doWork();
 
         // then
-        assertThat(truncateFuture.isDone()).isTrue();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
     }
 
@@ -688,18 +684,16 @@ public class LogStreamTest
         stream.getLogBlockIndexController().doWork();
 
         // when
-        final CompletableFuture<Void> truncateFuture = stream.truncate(TRUNCATE_POSITION);
+        stream.truncate(TRUNCATE_POSITION);
 
         // then
         verify(storage.getMock()).truncate(TRUNCATE_START_ADDRESS + EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(truncateFuture.isDone()).isFalse();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
 
         // when
         stream.getLogBlockIndexController().doWork();
 
         // then
-        assertThat(truncateFuture.isDone()).isTrue();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
     }
 
@@ -729,18 +723,16 @@ public class LogStreamTest
         stream.getLogBlockIndexController().doWork();
 
         // when
-        final CompletableFuture<Void> truncateFuture = stream.truncate(TRUNCATE_POSITION);
+        stream.truncate(TRUNCATE_POSITION);
 
         // then
         verify(storage.getMock()).truncate(TRUNCATE_START_ADDRESS + EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(truncateFuture.isDone()).isFalse();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
 
         // when
         stream.getLogBlockIndexController().doWork();
 
         // then
-        assertThat(truncateFuture.isDone()).isTrue();
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
     }
 
@@ -763,11 +755,44 @@ public class LogStreamTest
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(LOG_ADDRESS);
         when(mockBlockIndex.size()).thenReturn(1);
 
-        // when truncate is called
-        final CompletableFuture<Void> truncateFuture = stream.truncate(TRUNCATE_POSITION);
+        // expect
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("Truncation failed! Position 101 was not found.");
 
-        // then truncate was completed exceptionally
-        assertThat(truncateFuture.isCompletedExceptionally()).isTrue();
-        assertThat(truncateFuture).hasFailedWithThrowableThat().hasMessage("Truncation failed! Position " + TRUNCATE_POSITION + " was not found.");
+        // when truncate is called
+        stream.truncate(TRUNCATE_POSITION);
+    }
+
+    @Test
+    public void shouldTruncateIfPositionOfEventWasHigher()
+    {
+        // given
+        final MockLogStorage storage = new MockLogStorage();
+        storage.add(newLogEntry().position(TRUNCATE_POSITION + 1).maxPosition(TRUNCATE_POSITION + 1).partlyRead());
+
+        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
+            .agentRunnerService(mockAgentRunnerService)
+            .logStorage(storage.getMock())
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .logStreamControllerDisabled(true)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .build();
+
+        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION + 1)).thenReturn(LOG_ADDRESS);
+        when(mockBlockIndex.size()).thenReturn(1);
+
+        // given open log stream and open block index controller
+        stream.openAsync();
+        stream.getLogBlockIndexController().doWork();
+
+        // when truncate is called
+        stream.truncate(TRUNCATE_POSITION);
+        stream.getLogBlockIndexController().doWork();
+
+        // then
+        verify(storage.getMock()).truncate(LOG_ADDRESS);
+        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
     }
 }

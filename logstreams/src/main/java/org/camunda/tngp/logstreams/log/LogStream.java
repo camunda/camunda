@@ -199,12 +199,12 @@ public interface LogStream extends AutoCloseable
 
     /**
      * Truncates the log stream from the given position to the end of the stream.
+     * Each event which has a higher position as the given will be truncated.
      * This method will truncated the log storage and block index.
-     *
      *
      * @param position the position to start the truncation
      * @return the future which is completed if the truncation was successful
      */
-    CompletableFuture<Void> truncate(long position);
+    void truncate(long position);
 
 }
