@@ -19,6 +19,7 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -59,6 +60,11 @@ public class ImportIT  {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
+  @Before
+  public void setUp() {
+    embeddedOptimizeRule.resetImportStartIndexes();
+  }
 
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {

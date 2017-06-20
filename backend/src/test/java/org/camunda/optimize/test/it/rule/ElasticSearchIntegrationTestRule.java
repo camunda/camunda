@@ -4,9 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.bulk.byscroll.BulkByScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -20,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +33,7 @@ import java.util.Properties;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
@@ -104,6 +110,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       esclient.admin().indices()
           .prepareRefresh(this.getOptimizeIndex())
           .get();
+      esclient.admin().indices()
+          .prepareFlush(this.getOptimizeIndex())
+          .get();
     } catch (IndexNotFoundException e) {
       //nothing to do
     }
@@ -172,20 +181,18 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    try {
-      String indexName = properties.getProperty("camunda.optimize.es.index");
-      boolean exists = esclient.admin().indices()
-          .prepareExists(indexName)
-          .execute().actionGet().isExists();
-      if (exists) {
-        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-            .refresh(true)
-            .filter(matchAllQuery())
-            .source(indexName)
-            .get();
-      }
-    } catch (IndexNotFoundException e) {
-      //nothing to do
+    String indexName = properties.getProperty("camunda.optimize.es.index");
+    boolean exists = esclient.admin().indices()
+        .prepareExists(indexName)
+        .execute().actionGet().isExists();
+
+    if (exists) {
+      BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+          .refresh(true)
+          .filter(matchAllQuery())
+          .source(indexName)
+          .execute()
+          .actionGet();
     }
   }
 
@@ -195,7 +202,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void assureElasticsearchIsClean() {
     try {
-      SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
+      SearchResponse response = esclient
+          .prepareSearch(this.getOptimizeIndex())
           .setQuery(matchAllQuery())
           .get();
       Long hits = response.getHits().getTotalHits();

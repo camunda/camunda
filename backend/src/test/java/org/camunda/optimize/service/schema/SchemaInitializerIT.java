@@ -3,6 +3,8 @@ package org.camunda.optimize.service.schema;
 import org.camunda.optimize.dto.optimize.importing.EventDto;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -14,6 +16,8 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.mapper.StrictDynamicMappingException;
 import org.elasticsearch.indices.TypeMissingException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +55,8 @@ public class SchemaInitializerIT {
   private ElasticSearchSchemaManager manager;
   @Autowired
   private Client transportClient;
+  @Autowired
+  private ImportJobExecutor jobExecutor;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -62,10 +68,14 @@ public class SchemaInitializerIT {
   public static RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
-  @Test
-  public void schemaIsNotInitializedTwice() {
+  @Before
+  public void setUp() {
     // given
     elasticSearchRule.cleanAndVerify();
+  }
+
+  @Test
+  public void schemaIsNotInitializedTwice() {
 
     // when I initialize schema twice
     schemaInitializer.initializeSchema();
@@ -76,8 +86,6 @@ public class SchemaInitializerIT {
 
   @Test
   public void optimizeIndexExistsAfterSchemaInitialization() {
-    // given
-    elasticSearchRule.cleanAndVerify();
 
     // when
     schemaInitializer.initializeSchema();
@@ -88,8 +96,6 @@ public class SchemaInitializerIT {
 
   @Test
   public void typesExistsAfterSchemaInitialization() {
-    // given
-    elasticSearchRule.cleanAndVerify();
 
     // when
     schemaInitializer.initializeSchema();
@@ -119,7 +125,6 @@ public class SchemaInitializerIT {
   public void oldMappingsAreUpdated() {
 
     // given schema is created
-    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // when there is a new mapping and I update the mapping
@@ -152,7 +157,6 @@ public class SchemaInitializerIT {
   @Test
   public void newTypeIsNotAddedDynamically() throws IOException {
     // given schema is created
-    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // then an exception is thrown
@@ -166,7 +170,6 @@ public class SchemaInitializerIT {
   @Test
   public void onlyAcceptDocumentsThatComplyWithTheSchema() {
     // given schema is created
-    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // then

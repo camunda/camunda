@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+
 @Component
 public class DefinitionBasedImportIndexWriter {
 
@@ -34,6 +36,7 @@ public class DefinitionBasedImportIndexWriter {
         typeIndexComesFrom)
       .setSource(
         objectMapper.writeValueAsString(importStartIndex), XContentType.JSON)
+      .setRefreshPolicy(IMMEDIATE)
       .get();
   }
 

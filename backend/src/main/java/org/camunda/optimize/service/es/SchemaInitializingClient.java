@@ -9,6 +9,10 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.FilterClient;
 
 /**
+ * Wrapper client that performs schema initialization before any action towards ES is
+ * executed. Please note that this client cannot be used for schema initialization mechanism
+ * itself as it will cause infinite loop.
+ *
  * @author Askar Akhmerov
  */
 public class SchemaInitializingClient extends FilterClient {
@@ -19,7 +23,17 @@ public class SchemaInitializingClient extends FilterClient {
   }
 
   @Override
-  protected <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> void doExecute(Action<Request, Response, RequestBuilder> action, Request request, ActionListener<Response> listener) {
+  protected <
+      Request extends ActionRequest,
+      Response extends ActionResponse,
+      RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>
+      >
+  void doExecute(
+      Action<Request, Response, RequestBuilder> action,
+      Request request,
+      ActionListener<Response> listener
+  ) {
+
     elasticSearchSchemaInitializer.initializeSchema();
     super.doExecute(action, request, listener);
   }
