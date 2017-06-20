@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -38,7 +38,7 @@ public class VariableReader {
   public static final String VALUE_AGGREGATION = "values";
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
 

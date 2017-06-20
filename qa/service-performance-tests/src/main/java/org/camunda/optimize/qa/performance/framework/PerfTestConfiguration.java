@@ -1,6 +1,6 @@
 package org.camunda.optimize.qa.performance.framework;
 
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 
 import java.util.Properties;
 
@@ -10,7 +10,7 @@ public class PerfTestConfiguration {
   private int numberOfThreads;
   private int dataGenerationSize;
 
-  private TransportClient client;
+  private Client client;
   private String optimizeIndex;
   private String processInstanceType;
   private String dateFormat;
@@ -57,11 +57,11 @@ public class PerfTestConfiguration {
     this.authorizationToken = authorizationToken;
   }
 
-  public TransportClient getClient() {
+  public Client getClient() {
     return client;
   }
 
-  public void setClient(TransportClient client) {
+  public void setClient(Client client) {
     this.client = client;
   }
 

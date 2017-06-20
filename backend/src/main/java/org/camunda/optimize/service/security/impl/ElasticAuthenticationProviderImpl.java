@@ -6,7 +6,7 @@ import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -16,20 +16,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
  * @author Askar Akhmerov
  */
 @Component ("elasticAuthenticationProvider")
-@DependsOn("schemaInitializer")
 public class ElasticAuthenticationProviderImpl implements AuthenticationProvider {
   private static final Logger logger = LoggerFactory.getLogger(ElasticAuthenticationProviderImpl.class);
+  private boolean initilized = false;
 
   @Autowired
-  private TransportClient client;
+  private Client client;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -37,21 +35,23 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   @Autowired
   private ObjectMapper objectMapper;
 
-  @PostConstruct
-  private void init() {
-    try {
-      SearchResponse searchResponse = client
-          .prepareSearch(configurationService.getOptimizeIndex())
-          .setTypes(configurationService.getElasticSearchUsersType())
-          .setSource(new SearchSourceBuilder().size(0))
-          .get();
-      if (searchResponse.getHits().totalHits() <= 0) {
+  private void initialize() {
+    if (!initilized) {
+      try {
+        SearchResponse searchResponse = client
+            .prepareSearch(configurationService.getOptimizeIndex())
+            .setTypes(configurationService.getElasticSearchUsersType())
+            .setSource(new SearchSourceBuilder().size(0))
+            .get();
+        if (searchResponse.getHits().totalHits() <= 0) {
+          addDefaultUser();
+        }
+
+      } catch (IndexNotFoundException e) {
+        //should never happen, but just in case
         addDefaultUser();
       }
-
-    } catch (IndexNotFoundException e) {
-      //should never happen, but just in case
-      addDefaultUser();
+      initilized = true;
     }
   }
 
@@ -60,7 +60,6 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
     CredentialsDto user = new CredentialsDto();
     user.setUsername(configurationService.getDefaultUser());
     user.setPassword(configurationService.getDefaultPassword());
-
 
     try {
       bulkRequest.add(client
@@ -81,6 +80,7 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   }
 
   public boolean authenticate(CredentialsDto credentialsDto) {
+    this.initialize();
     boolean authenticated = true;
     SearchResponse response = client.prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getElasticSearchUsersType())
@@ -96,11 +96,11 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
     return authenticated;
   }
 
-  public TransportClient getClient() {
+  public Client getClient() {
     return client;
   }
 
-  public void setClient(TransportClient client) {
+  public void setClient(Client client) {
     this.client = client;
   }
 }

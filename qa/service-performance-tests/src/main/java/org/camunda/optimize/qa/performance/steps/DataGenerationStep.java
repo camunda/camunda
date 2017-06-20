@@ -9,7 +9,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public abstract class DataGenerationStep extends PerfTestStep {
   private Logger logger = LoggerFactory.getLogger(DataGenerationStep.class);
 
   private final int MAX_BULK_SIZE = 50_000;
-  protected TransportClient client = null;
+  protected Client client = null;
   protected PerfTestContext context;
   private Integer dataGenerationSize;
   private Integer numberOfThreads;

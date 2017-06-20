@@ -109,6 +109,13 @@ module.exports = {
       template: 'app/license.html',
       favicon: 'app/favicon.ico',
       chunks: ['license']
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'error.html',
+      title: 'Camunda Optimize',
+      template: 'app/error.html',
+      favicon: 'app/favicon.ico',
+      chunks: ['error']
     })
   ],
   devServer: {

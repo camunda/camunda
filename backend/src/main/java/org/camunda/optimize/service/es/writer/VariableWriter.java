@@ -16,7 +16,7 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -52,7 +52,7 @@ public class VariableWriter {
   private final Logger logger = LoggerFactory.getLogger(VariableWriter.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

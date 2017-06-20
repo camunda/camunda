@@ -154,10 +154,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return authenticationToken;
   }
 
-  public void initializeIndex() {
-    getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
-  }
-
   private String authenticateAdmin() {
     Response tokenResponse = authenticateAdminRequest();
     return tokenResponse.readEntity(String.class);

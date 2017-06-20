@@ -1,22 +1,22 @@
 package org.camunda.optimize.test.it.factory;
 
 import org.camunda.optimize.service.es.TransportClientFactory;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 
-public class SpyTransportClientFactory implements FactoryBean<TransportClient> {
+public class SpyTransportClientFactory implements FactoryBean<Client> {
 
-  private TransportClient spyedInstance;
+  private Client spyedInstance;
 
   @Autowired
   private ApplicationContext applicationContext;
 
   @Override
-  public TransportClient getObject() throws Exception {
+  public Client getObject() throws Exception {
     if (spyedInstance == null) {
       AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
       TransportClientFactory transportClientFactory = beanFactory.createBean(TransportClientFactory.class);
@@ -27,7 +27,7 @@ public class SpyTransportClientFactory implements FactoryBean<TransportClient> {
 
   @Override
   public Class<?> getObjectType() {
-    return TransportClient.class;
+    return Client.class;
   }
 
   @Override

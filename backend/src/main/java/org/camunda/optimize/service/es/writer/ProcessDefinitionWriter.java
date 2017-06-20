@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeD
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class ProcessDefinitionWriter {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionWriter.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

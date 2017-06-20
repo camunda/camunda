@@ -5,19 +5,14 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.AdminClient;
-import org.elasticsearch.client.IndicesAdminClient;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -33,7 +28,7 @@ public class ProcessDefinitionWriterTest {
   private ProcessDefinitionWriter underTest;
 
   @Autowired
-  private TransportClient transportClient;
+  private Client client;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -89,7 +84,7 @@ public class ProcessDefinitionWriterTest {
   private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, ListenableActionFuture<BulkResponse> getMock) {
     BulkRequestBuilder bulkRequest = Mockito.mock(BulkRequestBuilder.class);
     Mockito.when(bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)).thenReturn(bulkRequest);
-    Mockito.when(transportClient.prepareBulk()).thenReturn(bulkRequest);
+    Mockito.when(client.prepareBulk()).thenReturn(bulkRequest);
     Mockito.when(bulkRequest.add(indexMock)).thenReturn(bulkRequest);
     Mockito.when(bulkRequest.execute()).thenReturn(getMock);
     return bulkRequest;
@@ -98,7 +93,7 @@ public class ProcessDefinitionWriterTest {
   private IndexRequestBuilder setupIndexRequestBuilder(String type) {
     IndexRequestBuilder indexMock = Mockito.mock(IndexRequestBuilder.class);
     Mockito.when(indexMock.setSource(Mockito.anyString())).thenReturn(indexMock);
-    Mockito.when(transportClient.prepareIndex(
+    Mockito.when(client.prepareIndex(
       Mockito.eq(configurationService.getOptimizeIndex()),
       Mockito.eq(type),
       Mockito.eq("123"))

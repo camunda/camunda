@@ -222,10 +222,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     getImportScheduler().disable();
   }
 
-  protected void initializeIndex() {
-    jerseyCamundaOptimize.getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
-  }
-
   protected ApplicationContext getOptimizeApplicationContext() {
     return jerseyCamundaOptimize.getApplicationContext();
   }

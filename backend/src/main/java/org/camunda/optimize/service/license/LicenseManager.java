@@ -9,7 +9,7 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class LicenseManager {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
 
   private final String licenseDocumentId = "license";
   private LicenseKey licenseKey = new OptimizeLicenseKey();

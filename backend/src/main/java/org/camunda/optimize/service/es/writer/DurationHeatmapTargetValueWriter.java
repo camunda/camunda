@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import java.util.Map;
 public class DurationHeatmapTargetValueWriter {
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
 
   @Autowired
   private ConfigurationService configurationService;

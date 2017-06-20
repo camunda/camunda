@@ -8,7 +8,7 @@ import org.camunda.optimize.service.es.mapping.VariableFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
@@ -25,7 +25,7 @@ public abstract class HeatMapReader {
   private final Logger logger = LoggerFactory.getLogger(HeatMapReader.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
 

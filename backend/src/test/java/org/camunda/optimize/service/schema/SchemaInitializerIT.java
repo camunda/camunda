@@ -11,7 +11,7 @@ import org.camunda.optimize.test.it.spring.OptimizeAwareDependencyInjectionListe
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.mapper.StrictDynamicMappingException;
 import org.elasticsearch.indices.TypeMissingException;
 import org.junit.ClassRule;
@@ -50,7 +50,7 @@ public class SchemaInitializerIT {
   @Autowired
   private ElasticSearchSchemaManager manager;
   @Autowired
-  private TransportClient transportClient;
+  private Client transportClient;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -125,6 +125,7 @@ public class SchemaInitializerIT {
     // when there is a new mapping and I update the mapping
     MyUpdatedEventType updatedEventType = new MyUpdatedEventType(configurationService);
     manager.addMapping(updatedEventType);
+    schemaInitializer.setInitialized(false);
     schemaInitializer.initializeSchema();
 
     // then the mapping contains the new fields

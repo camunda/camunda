@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class DefinitionBasedImportIndexWriter {
   private final Logger logger = LoggerFactory.getLogger(DefinitionBasedImportIndexWriter.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

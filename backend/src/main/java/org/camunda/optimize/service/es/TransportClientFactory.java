@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -11,25 +12,27 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author Askar Akhmerov
  */
-public class TransportClientFactory implements FactoryBean <TransportClient> {
+public class TransportClientFactory implements FactoryBean <Client> {
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
-  private TransportClient instance;
+  private SchemaInitializingClient instance;
+  private TransportClient internalClient;
 
   @Autowired
   private ConfigurationService configurationService;
+  @Autowired
+  private ElasticSearchSchemaInitializer elasticSearchSchemaInitializer;
 
   @Override
-  public TransportClient getObject() throws Exception {
+  public Client getObject() throws Exception {
     if (instance == null) {
       logger.info("Starting Elasticsearch client...");
       try {
-        instance =
+        internalClient =
           new PreBuiltTransportClient(
             Settings.builder()
               .put("client.transport.ping_timeout", configurationService.getElasticsearchConnectionTimeout(), TimeUnit.MILLISECONDS)
@@ -38,6 +41,9 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
                 InetAddress.getByName(configurationService.getElasticSearchHost()),
                 configurationService.getElasticSearchPort()
                 ));
+        instance = new SchemaInitializingClient(internalClient);
+        elasticSearchSchemaInitializer.useClient(internalClient, configurationService);
+        instance.setElasticSearchSchemaInitializer(elasticSearchSchemaInitializer);
       } catch (Exception e) {
         logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
       }
@@ -48,7 +54,7 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
 
   @Override
   public Class<?> getObjectType() {
-    return TransportClient.class;
+    return Client.class;
   }
 
   @Override

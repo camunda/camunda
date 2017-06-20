@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -35,7 +35,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
   private ObjectMapper objectMapper;
   private Properties properties;
-  private TransportClient esclient;
+  private Client esclient;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
@@ -205,7 +205,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public TransportClient getClient() {
+  public Client getClient() {
     return esclient;
   }
 

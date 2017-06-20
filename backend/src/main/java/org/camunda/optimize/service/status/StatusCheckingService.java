@@ -3,7 +3,6 @@ package org.camunda.optimize.service.status;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,7 +18,7 @@ public class StatusCheckingService {
   private Client engineClient;
 
   @Autowired
-  private TransportClient transportClient;
+  private org.elasticsearch.client.Client elasticsearchClient;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -51,7 +50,7 @@ public class StatusCheckingService {
   private boolean isConnectedToElasticSearch() {
     boolean isConnected = false;
     try {
-      ClusterHealthResponse getResponse = transportClient
+      ClusterHealthResponse getResponse = elasticsearchClient
         .admin()
         .cluster()
         .prepareHealth(configurationService.getOptimizeIndex())

@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class BranchAnalysisReader {
   private static final String GATEWAY_ACTIVITY_TYPE = "exclusiveGateway";
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
 

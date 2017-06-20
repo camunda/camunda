@@ -5,7 +5,7 @@ import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -30,13 +30,13 @@ import static org.mockito.Mockito.when;
  *
  * @author Askar Akhmerov
  */
-public class MockTransportClientFactory implements FactoryBean<TransportClient> {
+public class MockTransportClientFactory implements FactoryBean<Client> {
   @Autowired
   private ConfigurationService configurationService;
 
   @Override
-  public TransportClient getObject() throws Exception {
-    TransportClient transportClientMock = mock(TransportClient.class);
+  public Client getObject() throws Exception {
+    Client transportClientMock = mock(Client.class);
     SearchRequestBuilder optimizeSearchRequestBuilder = mock(SearchRequestBuilder.class);
     when(transportClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(optimizeSearchRequestBuilder);
 
@@ -47,7 +47,7 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
     return transportClientMock;
   }
 
-  private void setUpGetRequestBuilderForWriterTests(TransportClient transportClientMock) {
+  private void setUpGetRequestBuilderForWriterTests(Client transportClientMock) {
     GetResponse response = mock(GetResponse.class);
     GetRequestBuilder builder = mock(GetRequestBuilder.class);
     when(transportClientMock.prepareGet(anyString(), anyString(), anyString())).thenReturn(builder);
@@ -99,7 +99,7 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
 
   @Override
   public Class<?> getObjectType() {
-    return TransportClient.class;
+    return Client.class;
   }
 
   @Override

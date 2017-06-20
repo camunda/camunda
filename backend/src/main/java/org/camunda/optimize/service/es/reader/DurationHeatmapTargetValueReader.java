@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ public class DurationHeatmapTargetValueReader {
   private final Logger logger = LoggerFactory.getLogger(DurationHeatmapTargetValueReader.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
 
   @Autowired
   private ConfigurationService configurationService;

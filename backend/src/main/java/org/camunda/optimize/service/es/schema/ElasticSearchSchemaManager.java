@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -20,11 +20,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 public class ElasticSearchSchemaManager {
 
   private Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
-
-  @Autowired
-  private TransportClient esclient;
-
-  @Autowired
+  private Client esclient;
   private ConfigurationService configurationService;
 
   private List<TypeMappingCreator> mappings = new LinkedList<>();
@@ -97,4 +93,19 @@ public class ElasticSearchSchemaManager {
       .get();
   }
 
+  public Client getEsclient() {
+    return esclient;
+  }
+
+  public void setEsclient(Client esclient) {
+    this.esclient = esclient;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  public void setConfigurationService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 }

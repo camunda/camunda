@@ -2,6 +2,7 @@ package org.camunda.optimize.jetty;
 
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,7 @@ public class LicenseFilter implements Filter {
   private static final String INDEX_HTML_PAGE = "/index.html";
   private static final String LOGIN_PAGE = "/login";
   private static final String LICENSE_PAGE = "/license.html";
+  private static final String ERROR_PAGE = "/error.html";
 
   private LicenseManager licenseManager;
 
@@ -68,11 +70,18 @@ public class LicenseFilter implements Filter {
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
     String requestPath = servletRequest.getServletPath().toLowerCase();
-    if (isIndexPage(requestPath) || isLoginPage(requestPath)) {
-      String licenseAsString = retrieveLicense();
-      if(!licenseManager.isValidOptimizeLicense(licenseAsString)) {
-        logger.warn("Given License is invalid or not available, redirecting to license page!");
-        servletResponse.sendRedirect(LICENSE_PAGE);
+    boolean indexOrLogin = isIndexPage(requestPath) || isLoginPage(requestPath);
+    if (indexOrLogin && !isErrorPage(requestPath)) {
+      try {
+        String licenseAsString = retrieveLicense();
+        if(!licenseManager.isValidOptimizeLicense(licenseAsString)) {
+          logger.warn("Given License is invalid or not available, redirecting to license page!");
+          servletResponse.sendRedirect(LICENSE_PAGE);
+          return;
+        }
+      } catch (Exception e) {
+        logger.error("could not fetch license", e);
+        servletResponse.sendRedirect(ERROR_PAGE);
         return;
       }
     }
@@ -96,6 +105,10 @@ public class LicenseFilter implements Filter {
     if (licenseManager == null) {
       licenseManager = awareDelegate.getApplicationContext().getBean(LicenseManager.class);
     }
+  }
+
+  private boolean isErrorPage(String requestPath) {
+    return requestPath.startsWith(ERROR_PAGE);
   }
 
   private boolean isIndexPage(String requestPath) {

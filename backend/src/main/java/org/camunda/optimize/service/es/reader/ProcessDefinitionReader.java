@@ -9,7 +9,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -30,7 +30,7 @@ public class ProcessDefinitionReader {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionReader.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
 
   @Autowired
   private ConfigurationService configurationService;

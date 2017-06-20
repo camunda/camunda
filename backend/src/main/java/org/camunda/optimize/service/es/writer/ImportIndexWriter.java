@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.writer;
 
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public class ImportIndexWriter {
   private final Logger logger = LoggerFactory.getLogger(ImportIndexWriter.class);
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
 

@@ -3,7 +3,8 @@ package org.camunda.optimize.service.importing.diff;
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
   protected ConfigurationService configurationService;
 
   @Autowired
-  private TransportClient esclient;
+  private Client esclient;
 
   public List<ENG> retrieveMissingEntities(List<ENG> engineEntities) {
 
