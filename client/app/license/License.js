@@ -5,7 +5,8 @@ import {
 import {Header} from 'main/header';
 import {Footer} from 'main/footer';
 import {Notifications} from 'notifications';
-import {get, post} from 'http';
+import {checkLicense, uploadLicense} from './service';
+import {formatDate} from 'utils';
 
 // Given in seconds
 const redirectionTimeout = 10;
@@ -49,8 +50,7 @@ export function License() {
 
     setElementVisibility(messageNode, false);
 
-    get('/api/license/validate')
-      .then(response => response.json())
+    checkLicense()
       .then(displaySucccess)
       .catch(response => response.json().then(displayError));
 
@@ -59,24 +59,19 @@ export function License() {
 
       event.preventDefault();
 
-      post('/api/license/validate-and-store', key, {
-        headers: {
-          'Content-Type': 'text/plain'
-        }
-      })
-      .then(response => response.json())
-      .then(licenseData => {
-        displaySucccess(licenseData, true);
+      uploadLicense(key)
+        .then(licenseData => {
+          displaySucccess(licenseData, true);
 
-        $window.setTimeout(() => {
-          $window.location.pathname = '/';
-        }, redirectionTimeout * 1000);
-      })
-      .catch(error => {
-        return error
-          .json()
-          .then(displayError);
-      });
+          $window.setTimeout(() => {
+            $window.location.pathname = '/';
+          }, redirectionTimeout * 1000);
+        })
+        .catch(error => {
+          return error
+            .json()
+            .then(displayError);
+        });
     });
 
     function displayError({errorMessage}) {
@@ -94,7 +89,7 @@ export function License() {
       if (!unlimited) {
         const date = new Date(validUntil);
 
-        message += ` Valid until ${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}.`;
+        message += ` Valid until ${formatDate(date)}.`;
       }
 
       if (redirection) {

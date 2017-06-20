@@ -9,8 +9,8 @@ describe('<License>', () => {
   let Header;
   let Footer;
   let Notifications;
-  let get;
-  let post;
+  let checkLicense;
+  let uploadLicense;
   let node;
   let unlimitedLicenseResponse;
   let limitedLicenseResponse;
@@ -22,8 +22,8 @@ describe('<License>', () => {
     Header = createMockComponent('Header');
     Footer = createMockComponent('Footer');
     Notifications = createMockComponent('Notifications');
-    get = sinon.stub();
-    post = sinon.stub();
+    checkLicense = sinon.stub();
+    uploadLicense = sinon.stub();
 
     unlimitedLicenseResponse = {
       customerId: 'schrottis inn',
@@ -45,8 +45,8 @@ describe('<License>', () => {
     __set__('Header', Header);
     __set__('Footer', Footer);
     __set__('Notifications', Notifications);
-    __set__('get', get);
-    __set__('post', post);
+    __set__('checkLicense', checkLicense);
+    __set__('uploadLicense', uploadLicense);
     __set__('$window', $window);
   });
 
@@ -54,8 +54,8 @@ describe('<License>', () => {
     __ResetDependency__('Header');
     __ResetDependency__('Footer');
     __ResetDependency__('Notifications');
-    __ResetDependency__('get');
-    __ResetDependency__('post');
+    __ResetDependency__('checkLicense');
+    __ResetDependency__('uploadLicense');
     __ResetDependency__('$window');
   });
 
@@ -63,7 +63,7 @@ describe('<License>', () => {
     const errorMessage = 'some awesome error message!';
 
     beforeEach(() => {
-      get.returns(
+      checkLicense.returns(
         Promise.reject({
           json: sinon.stub().returns(Promise.resolve({
             errorMessage
@@ -82,10 +82,8 @@ describe('<License>', () => {
     });
 
     it('should display valid license when storing new unlimited license success', () => {
-      post.returns(
-        Promise.resolve({
-          json: sinon.stub().returns(Promise.resolve(unlimitedLicenseResponse))
-        })
+      uploadLicense.returns(
+        Promise.resolve(unlimitedLicenseResponse)
       );
 
       Promise.runAll(); // run initial successful promise
@@ -105,10 +103,8 @@ describe('<License>', () => {
     });
 
     it('should display valid license when storing new limited license success', () => {
-      post.returns(
-        Promise.resolve({
-          json: sinon.stub().returns(Promise.resolve(limitedLicenseResponse))
-        })
+      uploadLicense.returns(
+        Promise.resolve(limitedLicenseResponse)
       );
 
       Promise.runAll(); // run initial successful promise
@@ -128,10 +124,8 @@ describe('<License>', () => {
     });
 
     it('should redirected to main page after timeout', () => {
-      post.returns(
-        Promise.resolve({
-          json: sinon.stub().returns(Promise.resolve(limitedLicenseResponse))
-        })
+      uploadLicense.returns(
+        Promise.resolve(limitedLicenseResponse)
       );
 
       Promise.runAll(); // run initial successful promise
@@ -153,10 +147,8 @@ describe('<License>', () => {
 
   describe('with valid license', () => {
     beforeEach(() => {
-      get.returns(
-        Promise.resolve({
-          json: sinon.stub().returns(Promise.resolve(unlimitedLicenseResponse))
-        })
+      checkLicense.returns(
+        Promise.resolve(unlimitedLicenseResponse)
       );
 
       ({node} = mountTemplate(<License />));
@@ -179,7 +171,7 @@ describe('<License>', () => {
     });
 
     it('should validate license on start', () => {
-      expect(get.calledWith('/api/license/validate')).to.eql(true);
+      expect(checkLicense.called).to.eql(true);
     });
 
     it('should display license is valid message after initial license check is resolved', () => {
@@ -190,7 +182,7 @@ describe('<License>', () => {
     });
 
     it('should store and validate new license on form submit', () => {
-      post.returns(Promise.resolve('dd'));
+      uploadLicense.returns(Promise.resolve('dd'));
 
       node.querySelector('textarea').value = license;
 
@@ -200,13 +192,13 @@ describe('<License>', () => {
         eventName: 'submit'
       });
 
-      expect(post.calledWith('/api/license/validate-and-store', license)).to.eql(true);
+      expect(uploadLicense.calledWith(license)).to.eql(true);
     });
 
     it('should display error when storing new license fails', () => {
       const errorMessage = 'Pay us more monies!';
 
-      post.returns(
+      uploadLicense.returns(
         Promise.reject({
           json: sinon.stub().returns(Promise.resolve({
             errorMessage

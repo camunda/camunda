@@ -6,9 +6,11 @@ import {LoginRoot, Authenticated} from 'login';
 import {LoginForm} from './loginForm';
 import {DynamicLoader} from 'dynamicLoader';
 import {Notifications} from 'notifications';
+import {checkLicenseAndNotifyIfExpiresSoon} from 'license/service';
+import {runOnce, onNextTick} from 'utils';
 
 export function Main() {
-  return <Router selector="router">
+  const template = <Router selector="router">
     <LoginRoot>
       <Header />
       <div className="site-wrap">
@@ -34,4 +36,13 @@ export function Main() {
       <Footer selector="footer" />
     </LoginRoot>
   </Router>;
+
+  return (node, eventsBus) => {
+    return [
+      template(node, eventsBus),
+      runOnce(() => {
+        onNextTick(checkLicenseAndNotifyIfExpiresSoon);
+      })
+    ];
+  };
 }

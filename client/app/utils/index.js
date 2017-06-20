@@ -17,3 +17,5 @@ export {parseParams, stringifyParams} from './params';
 export {interval} from './interval';
 export {isUnique} from './isUnique';
 export {readFiles, readFile} from './readFiles';
+export {range} from './range';
+export {formatDate, zeroCapNumber} from './formatDate';
