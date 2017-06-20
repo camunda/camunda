@@ -30,6 +30,7 @@ export function checkLicenseAndNotifyIfExpiresSoon() {
 
       if (daysDiff <= 10) {
         addNotification({
+          type: 'warning',
           status: 'License soon expires',
           text: `${daysDiff} day${daysDiff > 1 ? 's': ''} left.
           License expires ${formatDate(validUntilDate)}.`

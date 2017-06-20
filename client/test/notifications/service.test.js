@@ -54,7 +54,7 @@ describe('notifications service', () => {
     it('should dispatch add notification action', () => {
       const {id, ...actualNotification} = createAddNotificationAction.lastCall.args[0];
 
-      expect(actualNotification).to.eql({status, text, isError});
+      expect(actualNotification).to.eql({status, text, type: 'error'});
       expect(typeof id).to.eql('number');
       expect(dispatchAction.calledWith(createAddNotificationAction))
         .to.eql(true, 'expected add notification action to be dispatched');
@@ -65,7 +65,7 @@ describe('notifications service', () => {
 
       const {id, ...actualNotification} = createRemoveNotificationAction.lastCall.args[0];
 
-      expect(actualNotification).to.eql({status, text, isError});
+      expect(actualNotification).to.eql({status, text, type: 'error'});
       expect(id).to.eql(removalId);
       expect(dispatchAction.calledWith(createRemoveNotificationAction))
         .to.eql(true, 'expected remove notification action to be dispatched');
@@ -81,6 +81,17 @@ describe('notifications service', () => {
       addNotification({status, text, isError, timeout: 0});
 
       expect($window.setTimeout.called).to.eql(false);
+    });
+
+    it('should let type override computed type of notification', () => {
+      const type = 'type-23';
+
+      addNotification({status, text, isError, type});
+
+      const {id, ...actualNotification} = createAddNotificationAction.lastCall.args[0];
+
+      expect(actualNotification).to.eql({status, text, type});
+      expect(typeof id).to.eql('number');
     });
   });
 

@@ -1,11 +1,11 @@
 import {dispatchAction, $window} from 'view-utils';
 import {createAddNotificationAction, createRemoveNotificationAction} from './reducer';
 
-export function addNotification({status, text, timeout, isError = false}) {
+export function addNotification({status, text, timeout, type, isError = false}) {
   const notification = {
     status,
     text,
-    isError,
+    type: type ? type : isError ? 'error' : 'info',
     id: Math.random()
   };
   const remove = removeNotification.bind(null, notification);
@@ -22,3 +22,5 @@ export function addNotification({status, text, timeout, isError = false}) {
 export function removeNotification(notification) {
   dispatchAction(createRemoveNotificationAction(notification));
 }
+
+$window.addNotification = addNotification;

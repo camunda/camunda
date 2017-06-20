@@ -16,7 +16,8 @@ describe('<Notification>', () => {
 
     state = {
       status: 'some status',
-      text: 'help me!'
+      text: 'help me!',
+      type: 'info'
     };
 
     ({node, update} = mountTemplate(<Notification />));
@@ -51,16 +52,14 @@ describe('<Notification>', () => {
       .to.eql(true, 'expected removeNotification to be called with state');
   });
 
-  it('should create notification with alert-info class', function() {
-    expect(node.querySelector('.alert-info')).to.exist;
-  });
+  it('should create notification with given alert type', function() {
+    const type = 'some-type';
 
-  it('should create notification with alert-error class', function() {
     update({
       ...state,
-      isError: true
+      type
     });
 
-    expect(node.querySelector('.alert-error')).to.exist;
+    expect(node.querySelector('.alert')).to.have.class(`alert-${type}`);
   });
 });
