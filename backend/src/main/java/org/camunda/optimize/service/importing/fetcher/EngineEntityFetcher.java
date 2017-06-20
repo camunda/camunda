@@ -30,6 +30,8 @@ public class EngineEntityFetcher {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
+  protected static final String UTF8 = "UTF-8";
+
   @Autowired
   private ConfigurationService configurationService;
 
@@ -46,6 +48,7 @@ public class EngineEntityFetcher {
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
           .path(configurationService.getHistoricProcessInstanceEndpoint())
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
           .readEntity(new GenericType<List<HistoricProcessInstanceDto>>() {
           });
@@ -71,6 +74,7 @@ public class EngineEntityFetcher {
           .queryParam("deserializeValues", "false")
           .path(configurationService.getHistoricVariableInstanceEndpoint())
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
           .readEntity(new GenericType<List<HistoricVariableInstanceDto>>() {
           });

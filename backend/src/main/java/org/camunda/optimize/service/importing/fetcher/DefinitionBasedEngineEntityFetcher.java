@@ -59,6 +59,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
           .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
           .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
           });
       long requestEnd = System.currentTimeMillis();
@@ -81,6 +82,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
             .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
             .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
             .request()
+            .acceptEncoding(UTF8)
             .get(CountDto.class);
         totalCount += newCount.getCount();
       } catch (RuntimeException e) {
@@ -102,6 +104,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
             .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
             .request(MediaType.APPLICATION_JSON)
+            .acceptEncoding(UTF8)
             .get(ProcessDefinitionXmlEngineDto.class);
         xmls.add(xml);
       } catch (RuntimeException e) {
@@ -126,6 +129,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
           .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
           });
     } catch (RuntimeException e) {
@@ -144,6 +148,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
             .path(configurationService.getProcessDefinitionCountEndpoint())
             .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
             .request()
+            .acceptEncoding(UTF8)
             .get(CountDto.class);
         totalCount += newCount.getCount();
       } catch (RuntimeException e) {

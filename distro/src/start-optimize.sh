@@ -32,4 +32,4 @@ until ${COMMAND};
 done
 
 echo -e "\nStarting jetty"
-nohup java -Dpidfile=$PID_FILE -jar $BASEDIR/optimize-backend-${project.version}.jar </dev/null > $LOG_FILE 2>&1
+nohup java -Dpidfile=$PID_FILE -Dfile.encoding=UTF-8 -jar $BASEDIR/optimize-backend-${project.version}.jar </dev/null > $LOG_FILE 2>&1

@@ -52,6 +52,7 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
           .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
           .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
           });
       long requestEnd = System.currentTimeMillis();
@@ -72,6 +73,7 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
           .path(configurationService.getHistoricActivityInstanceCountEndpoint())
           .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
           .request()
+          .acceptEncoding(UTF8)
           .get(CountDto.class);
     } catch (RuntimeException e) {
       throw new OptimizeException("Could not fetch historic activity instance count from engine. Please check the connection!", e);
@@ -94,6 +96,7 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
             .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
             .request(MediaType.APPLICATION_JSON)
+            .acceptEncoding(UTF8)
             .get(ProcessDefinitionXmlEngineDto.class);
         xmls.add(xml);
       }
@@ -115,6 +118,7 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
           .queryParam(SORT_BY, SORT_TYPE_ID)
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
           .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
           .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
           });
     } catch (RuntimeException e) {
@@ -132,6 +136,7 @@ public class TotalQuantityEngineEntityFetcher extends EngineEntityFetcher {
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
           .path(configurationService.getProcessDefinitionCountEndpoint())
           .request()
+          .acceptEncoding(UTF8)
           .get(CountDto.class);
     } catch (RuntimeException e) {
       throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);

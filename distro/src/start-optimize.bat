@@ -39,5 +39,5 @@ if %ERRORLEVEL% neq 0 (
 )
 echo Elasticsearch has successfully been started.
 echo Starting jetty...
-java -jar %BASEDIR%optimize-backend-${project.version}.jar > %LOG_FILE% 2>&1
+java -Dfile.encoding=UTF-8 -jar %BASEDIR%optimize-backend-${project.version}.jar > %LOG_FILE% 2>&1
  
