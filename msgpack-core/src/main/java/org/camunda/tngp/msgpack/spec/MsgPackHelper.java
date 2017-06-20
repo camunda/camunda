@@ -4,6 +4,8 @@ public class MsgPackHelper
 {
     public static final byte[] EMTPY_OBJECT = new byte[]{ MsgPackCodes.FIXMAP_PREFIX };
     public static final byte[] EMPTY_ARRAY = new byte[]{ MsgPackCodes.FIXARRAY_PREFIX };
+    public static final byte[] NIL = new byte[]{ MsgPackCodes.NIL };
+
     public static final long ensurePositive(long size)
     {
         if (size < 0)

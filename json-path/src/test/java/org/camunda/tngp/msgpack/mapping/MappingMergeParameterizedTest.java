@@ -524,7 +524,17 @@ public class MappingMergeParameterizedTest
                 // mapping
                 createMapping("$.arr[0].obj.otherArr[0]", "$.arr[0].obj.otherArr[1].obj"),
                 // expected result
-                "{'array':[[1,2],3,4],'arr':[{'obj':{'otherArr':[{'obj':{'test':'hallo'}}]}}], 'int':2}"}  });
+                "{'array':[[1,2],3,4],'arr':[{'obj':{'otherArr':[{'obj':{'test':'hallo'}}]}}], 'int':2}"},
+            // 47. Test
+            {
+                // source
+                "{}",
+                // target
+                "null",
+                // mapping
+                createMapping("$", "$"),
+                // expected result
+                "{}" }});
     }
 
     @Parameter

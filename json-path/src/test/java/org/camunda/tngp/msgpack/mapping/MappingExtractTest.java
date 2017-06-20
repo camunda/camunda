@@ -5,7 +5,6 @@ import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMapping;
 import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMappings;
 import static org.camunda.tngp.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
 import static org.camunda.tngp.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMPTY_ARRAY;
 import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 
 import org.agrona.DirectBuffer;
@@ -78,22 +77,6 @@ public class MappingExtractTest
         // expect
         expectedException.expect(MappingException.class);
         expectedException.expectMessage("No data found for query $.foo.");
-
-        // when
-        processor.extract(sourceDocument, mapping);
-    }
-
-
-    @Test
-    public void shouldThrowExceptionIfSourceDocumentIsNoObject() throws Throwable
-    {
-        // given payload
-        final DirectBuffer sourceDocument = new UnsafeBuffer(EMPTY_ARRAY);
-        final Mapping[] mapping = createMapping("$.foo", "$");
-
-        // expect
-        expectedException.expect(MappingException.class);
-        expectedException.expectMessage("Can't extract from source document, since it is not a map (json object).");
 
         // when
         processor.extract(sourceDocument, mapping);

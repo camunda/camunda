@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMapping;
 import static org.camunda.tngp.msgpack.mapping.MappingBuilder.createMappings;
 import static org.camunda.tngp.msgpack.mapping.MappingTestUtil.*;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMPTY_ARRAY;
 import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -96,37 +95,6 @@ public class MappingMergeTest
 
         // when
         processor.merge(sourceDocument, sourceDocument, mapping);
-    }
-
-    @Test
-    public void shouldThrowExceptionIfSourceDocumentIsNoObject() throws Throwable
-    {
-        // given payload
-        final DirectBuffer sourceDocument = new UnsafeBuffer(EMPTY_ARRAY);
-        final Mapping[] mapping = createMapping("$.foo", "$");
-
-        // expect
-        expectedException.expect(MappingException.class);
-        expectedException.expectMessage("Can't extract from source document, since it is not a map (json object).");
-
-        // when
-        processor.merge(sourceDocument, sourceDocument, mapping);
-    }
-
-    @Test
-    public void shouldThrowExceptionIfTargetDocumentIsNoObject() throws Throwable
-    {
-        // given payload
-        final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
-        final DirectBuffer targetDocument = new UnsafeBuffer(EMPTY_ARRAY);
-        final Mapping[] mapping = createMapping("$.foo", "$");
-
-        // expect
-        expectedException.expect(MappingException.class);
-        expectedException.expectMessage("Can't merge into the target document, since it is not a map (json object).");
-
-        // when
-        processor.merge(sourceDocument, targetDocument, mapping);
     }
 
     @Test

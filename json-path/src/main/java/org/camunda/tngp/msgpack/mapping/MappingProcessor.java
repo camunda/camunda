@@ -109,20 +109,9 @@ public class MappingProcessor
     public static final int MAX_JSON_KEY_LEN = 256;
 
     /**
-     * The message for the exception, which is thrown if the source document is not a map (json object).
-     */
-    public static final String EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Can't extract from source document, since it is not a map (json object).";
-
-    /**
-     * The message for the exception, which is thrown if the target document is not a map (json object).
-     */
-    public static final String EXCEPTION_MSG_TARGET_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Can't merge into the target document, since it is not a map (json object).";
-
-    /**
      * The message for the exception, which is thrown if the resulting document is not a map (json object).
      */
     public static final String EXCEPTION_MSG_RESULTING_DOCUMENT_IS_NOT_OF_TYPE_MAP = "Processing failed, since mapping will result in a non map object (json object).";
-
 
     /**
      * The message for the exception which is thrown if the mapping is either null or empty.
@@ -158,17 +147,23 @@ public class MappingProcessor
         {
             throw new IllegalArgumentException("Target document must not be null!");
         }
-        ensureValidParameter(sourceDocument, mappings);
-        ensureDocumentIsAMsgPackMap(sourceDocument, EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP);
-        ensureDocumentIsAMsgPackMap(targetDocument, EXCEPTION_MSG_TARGET_DOCUMENT_IS_NOT_OF_TYPE_MAP);
 
-        documentIndexer.wrap(targetDocument);
-        final MsgPackTree targetTree = documentIndexer.index();
+        if (targetDocument.capacity() > 1)
+        {
+            ensureValidParameter(sourceDocument, mappings);
 
-        documentExtractor.wrap(targetTree, sourceDocument);
-        final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
+            documentIndexer.wrap(targetDocument);
+            final MsgPackTree targetTree = documentIndexer.index();
 
-        return writeMsgPackTree(mergedDocumentTree);
+            documentExtractor.wrap(targetTree, sourceDocument);
+            final MsgPackTree mergedDocumentTree = documentExtractor.extract(mappings);
+
+            return writeMsgPackTree(mergedDocumentTree);
+        }
+        else
+        {
+            return extract(sourceDocument, mappings);
+        }
     }
 
     /**
@@ -183,7 +178,6 @@ public class MappingProcessor
     public int extract(DirectBuffer sourceDocument, Mapping... mappings)
     {
         ensureValidParameter(sourceDocument, mappings);
-        ensureDocumentIsAMsgPackMap(sourceDocument, EXCEPTION_MSG_SOURCE_DOCUMENT_IS_NOT_OF_TYPE_MAP);
 
         documentExtractor.wrap(sourceDocument);
         final MsgPackTree extractedDocumentTree = documentExtractor.extract(mappings);
