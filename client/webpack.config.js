@@ -9,6 +9,7 @@ module.exports = {
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
     license: path.resolve(__dirname, 'app', 'licenseApp.js'),
+    error: path.resolve(__dirname, 'app', 'error.js')
   },
   output: {
     publicPath: '/',
@@ -125,7 +126,8 @@ module.exports = {
     open: true,
     historyApiFallback: {
       rewrites: [
-        {from: /^\/license/, to: '/license.html'},
+        {from: /^\/license$/, to: '/license.html'},
+        {from: /^\/error$/, to: '/error.html'},
       ]
     },
     proxy: {
