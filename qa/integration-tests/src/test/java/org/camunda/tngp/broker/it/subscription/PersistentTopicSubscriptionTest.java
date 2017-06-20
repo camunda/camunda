@@ -123,9 +123,9 @@ public class PersistentTopicSubscriptionTest
 
     protected void restartBroker()
     {
-        clientRule.closeClient();
+        client.disconnect();
         brokerRule.restartBroker();
-        client = clientRule.getClient();
+        client.connect();
     }
 
 }

@@ -307,7 +307,7 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        clientRule.closeClient();
+        client.disconnect();
 
         // then
         assertThat(subscription.isClosed());
@@ -351,10 +351,10 @@ public class TopicSubscriptionTest
 
         broker.closeServerSocketBinding();
         TestUtil.waitUntil(() -> !firstSubscription.isOpen());
-        clientRule.closeClient();
+        client.disconnect();
 
         broker.openServerSocketBinding();
-        client = clientRule.getClient();
+        client.connect();
 
         // when
         final TopicSubscription secondSubscription = clientRule.topic().newSubscription()

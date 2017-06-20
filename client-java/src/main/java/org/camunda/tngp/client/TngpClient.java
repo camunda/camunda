@@ -3,8 +3,7 @@ package org.camunda.tngp.client;
 import java.util.Properties;
 
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public interface TngpClient extends AutoCloseable
 {
@@ -41,10 +40,17 @@ public interface TngpClient extends AutoCloseable
      */
     TopicClient topic(String topicName, int partitionId);
 
+    TransportConnectionPool getConnectionPool();
+
     /**
-     * Open {@link TransportConnection} for request / response style communication.
+     * Connects the client to the configured broker. Not thread-safe.
      */
-    TransportConnection openConnection();
+    void connect();
+
+    /**
+     * Disconnects the client from the configured broker. Not thread-safe.
+     */
+    void disconnect();
 
     void close();
 
@@ -52,4 +58,5 @@ public interface TngpClient extends AutoCloseable
     {
         return new TngpClientImpl(properties);
     }
+
 }

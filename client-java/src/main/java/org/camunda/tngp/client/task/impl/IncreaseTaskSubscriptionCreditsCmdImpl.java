@@ -1,15 +1,16 @@
 package org.camunda.tngp.client.task.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.*;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
-import org.camunda.tngp.client.impl.cmd.TopicCommand;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
-public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription> implements TopicCommand
+public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -36,18 +37,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     {
         this.credits = credits;
         return this;
-    }
-
-    @Override
-    public String getTopicName()
-    {
-        return topicName;
-    }
-
-    @Override
-    public int getPartitionId()
-    {
-        return partitionId;
     }
 
     @Override

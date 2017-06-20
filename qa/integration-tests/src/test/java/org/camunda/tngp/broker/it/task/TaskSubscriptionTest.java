@@ -387,15 +387,15 @@ public class TaskSubscriptionTest
     public void shouldOpenSubscriptionAfterClientReconnect()
     {
         // given
-        TngpClient client = clientRule.getClient();
+        final TngpClient client = clientRule.getClient();
 
         clientRule.taskTopic().create()
             .taskType("foo")
             .execute();
 
         // when
-        clientRule.closeClient();
-        client = clientRule.getClient();
+        client.disconnect();
+        client.connect();
 
         // then
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();

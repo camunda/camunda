@@ -4,26 +4,33 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
+import org.camunda.tngp.client.impl.cmd.AbstractSingleMessageCmd;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 
 public class ClientCmdExecutor
 {
-    private final TransportManager transportManager;
+    protected final TransportConnectionPool connectionPool;
+    protected final DataFramePool dataFramePool;
+    protected Channel channel;
 
-    public ClientCmdExecutor(final TransportManager transportManager)
+    public ClientCmdExecutor(final TransportConnectionPool connectionPool,
+            DataFramePool dataFramePool)
     {
-
-        this.transportManager = transportManager;
+        this.connectionPool = connectionPool;
+        this.dataFramePool = dataFramePool;
     }
 
     public <R> R execute(final AbstractCmdImpl<R> cmd)
     {
-        try (TransportConnection connection = transportManager.openConnection())
+        try (final TransportConnection connection = connectionPool.openConnection())
         {
             if (connection != null)
             {
@@ -57,7 +64,7 @@ public class ClientCmdExecutor
         final RequestWriter requestWriter = cmd.getRequestWriter();
         requestWriter.validate();
 
-        final Channel channel = transportManager.getChannelForCommand(cmd);
+        ensureStreamConnected();
 
         final PooledTransportRequest request = connection.openRequest(channel.getStreamId(), requestWriter.getLength());
 
@@ -89,4 +96,45 @@ public class ClientCmdExecutor
         requestWriter.write(buffer, offset);
     }
 
+    public void execute(AbstractSingleMessageCmd cmd)
+    {
+        final RequestWriter requestWriter = cmd.getRequestWriter();
+        requestWriter.validate();
+
+        ensureStreamConnected();
+
+        final OutgoingDataFrame dataFrame = dataFramePool.openFrame(requestWriter.getLength(), channel.getStreamId());
+
+        if (dataFrame != null)
+        {
+            try
+            {
+                dataFrame.write(requestWriter);
+                dataFrame.commit();
+            }
+            catch (Exception e)
+            {
+                dataFrame.abort();
+                throw new RuntimeException("Failed to write data frame", e);
+            }
+        }
+        else
+        {
+            throw new RuntimeException("Failed to open data frame");
+        }
+
+    }
+
+    protected void ensureStreamConnected()
+    {
+        if (channel == null || !channel.isReady())
+        {
+            throw new RuntimeException("Currently not connected to broker");
+        }
+    }
+
+    public void setChannel(Channel remoteStream)
+    {
+        this.channel = remoteStream;
+    }
 }

@@ -21,49 +21,30 @@ public class ClientRule extends ExternalResource
 
     public ClientRule()
     {
-        this(Properties::new);
+        this(() -> new Properties());
     }
 
-    public ClientRule(final Supplier<Properties> propertiesProvider)
+    public ClientRule(Supplier<Properties> propertiesProvider)
     {
         this.properties = propertiesProvider.get();
 
     }
 
-    protected TngpClient createClient()
-    {
-        return TngpClient.create(properties);
-    }
-
-    public void closeClient()
-    {
-        if (client != null)
-        {
-            client.close();
-            client = null;
-        }
-    }
-
-
     @Override
     protected void before() throws Throwable
     {
-        client = createClient();
+        client = TngpClient.create(properties);
+        client.connect();
     }
 
     @Override
     protected void after()
     {
-        closeClient();
+        client.close();
     }
 
     public TngpClient getClient()
     {
-        if (client == null)
-        {
-            client = createClient();
-        }
-
         return client;
     }
 

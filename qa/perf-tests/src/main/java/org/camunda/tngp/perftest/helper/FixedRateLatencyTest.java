@@ -30,12 +30,26 @@ public abstract class FixedRateLatencyTest
 
         printProperties(properties);
 
-        try (TngpClient client = TngpClient.create(properties))
+        TngpClient client = null;
+
+        try
         {
+            client = TngpClient.create(properties);
+            client.connect();
+
             executeSetup(properties, client);
             executeWarmup(properties, client);
             executeTest(properties, client);
         }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            client.close();
+        }
+
     }
 
     protected void setDefaultProperties(final Properties properties)
@@ -56,7 +70,7 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeWarmup(Properties properties, TngpClient client)
     {
-        try (TransportConnection conection = client.openConnection())
+        try (TransportConnection conection = client.getConnectionPool().openConnection())
         {
             System.out.format("Executing warmup\n");
 
@@ -81,7 +95,7 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeTest(Properties properties, TngpClient client)
     {
-        try (TransportConnection connection = client.openConnection())
+        try (TransportConnection conection = client.getConnectionPool().openConnection())
         {
             System.out.format("Executing test\n");
 
@@ -90,9 +104,12 @@ public abstract class FixedRateLatencyTest
 
             final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
-            final Consumer<Long> noopLatencyConsumer = histogram::recordValue;
+            final Consumer<Long> noopLatencyConsumer = (latency) ->
+            {
+                histogram.recordValue(latency);
+            };
 
-            final Supplier<Future> requestFn = requestFn(client, connection);
+            final Supplier<Future> requestFn = requestFn(client, conection);
 
             final int errors = TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, requestRate, timeMs);
 

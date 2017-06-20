@@ -47,15 +47,23 @@ public class TopicSubscriptionThroughputTest
 
         printProperties(properties);
 
+        TngpClient client = null;
 
-        try (TngpClient client = TngpClient.create(properties))
+        try
         {
+            client = TngpClient.create(properties);
+            client.connect();
+
             executeSetup(properties, client);
             executeTest(properties, client);
         }
         catch (Exception e)
         {
             e.printStackTrace();
+        }
+        finally
+        {
+            client.close();
         }
     }
 
@@ -110,7 +118,7 @@ public class TopicSubscriptionThroughputTest
         final int numTasks = Integer.parseInt(properties.getProperty(TEST_NUM_TASKS));
         final int setUpTimeMs = Integer.parseInt(properties.getProperty(TEST_SETUP_TIMEMS));
 
-        try (TransportConnection connection = client.openConnection())
+        try (TransportConnection connection = client.getConnectionPool().openConnection())
         {
             final Supplier<Future> request = () -> client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
                     .taskType(TASK_TYPE)
