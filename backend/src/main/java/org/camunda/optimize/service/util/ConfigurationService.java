@@ -3,6 +3,7 @@ package org.camunda.optimize.service.util;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static org.camunda.optimize.service.util.StringUtil.splitStringByComma;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
 /**
@@ -40,6 +41,10 @@ public class ConfigurationService {
   private String processDefinitionsToImport;
   @Value(("${camunda.optimize.variable.max.valueList.size}"))
   private int maxVariableValueListSize;
+
+  // plugins
+  @Value(("${camunda.optimize.plugin.variable.import.base.packages}"))
+  private String variableImportPluginBasePackages;
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -336,10 +341,6 @@ public class ConfigurationService {
     return getProcessDefinitionsToImportAsArray().length > 0;
   }
 
-  public static String[] splitStringByComma(String commaSeparatedList) {
-    return commaSeparatedList.trim().split("\\s*,\\s*");
-  }
-
   public String getProcessDefinitionImportIndexType() {
     return processDefinitionImportIndexType;
   }
@@ -578,5 +579,21 @@ public class ConfigurationService {
 
   public void setLicenseType(String licenseType) {
     this.licenseType = licenseType;
+  }
+
+  public String getVariableImportPluginBasePackages() {
+    return variableImportPluginBasePackages;
+  }
+
+  public void setVariableImportPluginBasePackages(String variableImportPluginBasePackages) {
+    this.variableImportPluginBasePackages = variableImportPluginBasePackages;
+  }
+
+  public String[] getVariableImportPluginBasePackagesAsArray() {
+    String[] basePackageArray = splitStringByComma(variableImportPluginBasePackages);
+    if(basePackageArray.length == 1 && basePackageArray[0].isEmpty()) {
+      return new String[]{};
+    }
+    return basePackageArray;
   }
 }

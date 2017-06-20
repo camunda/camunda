@@ -37,6 +37,14 @@
       </excludes>
       <outputDirectory>environment/</outputDirectory>
     </fileSet>
+    <fileSet>
+      <!--create empty plugin directory-->
+      <directory>src/plugin</directory>
+      <outputDirectory>/plugin</outputDirectory>
+      <excludes>
+        <exclude>*</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
 
   <files>

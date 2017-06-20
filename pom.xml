@@ -13,6 +13,7 @@
     <module>backend</module>
     <module>qa</module>
     <module>distro</module>
+    <module>plugin</module>
   </modules>
 
   <properties>
