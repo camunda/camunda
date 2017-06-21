@@ -2,11 +2,11 @@ package org.camunda.tngp.transport.impl.agent;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.ReadTransportPoller;
 import org.camunda.tngp.util.DeferredCommandContext;
+import org.camunda.tngp.util.actor.Actor;
 
 /**
  *
@@ -18,7 +18,7 @@ import org.camunda.tngp.util.DeferredCommandContext;
  * <li>Closing channels</li>
  * </ul>
  */
-public class Receiver implements Agent
+public class Receiver implements Actor
 {
     protected final DeferredCommandContext commandContext;
     protected final ReadTransportPoller transportPoller;
@@ -29,6 +29,7 @@ public class Receiver implements Agent
         transportPoller = new ReadTransportPoller();
     }
 
+    @Override
     public int doWork() throws Exception
     {
         int work = 0;
@@ -39,13 +40,13 @@ public class Receiver implements Agent
         return work;
     }
 
-    @Override
-    public void onClose()
+    public void closeSelectors()
     {
         transportPoller.close();
     }
 
-    public String roleName()
+    @Override
+    public String name()
     {
         return "receiver";
     }

@@ -12,10 +12,26 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-import org.junit.Test;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.*;
 
 public class MixedProtocolsTest
 {
+    private ActorScheduler actorScheduler;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown()
+    {
+        actorScheduler.close();
+    }
+
     @Test
     public void shouldEchoMessages()
     {
@@ -24,16 +40,20 @@ public class MixedProtocolsTest
         final CollectingHandler singleMessageHandler = new CollectingHandler();
         final int numRequests = 1000;
 
-        try (final Transport clientTransport = Transports.createTransport("client").build();
-                final Transport serverTransport = Transports.createTransport("server").build();
+        try (Transport clientTransport = Transports.createTransport("client")
+                .actorScheduler(actorScheduler)
+                .build();
+             Transport serverTransport = Transports.createTransport("server")
+                .actorScheduler(actorScheduler)
+                .build();
 
-                final ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
+             ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
                    .transportChannelHandler(new ReverseOrderChannelHandler(serverTransport.getSendBuffer()))
                    .bind();
 
-                final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
+             TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
 
-                final TransportConnection connection = connectionPool.openConnection())
+             TransportConnection connection = connectionPool.openConnection())
         {
             final Channel channel = clientTransport.createClientChannelPool()
                     .requestResponseProtocol(connectionPool)

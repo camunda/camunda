@@ -16,8 +16,10 @@ import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.camunda.tngp.util.time.ClockUtil;
-import org.junit.Test;
+import org.junit.*;
 
 public class ControlFramesTest
 {
@@ -34,6 +36,21 @@ public class ControlFramesTest
 
         FULL_DUPLEX_CONTROL_FRAME = writer;
     }
+
+    private ActorScheduler actorScheduler;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown()
+    {
+        actorScheduler.close();
+    }
+
 
     /**
      * Tests sending control frames. Frames are echoed from the server to reproduce a bug
@@ -52,14 +69,18 @@ public class ControlFramesTest
         final int numRequests = 300_000;
 
         try (
-            final Transport clientTransport = Transports.createTransport("client").build();
-            final Transport serverTransport = Transports.createTransport("server").build();
+            Transport clientTransport = Transports.createTransport("client")
+                .actorScheduler(actorScheduler)
+                .build();
+            Transport serverTransport = Transports.createTransport("server")
+                .actorScheduler(actorScheduler)
+                .build();
 
-            final ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
+            ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
                 .transportChannelHandler(new EchoControlFramesHandler())
                 .bind();
 
-            final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
+            TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
 
             )
         {

@@ -4,14 +4,14 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.util.DeferredCommandContext;
+import org.camunda.tngp.util.actor.Actor;
 
-public class Sender implements Agent
+public class Sender implements Actor
 {
 
     protected final DeferredCommandContext commandContext;
@@ -45,6 +45,7 @@ public class Sender implements Agent
         return controlFrameInProgressChannel != null;
     }
 
+    @Override
     public int doWork() throws Exception
     {
         int workCount = 0;
@@ -112,7 +113,8 @@ public class Sender implements Agent
         }
     }
 
-    public String roleName()
+    @Override
+    public String name()
     {
         return "sender";
     }

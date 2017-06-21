@@ -8,10 +8,28 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePoolImpl;
 import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ProtocolSingleMessageTest
 {
+    private ActorScheduler actorScheduler;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown() throws Exception
+    {
+        actorScheduler.close();
+    }
+
     @Test
     public void shouldEchoMessages() throws Exception
     {
@@ -20,15 +38,15 @@ public class ProtocolSingleMessageTest
         final int numRequests = 1_000_000;
 
         try (
-            final Transport clientTransport = Transports.createTransport("client").build();
-            final Transport serverTransport = Transports.createTransport("server").build();
+            Transport clientTransport = Transports.createTransport("client").actorScheduler(actorScheduler).build();
+            Transport serverTransport = Transports.createTransport("server").actorScheduler(actorScheduler).build();
 
-            final ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
+            ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
                 // echo server: use send buffer as receive buffer
                 .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
                 .bind();
 
-            final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64))
+            TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64))
         {
             final DataFramePool dataFramePool = new DataFramePoolImpl(32, clientTransport.getSendBuffer());
 

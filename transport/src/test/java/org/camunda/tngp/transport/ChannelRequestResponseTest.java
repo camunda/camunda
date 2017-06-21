@@ -8,13 +8,30 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ChannelRequestResponseTest
 {
+
+    private ActorScheduler actorScheduler;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown()
+    {
+        actorScheduler.close();
+    }
 
     static class ClientFragmentHandler implements FragmentHandler
     {
@@ -26,6 +43,7 @@ public class ChannelRequestResponseTest
             reset();
         }
 
+        @Override
         public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
         {
             lastMsgIdReceived = buffer.getInt(offset + TransportHeaderDescriptor.HEADER_LENGTH);
@@ -50,15 +68,16 @@ public class ChannelRequestResponseTest
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("client-receive-buffer")
+                .actorScheduler(actorScheduler)
                 .bufferSize(16 * 1024 * 1024)
                 .build();
 
         final Transport clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
 
         final Transport serverTransport = Transports.createTransport("server")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
 
         serverTransport.createServerSocketBinding(addr)

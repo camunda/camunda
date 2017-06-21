@@ -3,7 +3,6 @@ package org.camunda.tngp.transport;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.agrona.concurrent.AgentRunner;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Conductor;
@@ -72,20 +71,14 @@ public class Transport implements AutoCloseable
         {
             return conductor.closeAsync().thenApply((v) ->
             {
-                // thread is required because the conductor agent cannot close
-                // itself very well
-                final Thread t = new Thread(() ->
+                if (!transportContext.isSendBufferExternallyManaged())
                 {
-                    final AgentRunner[] agentRunners = transportContext.getAgentRunners();
-                    if (agentRunners != null)
-                    {
-                        for (AgentRunner agentRunner : agentRunners)
-                        {
-                            agentRunner.close();
-                        }
-                    }
-                });
-                t.start();
+                    transportContext.getSendBuffer().closeAsync();
+                }
+
+                transportContext.getReceiver().close();
+                transportContext.getSender().close();
+                transportContext.getConductor().close();
 
                 return this;
             });
@@ -96,6 +89,7 @@ public class Transport implements AutoCloseable
         }
     }
 
+    @Override
     public void close()
     {
         closeAsync().join();

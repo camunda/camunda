@@ -1,17 +1,11 @@
 package org.camunda.tngp.transport;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.CompositeAgent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -20,6 +14,8 @@ import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Conductor;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
+import org.camunda.tngp.util.EnsureUtil;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class TransportBuilder
 {
@@ -27,12 +23,6 @@ public class TransportBuilder
      * In the same order of magnitude of what apache and nginx use.
      */
     protected static final long DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = 5000;
-
-    public enum ThreadingMode
-    {
-        SHARED,
-        DEDICATED;
-    }
 
     protected final String name;
 
@@ -50,17 +40,16 @@ public class TransportBuilder
      */
     protected int stateDispatchBufferSize = 32 * 1024;
 
-    protected ThreadingMode threadingMode = ThreadingMode.SHARED;
-
     protected CountersManager countersManager;
 
     protected TransportContext transportContext;
 
-    protected boolean agentsExternallyManaged = false;
+    protected boolean actorsExternallyManaged = false;
     protected boolean sendBufferExternallyManaged = false;
 
+    protected ActorScheduler actorScheduler;
+
     protected Conductor conductor;
-    protected Agent sendBufferConductor;
     protected Receiver receiver;
     protected Sender sender;
 
@@ -76,6 +65,12 @@ public class TransportBuilder
     public TransportBuilder(String name)
     {
         this.name = name;
+    }
+
+    public TransportBuilder actorScheduler(ActorScheduler actorScheduler)
+    {
+        this.actorScheduler = actorScheduler;
+        return this;
     }
 
     public TransportBuilder countersManager(CountersManager countersManager)
@@ -121,15 +116,9 @@ public class TransportBuilder
         return this;
     }
 
-    public TransportBuilder threadingMode(ThreadingMode mode)
+    public TransportBuilder actorsExternallyManaged()
     {
-        this.threadingMode = mode;
-        return this;
-    }
-
-    public TransportBuilder agentsExternallyManaged()
-    {
-        this.agentsExternallyManaged = true;
+        this.actorsExternallyManaged = true;
         return this;
     }
 
@@ -140,7 +129,7 @@ public class TransportBuilder
         initReceiver();
         initSender();
         initConductor();
-        startAgents();
+        scheduleActors();
 
         return new Transport(conductor, transportContext);
     }
@@ -168,17 +157,16 @@ public class TransportBuilder
         if (!sendBufferExternallyManaged)
         {
             this.sendBuffer = Dispatchers.create(name + ".write-buffer")
+                .actorScheduler(actorScheduler)
                 .bufferSize(sendBufferSize)
                 .subscriptions("sender")
                 .countersManager(countersManager)
-                .conductorExternallyManaged()
                 .build();
 
-            this.sendBufferConductor = sendBuffer.getConductorAgent();
             this.senderSubscription = sendBuffer.getSubscriptionByName("sender");
         }
 
-        transportContext.setSendBuffer(sendBuffer);
+        transportContext.setSendBuffer(sendBuffer, sendBufferExternallyManaged);
 
         if (senderSubscription == null)
         {
@@ -198,77 +186,16 @@ public class TransportBuilder
         this.sender = new Sender(controlFrameBuffer, this.transportContext);
     }
 
-    protected void startAgents()
+    protected void scheduleActors()
     {
-        if (!agentsExternallyManaged)
+        if (!actorsExternallyManaged)
         {
-            AgentRunner[] agentRunners = null;
+            EnsureUtil.ensureNotNull("task scheduler", actorScheduler);
 
-            if (threadingMode == ThreadingMode.SHARED)
-            {
-                agentRunners = new AgentRunner[1];
-
-                if (sendBufferExternallyManaged)
-                {
-                    agentRunners[0] = startAgents(conductor, receiver, sender);
-                }
-                else
-                {
-                    agentRunners[0] = startAgents(conductor, sendBufferConductor, receiver, sender);
-                }
-            }
-            else if (threadingMode == ThreadingMode.DEDICATED)
-            {
-                agentRunners = new AgentRunner[3];
-
-                if (sendBufferExternallyManaged)
-                {
-                    agentRunners[0] = startAgents(conductor);
-                }
-                else
-                {
-                    agentRunners[0] = startAgents(conductor, sendBufferConductor);
-                }
-                agentRunners[1] = startAgents(receiver);
-                agentRunners[2] = startAgents(sender);
-            }
-            else
-            {
-                throw new RuntimeException("unsupported threading mode " + threadingMode);
-            }
-            transportContext.setAgentRunners(agentRunners);
+            transportContext.setConductor(actorScheduler.schedule(conductor));
+            transportContext.setReceiver(actorScheduler.schedule(receiver));
+            transportContext.setSender(actorScheduler.schedule(sender));
         }
-    }
-
-
-    protected AgentRunner startAgents(Agent... agents)
-    {
-
-        Agent agentToRun = null;
-
-        if (agents.length == 1)
-        {
-            agentToRun = agents[0];
-        }
-        else
-        {
-            agentToRun = new CompositeAgent(agents);
-        }
-
-        final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(5));
-
-        AtomicCounter errorCounter = null;
-        if (countersManager != null)
-        {
-            errorCounter = countersManager.newCounter(String.format("net.long_running.transport.%s.errorCounter", name));
-        }
-
-        final AgentRunner runner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, agentToRun);
-
-        AgentRunner.startOnThread(runner);
-
-        return runner;
-
     }
 
     public Conductor getTransportConductor()

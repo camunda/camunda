@@ -15,12 +15,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.test.util.TestUtil;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.util.RecordingChannelHandler;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +29,7 @@ import org.junit.Test;
 
 public class TransportChannelHandlerTest
 {
+
     protected static final long KEEP_ALIVE_PERIOD = 1000;
     protected static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
 
@@ -51,17 +53,21 @@ public class TransportChannelHandlerTest
     protected RecordingChannelHandler clientHandler;
     protected ChannelManager clientChannelManager;
 
+    private ActorScheduler actorScheduler;
+
     @Before
     public void setUp()
     {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+
         ClockUtil.setCurrentTime(Instant.now());
         clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .channelKeepAlivePeriod(KEEP_ALIVE_PERIOD)
             .build();
 
         serverTransport = Transports.createTransport("server")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
 
         serverHandler = new RecordingChannelHandler();
@@ -80,10 +86,11 @@ public class TransportChannelHandlerTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
         clientTransport.close();
         serverTransport.close();
+        actorScheduler.close();
         ClockUtil.reset();
     }
 

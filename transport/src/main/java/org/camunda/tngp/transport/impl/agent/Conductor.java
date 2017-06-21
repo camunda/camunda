@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -25,8 +24,9 @@ import org.camunda.tngp.transport.util.SharedStateMachineBlueprint;
 import org.camunda.tngp.transport.util.SharedStateMachineManager;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.LangUtil;
+import org.camunda.tngp.util.actor.Actor;
 
-public class Conductor implements Agent
+public class Conductor implements Actor
 {
 
     protected final SharedStateMachineBlueprint<ChannelImpl> channelLifecycle;
@@ -120,8 +120,13 @@ public class Conductor implements Agent
         int workCount = 0;
 
         workCount += commandContext.doWork();
-        workCount += connectTransportPoller.pollNow();
-        workCount += acceptTransportPoller.pollNow();
+
+        if (isOpen())
+        {
+            workCount += connectTransportPoller.pollNow();
+            workCount += acceptTransportPoller.pollNow();
+        }
+
         workCount += maintainChannels();
         workCount += maintainChannelManagers();
 
@@ -340,6 +345,8 @@ public class Conductor implements Agent
                         {
                             future.complete(null);
                         });
+
+                        receiver.closeSelectors();
                     });
             });
         }
@@ -355,9 +362,15 @@ public class Conductor implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return "transport-conductor";
+    }
+
+    @Override
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
     }
 
 }

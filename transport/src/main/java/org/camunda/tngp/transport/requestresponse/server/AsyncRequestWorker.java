@@ -1,8 +1,8 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.util.actor.Actor;
 
 /**
  * <p>
@@ -37,7 +37,7 @@ import org.camunda.tngp.dispatcher.Subscription;
  * <li>after that the response is committed</li>
  * </ul>
  */
-public class AsyncRequestWorker implements Agent
+public class AsyncRequestWorker implements Actor
 {
     protected final String name;
 
@@ -59,6 +59,7 @@ public class AsyncRequestWorker implements Agent
         this.workerTasks = context.getWorkerTasks();
     }
 
+    @Override
     public int doWork() throws Exception
     {
         int workCount = 0;
@@ -84,7 +85,7 @@ public class AsyncRequestWorker implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return name;
     }

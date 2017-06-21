@@ -7,16 +7,13 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.test.util.TestUtil;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class ChannelLifecycleTest
@@ -27,16 +24,19 @@ public class ChannelLifecycleTest
 
     protected Transport clientTransport;
     protected Transport serverTransport;
+    private ActorScheduler actorScheduler;
 
     @Before
     public void setUp()
     {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+
         clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
 
         serverTransport = Transports.createTransport("server")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
     }
 
@@ -45,6 +45,7 @@ public class ChannelLifecycleTest
     {
         clientTransport.close();
         serverTransport.close();
+        actorScheduler.close();
     }
 
     @Test

@@ -2,9 +2,10 @@ package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.util.RecordingChannelListener;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,16 +16,19 @@ public class TransportChannelListenerTest
     protected Transport clientTransport;
     protected Transport serverTransport;
     protected Receiver serverReceiver;
+    private ActorScheduler actorScheduler;
 
     @Before
     public void setUp()
     {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+
         clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .build();
 
         final TransportBuilder serverTransportBuilder = Transports.createTransport("server")
-            .threadingMode(ThreadingMode.SHARED);
+            .actorScheduler(actorScheduler);
 
         serverTransport = serverTransportBuilder.build();
         serverReceiver = serverTransportBuilder.getReceiver();
@@ -35,6 +39,7 @@ public class TransportChannelListenerTest
     {
         clientTransport.close();
         serverTransport.close();
+        actorScheduler.close();
     }
 
     @Test

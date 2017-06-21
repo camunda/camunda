@@ -10,11 +10,12 @@ import java.util.Date;
 import java.util.concurrent.CompletionException;
 
 import org.camunda.tngp.test.util.TestUtil;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.util.RecordingChannelHandler;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -31,16 +32,20 @@ public class ClientChannelPoolingTest
     protected Transport clientTransport;
     protected Transport serverTransport;
 
+    private ActorScheduler actorScheduler;
+
     @Before
     public void setUp()
     {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+
         clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
+            .actorScheduler(actorScheduler)
             .channelKeepAlivePeriod(Integer.MAX_VALUE)
             .build();
 
         serverTransport = Transports.createTransport("server")
-                .threadingMode(ThreadingMode.SHARED)
+                .actorScheduler(actorScheduler)
                 .build();
     }
 
@@ -50,6 +55,7 @@ public class ClientChannelPoolingTest
         ClockUtil.reset();
         clientTransport.close();
         serverTransport.close();
+        actorScheduler.close();
     }
 
     @Test
