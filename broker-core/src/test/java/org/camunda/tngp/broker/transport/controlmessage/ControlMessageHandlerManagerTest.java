@@ -12,12 +12,15 @@
  */
 package org.camunda.tngp.broker.transport.controlmessage;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.test.util.BufferAssert.*;
-import static org.camunda.tngp.util.StringUtil.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -25,7 +28,6 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -37,7 +39,8 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.test.util.FluentMock;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +73,9 @@ public class ControlMessageHandlerManagerTest
     private Subscription mockSubscription;
 
     @Mock
-    private AgentRunnerService mockAgentRunnerService;
+    private ActorScheduler mockTaskScheduler;
+    @Mock
+    private ActorReference mockActorRef;
 
     @FluentMock
     private ErrorResponseWriter mockErrorResponseWriter;
@@ -93,8 +98,10 @@ public class ControlMessageHandlerManagerTest
                 mockControlMessageBuffer,
                 mockErrorResponseWriter,
                 TIMEOUT.toMillis(),
-                mockAgentRunnerService,
+                mockTaskScheduler,
                 Collections.singletonList(mockControlMessageHandler));
+
+        when(mockTaskScheduler.schedule(manager)).thenReturn(mockActorRef);
 
         // fix the current time to calculate the timeout
         ClockUtil.setCurrentTime(Instant.now());
@@ -109,7 +116,7 @@ public class ControlMessageHandlerManagerTest
     @Test
     public void shouldGetRoleName()
     {
-        assertThat(manager.roleName()).isEqualTo("control.message.handler");
+        assertThat(manager.name()).isEqualTo("control.message.handler");
     }
 
     @Test
@@ -126,7 +133,7 @@ public class ControlMessageHandlerManagerTest
         assertThat(future).isCompleted();
         assertThat(manager.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService).run(any(Agent.class));
+        verify(mockTaskScheduler).schedule(manager);
     }
 
     @Test
@@ -144,7 +151,7 @@ public class ControlMessageHandlerManagerTest
         assertThat(future).isCompletedExceptionally();
         assertThat(manager.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService, times(1)).run(any(Agent.class));
+        verify(mockTaskScheduler, times(1)).schedule(manager);
     }
 
     @Test
@@ -162,7 +169,7 @@ public class ControlMessageHandlerManagerTest
         assertThat(future).isCompleted();
         assertThat(manager.isClosed()).isTrue();
 
-        verify(mockAgentRunnerService).remove(any(Agent.class));
+        verify(mockActorRef).close();
     }
 
     @Test

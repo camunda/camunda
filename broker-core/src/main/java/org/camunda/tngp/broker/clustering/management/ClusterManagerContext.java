@@ -3,15 +3,15 @@ package org.camunda.tngp.broker.clustering.management;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.logstreams.LogStreamsManager;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class ClusterManagerContext
 {
-    private AgentRunnerServices agentRunner;
+    private ActorScheduler actorScheduler;
     private Peer localPeer;
     private Subscription subscription;
     private ChannelManager clientChannelPool;
@@ -20,14 +20,14 @@ public class ClusterManagerContext
     private PeerList peers;
     private LogStreamsManager logStreamsManager;
 
-    public AgentRunnerServices getAgentRunner()
+    public ActorScheduler getTaskScheduler()
     {
-        return agentRunner;
+        return actorScheduler;
     }
 
-    public void setAgentRunner(AgentRunnerServices agentRunner)
+    public void setTaskScheduler(ActorScheduler actorScheduler)
     {
-        this.agentRunner = agentRunner;
+        this.actorScheduler = actorScheduler;
     }
 
     public Peer getLocalPeer()

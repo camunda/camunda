@@ -21,7 +21,7 @@ public class TaskQueueComponent implements Component
 
         final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService();
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
-            .dependency(AGENT_RUNNER_SERVICE, taskSubscriptionManagerService.getAgentRunnerServicesInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, taskSubscriptionManagerService.getActorSchedulerInjector())
             .groupReference(LOG_STREAM_SERVICE_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
             .install();
 
@@ -30,7 +30,7 @@ public class TaskQueueComponent implements Component
             .dependency(TRANSPORT_SEND_BUFFER, taskQueueManagerService.getSendBufferInjector())
             .dependency(EXECUTOR_SERVICE, taskQueueManagerService.getExecutorInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
-            .dependency(AGENT_RUNNER_SERVICE, taskQueueManagerService.getAgentRunnerServicesInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, taskQueueManagerService.getActorSchedulerInjector())
             .groupReference(LOG_STREAM_SERVICE_GROUP, taskQueueManagerService.getLogStreamsGroupReference())
             .install();
 

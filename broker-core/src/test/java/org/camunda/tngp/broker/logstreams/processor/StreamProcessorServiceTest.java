@@ -2,17 +2,21 @@ package org.camunda.tngp.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.logstreams.log.*;
-import org.camunda.tngp.logstreams.processor.*;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.processor.EventFilter;
+import org.camunda.tngp.logstreams.processor.StreamProcessor;
+import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.junit.*;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class StreamProcessorServiceTest
@@ -153,10 +157,8 @@ public class StreamProcessorServiceTest
 
     protected void injectMocks(StreamProcessorService streamProcessorService)
     {
-        final AgentRunnerServices agentRunnerServices = mock(AgentRunnerServices.class);
-        final AgentRunnerService agentRunnerService = mock(AgentRunnerService.class);
-        when(agentRunnerServices.logStreamProcessorAgentRunnerService()).thenReturn(agentRunnerService);
-        streamProcessorService.getAgentRunnerInjector().inject(agentRunnerServices);
+        final ActorScheduler actorScheduler = mock(ActorScheduler.class);
+        streamProcessorService.getActorSchedulerInjector().inject(actorScheduler);
 
         final LogStream logStream = mock(LogStream.class);
         when(logStream.getTopicName()).thenReturn(DEFAULT_TOPIC_NAME_BUFFER);

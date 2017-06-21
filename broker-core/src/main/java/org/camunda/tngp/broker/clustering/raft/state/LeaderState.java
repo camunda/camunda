@@ -1,8 +1,9 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.clustering.gossip.RaftMembershipState.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static org.camunda.tngp.clustering.gossip.RaftMembershipState.FOLLOWER;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,31 +18,15 @@ import org.camunda.tngp.broker.clustering.raft.controller.ConfigurationControlle
 import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
 import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
 import org.camunda.tngp.broker.clustering.raft.entry.InitializeEntry;
-import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
-import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
-import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
-import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
-import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
-import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
-import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
-import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.broker.clustering.raft.message.*;
 import org.camunda.tngp.broker.logstreams.LogStreamService;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.SocketAddress;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.state.SimpleStateMachineContext;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
-import org.camunda.tngp.util.state.StateMachineCommand;
-import org.camunda.tngp.util.state.TransitionState;
-import org.camunda.tngp.util.state.WaitState;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.state.*;
 
 public class LeaderState extends ActiveState
 {
@@ -618,15 +603,14 @@ public class LeaderState extends ActiveState
             final RaftContext raftContext = context.raftContext;
 
             final Raft raft = raftContext.getRaft();
-            final AgentRunnerServices agentRunner = raftContext.getAgentRunner();
-            final AgentRunnerService conductorAgentRunner = agentRunner.conductorAgentRunnerService();
+            final ActorScheduler actorScheduler = raftContext.getTaskScheduler();
 
             final LogStream stream = raft.stream();
 
             int workcount = 0;
 
             workcount += 1;
-            context.logStreamControllerFuture = stream.openLogStreamController(conductorAgentRunner);
+            context.logStreamControllerFuture = stream.openLogStreamController(actorScheduler);
 
             context.take(TRANSITION_DEFAULT);
 
@@ -755,7 +739,7 @@ public class LeaderState extends ActiveState
             final ServiceName<LogStream> serviceName = logStreamServiceName(stream.getLogName());
             final LogStreamService service = new LogStreamService(stream);
             serviceContainer.createService(serviceName, service)
-                .dependency(AGENT_RUNNER_SERVICE)
+                .dependency(ACTOR_SCHEDULER_SERVICE)
                 .group(LOG_STREAM_SERVICE_GROUP)
                 .install();
 

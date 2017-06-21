@@ -29,7 +29,7 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.protocol.clientapi.*;
 import org.camunda.tngp.test.util.FluentMock;
-import org.camunda.tngp.test.util.agent.ControllableAgentRunnerService;
+import org.camunda.tngp.test.util.agent.ControllableTaskScheduler;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
@@ -88,7 +88,7 @@ public class ClientApiMessageHandlerTest
     public Timeout testTimeout = Timeout.seconds(5);
 
     @Rule
-    public ControllableAgentRunnerService agentRunnerService = new ControllableAgentRunnerService();
+    public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
 
     @Before
     public void setup()
@@ -99,8 +99,7 @@ public class ClientApiMessageHandlerTest
 
         logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
+            .actorScheduler(agentRunnerService)
             .build();
 
         logStream.openAsync();

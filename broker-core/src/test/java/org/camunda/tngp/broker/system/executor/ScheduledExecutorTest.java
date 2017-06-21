@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.camunda.tngp.test.util.agent.ControllableAgentRunnerService;
+import org.camunda.tngp.test.util.agent.ControllableTaskScheduler;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +30,7 @@ public class ScheduledExecutorTest
     private final Instant now = Instant.now();
 
     @Rule
-    public ControllableAgentRunnerService agentRunnerService = new ControllableAgentRunnerService();
+    public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
 
     private ScheduledExecutorImpl executor;
 

@@ -5,25 +5,27 @@ import java.io.File;
 import org.camunda.tngp.broker.clustering.gossip.Gossip;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.LangUtil;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class GossipService implements Service<Gossip>
 {
-    private final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<GossipContext> gossipContextInjector = new Injector<>();
 
     private Gossip gossip;
     private GossipContext gossipContext;
+    private ActorReference actorRef;
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         this.gossipContext = gossipContextInjector.getValue();
         startContext.run(() ->
         {
@@ -33,15 +35,14 @@ public class GossipService implements Service<Gossip>
 
             this.gossip = new Gossip(gossipContext);
             gossip.open();
-            agentRunnerServices.gossipAgentRunnerService().run(gossip);
+            actorRef = actorScheduler.schedule(gossip);
         });
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
-        agentRunnerServices.gossipAgentRunnerService().remove(gossip);
+        actorRef.close();
     }
 
     @Override
@@ -55,9 +56,9 @@ public class GossipService implements Service<Gossip>
         return gossipContextInjector;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerInjector;
+        return actorSchedulerInjector;
     }
 
     private void createFile(String file)

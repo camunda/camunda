@@ -1,8 +1,11 @@
 package org.camunda.tngp.broker.clustering.management;
 
 import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +17,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManagerService;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
@@ -42,8 +44,9 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.actor.Actor;
 
-public class ClusterManager implements Agent
+public class ClusterManager implements Actor
 {
     private final ClusterManagerContext context;
     private final ServiceContainer serviceContainer;
@@ -133,7 +136,7 @@ public class ClusterManager implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return "management";
     }
@@ -280,14 +283,14 @@ public class ClusterManager implements Agent
             .dependency(clientChannelManagerServiceName, raftContextService.getClientChannelManagerInjector())
             .dependency(transportConnectionPoolServiceName, raftContextService.getTransportConnectionPoolInjector())
             .dependency(subscriptionServiceName, raftContextService.getSubscriptionInjector())
-            .dependency(AGENT_RUNNER_SERVICE, raftContextService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, raftContextService.getActorSchedulerInjector())
             .install();
 
         final RaftService raftService = new RaftService(logStream, meta, new CopyOnWriteArrayList<>(members), bootstrap);
         final ServiceName<Raft> raftServiceName = raftServiceName(logName);
         serviceContainer.createService(raftServiceName, raftService)
             .group(RAFT_SERVICE_GROUP)
-            .dependency(AGENT_RUNNER_SERVICE, raftService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, raftService.getActorSchedulerInjector())
             .dependency(raftContextServiceName, raftService.getRaftContextInjector())
             .install();
     }

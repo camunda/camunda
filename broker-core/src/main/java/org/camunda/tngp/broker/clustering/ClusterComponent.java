@@ -114,7 +114,7 @@ public class ClusterComponent implements Component
 
         final GossipService gossipService = new GossipService();
         serviceContainer.createService(GOSSIP_SERVICE, gossipService)
-            .dependency(AGENT_RUNNER_SERVICE, gossipService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, gossipService.getActorSchedulerInjector())
             .dependency(GOSSIP_CONTEXT_SERVICE, gossipService.getGossipContextInjector())
             .install();
 
@@ -148,7 +148,7 @@ public class ClusterComponent implements Component
             .dependency(TRANSPORT_SEND_BUFFER, clusterManagementContextService.getSendBufferInjector())
             .dependency(PEER_LIST_SERVICE, clusterManagementContextService.getPeerListInjector())
             .dependency(PEER_LOCAL_SERVICE, clusterManagementContextService.getLocalPeerInjector())
-            .dependency(AGENT_RUNNER_SERVICE, clusterManagementContextService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
             .dependency(clientChannelManagerServiceName, clusterManagementContextService.getClientChannelManagerInjector())
             .dependency(transportConnectionPoolServiceName, clusterManagementContextService.getTransportConnectionPoolInjector())
@@ -158,7 +158,7 @@ public class ClusterComponent implements Component
         final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config.management);
         serviceContainer.createService(CLUSTER_MANAGER_SERVICE, clusterManagerService)
             .dependency(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagerService.getClusterManagementContextInjector())
-            .dependency(AGENT_RUNNER_SERVICE, clusterManagerService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagerService.getActorSchedulerInjector())
             .groupReference(RAFT_SERVICE_GROUP, clusterManagerService.getRaftGroupReference())
             .install();
     }

@@ -96,7 +96,7 @@ public class TaskQueueTest
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
         thrown.expect(BrokerRequestException.class);
-        thrown.expectMessage("Task does not exist or is not locked");
+        thrown.expectMessage("Actor does not exist or is not locked");
 
         topicClient.complete()
             .taskKey(taskId)

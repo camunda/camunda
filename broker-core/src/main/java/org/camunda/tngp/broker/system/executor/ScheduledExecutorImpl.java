@@ -19,12 +19,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.time.ClockUtil;
 
-public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
+public class ScheduledExecutorImpl implements Actor, ScheduledExecutor
 {
     protected static final String NAME = "scheduled-executor";
 
@@ -34,11 +35,12 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
     protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
+    protected ActorReference actorRef;
 
-    public ScheduledExecutorImpl(AgentRunnerService agentRunnerService)
+    public ScheduledExecutorImpl(ActorScheduler actorScheduler)
     {
-        this.agentRunnerService = agentRunnerService;
+        this.actorScheduler = actorScheduler;
     }
 
     @Override
@@ -146,7 +148,7 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
     {
         if (isRunning.compareAndSet(false, true))
         {
-            agentRunnerService.run(this);
+            actorRef = actorScheduler.schedule(this);
         }
     }
 
@@ -163,7 +165,7 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
         {
             cmdQueue.add(() ->
             {
-                agentRunnerService.remove(this);
+                actorRef.close();
 
                 future.complete(null);
             });
@@ -177,7 +179,13 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
     }
 
     @Override
-    public String roleName()
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
+    }
+
+    @Override
+    public String name()
     {
         return NAME;
     }

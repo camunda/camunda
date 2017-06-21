@@ -3,20 +3,18 @@ package org.camunda.tngp.client.task.impl.subscription;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.event.impl.EventTypeMapping;
 import org.camunda.tngp.client.event.impl.TopicEventImpl;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
-import org.camunda.tngp.protocol.clientapi.SubscriptionType;
+import org.camunda.tngp.protocol.clientapi.*;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.util.actor.Actor;
 import org.slf4j.Logger;
 
-public class SubscribedEventCollector implements Agent, FragmentHandler
+public class SubscribedEventCollector implements Actor, FragmentHandler
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
     protected static final String NAME = "event-collector";
@@ -47,7 +45,7 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return NAME;
     }

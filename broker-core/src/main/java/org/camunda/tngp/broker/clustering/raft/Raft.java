@@ -5,44 +5,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import org.agrona.concurrent.Agent;
-import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
-import org.camunda.tngp.broker.clustering.raft.controller.JoinController;
-import org.camunda.tngp.broker.clustering.raft.controller.LeaveController;
-import org.camunda.tngp.broker.clustering.raft.controller.PollController;
-import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
-import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
+import org.camunda.tngp.broker.clustering.raft.controller.*;
 import org.camunda.tngp.broker.clustering.raft.handler.RaftMessageHandler;
-import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
-import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
-import org.camunda.tngp.broker.clustering.raft.message.ConfigureRequest;
-import org.camunda.tngp.broker.clustering.raft.message.ConfigureResponse;
-import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
-import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
-import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
-import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
-import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
-import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.raft.state.ActiveState;
-import org.camunda.tngp.broker.clustering.raft.state.CandidateState;
-import org.camunda.tngp.broker.clustering.raft.state.FollowerState;
-import org.camunda.tngp.broker.clustering.raft.state.InactiveState;
-import org.camunda.tngp.broker.clustering.raft.state.LeaderState;
-import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
-import org.camunda.tngp.broker.clustering.raft.state.RaftState;
+import org.camunda.tngp.broker.clustering.raft.message.*;
+import org.camunda.tngp.broker.clustering.raft.state.*;
 import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.transport.SocketAddress;
-import org.camunda.tngp.util.state.SimpleStateMachineContext;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
-import org.camunda.tngp.util.state.StateMachineCommand;
-import org.camunda.tngp.util.state.WaitState;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.state.*;
 
-public class Raft implements Agent
+public class Raft implements Actor
 {
     private static final int TRANSITION_OPEN = 0;
     private static final int TRANSITION_DEFAULT = 1;
@@ -197,9 +170,15 @@ public class Raft implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return String.format("raft.%s", stream.getLogName());
+    }
+
+    @Override
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
     }
 
     @Override

@@ -10,12 +10,12 @@ import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.*;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
@@ -41,7 +41,7 @@ public class ClientApiRule extends ExternalResource
     {
         incomingMessageCollector = new RawMessageCollector();
         transport = Transports.createTransport("testTransport")
-                .threadingMode(ThreadingMode.SHARED)
+                .actorScheduler(ActorSchedulerImpl.createDefaultScheduler())
                 .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 2, 64);

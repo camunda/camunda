@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.logstreams;
 
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import org.camunda.tngp.broker.event.TopicSubscriptionServiceNames;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
@@ -18,7 +18,7 @@ public class LogStreamsComponent implements Component
     {
         final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager());
         context.getServiceContainer().createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
-            .dependency(AGENT_RUNNER_SERVICE, streamsManager.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, streamsManager.getActorSchedulerInjector())
             .install();
 
         final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
@@ -29,7 +29,7 @@ public class LogStreamsComponent implements Component
         context.getServiceContainer()
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.TRANSPORT_SEND_BUFFER, topicSubscriptionService.getSendBufferInjector())
-            .dependency(AGENT_RUNNER_SERVICE, topicSubscriptionService.getAgentRunnerServicesInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, topicSubscriptionService.getActorSchedulerInjector())
             .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();
     }

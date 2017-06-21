@@ -25,11 +25,11 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 {
     protected static final int BUFFER_SIZE = 4 * 1024;
 
-    protected static final byte[] READ_BUFFER = new byte[BUFFER_SIZE];
-    protected static final ByteBuffer READ_BUFFER_VIEW = ByteBuffer.wrap(READ_BUFFER);
+    protected final byte[] readBuffer = new byte[BUFFER_SIZE];
+    protected final ByteBuffer readBufferView = ByteBuffer.wrap(readBuffer);
 
-    protected static final byte[] WRITE_BUFFER = new byte[BUFFER_SIZE];
-    protected static final ByteBuffer WRITE_BUFFER_VIEW = ByteBuffer.wrap(WRITE_BUFFER);
+    protected final byte[] writeBuffer = new byte[BUFFER_SIZE];
+    protected final ByteBuffer writeBufferView = ByteBuffer.wrap(writeBuffer);
 
     protected final T hashIndex;
     protected final IndexStore indexStore;
@@ -55,12 +55,12 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 
         do
         {
-            READ_BUFFER_VIEW.position(0);
-            read = indexStore.read(READ_BUFFER_VIEW, offset);
+            readBufferView.position(0);
+            read = indexStore.read(readBufferView, offset);
 
             if (read > 0)
             {
-                outputStream.write(READ_BUFFER, 0, read);
+                outputStream.write(readBuffer, 0, read);
 
                 offset += read;
             }
@@ -76,12 +76,12 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 
         do
         {
-            read = StreamUtil.read(inputStream, WRITE_BUFFER, 0);
+            read = StreamUtil.read(inputStream, writeBuffer, 0);
 
             if (read > 0)
             {
-                WRITE_BUFFER_VIEW.position(0);
-                indexStore.writeFully(WRITE_BUFFER_VIEW, offset);
+                writeBufferView.position(0);
+                indexStore.writeFully(writeBufferView, offset);
 
                 offset += read;
             }
@@ -96,8 +96,8 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     {
         hashIndex.clear();
 
-        READ_BUFFER_VIEW.clear();
-        WRITE_BUFFER_VIEW.clear();
+        readBufferView.clear();
+        writeBufferView.clear();
     }
 
 }

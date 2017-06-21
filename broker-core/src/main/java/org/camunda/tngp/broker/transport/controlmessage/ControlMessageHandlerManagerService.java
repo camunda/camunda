@@ -17,7 +17,6 @@ import java.util.List;
 
 import org.camunda.tngp.broker.event.handler.RemoveTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.task.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -25,13 +24,13 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class ControlMessageHandlerManagerService implements Service<ControlMessageHandlerManager>
 {
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
-    protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
 
@@ -53,7 +52,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final ControlMessageResponseWriter controlMessageResponseWriter = new ControlMessageResponseWriter(sendBuffer);
         final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter(sendBuffer);
 
-        final AgentRunnerService agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
@@ -65,7 +64,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
             new RemoveTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter)
         );
 
-        service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, agentRunnerService, controlMessageHandlers);
+        service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, actorScheduler, controlMessageHandlers);
 
         context.async(service.openAsync());
     }
@@ -92,9 +91,9 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         return controlMessageBufferInjector;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerServicesInjector;
+        return actorSchedulerInjector;
     }
 
     public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()

@@ -2,16 +2,12 @@ package org.camunda.tngp.broker.clustering.raft.service;
 
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.servicecontainer.Injector;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.servicecontainer.*;
 import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class RaftContextService implements Service<RaftContext>
 {
@@ -20,7 +16,7 @@ public class RaftContextService implements Service<RaftContext>
     private final Injector<Subscription> subscriptionInjector = new Injector<>();
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     private final Injector<Peer> localPeerInjector = new Injector<>();
-    private final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private RaftContext raftContext;
     private ServiceContainer serviceContainer;
@@ -38,7 +34,7 @@ public class RaftContextService implements Service<RaftContext>
         final Subscription subscription = subscriptionInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final Peer localPeer = localPeerInjector.getValue();
-        final AgentRunnerServices agentRunner = agentRunnerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         raftContext = new RaftContext();
         raftContext.setClientChannelPool(clientChannelManager);
@@ -46,7 +42,7 @@ public class RaftContextService implements Service<RaftContext>
         raftContext.setSubscription(subscription);
         raftContext.setSendBuffer(sendBuffer);
         raftContext.setRaftEndpoint(localPeer.replicationEndpoint());
-        raftContext.setAgentRunner(agentRunner);
+        raftContext.setTaskScheduler(actorScheduler);
         raftContext.setServiceContainer(serviceContainer);
     }
 
@@ -86,8 +82,8 @@ public class RaftContextService implements Service<RaftContext>
         return localPeerInjector;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerInjector;
+        return actorSchedulerInjector;
     }
 }

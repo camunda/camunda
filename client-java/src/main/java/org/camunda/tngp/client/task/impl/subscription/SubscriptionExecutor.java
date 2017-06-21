@@ -1,9 +1,9 @@
 package org.camunda.tngp.client.task.impl.subscription;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.event.impl.EventSubscription;
+import org.camunda.tngp.util.actor.Actor;
 
-public class SubscriptionExecutor implements Agent
+public class SubscriptionExecutor implements Actor
 {
     public static final String ROLE_NAME = "subscription-executor";
 
@@ -31,7 +31,7 @@ public class SubscriptionExecutor implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return ROLE_NAME;
     }

@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.broker.transport.controlmessage;
 
-import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.*;
+import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -32,16 +31,13 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.state.SimpleStateMachineContext;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
-import org.camunda.tngp.util.state.TransitionState;
-import org.camunda.tngp.util.state.WaitState;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.state.*;
 import org.camunda.tngp.util.time.ClockUtil;
 
-public class ControlMessageHandlerManager implements Agent
+public class ControlMessageHandlerManager implements Actor
 {
     protected static final String NAME = "control.message.handler";
 
@@ -68,8 +64,9 @@ public class ControlMessageHandlerManager implements Agent
             .from(closedState).take(TRANSITION_OPEN).to(openingState)
             .build());
 
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
+    protected ActorReference actorRef;
 
     protected final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -91,10 +88,10 @@ public class ControlMessageHandlerManager implements Agent
             Dispatcher controlMessageDispatcher,
             ErrorResponseWriter errorResponseWriter,
             long requestTimeoutInMillis,
-            AgentRunnerService agentRunnerService,
+            ActorScheduler actorScheduler,
             List<ControlMessageHandler> handlers)
     {
-        this.agentRunnerService = agentRunnerService;
+        this.actorScheduler = actorScheduler;
         this.controlMessageDispatcher = controlMessageDispatcher;
         this.requestTimeoutInMillis = requestTimeoutInMillis;
         this.errorResponseWriter = errorResponseWriter;
@@ -107,7 +104,7 @@ public class ControlMessageHandlerManager implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return NAME;
     }
@@ -139,7 +136,7 @@ public class ControlMessageHandlerManager implements Agent
         {
             try
             {
-                agentRunnerService.run(this);
+                actorRef = actorScheduler.schedule(this);
             }
             catch (Exception e)
             {
@@ -331,7 +328,7 @@ public class ControlMessageHandlerManager implements Agent
             {
                 context.completeOpenCloseFuture();
 
-                agentRunnerService.remove(ControlMessageHandlerManager.this);
+                actorRef.close();
             }
         }
     }

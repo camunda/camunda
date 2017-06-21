@@ -17,10 +17,11 @@ import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.transport.*;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class TngpClientImpl implements TngpClient
@@ -36,6 +37,7 @@ public class TngpClientImpl implements TngpClient
     protected Channel channel;
     protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
+    protected ActorScheduler transportActorScheduler;
 
     protected ClientCmdExecutor cmdExecutor;
 
@@ -71,12 +73,13 @@ public class TngpClientImpl implements TngpClient
         final int maxConnections = Integer.parseInt(properties.getProperty(CLIENT_MAXCONNECTIONS));
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
-        final ThreadingMode threadingMode = ThreadingMode.valueOf(properties.getProperty(CLIENT_THREADINGMODE));
+
+        this.transportActorScheduler = ActorSchedulerImpl.createDefaultScheduler();
 
         final TransportBuilder transportBuilder = Transports.createTransport("tngp.client")
             .sendBufferSize(1024 * 1024 * sendBufferSize)
             .maxMessageLength(1024 * 1024)
-            .threadingMode(threadingMode);
+            .actorScheduler(transportActorScheduler);
 
         if (properties.containsKey(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
@@ -90,6 +93,7 @@ public class TngpClientImpl implements TngpClient
             .bufferSize(1024 * 1024 * sendBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)
+            .actorScheduler(transportActorScheduler)
             .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
@@ -149,6 +153,8 @@ public class TngpClientImpl implements TngpClient
             disconnect();
         }
 
+        subscriptionManager.close();
+
         try
         {
             connectionPool.close();
@@ -175,6 +181,8 @@ public class TngpClientImpl implements TngpClient
         {
             e.printStackTrace();
         }
+
+        transportActorScheduler.close();
     }
 
     protected boolean isConnected()

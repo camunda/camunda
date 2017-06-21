@@ -12,16 +12,15 @@
  */
 package org.camunda.tngp.broker.system.executor;
 
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class ScheduledExecutorService implements Service<ScheduledExecutor>
 {
-    protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected ScheduledExecutorImpl executor;
 
@@ -30,7 +29,7 @@ public class ScheduledExecutorService implements Service<ScheduledExecutor>
     {
         ctx.run(() ->
         {
-            final AgentRunnerService agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
+            final ActorScheduler agentRunnerService = actorSchedulerInjector.getValue();
 
             executor = new ScheduledExecutorImpl(agentRunnerService);
 
@@ -50,9 +49,9 @@ public class ScheduledExecutorService implements Service<ScheduledExecutor>
         return executor;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerServicesInjector;
+        return actorSchedulerInjector;
     }
 
 }

@@ -22,11 +22,11 @@
 
     <!-- SUB PROJECTS -->
     <util.version>1.0.0-SNAPSHOT</util.version>
-    <log.version>1.0.0-alpha5</log.version>
+    <log.version>1.0.0-SNAPSHOT</log.version>
     <tngp.msgpack.version>1.0.0-SNAPSHOT</tngp.msgpack.version>
-    <service.version>1.0.0-alpha4</service.version>
-    <dispatcher.version>1.0.0-alpha4</dispatcher.version>
-    <transport.version>1.0.0-alpha7</transport.version>
+    <service.version>1.0.0-SNAPSHOT</service.version>
+    <dispatcher.version>1.0.0-SNAPSHOT</dispatcher.version>
+    <transport.version>1.0.0-SNAPSHOT</transport.version>
   </properties>
 
   <dependencyManagement>

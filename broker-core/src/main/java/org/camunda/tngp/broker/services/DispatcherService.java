@@ -2,8 +2,6 @@ package org.camunda.tngp.broker.services;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.Agent;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -11,15 +9,17 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class DispatcherService implements Service<Dispatcher>
 {
-    protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected DispatcherBuilder dispatcherBuilder;
     protected Dispatcher dispatcher;
-    protected Agent dispatcherConductor;
+    protected ActorReference conductorRef;
 
     public DispatcherService(int bufferSize)
     {
@@ -43,9 +43,7 @@ public class DispatcherService implements Service<Dispatcher>
                 .countersBuffer(counters.getCountersBuffer())
                 .build();
 
-        dispatcherConductor = dispatcher.getConductorAgent();
-
-        agentRunnerInjector.getValue().conductorAgentRunnerService().run(dispatcherConductor);
+        conductorRef = actorSchedulerInjector.getValue().schedule(dispatcher.getConductor());
     }
 
     @Override
@@ -53,7 +51,7 @@ public class DispatcherService implements Service<Dispatcher>
     {
         final CompletableFuture<Void> closeFuture = dispatcher.closeAsync().thenAccept((v) ->
         {
-            agentRunnerInjector.getValue().conductorAgentRunnerService().remove(dispatcherConductor);
+            conductorRef.close();
         });
 
         ctx.async(closeFuture);
@@ -65,9 +63,9 @@ public class DispatcherService implements Service<Dispatcher>
         return dispatcher;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerInjector;
+        return actorSchedulerInjector;
     }
 
     public Injector<Counters> getCountersManagerInjector()

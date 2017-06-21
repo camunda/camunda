@@ -1,12 +1,12 @@
 package org.camunda.tngp.broker.system;
 
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.EXECUTOR_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import org.camunda.tngp.broker.services.CountersManagerService;
 import org.camunda.tngp.broker.system.executor.ScheduledExecutorService;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServicesImpl;
+import org.camunda.tngp.broker.system.threads.ActorSchedulerService;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component
@@ -21,14 +21,13 @@ public class SystemComponent implements Component
         serviceContainer.createService(COUNTERS_MANAGER_SERVICE, countersManagerService)
             .install();
 
-        final AgentRunnerServicesImpl agentRunnerService = new AgentRunnerServicesImpl(context.getConfigurationManager());
-        serviceContainer.createService(AGENT_RUNNER_SERVICE, agentRunnerService)
-            .dependency(COUNTERS_MANAGER_SERVICE, agentRunnerService.getCountersManagerInjector())
+        final ActorSchedulerService agentRunnerService = new ActorSchedulerService(context.getConfigurationManager());
+        serviceContainer.createService(ACTOR_SCHEDULER_SERVICE, agentRunnerService)
             .install();
 
         final ScheduledExecutorService executorService = new ScheduledExecutorService();
         serviceContainer.createService(EXECUTOR_SERVICE, executorService)
-            .dependency(AGENT_RUNNER_SERVICE, executorService.getAgentRunnerServicesInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, executorService.getActorSchedulerInjector())
             .install();
     }
 

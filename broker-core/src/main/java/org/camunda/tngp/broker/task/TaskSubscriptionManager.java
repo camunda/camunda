@@ -14,20 +14,15 @@ package org.camunda.tngp.broker.task;
 
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static org.camunda.tngp.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
 import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -35,7 +30,6 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.task.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.task.processor.TaskSubscription;
@@ -45,9 +39,10 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.util.DeferredCommandContext;
+import org.camunda.tngp.util.actor.Actor;
 import org.camunda.tngp.util.buffer.BufferUtil;
 
-public class TaskSubscriptionManager implements Agent
+public class TaskSubscriptionManager implements Actor
 {
     protected static final String NAME = "taskqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
@@ -104,7 +99,7 @@ public class TaskSubscriptionManager implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return NAME;
     }
@@ -203,7 +198,7 @@ public class TaskSubscriptionManager implements Agent
             .dependency(logStreamServiceName, streamProcessorService.getSourceStreamInjector())
             .dependency(logStreamServiceName, streamProcessorService.getTargetStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(AGENT_RUNNER_SERVICE, streamProcessorService.getAgentRunnerInjector())
+            .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install()
             .handle((r, t) -> t == null ? future.complete(streamProcessor) : future.completeExceptionally(t));
 

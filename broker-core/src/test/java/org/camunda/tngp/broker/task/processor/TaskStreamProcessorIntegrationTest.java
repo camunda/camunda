@@ -34,7 +34,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.util.FluentMock;
-import org.camunda.tngp.test.util.agent.ControllableAgentRunnerService;
+import org.camunda.tngp.test.util.agent.ControllableTaskScheduler;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +64,7 @@ public class TaskStreamProcessorIntegrationTest
     private StreamProcessorController taskExpireLockStreamProcessorController;
 
     @Rule
-    public ControllableAgentRunnerService agentRunnerService = new ControllableAgentRunnerService();
+    public ControllableTaskScheduler taskScheduler = new ControllableTaskScheduler();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -112,8 +112,7 @@ public class TaskStreamProcessorIntegrationTest
 
         logStream = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(rootPath)
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
+            .actorScheduler(taskScheduler)
             .deleteOnClose(true)
             .build();
 
@@ -127,7 +126,7 @@ public class TaskStreamProcessorIntegrationTest
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)
-            .agentRunnerService(agentRunnerService)
+            .actorScheduler(taskScheduler)
             .build();
 
         lockTaskStreamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
@@ -135,7 +134,7 @@ public class TaskStreamProcessorIntegrationTest
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)
-            .agentRunnerService(agentRunnerService)
+            .actorScheduler(taskScheduler)
             .build();
 
         taskExpireLockStreamProcessor = new TaskExpireLockStreamProcessor();
@@ -143,7 +142,7 @@ public class TaskStreamProcessorIntegrationTest
                 .sourceStream(logStream)
                 .targetStream(logStream)
                 .snapshotStorage(snapshotStorage)
-                .agentRunnerService(agentRunnerService)
+                .actorScheduler(taskScheduler)
                 .build();
 
         taskInstanceStreamProcessorController.openAsync();
@@ -153,7 +152,7 @@ public class TaskStreamProcessorIntegrationTest
         logStreamWriter = new LogStreamWriterImpl(logStream);
         defaultBrokerEventMetadata.eventType(TASK_EVENT);
 
-        agentRunnerService.waitUntilDone();
+        taskScheduler.waitUntilDone();
     }
 
     @After
@@ -418,7 +417,7 @@ public class TaskStreamProcessorIntegrationTest
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
-        agentRunnerService.waitUntilDone();
+        taskScheduler.waitUntilDone();
 
         // when
         ClockUtil.setCurrentTime(now.plus(lockDuration));
@@ -546,7 +545,7 @@ public class TaskStreamProcessorIntegrationTest
 
     private LoggedEvent getResultEventOf(long position)
     {
-        agentRunnerService.waitUntilDone();
+        taskScheduler.waitUntilDone();
 
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
 

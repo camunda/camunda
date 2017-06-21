@@ -12,20 +12,23 @@
  */
 package org.camunda.tngp.broker.workflow;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
+import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
 import java.nio.channels.FileChannel;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.incident.IncidentStreamProcessorErrorHandler;
 import org.camunda.tngp.broker.incident.processor.IncidentStreamProcessor;
 import org.camunda.tngp.broker.logstreams.cfg.StreamProcessorCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.workflow.processor.DeploymentStreamProcessor;
 import org.camunda.tngp.broker.workflow.processor.WorkflowInstanceStreamProcessor;
@@ -34,22 +37,20 @@ import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.servicecontainer.Injector;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceGroupReference;
-import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.servicecontainer.*;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.FileUtil;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
-public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Agent
+public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Actor
 {
     protected static final String NAME = "workflow.queue.manager";
 
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
-    protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> addStream(stream, name))
@@ -68,6 +69,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     protected IndexStore incidentInstanceIndex;
     protected IndexStore activityInstanceIndex;
     protected IndexStore incidentTaskIndex;
+
+    protected ActorReference actorRef;
 
     public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
@@ -107,7 +110,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .dependency(logStreamServiceName, deploymentStreamProcessorService.getSourceStreamInjector())
                 .dependency(logStreamServiceName, deploymentStreamProcessorService.getTargetStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, deploymentStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(AGENT_RUNNER_SERVICE, deploymentStreamProcessorService.getAgentRunnerInjector())
+                .dependency(ACTOR_SCHEDULER_SERVICE, deploymentStreamProcessorService.getActorSchedulerInjector())
                 .install();
     }
 
@@ -149,7 +152,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getSourceStreamInjector())
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getTargetStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, workflowStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(AGENT_RUNNER_SERVICE, workflowStreamProcessorService.getAgentRunnerInjector())
+                .dependency(ACTOR_SCHEDULER_SERVICE, workflowStreamProcessorService.getActorSchedulerInjector())
                 .install();
     }
 
@@ -178,7 +181,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .dependency(logStreamServiceName, incidentStreamProcessorService.getSourceStreamInjector())
                 .dependency(logStreamServiceName, incidentStreamProcessorService.getTargetStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, incidentStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(AGENT_RUNNER_SERVICE, incidentStreamProcessorService.getAgentRunnerInjector())
+                .dependency(ACTOR_SCHEDULER_SERVICE, incidentStreamProcessorService.getActorSchedulerInjector())
                 .install();
     }
 
@@ -208,8 +211,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         this.serviceContext = serviceContext;
         this.asyncContext = new DeferredCommandContext();
 
-        final AgentRunnerServices agentRunnerService = agentRunnerServicesInjector.getValue();
-        agentRunnerService.conductorAgentRunnerService().run(this);
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        actorRef = actorScheduler.schedule(this);
     }
 
     @Override
@@ -217,8 +220,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         ctx.run(() ->
         {
-            final AgentRunnerServices agentRunnerService = agentRunnerServicesInjector.getValue();
-            agentRunnerService.conductorAgentRunnerService().remove(this);
+            actorRef.close();
+
+            clear();
         });
     }
 
@@ -238,9 +242,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         return logStreamsGroupReference;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerServicesInjector;
+        return actorSchedulerInjector;
     }
 
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
@@ -252,21 +256,25 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     }
 
     @Override
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
+    }
+
+    @Override
     public int doWork() throws Exception
     {
         return asyncContext.doWork();
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return NAME;
     }
 
-    @Override
-    public void onClose()
+    private void clear()
     {
-
         workflowDeploymentIndexStore.flush();
         workflowPositionIndexStore.flush();
         workflowVersionIndexStore.flush();

@@ -17,8 +17,8 @@ import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
@@ -54,7 +54,7 @@ public class StubBrokerRule extends ExternalResource
         msgPackHelper = new MsgPackHelper();
 
         transport = Transports.createTransport("testTransport")
-                .threadingMode(ThreadingMode.SHARED)
+                .actorScheduler(ActorSchedulerImpl.createDefaultScheduler())
                 .build();
 
         bindAddr = new SocketAddress(host, port);

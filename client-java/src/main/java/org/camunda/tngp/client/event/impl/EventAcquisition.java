@@ -3,15 +3,13 @@ package org.camunda.tngp.client.event.impl;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.Loggers;
-import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
-import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
-import org.camunda.tngp.client.task.impl.subscription.SubscribedEventHandler;
+import org.camunda.tngp.client.task.impl.subscription.*;
 import org.camunda.tngp.util.DeferredCommandContext;
+import org.camunda.tngp.util.actor.Actor;
 import org.slf4j.Logger;
 
-public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Agent
+public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Actor
 {
 
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
@@ -34,7 +32,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return name;
     }
@@ -94,7 +92,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
         else
         {
-            LOGGER.debug(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriberKey);
+            LOGGER.debug(name() + ": Ignoring event " + event.toString() + " for subscription " + subscriberKey);
             return true; // ignoring the event is success; don't want to retry it later
         }
     }

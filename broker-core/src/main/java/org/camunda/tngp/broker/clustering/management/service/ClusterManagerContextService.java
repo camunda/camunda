@@ -4,7 +4,6 @@ import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.clustering.management.ClusterManagerContext;
 import org.camunda.tngp.broker.logstreams.LogStreamsManager;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -13,6 +12,7 @@ import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class ClusterManagerContextService implements Service<ClusterManagerContext>
 {
@@ -22,7 +22,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     private final Injector<PeerList> peerListInjector = new Injector<>();
     private final Injector<Peer> localPeerInjector = new Injector<>();
-    private final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<LogStreamsManager> logStreamsManagerInjector = new Injector<>();
 
     private ClusterManagerContext context;
@@ -36,11 +36,11 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final PeerList peers = peerListInjector.getValue();
         final Peer localPeer = localPeerInjector.getValue();
-        final AgentRunnerServices agentRunner = agentRunnerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
 
         context = new ClusterManagerContext();
-        context.setAgentRunner(agentRunner);
+        context.setTaskScheduler(actorScheduler);
         context.setLocalPeer(localPeer);
         context.setClientChannelPool(clientChannelManager);
         context.setConnections(connectionPool);
@@ -91,9 +91,9 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         return localPeerInjector;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
-        return agentRunnerInjector;
+        return actorSchedulerInjector;
     }
 
     public Injector<LogStreamsManager> getLogStreamsManagerInjector()
