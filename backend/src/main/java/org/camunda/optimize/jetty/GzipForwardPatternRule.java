@@ -1,14 +1,10 @@
 package org.camunda.optimize.jetty;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import javax.activation.MimeType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -17,8 +13,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.MediaType;
-import java.awt.*;
 import java.io.IOException;
 
 /**

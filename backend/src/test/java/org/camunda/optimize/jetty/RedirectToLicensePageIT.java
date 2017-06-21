@@ -72,9 +72,8 @@ public class RedirectToLicensePageIT {
       embeddedOptimizeRule.rootTarget("/login").request().get();
 
     // then
-    assertThat(response.getLocation(), is(not(nullValue())));
-    URI location = response.getLocation();
-    assertThat(location.getPath().startsWith("/license"), is(false));
+    assertThat(response.getStatus(), is(200));
+    assertThat(response.getLocation(),is(nullValue()));
   }
 
   @Test
@@ -110,13 +109,12 @@ public class RedirectToLicensePageIT {
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the root page
-    assertThat(response.getStatus(), is(302));
-    assertThat(response.getLocation().getPath(), is("/"));
+    assertThat(response.getStatus(), is(200));
 
     // when I now redirect to root page
     response =
       embeddedOptimizeRule
-        .rootTarget(response.getLocation().getPath()).request().get();
+        .rootTarget("/").request().get();
 
     // then I get a redirect to the license page
     assertThat(response.getLocation(), is(not(nullValue())));
@@ -135,13 +133,12 @@ public class RedirectToLicensePageIT {
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the root page
-    assertThat(response.getStatus(), is(302));
-    assertThat(response.getLocation().getPath(), is("/"));
+    assertThat(response.getStatus(), is(200));
 
     // when I now redirect to root page
     response =
       embeddedOptimizeRule
-        .rootTarget(response.getLocation().getPath()).request().get();
+        .rootTarget("/").request().get();
 
     // then I shouldn't get a redirect to the license page
     assertThat(response.getStatus(), is(200));
