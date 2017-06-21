@@ -398,7 +398,7 @@ public class MappingMergeParameterizedTest
                 createMapping("$.value", "$.obj.newFoo"),
                 // expected result
                 "{'obj':{'test':'value','newFoo':1},'int':1}" },
-            // 37. Test //fails
+            // 37. Test camunda-tngp/camunda-tngp#297
 //                                            {
 //                                                    // source
 //                                                    "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -534,7 +534,18 @@ public class MappingMergeParameterizedTest
                 // mapping
                 createMapping("$", "$"),
                 // expected result
-                "{}" }});
+                "{}" }
+            // 48. Test camunda-tngp/msgpack-json-path#10
+//            ,{
+//                // source
+//                "{'foo':'bar'}",
+//                // target
+//                "{'obj':{'0':{'test':1}}}",
+//                // mapping
+//                createMapping("$.foo", "$.obj.0"),
+//                // expected result
+//                "{'obj':{'0':{'foo':'bar'}}}" }
+        });
     }
 
     @Parameter

@@ -147,7 +147,7 @@ public class MappingExtractParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newObj':{'test':'value'}}" },
-            // 15. Test //fails
+            // 15. Test camunda-tngp/camunda-tngp#297
 //            {
 //                // source
 //                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",

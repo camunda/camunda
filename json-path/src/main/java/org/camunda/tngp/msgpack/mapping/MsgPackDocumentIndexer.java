@@ -169,7 +169,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
 
     private MsgPackType getLastNodeType()
     {
-        MsgPackType lastType;
+        final MsgPackType lastType;
         if (lastTypeStack.isEmpty())
         {
             lastType = MsgPackType.EXTENSION;
@@ -286,15 +286,15 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     private void processValueNode(long position, MsgPackToken currentValue)
     {
         String parentId = parentsStack.pop();
-        String nodeName;
+        final String nodeName;
         final String nodeId;
 
         if (!arrayValueStack.isEmpty())
         {
-            nodeName = getNodeName(lastKey, lastKeyLen);
             if (lastType != MsgPackType.ARRAY)
             {
                 // object in array
+                nodeName = getNodeName(lastKey, lastKeyLen);
                 nodeId = construct(parentId, nodeName);
             }
             else

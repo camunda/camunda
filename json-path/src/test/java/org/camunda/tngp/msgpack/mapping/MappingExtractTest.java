@@ -64,7 +64,7 @@ public class MappingExtractTest
         expectedException.expectMessage("Mapping must be neither null nor empty!");
 
         // when
-        processor.extract(sourceDocument, null);
+        processor.extract(sourceDocument);
     }
 
     @Test

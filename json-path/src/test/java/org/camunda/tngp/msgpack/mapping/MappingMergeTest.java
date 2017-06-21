@@ -79,7 +79,7 @@ public class MappingMergeTest
         expectedException.expectMessage("Mapping must be neither null nor empty!");
 
         // when
-        processor.merge(sourceDocument, sourceDocument, null);
+        processor.merge(sourceDocument, sourceDocument);
     }
 
     @Test
