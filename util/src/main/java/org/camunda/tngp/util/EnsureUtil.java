@@ -1,6 +1,8 @@
 package org.camunda.tngp.util;
 
 
+import java.time.Duration;
+
 import org.agrona.DirectBuffer;
 
 
@@ -47,6 +49,64 @@ public class EnsureUtil
         if (testValue > comparisonValue)
         {
             throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureGreaterThan(String property, double testValue, double comparisonValue)
+    {
+        if (testValue <= comparisonValue)
+        {
+            throw new RuntimeException(property + " must be greater than " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureGreaterThanOrEqual(String property, double testValue, double comparisonValue)
+    {
+        if (testValue < comparisonValue)
+        {
+            throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureLessThan(String property, double testValue, double comparisonValue)
+    {
+        if (testValue >= comparisonValue)
+        {
+            throw new RuntimeException(property + " must be less than " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureLessThanOrEqual(String property, double testValue, double comparisonValue)
+    {
+        if (testValue > comparisonValue)
+        {
+            throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureNotNullOrGreaterThan(String property, Duration testValue, Duration comparisonValue)
+    {
+        ensureNotNull(property, testValue);
+
+        if (testValue.compareTo(comparisonValue) <= 0)
+        {
+            throw new RuntimeException(property + " must be greater than " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureNotNullOrGreaterThanOrEqual(String property, Duration testValue, Duration comparisonValue)
+    {
+        ensureNotNull(property, testValue);
+
+        if (testValue.compareTo(comparisonValue) < 0)
+        {
+            throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
         }
 
     }

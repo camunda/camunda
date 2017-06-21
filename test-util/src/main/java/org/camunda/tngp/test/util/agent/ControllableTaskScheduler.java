@@ -16,17 +16,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.agrona.concurrent.Agent;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorReferenceImpl;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.junit.rules.ExternalResource;
 
-public class ControllableAgentRunnerService extends ExternalResource implements AgentRunnerService
+public class ControllableTaskScheduler extends ExternalResource implements ActorScheduler
 {
     protected static final int MAX_WORK_COUNT = 1_000;
 
     protected AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    protected final List<Agent> agents = new ArrayList<>();
+    protected final List<ActorReferenceImpl> actorRefs = new ArrayList<>();
 
     @Override
     protected void after()
@@ -54,15 +56,15 @@ public class ControllableAgentRunnerService extends ExternalResource implements 
             {
                 workCount = 0;
 
-                final ArrayList<Agent> agentList = new ArrayList<>(agents);
-                for (int i = 0; i < agentList.size() && isRunning.get(); i++)
+                final ArrayList<ActorReferenceImpl> actorRefList = new ArrayList<>(actorRefs);
+                for (int i = 0; i < actorRefList.size() && isRunning.get(); i++)
                 {
-                    final Agent agent = agentList.get(i);
-                    if (agent != null)
+                    final ActorReferenceImpl actorRef = actorRefList.get(i);
+                    if (actorRef != null)
                     {
                         try
                         {
-                            workCount += agent.doWork();
+                            workCount += actorRef.getActor().doWork();
                         }
                         catch (Exception e)
                         {
@@ -83,27 +85,18 @@ public class ControllableAgentRunnerService extends ExternalResource implements 
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
-        if (isRunning.compareAndSet(true, false))
-        {
-            for (Agent agent : agents)
-            {
-                agent.onClose();
-            }
-        }
+        isRunning.set(false);
     }
 
     @Override
-    public synchronized void run(Agent agent)
+    public synchronized ActorReference schedule(Actor actor)
     {
-        agents.add(agent);
-    }
+        final ActorReferenceImpl scheduledTask = new ActorReferenceImpl(actor, 32);
+        actorRefs.add(scheduledTask);
 
-    @Override
-    public synchronized void remove(Agent agent)
-    {
-        agents.remove(agent);
+        return scheduledTask;
     }
 
 }
