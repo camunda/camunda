@@ -5,28 +5,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceBuilder;
-import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceGroupReference;
-import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.*;
+import org.camunda.tngp.util.LangUtil;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 
-public class ServiceContainerImpl implements Agent, ServiceContainer
+public class ServiceContainerImpl implements Actor, ServiceContainer
 {
     enum ContainerState
     {
@@ -39,7 +32,9 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
     protected final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
     protected final List<ServiceController> controllers = new ArrayList<>();
 
-    private final AgentRunner agentRunner;
+    private final ActorScheduler actorScheduler;
+    private ActorReference actorRef;
+
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(1024);
     protected final Consumer<Runnable> cmdConsumer = (r) ->
     {
@@ -61,7 +56,11 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
     public ServiceContainerImpl()
     {
         idleStrategy = new WaitingIdleStrategy();
-        agentRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, null, this);
+
+        actorScheduler = ActorSchedulerImpl.newBuilder()
+                .runnerIdleStrategy(idleStrategy)
+                .runnerErrorHander(DEFAULT_ERROR_HANDLER)
+                .build();
     }
 
     @Override
@@ -76,7 +75,8 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
 
         if (isOpenend.compareAndSet(false, true))
         {
-            AgentRunner.startOnThread(agentRunner);
+            actorRef = actorScheduler.schedule(this);
+
             final AtomicInteger threadCounter = new AtomicInteger();
             actionsExecutor = Executors.newCachedThreadPool((r) -> new Thread(r, String.format("service-container-action-%d", threadCounter.getAndIncrement())));
         }
@@ -104,7 +104,7 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
 
 
     @Override
-    public String roleName()
+    public String name()
     {
         return NAME;
     }
@@ -271,7 +271,9 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
     private void onClosed()
     {
         state = ContainerState.CLOSED;
-        agentRunner.close();
+
+        actorRef.close();
+        actorScheduler.close();
 
         if (actionsExecutor != null)
         {

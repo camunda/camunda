@@ -14,7 +14,16 @@
     <relativePath />
   </parent>
 
+  <properties>
+    <version.util>1.0.0-SNAPSHOT</version.util>
+  </properties>
+
   <dependencies>
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>util</artifactId>
+      <version>${version.util}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>
