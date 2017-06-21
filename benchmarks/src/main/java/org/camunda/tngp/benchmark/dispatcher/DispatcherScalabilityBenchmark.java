@@ -6,19 +6,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.Subscription;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Threads;
+import org.camunda.tngp.dispatcher.*;
+import org.openjdk.jmh.annotations.*;
 
 public class DispatcherScalabilityBenchmark
 {
@@ -52,7 +42,6 @@ public class DispatcherScalabilityBenchmark
 
             dispatcher = Dispatchers.create("default")
                     .bufferSize(1024 * 1024 * 32)
-                    .idleStrategy(new BusySpinIdleStrategy())
                     .build();
 
             subscription = dispatcher.openSubscription("test");

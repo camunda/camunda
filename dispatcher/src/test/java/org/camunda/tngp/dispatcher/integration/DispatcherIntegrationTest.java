@@ -11,17 +11,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.dispatcher.*;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DispatcherIntegrationTest
 {
+    private ActorScheduler actorScheduler;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown() throws Exception
+    {
+        actorScheduler.close();
+    }
+
 
     class Consumer implements FragmentHandler
     {
@@ -50,6 +63,7 @@ public class DispatcherIntegrationTest
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
@@ -82,6 +96,7 @@ public class DispatcherIntegrationTest
         final ClaimedFragment claimedFragment = new ClaimedFragment();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
@@ -114,6 +129,7 @@ public class DispatcherIntegrationTest
         final BlockPeek blockPeek = new BlockPeek();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
@@ -162,6 +178,7 @@ public class DispatcherIntegrationTest
         final Consumer consumer2 = new Consumer();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
@@ -211,6 +228,7 @@ public class DispatcherIntegrationTest
         final BlockPeek blockPeek2 = new BlockPeek();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
@@ -285,6 +303,7 @@ public class DispatcherIntegrationTest
         };
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
@@ -328,6 +347,7 @@ public class DispatcherIntegrationTest
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .initialPartitionId(2)
                 .build();

@@ -2,9 +2,9 @@ package org.camunda.tngp.dispatcher.impl;
 
 import java.util.function.Consumer;
 
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.util.actor.Actor;
 
 /**
  * The conductor performs maintenance operations on the dispatcher
@@ -15,7 +15,7 @@ import org.camunda.tngp.dispatcher.Dispatcher;
  * <li>Advance publisher limit</li>
  * </ul>
  */
-public class DispatcherConductor implements Agent, Consumer<DispatcherConductorCommand>
+public class DispatcherConductor implements Actor, Consumer<DispatcherConductorCommand>
 {
     public static final String NAME_TEMPLATE = "%s.dispatcher-conductor";
 
@@ -32,11 +32,19 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
         this.name = String.format(NAME_TEMPLATE, dispatcherName);
     }
 
-    public String roleName()
+    @Override
+    public String name()
     {
         return name;
     }
 
+    @Override
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
+    }
+
+    @Override
     public int doWork() throws Exception
     {
         int workCount = cmdQueue.drain(this);

@@ -1,41 +1,38 @@
 package org.camunda.tngp.dispatcher.impl;
 
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorReference;
 
 public class DispatcherContext
 {
     protected ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> dispatcherCommandQueue = new ManyToOneConcurrentArrayQueue<>(100);
 
-    protected AgentRunner agentRunner;
-    protected Agent conductorAgent;
-
-    public void close()
-    {
-        if (agentRunner != null)
-        {
-            agentRunner.close();
-        }
-    }
+    protected Actor conductor;
+    protected ActorReference conductorRef;
 
     public ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> getDispatcherCommandQueue()
     {
         return dispatcherCommandQueue;
     }
 
-    public void setAgentRunner(AgentRunner agentRunner)
+    public Actor getConductor()
     {
-        this.agentRunner = agentRunner;
+        return conductor;
     }
 
-    public Agent getConductorAgent()
+    public void setConductor(Actor conductorAgent)
     {
-        return conductorAgent;
+        this.conductor = conductorAgent;
     }
 
-    public void setConductorAgent(Agent conductorAgent)
+    public void setConductorReference(ActorReference conductorRef)
     {
-        this.conductorAgent = conductorAgent;
+        this.conductorRef = conductorRef;
+    }
+
+    public ActorReference getConductorReference()
+    {
+        return conductorRef;
     }
 }

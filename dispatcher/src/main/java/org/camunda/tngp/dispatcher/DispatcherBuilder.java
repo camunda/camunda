@@ -6,31 +6,23 @@ import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.requiredC
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 import org.agrona.BitUtil;
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
-import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
-import org.camunda.tngp.dispatcher.impl.allocation.AllocationDescriptor;
-import org.camunda.tngp.dispatcher.impl.allocation.DirectBufferAllocator;
-import org.camunda.tngp.dispatcher.impl.allocation.ExternallyAllocatedBuffer;
-import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocationDescriptor;
-import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocator;
+import org.camunda.tngp.dispatcher.impl.allocation.*;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.util.EnsureUtil;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 /**
  * Builder for a {@link Dispatcher}
@@ -38,11 +30,6 @@ import org.camunda.tngp.util.EnsureUtil;
  */
 public class DispatcherBuilder
 {
-    private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
-    {
-        t.printStackTrace();
-    };
-
     protected boolean allocateInMemory = true;
 
     protected ByteBuffer rawBuffer;
@@ -59,9 +46,9 @@ public class DispatcherBuilder
 
     protected AtomicBuffer countersBuffer;
 
-    protected boolean agentExternallyManaged = false;
+    protected ActorScheduler actorScheduler;
 
-    protected IdleStrategy idleStrategy;
+    protected boolean agentExternallyManaged = false;
 
     protected String[] subscriptionNames;
 
@@ -121,13 +108,9 @@ public class DispatcherBuilder
         return this;
     }
 
-    /**
-     * The idle strategy of the conductor agent. Default is
-     * {@link BackoffIdleStrategy}.
-     */
-    public DispatcherBuilder idleStrategy(IdleStrategy idleStrategy)
+    public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler)
     {
-        this.idleStrategy = idleStrategy;
+        this.actorScheduler = actorScheduler;
         return this;
     }
 
@@ -245,13 +228,15 @@ public class DispatcherBuilder
             context,
             dispatcherName);
 
-        final DispatcherConductor conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
-        context.setConductorAgent(conductorAgent);
+        final DispatcherConductor conductor = new DispatcherConductor(dispatcherName, context, dispatcher);
+        context.setConductor(conductor);
 
         if (!agentExternallyManaged)
         {
-            final AgentRunner conductorRunner = initConductorRunner(conductorAgent);
-            context.setAgentRunner(conductorRunner);
+            Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
+
+            final ActorReference actorReference = actorScheduler.schedule(conductor);
+            context.setConductorReference(actorReference);
         }
 
         return dispatcher;
@@ -290,26 +275,4 @@ public class DispatcherBuilder
         }
         return allocatedBuffer;
     }
-
-    protected AgentRunner initConductorRunner(DispatcherConductor conductorAgent)
-    {
-        IdleStrategy idleStrategy = this.idleStrategy;
-
-        if (idleStrategy == null)
-        {
-            idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
-        }
-
-        AtomicCounter errorCounter = null;
-        if (countersManager != null)
-        {
-            errorCounter = countersManager.newCounter(String.format("net.long_running.dispatcher.%s.conductor.errorCounter", dispatcherName));
-        }
-
-        final AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
-        AgentRunner.startOnThread(conductorRunner);
-
-        return conductorRunner;
-    }
-
 }

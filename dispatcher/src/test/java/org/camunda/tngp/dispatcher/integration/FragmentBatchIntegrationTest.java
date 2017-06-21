@@ -9,11 +9,9 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdO
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.ClaimedFragmentBatch;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.dispatcher.*;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +24,7 @@ public class FragmentBatchIntegrationTest
 
     private Dispatcher dispatcher;
     private Subscription subscription;
+    private ActorScheduler actorScheduler;
 
     private BlockPeek blockPeek;
     private ClaimedFragmentBatch batch;
@@ -33,8 +32,11 @@ public class FragmentBatchIntegrationTest
     @Before
     public void init()
     {
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+
         dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 32)
+                .actorScheduler(actorScheduler)
                 .build();
 
         subscription = dispatcher.openSubscription("test");
@@ -44,9 +46,10 @@ public class FragmentBatchIntegrationTest
     }
 
     @After
-    public void cleanUp()
+    public void cleanUp() throws Exception
     {
         dispatcher.close();
+        actorScheduler.close();
     }
 
     @Test

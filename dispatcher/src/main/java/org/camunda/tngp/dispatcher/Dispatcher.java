@@ -10,13 +10,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
+import org.camunda.tngp.util.actor.Actor;
 
 
 /**
@@ -512,6 +512,7 @@ public class Dispatcher implements AutoCloseable
         return subscription;
     }
 
+    @Override
     public void close()
     {
         closeAsync().join();
@@ -537,7 +538,10 @@ public class Dispatcher implements AutoCloseable
                     .thenRun(() ->
                     {
                         logBuffer.close();
-                        context.close();
+                        if (context.getConductorReference() != null)
+                        {
+                            context.getConductorReference().close();
+                        }
                     });
 
         return future;
@@ -598,9 +602,9 @@ public class Dispatcher implements AutoCloseable
         return subscriptions.length;
     }
 
-    public Agent getConductorAgent()
+    public Actor getConductor()
     {
-        return context.getConductorAgent();
+        return context.getConductor();
     }
 
     @Override
