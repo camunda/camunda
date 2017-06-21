@@ -43,6 +43,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.msgpack.mapping.Mapping;
+import org.camunda.tngp.msgpack.mapping.MappingException;
 import org.camunda.tngp.msgpack.mapping.MappingProcessor;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
@@ -769,6 +770,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityCompletingEventProcessor implements EventProcessor
     {
+        public static final String INCIDENT_ERROR_MSG_MISSING_TASK_PAYLOAD_ON_OUT_MAPPING = "Task was completed without an payload - processing of output mapping failed!";
+
         @Override
         public void processEvent()
         {
@@ -782,13 +785,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
             final DirectBuffer workflowInstancePayload = payloadCache.getPayload(workflowInstanceEvent.getWorkflowInstanceKey());
-            DirectBuffer taskPayload = workflowInstanceEvent.getPayload();
+            final DirectBuffer taskPayload = workflowInstanceEvent.getPayload();
             final boolean isNilPayload = isNilPayload(taskPayload);
             if (mappings.length > 0)
             {
                 if (isNilPayload)
                 {
-                    taskPayload = workflowInstancePayload;
+                    throw new MappingException(INCIDENT_ERROR_MSG_MISSING_TASK_PAYLOAD_ON_OUT_MAPPING);
                 }
                 final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, mappings);
                 final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();

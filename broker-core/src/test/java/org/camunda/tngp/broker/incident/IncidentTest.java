@@ -127,7 +127,7 @@ public class IncidentTest
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        testClient.completeTaskOfType("test");
+        testClient.completeTaskOfType("test", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
@@ -183,7 +183,7 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        testClient.completeTaskOfType("test");
+        testClient.completeTaskOfType("test", MSGPACK_PAYLOAD);
 
         final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
@@ -339,6 +339,144 @@ public class IncidentTest
         assertThat(incidentResolvedEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
                                                  .containsEntry("errorMessage",
                                                                 "Processing failed, since mapping will result in a non map object (json object).")
+                                                 .containsEntry("bpmnProcessId", "process")
+                                                 .containsEntry("workflowInstanceKey", workflowInstanceKey)
+                                                 .containsEntry("activityId", "service")
+                                                 .containsEntry("activityInstanceKey", followUpEvent.key())
+                                                 .containsEntry("taskKey", -1);
+    }
+
+    @Test
+    public void shouldCreateIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.jsonObject", "$")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external");
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                         .containsEntry("errorMessage", "Task was completed without an payload - processing of output mapping failed!");
+    }
+
+    @Test
+    public void shouldResolveIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .input("$.jsonObject", "$")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external");
+
+        // then incident is created
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
+
+        // then
+        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        final byte[] result = (byte[]) followUpEvent.event()
+                                                    .get(PROP_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+
+        final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
+        assertThat(incidentResolvedEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                                 .containsEntry("errorMessage",
+                                                                "Task was completed without an payload - processing of output mapping failed!")
+                                                 .containsEntry("bpmnProcessId", "process")
+                                                 .containsEntry("workflowInstanceKey", workflowInstanceKey)
+                                                 .containsEntry("activityId", "service")
+                                                 .containsEntry("activityInstanceKey", followUpEvent.key())
+                                                 .containsEntry("taskKey", -1);
+    }
+
+    @Test
+    public void shouldCreateIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external");
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                         .containsEntry("errorMessage", "Task was completed without an payload - processing of output mapping failed!");
+    }
+
+    @Test
+    public void shouldResolveIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5)
+                                           .ioMapping("service")
+                                           .output("$.testAttr", "$")
+                                           .done());
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+
+        // when
+        testClient.completeTaskOfType("external");
+
+        // then incident is created
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETING"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
+
+        // then
+        final SubscribedEvent followUpEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        final byte[] result = (byte[]) followUpEvent.event()
+                                                    .get(PROP_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+
+        final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
+        assertThat(incidentResolvedEvent.event()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+                                                 .containsEntry("errorMessage",
+                                                                "Task was completed without an payload - processing of output mapping failed!")
                                                  .containsEntry("bpmnProcessId", "process")
                                                  .containsEntry("workflowInstanceKey", workflowInstanceKey)
                                                  .containsEntry("activityId", "service")
