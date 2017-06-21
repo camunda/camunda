@@ -74,13 +74,16 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     if (webappURL != null) {
       ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
       context.setResourceBase(webappURL.toExternalForm());
-      holderPwd.setInitParameter("dirAllowed","true");
-      context.addServlet(holderPwd,"/");
+      holderPwd.setInitParameter("dirAllowed", "true");
+      context.addServlet(holderPwd, "/");
 
       FilterHolder filterHolder = new FilterHolder();
       filterHolder.setFilter(new LicenseFilter(this));
-      context.addFilter(filterHolder, "/*",
-        EnumSet.of(DispatcherType.REQUEST));
+      context.addFilter(
+          filterHolder,
+          "/*",
+          EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
+      );
 
       NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
       context.setErrorHandler(errorMapper);
@@ -92,7 +95,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private void initJSRewriteHandler(ServletContextHandler context) {
 
-    context.addFilter(GzipForwardPatternRule.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
+    context.addFilter(GzipForwardPatternRule.class, "/*", EnumSet.of(DispatcherType.REQUEST));
   }
 
   private void initGzipFilterHolder(ServletContextHandler context) {

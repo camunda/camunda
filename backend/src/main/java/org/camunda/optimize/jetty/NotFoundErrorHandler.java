@@ -23,6 +23,7 @@ public class NotFoundErrorHandler extends ErrorHandler {
 
   @Override
   public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+
     if (
         !request.getServletPath().startsWith(API_PATH) &&
             HttpServletResponse.SC_NOT_FOUND == response.getStatus()
