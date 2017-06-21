@@ -110,7 +110,7 @@ public class RedirectToLicensePageIT {
 
     // then first redirect request should be the root page
     assertThat(response.getStatus(), is(302));
-    assertThat(response.getLocation().getPath(), is("/"))
+    assertThat(response.getLocation().getPath(), is("/"));
 
     // when I now redirect to root page
     response =
