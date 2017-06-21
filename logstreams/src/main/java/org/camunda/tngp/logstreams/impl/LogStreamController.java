@@ -1,28 +1,31 @@
 package org.camunda.tngp.logstreams.impl;
 
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.Agent;
-import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
-import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.TransitionState;
-import org.camunda.tngp.util.state.WaitState;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_CLOSE;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_DEFAULT;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_OPEN;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
+import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.dispatcher.BlockPeek;
+import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
-public class LogStreamController implements Agent
+public class LogStreamController implements Actor
 {
     protected static final int TRANSITION_FAIL = 3;
     protected static final int TRANSITION_RECOVER = 5;
@@ -42,12 +45,13 @@ public class LogStreamController implements Agent
     //  MANDATORY //////////////////////////////////////////////////
     protected final String name;
     protected final LogStorage logStorage;
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
+    protected ActorReference controllerRef;
+    protected ActorReference writeBufferRef;
 
     protected final BlockPeek blockPeek = new BlockPeek();
     protected final int maxAppendBlockSize;
     protected final Dispatcher writeBuffer;
-    protected final AgentRunnerService writeBufferAgentRunnerService;
     protected Subscription writeBufferSubscription;
     protected final Runnable openStateRunnable;
     protected final Runnable closedStateRunnable;
@@ -58,14 +62,16 @@ public class LogStreamController implements Agent
     {
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
-        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+        this.actorScheduler = logStreamBuilder.getTaskScheduler();
 
         this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
         this.writeBuffer = logStreamBuilder.getWriteBuffer();
-        this.writeBufferAgentRunnerService = logStreamBuilder.getWriteBufferAgentRunnerService();
 
-        this.openStateRunnable = () -> agentRunnerService.run(this);
-        this.closedStateRunnable = () -> agentRunnerService.remove(this);
+        this.openStateRunnable = () ->
+        {
+            controllerRef = actorScheduler.schedule(this);
+        };
+        this.closedStateRunnable = () -> controllerRef.close();
         this.stateMachine = new LogStateMachineAgent(
             StateMachine.<LogContext>builder(s -> new LogContext(s))
                 .initialState(closedState)
@@ -89,7 +95,7 @@ public class LogStreamController implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return name;
     }
@@ -112,7 +118,7 @@ public class LogStreamController implements Agent
                 }
 
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
-                writeBufferAgentRunnerService.run(writeBuffer.getConductorAgent());
+                writeBufferRef = actorScheduler.schedule(writeBuffer.getConductor());
 
                 context.take(TRANSITION_DEFAULT);
                 stateMachine.completeOpenFuture(null);
@@ -227,8 +233,7 @@ public class LogStreamController implements Agent
         @Override
         public void work(LogContext context)
         {
-            final Agent conductorAgent = writeBuffer.getConductorAgent();
-            writeBufferAgentRunnerService.remove(conductorAgent);
+            writeBufferRef.close();
             context.take(TRANSITION_DEFAULT);
         }
     }

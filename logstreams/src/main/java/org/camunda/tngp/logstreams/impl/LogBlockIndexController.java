@@ -1,30 +1,33 @@
 package org.camunda.tngp.logstreams.impl;
 
-import org.agrona.concurrent.Agent;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_CLOSE;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_DEFAULT;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.TRANSITION_OPEN;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.*;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.TransitionState;
 import org.camunda.tngp.util.state.WaitState;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
-import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
-import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
-import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
-
 /**
  * Represents the log block index controller, which creates the log block index
  * for the given log storage.
  */
-public class LogBlockIndexController implements Agent
+public class LogBlockIndexController implements Actor
 {
     /**
      * The default deviation is 10%. That means for blocks which are filled 90%
@@ -52,7 +55,8 @@ public class LogBlockIndexController implements Agent
     protected final String name;
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
+    protected ActorReference actorRef;
 
     /**
      * Defines the block size for which an index will be created.
@@ -91,19 +95,23 @@ public class LogBlockIndexController implements Agent
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
-        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+        this.actorScheduler = logStreamBuilder.getTaskScheduler();
         this.commitPosition = commitPosition;
 
         this.deviation = logStreamBuilder.getDeviation();
-        this.indexBlockSize = (int) ((float) logStreamBuilder.getIndexBlockSize() * (1f - deviation));
+        this.indexBlockSize = (int) (logStreamBuilder.getIndexBlockSize() * (1f - deviation));
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
         this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
         this.bufferSize = logStreamBuilder.getReadBlockSize();
         ioBuffer = ByteBuffer.allocateDirect(bufferSize);
         buffer.wrap(ioBuffer);
 
-        this.openStateRunnable = () -> agentRunnerService.run(this);
-        this.closedStateRunnable = () -> agentRunnerService.remove(this);
+        this.openStateRunnable = () ->
+        {
+            actorRef = actorScheduler.schedule(this);
+        };
+        this.closedStateRunnable = () -> actorRef.close();
+
         this.stateMachine = new LogStateMachineAgent(
             StateMachine.<LogContext>builder(s -> new LogContext(s))
                 .initialState(closedState)
@@ -131,7 +139,7 @@ public class LogBlockIndexController implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return name;
     }

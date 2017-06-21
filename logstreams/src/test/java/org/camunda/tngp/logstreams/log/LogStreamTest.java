@@ -1,7 +1,29 @@
 package org.camunda.tngp.logstreams.log;
 
+import static java.lang.String.join;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static org.camunda.tngp.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.LOG_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.TOPIC_NAME_BUFFER;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
@@ -12,32 +34,15 @@ import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-
-import static java.lang.String.join;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
-import static org.camunda.tngp.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
 
 public class LogStreamTest
 {
@@ -54,16 +59,18 @@ public class LogStreamTest
     LogStreamImpl.LogStreamBuilder mockLogStreamBuilder;
 
     @Mock
-    private AgentRunnerService mockAgentRunnerService;
+    private ActorScheduler mockActorScheduler;
     @Mock
-    private AgentRunnerService mockConductorAgentRunnerService;
+    private ActorReference mockControllerRef;
+    @Mock
+    private ActorReference mockWriteBufferRef;
 
     @Mock
     private Dispatcher mockWriteBuffer;
     @Mock
     private Subscription mockWriteBufferSubscription;
     @Mock
-    private Agent mockWriteBufferConductorAgent;
+    private Actor mockWriteBufferConductor;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -88,8 +95,7 @@ public class LogStreamTest
         this.mockLogStorage = new MockLogStorage();
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        builder.agentRunnerService(mockAgentRunnerService)
-            .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
+        builder.actorScheduler(mockActorScheduler)
             .writeBuffer(mockWriteBuffer)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -100,8 +106,11 @@ public class LogStreamTest
 
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
-        when(mockWriteBuffer.getConductorAgent()).thenReturn(mockWriteBufferConductorAgent);
+        when(mockWriteBuffer.getConductor()).thenReturn(mockWriteBufferConductor);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
+
+        when(mockActorScheduler.schedule(any(LogStreamController.class))).thenReturn(mockControllerRef);
+        when(mockActorScheduler.schedule(mockWriteBufferConductor)).thenReturn(mockWriteBufferRef);
 
         logStream = builder.build();
     }
@@ -113,8 +122,7 @@ public class LogStreamTest
         final DirectBuffer topicName = wrapString(join("", Collections.nCopies(MAX_TOPIC_NAME_LENGTH + 1, "f")));
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(topicName, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
-            .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .writeBuffer(mockWriteBuffer)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -159,7 +167,7 @@ public class LogStreamTest
     {
         // when log stream is created with builder and without flag is set
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
+        final LogStream stream = builder.actorScheduler(mockActorScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -216,7 +224,7 @@ public class LogStreamTest
         // given log stream with without flag
         when(logStream.getLogStorage().isOpen()).thenReturn(true);
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
+        final LogStream stream = builder.actorScheduler(mockActorScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -269,11 +277,11 @@ public class LogStreamTest
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
-//        verify(mockWriteBuffer).closeAsync();
+        // verify(mockWriteBuffer).closeAsync();
 
         // agent and controller is removed from agent runner's
-        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
-        verify(mockAgentRunnerService).remove(logStreamController);
+        verify(mockControllerRef).close();
+        verify(mockWriteBufferRef).close();
     }
 
     @Test
@@ -322,9 +330,8 @@ public class LogStreamTest
         assertNotNull(logStream.getWriteBuffer());
 
         // verify usage of agent runner service, only one times with mock because after re-opening new agent is used
-        verify(mockConductorAgentRunnerService, times(2)).run(any(Agent.class));
-        verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
-        verify(mockAgentRunnerService).run(logStreamController);
+        verify(mockActorScheduler).schedule(mockWriteBufferConductor);
+        verify(mockActorScheduler).schedule(logStreamController);
     }
 
     @Test
@@ -347,36 +354,36 @@ public class LogStreamTest
             .sourceEventPosition(4L)
             .producerId(5)
             .value(getBytes("event")));
-        final AgentRunnerService secondAgentRunnerService = mock(AgentRunnerService.class);
+        final ActorScheduler secondTaskScheduler = mock(ActorScheduler.class);
 
         // given open log stream with stopped log stream controller
         logStream.openAsync();
         logStream.getLogBlockIndexController().doWork();
-        LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStreamController logStreamController1 = logStream.getLogStreamController();
+        logStreamController1.doWork();
 
         logStream.closeLogStreamController();
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
+        logStreamController1.doWork(); // closing
+        logStreamController1.doWork(); // close
 
         // when log streaming is started
-        logStream.openLogStreamController(secondAgentRunnerService);
-        logStreamController = logStream.getLogStreamController();
+        logStream.openLogStreamController(secondTaskScheduler);
+        final LogStreamController logStreamController2 = logStream.getLogStreamController();
 
         // then
         // log stream controller has been set
-        assertNotNull(logStreamController);
-        logStreamController.doWork();
+        assertNotNull(logStreamController2);
+        logStreamController2.doWork();
         // is running
-        assertTrue(logStreamController.isRunning());
+        assertTrue(logStreamController2.isRunning());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
 
         // verify usage of agent runner service
-        verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
-        verify(secondAgentRunnerService).run(any(Agent.class));
-        verify(mockAgentRunnerService).run(logStreamController);
+        verify(mockActorScheduler).schedule(mockWriteBufferConductor);
+        verify(mockActorScheduler).schedule(logStreamController1);
+        verify(secondTaskScheduler).schedule(logStreamController2);
     }
 
     @Test
@@ -398,7 +405,7 @@ public class LogStreamTest
 
         // given log stream with without flag
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
+        final LogStream stream = builder.actorScheduler(mockActorScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -408,7 +415,7 @@ public class LogStreamTest
             .indexBlockSize(INDEX_BLOCK_SIZE).build();
 
         // when log streaming is started
-        stream.openLogStreamController(mockConductorAgentRunnerService);
+        stream.openLogStreamController(mockActorScheduler);
         final LogStreamController logStreamController = stream.getLogStreamController();
 
         // then
@@ -423,8 +430,8 @@ public class LogStreamTest
         assertNotNull(writeBuffer);
 
         // verify usage of agent runner service
-        verify(mockConductorAgentRunnerService).run(writeBuffer.getConductorAgent());
-        verify(mockAgentRunnerService).run(logStreamController);
+        verify(mockActorScheduler).schedule(writeBuffer.getConductor());
+        verify(mockActorScheduler).schedule(logStreamController);
     }
 
     @Test
@@ -461,7 +468,7 @@ public class LogStreamTest
     {
         // given open log stream without log stream controller
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
+        final LogStream stream = builder.actorScheduler(mockActorScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -522,7 +529,7 @@ public class LogStreamTest
     {
         // given open->close log stream without log stream controller
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
+        final LogStream stream = builder.actorScheduler(mockActorScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
@@ -569,7 +576,7 @@ public class LogStreamTest
     public void shouldThrowExceptionForTruncationOfAlreadyCommittedPosition()
     {
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -597,7 +604,7 @@ public class LogStreamTest
         storage.add(newLogEntry().partlyRead());
 
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -631,7 +638,7 @@ public class LogStreamTest
         storage.add(newLogEntry().partlyRead());
 
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -667,7 +674,7 @@ public class LogStreamTest
         storage.add(newLogEntry().partlyRead());
 
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -704,7 +711,7 @@ public class LogStreamTest
         storage.add(newLogEntry().partlyRead());
 
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -743,7 +750,7 @@ public class LogStreamTest
         final MockLogStorage storage = new MockLogStorage();
         storage.add(newLogEntry().maxPosition(TRUNCATE_POSITION - 1).partlyRead());
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -771,7 +778,7 @@ public class LogStreamTest
         storage.add(newLogEntry().position(TRUNCATE_POSITION + 1).maxPosition(TRUNCATE_POSITION + 1).partlyRead());
 
         final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockActorScheduler)
             .logStorage(storage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)

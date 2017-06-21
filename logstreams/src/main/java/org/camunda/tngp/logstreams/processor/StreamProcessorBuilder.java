@@ -15,18 +15,13 @@ package org.camunda.tngp.logstreams.processor;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.DisabledLogStreamWriter;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.DeferredCommandContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class StreamProcessorBuilder
 {
@@ -38,7 +33,7 @@ public class StreamProcessorBuilder
     protected LogStream sourceStream;
     protected LogStream targetStream;
 
-    protected AgentRunnerService agentRunnerService;
+    protected ActorScheduler actorScheduler;
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
@@ -76,9 +71,9 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder agentRunnerService(AgentRunnerService agentRunnerService)
+    public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler)
     {
-        this.agentRunnerService = agentRunnerService;
+        this.actorScheduler = actorScheduler;
         return this;
     }
 
@@ -141,7 +136,7 @@ public class StreamProcessorBuilder
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
         Objects.requireNonNull(sourceStream, "No source stream provided.");
         Objects.requireNonNull(targetStream, "No target stream provided.");
-        Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
+        Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
         Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
 
         if (streamProcessorCmdQueue == null)
@@ -199,7 +194,7 @@ public class StreamProcessorBuilder
         ctx.setSourceStream(sourceStream);
         ctx.setTargetStream(targetStream);
 
-        ctx.setAgentRunnerService(agentRunnerService);
+        ctx.setTaskScheduler(actorScheduler);
 
         ctx.setSourceLogStreamReader(sourceLogStreamReader);
         ctx.setTargetLogStreamReader(targetLogStreamReader);

@@ -10,7 +10,7 @@ import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 
 /**
@@ -179,10 +179,10 @@ public interface LogStream extends AutoCloseable
      * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
      *
      * @see {@link #openLogStreamController(AgentRunnerService, int)}
-     * @param writeBufferAgentRunnerService the agent runner service which is used for the scheduling
+     * @param actorScheduler the agent runner service which is used for the scheduling
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService);
+    CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler);
 
     /**
      * Starts the log streaming from the write buffer into log storage. The write buffer
@@ -191,11 +191,11 @@ public interface LogStream extends AutoCloseable
      * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
      *
-     * @param writeBufferAgentRunnerService the agent runner service which is used for the scheduling
+     * @param actorScheduler the agent runner service which is used for the scheduling
      * @param maxAppendBlockSize the maximum block size which should been appended
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService, int maxAppendBlockSize);
+    CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler, int maxAppendBlockSize);
 
     /**
      * Truncates the log stream from the given position to the end of the stream.

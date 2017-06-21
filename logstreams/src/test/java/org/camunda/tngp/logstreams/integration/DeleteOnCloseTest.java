@@ -9,14 +9,9 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.agent.SharedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 
@@ -27,18 +22,18 @@ public class DeleteOnCloseTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    private AgentRunnerService agentRunnerService;
+    private ActorScheduler actorScheduler;
 
     @Before
     public void setup()
     {
-        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
     }
 
     @After
     public void destroy() throws Exception
     {
-        agentRunnerService.close();
+        actorScheduler.close();
     }
 
     @Test
@@ -48,8 +43,7 @@ public class DeleteOnCloseTest
 
         final LogStream log = LogStreams.createFsLogStream(TOPIC_NAME, 0)
             .logRootPath(logFolder.getAbsolutePath())
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
+            .actorScheduler(actorScheduler)
             .build();
 
         log.open();
@@ -70,8 +64,7 @@ public class DeleteOnCloseTest
         final LogStream log = LogStreams.createFsLogStream(TOPIC_NAME, 0)
             .logRootPath(logFolder.getAbsolutePath())
             .deleteOnClose(true)
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
+            .actorScheduler(actorScheduler)
             .build();
 
         log.open();

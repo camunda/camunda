@@ -16,14 +16,14 @@
 
 
   <properties>
-    <version.util>1.0.0-alpha6</version.util>
+    <version.util>1.0.0-SNAPSHOT</version.util>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>dispatcher</artifactId>
-      <version>1.0.0-alpha4</version>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>

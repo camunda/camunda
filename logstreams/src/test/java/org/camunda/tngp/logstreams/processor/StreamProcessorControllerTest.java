@@ -12,29 +12,23 @@
  */
 package org.camunda.tngp.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.util.buffer.BufferUtil.*;
-import static org.mockito.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
-import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
-import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
-import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.DeferredCommandContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -60,7 +54,10 @@ public class StreamProcessorControllerTest
     private EventProcessor mockEventProcessor;
 
     @Mock
-    private AgentRunnerService mockAgentRunnerService;
+    private ActorScheduler mockTaskScheduler;
+
+    @Mock
+    private ActorReference mockActorRef;
 
     @Mock
     private LogStream mockSourceLogStream;
@@ -123,7 +120,7 @@ public class StreamProcessorControllerTest
 
         mockSourceLogStreamReader = new MockLogStreamReader();
         builder = new TestStreamProcessorBuilder(STREAM_PROCESSOR_ID, STREAM_PROCESSOR_NAME, mockStreamProcessor)
-                .agentRunnerService(mockAgentRunnerService)
+                .actorScheduler(mockTaskScheduler)
                 .sourceStream(mockSourceLogStream)
                 .targetStream(mockTargetLogStream)
                 .sourceLogStreamReader(mockSourceLogStreamReader)
@@ -136,6 +133,8 @@ public class StreamProcessorControllerTest
                 .eventFilter(eventFilter)
                 .reprocessingEventFilter(reprocessingEventFilter)
                 .errorHandler(mockErrorHandler);
+
+        when(mockTaskScheduler.schedule(any())).thenReturn(mockActorRef);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
@@ -164,7 +163,7 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldGetRoleName()
     {
-        assertThat(controller.roleName()).isEqualTo(STREAM_PROCESSOR_NAME);
+        assertThat(controller.name()).isEqualTo(STREAM_PROCESSOR_NAME);
     }
 
     @Test
@@ -188,7 +187,7 @@ public class StreamProcessorControllerTest
         assertThat(future).isCompleted();
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService).run(any(Agent.class));
+        verify(mockTaskScheduler).schedule(any(StreamProcessorController.class));
 
         assertThat(mockSourceLogStreamReader.getMockingLog()).isEqualTo(mockSourceLogStream);
         verify(mockTargetLogStreamReader).wrap(mockTargetLogStream);
@@ -213,7 +212,7 @@ public class StreamProcessorControllerTest
         assertThat(future).isCompletedExceptionally();
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService, times(1)).run(any(Agent.class));
+        verify(mockTaskScheduler, times(1)).schedule(any(StreamProcessorController.class));
 
         assertThat(mockSourceLogStreamReader.getMockingLog()).isEqualTo(mockSourceLogStream);
         assertThat(mockSourceLogStreamReader.getPosition()).isEqualTo(1L);
@@ -242,7 +241,7 @@ public class StreamProcessorControllerTest
 
         verify(mockStreamProcessor).onClose();
 
-        verify(mockAgentRunnerService).remove(any(Agent.class));
+        verify(mockActorRef).close();
     }
 
     @Test

@@ -18,14 +18,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.DeferredCommandContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.state.*;
 
-public class StreamProcessorController implements Agent
+public class StreamProcessorController implements Actor
 {
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_OPEN = 1;
@@ -93,7 +94,8 @@ public class StreamProcessorController implements Agent
 
     protected final StreamProcessorErrorHandler streamProcessorErrorHandler;
 
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
+    protected ActorReference actorRef;
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     protected final EventFilter eventFilter;
@@ -103,7 +105,7 @@ public class StreamProcessorController implements Agent
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
-        this.agentRunnerService = context.getAgentRunnerService();
+        this.actorScheduler = context.getTaskScheduler();
         this.streamProcessor = context.getStreamProcessor();
         this.sourceLogStreamReader = context.getSourceLogStreamReader();
         this.targetLogStreamReader = context.getTargetLogStreamReader();
@@ -125,7 +127,7 @@ public class StreamProcessorController implements Agent
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return streamProcessorContext.getName();
     }
@@ -151,7 +153,7 @@ public class StreamProcessorController implements Agent
         {
             try
             {
-                agentRunnerService.run(this);
+                actorRef = actorScheduler.schedule(this);
             }
             catch (Exception e)
             {
@@ -626,7 +628,7 @@ public class StreamProcessorController implements Agent
             {
                 context.completeFuture();
 
-                agentRunnerService.remove(StreamProcessorController.this);
+                actorRef.close();
             }
         }
     }

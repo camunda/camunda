@@ -12,7 +12,22 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import org.agrona.concurrent.Agent;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.dispatcher.BlockPeek;
@@ -25,26 +40,14 @@ import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorReference;
+import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorScheduler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
 
 public class LogStreamControllerTest
 {
@@ -54,16 +57,18 @@ public class LogStreamControllerTest
     private LogStreamController controller;
 
     @Mock
-    private AgentRunnerService mockAgentRunnerService;
+    private ActorScheduler mockTaskScheduler;
     @Mock
-    private AgentRunnerService mockConductorAgentRunnerService;
+    private ActorReference mockControllerRef;
+    @Mock
+    private ActorReference mockSendBufferRef;
 
     @Mock
     private Dispatcher mockWriteBuffer;
     @Mock
     private Subscription mockWriteBufferSubscription;
     @Mock
-    private Agent mockWriteBufferConductorAgent;
+    private Actor mockWriteBufferConductor;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -90,8 +95,8 @@ public class LogStreamControllerTest
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
 
-        builder.agentRunnerService(mockAgentRunnerService)
-            .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
+        builder
+            .actorScheduler(mockTaskScheduler)
             .writeBuffer(mockWriteBuffer)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
@@ -102,8 +107,11 @@ public class LogStreamControllerTest
 
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
-        when(mockWriteBuffer.getConductorAgent()).thenReturn(mockWriteBufferConductorAgent);
+        when(mockWriteBuffer.getConductor()).thenReturn(mockWriteBufferConductor);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
+
+        when(mockTaskScheduler.schedule(any(LogStreamController.class))).thenReturn(mockControllerRef);
+        when(mockTaskScheduler.schedule(mockWriteBufferConductor)).thenReturn(mockSendBufferRef);
 
         controller = new LogStreamController(builder);
 
@@ -115,7 +123,7 @@ public class LogStreamControllerTest
     @Test
     public void shouldGetRoleName()
     {
-        assertThat(controller.roleName()).isEqualTo(LOG_NAME);
+        assertThat(controller.name()).isEqualTo(LOG_NAME);
     }
 
     @Test
@@ -130,8 +138,8 @@ public class LogStreamControllerTest
         assertThat(future).isCompleted();
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService).run(any(Agent.class));
-        verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
+        verify(mockTaskScheduler).schedule(controller);
+        verify(mockTaskScheduler).schedule(mockWriteBufferConductor);
     }
 
     @Test
@@ -150,8 +158,8 @@ public class LogStreamControllerTest
         assertThat(future).isCompletedExceptionally();
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockAgentRunnerService, times(1)).run(any(Agent.class));
-        verify(mockConductorAgentRunnerService, times(1)).run(mockWriteBufferConductorAgent);
+        verify(mockTaskScheduler, times(1)).schedule(controller);
+        verify(mockTaskScheduler, times(1)).schedule(mockWriteBufferConductor);
     }
 
     @Test
@@ -172,8 +180,8 @@ public class LogStreamControllerTest
         assertThat(future).isCompleted();
         assertThat(controller.isClosed()).isTrue();
 
-        verify(mockAgentRunnerService).remove(any(Agent.class));
-        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
+        verify(mockControllerRef).close();
+        verify(mockSendBufferRef).close();
 
     }
 

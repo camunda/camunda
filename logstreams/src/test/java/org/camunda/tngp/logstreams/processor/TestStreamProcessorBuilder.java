@@ -7,7 +7,7 @@ import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.DeferredCommandContext;
-import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 public class TestStreamProcessorBuilder extends StreamProcessorBuilder
 {
@@ -35,9 +35,9 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder agentRunnerService(AgentRunnerService agentRunnerService)
+    public TestStreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler)
     {
-        return (TestStreamProcessorBuilder) super.agentRunnerService(agentRunnerService);
+        return (TestStreamProcessorBuilder) super.actorScheduler(actorScheduler);
     }
 
     @Override

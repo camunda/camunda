@@ -1,29 +1,28 @@
 package org.camunda.tngp.logstreams.log;
 
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
-import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
-import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
-import org.camunda.tngp.logstreams.spi.*;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static org.camunda.tngp.logstreams.log.LogTestUtil.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
+import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
+import org.camunda.tngp.logstreams.spi.*;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
@@ -36,7 +35,7 @@ public class LogBlockIndexControllerTest
     private LogBlockIndexController blockIdxController;
 
     @Mock
-    private AgentRunnerService mockAgentRunnerService;
+    private ActorScheduler mockTaskScheduler;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -61,7 +60,7 @@ public class LogBlockIndexControllerTest
         commitPosition.setOrdered(Long.MAX_VALUE);
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockTaskScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
@@ -276,7 +275,7 @@ public class LogBlockIndexControllerTest
     {
         // given log block index controller with half deviation
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockTaskScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
@@ -308,7 +307,7 @@ public class LogBlockIndexControllerTest
     {
         // given log block index controller with half deviation
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .agentRunnerService(mockAgentRunnerService)
+            .actorScheduler(mockTaskScheduler)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)

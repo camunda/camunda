@@ -1,5 +1,19 @@
 package org.camunda.tngp.logstreams.impl;
 
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static org.camunda.tngp.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -17,21 +31,7 @@ import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
-import static org.camunda.tngp.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static org.camunda.tngp.logstreams.log.LogStreamUtil.getAddressForPosition;
-import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
-import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
+import org.camunda.tngp.util.actor.ActorScheduler;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -53,13 +53,12 @@ public final class LogStreamImpl implements LogStream
 
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
-    protected final AgentRunnerService agentRunnerService;
+    protected final ActorScheduler actorScheduler;
 
 
     protected final LogBlockIndexController logBlockIndexController;
 
     protected LogStreamController logStreamController;
-    protected AgentRunnerService writeAgentRunnerService;
     protected Dispatcher writeBuffer;
     protected final Position commitPosition = new AtomicLongPosition();
 
@@ -76,7 +75,7 @@ public final class LogStreamImpl implements LogStream
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
-        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+        this.actorScheduler = logStreamBuilder.getTaskScheduler();
 
         commitPosition.setOrdered(INVALID_ADDRESS);
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition);
@@ -84,7 +83,6 @@ public final class LogStreamImpl implements LogStream
         if (!logStreamBuilder.isLogStreamControllerDisabled())
         {
             this.logStreamController = new LogStreamController(logStreamBuilder);
-            writeAgentRunnerService = logStreamBuilder.getWriteBufferAgentRunnerService();
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
     }
@@ -297,24 +295,23 @@ public final class LogStreamImpl implements LogStream
     public CompletableFuture<Void> openLogStreamController()
     {
 
-        return openLogStreamController(writeAgentRunnerService, DEFAULT_MAX_APPEND_BLOCK_SIZE);
+        return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService)
+    public CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler)
     {
-        return openLogStreamController(writeBufferAgentRunnerService, DEFAULT_MAX_APPEND_BLOCK_SIZE);
+        return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService,
+    public CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler,
                                                            int maxAppendBlockSize)
     {
         final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(topicName, partitionId)
             .logStorage(logStorage)
             .logBlockIndex(blockIndex)
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(writeBufferAgentRunnerService)
+            .actorScheduler(actorScheduler)
             .maxAppendBlockSize(maxAppendBlockSize);
 
         this.logStreamController = new LogStreamController(logStreamBuilder);
@@ -372,7 +369,7 @@ public final class LogStreamImpl implements LogStream
         protected final DirectBuffer topicName;
         protected final int partitionId;
         protected final String logName;
-        protected AgentRunnerService agentRunnerService;
+        protected ActorScheduler actorScheduler;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
 
@@ -394,7 +391,6 @@ public final class LogStreamImpl implements LogStream
         protected SnapshotPolicy snapshotPolicy;
         protected SnapshotStorage snapshotStorage;
 
-        protected AgentRunnerService writeBufferAgentRunnerService;
         protected Dispatcher writeBuffer;
 
         public LogStreamBuilder(final DirectBuffer topicName, final int partitionId)
@@ -434,12 +430,6 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T writeBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
-        {
-            this.writeBufferAgentRunnerService = writeBufferAgentRunnerService;
-            return self();
-        }
-
         public T initialLogSegmentId(int logFragmentId)
         {
             this.initialLogSegmentId = logFragmentId;
@@ -458,9 +448,9 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T agentRunnerService(AgentRunnerService agentRunnerService)
+        public T actorScheduler(ActorScheduler actorScheduler)
         {
-            this.agentRunnerService = agentRunnerService;
+            this.actorScheduler = actorScheduler;
             return self();
         }
 
@@ -542,14 +532,14 @@ public final class LogStreamImpl implements LogStream
             return logName;
         }
 
-        public AgentRunnerService getAgentRunnerService()
+        public ActorScheduler getTaskScheduler()
         {
-            if (agentRunnerService == null)
+            if (actorScheduler == null)
             {
-                Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
+                Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
             }
 
-            return agentRunnerService;
+            return actorScheduler;
         }
 
         protected void initLogStorage()
@@ -596,11 +586,6 @@ public final class LogStreamImpl implements LogStream
                 snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
             }
             return snapshotPolicy;
-        }
-
-        public AgentRunnerService getWriteBufferAgentRunnerService()
-        {
-            return writeBufferAgentRunnerService;
         }
 
         protected Dispatcher initWriteBuffer(Dispatcher writeBuffer, BufferedLogStreamReader logReader,
@@ -676,7 +661,7 @@ public final class LogStreamImpl implements LogStream
             ensureGreaterThanOrEqual("partitionId", partitionId, 0);
             Objects.requireNonNull(getLogStorage(), "logStorage");
             Objects.requireNonNull(getBlockIndex(), "blockIndex");
-            Objects.requireNonNull(getAgentRunnerService(), "agentRunnerService");
+            Objects.requireNonNull(getTaskScheduler(), "actorScheduler");
             ensureFalse("deviation", deviation <= 0f || deviation > 1f);
 
             return new LogStreamImpl(this);

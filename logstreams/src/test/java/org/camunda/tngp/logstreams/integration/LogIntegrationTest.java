@@ -10,14 +10,9 @@ import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamBatchWriter;
-import org.camunda.tngp.logstreams.log.LogStreamBatchWriterImpl;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.agent.SharedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
+import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.util.actor.ActorScheduler;
+import org.camunda.tngp.util.actor.ActorSchedulerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,13 +27,13 @@ public class LogIntegrationTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    protected AgentRunnerService agentRunnerService;
+    protected ActorScheduler actorScheduler;
     private LogStream logStream;
 
     @Before
     public void setup()
     {
-        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
+        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
 
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
@@ -46,8 +41,7 @@ public class LogIntegrationTest
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
+                .actorScheduler(actorScheduler)
                 .build();
 
         logStream.open();
@@ -57,8 +51,7 @@ public class LogIntegrationTest
     public void destroy() throws Exception
     {
         logStream.close();
-
-        agentRunnerService.close();
+        actorScheduler.close();
     }
 
     @Test
