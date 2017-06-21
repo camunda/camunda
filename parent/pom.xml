@@ -25,7 +25,7 @@
     <version.agrona>0.9.6</version.agrona>
     <version.junit>4.12</version.junit>
     <version.mockito>1.8.5</version.mockito>
-    <version.assertj>3.3.0</version.assertj>
+    <version.assertj>3.8.0</version.assertj>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
   </properties>
 
