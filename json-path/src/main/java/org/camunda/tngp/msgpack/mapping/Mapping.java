@@ -14,8 +14,8 @@ public class Mapping
     public static final String JSON_ROOT_PATH = "$";
     public static final String MAPPING_STRING = "%s -> %s";
 
-    private JsonPathQuery source;
-    private String targetQueryString;
+    private final JsonPathQuery source;
+    private final String targetQueryString;
 
     public Mapping(JsonPathQuery source, String targetQueryString)
     {

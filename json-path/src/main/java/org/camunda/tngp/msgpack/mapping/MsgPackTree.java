@@ -40,7 +40,7 @@ public class MsgPackTree
     protected final Map<String, Set<String>> nodeChildsMap;
     protected final Map<String, Long>  leafMap; //Bytes2LongHashIndex leafMap;
 
-    protected DirectBuffer underlyingDocument = new UnsafeBuffer(0, 0);
+    protected final DirectBuffer underlyingDocument = new UnsafeBuffer(0, 0);
     protected DirectBuffer extractDocument;
 
     public MsgPackTree()

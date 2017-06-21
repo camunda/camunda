@@ -103,17 +103,17 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
      * A node become a parent if the node is of type MAP or ARRAY.
      * This node will be added several times, corresponding to the size of the MsgPackToken#size of this node.
      */
-    protected Deque<String> parentsStack = new ArrayDeque<>();
+    protected final Deque<String> parentsStack = new ArrayDeque<>();
 
     /**
      * Indicates if the current value belongs to an array.
      */
-    protected Deque<Boolean> arrayValueStack = new ArrayDeque<>();
+    protected final Deque<Boolean> arrayValueStack = new ArrayDeque<>();
 
     /**
      * Contains the type of the last msg pack token.
      */
-    protected Deque<MsgPackType> lastTypeStack = new ArrayDeque<>();
+    protected final Deque<MsgPackType> lastTypeStack = new ArrayDeque<>();
 
     /**
      * The traverser which is used to index the message pack document.
