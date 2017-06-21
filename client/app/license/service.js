@@ -26,7 +26,7 @@ export function checkLicenseAndNotifyIfExpiresSoon() {
       const validUntilDate = new Date(validUntil);
       const validUntilTime = validUntilDate.getTime();
       const now = Date.now();
-      const daysDiff = Math.round((validUntilTime - now) / (24 * 60 * 60 * 1000));
+      const daysDiff = Math.ceil((validUntilTime - now) / (24 * 60 * 60 * 1000));
 
       if (daysDiff <= 10) {
         addNotification({
