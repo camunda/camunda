@@ -109,12 +109,13 @@ public class RedirectToLicensePageIT {
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the root page
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(302));
+    assertThat(response.getLocation().getPath(), is("/"))
 
     // when I now redirect to root page
     response =
       embeddedOptimizeRule
-        .rootTarget("/").request().get();
+        .rootTarget(response.getLocation().getPath()).request().get();
 
     // then I get a redirect to the license page
     assertThat(response.getLocation(), is(not(nullValue())));
