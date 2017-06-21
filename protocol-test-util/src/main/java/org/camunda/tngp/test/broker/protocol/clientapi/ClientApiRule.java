@@ -137,6 +137,18 @@ public class ClientApiRule extends ExternalResource
             .send();
     }
 
+    public ControlMessageRequest closeTopicSubscription(long subscriberKey)
+    {
+        return createControlMessageRequest()
+                .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+                .data()
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("subscriberKey", subscriberKey)
+                .done()
+                .send();
+    }
+
     public ControlMessageRequest openTaskSubscription(final String type)
     {
         return openTaskSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, type);

@@ -340,52 +340,64 @@ public class WorkflowTaskIOMappingTest
             .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
     }
 
-// TODO two process instances should not see there payloads
-// for that we have to create and complete WF instances
-//    @Test
-//    public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws Throwable
-//    {
-//        // given
-//        final Map<String, Object> jsonObject = new HashMap<>();
-//        jsonObject.put("testAttr", "test");
-//        jsonObject.put("testObj", jsonPayload);
-//        jsonObject.put("a", jsonPayload);
-//        testClient.deploy(wrap(
-//            Bpmn.createExecutableProcess("process")
-//                .startEvent()
-//                .serviceTask("service")
-//                .endEvent()
-//                .done())
-//            .taskDefinition("service", "external", 5));
-//
-//        testClient.createWorkflowInstance("process", MSGPACK_MAPPER.writeValueAsBytes(jsonObject));
-//        final Long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-//
-//        // when
-//        testClient.completeAllTaskOfType("external", new byte[][]{ MSGPACK_MAPPER.writeValueAsBytes(jsonObject), MSGPACK_PAYLOAD});
-//
-//        // then
-//        SubscribedEvent activityActivatedEvent =
-//            testClient.receiveSingleEvent(
-//                workflowInstanceEvents("ACTIVITY_ACTIVATED")
-//                    .and(e -> e.event()
-//                        .get(PROP_WORKFLOW_INSTANCE_KEY)
-//                        .equals(workflowInstanceKey)));
-//        SubscribedEvent activityCompletedEvent =
-//            testClient.receiveSingleEvent(
-//                workflowInstanceEvents("ACTIVITY_COMPLETED")
-//                    .and(e -> e.event()
-//                        .get(PROP_WORKFLOW_INSTANCE_KEY)
-//                        .equals(workflowInstanceKey)));
-//
-//
-//
-//        final JsonNode jsonNode = MSGPACK_MAPPER.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
-//        assertThat(jsonNode).isNotNull().isNotEmpty();
-//        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
-//        assertThat(activityCompletedEvent.event())
-//            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
-//    }
+    @Test
+    public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5));
+
+        final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+        final long secondWFInstanceKey = testClient.createWorkflowInstance("process");
+
+        // when
+        testClient.completeTaskOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
+        testClient.completeTaskOfWorkflowInstance("external", secondWFInstanceKey, MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+
+        // then first event payload is expected as
+        final SubscribedEvent firstWFActivityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED", firstWFInstanceKey));
+        byte[] payload = (byte[]) firstWFActivityCompletedEvent.event().get(PROP_TASK_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+
+        // and second event payload is expected as
+        final SubscribedEvent secondWFActivityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED", secondWFInstanceKey));
+        payload = (byte[]) secondWFActivityCompletedEvent.event().get(PROP_TASK_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    }
+
+    @Test
+    public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
+                                   .startEvent()
+                                   .serviceTask("service")
+                                   .endEvent()
+                                   .done()).taskDefinition("service", "external", 5).ioMapping("service").output("$", "$.taskPayload").done());
+
+        final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+        final long secondWFInstanceKey = testClient.createWorkflowInstance("process",
+                                                                           MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'otherPayload':'value'}")));
+
+        // when
+        testClient.completeTaskOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
+        testClient.completeTaskOfWorkflowInstance("external", secondWFInstanceKey, MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+
+        // then first event payload is expected as
+        final SubscribedEvent firstWFActivityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED", firstWFInstanceKey));
+        byte[] payload = (byte[]) firstWFActivityCompletedEvent.event().get(PROP_TASK_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(payload))
+            .isEqualTo(JSON_MAPPER.readTree("{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}"));
+
+        // and second event payload is expected as
+        final SubscribedEvent secondWFActivityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED", secondWFInstanceKey));
+        payload = (byte[]) secondWFActivityCompletedEvent.event().get(PROP_TASK_PAYLOAD);
+        assertThat(MSGPACK_MAPPER.readTree(payload))
+            .isEqualTo(JSON_MAPPER.readTree("{'otherPayload':'value','taskPayload':{'foo':'bar'}}"));
+    }
 
     @Test
     public void shouldUseDefaultOutputMappingIfNullSpecified() throws Throwable

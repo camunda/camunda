@@ -15,6 +15,7 @@ package org.camunda.tngp.test.broker.protocol.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsArray;
 
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -35,6 +36,7 @@ public class TestTopicClient
     public static final String PROP_WORKFLOW_BPMN_XML = "bpmnXml";
     public static final String PROP_WORKFLOW_VERSION = "version";
     private static final String PROP_WORKFLOW_PAYLOAD = "payload";
+    public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
 
     private final ClientApiRule apiRule;
     private final String topicName;
@@ -172,6 +174,39 @@ public class TestTopicClient
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
     }
 
+    public void completeTaskOfWorkflowInstance(String taskType, long workflowInstanceKey, byte[] payload)
+    {
+        apiRule.openTaskSubscription(topicName, partitionId, taskType).await();
+
+        final SubscribedEvent taskEvent = apiRule
+            .subscribedEvents()
+            .filter(taskEvents("LOCKED"))
+            .filter(e -> e.event().get("type").equals(taskType))
+            .filter(e -> ((Map) e.event().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
+
+        final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
+                                                                           .topicName(topicName)
+                                                                           .partitionId(partitionId)
+                                                                           .key(taskEvent.key())
+                                                                           .eventTypeTask()
+                                                                           .command()
+                                                                           .put(PROP_EVENT, "COMPLETE")
+                                                                           .put("type", taskType)
+                                                                           .put("lockOwner", taskEvent.event().get("lockOwner"))
+                                                                           .put("headers", taskEvent.event().get("headers"));
+
+        if (payload != null)
+        {
+            mapBuilder.put("payload", payload);
+        }
+
+        final ExecuteCommandResponse response = mapBuilder.done().sendAndAwait();
+
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
+    }
+
     /**
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
      *   to reduce it to a finite stream
@@ -209,6 +244,11 @@ public class TestTopicClient
         return e -> e.event().get(PROP_EVENT).equals(eventType);
     }
 
+    public static Predicate<SubscribedEvent> workflowInstanceKey(long workflowInstanceKey)
+    {
+        return e -> e.event().get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey);
+    }
+
     public static Predicate<SubscribedEvent> workflowInstanceEvents()
     {
         return e -> e.eventType() == EventType.WORKFLOW_EVENT;
@@ -217,6 +257,11 @@ public class TestTopicClient
     public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType)
     {
         return workflowInstanceEvents().and(eventType(eventType));
+    }
+
+    public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType, long workflowInstanceKey)
+    {
+        return workflowInstanceEvents(eventType).and(workflowInstanceKey(workflowInstanceKey));
     }
 
     public static Predicate<SubscribedEvent> taskEvents()
