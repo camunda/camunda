@@ -4,7 +4,9 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.client.impl.Loggers;
-import org.camunda.tngp.client.task.impl.subscription.*;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
+import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
+import org.camunda.tngp.client.task.impl.subscription.SubscribedEventHandler;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.actor.Actor;
 import org.slf4j.Logger;
@@ -35,6 +37,12 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     public String name()
     {
         return name;
+    }
+
+    @Override
+    public int getPriority(long now)
+    {
+        return PRIORITY_LOW;
     }
 
     @Override

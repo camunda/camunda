@@ -12,7 +12,6 @@ import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.TransportChannelListener;
-import org.camunda.tngp.util.actor.Actor;
 import org.camunda.tngp.util.actor.ActorReference;
 import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.actor.ActorSchedulerImpl;
@@ -26,9 +25,11 @@ public class SubscriptionManager implements TransportChannelListener
     protected final MsgPackMapper msgPackMapper;
     protected final TngpClientImpl client;
 
-    protected final ActorScheduler actorScheduler;
-    protected ActorReference aquisitionRef;
-    protected ActorReference[] executorRefs;
+    protected final ActorScheduler executorActorScheduler;
+    protected final ActorScheduler acquisitionActorScheduler;
+
+    protected ActorReference[] acquisitionActorRefs;
+    protected ActorReference[] executorActorRefs;
 
     protected AgentRunner acquisitionRunner;
     protected AgentRunner[] executionRunners;
@@ -64,8 +65,8 @@ public class SubscriptionManager implements TransportChannelListener
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
 
-        // allocate one thread per executor + one extra for acquisition
-        this.actorScheduler = ActorSchedulerImpl.createDefaultScheduler(numExecutionThreads + 1);
+        this.acquisitionActorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        this.executorActorScheduler = ActorSchedulerImpl.createDefaultScheduler(numExecutionThreads);
     }
 
     public void start()
@@ -82,45 +83,54 @@ public class SubscriptionManager implements TransportChannelListener
 
     public void close()
     {
-        actorScheduler.close();
+        acquisitionActorScheduler.close();
+        executorActorScheduler.close();
     }
 
     protected void startAcquisition()
     {
-        if (aquisitionRef == null)
+        if (acquisitionActorRefs == null)
         {
-            aquisitionRef = actorScheduler.schedule(new AquisitionActor());
+            acquisitionActorRefs = new ActorReference[3];
+
+            acquisitionActorRefs[0] = acquisitionActorScheduler.schedule(taskCollector);
+            acquisitionActorRefs[1] = acquisitionActorScheduler.schedule(taskAcquisition);
+            acquisitionActorRefs[2] = acquisitionActorScheduler.schedule(topicSubscriptionAcquisition);
         }
     }
 
     protected void stopAcquisition()
     {
-        aquisitionRef.close();
-        aquisitionRef = null;
+        for (int i = 0; i < acquisitionActorRefs.length; i++)
+        {
+            acquisitionActorRefs[i].close();
+        }
+
+        acquisitionActorRefs = null;
     }
 
     protected void startExecution()
     {
-        if (executorRefs == null)
+        if (executorActorRefs == null)
         {
-            executorRefs = new ActorReference[numExecutionThreads * 2];
+            executorActorRefs = new ActorReference[numExecutionThreads * 2];
 
-            for (int i = 0; i < executorRefs.length; i += 2)
+            for (int i = 0; i < executorActorRefs.length; i += 2)
             {
-                executorRefs[i] = actorScheduler.schedule(new SubscriptionExecutor(taskSubscriptions));
-                executorRefs[i + 1] = actorScheduler.schedule(new SubscriptionExecutor(topicSubscriptions));
+                executorActorRefs[i] = executorActorScheduler.schedule(new SubscriptionExecutor(taskSubscriptions));
+                executorActorRefs[i + 1] = executorActorScheduler.schedule(new SubscriptionExecutor(topicSubscriptions));
             }
         }
     }
 
     protected void stopExecution()
     {
-        for (int i = 0; i < executorRefs.length; i++)
+        for (int i = 0; i < executorActorRefs.length; i++)
         {
-            executorRefs[i].close();
+            executorActorRefs[i].close();
         }
 
-        executorRefs = null;
+        executorActorRefs = null;
     }
 
     public void closeAllSubscriptions()
@@ -160,27 +170,6 @@ public class SubscriptionManager implements TransportChannelListener
     {
         taskSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
         topicSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
-    }
-
-    private final class AquisitionActor implements Actor
-    {
-        @Override
-        public int doWork() throws Exception
-        {
-            int workCount = 0;
-
-            workCount += taskCollector.doWork();
-            workCount += taskAcquisition.doWork();
-            workCount += topicSubscriptionAcquisition.doWork();
-
-            return workCount;
-        }
-
-        @Override
-        public String name()
-        {
-            return "aquisition";
-        }
     }
 
 }
