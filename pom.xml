@@ -43,6 +43,17 @@
     </profile>
   </profiles>
 
+  <!--
+       do not remove, it is needed for resolving parent snapshot versions
+       Why? See http://maven.40175.n5.nabble.com/Parent-SNAPSHOT-not-resolved-Maven-2-2-1-3-0-4-Nexus-repo-td5772374.html
+  -->
+  <repositories>
+      <repository>
+          <id>foo</id>
+          <url>http//bar</url>
+      </repository>
+  </repositories>
+
   <scm>
     <url>https://github.com/camunda-tngp/camunda-tngp</url>
     <connection>scm:git:git@github.com:camunda-tngp/camunda-tngp.git</connection>
