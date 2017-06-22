@@ -20,6 +20,7 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,6 +45,7 @@ public class TaskSubscriptionTest
         this.client = clientRule.getClient();
     }
 
+    @After
     public void after()
     {
         continueTaskHandlingThreads();
@@ -120,7 +122,7 @@ public class TaskSubscriptionTest
             broker.pushLockedTask(clientChannelId, 123L, i, i, "foo");
         }
 
-        TestUtil.waitUntil(() -> handler.numWaitingThreads.get() == numExecutionThreads);
+        TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
 
         // pushing one more event, exceeding client capacity
         broker.pushLockedTask(clientChannelId, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "foo");
