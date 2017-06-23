@@ -31,5 +31,9 @@ until ${COMMAND};
   fi
 done
 
+# Set up the optimize classpaths, i.e. add the environment folder, all jars in the
+# plugin directory and the optimize jar
+OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/plugin/*:$BASEDIR/optimize-backend-${project.version}.jar
+
 echo -e "\nStarting jetty"
-nohup java -Dpidfile=$PID_FILE -Dfile.encoding=UTF-8 -jar $BASEDIR/optimize-backend-${project.version}.jar </dev/null > $LOG_FILE 2>&1
+nohup java -cp $OPTIMIZE_CLASSPATH -Dpidfile=$PID_FILE -Dfile.encoding=UTF-8 org.camunda.optimize.Main </dev/null > $LOG_FILE 2>&1

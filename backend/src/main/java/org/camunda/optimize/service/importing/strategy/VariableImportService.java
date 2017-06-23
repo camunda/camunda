@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+
 @Component
 public class VariableImportService extends IdBasedImportService<HistoricVariableInstanceDto, VariableDto> {
 
@@ -87,8 +89,8 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
       logger.debug("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
         variableDto.getId());
       return false;
-    } else if (isNullOrEmpty(variableDto.getType())) {
-      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type.",
+    } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
+      logger.debug("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessInstanceId())) {

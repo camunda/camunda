@@ -50,6 +50,14 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     list.add(dto);
 
+    dto = new PluginVariableDto();
+    dto.setName("foo");
+    dto.setType("fasdfasdfdfsa");
+    dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
+    dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
+    dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
+    list.add(dto);
+
     return list;
   }
 }

@@ -246,13 +246,6 @@
                 </filter>
               </filters>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <manifestEntries>
-                    <Main-Class>org.camunda.optimize.Main</Main-Class>
-                    <Class-Path>environment/</Class-Path>
-                    <Class-Path>plugin/</Class-Path>
-                  </manifestEntries>
-                </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
               </transformers>
             </configuration>

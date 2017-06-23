@@ -17,7 +17,7 @@ public class PluginVariableDto {
 
   /*
    * The type of the variable. This can be all primitive types that are supported by the engine.
-   * In particular, string, integer, long, short, double, boolean, date.
+   * In particular, String, Integer, Long, Short, Double, Boolean, Date.
    *
    * Note: This field is required in order to be imported to Optimize.
    */

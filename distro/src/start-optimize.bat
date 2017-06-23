@@ -37,7 +37,12 @@ if %ERRORLEVEL% neq 0 (
     )
     goto :while1
 )
+
+:: Set up the optimize classpaths, i.e. add the environment folder, all jars in the
+:: plugin directory and the optimize jar
+set OPTIMIZE_CLASSPATH=%BASEDIR%\environment;%BASEDIR%\plugin\*;%BASEDIR%optimize-backend-${project.version}.jar
+
 echo Elasticsearch has successfully been started.
 echo Starting jetty...
-java -Dfile.encoding=UTF-8 -jar %BASEDIR%optimize-backend-${project.version}.jar > %LOG_FILE% 2>&1
+java -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main > %LOG_FILE% 2>&1
  
