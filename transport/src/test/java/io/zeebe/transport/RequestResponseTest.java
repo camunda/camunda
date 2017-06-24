@@ -1,0 +1,123 @@
+package io.zeebe.transport;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.buffer.DirectBufferWriter;
+
+public class RequestResponseTest
+{
+
+    protected ServerResponse response = new ServerResponse();
+    protected Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
+    protected UnsafeBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+    protected DirectBufferWriter bufferWriter = new DirectBufferWriter();
+
+    private ActorScheduler actorScheduler;
+    private ClientTransport clientTransport;
+    private ServerTransport serverTransport;
+
+    @Before
+    public void setup()
+    {
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+    }
+
+    @After
+    public void teardown()
+    {
+        clientTransport.close();
+        serverTransport.close();
+        actorScheduler.close();
+    }
+
+    @Test
+    public void shouldEchoMessages() throws Exception
+    {
+        // 1K message
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
+
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
+
+        clientTransport = Transports.newClientTransport()
+            .sendBuffer(clientSendBuffer)
+            .requestPoolSize(128)
+            .scheduler(actorScheduler)
+            .build();
+
+        serverTransport = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .bindAddress(addr.toInetSocketAddress())
+            .scheduler(actorScheduler)
+            .build(null, (output, remote, buf, offset, length, requestId) ->
+            {
+                response
+                    .reset()
+                    .buffer(buf, offset, length)
+                    .requestId(requestId)
+                    .remoteStreamId(remote.getStreamId());
+                return output.sendResponse(response);
+            });
+
+        final int numRequests = 100_000;
+        int numResponsesReceived = 0;
+        int numRequestsSent = 0;
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(addr);
+
+        while (numResponsesReceived < numRequests)
+        {
+            while (numRequestsSent < numRequests && sendRequest(clientTransport, remote, numRequestsSent))
+            {
+                numRequestsSent++;
+            }
+
+            final ClientRequest nextPendingRequest = pendingRequests.peek();
+
+            if (nextPendingRequest.isDone())
+            {
+                final DirectBuffer response = nextPendingRequest.get();
+                assertThat(response.getInt(0)).isEqualTo(numResponsesReceived);
+                numResponsesReceived++;
+                nextPendingRequest.close();
+                pendingRequests.remove();
+            }
+        }
+
+    }
+
+    protected boolean sendRequest(ClientTransport client, RemoteAddress remote, int payload)
+    {
+        messageBuffer.putInt(0, payload);
+        bufferWriter.wrap(messageBuffer, 0, messageBuffer.capacity());
+        final ClientRequest request = client.getOutput().sendRequest(remote, bufferWriter);
+        if (request != null)
+        {
+            pendingRequests.add(request);
+        }
+
+        return request != null;
+    }
+}

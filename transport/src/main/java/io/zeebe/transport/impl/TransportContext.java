@@ -1,31 +1,72 @@
 package io.zeebe.transport.impl;
 
 import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.actor.ActorReference;
 
 public class TransportContext
 {
-    protected Dispatcher sendBuffer;
-    protected Subscription senderSubscription;
+    private int messageMaxLength;
 
-    protected long channelKeepAlivePeriod;
-    protected int maxMessageLength;
+    private ServerOutput serverOutput;
+    private ClientOutput clientOutput;
 
-    protected ActorReference conductorRef;
-    protected ActorReference senderRef;
-    protected ActorReference receiverRef;
-    protected boolean sendBufferExternallyManaged;
+    private Dispatcher receiveBuffer;
 
-    public void setSendBuffer(Dispatcher sendBuffer, boolean sendBufferExternallyManaged)
+    private Subscription senderSubscription;
+
+    private RemoteAddressList remoteAddressList;
+
+    private ClientRequestPool clientRequestPool;
+
+    private ActorReference[] actorReferences;
+
+    private FragmentHandler receiveHandler;
+    private FragmentHandler sendFailureHandler;
+
+    private ServerSocketBinding serverSocketBinding;
+
+    public int getMessageMaxLength()
     {
-        this.sendBuffer = sendBuffer;
-        this.sendBufferExternallyManaged = sendBufferExternallyManaged;
+        return messageMaxLength;
     }
 
-    public Dispatcher getSendBuffer()
+    public void setMessageMaxLength(int messageMaxLength)
     {
-        return sendBuffer;
+        this.messageMaxLength = messageMaxLength;
+    }
+
+    public ServerOutput getServerOutput()
+    {
+        return serverOutput;
+    }
+
+    public void setServerOutput(ServerOutput serverOutput)
+    {
+        this.serverOutput = serverOutput;
+    }
+
+    public ClientOutput getClientOutput()
+    {
+        return clientOutput;
+    }
+
+    public void setClientOutput(ClientOutput clientOutput)
+    {
+        this.clientOutput = clientOutput;
+    }
+
+    public Dispatcher getReceiveBuffer()
+    {
+        return receiveBuffer;
+    }
+
+    public void setReceiveBuffer(Dispatcher receiveBuffer)
+    {
+        this.receiveBuffer = receiveBuffer;
     }
 
     public Subscription getSenderSubscription()
@@ -38,58 +79,63 @@ public class TransportContext
         this.senderSubscription = senderSubscription;
     }
 
-    public int getMaxMessageLength()
+    public RemoteAddressList getRemoteAddressList()
     {
-        return maxMessageLength;
+        return remoteAddressList;
     }
 
-    public void setMaxMessageLength(int maxMessageLength)
+    public void setRemoteAddressList(RemoteAddressList remoteAddressList)
     {
-        this.maxMessageLength = maxMessageLength;
+        this.remoteAddressList = remoteAddressList;
     }
 
-    public void setChannelKeepAlivePeriod(long channelKeepAlivePeriod)
+    public ClientRequestPool getClientRequestPool()
     {
-        this.channelKeepAlivePeriod = channelKeepAlivePeriod;
+        return clientRequestPool;
     }
 
-    public long getChannelKeepAlivePeriod()
+    public void setClientRequestPool(ClientRequestPool clientRequestPool)
     {
-        return channelKeepAlivePeriod;
+        this.clientRequestPool = clientRequestPool;
     }
 
-    public ActorReference getConductor()
+    public void setActorReferences(ActorReference... conductorReferences)
     {
-        return conductorRef;
+        this.actorReferences = conductorReferences;
     }
 
-    public void setConductor(ActorReference conductor)
+    public ActorReference[] getActorReferences()
     {
-        this.conductorRef = conductor;
+        return actorReferences;
     }
 
-    public ActorReference getSender()
+    public void setReceiveHandler(FragmentHandler receiveHandler)
     {
-        return senderRef;
+        this.receiveHandler = receiveHandler;
     }
 
-    public void setSender(ActorReference sender)
+    public FragmentHandler getReceiveHandler()
     {
-        this.senderRef = sender;
+        return receiveHandler;
     }
 
-    public ActorReference getReceiver()
+    public FragmentHandler getSendFailureHandler()
     {
-        return receiverRef;
+        return sendFailureHandler;
     }
 
-    public void setReceiver(ActorReference receiver)
+    public void setSendFailureHandler(FragmentHandler sendFailureHandler)
     {
-        this.receiverRef = receiver;
+        this.sendFailureHandler = sendFailureHandler;
     }
 
-    public boolean isSendBufferExternallyManaged()
+    public ServerSocketBinding getServerSocketBinding()
     {
-        return sendBufferExternallyManaged;
+        return serverSocketBinding;
+    }
+
+    public void setServerSocketBinding(ServerSocketBinding serverSocketBinding)
+    {
+        this.serverSocketBinding = serverSocketBinding;
     }
 }

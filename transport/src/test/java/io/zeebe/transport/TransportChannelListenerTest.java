@@ -2,24 +2,28 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.impl.ChannelImpl;
-import io.zeebe.transport.impl.agent.Receiver;
-import io.zeebe.transport.util.RecordingChannelListener;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.util.RecordingChannelListener;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.buffer.DirectBufferWriter;
+
 public class TransportChannelListenerTest
 {
 
-    protected Transport clientTransport;
-    protected Transport serverTransport;
-    protected Receiver serverReceiver;
+    private static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
+    protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
+
+    protected ClientTransport clientTransport;
+    protected ServerTransport serverTransport;
     private ActorScheduler actorScheduler;
 
     @Before
@@ -27,15 +31,29 @@ public class TransportChannelListenerTest
     {
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
-        clientTransport = Transports.createTransport("client")
+        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+                .bufferSize(32 * 1024 * 1024)
+                .subscriptions("sender")
+                .actorScheduler(actorScheduler)
+                .build();
+
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
 
-        final TransportBuilder serverTransportBuilder = Transports.createTransport("server")
-            .actorScheduler(actorScheduler);
+        clientTransport = Transports.newClientTransport()
+            .sendBuffer(clientSendBuffer)
+            .requestPoolSize(128)
+            .scheduler(actorScheduler)
+            .build();
 
-        serverTransport = serverTransportBuilder.build();
-        serverReceiver = serverTransportBuilder.getReceiver();
+        serverTransport = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .bindAddress(ADDRESS.toInetSocketAddress())
+            .scheduler(actorScheduler)
+            .build(null, null);
     }
 
     @After
@@ -56,21 +74,20 @@ public class TransportChannelListenerTest
         final RecordingChannelListener serverListener = new RecordingChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
-        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
 
-        serverTransport.createServerSocketBinding(addr).bind();
-        final ChannelManager channelManager = clientTransport
-                .createClientChannelPool()
-                .build();
+        // opens a channel asynchronously
+        clientTransport.getOutput().sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
 
-        final Channel channel = channelManager.requestChannel(addr);
+        TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
 
         // when
-        channelManager.closeAllChannelsAsync().join();
+        clientTransport.closeAllChannels().join();
 
         // then
-        assertThat(clientListener.getClosedChannels()).hasSize(1);
-        assertThat(clientListener.getClosedChannels().get(0)).isSameAs(channel);
+        TestUtil.waitUntil(() -> !clientListener.getClosedConnections().isEmpty());
+        assertThat(clientListener.getClosedConnections()).hasSize(1);
+        assertThat(clientListener.getClosedConnections().get(0)).isSameAs(remoteAddress);
 
         // TODO: cannot reliably wait for channel being closed on server-side, since
         //   channel close notification happens asynchronously after client channel close
@@ -88,52 +105,17 @@ public class TransportChannelListenerTest
         final RecordingChannelListener serverListener = new RecordingChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
-        final SocketAddress addr = new SocketAddress("localhost", 51115);
-
-        serverTransport.createServerSocketBinding(addr).bind();
-        final ChannelManager channelManager = clientTransport
-                .createClientChannelPool()
-                .build();
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
 
         // when
-        final Channel channel = channelManager.requestChannel(addr);
+        clientTransport.getOutput().sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
 
         // then
-        TestUtil.waitUntil(() -> !clientListener.getOpenedChannels().isEmpty());
-        TestUtil.waitUntil(() -> !serverListener.getOpenedChannels().isEmpty());
+        TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
+        TestUtil.waitUntil(() -> !serverListener.getOpenedConnections().isEmpty());
 
-        assertThat(clientListener.getOpenedChannels()).containsExactly(channel);
-        assertThat(serverListener.getOpenedChannels()).hasSize(1);
-    }
-
-    @Test
-    public void shouldInvokeRegisteredListenerOnChannelInterrupted() throws InterruptedException, IOException
-    {
-        // given
-        final RecordingChannelListener clientListener = new RecordingChannelListener();
-        clientTransport.registerChannelListener(clientListener);
-
-        final RecordingChannelListener serverListener = new RecordingChannelListener();
-        serverTransport.registerChannelListener(serverListener);
-
-        final SocketAddress addr = new SocketAddress("localhost", 51115);
-
-        serverTransport.createServerSocketBinding(addr).bind();
-        final ChannelManager channelManager = clientTransport
-                .createClientChannelPool()
-                .build();
-
-        final Channel channel = channelManager.requestChannel(addr);
-
-        // when
-        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-        TestUtil.waitUntil(() -> !clientListener.getInterruptedChannels().isEmpty());
-        TestUtil.waitUntil(() -> !serverListener.getInterruptedChannels().isEmpty());
-
-        // then
-        assertThat(clientListener.getInterruptedChannels()).containsExactly(channel);
-        assertThat(serverListener.getInterruptedChannels()).hasSize(1);
-
+        assertThat(clientListener.getOpenedConnections()).containsExactly(remoteAddress);
+        assertThat(serverListener.getOpenedConnections()).hasSize(1);
     }
 
     @Test
@@ -146,23 +128,21 @@ public class TransportChannelListenerTest
         final RecordingChannelListener serverListener = new RecordingChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
-        final SocketAddress addr = new SocketAddress("localhost", 51115);
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
 
-        serverTransport.createServerSocketBinding(addr).bind();
-        final ChannelManager channelManager = clientTransport
-                .createClientChannelPool()
-                .build();
-        channelManager.requestChannel(addr);
+        clientTransport.getOutput().sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
+        TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
 
-        // when
         clientTransport.removeChannelListener(clientListener);
         serverTransport.removeChannelListener(serverListener);
 
-        // then
-        channelManager.closeAllChannelsAsync().join();
+        // when
+        clientTransport.closeAllChannels().join();
 
-        assertThat(clientListener.getClosedChannels()).hasSize(0);
-        assertThat(serverListener.getClosedChannels()).hasSize(0);
+        // then
+
+        assertThat(clientListener.getClosedConnections()).hasSize(0);
+        assertThat(serverListener.getClosedConnections()).hasSize(0);
     }
 
 }

@@ -2,8 +2,13 @@ package io.zeebe.transport;
 
 public class Transports
 {
-    public static TransportBuilder createTransport(String name)
+    public static ServerTransportBuilder newServerTransport()
     {
-        return new TransportBuilder(name);
+        return new ServerTransportBuilder();
+    }
+
+    public static ClientTransportBuilder newClientTransport()
+    {
+        return new ClientTransportBuilder();
     }
 }

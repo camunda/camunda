@@ -40,6 +40,13 @@ public class SocketAddress implements Comparable<SocketAddress>
         this(address.getHostName(), address.getPort());
     }
 
+    public SocketAddress(SocketAddress other)
+    {
+        this();
+        host(other.hostBuffer, 0, other.hostLength);
+        port(other.port);
+    }
+
     public MutableDirectBuffer getHostBuffer()
     {
         return hostBuffer;

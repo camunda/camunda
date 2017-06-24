@@ -3,47 +3,35 @@ package io.zeebe.transport.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.transport.Channel;
-import io.zeebe.transport.TransportChannelListener;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
 
-public class RecordingChannelListener implements TransportChannelListener
+public class RecordingChannelListener implements TransportListener
 {
 
-    protected List<Channel> closedChannels = new ArrayList<>();
-    protected List<Channel> interruptedChannels = new ArrayList<>();
-    protected List<Channel> openedChannels = new ArrayList<>();
+    protected List<RemoteAddress> closedConnections = new ArrayList<>();
+    protected List<RemoteAddress> openedConnections = new ArrayList<>();
 
-    @Override
-    public void onChannelClosed(Channel channel)
+    public List<RemoteAddress> getClosedConnections()
     {
-        closedChannels.add(channel);
+        return closedConnections;
     }
 
-    public List<Channel> getClosedChannels()
+    public List<RemoteAddress> getOpenedConnections()
     {
-        return closedChannels;
-    }
-
-    @Override
-    public void onChannelInterrupted(Channel channel)
-    {
-        interruptedChannels.add(channel);
-    }
-
-    public List<Channel> getInterruptedChannels()
-    {
-        return interruptedChannels;
+        return openedConnections;
     }
 
     @Override
-    public void onChannelOpened(Channel channel)
+    public void onConnectionEstablished(RemoteAddress remoteAddress)
     {
-        openedChannels.add(channel);
+        openedConnections.add(remoteAddress);
     }
 
-    public List<Channel> getOpenedChannels()
+    @Override
+    public void onConnectionClosed(RemoteAddress remoteAddress)
     {
-        return openedChannels;
+        closedConnections.add(remoteAddress);
     }
 
 }

@@ -2,23 +2,31 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.concurrent.ExecutionException;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.requestresponse.client.PooledTransportRequest;
-import io.zeebe.transport.requestresponse.client.TransportConnection;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
-import io.zeebe.transport.singlemessage.DataFramePool;
-import io.zeebe.transport.singlemessage.OutgoingDataFrame;
-import io.zeebe.transport.spi.TransportChannelHandler;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.*;
+import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class MixedProtocolsTest
 {
+
+    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(new byte[1024]);
+    protected final DirectBufferWriter bufferWriter = new DirectBufferWriter();
+
+    protected final TransportMessage message = new TransportMessage();
+
     private ActorScheduler actorScheduler;
+    protected ClientTransport clientTransport;
+    protected ServerTransport serverTransport;
 
     @Before
     public void setup()
@@ -27,57 +35,69 @@ public class MixedProtocolsTest
     }
 
     @After
-    public void teardown()
+    public void tearDown()
     {
+        clientTransport.close();
+        serverTransport.close();
         actorScheduler.close();
     }
 
     @Test
-    public void shouldEchoMessages()
+    public void shouldEchoMessages() throws InterruptedException, ExecutionException
     {
 
         final SocketAddress addr = new SocketAddress("localhost", 51115);
-        final CollectingHandler singleMessageHandler = new CollectingHandler();
         final int numRequests = 1000;
 
-        try (Transport clientTransport = Transports.createTransport("client")
-                .actorScheduler(actorScheduler)
-                .build();
-             Transport serverTransport = Transports.createTransport("server")
-                .actorScheduler(actorScheduler)
-                .build();
+        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
 
-             ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
-                   .transportChannelHandler(new ReverseOrderChannelHandler(serverTransport.getSendBuffer()))
-                   .bind();
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
 
-             TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
+        clientTransport = Transports.newClientTransport()
+            .sendBuffer(clientSendBuffer)
+            .requestPoolSize(128)
+            .scheduler(actorScheduler)
+            .build();
 
-             TransportConnection connection = connectionPool.openConnection())
+        final ReverseOrderChannelHandler handler = new ReverseOrderChannelHandler();
+
+        serverTransport = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .bindAddress(addr.toInetSocketAddress())
+            .scheduler(actorScheduler)
+            .build(handler, handler);
+
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(addr);
+
+        for (int i = 0; i < numRequests; i++)
         {
-            final Channel channel = clientTransport.createClientChannelPool()
-                    .requestResponseProtocol(connectionPool)
-                    .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, singleMessageHandler)
-                    .build()
-                    .requestChannel(addr);
+            requestBuffer.putInt(0, i);
+            bufferWriter.wrap(requestBuffer, 0, requestBuffer.capacity());
+            final ClientRequest request = clientTransport.getOutput().sendRequest(remoteAddress, bufferWriter);
 
-            final DataFramePool dataFramePool = DataFramePool.newBoundedPool(2, clientTransport.getSendBuffer());
+            requestBuffer.putInt(0, numRequests - i);
+            message
+                .reset()
+                .buffer(requestBuffer)
+                .remoteAddress(remoteAddress);
 
-            for (int i = 0; i < numRequests; i++)
+            final boolean success = clientTransport.getOutput().sendMessage(message);
+            if (!success)
             {
-                final PooledTransportRequest request = connection.openRequest(channel.getStreamId(), 1024);
-
-                request.getClaimedRequestBuffer().putInt(request.getClaimedOffset(), i);
-                request.commit();
-
-                final OutgoingDataFrame dataFrame = dataFramePool.openFrame(channel.getStreamId(), 1024);
-                dataFrame.getBuffer().putInt(0, i);
-                dataFrame.commit();
-
-                request.awaitResponse();
-                assertThat(request.getResponseBuffer().getInt(0)).isEqualTo(i);
-                request.close();
+                throw new RuntimeException("Could not send message");
             }
+
+            final DirectBuffer response = request.get();
+            assertThat(response.getInt(0)).isEqualTo(i);
+            request.close();
         }
     }
 
@@ -87,74 +107,47 @@ public class MixedProtocolsTest
      * it waits for the next {@link Protocols#FULL_DUPLEX_SINGLE_MESSAGE} messages, echos this message,
      * and only then echos the first message.
      */
-    public static class ReverseOrderChannelHandler implements TransportChannelHandler
+    public static class ReverseOrderChannelHandler implements ServerMessageHandler, ServerRequestHandler
     {
-        protected Dispatcher sendBuffer;
-
         protected UnsafeBuffer requestResponseMessageBuffer;
-        protected int capacity;
 
-        public ReverseOrderChannelHandler(Dispatcher sendBuffer)
+        protected final ServerResponse response = new ServerResponse();
+        protected final TransportMessage message = new TransportMessage();
+
+        public ReverseOrderChannelHandler()
         {
-            this.sendBuffer = sendBuffer;
             this.requestResponseMessageBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
         }
 
         @Override
-        public void onChannelOpened(Channel transportChannel)
+        public boolean onRequest(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
+                int length, long requestId)
         {
-        }
-
-        @Override
-        public void onChannelClosed(Channel transportChannel)
-        {
-        }
-
-        @Override
-        public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-        }
-
-        @Override
-        public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            final short protocolId = buffer.getShort(offset);
-            if (protocolId == Protocols.REQUEST_RESPONSE)
-            {
-                requestResponseMessageBuffer.putBytes(0, buffer, offset, length);
-                capacity = length;
-                return true;
-            }
-            else
-            {
-                final boolean success = echoMessage(transportChannel, buffer, offset, length);
-
-                if (success)
-                {
-                    echoMessage(transportChannel, requestResponseMessageBuffer, 0, capacity);
-                }
-
-                return success;
-            }
-        }
-
-        protected boolean echoMessage(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            final long offerPosition = sendBuffer.offer(buffer, offset, length, transportChannel.getStreamId());
-
-            if (offerPosition < 0)
-            {
-                System.err.println("Could not echo message");
-            }
-
-            return offerPosition >= 0;
-        }
-
-        @Override
-        public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
+            requestResponseMessageBuffer.putBytes(0, buffer, offset, length);
+            response.reset()
+                .requestId(requestId)
+                .remoteAddress(remoteAddress)
+                .buffer(requestResponseMessageBuffer, 0, length);
             return true;
+        }
+
+        @Override
+        public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
+                int length)
+        {
+            message.reset()
+                .buffer(buffer, offset, length)
+                .remoteAddress(remoteAddress);
+
+            final boolean success = output.sendMessage(message);
+
+            if (success)
+            {
+                output.sendResponse(response);
+            }
+
+            return success;
         }
     }
 
