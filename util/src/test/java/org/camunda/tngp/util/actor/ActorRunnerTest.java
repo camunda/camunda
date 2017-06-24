@@ -154,7 +154,7 @@ public class ActorRunnerTest
 
         waitUntil(() -> actor1.invocations > 10);
 
-        verify(mockIdleStrategy, atLeastOnce()).idle();
+        verify(mockIdleStrategy, atLeastOnce()).idle(0);
     }
 
     @Test

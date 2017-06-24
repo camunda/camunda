@@ -13,7 +13,7 @@ public class ActorRunner implements Runnable
 {
     private final DeferredCommandContext deferredCommands = new DeferredCommandContext(1024);
 
-    private final List<ActorReferenceImpl> currentActor = new ArrayList<>();
+    private final List<ActorReferenceImpl> actors = new ArrayList<>();
 
     private final int baseIterationsPerActor;
     private final IdleStrategy idleStrategy;
@@ -39,16 +39,7 @@ public class ActorRunner implements Runnable
         {
             try
             {
-                final boolean didWork = doWork();
-
-                if (didWork)
-                {
-                    idleStrategy.reset();
-                }
-                else
-                {
-                    idleStrategy.idle();
-                }
+                idleStrategy.idle(doWork());
             }
             catch (Throwable e)
             {
@@ -58,9 +49,11 @@ public class ActorRunner implements Runnable
         while (!shouldClose);
     }
 
-    private boolean doWork()
+    private int doWork()
     {
-        deferredCommands.doWork();
+        int wc = 0;
+
+        wc += deferredCommands.doWork();
 
         final long now = System.nanoTime();
 
@@ -70,28 +63,28 @@ public class ActorRunner implements Runnable
             lastSampleTime = now;
         }
 
-        boolean didWork = false;
-
-        for (int i = 0; i < currentActor.size(); i++)
+        for (int i = 0; i < actors.size(); i++)
         {
-            final ActorReferenceImpl actor = currentActor.get(i);
+            final ActorReferenceImpl actor = actors.get(i);
 
             if (actor.isClosed())
             {
-                currentActor.remove(i);
+                actors.remove(i);
                 i -= 1;
+                wc += 1;
             }
             else
             {
-                didWork = runActor(actor, now, sampling);
+                wc += runActor(actor, now, sampling);
             }
         }
-        return didWork;
+
+        return wc;
     }
 
-    private boolean runActor(final ActorReferenceImpl actor, final long now, final boolean sampling)
+    private int runActor(final ActorReferenceImpl actor, final long now, final boolean sampling)
     {
-        boolean didWork = false;
+        int wc = 0;
 
         try
         {
@@ -99,14 +92,14 @@ public class ActorRunner implements Runnable
             {
                 final long start = System.nanoTime();
 
-                didWork = tryRunActor(actor, now);
+                wc += tryRunActor(actor, now);
 
                 final long end = System.nanoTime();
                 actor.addDurationSample(end - start);
             }
             else
             {
-                didWork = tryRunActor(actor, now);
+                wc += tryRunActor(actor, now);
             }
 
         }
@@ -114,11 +107,14 @@ public class ActorRunner implements Runnable
         {
             errorHandler.onError(e);
         }
-        return didWork;
+
+        return wc;
     }
 
-    private boolean tryRunActor(ActorReferenceImpl actorRef, long now) throws Exception
+    private int tryRunActor(ActorReferenceImpl actorRef, long now) throws Exception
     {
+        int wc = 0;
+
         final Actor actor = actorRef.getActor();
         final int priority = actor.getPriority(now);
         final int maxIterations = priority * baseIterationsPerActor;
@@ -126,14 +122,16 @@ public class ActorRunner implements Runnable
         int i = 0;
         for (; i < maxIterations; i++)
         {
-            final boolean didWork = actor.doWork() > 0;
+            final int work = actor.doWork();
+            wc += work;
 
-            if (!didWork)
+            if (work == 0)
             {
                 break;
             }
         }
-        return i > 0;
+
+        return wc;
     }
 
     public void close()
@@ -145,7 +143,7 @@ public class ActorRunner implements Runnable
     {
         deferredCommands.runAsync(() ->
         {
-            currentActor.add(actor);
+            actors.add(actor);
         });
     }
 
@@ -153,14 +151,14 @@ public class ActorRunner implements Runnable
     {
         deferredCommands.runAsync(() ->
         {
-            currentActor.remove(actor);
+            actors.remove(actor);
             removeCallback.accept(actor);
         });
     }
 
     public List<ActorReferenceImpl> getActors()
     {
-        return currentActor;
+        return actors;
     }
 
     @Override
@@ -168,7 +166,7 @@ public class ActorRunner implements Runnable
     {
         final StringBuilder builder = new StringBuilder();
         builder.append("ActorRunner [currentActor=");
-        builder.append(currentActor);
+        builder.append(actors);
         builder.append("]");
         return builder.toString();
     }
