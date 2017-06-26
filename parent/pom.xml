@@ -53,6 +53,12 @@
 
       <dependency>
         <groupId>org.camunda.tngp</groupId>
+        <artifactId>tngp-cli</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
         <artifactId>tngp-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
