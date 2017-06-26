@@ -6,7 +6,6 @@ import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -31,15 +32,14 @@ public class ImportScheduler extends Thread {
   protected ImportJobExecutor importJobExecutor;
 
   @Autowired
-  protected ImportProgressReporter importProgressReporter;
-
-  @Autowired
   protected ScheduleJobFactory scheduleJobFactory;
 
   @Autowired
   protected ImportServiceProvider importServiceProvider;
 
-  protected long backoffCounter = STARTING_BACKOFF;
+  protected HashMap<String,Long> jobBackoffCounters = new HashMap<>();
+
+  protected long generalBackoffCounter = STARTING_BACKOFF;
 
   private boolean enabled = true;
 
@@ -90,8 +90,10 @@ public class ImportScheduler extends Thread {
 
         ImportResult importResult = toExecute.execute();
         pagesPassed = importResult.getPagesPassed();
-        if (pagesPassed != 0 && importResult.getIdsToFetch() != null) {
+        if (pagesPassed != 0) {
           postProcess(toExecute, importResult);
+        } else if (pagesPassed == 0) {
+          sleepAndReschedule(pagesPassed, toExecute);
         }
 
       } catch (RejectedExecutionException e) {
@@ -113,6 +115,7 @@ public class ImportScheduler extends Thread {
     }
 
     if (importScheduleJobs.isEmpty()) {
+      this.backoffAndSleep();
       sleepAndReschedule(pagesPassed);
     }
   }
@@ -157,7 +160,8 @@ public class ImportScheduler extends Thread {
           toExecute.getImportService().getElasticsearchType()
       );
       importScheduleJobs.add(toExecute);
-      backoffCounter = STARTING_BACKOFF;
+      this.setJobBackoff(toExecute.getImportService().getElasticsearchType(), STARTING_BACKOFF);
+      this.generalBackoffCounter = STARTING_BACKOFF;
     }
     if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
       logger.debug(
@@ -170,21 +174,73 @@ public class ImportScheduler extends Thread {
   }
 
   private void sleepAndReschedule(int pagesPassed, ImportScheduleJob toExecute) {
-    backoffCounter = calculateBackoff(pagesPassed);
-    long interval = configurationService.getImportHandlerWait();
+    if (toExecute != null) {
+      long sleepTime = calculateSleepTime(pagesPassed, toExecute);
 
-    try {
-      long sleepTime = interval * backoffCounter;
-      logDebugSleepInformation(sleepTime, toExecute);
-      Thread.currentThread().sleep(sleepTime);
-    } catch (InterruptedException e) {
-      logger.warn("Import handler is interrupted while sleeping between import jobs", e);
+      if (sleepTime > 0) {
+        toExecute.setTimeToExecute(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
+      } else {
+        toExecute.setTimeToExecute(null);
+      }
+
+      try {
+        this.importScheduleJobs.put(toExecute);
+      } catch (InterruptedException e) {
+        logger.debug("Can't reschedule job", e);
+      }
+
+      if (allJobsAreBackingOff()) {
+        backoffAndSleep();
+      }
     }
+
 
     //just in case someone manually added a job
     if (importScheduleJobs.isEmpty()) {
       this.scheduleProcessEngineImport();
     }
+  }
+
+  private void backoffAndSleep() {
+    try {
+      if (this.generalBackoffCounter < configurationService.getMaximumBackoff()) {
+        this.generalBackoffCounter = this.generalBackoffCounter + 1;
+      }
+      Thread.sleep(configurationService.getGeneralBackoff() * this.generalBackoffCounter);
+    } catch (InterruptedException e) {
+      logger.error("Interrupting backoff", e);
+    }
+  }
+
+  /**
+   * Calculate sleep time for specific import job based on current progress
+   * of import.
+   *
+   * @param pagesPassed
+   * @param toExecute
+   * @return
+   */
+  private long calculateSleepTime(int pagesPassed, ImportScheduleJob toExecute) {
+    long jobBackoff = calculateJobBackoff(pagesPassed, toExecute);
+    long interval = configurationService.getImportHandlerWait();
+    long sleepTime = interval * jobBackoff;
+    logDebugSleepInformation(sleepTime, toExecute);
+    return sleepTime;
+  }
+
+  /**
+   * Check if there is at least one job which does not have backoff time set.
+   * @return
+   */
+  private boolean allJobsAreBackingOff() {
+    boolean result = true;
+    for (ImportScheduleJob job : this.importScheduleJobs) {
+      if (job.getTimeToExecute() == null) {
+        result = false;
+        break;
+      }
+    }
+    return result;
   }
 
   private void logDebugSleepInformation(long sleepTime, ImportScheduleJob toExecute) {
@@ -206,13 +262,15 @@ public class ImportScheduler extends Thread {
     this.sleepAndReschedule(pagesPassed, null);
   }
 
-  protected long calculateBackoff(int pagesPassed) {
+  protected long calculateJobBackoff(int pagesPassed, ImportScheduleJob toExecute) {
     long result;
+    Long jobBackoff = getBackoffCounter(toExecute.getImportService().getElasticsearchType());
     if (pagesPassed == 0) {
-      if (backoffCounter < configurationService.getMaximumBackoff()) {
-        result = backoffCounter + 1;
+      if (jobBackoff < configurationService.getMaximumBackoff()) {
+        result = jobBackoff + 1;
+        this.setJobBackoff(toExecute.getImportService().getElasticsearchType(), result);
       } else {
-        result = backoffCounter;
+        result = jobBackoff;
       }
     } else {
       result = STARTING_BACKOFF;
@@ -220,12 +278,15 @@ public class ImportScheduler extends Thread {
     return result;
   }
 
-  protected long getBackoffCounter() {
-    return backoffCounter;
+  protected void setJobBackoff (String job, Long backoff) {
+    this.jobBackoffCounters.put(job,backoff);
   }
 
-  protected void resetBackoffCounter() {
-    this.backoffCounter = STARTING_BACKOFF;
+  protected void resetBackoffCounters() {
+    for (Map.Entry e : this.jobBackoffCounters.entrySet()) {
+      e.setValue(STARTING_BACKOFF);
+    }
+    this.generalBackoffCounter = STARTING_BACKOFF;
   }
 
   public LocalDateTime getLastReset() {
@@ -238,5 +299,18 @@ public class ImportScheduler extends Thread {
 
   public void disable() {
     this.enabled = false;
+  }
+
+  public Long getBackoffCounter(String elasticsearchType) {
+    Long jobBackoff = this.jobBackoffCounters.get(elasticsearchType);
+    if (jobBackoff == null) {
+      jobBackoff = STARTING_BACKOFF;
+      this.setJobBackoff(elasticsearchType, STARTING_BACKOFF);
+    }
+    return jobBackoff;
+  }
+
+  public long getGeneralBackoffCounter() {
+    return generalBackoffCounter;
   }
 }

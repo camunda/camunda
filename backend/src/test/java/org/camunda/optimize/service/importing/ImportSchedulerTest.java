@@ -7,6 +7,7 @@ import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportServic
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -56,7 +57,7 @@ public class ImportSchedulerTest {
 
   @Before
   public void setUp() throws OptimizeException {
-    importScheduler.resetBackoffCounter();
+    importScheduler.resetBackoffCounters();
     importScheduler.importScheduleJobs.clear();
 
     services = mockImportServices();
@@ -94,10 +95,16 @@ public class ImportSchedulerTest {
   }
 
   private List<PaginatedImportService> mockImportServices() throws OptimizeException {
-    List<PaginatedImportService> services = new ArrayList<>();
-    services.add(mock(ActivityImportService.class));
-    services.add(mock(ProcessDefinitionImportService.class));
-    services.add(mock(ProcessDefinitionXmlImportService.class));
+    ArrayList<PaginatedImportService> services = new ArrayList<>();
+    ActivityImportService activityImportService = mock(ActivityImportService.class);
+    when(activityImportService.getElasticsearchType()).thenReturn("activity");
+    services.add(activityImportService);
+    ProcessDefinitionImportService processDefinitionImportService = mock(ProcessDefinitionImportService.class);
+    when(processDefinitionImportService.getElasticsearchType()).thenReturn("pd-is");
+    services.add(processDefinitionImportService);
+    ProcessDefinitionXmlImportService processDefinitionXmlImportService = mock(ProcessDefinitionXmlImportService.class);
+    when(processDefinitionXmlImportService.getElasticsearchType()).thenReturn("pd-xml");
+    services.add(processDefinitionXmlImportService);
     for (PaginatedImportService service : services) {
       when(service.executeImport()).thenReturn(new ImportResult());
     }
@@ -119,7 +126,7 @@ public class ImportSchedulerTest {
     importScheduler.executeJob();
     importScheduler.executeJob();
 
-    assertThat(importScheduler.importScheduleJobs.size(), is(3));
+    assertThat(importScheduler.importScheduleJobs.size(), is(5));
     ImportScheduleJob piJob = importScheduler.importScheduleJobs.poll();
     assertThat(piJob, is(instanceOf(IdBasedImportScheduleJob.class)));
     assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch(), is(notNullValue()));
@@ -137,7 +144,8 @@ public class ImportSchedulerTest {
     //when
     importScheduler.executeJob();
 
-    assertThat(importScheduler.getBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
   }
 
   @Test
@@ -152,22 +160,38 @@ public class ImportSchedulerTest {
 
     //when
     importScheduler.executeJob();
-    importScheduler.executeJob();
-    importScheduler.executeJob();
 
-    assertThat(importScheduler.getBackoffCounter(), is(1L));
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(1L));
   }
 
   @Test
-  public void testBackoffIncreaseWithoutJobs() throws Exception {
-    assertThat(importScheduler.getBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+  public void testGeneralBackoffIncreaseWithoutJobs() throws Exception {
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
 
     //when
     importScheduler.executeJob();
 
     //then
-    assertThat(importScheduler.getBackoffCounter(), is(1L));
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(1L));
   }
+
+  @Test
+  public void testGeneralBackoffDoesNotExceedMax() throws Exception {
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+
+    //when
+    importScheduler.executeJob();
+    importScheduler.executeJob();
+    importScheduler.executeJob();
+    importScheduler.executeJob();
+    importScheduler.executeJob();
+    importScheduler.executeJob();
+
+    //then
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(3L));
+  }
+
+
 
   @Test
   public void testResetAfterPeriod () throws Exception {
@@ -212,45 +236,55 @@ public class ImportSchedulerTest {
   public void testBackoffResetAfterPage() throws OptimizeException {
     //given
     //right after instantiation backoff is 0
-    assertThat(importScheduler.getBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+    importScheduler.scheduleProcessEngineImport();
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getBackoffCounter(services.get(1).getElasticsearchType()), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getBackoffCounter(services.get(2).getElasticsearchType()), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+
 
     importScheduler.executeJob();
     //initial execution increases backoff and schedules jobs
-    assertThat(importScheduler.getBackoffCounter(), is(1L));
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(1L));
     importScheduler.executeJob();
     importScheduler.executeJob();
     importScheduler.executeJob();
     //there were still no pages returned -> backoff is 2
-    assertThat(importScheduler.getBackoffCounter(), is(2L));
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(2L));
 
     //return one page from first import service
 
     ImportResult result = new ImportResult();
     result.setPagesPassed(1);
-    when(services.get(2).executeImport()).thenReturn(result);
+    for (PaginatedImportService m : services) {
+      when(m.executeImport()).thenReturn(result);
+    }
 
     //when
     importScheduler.executeJob();
+    assertThat(importScheduler.getGeneralBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+
     importScheduler.executeJob();
     importScheduler.executeJob();
 
     //then
-    assertThat(importScheduler.getBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));
+    assertThat(importScheduler.getBackoffCounter(services.get(0).getElasticsearchType()), is(ImportScheduler.STARTING_BACKOFF));
   }
 
   @Test
   public void testBackoffNotExceedingMax() throws Exception {
-    assertThat(importScheduler.calculateBackoff(0), is(1L));
-    assertThat(importScheduler.calculateBackoff(1), is(ImportScheduler.STARTING_BACKOFF));
+    ImportScheduleJob toExecute = new PageBasedImportScheduleJob();
+    toExecute.setImportService(services.get(0));
+
+    assertThat(importScheduler.calculateJobBackoff(0, toExecute), is(1L));
+    assertThat(importScheduler.calculateJobBackoff(1, toExecute), is(ImportScheduler.STARTING_BACKOFF));
     //does not increase after 2
     importScheduler.executeJob();
+    assertThat(importScheduler.calculateJobBackoff(0, toExecute), is(2L));
     importScheduler.executeJob();
+    assertThat(importScheduler.calculateJobBackoff(0, toExecute), is(3L));
     importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0), is(2L));
-    importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0), is(3L));
-    importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0), is(3L));
+    assertThat(importScheduler.calculateJobBackoff(0, toExecute), is(3L));
   }
 
 }

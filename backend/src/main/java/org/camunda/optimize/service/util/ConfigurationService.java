@@ -128,6 +128,8 @@ public class ConfigurationService {
   private int esNumberOfReplicas;
   @Value("${camunda.optimize.es.settings.index.number_of_shards}")
   private int esNumberOfShards;
+  @Value("${camunda.optimize.es.import.handler.general.backoff.ms}")
+  private long generalBackoff;
 
   public String getSecret() {
     return secret;
@@ -579,6 +581,10 @@ public class ConfigurationService {
 
   public void setLicenseType(String licenseType) {
     this.licenseType = licenseType;
+  }
+
+  public long getGeneralBackoff() {
+    return generalBackoff;
   }
 
   public String getVariableImportPluginBasePackages() {

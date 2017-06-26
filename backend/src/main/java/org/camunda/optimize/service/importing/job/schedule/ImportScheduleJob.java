@@ -4,6 +4,8 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.ImportService;
 
+import java.time.LocalDateTime;
+
 /**
  * @author Askar Akhmerov
  */
@@ -11,9 +13,16 @@ public abstract class ImportScheduleJob<S extends ImportService> {
 
   protected S importService;
   protected boolean pageBased = true;
+  protected LocalDateTime timeToExecute;
 
   public ImportResult execute() throws OptimizeException {
-    return importService.executeImport();
+    ImportResult result;
+    if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
+      result = new ImportResult();
+    } else {
+      result =  importService.executeImport();
+    }
+    return result;
   }
 
   public void setImportService(S importService) {
@@ -30,5 +39,13 @@ public abstract class ImportScheduleJob<S extends ImportService> {
 
   public void setPageBased(boolean pageBased) {
     this.pageBased = pageBased;
+  }
+
+  public LocalDateTime getTimeToExecute() {
+    return timeToExecute;
+  }
+
+  public void setTimeToExecute(LocalDateTime timeToExecute) {
+    this.timeToExecute = timeToExecute;
   }
 }
