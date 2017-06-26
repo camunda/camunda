@@ -12,6 +12,8 @@
   <context:component-scan base-package="org.camunda.optimize.service"/>
   <context:component-scan base-package="org.camunda.optimize.rest"/>
   <context:component-scan base-package="org.camunda.optimize.test"/>
+  <context:component-scan base-package="org.camunda.optimize.plugin"/>
+
 
   <context:property-placeholder location="classpath:service.properties,classpath:import-performance-test.properties" />
 
