@@ -5,7 +5,7 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportRequest;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class ProtocolRequestResponseTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
     }
 
     @After

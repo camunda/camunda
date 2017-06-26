@@ -12,7 +12,7 @@ import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -29,7 +29,7 @@ public class ChannelLifecycleTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         clientTransport = Transports.createTransport("client")
             .actorScheduler(actorScheduler)

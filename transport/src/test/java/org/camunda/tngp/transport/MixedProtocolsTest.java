@@ -13,7 +13,7 @@ import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.*;
 
 public class MixedProtocolsTest
@@ -23,7 +23,7 @@ public class MixedProtocolsTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
     }
 
     @After

@@ -17,7 +17,7 @@ import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.*;
 
@@ -42,7 +42,7 @@ public class ControlFramesTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
     }
 
     @After

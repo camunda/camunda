@@ -9,7 +9,7 @@ import org.camunda.tngp.transport.impl.ChannelImpl;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.util.RecordingChannelListener;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +25,7 @@ public class TransportChannelListenerTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         clientTransport = Transports.createTransport("client")
             .actorScheduler(actorScheduler)

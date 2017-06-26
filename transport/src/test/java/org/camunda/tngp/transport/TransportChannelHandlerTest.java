@@ -21,7 +21,7 @@ import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.util.RecordingChannelHandler;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +58,7 @@ public class TransportChannelHandlerTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         ClockUtil.setCurrentTime(Instant.now());
         clientTransport = Transports.createTransport("client")

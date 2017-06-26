@@ -9,7 +9,7 @@ import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePoolImpl;
 import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +21,7 @@ public class ProtocolSingleMessageTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
     }
 
     @After

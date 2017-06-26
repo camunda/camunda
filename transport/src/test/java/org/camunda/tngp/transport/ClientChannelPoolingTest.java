@@ -18,7 +18,7 @@ import org.camunda.tngp.transport.util.RecordingChannelHandler;
 import org.camunda.tngp.transport.util.RecordingChannelListener;
 import org.camunda.tngp.util.PooledFuture;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +41,7 @@ public class ClientChannelPoolingTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         clientTransport = Transports.createTransport("client")
             .actorScheduler(actorScheduler)

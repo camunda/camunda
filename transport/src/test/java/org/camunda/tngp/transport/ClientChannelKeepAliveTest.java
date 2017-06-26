@@ -9,7 +9,7 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +27,7 @@ public class ClientChannelKeepAliveTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         clientTransport = Transports.createTransport("client")
             .actorScheduler(actorScheduler)
