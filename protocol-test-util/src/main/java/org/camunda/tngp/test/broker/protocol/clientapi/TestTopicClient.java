@@ -144,45 +144,22 @@ public class TestTopicClient
 
     public void completeTaskOfType(String taskType, byte[] payload)
     {
-        apiRule.openTaskSubscription(topicName, partitionId, taskType).await();
-
-        final SubscribedEvent taskEvent = apiRule
-            .subscribedEvents()
-            .filter(taskEvents("LOCKED"))
-            .filter(e -> e.event().get("type").equals(taskType))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
-
-        final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
-            .topicName(topicName)
-            .partitionId(partitionId)
-            .key(taskEvent.key())
-            .eventTypeTask()
-            .command()
-                .put(PROP_EVENT, "COMPLETE")
-                .put("type", taskType)
-                .put("lockOwner", taskEvent.event().get("lockOwner"))
-                .put("headers", taskEvent.event().get("headers"));
-
-        if (payload != null)
-        {
-            mapBuilder.put("payload", payload);
-        }
-
-        final ExecuteCommandResponse response = mapBuilder.done().sendAndAwait();
-
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
+        completeTask(taskType, payload, e -> true);
     }
 
+    @SuppressWarnings("rawtypes")
     public void completeTaskOfWorkflowInstance(String taskType, long workflowInstanceKey, byte[] payload)
+    {
+        completeTask(taskType, payload, e -> ((Map) e.event().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey));
+    }
+
+    public void completeTask(String taskType, byte[] payload, Predicate<SubscribedEvent> taskEventFilter)
     {
         apiRule.openTaskSubscription(topicName, partitionId, taskType).await();
 
         final SubscribedEvent taskEvent = apiRule
             .subscribedEvents()
-            .filter(taskEvents("LOCKED"))
-            .filter(e -> e.event().get("type").equals(taskType))
-            .filter(e -> ((Map) e.event().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey))
+            .filter(taskEvents("LOCKED").and(taskType(taskType)).and(taskEventFilter))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
@@ -272,6 +249,11 @@ public class TestTopicClient
     public static Predicate<SubscribedEvent> taskEvents(String eventType)
     {
         return taskEvents().and(eventType(eventType));
+    }
+
+    public static Predicate<SubscribedEvent> taskType(String taskType)
+    {
+        return e -> taskType.equals(e.event().get("type"));
     }
 
     public static Predicate<SubscribedEvent> incidentEvents()
