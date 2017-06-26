@@ -19,7 +19,7 @@ import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
@@ -55,7 +55,7 @@ public class StubBrokerRule extends ExternalResource
         msgPackHelper = new MsgPackHelper();
 
         transport = Transports.createTransport("testTransport")
-                .actorScheduler(ActorSchedulerImpl.createDefaultScheduler())
+                .actorScheduler(ActorSchedulerBuilder.createDefaultScheduler())
                 .build();
 
         bindAddr = new SocketAddress(host, port);

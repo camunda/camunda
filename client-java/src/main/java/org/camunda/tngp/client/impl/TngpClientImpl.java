@@ -21,7 +21,7 @@ import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class TngpClientImpl implements TngpClient
@@ -74,7 +74,7 @@ public class TngpClientImpl implements TngpClient
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
-        this.transportActorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         final TransportBuilder transportBuilder = Transports.createTransport("tngp.client")
             .sendBufferSize(1024 * 1024 * sendBufferSize)

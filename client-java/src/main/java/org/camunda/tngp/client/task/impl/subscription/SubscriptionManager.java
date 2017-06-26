@@ -14,7 +14,7 @@ import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.TransportChannelListener;
 import org.camunda.tngp.util.actor.ActorReference;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 
 public class SubscriptionManager implements TransportChannelListener
 {
@@ -65,8 +65,8 @@ public class SubscriptionManager implements TransportChannelListener
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
 
-        this.acquisitionActorScheduler = ActorSchedulerImpl.createDefaultScheduler();
-        this.executorActorScheduler = ActorSchedulerImpl.createDefaultScheduler(numExecutionThreads);
+        this.acquisitionActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        this.executorActorScheduler = ActorSchedulerBuilder.createDefaultScheduler(numExecutionThreads);
     }
 
     public void start()

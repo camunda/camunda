@@ -16,7 +16,7 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 
 public class ActorSchedulerService implements Service<ActorScheduler>
 {
@@ -60,7 +60,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
         final IdleStrategy idleStrategy = createIdleStrategy(brokerIdleStrategy);
         final ErrorHandler errorHandler = t -> t.printStackTrace();
 
-        scheduler = ActorSchedulerImpl.newBuilder()
+        scheduler = new ActorSchedulerBuilder()
                 .threadCount(availableThreads)
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(errorHandler)
