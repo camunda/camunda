@@ -22,11 +22,11 @@ public class IncidentEventImpl implements IncidentEvent
     private String errorMessage;
 
     private String bpmnProcessId;
-    private long workflowInstanceKey;
+    private Long workflowInstanceKey;
     private String activityId;
-    private long activityInstanceKey;
+    private Long activityInstanceKey;
 
-    private long taskKey;
+    private Long taskKey;
 
     public String getEventType()
     {
@@ -60,7 +60,7 @@ public class IncidentEventImpl implements IncidentEvent
 
     public String getBpmnProcessId()
     {
-        return bpmnProcessId;
+        return bpmnProcessId != null && !bpmnProcessId.isEmpty() ? bpmnProcessId : null;
     }
 
     public void setBpmnProcessId(String bpmnProcessId)
@@ -70,7 +70,7 @@ public class IncidentEventImpl implements IncidentEvent
 
     public String getActivityId()
     {
-        return activityId;
+        return activityId != null && !activityId.isEmpty() ? activityId : null;
     }
 
     public void setActivityId(String activityId)
@@ -78,9 +78,9 @@ public class IncidentEventImpl implements IncidentEvent
         this.activityId = activityId;
     }
 
-    public long getActivityInstanceKey()
+    public Long getActivityInstanceKey()
     {
-        return activityInstanceKey;
+        return activityInstanceKey > 0 ? activityInstanceKey : null;
     }
 
     public void setActivityInstanceKey(long activityInstanceKey)
@@ -88,9 +88,9 @@ public class IncidentEventImpl implements IncidentEvent
         this.activityInstanceKey = activityInstanceKey;
     }
 
-    public long getTaskKey()
+    public Long getTaskKey()
     {
-        return taskKey;
+        return taskKey > 0 ? taskKey : null;
     }
 
     public void setTaskKey(long taskKey)
@@ -98,9 +98,9 @@ public class IncidentEventImpl implements IncidentEvent
         this.taskKey = taskKey;
     }
 
-    public long getWorkflowInstanceKey()
+    public Long getWorkflowInstanceKey()
     {
-        return workflowInstanceKey;
+        return workflowInstanceKey > 0 ? workflowInstanceKey : null;
     }
 
     public void setWorkflowInstanceKey(long workflowInstanceKey)

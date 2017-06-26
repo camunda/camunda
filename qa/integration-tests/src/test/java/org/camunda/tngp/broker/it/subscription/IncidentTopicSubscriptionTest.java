@@ -86,7 +86,7 @@ public class IncidentTopicSubscriptionTest
         assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
         assertThat(event.getActivityId()).isEqualTo("task");
         assertThat(event.getActivityInstanceKey()).isGreaterThan(0);
-        assertThat(event.getTaskKey()).isLessThan(0);
+        assertThat(event.getTaskKey()).isNull();
     }
 
     @Test
@@ -123,10 +123,10 @@ public class IncidentTopicSubscriptionTest
         assertThat(event.getEventType()).isEqualTo("CREATED");
         assertThat(event.getErrorType()).isEqualTo("TASK_NO_RETRIES");
         assertThat(event.getErrorMessage()).isEqualTo("No more retries left.");
-        assertThat(event.getBpmnProcessId()).isEmpty();
-        assertThat(event.getWorkflowInstanceKey()).isLessThan(0);
-        assertThat(event.getActivityId()).isEmpty();
-        assertThat(event.getActivityInstanceKey()).isLessThan(0);
+        assertThat(event.getBpmnProcessId()).isNull();
+        assertThat(event.getWorkflowInstanceKey()).isNull();
+        assertThat(event.getActivityId()).isNull();
+        assertThat(event.getActivityInstanceKey()).isNull();
         assertThat(event.getTaskKey()).isEqualTo(taskKey);
     }
 

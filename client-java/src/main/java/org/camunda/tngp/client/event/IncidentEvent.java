@@ -33,33 +33,33 @@ public interface IncidentEvent
     String getErrorMessage();
 
     /**
-     * @return the BPMN process id this incident belongs to. Can be empty if the
+     * @return the BPMN process id this incident belongs to. Can be <code>null</code> if the
      *         incident belongs to no workflow instance.
      */
     String getBpmnProcessId();
 
     /**
      * @return the key of the workflow instance this incident belongs to. Can be
-     *         negative if the incident belongs to no workflow instance.
+     *         <code>null</code> if the incident belongs to no workflow instance.
      */
-    long getWorkflowInstanceKey();
+    Long getWorkflowInstanceKey();
 
     /**
-     * @return the id of the activity this incident belongs to. Can be empty if
+     * @return the id of the activity this incident belongs to. Can be <code>null</code> if
      *         the incident belongs to no activity or workflow instance.
      */
     String getActivityId();
 
     /**
      * @return the key of the activity instance this incident belongs to. Can be
-     *         negative if the incident belongs to no activity or workflow
+     *         <code>null</code> if the incident belongs to no activity or workflow
      *         instance.
      */
-    long getActivityInstanceKey();
+    Long getActivityInstanceKey();
 
     /**
-     * @return the key of the task this incident belongs to. Can be negative if the
+     * @return the key of the task this incident belongs to. Can be <code>null</code> if the
      *         incident belongs to no task.
      */
-    long getTaskKey();
+    Long getTaskKey();
 }
