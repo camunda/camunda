@@ -15,6 +15,7 @@ package org.camunda.tngp.util.actor;
 public interface Actor
 {
     int PRIORITY_LOW = 1;
+    int PRIORITY_MIDDLE = 50;
     int PRIORITY_HIGH = 100;
 
     /**
@@ -39,14 +40,14 @@ public interface Actor
      * The priority influences how often the actor is invoked by the scheduler.
      *
      * <p>
-     * Default priority is 100.
+     * Default priority is {@value #PRIORITY_MIDDLE}.
      *
      * @param now
      *            the current time in nano seconds
      */
     default int getPriority(long now)
     {
-        return PRIORITY_HIGH;
+        return PRIORITY_MIDDLE;
     }
 
     /**

@@ -188,7 +188,7 @@ public class ActorRunnerTest
 
         waitUntil(() -> actor.invocations > 0);
 
-        assertThat(actorRef.getDuration()).isGreaterThan(0);
+        assertThat(actorRef.getDuration()).isGreaterThan(0L);
     }
 
     private class RecordingActor implements Actor

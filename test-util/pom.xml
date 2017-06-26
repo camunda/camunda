@@ -12,7 +12,6 @@
   </parent>
 
   <properties>
-    <camunda.version>7.6.0</camunda.version>
     <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
   </properties>
 

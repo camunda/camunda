@@ -25,19 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-public class ActorSchedulerTest
+public class DynamicActorSchedulerTest
 {
     private static final Actor DUMMY_ACTOR = () -> 1;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Mock
     private ActorRunner mockRunner1;
@@ -198,147 +193,4 @@ public class ActorSchedulerTest
         verify(mockRunner1, never()).reclaimActor(any(), any());
     }
 
-    @Test
-    public void shouldVerifyThreadCount()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("thread count must be greater than 0");
-
-        ActorSchedulerImpl.newBuilder()
-            .threadCount(0)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyBaseIterationsPerActor()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("base iterations per actor must be greater than 0");
-
-        ActorSchedulerImpl.newBuilder()
-            .baseIterationsPerActor(0)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyDurationSampleCount()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("duration sample count must be greater than 0");
-
-        ActorSchedulerImpl.newBuilder()
-            .durationSampleCount(0)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyDurationSamplePeriodNotNull()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("duration sample period must not be null");
-
-        ActorSchedulerImpl.newBuilder()
-            .durationSamplePeriod(null)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyDurationSamplePeriodGreterThanZero()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("duration sample period must be greater than PT0S");
-
-        ActorSchedulerImpl.newBuilder()
-            .durationSamplePeriod(Duration.ofNanos(0))
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyImbalanceThresholdLessThanOne()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("imbalance threshold must be less than or equal to 1.0");
-
-        ActorSchedulerImpl.newBuilder()
-            .imbalanceThreshold(1.5)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyImbalanceThresholdGreaterThanZero()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("imbalance threshold must be greater than or equal to 0.0");
-
-        ActorSchedulerImpl.newBuilder()
-            .imbalanceThreshold(-0.5)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyIdleStrategy()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("runner idle strategy must not be null");
-
-        ActorSchedulerImpl.newBuilder()
-            .runnerIdleStrategy(null)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifyErrorHandler()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("runner error handler must not be null");
-
-        ActorSchedulerImpl.newBuilder()
-            .runnerErrorHander(null)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifySchedulerInitialBackoffNotNull()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("scheduler initial backoff must not be null");
-
-        ActorSchedulerImpl.newBuilder()
-            .schedulerInitialBackoff(null)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifySchedulerInitialBackoffGreterThanZero()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("scheduler initial backoff must be greater than PT0S");
-
-        ActorSchedulerImpl.newBuilder()
-            .schedulerInitialBackoff(Duration.ofNanos(0))
-            .build();
-    }
-
-    @Test
-    public void shouldVerifySchedulerMaxBackoffNotNull()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("scheduler max backoff must not be null");
-
-        ActorSchedulerImpl.newBuilder()
-            .schedulerMaxBackoff(null)
-            .build();
-    }
-
-    @Test
-    public void shouldVerifySchedulerMaxBackoffGreterThanInitialBackoff()
-    {
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("scheduler max backoff must be greater than PT10S");
-
-        ActorSchedulerImpl.newBuilder()
-            .schedulerInitialBackoff(Duration.ofSeconds(10))
-            .schedulerMaxBackoff(Duration.ofNanos(5))
-            .build();
-    }
 }
