@@ -27,5 +27,5 @@ public interface WorkflowInstance
      * The payload of the current running workflow instance.
      * @return the payload of the workflow instance
      */
-    byte[] getPayload();
+    String getPayload();
 }

@@ -12,8 +12,6 @@
  */
 package org.camunda.tngp.broker.workflow.index;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
-
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
@@ -79,9 +77,7 @@ public class PayloadCache
         {
             payload = cache.get(position);
         }
-
-        ensureNotNull("payload", payload);
-        return payload;
+        return payload == null ? WorkflowInstanceEvent.NO_PAYLOAD : payload;
     }
 
     public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)

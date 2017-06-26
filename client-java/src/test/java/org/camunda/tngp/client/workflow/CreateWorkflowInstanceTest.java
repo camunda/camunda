@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
+import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -28,6 +29,8 @@ public class CreateWorkflowInstanceTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
+    private final MsgPackConverter msgPackConverter = new MsgPackConverter();
+
     protected TngpClient client;
 
     @Before
@@ -44,6 +47,7 @@ public class CreateWorkflowInstanceTest
                 .put("eventType", "WORKFLOW_INSTANCE_CREATED")
                 .put("version", 1)
                 .put("workflowInstanceKey", 1)
+                .put("payload", msgPackConverter.convertToMsgPack("null"))
                 .done()
                 .register();
 
@@ -61,7 +65,7 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    public void shouldCreateWorkflowInstanceWithPayload()
+    public void shouldCreateWorkflowInstanceWithPayload() throws Exception
     {
         // given
         final byte[] payload = getBytes("{ \"bar\" : 4 }");
@@ -70,7 +74,7 @@ public class CreateWorkflowInstanceTest
             .put("eventType", "WORKFLOW_INSTANCE_CREATED")
             .put("version", 1)
             .put("workflowInstanceKey", 1)
-            .put("payload", payload)
+            .put("payload", msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"))
             .done()
             .register();
 
@@ -86,7 +90,7 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-        assertThat(workflowInstance.getPayload()).isEqualTo(payload);
+        assertThat(workflowInstance.getPayload()).isEqualTo("{\"bar\":4}");
     }
 
     @Test
@@ -132,6 +136,7 @@ public class CreateWorkflowInstanceTest
         brokerRule.onWorkflowRequestRespondWith(1L)
                 .put("eventType", "WORKFLOW_INSTANCE_CREATED")
                 .put("workflowInstanceKey", 1)
+                .put("payload", msgPackConverter.convertToMsgPack("null"))
                 .done()
                 .register();
 
