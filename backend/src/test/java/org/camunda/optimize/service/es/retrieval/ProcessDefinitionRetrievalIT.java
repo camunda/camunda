@@ -42,6 +42,11 @@ public class ProcessDefinitionRetrievalIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
+  @Before
+  public void setUp() {
+    embeddedOptimizeRule.resetImportStartIndexes();
+  }
+
   @Test
   public void getProcessDefinitionsWithMoreThenTen() throws Exception {
     for (int i = 0; i < 11; i++) {

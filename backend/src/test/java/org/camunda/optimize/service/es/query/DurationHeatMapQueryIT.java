@@ -52,6 +52,11 @@ public class DurationHeatMapQueryIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
+  @Before
+  public void setUp() {
+    embeddedOptimizeRule.resetImportStartIndexes();
+  }
+
   @Test
   public void getHeatMapWithImport() throws Exception {
 

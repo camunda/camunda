@@ -50,7 +50,12 @@ public class FrequencyHeatMapQueryIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-  
+
+  @Before
+  public void setUp() {
+    embeddedOptimizeRule.resetImportStartIndexes();
+  }
+
   @Test
   public void getHeatMap() throws Exception {
 

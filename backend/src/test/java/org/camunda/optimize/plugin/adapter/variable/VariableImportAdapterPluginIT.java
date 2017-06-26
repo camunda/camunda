@@ -41,6 +41,7 @@ public class VariableImportAdapterPluginIT {
   @Before
   public void setup() throws IOException {
     configurationService = embeddedOptimizeRule.getConfigurationService();
+    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   @After

@@ -58,7 +58,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void starting(Description description) {
     startOptimize();
-    resetImportStartIndexes();
   }
 
   public String getAuthenticationToken() {

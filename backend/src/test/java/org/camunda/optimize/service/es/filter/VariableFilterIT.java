@@ -57,6 +57,7 @@ public class VariableFilterIT {
   @Before
   public void init() {
     sdf = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   private final String TEST_DEFINITION = "testDefinition";

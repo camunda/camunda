@@ -42,6 +42,7 @@ public class VariableRetrievalIT {
   @Before
   public void init() {
     simpleDateFormat = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   @Rule
