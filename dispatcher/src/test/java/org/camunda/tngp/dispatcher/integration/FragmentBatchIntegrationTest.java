@@ -11,7 +11,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.*;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class FragmentBatchIntegrationTest
     @Before
     public void init()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
         dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 32)

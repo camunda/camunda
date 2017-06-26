@@ -14,7 +14,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.*;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class DispatcherIntegrationTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerImpl.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
     }
 
     @After
