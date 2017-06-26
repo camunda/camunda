@@ -14,10 +14,10 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.servicecontainer.*;
 import org.camunda.tngp.util.LangUtil;
-import org.camunda.tngp.util.actor.ActorReference;
 import org.camunda.tngp.util.actor.Actor;
+import org.camunda.tngp.util.actor.ActorReference;
 import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerImpl;
+import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 
 public class ServiceContainerImpl implements Actor, ServiceContainer
 {
@@ -57,7 +57,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     {
         idleStrategy = new WaitingIdleStrategy();
 
-        actorScheduler = ActorSchedulerImpl.newBuilder()
+        actorScheduler = new ActorSchedulerBuilder()
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(DEFAULT_ERROR_HANDLER)
                 .build();
