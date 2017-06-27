@@ -3,12 +3,12 @@ package io.zeebe.broker.transport.controlmessage;
 import java.util.Objects;
 
 import org.agrona.MutableDirectBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.broker.transport.clientapi.ResponseWriter;
-import io.zeebe.dispatcher.Dispatcher;
+
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class ControlMessageResponseWriter implements BufferWriter
@@ -16,20 +16,14 @@ public class ControlMessageResponseWriter implements BufferWriter
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ControlMessageResponseEncoder responseEncoder = new ControlMessageResponseEncoder();
 
-    protected final ResponseWriter responseWriter;
-
     protected BufferWriter dataWriter;
-    protected BrokerEventMetadata metadata;
 
-    public ControlMessageResponseWriter(Dispatcher sendBuffer)
-    {
-        this.responseWriter = new ResponseWriter(sendBuffer);
-    }
+    protected final ServerOutput output;
+    protected final ServerResponse response = new ServerResponse();
 
-    public ControlMessageResponseWriter brokerEventMetadata(BrokerEventMetadata metadata)
+    public ControlMessageResponseWriter(ServerOutput output)
     {
-        this.metadata = metadata;
-        return this;
+        this.output = output;
     }
 
     public ControlMessageResponseWriter dataWriter(BufferWriter writer)
@@ -38,18 +32,18 @@ public class ControlMessageResponseWriter implements BufferWriter
         return this;
     }
 
-    public boolean tryWriteResponse()
+    public boolean tryWriteResponse(int requestStreamId, long requestId)
     {
-        Objects.requireNonNull(metadata);
         Objects.requireNonNull(dataWriter);
 
         try
         {
-            return responseWriter.tryWrite(
-                    metadata.getReqChannelId(),
-                    metadata.getReqConnectionId(),
-                    metadata.getReqRequestId(),
-                    this);
+            response.reset()
+                .remoteStreamId(requestStreamId)
+                .requestId(requestId)
+                .writer(this);
+
+            return output.sendResponse(response);
         }
         finally
         {
@@ -93,7 +87,6 @@ public class ControlMessageResponseWriter implements BufferWriter
     protected void reset()
     {
         dataWriter = null;
-        metadata = null;
     }
 
 }

@@ -10,6 +10,7 @@ import static io.zeebe.clustering.raft.PollRequestEncoder.topicNameHeaderLength;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.raft.MessageHeaderDecoder;
 import io.zeebe.clustering.raft.MessageHeaderEncoder;

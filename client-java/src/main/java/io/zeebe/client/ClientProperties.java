@@ -13,12 +13,6 @@ public class ClientProperties
     public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
 
     /**
-     * the maximum count of concurrently open connections.
-     * This should be aligned with the maximum number of threads concurrently using the client.
-     */
-    public static final String CLIENT_MAXCONNECTIONS = "zeebe.client.maxConnections";
-
-    /**
      * The maximum count of concurrently in flight requests.
      */
     public static final String CLIENT_MAXREQUESTS = "zeebe.client.maxRequests";
@@ -66,7 +60,6 @@ public class ClientProperties
     public static void setDefaults(Properties properties)
     {
         properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");
-        properties.putIfAbsent(CLIENT_MAXCONNECTIONS, "8");
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "64");
         properties.putIfAbsent(CLIENT_SENDBUFFER_SIZE, "16");
         properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");

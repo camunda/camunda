@@ -1,8 +1,8 @@
 package io.zeebe.broker.system;
 
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.EXECUTOR_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import io.zeebe.broker.services.CountersManagerService;
 import io.zeebe.broker.system.executor.ScheduledExecutorService;

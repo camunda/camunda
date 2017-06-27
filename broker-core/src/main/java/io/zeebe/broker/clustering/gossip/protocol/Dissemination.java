@@ -2,7 +2,6 @@ package io.zeebe.broker.clustering.gossip.protocol;
 
 import static io.zeebe.clustering.gossip.PeerState.ALIVE;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.gossip.GossipContext;
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.Peer;
@@ -10,10 +9,8 @@ import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerSelector;
 import io.zeebe.broker.clustering.gossip.message.GossipRequest;
 import io.zeebe.broker.clustering.gossip.message.GossipResponse;
-import io.zeebe.broker.clustering.util.RequestResponseController;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -160,10 +157,8 @@ public class Dissemination
             this.request = new GossipRequest();
             this.response = new GossipResponse();
 
-            final ChannelManager clientChannelManager = gossipContext.getClientChannelPool();
-            final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
-            this.requestController = new RequestResponseController(clientChannelManager, connections, config.disseminationTimeout);
+            this.requestController = new RequestResponseController(gossipContext.getClientTransport(), config.disseminationTimeout);
 
             this.failureDetectors = failureDetectors;
         }
@@ -207,7 +202,7 @@ public class Dissemination
             request.peers(peers);
 
             final SocketAddress endpoint = peer.managementEndpoint();
-            requestController.open(endpoint, request);
+            requestController.open(endpoint, request, context.response);
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -243,14 +238,9 @@ public class Dissemination
         @Override
         public void work(DisseminationContext context) throws Exception
         {
-            final RequestResponseController requestController = context.requestController;
             final GossipResponse response = context.response;
             final PeerList peers = context.peers;
 
-            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
-            final int responseLength = requestController.getResponseLength();
-
-            response.wrap(responseBuffer, 0, responseLength);
             peers.merge(response.peers());
 
             context.take(TRANSITION_DEFAULT);

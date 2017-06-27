@@ -1,6 +1,7 @@
 package io.zeebe.client.event.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;

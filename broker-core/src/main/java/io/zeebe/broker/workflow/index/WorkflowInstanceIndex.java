@@ -17,10 +17,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
 
+import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.hashindex.Long2BytesHashIndex;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Index that maps <b>workflow instance key</b> to

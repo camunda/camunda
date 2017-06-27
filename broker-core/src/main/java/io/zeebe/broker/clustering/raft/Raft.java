@@ -5,15 +5,43 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import io.zeebe.broker.clustering.raft.controller.*;
+import io.zeebe.broker.clustering.raft.controller.ConfigureController;
+import io.zeebe.broker.clustering.raft.controller.JoinController;
+import io.zeebe.broker.clustering.raft.controller.LeaveController;
+import io.zeebe.broker.clustering.raft.controller.PollController;
+import io.zeebe.broker.clustering.raft.controller.ReplicationController;
+import io.zeebe.broker.clustering.raft.controller.VoteController;
 import io.zeebe.broker.clustering.raft.handler.RaftMessageHandler;
-import io.zeebe.broker.clustering.raft.message.*;
-import io.zeebe.broker.clustering.raft.state.*;
+import io.zeebe.broker.clustering.raft.message.AppendRequest;
+import io.zeebe.broker.clustering.raft.message.AppendResponse;
+import io.zeebe.broker.clustering.raft.message.ConfigureRequest;
+import io.zeebe.broker.clustering.raft.message.ConfigureResponse;
+import io.zeebe.broker.clustering.raft.message.JoinRequest;
+import io.zeebe.broker.clustering.raft.message.JoinResponse;
+import io.zeebe.broker.clustering.raft.message.LeaveRequest;
+import io.zeebe.broker.clustering.raft.message.LeaveResponse;
+import io.zeebe.broker.clustering.raft.message.PollRequest;
+import io.zeebe.broker.clustering.raft.message.PollResponse;
+import io.zeebe.broker.clustering.raft.message.VoteRequest;
+import io.zeebe.broker.clustering.raft.message.VoteResponse;
+import io.zeebe.broker.clustering.raft.state.ActiveState;
+import io.zeebe.broker.clustering.raft.state.CandidateState;
+import io.zeebe.broker.clustering.raft.state.FollowerState;
+import io.zeebe.broker.clustering.raft.state.InactiveState;
+import io.zeebe.broker.clustering.raft.state.LeaderState;
+import io.zeebe.broker.clustering.raft.state.LogStreamState;
+import io.zeebe.broker.clustering.raft.state.RaftState;
 import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.Actor;
-import io.zeebe.util.state.*;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.StateMachineCommand;
+import io.zeebe.util.state.WaitState;
 
 public class Raft implements Actor
 {
@@ -56,7 +84,7 @@ public class Raft implements Actor
     private final JoinController joinController;
     private final LeaveController leaveController;
 
-    private final RaftMessageHandler fragmentHandler;
+    private final ServerInputSubscription inputSubscription;
 
     private final List<Consumer<Raft>> stateChangeListeners;
 
@@ -99,10 +127,16 @@ public class Raft implements Actor
 
         this.state = inactiveState;
 
-        this.fragmentHandler = new RaftMessageHandler(context, context.getSubscription());
+        final RaftMessageHandler handler = new RaftMessageHandler(context);
+
+        // TODO: we have n rafts; name must be unique per raft
+        // TODO: must have another subscription on receive buffer of client transport
+        //   => cannot be the same receive buffer due to conflicting stream IDs
+        //   => maybe that is a reason why a single transport concept (for both client and n servers) should be used, where stream ids are unique
+        inputSubscription = context.getServerTransport().openSubscription("raft-foo", handler, handler).join();
+
         this.joinController = new JoinController(context);
         this.leaveController = new LeaveController(context);
-
         this.stateChangeListeners = new CopyOnWriteArrayList<>();
 
         this.stream.setTerm(meta.loadTerm());
@@ -186,7 +220,7 @@ public class Raft implements Actor
     {
         int workcount = 0;
 
-        workcount += fragmentHandler.doWork();
+        workcount += inputSubscription.poll();
         workcount += transitionStateMachine.doWork();
         workcount += joinController.doWork();
         workcount += leaveController.doWork();
@@ -225,7 +259,7 @@ public class Raft implements Actor
         return state.state();
     }
 
-    public boolean needMembers()
+    public boolean needsMembers()
     {
         return isLeader(); // TODO: && not enough members;
     }

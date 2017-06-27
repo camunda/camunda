@@ -1,19 +1,19 @@
 package io.zeebe.broker.it;
 
-import static io.zeebe.logstreams.log.LogStream.*;
+import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
-import java.io.IOException;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.client.TaskTopicClient;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.TopicClient;
 import io.zeebe.client.WorkflowTopicClient;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.transport.impl.ChannelImpl;
-import io.zeebe.transport.impl.ChannelManagerImpl;
-import org.junit.rules.ExternalResource;
+import io.zeebe.transport.ClientTransport;
 
 public class ClientRule extends ExternalResource
 {
@@ -53,19 +53,8 @@ public class ClientRule extends ExternalResource
 
     public void interruptBrokerConnections()
     {
-        final ChannelManagerImpl channelManager = (ChannelManagerImpl) ((ZeebeClientImpl) client).getChannelManager();
-
-        for (final ChannelImpl channel : channelManager.getManagedChannels())
-        {
-            try
-            {
-                channel.getSocketChannel().shutdownOutput();
-            }
-            catch (final IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
+        final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
+        transport.interruptAllChannels();
     }
 
     public TopicClient topic()

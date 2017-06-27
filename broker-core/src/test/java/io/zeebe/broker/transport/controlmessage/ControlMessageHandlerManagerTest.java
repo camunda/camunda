@@ -1,20 +1,8 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.broker.transport.controlmessage;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
@@ -29,19 +17,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.test.util.FluentMock;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,14 +25,27 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
+import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.time.ClockUtil;
+
 public class ControlMessageHandlerManagerTest
 {
     private static final ControlMessageType CONTROL_MESSAGE_TYPE = ControlMessageType.ADD_TASK_SUBSCRIPTION;
     private static final byte[] CONTROL_MESSAGE_DATA = getBytes("foo");
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
-    private static final int REQ_CHANNEL_ID = 11;
-    private static final long REQ_CONNECTION_ID = 12L;
+    private static final int REQ_STREAM_ID = 11;
     private static final long REQ_REQUEST_ID = 13L;
 
     private final UnsafeBuffer requestWriteBuffer = new UnsafeBuffer(new byte[1024]);
@@ -77,13 +65,13 @@ public class ControlMessageHandlerManagerTest
     @Mock
     private ActorReference mockActorRef;
 
-    @FluentMock
-    private ErrorResponseWriter mockErrorResponseWriter;
-
     @Mock
     private ControlMessageHandler mockControlMessageHandler;
 
     private ControlMessageHandlerManager manager;
+
+    @Mock
+    private BufferingServerOutput output;
 
     @Before
     public void init()
@@ -94,9 +82,10 @@ public class ControlMessageHandlerManagerTest
 
         when(mockControlMessageHandler.getMessageType()).thenReturn(CONTROL_MESSAGE_TYPE);
 
+        output = new BufferingServerOutput();
         manager = new ControlMessageHandlerManager(
+                output,
                 mockControlMessageBuffer,
-                mockErrorResponseWriter,
                 TIMEOUT.toMillis(),
                 mockTaskScheduler,
                 Collections.singletonList(mockControlMessageHandler));
@@ -208,9 +197,8 @@ public class ControlMessageHandlerManagerTest
         assertThatBuffer(bufferCaptor.getValue()).hasBytes(CONTROL_MESSAGE_DATA);
 
         final BrokerEventMetadata metadata = metadataCaptor.getValue();
-        assertThat(metadata.getReqChannelId()).isEqualTo(REQ_CHANNEL_ID);
-        assertThat(metadata.getReqConnectionId()).isEqualTo(REQ_CONNECTION_ID);
-        assertThat(metadata.getReqRequestId()).isEqualTo(REQ_REQUEST_ID);
+        assertThat(metadata.getRequestStreamId()).isEqualTo(REQ_STREAM_ID);
+        assertThat(metadata.getRequestId()).isEqualTo(REQ_REQUEST_ID);
     }
 
     @Test
@@ -270,9 +258,12 @@ public class ControlMessageHandlerManagerTest
         // then
         assertThat(manager.isOpen()).isTrue();
 
-        verify(mockErrorResponseWriter).errorCode(ErrorCode.REQUEST_TIMEOUT);
-        verify(mockErrorResponseWriter).errorMessage("Timeout while handle control message.");
-        verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
+        assertThat(output.getSentResponses()).hasSize(1);
+
+        final ErrorResponseDecoder errorResponse = output.getAsErrorResponse(0);
+
+        assertThat(errorResponse.errorCode()).isEqualTo(ErrorCode.REQUEST_TIMEOUT);
+        assertThat(errorResponse.errorData()).isEqualTo("Timeout while handle control message.");
 
         verify(spyFuture, times(2)).isDone();
         verify(mockSubscription, times(2)).poll(any(FragmentHandler.class), eq(1));
@@ -295,9 +286,12 @@ public class ControlMessageHandlerManagerTest
         // then
         assertThat(manager.isOpen()).isTrue();
 
-        verify(mockErrorResponseWriter).errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
+        assertThat(output.getSentResponses()).hasSize(1);
 
+        final ErrorResponseDecoder errorResponse = output.getAsErrorResponse(0);
+
+        assertThat(errorResponse.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
+        assertThat(errorResponse.errorData()).isEqualTo("Cannot handle control message with type 'NULL_VAL'.");
         verify(mockSubscription, times(2)).poll(any(FragmentHandler.class), eq(1));
     }
 
@@ -317,8 +311,7 @@ public class ControlMessageHandlerManagerTest
 
             requestHeaderDescriptor
                 .wrap(requestWriteBuffer, offset)
-                .channelId(REQ_CHANNEL_ID)
-                .connectionId(REQ_CONNECTION_ID)
+                .streamId(REQ_STREAM_ID)
                 .requestId(REQ_REQUEST_ID);
 
             offset += ControlMessageRequestHeaderDescriptor.headerLength();

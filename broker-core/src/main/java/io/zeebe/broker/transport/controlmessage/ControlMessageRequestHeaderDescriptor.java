@@ -17,12 +17,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.protocol.Protocol;
 
 public class ControlMessageRequestHeaderDescriptor
 {
-    public static final int CHANNEL_ID_OFFSET;
-    public static final int CONNECTION_ID_OFFSET;
+    public static final int STREAM_ID_OFFSET;
     public static final int REQUEST_ID_OFFSET;
 
     public static final int HEADER_LENGTH;
@@ -31,11 +31,8 @@ public class ControlMessageRequestHeaderDescriptor
     {
         int offset = 0;
 
-        CHANNEL_ID_OFFSET = offset;
+        STREAM_ID_OFFSET = offset;
         offset += SIZE_OF_INT;
-
-        CONNECTION_ID_OFFSET = offset;
-        offset += SIZE_OF_LONG;
 
         REQUEST_ID_OFFSET = offset;
         offset += SIZE_OF_LONG;
@@ -61,15 +58,9 @@ public class ControlMessageRequestHeaderDescriptor
         return this;
     }
 
-    public ControlMessageRequestHeaderDescriptor channelId(int channelId)
+    public ControlMessageRequestHeaderDescriptor streamId(int streamId)
     {
-        buffer.putInt(CHANNEL_ID_OFFSET, channelId, Protocol.ENDIANNESS);
-        return this;
-    }
-
-    public ControlMessageRequestHeaderDescriptor connectionId(long connectionId)
-    {
-        buffer.putLong(CONNECTION_ID_OFFSET, connectionId, Protocol.ENDIANNESS);
+        buffer.putInt(STREAM_ID_OFFSET, streamId, Protocol.ENDIANNESS);
         return this;
     }
 
@@ -79,14 +70,9 @@ public class ControlMessageRequestHeaderDescriptor
         return this;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return buffer.getInt(CHANNEL_ID_OFFSET, Protocol.ENDIANNESS);
-    }
-
-    public long connectionId()
-    {
-        return buffer.getLong(CONNECTION_ID_OFFSET, Protocol.ENDIANNESS);
+        return buffer.getInt(STREAM_ID_OFFSET, Protocol.ENDIANNESS);
     }
 
     public long requestId()

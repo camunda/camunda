@@ -1,22 +1,28 @@
 package io.zeebe.broker.workflow.graph.transformer.validator;
 
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.INPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.IO_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.MAPPING_ATTRIBUTE_SOURCE;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.MAPPING_ATTRIBUTE_TARGET;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.OUTPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZEEBE_NAMESPACE;
+import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.INVALID_JSON_PATH_EXPRESSION;
+import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
+import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
+
+import java.util.List;
+import java.util.regex.Pattern;
+
 import org.agrona.Strings;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
+
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.Mapping;
-
-import java.util.List;
-import java.util.regex.Pattern;
-
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.*;
-import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.INVALID_JSON_PATH_EXPRESSION;
-import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
-import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
 
 /**
  * Represents the IO mapping validation rule.

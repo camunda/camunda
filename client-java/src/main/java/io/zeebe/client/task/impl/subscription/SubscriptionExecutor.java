@@ -1,6 +1,5 @@
 package io.zeebe.client.task.impl.subscription;
 
-import io.zeebe.client.event.impl.EventSubscription;
 import io.zeebe.util.actor.Actor;
 
 public class SubscriptionExecutor implements Actor
@@ -17,17 +16,7 @@ public class SubscriptionExecutor implements Actor
     @Override
     public int doWork() throws Exception
     {
-        return pollManagedSubscriptions(subscriptions);
-    }
-
-    protected int pollManagedSubscriptions(EventSubscriptions<?> subscriptions)
-    {
-        int workCount = 0;
-        for (EventSubscription<?> subscription : subscriptions.getManagedSubscriptions())
-        {
-            workCount += subscription.poll();
-        }
-        return workCount;
+        return subscriptions.pollManagedSubscriptions();
     }
 
     @Override

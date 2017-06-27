@@ -4,6 +4,7 @@ import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.message.util.GossipMessageReader;

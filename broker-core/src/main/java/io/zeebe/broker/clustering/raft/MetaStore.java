@@ -1,7 +1,7 @@
 package io.zeebe.broker.clustering.raft;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static io.zeebe.util.StringUtil.fromBytes;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.entry.ConfiguredMember;
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.ArrayProperty;

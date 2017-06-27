@@ -15,8 +15,8 @@ package io.zeebe.client.event.impl;
 import io.zeebe.client.TopicClient;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.ZeebeClientImpl;
 
 
 public class TopicClientImpl implements TopicClient

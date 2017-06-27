@@ -12,11 +12,14 @@ import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.SubscribedEventEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 
@@ -24,8 +27,6 @@ public class SubscribedEventWriter implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final SubscribedEventEncoder bodyEncoder = new SubscribedEventEncoder();
-
-    protected int channelId;
 
     protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId = partitionIdNullValue();
@@ -37,17 +38,12 @@ public class SubscribedEventWriter implements BufferWriter
     protected DirectBufferWriter eventBuffer = new DirectBufferWriter();
     protected BufferWriter eventWriter;
 
-    protected final SingleMessageWriter singleMessageWriter;
+    protected final ServerOutput output;
+    protected final TransportMessage message = new TransportMessage();
 
-    public SubscribedEventWriter(final SingleMessageWriter singleMessageWriter)
+    public SubscribedEventWriter(final ServerOutput output)
     {
-        this.singleMessageWriter = singleMessageWriter;
-    }
-
-    public SubscribedEventWriter channelId(final int channelId)
-    {
-        this.channelId = channelId;
-        return this;
+        this.output = output;
     }
 
     public SubscribedEventWriter topicName(final DirectBuffer topicName)
@@ -147,13 +143,17 @@ public class SubscribedEventWriter implements BufferWriter
         eventWriter.write(buffer, offset);
     }
 
-    public boolean tryWriteMessage()
+    public boolean tryWriteMessage(int remoteStreamId)
     {
         Objects.requireNonNull(eventWriter);
 
         try
         {
-            return singleMessageWriter.tryWrite(channelId, this);
+            message.reset()
+                .remoteStreamId(remoteStreamId)
+                .writer(this);
+
+            return output.sendMessage(message);
         }
         finally
         {
@@ -163,7 +163,6 @@ public class SubscribedEventWriter implements BufferWriter
 
     protected void reset()
     {
-        this.channelId = -1;
         this.partitionId = partitionIdNullValue();
         this.topicName.wrap(0, 0);
         this.position = positionNullValue();

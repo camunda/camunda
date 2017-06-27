@@ -4,6 +4,7 @@ import static io.zeebe.clustering.raft.VoteResponseEncoder.termNullValue;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.clustering.raft.BooleanType;
 import io.zeebe.clustering.raft.MessageHeaderDecoder;
 import io.zeebe.clustering.raft.MessageHeaderEncoder;

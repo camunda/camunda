@@ -13,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.raft.BooleanType;
 import io.zeebe.clustering.raft.LeaveResponseDecoder;

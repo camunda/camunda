@@ -4,6 +4,7 @@ import static io.zeebe.clustering.management.InvitationRequestEncoder.termNullVa
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.clustering.management.InvitationResponseDecoder;
 import io.zeebe.clustering.management.InvitationResponseEncoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;

@@ -1,13 +1,19 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.*;
+import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
+import org.junit.rules.ExternalResource;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -15,13 +21,11 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.TopicLeader;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.ServerSocketBinding;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.ServerSocketBindingImpl;
+import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -29,19 +33,21 @@ public class StubBrokerRule extends ExternalResource
     public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC_NAME;
     public static final int TEST_PARTITION_ID = DEFAULT_PARTITION_ID;
 
+
     protected final String host;
     protected final int port;
 
-    protected Transport transport;
-    protected ServerSocketBinding serverSocketBinding;
+    protected ActorScheduler actorScheduler;
+    protected ServerTransport transport;
+    protected Dispatcher sendBuffer;
 
     protected StubResponseChannelHandler channelHandler;
     protected MsgPackHelper msgPackHelper;
-    private SocketAddress bindAddr;
+    private InetSocketAddress bindAddr;
 
     public StubBrokerRule()
     {
-        this("localhost", 51015);
+        this("127.0.0.1", 51015);
     }
 
     public StubBrokerRule(String host, int port)
@@ -54,62 +60,74 @@ public class StubBrokerRule extends ExternalResource
     protected void before() throws Throwable
     {
         msgPackHelper = new MsgPackHelper();
+        this.actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
 
-        transport = Transports.createTransport("testTransport")
-                .actorScheduler(ActorSchedulerBuilder.createDefaultScheduler())
-                .build();
+        sendBuffer = Dispatchers.create("send-buffer")
+            .actorScheduler(actorScheduler)
+            .subscriptions("sender")
+            .bufferSize(1024 * 1024)
+            .build();
 
-        bindAddr = new SocketAddress(host, port);
-
-        channelHandler = new StubResponseChannelHandler(transport.getSendBuffer(), msgPackHelper);
+        channelHandler = new StubResponseChannelHandler(msgPackHelper);
+        bindAddr = new InetSocketAddress(host, port);
 
         stubTopologyRequest(
             new Topology()
                 .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID))
         );
 
-        openServerSocketBinding();
+        bindTransport();
     }
 
     @Override
     protected void after()
     {
-        if (serverSocketBinding != null)
-        {
-            closeServerSocketBinding();
-        }
         if (transport != null)
         {
-            transport.close();
+            closeTransport();
         }
-    }
-
-    public void closeServerSocketBinding()
-    {
-        if (serverSocketBinding == null)
+        if (sendBuffer != null)
         {
-            throw new RuntimeException("No open server socket binding");
+            sendBuffer.close();
         }
-
-        serverSocketBinding.close();
-        serverSocketBinding = null;
+        if (actorScheduler != null)
+        {
+            actorScheduler.close();
+        }
     }
 
     public void interruptAllServerChannels()
     {
-        ((ServerSocketBindingImpl) serverSocketBinding).interruptAllChannels().join();
+        transport.interruptAllChannels();
     }
 
-    public void openServerSocketBinding()
+    public void closeTransport()
     {
-        if (serverSocketBinding != null)
+        if (transport != null)
         {
-            throw new RuntimeException("Server socket binding already open");
+            transport.close();
+            transport = null;
         }
+        else
+        {
+            throw new RuntimeException("transport not open");
+        }
+    }
 
-        serverSocketBinding = transport.createServerSocketBinding(bindAddr)
-            .transportChannelHandler(channelHandler)
-            .bind();
+    public void bindTransport()
+    {
+        if (transport == null)
+        {
+            transport = Transports.newServerTransport()
+                    .bindAddress(bindAddr)
+                    .scheduler(actorScheduler)
+                    .sendBuffer(sendBuffer)
+                    .build(null, channelHandler);
+        }
+        else
+        {
+            throw new RuntimeException("transport already open");
+        }
     }
 
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(long key)
@@ -171,7 +189,7 @@ public class StubBrokerRule extends ExternalResource
 
     public SubscribedEventBuilder newSubscribedEvent()
     {
-        return new SubscribedEventBuilder(msgPackHelper, transport.getSendBuffer());
+        return new SubscribedEventBuilder(msgPackHelper, transport);
     }
 
     public void stubTopologyRequest(final Topology topology)
@@ -250,12 +268,12 @@ public class StubBrokerRule extends ExternalResource
             .register();
     }
 
-    public void pushTopicEvent(int channelId, long subscriberKey, long key, long position)
+    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position)
     {
-        pushTopicEvent(channelId, subscriberKey, key, position, EventType.RAFT_EVENT);
+        pushTopicEvent(remote, subscriberKey, key, position, EventType.RAFT_EVENT);
     }
 
-    public void pushTopicEvent(int channelId, long subscriberKey, long key, long position, EventType eventType)
+    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, EventType eventType)
     {
         newSubscribedEvent()
             .topicName(DEFAULT_TOPIC_NAME)
@@ -267,10 +285,10 @@ public class StubBrokerRule extends ExternalResource
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event()
                 .done()
-            .push(channelId);
+            .push(remote);
     }
 
-    public void pushLockedTask(int channelId, long subscriberKey, long key, long position, String taskType)
+    public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String taskType)
     {
         newSubscribedEvent()
             .topicName(DEFAULT_TOPIC_NAME)
@@ -286,6 +304,6 @@ public class StubBrokerRule extends ExternalResource
                 .put("retries", 3)
                 .put("payload", msgPackHelper.encodeAsMsgPack(new HashMap<>()))
                 .done()
-            .push(channelId);
+            .push(remote);
     }
 }

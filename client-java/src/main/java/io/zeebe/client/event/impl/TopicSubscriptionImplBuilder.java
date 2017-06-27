@@ -1,5 +1,6 @@
 package io.zeebe.client.event.impl;
 
+import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.CheckedConsumer;
 
 public class TopicSubscriptionImplBuilder
@@ -75,8 +76,11 @@ public class TopicSubscriptionImplBuilder
                 prefetchCapacity,
                 startPosition,
                 forceStart,
-                name);
+                name,
+                acquisition);
 
-        return acquisition.newSubscriptionAsync(subscription).join();
+        this.acquisition.newSubscriptionAsync(subscription);
+
+        return subscription;
     }
 }

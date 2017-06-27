@@ -1,20 +1,19 @@
 package io.zeebe.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.MockitoAnnotations;
+
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public class SubscribedEventWriterTest
 {
@@ -23,9 +22,6 @@ public class SubscribedEventWriterTest
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
-
-    @Mock
-    protected SingleMessageWriter singleMessageWriter;
 
     @Before
     public void setUp()
@@ -37,8 +33,8 @@ public class SubscribedEventWriterTest
     public void shouldWriteEventToBuffer()
     {
         // given
-        final SubscribedEventWriter eventWriter = new SubscribedEventWriter(singleMessageWriter);
-        eventWriter.channelId(123)
+        final SubscribedEventWriter eventWriter = new SubscribedEventWriter(null);
+        eventWriter
             .event(BUFFER, 1, BUFFER.capacity() - 1)
             .eventType(EventType.RAFT_EVENT)
             .key(123L)
@@ -68,20 +64,5 @@ public class SubscribedEventWriterTest
         bodyDecoder.getEvent(eventBuffer, 0, eventBuffer.capacity());
 
         assertThatBuffer(eventBuffer).hasBytes(BUFFER, 1, BUFFER.capacity() - 1);
-    }
-
-    @Test
-    public void shouldWriteAsSingleMessage()
-    {
-        // given
-        final SubscribedEventWriter eventWriter = new SubscribedEventWriter(singleMessageWriter);
-        eventWriter.channelId(123)
-            .event(BUFFER, 1, BUFFER.capacity() - 1);
-
-        // when
-        eventWriter.tryWriteMessage();
-
-        // then
-        verify(singleMessageWriter).tryWrite(123, eventWriter);
     }
 }

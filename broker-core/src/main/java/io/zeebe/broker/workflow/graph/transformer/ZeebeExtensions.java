@@ -12,6 +12,9 @@
  */
 package io.zeebe.broker.workflow.graph.transformer;
 
+import java.util.Collection;
+import java.util.Map;
+
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
@@ -22,9 +25,6 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
-
-import java.util.Collection;
-import java.util.Map;
 
 public class ZeebeExtensions
 {

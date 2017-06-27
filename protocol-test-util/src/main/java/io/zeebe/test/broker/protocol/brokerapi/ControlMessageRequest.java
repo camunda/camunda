@@ -10,27 +10,28 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 
+import io.zeebe.transport.RemoteAddress;
+
 public class ControlMessageRequest implements BufferReader
 {
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ControlMessageRequestDecoder bodyDecoder = new ControlMessageRequestDecoder();
 
     protected final MsgPackHelper msgPackHelper;
+    protected final RemoteAddress source;
 
     protected Map<String, Object> data;
 
-    protected int channelId;
 
-
-    public ControlMessageRequest(int channelId, MsgPackHelper msgPackHelper)
+    public ControlMessageRequest(RemoteAddress source, MsgPackHelper msgPackHelper)
     {
-        this.channelId = channelId;
+        this.source = source;
         this.msgPackHelper = msgPackHelper;
     }
 
-    public int getChannelId()
+    public RemoteAddress getSource()
     {
-        return channelId;
+        return source;
     }
 
     public ControlMessageType messageType()

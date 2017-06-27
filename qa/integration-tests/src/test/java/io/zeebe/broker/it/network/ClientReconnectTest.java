@@ -25,7 +25,7 @@ public class ClientReconnectTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public Timeout testTimeout = Timeout.seconds(10);
+    public Timeout testTimeout = Timeout.seconds(30);
 
     @Test
     public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss()

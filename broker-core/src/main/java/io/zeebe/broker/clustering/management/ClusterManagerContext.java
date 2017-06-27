@@ -3,22 +3,18 @@ package io.zeebe.broker.clustering.management;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.logstreams.LogStreamsManager;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class ClusterManagerContext
 {
     private ActorScheduler actorScheduler;
     private Peer localPeer;
-    private Subscription subscription;
-    private ChannelManager clientChannelPool;
-    private TransportConnectionPool connections;
-    private Dispatcher sendBuffer;
     private PeerList peers;
     private LogStreamsManager logStreamsManager;
+    protected ClientTransport clientTransport;
+    protected BufferingServerTransport serverTransport;
 
     public ActorScheduler getActorScheduler()
     {
@@ -40,44 +36,24 @@ public class ClusterManagerContext
         this.localPeer = localPeer;
     }
 
-    public Subscription getSubscription()
+    public BufferingServerTransport getServerTransport()
     {
-        return subscription;
+        return serverTransport;
     }
 
-    public void setSubscription(Subscription subscription)
+    public void setServerTransport(BufferingServerTransport serverTransport)
     {
-        this.subscription = subscription;
+        this.serverTransport = serverTransport;
     }
 
-    public ChannelManager getClientChannelPool()
+    public ClientTransport getClientTransport()
     {
-        return clientChannelPool;
+        return clientTransport;
     }
 
-    public void setClientChannelPool(ChannelManager clientChannelManager)
+    public void setClientTransport(ClientTransport clientTransport)
     {
-        this.clientChannelPool = clientChannelManager;
-    }
-
-    public TransportConnectionPool getConnections()
-    {
-        return connections;
-    }
-
-    public void setConnections(TransportConnectionPool connections)
-    {
-        this.connections = connections;
-    }
-
-    public Dispatcher getSendBuffer()
-    {
-        return sendBuffer;
-    }
-
-    public void setSendBuffer(Dispatcher sendBuffer)
-    {
-        this.sendBuffer = sendBuffer;
+        this.clientTransport = clientTransport;
     }
 
     public PeerList getPeers()
@@ -99,4 +75,5 @@ public class ClusterManagerContext
     {
         this.logStreamsManager = logStreamsManager;
     }
+
 }

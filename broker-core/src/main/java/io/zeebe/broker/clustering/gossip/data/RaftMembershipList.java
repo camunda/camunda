@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.clustering.gossip.GossipDecoder;
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder;

@@ -1,39 +1,21 @@
 package io.zeebe.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.util.FluentMock;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
-import io.zeebe.transport.Channel;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.protocol.TransportHeaderDescriptor;
-import io.zeebe.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,12 +26,31 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
+import io.zeebe.broker.Constants;
+import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+
 public class ClientApiMessageHandlerTest
 {
-    protected static final int TRANSPORT_CHANNEL_ID = 21;
-    private static final int CONNECTION_ID = 4;
     private static final int REQUEST_ID = 5;
     private static final int RAFT_TERM = 10;
+    protected static final RemoteAddress DEFAULT_ADDRESS = new RemoteAddress(21, new SocketAddress("foo", 4242));
 
     protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
     protected static final int LOG_STREAM_PARTITION_ID = 1;
@@ -70,16 +71,7 @@ public class ClientApiMessageHandlerTest
     private ClientApiMessageHandler messageHandler;
 
     @Mock
-    private Channel mockTransportChannel;
-
-    @Mock
-    private Dispatcher mockSendBuffer;
-
-    @Mock
     private Dispatcher mockControlMessageDispatcher;
-
-    @FluentMock
-    private ErrorResponseWriter mockErrorResponseWriter;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -90,12 +82,14 @@ public class ClientApiMessageHandlerTest
     @Rule
     public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
 
+    protected BufferingServerOutput serverOutput;
+
     @Before
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
 
-        when(mockTransportChannel.getStreamId()).thenReturn(TRANSPORT_CHANNEL_ID);
+        serverOutput = new BufferingServerOutput();
 
         logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
@@ -104,12 +98,7 @@ public class ClientApiMessageHandlerTest
 
         logStream.openAsync();
 
-        messageHandler = new ClientApiMessageHandler(
-                mockSendBuffer,
-                mockControlMessageDispatcher,
-                mockErrorResponseWriter,
-                mock(TopicSubscriptionService.class),
-                mock(TaskSubscriptionManager.class));
+        messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
         messageHandler.addStream(logStream);
         logStream.setTerm(RAFT_TERM);
@@ -132,7 +121,7 @@ public class ClientApiMessageHandlerTest
         final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID);
 
         // when
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
         // then
         assertThat(isHandled).isTrue();
@@ -151,10 +140,8 @@ public class ClientApiMessageHandlerTest
         final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
         loggedEvent.readMetadata(eventMetadata);
 
-        assertThat(eventMetadata.getReqChannelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
-        assertThat(eventMetadata.getReqConnectionId()).isEqualTo(CONNECTION_ID);
-        assertThat(eventMetadata.getReqRequestId()).isEqualTo(REQUEST_ID);
-        assertThat(eventMetadata.getRaftTermId()).isEqualTo(RAFT_TERM);
+        assertThat(eventMetadata.getRequestId()).isEqualTo(REQUEST_ID);
+        assertThat(eventMetadata.getRequestStreamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
     }
 
     @Test
@@ -165,7 +152,7 @@ public class ClientApiMessageHandlerTest
         final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, clientProtocolVersion);
 
         // when
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
 
         // then
         assertThat(isHandled).isTrue();
@@ -187,7 +174,7 @@ public class ClientApiMessageHandlerTest
         final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, TASK_EVENT);
 
         // when
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
 
         // then
         assertThat(isHandled).isTrue();
@@ -211,7 +198,7 @@ public class ClientApiMessageHandlerTest
         when(mockControlMessageDispatcher.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
 
         // when
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
         // then
         assertThat(isHandled).isTrue();
@@ -222,8 +209,7 @@ public class ClientApiMessageHandlerTest
 
         controlMessageRequestHeaderDescriptor.wrap(sendBuffer, offset);
 
-        assertThat(controlMessageRequestHeaderDescriptor.channelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
-        assertThat(controlMessageRequestHeaderDescriptor.connectionId()).isEqualTo(CONNECTION_ID);
+        assertThat(controlMessageRequestHeaderDescriptor.streamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
         assertThat(controlMessageRequestHeaderDescriptor.requestId()).isEqualTo(REQUEST_ID);
 
         offset += ControlMessageRequestHeaderDescriptor.headerLength();
@@ -245,55 +231,43 @@ public class ClientApiMessageHandlerTest
         // given
         final int writtenLength = writeCommandRequestToBuffer(buffer, wrapString("unknown-topic"), LOG_STREAM_PARTITION_ID);
 
-        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
-
         // when
-        when(mockErrorResponseWriter.tryWriteResponseOrLogFailure()).thenReturn(true);
-
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
         // then
         assertThat(isHandled).isTrue();
 
-        verify(mockErrorResponseWriter).errorCode(ErrorCode.TOPIC_NOT_FOUND);
-        verify(mockErrorResponseWriter).errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", "unknown-topic", LOG_STREAM_PARTITION_ID);
-        verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
+        final List<DirectBuffer> sentResponses = serverOutput.getSentResponses();
+        assertThat(sentResponses).hasSize(1);
+
+        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
+        assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Topic with name 'unknown-topic' and partition id '1' not found");
     }
 
     @Test
     public void shouldNotHandleUnkownRequest() throws InterruptedException, ExecutionException
     {
         // given
-        int offset = 0;
-
-        final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
-        transportHeaderDescriptor.wrap(buffer, offset).protocolId(Protocols.REQUEST_RESPONSE);
-
-        offset += TransportHeaderDescriptor.headerLength();
-        offset += RequestResponseProtocolHeaderDescriptor.headerLength();
-
-        headerEncoder.wrap(buffer, offset)
+        headerEncoder.wrap(buffer, 0)
             .blockLength(commandRequestEncoder.sbeBlockLength())
             .schemaId(commandRequestEncoder.sbeSchemaId())
             .templateId(999)
             .version(1);
 
-        final int writtenLength =
-                TransportHeaderDescriptor.headerLength() +
-                RequestResponseProtocolHeaderDescriptor.headerLength() +
-                headerEncoder.encodedLength();
-
         // when
-        when(mockErrorResponseWriter.tryWriteResponseOrLogFailure()).thenReturn(true);
-
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, headerEncoder.encodedLength(), REQUEST_ID);
 
         // then
         assertThat(isHandled).isTrue();
 
-        verify(mockErrorResponseWriter).errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template id '%d' is not supported.", 999);
-        verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
+        assertThat(serverOutput.getSentResponses()).hasSize(1);
+
+        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
+        assertThat(errorDecoder.errorData()).isEqualTo("Cannot handle message. Template id '999' is not supported.");
     }
 
     @Test
@@ -302,18 +276,18 @@ public class ClientApiMessageHandlerTest
         // given
         final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE);
 
-        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
-        when(mockErrorResponseWriter.tryWriteResponseOrLogFailure()).thenReturn(true);
-
         // when
-        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+        final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
 
         // then
         assertThat(isHandled).isTrue();
 
-        verify(mockErrorResponseWriter).errorCode(ErrorCode.INVALID_CLIENT_VERSION);
-        verify(mockErrorResponseWriter).errorMessage("Client has newer version than broker (%d > %d)", (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION);
-        verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
+        assertThat(serverOutput.getSentResponses()).hasSize(1);
+
+        final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_CLIENT_VERSION);
+        assertThat(errorDecoder.errorData()).isEqualTo(String.format("Client has newer version than broker (%d > %d)", (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION));
     }
 
     private int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId)
@@ -329,18 +303,6 @@ public class ClientApiMessageHandlerTest
     protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId, Short protocolVersion, EventType eventType)
     {
         int offset = 0;
-
-        final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
-        transportHeaderDescriptor.wrap(buffer, offset).protocolId(Protocols.REQUEST_RESPONSE);
-
-        offset += TransportHeaderDescriptor.headerLength();
-
-        final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
-        requestResponseProtocolHeaderDescriptor.wrap(buffer, offset)
-            .connectionId(CONNECTION_ID)
-            .requestId(REQUEST_ID);
-
-        offset += RequestResponseProtocolHeaderDescriptor.headerLength();
 
         final int protocolVersionToWrite = protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
         final EventType eventTypeToWrite = eventType != null ? eventType : EventType.NULL_VAL;
@@ -361,27 +323,13 @@ public class ClientApiMessageHandlerTest
             .putTopicName(topicName, 0, topicName.capacity())
             .putCommand(COMMAND, 0, COMMAND.length);
 
-        return TransportHeaderDescriptor.headerLength() +
-                RequestResponseProtocolHeaderDescriptor.headerLength() +
-                headerEncoder.encodedLength() +
+        return headerEncoder.encodedLength() +
                 commandRequestEncoder.encodedLength();
     }
 
     private int writeControlRequestToBuffer(UnsafeBuffer buffer)
     {
         int offset = 0;
-
-        final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
-        transportHeaderDescriptor.wrap(buffer, offset).protocolId(Protocols.REQUEST_RESPONSE);
-
-        offset += TransportHeaderDescriptor.headerLength();
-
-        final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
-        requestResponseProtocolHeaderDescriptor.wrap(buffer, offset)
-            .connectionId(CONNECTION_ID)
-            .requestId(REQUEST_ID);
-
-        offset += RequestResponseProtocolHeaderDescriptor.headerLength();
 
         headerEncoder.wrap(buffer, offset)
             .blockLength(controlRequestEncoder.sbeBlockLength())
@@ -395,9 +343,7 @@ public class ClientApiMessageHandlerTest
 
         controlRequestEncoder.putData(COMMAND, 0, COMMAND.length);
 
-        return TransportHeaderDescriptor.headerLength() +
-                RequestResponseProtocolHeaderDescriptor.headerLength() +
-                headerEncoder.encodedLength() +
+        return headerEncoder.encodedLength() +
                 controlRequestEncoder.encodedLength();
     }
 

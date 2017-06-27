@@ -4,15 +4,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.raft.Configuration;
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.message.LeaveRequest;
 import io.zeebe.broker.clustering.raft.message.LeaveResponse;
-import io.zeebe.broker.clustering.util.RequestResponseController;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -148,7 +147,7 @@ public class LeaveController
         {
             super(stateMachine);
             this.raft = raftContext.getRaft();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientTransport());
             this.leaveRequest = new LeaveRequest();
             this.leaveResponse = new LeaveResponse();
         }
@@ -195,7 +194,8 @@ public class LeaveController
 
             if (member != null)
             {
-                requestController.open(member.endpoint(), leaveRequest);
+                context.leaveResponse.reset();
+                requestController.open(member.endpoint(), leaveRequest, context.leaveResponse);
 
                 context.position = position;
                 context.take(TRANSITION_DEFAULT);
@@ -238,15 +238,8 @@ public class LeaveController
         @Override
         public void work(LeaveContext context) throws Exception
         {
-            final RequestResponseController requestController = context.requestController;
             final LeaveResponse leaveResponse = context.leaveResponse;
             final Raft raft = context.raft;
-
-            leaveResponse.reset();
-
-            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
-            final int responseLength = requestController.getResponseLength();
-            leaveResponse.wrap(responseBuffer, 0, responseLength);
 
             if (leaveResponse.succeeded())
             {

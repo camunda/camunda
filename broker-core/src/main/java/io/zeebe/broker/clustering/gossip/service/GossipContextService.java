@@ -5,24 +5,20 @@ import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerSelector;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
 
 public class GossipContextService implements Service<GossipContext>
 {
-    private final Injector<ChannelManager> clientChannelManagerInjector = new Injector<>();
-    private final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
-    private final Injector<Subscription> subscriptionInjector = new Injector<>();
-    private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     private final Injector<PeerList> peerListInjector = new Injector<>();
     private final Injector<Peer> localPeerInjector = new Injector<>();
     private final Injector<PeerSelector> peerSelectorInjector = new Injector<>();
+    protected final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+    protected final Injector<BufferingServerTransport> managementApiTransportInjector = new Injector<>();
 
     private final GossipConfiguration config;
 
@@ -36,10 +32,9 @@ public class GossipContextService implements Service<GossipContext>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ChannelManager clientChannelManager = clientChannelManagerInjector.getValue();
-        final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
-        final Subscription subscription = subscriptionInjector.getValue();
-        final Dispatcher dispatcher = sendBufferInjector.getValue();
+        final ClientTransport clientTransport = clientTransportInjector.getValue();
+        final BufferingServerTransport serverTransport = managementApiTransportInjector.getValue();
+
         final PeerList peers = peerListInjector.getValue();
         final Peer localPeer = localPeerInjector.getValue();
         final PeerSelector peerSelector = peerSelectorInjector.getValue();
@@ -48,10 +43,8 @@ public class GossipContextService implements Service<GossipContext>
         context.setLocalPeer(localPeer);
         context.setPeers(peers);
         context.setConfig(config);
-        context.setClientChannelPool(clientChannelManager);
-        context.setConnections(connectionPool);
-        context.setSubscription(subscription);
-        context.setSendBuffer(dispatcher);
+        context.setClientTransport(clientTransport);
+        context.setServerTransport(serverTransport);
         context.setPeerSelector(peerSelector);
     }
 
@@ -64,26 +57,6 @@ public class GossipContextService implements Service<GossipContext>
     public GossipContext get()
     {
         return context;
-    }
-
-    public Injector<ChannelManager> getClientChannelManagerInjector()
-    {
-        return clientChannelManagerInjector;
-    }
-
-    public Injector<TransportConnectionPool> getTransportConnectionPoolInjector()
-    {
-        return transportConnectionPoolInjector;
-    }
-
-    public Injector<Subscription> getSubscriptionInjector()
-    {
-        return subscriptionInjector;
-    }
-
-    public Injector<Dispatcher> getSendBufferInjector()
-    {
-        return sendBufferInjector;
     }
 
     public Injector<PeerList> getPeerListInjector()
@@ -99,6 +72,16 @@ public class GossipContextService implements Service<GossipContext>
     public Injector<Peer> getLocalPeerInjector()
     {
         return localPeerInjector;
+    }
+
+    public Injector<ClientTransport> getClientTransportInjector()
+    {
+        return clientTransportInjector;
+    }
+
+    public Injector<BufferingServerTransport> getManagementApiTransportInjector()
+    {
+        return managementApiTransportInjector;
     }
 
 }

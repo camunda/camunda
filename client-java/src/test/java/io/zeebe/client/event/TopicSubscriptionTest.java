@@ -29,6 +29,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+import io.zeebe.transport.RemoteAddress;
+
 public class TopicSubscriptionTest
 {
 
@@ -250,11 +252,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
 
         // then
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
@@ -283,11 +285,11 @@ public class TopicSubscriptionTest
                 .name(SUBSCRIPTION_NAME)
                 .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L);
 
         // when
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
@@ -332,11 +334,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L);
 
         // when
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
 
         // then
         TestUtil.waitUntil(() -> handler
@@ -388,9 +390,9 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L);
         TestUtil.waitUntil(() -> handler.isWaiting());
 
         // when
@@ -442,7 +444,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldCloseSubscriptionOnChannelClose()
+    public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
     {
         // given
         broker.stubTopicSubscriptionApi(123L);
@@ -454,7 +456,11 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        broker.closeServerSocketBinding();
+        broker.closeTransport();
+
+        // TODO: transport must determine faster that subscription open request does not succeed (including
+        //  topology refreshes)
+        Thread.sleep(10000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
@@ -473,11 +479,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        broker.closeServerSocketBinding();
+        broker.closeTransport();
         TestUtil.waitUntil(() -> !firstSubscription.isOpen());
         client.disconnect();
 
-        broker.openServerSocketBinding();
+        broker.bindTransport();
         client.connect();
 
         // when
@@ -508,11 +514,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.RAFT_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.RAFT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.RAFT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.RAFT_EVENT);
 
         // then
         waitUntil(() -> eventHandler.numTopicEvents == 2);
@@ -540,11 +546,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.TASK_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.TASK_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.TASK_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.TASK_EVENT);
 
         // then
         waitUntil(() -> eventHandler.numTaskEvents >= 2);
@@ -572,11 +578,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.WORKFLOW_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.WORKFLOW_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
 
         // then
         waitUntil(() -> eventHandler.numWorkflowEvents >= 2);
@@ -604,11 +610,11 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.INCIDENT_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.INCIDENT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.INCIDENT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.INCIDENT_EVENT);
 
         // then
         waitUntil(() -> eventHandler.numIncidentEvents >= 2);
@@ -633,13 +639,12 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
-
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
         // when pushing two events
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L, EventType.TASK_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 3L, EventType.INCIDENT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.TASK_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 3L, EventType.INCIDENT_EVENT);
 
         // then
         waitUntil(() -> defaultEventHandler.numTopicEvents == 3);
@@ -693,10 +698,10 @@ public class TopicSubscriptionTest
 
         TestUtil.waitUntil(() -> receivedSubscribeCommands().count() >= 2);
 
-        final int clientChannelId = receivedSubscribeCommands().skip(1).findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = receivedSubscribeCommands().skip(1).findFirst().get().getSource();
 
         // when
-        broker.pushTopicEvent(clientChannelId, 124L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 124L, 1L, 2L);
 
         // then
         TestUtil.waitUntil(() -> recordingHandler.getRecordedEvents().size() > 0);
@@ -716,10 +721,10 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = receivedSubscribeCommands().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = receivedSubscribeCommands().findFirst().get().getSource();
 
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 3L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 3L);
 
         TestUtil.waitUntil(() -> handler.isWaiting());
 

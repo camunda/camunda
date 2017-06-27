@@ -10,11 +10,12 @@ import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.dispatcher.Dispatcher;
+
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class CommandResponseWriter implements BufferWriter
@@ -27,12 +28,12 @@ public class CommandResponseWriter implements BufferWriter
     protected long key = keyNullValue();
 
     protected BufferWriter eventWriter;
-    protected BrokerEventMetadata metadata;
-    protected final ResponseWriter responseWriter;
+    protected final ServerResponse response = new ServerResponse();
+    protected final ServerOutput output;
 
-    public CommandResponseWriter(final Dispatcher sendBuffer)
+    public CommandResponseWriter(final ServerOutput output)
     {
-        this.responseWriter = new ResponseWriter(sendBuffer);
+        this.output = output;
     }
 
     public CommandResponseWriter topicName(final DirectBuffer topicName)
@@ -53,30 +54,24 @@ public class CommandResponseWriter implements BufferWriter
         return this;
     }
 
-    public CommandResponseWriter brokerEventMetadata(final BrokerEventMetadata metadata)
-    {
-        this.metadata = metadata;
-        return this;
-    }
-
     public CommandResponseWriter eventWriter(final BufferWriter writer)
     {
         this.eventWriter = writer;
         return this;
     }
 
-    public boolean tryWriteResponse()
+    public boolean tryWriteResponse(int remoteStreamId, long requestId)
     {
-        Objects.requireNonNull(metadata);
         Objects.requireNonNull(eventWriter);
 
         try
         {
-            return responseWriter.tryWrite(
-                    metadata.getReqChannelId(),
-                    metadata.getReqConnectionId(),
-                    metadata.getReqRequestId(),
-                    this);
+            response.reset()
+                .remoteStreamId(remoteStreamId)
+                .requestId(requestId)
+                .writer(this);
+
+            return output.sendResponse(response);
         }
         finally
         {
@@ -130,7 +125,6 @@ public class CommandResponseWriter implements BufferWriter
         partitionId = partitionIdNullValue();
         key = keyNullValue();
         eventWriter = null;
-        metadata = null;
     }
 
 }

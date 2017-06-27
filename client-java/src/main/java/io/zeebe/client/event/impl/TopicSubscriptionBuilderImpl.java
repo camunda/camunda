@@ -1,7 +1,17 @@
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.*;
+import io.zeebe.client.event.IncidentEvent;
+import io.zeebe.client.event.IncidentEventHandler;
+import io.zeebe.client.event.RaftEvent;
+import io.zeebe.client.event.RaftEventHandler;
+import io.zeebe.client.event.TaskEventHandler;
+import io.zeebe.client.event.TopicEventHandler;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.TopicSubscriptionBuilder;
+import io.zeebe.client.event.WorkflowInstanceEventHandler;
 import io.zeebe.client.impl.data.MsgPackMapper;
+import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder

@@ -2,6 +2,7 @@ package io.zeebe.broker.clustering.raft.entry;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.ArrayProperty;
 import io.zeebe.broker.util.msgpack.value.ArrayValue;

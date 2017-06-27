@@ -3,6 +3,7 @@ package io.zeebe.broker.clustering.gossip.data;
 import java.util.Iterator;
 
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.list.CompactListIterator;
 
 public class PeerListIterator implements Iterator<Peer>

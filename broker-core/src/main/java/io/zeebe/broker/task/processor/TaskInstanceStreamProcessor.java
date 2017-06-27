@@ -4,6 +4,8 @@ import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -24,7 +26,6 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
@@ -154,12 +155,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected boolean writeResponse()
     {
         return responseWriter
-            .brokerEventMetadata(sourceEventMetadata)
             .topicName(logStreamTopicName)
             .partitionId(logStreamPartitionId)
             .key(eventKey)
             .eventWriter(taskEvent)
-            .tryWriteResponse();
+            .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
     }
 
     protected long writeEventToLogStream(LogStreamWriter writer)
@@ -245,7 +245,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             if (isLocked)
             {
                 success = subscribedEventWriter
-                        .channelId(sourceEventMetadata.getReqChannelId())
                         .topicName(logStreamTopicName)
                         .partitionId(logStreamPartitionId)
                         .key(eventKey)
@@ -253,7 +252,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
                         .eventType(TASK_EVENT)
                         .eventWriter(taskEvent)
-                        .tryWriteMessage();
+                        .tryWriteMessage(sourceEventMetadata.getRequestStreamId());
             }
             else
             {

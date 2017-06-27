@@ -5,6 +5,7 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
@@ -28,7 +29,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     protected LoggedEvent event;
 
-    protected final int channelId;
+    protected final int clientStreamId;
     protected final long subscriberKey;
     protected long startPosition;
     protected final DirectBuffer name;
@@ -44,7 +45,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected AtomicBoolean enabled;
 
     public TopicSubscriptionPushProcessor(
-            int channelId,
+            int clientStreamId,
             long subscriberKey,
             long startPosition,
             DirectBuffer name,
@@ -52,7 +53,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             SubscribedEventWriter channelWriter)
     {
         this.channelWriter = channelWriter;
-        this.channelId = channelId;
+        this.clientStreamId = clientStreamId;
         this.subscriberKey = subscriberKey;
         this.startPosition = startPosition;
         this.name = cloneBuffer(name);
@@ -130,7 +131,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         event.readMetadata(metadata);
 
         final boolean success = channelWriter
-            .channelId(channelId)
             .topicName(logStreamTopicName)
             .partitionId(logStreamPartitionId)
             .eventType(metadata.getEventType())
@@ -139,7 +139,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
-            .tryWriteMessage();
+            .tryWriteMessage(clientStreamId);
 
         if (success && recordsPendingEvents())
         {
@@ -175,7 +175,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     public int getChannelId()
     {
-        return channelId;
+        return clientStreamId;
     }
 
     public SubscribedEventWriter getChannelWriter()

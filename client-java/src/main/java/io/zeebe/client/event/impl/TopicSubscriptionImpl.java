@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.TopicEventHandler;
 import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.task.impl.subscription.EventAcquisition;
+import io.zeebe.client.task.impl.subscription.EventSubscription;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.util.CheckedConsumer;
 
@@ -33,9 +35,10 @@ public class TopicSubscriptionImpl
             int prefetchCapacity,
             long startPosition,
             boolean forceStart,
-            String name)
+            String name,
+            EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
-        super(prefetchCapacity);
+        super(prefetchCapacity, acquisition);
         this.prefetchCapacity = prefetchCapacity;
         this.client = client;
         if (handler != null)
@@ -175,15 +178,15 @@ public class TopicSubscriptionImpl
     }
 
     @Override
-    public String getTopicName()
-    {
-        return client.getTopic().getTopicName();
-    }
-
-    @Override
     public int getPartitionId()
     {
         return client.getTopic().getPartitionId();
+    }
+
+    @Override
+    public String getTopicName()
+    {
+        return client.getTopic().getTopicName();
     }
 
     @Override

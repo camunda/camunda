@@ -1,22 +1,26 @@
 package io.zeebe.client.task.impl.subscription;
 
 import org.agrona.concurrent.AgentRunner;
+
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.event.impl.*;
+import io.zeebe.client.event.impl.PollableTopicSubscriptionBuilderImpl;
+import io.zeebe.client.event.impl.TopicClientImpl;
+import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
+import io.zeebe.client.event.impl.TopicSubscriptionImpl;
 import io.zeebe.client.impl.TaskTopicClientImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.PollableTaskSubscriptionBuilder;
 import io.zeebe.client.task.TaskSubscriptionBuilder;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.transport.Channel;
-import io.zeebe.transport.TransportChannelListener;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 
-public class SubscriptionManager implements TransportChannelListener
+public class SubscriptionManager implements TransportListener
 {
 
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
@@ -55,8 +59,8 @@ public class SubscriptionManager implements TransportChannelListener
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
-        this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions, client.getChannelManager());
-        this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions, client.getChannelManager());
+        this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
+        this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions);
         this.taskCollector = new SubscribedEventCollector(receiveBufferSubscription, taskAcquisition, topicSubscriptionAcquisition);
 
         this.numExecutionThreads = numExecutionThreads;
@@ -160,23 +164,15 @@ public class SubscriptionManager implements TransportChannelListener
     }
 
     @Override
-    public void onChannelClosed(Channel channel)
+    public void onConnectionEstablished(RemoteAddress remoteAddress)
     {
-        taskSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
-        topicSubscriptions.abortSubscriptionsOnChannel(channel.getStreamId());
+
     }
 
     @Override
-    public void onChannelInterrupted(Channel channel)
+    public void onConnectionClosed(RemoteAddress remoteAddress)
     {
-        taskSubscriptions.suspendSubscriptionsOnChannel(channel.getStreamId());
-        topicSubscriptions.suspendSubscriptionsOnChannel(channel.getStreamId());
-    }
-
-    @Override
-    public void onChannelOpened(Channel channel)
-    {
-        taskSubscriptions.reopenSubscriptionsOnChannel(channel.getStreamId());
-        topicSubscriptions.reopenSubscriptionsOnChannel(channel.getStreamId());
+        taskSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
+        topicSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
     }
 }

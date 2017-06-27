@@ -78,7 +78,7 @@ public class LockTaskStreamProcessorTest
 
         subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
                 .setLockOwner(wrapString("owner-1"))
@@ -86,7 +86,7 @@ public class LockTaskStreamProcessorTest
 
         anotherSubscription = new TaskSubscription()
                 .setSubscriberKey(2L)
-                .setChannelId(12)
+                .setStreamId(12)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(10).toMillis())
                 .setLockOwner(wrapString("owner-2"))
@@ -126,7 +126,7 @@ public class LockTaskStreamProcessorTest
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
-        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
@@ -152,7 +152,7 @@ public class LockTaskStreamProcessorTest
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
-        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
@@ -178,7 +178,7 @@ public class LockTaskStreamProcessorTest
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
-        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
@@ -205,7 +205,7 @@ public class LockTaskStreamProcessorTest
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
-        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }

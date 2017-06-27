@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 
 public class BrokerRecoveryTest
 {
@@ -90,6 +91,9 @@ public class BrokerRecoveryTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(60 * 1000);
 
     protected static InputStream brokerConfig(String path)
     {
@@ -351,6 +355,7 @@ public class BrokerRecoveryTest
     }
 
     @Test
+    @Ignore
     public void shouldReceiveLockExpiredTasksAfterRestart()
     {
         // given

@@ -6,22 +6,27 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class RawMessage
 {
 
-    protected final int protocolId;
+    protected final boolean isResponse;
     protected final UnsafeBuffer message;
     protected final int sequenceNumber;
 
-    public RawMessage(int protocolId, int sequenceNumber, DirectBuffer message, int messageOffset, int messageLength)
+    public RawMessage(boolean isResponse, int sequenceNumber, DirectBuffer message, int messageOffset, int messageLength)
     {
-        this.protocolId = protocolId;
+        this.isResponse = isResponse;
         this.sequenceNumber = sequenceNumber;
 
         this.message = new UnsafeBuffer(new byte[messageLength]);
         this.message.putBytes(0, message, messageOffset, messageLength);
     }
 
-    public int getProtocolId()
+    public boolean isResponse()
     {
-        return protocolId;
+        return isResponse;
+    }
+
+    public boolean isMessage()
+    {
+        return !isResponse;
     }
 
     /**

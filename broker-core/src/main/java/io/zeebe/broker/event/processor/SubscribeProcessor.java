@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.logstreams.log.LogStreamWriter;
@@ -119,7 +120,7 @@ public class SubscribeProcessor implements EventProcessor
                     subscriberEvent.getForceStart());
 
             final CompletableFuture<TopicSubscriptionPushProcessor> processorFuture = manager.openPushProcessorAsync(
-                    metadata.getReqChannelId(),
+                    metadata.getRequestStreamId(),
                     event.getKey(),
                     resumePosition,
                     subscriptionName,

@@ -3,6 +3,7 @@ package io.zeebe.broker.util.msgpack.property;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.util.msgpack.value.StringValue;
 
 

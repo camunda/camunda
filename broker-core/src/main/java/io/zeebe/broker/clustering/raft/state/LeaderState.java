@@ -18,7 +18,16 @@ import io.zeebe.broker.clustering.raft.controller.ConfigurationController;
 import io.zeebe.broker.clustering.raft.controller.ConfigureController;
 import io.zeebe.broker.clustering.raft.controller.ReplicationController;
 import io.zeebe.broker.clustering.raft.entry.InitializeEntry;
-import io.zeebe.broker.clustering.raft.message.*;
+import io.zeebe.broker.clustering.raft.message.AppendRequest;
+import io.zeebe.broker.clustering.raft.message.AppendResponse;
+import io.zeebe.broker.clustering.raft.message.JoinRequest;
+import io.zeebe.broker.clustering.raft.message.JoinResponse;
+import io.zeebe.broker.clustering.raft.message.LeaveRequest;
+import io.zeebe.broker.clustering.raft.message.LeaveResponse;
+import io.zeebe.broker.clustering.raft.message.PollRequest;
+import io.zeebe.broker.clustering.raft.message.PollResponse;
+import io.zeebe.broker.clustering.raft.message.VoteRequest;
+import io.zeebe.broker.clustering.raft.message.VoteResponse;
 import io.zeebe.broker.logstreams.LogStreamService;
 import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.logstreams.log.LogStream;
@@ -26,7 +35,13 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.*;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.StateMachineCommand;
+import io.zeebe.util.state.TransitionState;
+import io.zeebe.util.state.WaitState;
 
 public class LeaderState extends ActiveState
 {

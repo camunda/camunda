@@ -28,7 +28,7 @@ public class LogStreamsComponent implements Component
         final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(context.getConfigurationManager());
         context.getServiceContainer()
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
-            .dependency(TransportServiceNames.TRANSPORT_SEND_BUFFER, topicSubscriptionService.getSendBufferInjector())
+            .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, topicSubscriptionService.getActorSchedulerInjector())
             .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();

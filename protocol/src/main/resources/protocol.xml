@@ -97,14 +97,13 @@
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="BrokerEventMetadata" id="200" description="Descriptor for Event Metadata">
-    <field name="reqChannelId" id="1" type="int32" />
-    <field name="reqConnectionId" id="2" type="uint64" />
-    <field name="reqRequestId" id="3" type="uint64" />
-    <field name="raftTermId" id="4" type="int32" />
-    <field name="subscriptionId" id="5" type="uint64" />
-    <field name="protocolVersion" id="6" type="uint16" />
-    <field name="eventType" id="7" type="EventType" />
-    <field name="incidentKey" id="8" type="uint64" />
+    <field name="requestStreamId" id="1" type="int32" />
+    <field name="requestId" id="2" type="uint64" />
+    <field name="raftTermId" id="3" type="int32" />
+    <field name="subscriptionId" id="4" type="uint64" />
+    <field name="protocolVersion" id="5" type="uint16" />
+    <field name="eventType" id="6" type="EventType" />
+    <field name="incidentKey" id="7" type="uint64" />
   </sbe:message>
 
 </sbe:messageSchema>

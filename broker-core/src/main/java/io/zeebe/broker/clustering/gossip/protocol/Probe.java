@@ -1,18 +1,19 @@
 package io.zeebe.broker.clustering.gossip.protocol;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.gossip.GossipContext;
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.message.GossipRequest;
 import io.zeebe.broker.clustering.gossip.message.GossipResponse;
 import io.zeebe.broker.clustering.gossip.message.ProbeRequest;
-import io.zeebe.broker.clustering.util.MessageWriter;
-import io.zeebe.broker.clustering.util.RequestResponseController;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -100,10 +101,15 @@ public class Probe
                         .build());
     }
 
-    public void open(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public void open(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final ServerOutput output,
+            final RemoteAddress requestAddress,
+            final long requestId)
     {
-        probeContext.channelId = channelId;
-        probeContext.connectionId = connectionId;
+        probeContext.requestStreamId = requestAddress.getStreamId();
         probeContext.requestId = requestId;
         probeContext.probeRequest.wrap(buffer, offset, length);
 
@@ -142,37 +148,33 @@ public class Probe
         final PeerList peers;
         final RequestResponseController requestController;
 
-        int channelId;
-        long connectionId;
+        int requestStreamId;
         long requestId;
 
         final ProbeRequest probeRequest;
         final GossipRequest gossipRequest;
         final GossipResponse gossipResponse;
-
-        final MessageWriter messageWriter;
+        final ServerOutput output;
+        final ServerResponse response = new ServerResponse();
 
         ProbeContext(StateMachine<?> stateMachine)
         {
             super(stateMachine);
             this.peers = gossipContext.getPeers();
 
-            final ChannelManager clientChannelManager = gossipContext.getClientChannelPool();
-            final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
-            this.requestController = new RequestResponseController(clientChannelManager, connections, config.probeTimeout);
+            final ClientTransport clientTransport = gossipContext.getClientTransport();
+            this.requestController = new RequestResponseController(clientTransport, config.probeTimeout);
+            this.output = gossipContext.getServerTransport().getOutput();
 
             this.probeRequest = new ProbeRequest();
             this.gossipRequest = new GossipRequest();
             this.gossipResponse = new GossipResponse();
-
-            this.messageWriter = new MessageWriter(gossipContext.getSendBuffer());
         }
 
         public void reset()
         {
-            channelId = -1;
-            connectionId = -1L;
+            requestStreamId = -1;
             requestId = -1L;
             probeRequest.reset();
         }
@@ -192,7 +194,7 @@ public class Probe
             gossipRequest.peers(peers);
 
             final SocketAddress target = probeRequest.target();
-            requestController.open(target, gossipRequest);
+            requestController.open(target, gossipRequest, context.gossipResponse);
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -228,14 +230,9 @@ public class Probe
         @Override
         public void work(ProbeContext context) throws Exception
         {
-            final RequestResponseController requestController = context.requestController;
             final GossipResponse gossipResponse = context.gossipResponse;
             final PeerList peers = context.peers;
 
-            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
-            final int responseLength = requestController.getResponseLength();
-
-            gossipResponse.wrap(responseBuffer, 0, responseLength);
             peers.merge(gossipResponse.peers());
 
             context.take(TRANSITION_DEFAULT);
@@ -247,21 +244,20 @@ public class Probe
         @Override
         public int doWork(ProbeContext context) throws Exception
         {
-            final MessageWriter messageWriter = context.messageWriter;
-            final int channelId = context.channelId;
-            final long connectionId = context.connectionId;
+            final int channelId = context.requestStreamId;
             final long requestId = context.requestId;
             final GossipResponse gossipResponse = context.gossipResponse;
 
             int workcount = 0;
 
-            messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-                .channelId(channelId)
-                .connectionId(connectionId)
+            context.response.reset()
+                .remoteStreamId(channelId)
                 .requestId(requestId)
-                .message(gossipResponse);
+                .writer(gossipResponse);
 
-            if (messageWriter.tryWriteMessage())
+            final boolean success = context.output.sendResponse(context.response);
+
+            if (success)
             {
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);

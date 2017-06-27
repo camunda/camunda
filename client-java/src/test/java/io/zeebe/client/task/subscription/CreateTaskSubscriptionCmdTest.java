@@ -12,19 +12,27 @@
  */
 package io.zeebe.client.task.subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.util.VarDataUtil.readBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
+
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
@@ -35,11 +43,7 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageResponseEncoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import io.zeebe.transport.RemoteAddress;
 
 public class CreateTaskSubscriptionCmdTest
 {
@@ -56,6 +60,9 @@ public class CreateTaskSubscriptionCmdTest
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Mock
+    public RemoteAddress contactPoint;
 
     @Before
     public void setup()

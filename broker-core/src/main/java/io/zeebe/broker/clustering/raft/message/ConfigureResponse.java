@@ -4,6 +4,7 @@ import static io.zeebe.clustering.raft.ConfigureResponseEncoder.termNullValue;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.clustering.raft.ConfigureResponseDecoder;
 import io.zeebe.clustering.raft.ConfigureResponseEncoder;
 import io.zeebe.clustering.raft.MessageHeaderDecoder;

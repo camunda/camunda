@@ -3,6 +3,7 @@ package io.zeebe.broker.event.handler;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
@@ -11,6 +12,7 @@ import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.transport.ServerOutput;
 
 public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 {
@@ -21,14 +23,11 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public RemoveTopicSubscriptionHandler(
-            TopicSubscriptionService subscriptionService,
-            ControlMessageResponseWriter responseWriter,
-            ErrorResponseWriter errorResponseWriter)
+    public RemoveTopicSubscriptionHandler(ServerOutput output, TopicSubscriptionService subscriptionService)
     {
+        this.errorResponseWriter = new ErrorResponseWriter(output);
+        this.responseWriter = new ControlMessageResponseWriter(output);
         this.subscriptionService = subscriptionService;
-        this.responseWriter = responseWriter;
-        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -53,19 +52,19 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
         {
             if (failure == null)
             {
-                responseWriter
-                    .brokerEventMetadata(metadata)
+                final boolean success = responseWriter
                     .dataWriter(request)
-                    .tryWriteResponse();
+                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+                // TODO: proper backpressure
             }
             else
             {
-                errorResponseWriter
-                    .metadata(metadata)
+                final boolean success = errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                     .errorMessage("Cannot close topic subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure();
+                    .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
+                // TODO: proper backpressure
             }
             return null;
         });

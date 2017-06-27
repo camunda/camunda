@@ -15,6 +15,7 @@ package io.zeebe.broker.workflow.graph.transformer.validator;
 import org.camunda.bpm.model.bpmn.instance.FlowElement;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
+
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 
 public class ActivityIdRule implements ModelElementValidator<FlowElement>

@@ -6,4 +6,16 @@ public class ComponentConfiguration
     {
         // noop;
     }
+
+    protected String getOrDefault(String configuredValue, String defaultValue)
+    {
+        if (configuredValue == null || configuredValue.isEmpty())
+        {
+            return defaultValue;
+        }
+        else
+        {
+            return configuredValue;
+        }
+    }
 }

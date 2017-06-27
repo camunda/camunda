@@ -4,9 +4,9 @@ import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.message.AppendRequest;
-import io.zeebe.broker.clustering.util.SingleMessageController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.transport.SingleMessageController;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -144,7 +144,7 @@ public class ReplicationController
             this.raftContext = raftContext;
             this.member = member;
             this.appendRequest = new AppendRequest();
-            this.singleMessageController = new SingleMessageController(raftContext.getClientChannelPool(), raftContext.getSendBuffer());
+            this.singleMessageController = new SingleMessageController(raftContext.getClientTransport());
         }
 
         public void reset()

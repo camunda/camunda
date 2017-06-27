@@ -1,7 +1,10 @@
 package io.zeebe.broker.workflow.data;
 
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.ArrayProperty;
 import io.zeebe.broker.util.msgpack.property.EnumProperty;
@@ -9,8 +12,6 @@ import io.zeebe.broker.util.msgpack.property.StringProperty;
 import io.zeebe.broker.util.msgpack.value.ArrayValue;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
 
 public class WorkflowDeploymentEvent extends UnpackedObject
 {

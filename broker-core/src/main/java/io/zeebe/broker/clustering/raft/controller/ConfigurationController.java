@@ -10,7 +10,6 @@ import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.entry.ConfigurationEntry;
 import io.zeebe.broker.clustering.raft.entry.ConfiguredMember;
-import io.zeebe.broker.clustering.util.MessageWriter;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.state.SimpleStateMachineContext;
@@ -175,7 +174,6 @@ public class ConfigurationController
         final AppendController appendController;
         final ConfigurationEntry configuration;
         final List<Member> members;
-        final MessageWriter messageWriter;
 
         CompletableFuture<Void> configurationFuture;
 
@@ -186,7 +184,6 @@ public class ConfigurationController
             this.appendController = new AppendController(raftContext);
             this.configuration = new ConfigurationEntry();
             this.members = new CopyOnWriteArrayList<>();
-            this.messageWriter = new MessageWriter(raftContext.getSendBuffer());
         }
 
         public void reset()

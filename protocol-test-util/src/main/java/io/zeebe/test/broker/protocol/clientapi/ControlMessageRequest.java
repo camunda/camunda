@@ -2,12 +2,16 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import java.util.Map;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class ControlMessageRequest implements BufferWriter
@@ -15,15 +19,18 @@ public class ControlMessageRequest implements BufferWriter
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
+    protected final ClientOutput output;
+    protected final RemoteAddress target;
 
     protected ControlMessageType messageType = ControlMessageType.NULL_VAL;
     protected byte[] encodedData;
 
-    protected final RequestResponseExchange requestResponseExchange;
+    protected ClientRequest request;
 
-    public ControlMessageRequest(TransportConnectionPool connectionPool, int channelId, MsgPackHelper msgPackHelper)
+    public ControlMessageRequest(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
-        this.requestResponseExchange = new RequestResponseExchange(connectionPool, channelId);
+        this.output = output;
+        this.target = target;
         this.msgPackHelper = msgPackHelper;
     }
 
@@ -41,21 +48,25 @@ public class ControlMessageRequest implements BufferWriter
 
     public ControlMessageRequest send()
     {
-        requestResponseExchange.sendRequest(this);
+        request = output.sendRequest(target, this);
         return this;
     }
 
     public ControlMessageResponse await()
     {
+        final DirectBuffer responseBuffer = request.join();
+
         final ControlMessageResponse response = new ControlMessageResponse(msgPackHelper);
-        requestResponseExchange.awaitResponse(response);
+        response.wrap(responseBuffer, 0, responseBuffer.capacity());
         return response;
     }
 
     public ErrorResponse awaitError()
     {
+        final DirectBuffer responseBuffer = request.join();
+
         final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-        requestResponseExchange.awaitResponse(errorResponse);
+        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
         return errorResponse;
     }
 

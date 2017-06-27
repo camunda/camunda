@@ -12,8 +12,13 @@
  */
 package io.zeebe.broker.task.data;
 
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.ArrayProperty;
 import io.zeebe.broker.util.msgpack.property.IntegerProperty;
@@ -22,10 +27,6 @@ import io.zeebe.broker.util.msgpack.property.StringProperty;
 import io.zeebe.broker.util.msgpack.value.ArrayValue;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
 
 public class TaskHeaders extends UnpackedObject
 {

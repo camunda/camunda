@@ -3,23 +3,23 @@ package io.zeebe.client.task.impl.subscription;
 import static io.zeebe.util.VarDataUtil.readBytes;
 
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.client.event.impl.EventTypeMapping;
 import io.zeebe.client.event.impl.TopicEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.protocol.TransportHeaderDescriptor;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
+import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.util.actor.Actor;
-import org.slf4j.Logger;
 
 public class SubscribedEventCollector implements Actor, FragmentHandler
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
     protected static final String NAME = "event-collector";
 
-    protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final SubscribedEventDecoder subscribedEventDecoder = new SubscribedEventDecoder();
 
@@ -54,20 +54,15 @@ public class SubscribedEventCollector implements Actor, FragmentHandler
     @Override
     public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
     {
-        transportHeaderDescriptor.wrap(buffer, offset);
-
-        offset += TransportHeaderDescriptor.HEADER_LENGTH;
-
         messageHeaderDecoder.wrap(buffer, offset);
 
         offset += MessageHeaderDecoder.ENCODED_LENGTH;
 
-        final int protocolId = transportHeaderDescriptor.protocolId();
         final int templateId = messageHeaderDecoder.templateId();
 
         final boolean messageHandled;
 
-        if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE && templateId == SubscribedEventDecoder.TEMPLATE_ID)
+        if (templateId == SubscribedEventDecoder.TEMPLATE_ID)
         {
             subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 

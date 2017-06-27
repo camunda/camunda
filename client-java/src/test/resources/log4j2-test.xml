@@ -9,7 +9,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.zeebe" level="debug">
+    <Logger name="io.zeebe" level="debug" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
     <Root level="info">

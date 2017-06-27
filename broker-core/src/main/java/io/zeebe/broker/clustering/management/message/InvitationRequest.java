@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.management.InvitationRequestDecoder;
 import io.zeebe.clustering.management.InvitationRequestDecoder.MembersDecoder;

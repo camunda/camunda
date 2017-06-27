@@ -3,17 +3,18 @@ package io.zeebe.broker.services;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 
+import org.agrona.BitUtil;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersManager;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.metrics.cfg.MetricsCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import org.agrona.BitUtil;
-import org.agrona.IoUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.CountersManager;
-import org.slf4j.Logger;
 
 public class CountersManagerService implements Service<Counters>
 {

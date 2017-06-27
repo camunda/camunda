@@ -1,6 +1,7 @@
 package io.zeebe.broker.util.msgpack.property;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.util.msgpack.value.PackedValue;
 
 public class PackedProperty extends BaseProperty<PackedValue>

@@ -4,6 +4,7 @@ import static io.zeebe.protocol.clientapi.EventType.NULL_VAL;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.protocol.clientapi.BrokerEventMetadataDecoder;
 import io.zeebe.protocol.clientapi.BrokerEventMetadataEncoder;
@@ -24,9 +25,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected BrokerEventMetadataEncoder encoder = new BrokerEventMetadataEncoder();
     protected BrokerEventMetadataDecoder decoder = new BrokerEventMetadataDecoder();
 
-    protected int reqChannelId;
-    protected long reqConnectionId;
-    protected long reqRequestId;
+    protected int requestStreamId;
+    protected long requestId;
     protected int raftTermId;
     protected long subscriberKey;
     protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version by default
@@ -44,9 +44,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        reqChannelId = decoder.reqChannelId();
-        reqConnectionId = decoder.reqConnectionId();
-        reqRequestId = decoder.reqRequestId();
+        requestStreamId = decoder.requestStreamId();
+        requestId = decoder.requestId();
         raftTermId = decoder.raftTermId();
         subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
@@ -74,9 +73,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         encoder.wrap(buffer, offset);
 
-        encoder.reqChannelId(reqChannelId)
-            .reqConnectionId(reqConnectionId)
-            .reqRequestId(reqRequestId)
+        encoder.requestId(requestId)
+            .requestStreamId(requestStreamId)
             .raftTermId(raftTermId)
             .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
@@ -84,36 +82,25 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
             .incidentKey(incidentKey);
     }
 
-    public int getReqChannelId()
+    public long getRequestId()
     {
-        return reqChannelId;
+        return requestId;
     }
 
-    public BrokerEventMetadata reqChannelId(int reqChannelId)
+    public BrokerEventMetadata requestId(long requestId)
     {
-        this.reqChannelId = reqChannelId;
+        this.requestId = requestId;
         return this;
     }
 
-    public long getReqConnectionId()
+    public int getRequestStreamId()
     {
-        return reqConnectionId;
+        return requestStreamId;
     }
 
-    public BrokerEventMetadata reqConnectionId(long reqConnectionId)
+    public BrokerEventMetadata requestStreamId(int requestStreamId)
     {
-        this.reqConnectionId = reqConnectionId;
-        return this;
-    }
-
-    public long getReqRequestId()
-    {
-        return reqRequestId;
-    }
-
-    public BrokerEventMetadata reqRequestId(long reqRequestId)
-    {
-        this.reqRequestId = reqRequestId;
+        this.requestStreamId = requestStreamId;
         return this;
     }
 
@@ -179,9 +166,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
     public BrokerEventMetadata reset()
     {
-        reqChannelId = BrokerEventMetadataEncoder.reqChannelIdNullValue();
-        reqConnectionId = BrokerEventMetadataEncoder.reqConnectionIdNullValue();
-        reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
+        requestId = BrokerEventMetadataEncoder.requestIdNullValue();
+        requestStreamId = BrokerEventMetadataEncoder.requestStreamIdNullValue();
         raftTermId = BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriberKey = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Constants.PROTOCOL_VERSION;
@@ -192,8 +178,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
     public boolean hasRequestMetadata()
     {
-        return reqChannelId != BrokerEventMetadataEncoder.reqChannelIdNullValue() &&
-                reqConnectionId != BrokerEventMetadataEncoder.reqConnectionIdNullValue() &&
-                reqRequestId != BrokerEventMetadataDecoder.reqRequestIdNullValue();
+        return requestId != BrokerEventMetadataEncoder.requestIdNullValue() &&
+                requestStreamId != BrokerEventMetadataEncoder.requestStreamIdNullValue();
     }
 }

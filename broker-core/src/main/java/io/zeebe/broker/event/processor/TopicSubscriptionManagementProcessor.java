@@ -7,21 +7,32 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
+import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
-import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -245,11 +256,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     public boolean writeRequestResponseError(BrokerEventMetadata metadata, LoggedEvent event, String error)
     {
         return errorWriter
-            .metadata(metadata)
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorMessage(error)
             .failedRequest(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
-            .tryWriteResponse();
+            .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
     }
 
     public void registerPushProcessor(TopicSubscriptionPushProcessor processor)
@@ -313,15 +323,14 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 subscriptionProcessor.onAck(subscriptionEvent.getAckPosition());
             }
 
-            if (metadata.getReqRequestId() >= 0)
+            if (metadata.getRequestId() >= 0)
             {
                 return responseWriter
                         .topicName(logStreamTopicName)
                         .partitionId(logStreamPartitionId)
-                        .brokerEventMetadata(metadata)
                         .eventWriter(subscriptionEvent)
                         .key(currentEvent.getKey())
-                        .tryWriteResponse();
+                        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
             }
             else
             {
@@ -351,10 +360,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             final boolean responseWritten = responseWriter
                     .topicName(logStreamTopicName)
                     .partitionId(logStreamPartitionId)
-                    .brokerEventMetadata(metadata)
                     .eventWriter(subscriberEvent)
                     .key(currentEvent.getKey())
-                    .tryWriteResponse();
+                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
 
             if (responseWritten)
             {
@@ -376,9 +384,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 .setAckPosition(subscriberEvent.getStartPosition() - 1);
 
             metadata.eventType(EventType.SUBSCRIPTION_EVENT)
-                .reqChannelId(-1)
-                .reqConnectionId(-1)
-                .reqRequestId(-1)
+                .requestStreamId(-1)
+                .requestId(-1)
                 .raftTermId(targetStream.getTerm());
 
             return writer

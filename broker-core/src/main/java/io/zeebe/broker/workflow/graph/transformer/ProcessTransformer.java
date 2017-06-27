@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 
 import org.camunda.bpm.model.bpmn.instance.FlowElement;
 import org.camunda.bpm.model.bpmn.instance.Process;
+
 import io.zeebe.broker.workflow.graph.model.BpmnFactory;
 import io.zeebe.broker.workflow.graph.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.graph.model.ExecutableScope;

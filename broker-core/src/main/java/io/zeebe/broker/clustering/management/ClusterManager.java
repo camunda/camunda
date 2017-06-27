@@ -1,11 +1,10 @@
 package io.zeebe.broker.clustering.management;
 
-import static io.zeebe.broker.clustering.ClusterServiceNames.*;
+import static io.zeebe.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
+import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.ClusterServiceNames.raftContextServiceName;
+import static io.zeebe.broker.clustering.ClusterServiceNames.raftServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.TRANSPORT;
-import static io.zeebe.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static io.zeebe.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +18,7 @@ import java.util.function.Consumer;
 import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import io.zeebe.broker.clustering.channel.ClientChannelManagerService;
+
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
@@ -31,20 +30,17 @@ import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.service.RaftContextService;
 import io.zeebe.broker.clustering.raft.service.RaftService;
-import io.zeebe.broker.clustering.service.SubscriptionService;
-import io.zeebe.broker.clustering.service.TransportConnectionPoolService;
-import io.zeebe.broker.clustering.util.MessageWriter;
-import io.zeebe.broker.clustering.util.RequestResponseController;
 import io.zeebe.broker.logstreams.LogStreamsManager;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.actor.Actor;
 import org.slf4j.Logger;
 
@@ -60,7 +56,7 @@ public class ClusterManager implements Actor
     private final ManyToOneConcurrentArrayQueue<Runnable> managementCmdQueue;
     private final Consumer<Runnable> commandConsumer;
 
-    private final List<RequestResponseController> activeRequestController;
+    private final List<RequestResponseController> activeRequestControllers;
 
     private final ClusterManagerFragmentHandler fragmentHandler;
 
@@ -69,7 +65,9 @@ public class ClusterManager implements Actor
 
     private ClusterManagementConfig config;
 
-    private final MessageWriter messageWriter;
+//    private final MessageWriter messageWriter;
+    protected final ServerResponse response = new ServerResponse();
+    protected final ServerInputSubscription inputSubscription;
 
     public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, ClusterManagementConfig config)
     {
@@ -79,12 +77,16 @@ public class ClusterManager implements Actor
         this.rafts = new CopyOnWriteArrayList<>();
         this.managementCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
         this.commandConsumer = (r) -> r.run();
-        this.activeRequestController = new CopyOnWriteArrayList<>();
+        this.activeRequestControllers = new CopyOnWriteArrayList<>();
         this.invitationRequest = new InvitationRequest();
 
-        this.fragmentHandler = new ClusterManagerFragmentHandler(this, context.getSubscription());
+        this.fragmentHandler = new ClusterManagerFragmentHandler(this);
         this.invitationResponse = new InvitationResponse();
-        this.messageWriter = new MessageWriter(context.getSendBuffer());
+
+        // TODO: kann man das hier blockierend machen?
+        inputSubscription = context.getServerTransport()
+                .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
+                .join();
 
         context.getPeers().registerListener((p) -> addPeer(p));
     }
@@ -151,12 +153,12 @@ public class ClusterManager implements Actor
         int workcount = 0;
 
         workcount += managementCmdQueue.drain(commandConsumer);
-        workcount += fragmentHandler.doWork();
+        workcount += inputSubscription.poll();
 
         int i = 0;
-        while (i < activeRequestController.size())
+        while (i < activeRequestControllers.size())
         {
-            final RequestResponseController requestController = activeRequestController.get(i);
+            final RequestResponseController requestController = activeRequestControllers.get(i);
             workcount += requestController.doWork();
 
             if (requestController.isFailed() || requestController.isResponseAvailable())
@@ -166,7 +168,7 @@ public class ClusterManager implements Actor
 
             if (requestController.isClosed())
             {
-                activeRequestController.remove(i);
+                activeRequestControllers.remove(i);
             }
             else
             {
@@ -187,7 +189,7 @@ public class ClusterManager implements Actor
             for (int i = 0; i < rafts.size(); i++)
             {
                 final Raft raft = rafts.get(i);
-                if (raft.needMembers())
+                if (raft.needsMembers())
                 {
                     // TODO: if this should be garbage free, we have to limit
                     // the number of concurrent invitations.
@@ -198,11 +200,9 @@ public class ClusterManager implements Actor
                         .term(raft.term())
                         .members(raft.configuration().members());
 
-                    final ChannelManager clientChannelManager = context.getClientChannelPool();
-                    final TransportConnectionPool connections = context.getConnections();
-                    final RequestResponseController requestController = new RequestResponseController(clientChannelManager, connections);
-                    requestController.open(copy.managementEndpoint(), invitationRequest);
-                    activeRequestController.add(requestController);
+                    final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
+                    requestController.open(copy.managementEndpoint(), invitationRequest, null);
+                    activeRequestControllers.add(requestController);
                 }
             }
 
@@ -254,39 +254,14 @@ public class ClusterManager implements Actor
     public void createRaft(LogStream logStream, MetaStore meta, List<Member> members, boolean bootstrap)
     {
         final String logName = logStream.getLogName();
-        final String component = String.format("raft.%s", logName);
-
-        final TransportConnectionPoolService transportConnectionPoolService = new TransportConnectionPoolService();
-
-        final ServiceName<TransportConnectionPool> transportConnectionPoolServiceName = transportConnectionPoolName(component);
-        serviceContainer.createService(transportConnectionPoolServiceName, transportConnectionPoolService)
-            .dependency(TRANSPORT, transportConnectionPoolService.getTransportInjector())
-            .install();
-
-        // TODO: make it configurable
-        final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(128);
-        final ServiceName<ChannelManager> clientChannelManagerServiceName = clientChannelManagerName(component);
-        serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
-            .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
-            .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
-            .dependency(serverSocketBindingReceiveBufferName(REPLICATION_SOCKET_BINDING_NAME), clientChannelManagerService.getReceiveBufferInjector())
-            .install();
-
-        final SubscriptionService subscriptionService = new SubscriptionService();
-        final ServiceName<Subscription> subscriptionServiceName = subscriptionServiceName(component);
-        serviceContainer.createService(subscriptionServiceName, subscriptionService)
-            .dependency(serverSocketBindingReceiveBufferName(REPLICATION_SOCKET_BINDING_NAME), subscriptionService.getReceiveBufferInjector())
-            .install();
 
         // TODO: provide raft configuration
         final RaftContextService raftContextService = new RaftContextService(serviceContainer);
         final ServiceName<RaftContext> raftContextServiceName = raftContextServiceName(logName);
         serviceContainer.createService(raftContextServiceName, raftContextService)
             .dependency(PEER_LOCAL_SERVICE, raftContextService.getLocalPeerInjector())
-            .dependency(TRANSPORT_SEND_BUFFER, raftContextService.getSendBufferInjector())
-            .dependency(clientChannelManagerServiceName, raftContextService.getClientChannelManagerInjector())
-            .dependency(transportConnectionPoolServiceName, raftContextService.getTransportConnectionPoolInjector())
-            .dependency(subscriptionServiceName, raftContextService.getSubscriptionInjector())
+            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME), raftContextService.getClientTransportInjector())
+            .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME), raftContextService.getReplicationApiTransportInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, raftContextService.getActorSchedulerInjector())
             .install();
 
@@ -299,7 +274,13 @@ public class ClusterManager implements Actor
             .install();
     }
 
-    public int onInvitationRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public boolean onInvitationRequest(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final ServerOutput output,
+            final RemoteAddress requestAddress,
+            final long requestId)
     {
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
@@ -313,14 +294,12 @@ public class ClusterManager implements Actor
         createRaft(logStream, new ArrayList<>(invitationRequest.members()), false);
 
         invitationResponse.reset();
-        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connectionId)
+        response.reset()
+            .remoteAddress(requestAddress)
             .requestId(requestId)
-            .message(invitationResponse)
-            .tryWriteMessage();
+            .writer(invitationResponse);
 
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        return output.sendResponse(response);
     }
 
 }

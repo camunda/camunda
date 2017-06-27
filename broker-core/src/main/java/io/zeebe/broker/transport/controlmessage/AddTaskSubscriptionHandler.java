@@ -15,12 +15,14 @@ package io.zeebe.broker.transport.controlmessage;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.transport.ServerOutput;
 
 public class AddTaskSubscriptionHandler implements ControlMessageHandler
 {
@@ -31,11 +33,11 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public AddTaskSubscriptionHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
+    public AddTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
     {
         this.manager = manager;
-        this.responseWriter = responseWriter;
-        this.errorResponseWriter = errorResponseWriter;
+        this.errorResponseWriter = new ErrorResponseWriter(output);
+        this.responseWriter = new ControlMessageResponseWriter(output);
     }
 
     @Override
@@ -51,7 +53,10 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
 
         subscription.wrap(buffer);
 
-        subscription.setChannelId(eventMetada.getReqChannelId());
+        final long requestId = eventMetada.getRequestId();
+        final int requestStreamId = eventMetada.getRequestStreamId();
+
+        subscription.setStreamId(requestStreamId);
 
         final CompletableFuture<Void> future = manager.addSubscription(subscription);
 
@@ -59,19 +64,19 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
         {
             if (failure == null)
             {
-                responseWriter
-                    .brokerEventMetadata(eventMetada)
+                final boolean success = responseWriter
                     .dataWriter(subscription)
-                    .tryWriteResponse();
+                    .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                // TODO: proper back pressure
             }
             else
             {
                 errorResponseWriter
-                    .metadata(eventMetada)
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                     .errorMessage("Cannot add task subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure();
+                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                // TODO: proper back pressure
             }
             return null;
         });

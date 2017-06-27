@@ -1,7 +1,8 @@
 package io.zeebe.broker.clustering.gossip.data;
 
-import static io.zeebe.broker.clustering.gossip.data.Peer.*;
-import static io.zeebe.clustering.gossip.PeerState.*;
+import static io.zeebe.broker.clustering.gossip.data.Peer.MAX_PEER_LENGTH;
+import static io.zeebe.clustering.gossip.PeerState.ALIVE;
+import static io.zeebe.clustering.gossip.PeerState.SUSPECT;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -15,6 +16,7 @@ import java.util.stream.StreamSupport;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
 import io.zeebe.list.CompactList;
 

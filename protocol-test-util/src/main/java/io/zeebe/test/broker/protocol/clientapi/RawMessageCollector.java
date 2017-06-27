@@ -6,14 +6,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.agrona.DirectBuffer;
-import io.zeebe.transport.Channel;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.protocol.TransportHeaderDescriptor;
-import io.zeebe.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
-import io.zeebe.transport.singlemessage.SingleMessageHeaderDescriptor;
-import io.zeebe.transport.spi.TransportChannelHandler;
 
-public class RawMessageCollector implements TransportChannelHandler, Supplier<RawMessage>
+import io.zeebe.transport.ClientInputListener;
+
+public class RawMessageCollector implements ClientInputListener, Supplier<RawMessage>
 {
     protected List<RawMessage> messages = new CopyOnWriteArrayList<>();
     protected int eventToReturn = 0;
@@ -56,56 +52,6 @@ public class RawMessageCollector implements TransportChannelHandler, Supplier<Ra
         return nextMessage;
     }
 
-    @Override
-    public void onChannelOpened(Channel transportChannel)
-    {
-    }
-
-    @Override
-    public void onChannelClosed(Channel transportChannel)
-    {
-    }
-
-    @Override
-    public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-    {
-    }
-
-    @Override
-    public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-    {
-        final short protocolId = buffer.getShort(TransportHeaderDescriptor.protocolIdOffset(offset));
-
-        int messageOffset = offset + TransportHeaderDescriptor.HEADER_LENGTH;
-        if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
-        {
-            messageOffset += SingleMessageHeaderDescriptor.HEADER_LENGTH;
-        }
-        else if (protocolId == Protocols.REQUEST_RESPONSE)
-        {
-            messageOffset += RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
-        }
-        else
-        {
-            throw new RuntimeException("unexpected protocol " + protocolId);
-        }
-
-        messages.add(new RawMessage(protocolId, messages.size(), buffer, messageOffset, length - (messageOffset - offset)));
-
-        synchronized (monitor)
-        {
-            monitor.notifyAll();
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-    {
-        return true;
-    }
-
     public List<RawMessage> getMessages()
     {
         return messages;
@@ -129,6 +75,26 @@ public class RawMessageCollector implements TransportChannelHandler, Supplier<Ra
     public long getNumMessagesFulfilling(Predicate<RawMessage> predicate)
     {
         return messages.stream().skip(eventToReturn).filter(predicate).count();
+    }
+
+    @Override
+    public void onResponse(int streamId, long requestId, DirectBuffer buffer, int offset, int length)
+    {
+        messages.add(new RawMessage(true, messages.size(), buffer, offset, length));
+        synchronized (monitor)
+        {
+            monitor.notifyAll();
+        }
+    }
+
+    @Override
+    public void onMessage(int streamId, DirectBuffer buffer, int offset, int length)
+    {
+        messages.add(new RawMessage(false, messages.size(), buffer, offset, length));
+        synchronized (monitor)
+        {
+            monitor.notifyAll();
+        }
     }
 
 }

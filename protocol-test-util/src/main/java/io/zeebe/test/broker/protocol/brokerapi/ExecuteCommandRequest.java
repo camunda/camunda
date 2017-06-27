@@ -12,6 +12,8 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 
+import io.zeebe.transport.RemoteAddress;
+
 public class ExecuteCommandRequest implements BufferReader
 {
 
@@ -22,11 +24,11 @@ public class ExecuteCommandRequest implements BufferReader
 
     protected String topicName;
     protected Map<String, Object> command;
-    protected int channelId;
+    protected RemoteAddress source;
 
-    public ExecuteCommandRequest(int channelId, MsgPackHelper msgPackHelper)
+    public ExecuteCommandRequest(RemoteAddress source, MsgPackHelper msgPackHelper)
     {
-        this.channelId = channelId;
+        this.source = source;
         this.msgPackHelper = msgPackHelper;
     }
 
@@ -55,9 +57,9 @@ public class ExecuteCommandRequest implements BufferReader
         return command;
     }
 
-    public int getChannelId()
+    public RemoteAddress getSource()
     {
-        return channelId;
+        return source;
     }
 
     @Override

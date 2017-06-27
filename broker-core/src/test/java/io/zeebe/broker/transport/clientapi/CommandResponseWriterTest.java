@@ -12,25 +12,19 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.protocol.TransportHeaderDescriptor;
-import io.zeebe.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
-import io.zeebe.util.buffer.DirectBufferWriter;
 import org.junit.Before;
 import org.junit.Test;
+
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class CommandResponseWriterTest
 {
@@ -40,22 +34,15 @@ public class CommandResponseWriterTest
     private static final long KEY = 2L;
     private static final byte[] EVENT = getBytes("eventType");
 
-    private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
-
-    private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
-    private final RequestResponseProtocolHeaderDescriptor protocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
     private CommandResponseWriter responseWriter;
-
-    private BrokerEventMetadata metadata;
     private DirectBufferWriter eventWriter;
 
     @Before
     public void setup()
     {
-        metadata = new BrokerEventMetadata();
         eventWriter = new DirectBufferWriter();
     }
 
@@ -63,14 +50,7 @@ public class CommandResponseWriterTest
     public void shouldWriteResponse()
     {
         // given
-        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().claim().done();
-        responseWriter = new CommandResponseWriter(mockDispatcher);
-
-        // when
-        metadata
-            .reqChannelId(1)
-            .reqConnectionId(2L)
-            .reqRequestId(3L);
+        responseWriter = new CommandResponseWriter(null);
 
         eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
@@ -78,25 +58,17 @@ public class CommandResponseWriterTest
             .topicName(TOPIC_NAME_BUFFER)
             .partitionId(PARTITION_ID)
             .key(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
-            .tryWriteResponse();
+            .eventWriter(eventWriter);
+
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
+
+        // when
+        responseWriter.write(buf, 0);
 
         // then
-        int offset = DataFrameDescriptor.HEADER_LENGTH;
+        int offset = 0;
 
-        transportHeaderDescriptor.wrap(sendBuffer, offset);
-        assertThat(transportHeaderDescriptor.protocolId()).isEqualTo(Protocols.REQUEST_RESPONSE);
-
-        offset += TransportHeaderDescriptor.HEADER_LENGTH;
-
-        protocolHeaderDescriptor.wrap(sendBuffer, offset);
-        assertThat(protocolHeaderDescriptor.connectionId()).isEqualTo(2L);
-        assertThat(protocolHeaderDescriptor.requestId()).isEqualTo(3L);
-
-        offset += RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
-
-        messageHeaderDecoder.wrap(sendBuffer, offset);
+        messageHeaderDecoder.wrap(buf, offset);
         assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
         assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
         assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
@@ -104,7 +76,7 @@ public class CommandResponseWriterTest
 
         offset += messageHeaderDecoder.encodedLength();
 
-        responseDecoder.wrap(sendBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
+        responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
         assertThat(responseDecoder.topicName()).isEqualTo(TOPIC_NAME);
         assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
         assertThat(responseDecoder.key()).isEqualTo(2L);
@@ -114,59 +86,4 @@ public class CommandResponseWriterTest
         final byte[] event = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
         assertThat(event).isEqualTo(EVENT);
     }
-
-    @Test
-    public void shouldRetryClaimFragmentIfPadding()
-    {
-        // given
-        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().padding().then().claim().done();
-        responseWriter = new CommandResponseWriter(mockDispatcher);
-
-        // when
-        metadata
-            .reqChannelId(1)
-            .reqConnectionId(1L)
-            .reqRequestId(2L);
-
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
-        final boolean isSent = responseWriter
-            .topicName(TOPIC_NAME_BUFFER)
-            .partitionId(PARTITION_ID)
-            .key(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
-            .tryWriteResponse();
-
-        // then
-        assertThat(isSent).isTrue();
-    }
-
-    @Test
-    public void shouldFailIfCannotClaimFragment()
-    {
-        // given
-        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().fail().done();
-        responseWriter = new CommandResponseWriter(mockDispatcher);
-
-        // when
-        metadata
-            .reqChannelId(1)
-            .reqConnectionId(1L)
-            .reqRequestId(2L);
-
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
-        final boolean isSent = responseWriter
-            .topicName(TOPIC_NAME_BUFFER)
-            .partitionId(PARTITION_ID)
-            .key(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
-            .tryWriteResponse();
-
-        // then
-        assertThat(isSent).isFalse();
-    }
-
 }

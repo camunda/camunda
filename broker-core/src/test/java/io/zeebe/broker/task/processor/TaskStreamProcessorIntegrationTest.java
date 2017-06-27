@@ -1,17 +1,33 @@
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
+import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_PAYLOAD;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
@@ -20,7 +36,11 @@ import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
@@ -28,13 +48,6 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.FluentMock;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.time.ClockUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorIntegrationTest
 {
@@ -75,7 +88,7 @@ public class TaskStreamProcessorIntegrationTest
     private LogStreamWriter logStreamWriter;
 
     private final BrokerEventMetadata defaultBrokerEventMetadata = new BrokerEventMetadata();
-    private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
+//    private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
 
     private final TaskEvent followUpTaskEvent = new TaskEvent();
 
@@ -84,20 +97,20 @@ public class TaskStreamProcessorIntegrationTest
     {
         MockitoAnnotations.initMocks(this);
 
-        when(mockResponseWriter.tryWriteResponse()).thenReturn(true);
-        when(mockSubscribedEventWriter.tryWriteMessage()).thenReturn(true);
+        when(mockResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+        when(mockSubscribedEventWriter.tryWriteMessage(anyInt())).thenReturn(true);
 
-        doAnswer(invocation ->
-        {
-            final BrokerEventMetadata metadata =  (BrokerEventMetadata) invocation.getArguments()[0];
-
-            final UnsafeBuffer metadataBuffer = new UnsafeBuffer(new byte[metadata.getLength()]);
-            metadata.write(metadataBuffer, 0);
-
-            lastBrokerEventMetadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
-
-            return invocation.getMock();
-        }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
+//        doAnswer(invocation ->
+//        {
+//            final BrokerEventMetadata metadata =  (BrokerEventMetadata) invocation.getArguments()[0];
+//
+//            final UnsafeBuffer metadataBuffer = new UnsafeBuffer(new byte[metadata.getLength()]);
+//            metadata.write(metadataBuffer, 0);
+//
+//            lastBrokerEventMetadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
+//
+//            return invocation.getMock();
+//        }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
 
         final String rootPath = tempFolder.getRoot().getAbsolutePath();
 
@@ -186,7 +199,7 @@ public class TaskStreamProcessorIntegrationTest
         verify(mockResponseWriter).topicName(TOPIC_NAME);
         verify(mockResponseWriter).partitionId(PARTITION_ID);
         verify(mockResponseWriter).key(2L);
-        verify(mockResponseWriter).tryWriteResponse();
+        verify(mockResponseWriter).tryWriteResponse(anyInt(), anyLong());
     }
 
     @Test
@@ -195,7 +208,7 @@ public class TaskStreamProcessorIntegrationTest
         // given
         final TaskSubscription subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
                 .setLockOwner(wrapString("owner"))
@@ -234,10 +247,9 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(MSGPACK_PAYLOAD.length)
             .hasBytes(MSGPACK_PAYLOAD);
 
-        verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
 
-        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
-        verify(mockSubscribedEventWriter).channelId(11);
+        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(11);
         verify(mockSubscribedEventWriter).subscriberKey(1L);
         verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
     }
@@ -248,7 +260,7 @@ public class TaskStreamProcessorIntegrationTest
         // given
         final TaskSubscription subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
                 .setLockOwner(wrapString("owner"))
@@ -301,7 +313,7 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(modifiedPayload.length)
             .hasBytes(modifiedPayload);
 
-        verify(mockResponseWriter, times(2)).tryWriteResponse();
+        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
 
     @Test
@@ -310,7 +322,7 @@ public class TaskStreamProcessorIntegrationTest
         // given
         final TaskSubscription subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
                 .setLockOwner(wrapString("owner"))
@@ -363,7 +375,7 @@ public class TaskStreamProcessorIntegrationTest
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
-        verify(mockResponseWriter, times(2)).tryWriteResponse();
+        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
 
     @Test
@@ -377,7 +389,7 @@ public class TaskStreamProcessorIntegrationTest
 
         final TaskSubscription subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(lockDuration.toMillis())
                 .setLockOwner(wrapString("owner"))
@@ -434,8 +446,8 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(MSGPACK_PAYLOAD.length)
             .hasBytes(MSGPACK_PAYLOAD);
 
-        verify(mockResponseWriter, times(1)).tryWriteResponse();
-        verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
+        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
+        verify(mockSubscribedEventWriter, times(2)).tryWriteMessage(anyInt());
     }
 
     @Test
@@ -444,7 +456,7 @@ public class TaskStreamProcessorIntegrationTest
         // given
         final TaskSubscription subscription = new TaskSubscription()
                 .setSubscriberKey(1L)
-                .setChannelId(11)
+                .setStreamId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
                 .setLockOwner(wrapString("owner"))
@@ -511,7 +523,7 @@ public class TaskStreamProcessorIntegrationTest
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
-        verify(mockResponseWriter, times(3)).tryWriteResponse();
+        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
 
         assertThat(followUpTaskEvent.getRetries()).isEqualTo(2);
     }

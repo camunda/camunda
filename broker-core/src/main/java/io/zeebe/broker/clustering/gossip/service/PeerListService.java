@@ -1,6 +1,6 @@
 package io.zeebe.broker.clustering.gossip.service;
 
-import static io.zeebe.clustering.gossip.PeerState.*;
+import static io.zeebe.clustering.gossip.PeerState.ALIVE;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;

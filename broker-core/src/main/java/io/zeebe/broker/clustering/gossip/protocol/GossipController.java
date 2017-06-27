@@ -1,6 +1,6 @@
 package io.zeebe.broker.clustering.gossip.protocol;
 
-import static io.zeebe.clustering.gossip.PeerState.*;
+import static io.zeebe.clustering.gossip.PeerState.ALIVE;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.gossip.GossipContext;
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.Heartbeat;
@@ -16,9 +17,9 @@ import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.message.GossipRequest;
 import io.zeebe.broker.clustering.gossip.message.GossipResponse;
-import io.zeebe.broker.clustering.util.MessageWriter;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.protocol.Protocols;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.StreamUtil;
 
 public class GossipController
@@ -36,7 +37,7 @@ public class GossipController
     private final PeerList diff;
     private final GossipRequest gossipRequest;
     private final GossipResponse gossipResponse;
-    private final MessageWriter responseWriter;
+    protected final ServerResponse response = new ServerResponse();
 
     private Dissemination[] disseminators;
     private FailureDetection[] failureDetectors;
@@ -56,7 +57,6 @@ public class GossipController
         this.diff = new PeerList(config.peerCapacity);
         this.gossipRequest = new GossipRequest();
         this.gossipResponse = new GossipResponse();
-        this.responseWriter = new MessageWriter(context.getSendBuffer());
         this.gossipFileName = config.fileName();
 
         this.tmp = new Peer();
@@ -294,7 +294,13 @@ public class GossipController
         return probe;
     }
 
-    public int onGossipRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public boolean onGossipRequest(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final ServerOutput output,
+            final RemoteAddress requestAddress,
+            final long requestId)
     {
         gossipRequest.wrap(buffer, offset, length);
 
@@ -329,29 +335,33 @@ public class GossipController
         // try to write response only once, if it fails
         // do not retry it, since with the next request
         // we try to respond again.
-        responseWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connectionId)
+        response.reset()
+            .remoteAddress(requestAddress)
             .requestId(requestId)
-            .message(gossipResponse)
-            .tryWriteMessage();
+            .writer(gossipResponse);
 
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        return output.sendResponse(response);
     }
 
-    public int onProbeRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public boolean onProbeRequest(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final ServerOutput output,
+            final RemoteAddress requestAddress,
+            final long requestId)
     {
         final Probe probeHandler = getClosedProbe();
 
         if (probeHandler != null)
         {
-            probeHandler.open(buffer, offset, length, channelId, connectionId, requestId);
+            probeHandler.open(buffer, offset, length, output, requestAddress, requestId);
         }
         // else -> all probe handler are active! just consume that request
         // and do not respond. The client (the one sent this probe request)
         // will most likely timeout or maybe receive a response from another
         // prober (if there are more than 1 prober per failed peer).
 
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        return true;
     }
 }

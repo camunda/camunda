@@ -1,12 +1,10 @@
 package io.zeebe.broker.clustering.raft;
 
 import io.zeebe.broker.clustering.raft.state.LogStreamState;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class RaftContext
@@ -17,10 +15,9 @@ public class RaftContext
     private ServiceContainer serviceContainer;
     private ActorScheduler actorScheduler;
     private SocketAddress raftEndpoint;
-    private Subscription subscription;
-    private ChannelManager clientChannelManager;
-    private TransportConnectionPool connections;
-    private Dispatcher sendBuffer;
+
+    protected ClientTransport clientTransport;
+    protected BufferingServerTransport serverTransport;
 
     public Raft getRaft()
     {
@@ -52,43 +49,24 @@ public class RaftContext
         this.raftEndpoint = raftEndpoint;
     }
 
-    public Subscription getSubscription()
+    public ClientTransport getClientTransport()
     {
-        return subscription;
-    }
-    public void setSubscription(Subscription subscription)
-    {
-        this.subscription = subscription;
+        return clientTransport;
     }
 
-    public ChannelManager getClientChannelPool()
+    public void setClientTransport(ClientTransport clientTransport)
     {
-        return clientChannelManager;
+        this.clientTransport = clientTransport;
     }
 
-    public void setClientChannelPool(ChannelManager clientChannelManager)
+    public BufferingServerTransport getServerTransport()
     {
-        this.clientChannelManager = clientChannelManager;
+        return serverTransport;
     }
 
-    public TransportConnectionPool getConnections()
+    public void setServerTransport(BufferingServerTransport serverTransport)
     {
-        return connections;
-    }
-
-    public void setConnections(TransportConnectionPool connections)
-    {
-        this.connections = connections;
-    }
-
-    public Dispatcher getSendBuffer()
-    {
-        return sendBuffer;
-    }
-
-    public void setSendBuffer(Dispatcher sendBuffer)
-    {
-        this.sendBuffer = sendBuffer;
+        this.serverTransport = serverTransport;
     }
 
     public ActorScheduler getTaskScheduler()

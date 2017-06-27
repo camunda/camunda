@@ -499,10 +499,9 @@ public class TopicSubscriptionTest
         final long firstSubscriberKey = subscriptionResponse.key();
 
         // when the transport channel is closed
-        apiRule.closeChannel();
+        apiRule.interruptAllChannels();
 
         // then the subscription has been closed and we can reopen it
-        apiRule.openChannel();
         subscriptionResponse = TestUtil.doRepeatedly(() ->
         {
             // it is not guaranteed this succeeds the first time as the event of the closed channel is asynchronous by nature

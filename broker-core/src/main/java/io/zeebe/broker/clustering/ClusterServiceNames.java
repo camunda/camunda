@@ -9,10 +9,7 @@ import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterServiceNames
 {
@@ -36,21 +33,6 @@ public class ClusterServiceNames
     public static ServiceName<Raft> raftServiceName(final String name)
     {
         return ServiceName.newServiceName(String.format("cluster.raft.%s", name), Raft.class);
-    }
-
-    public static ServiceName<Subscription> subscriptionServiceName(final String name)
-    {
-        return ServiceName.newServiceName(String.format("cluster.%s.subscription", name), Subscription.class);
-    }
-
-    public static ServiceName<ChannelManager> clientChannelManagerName(final String name)
-    {
-        return ServiceName.newServiceName(String.format("cluster.%s.client.channel.manager", name), ChannelManager.class);
-    }
-
-    public static ServiceName<TransportConnectionPool> transportConnectionPoolName(final String name)
-    {
-        return ServiceName.newServiceName(String.format("cluster.%s.connection.pool", name), TransportConnectionPool.class);
     }
 
 }

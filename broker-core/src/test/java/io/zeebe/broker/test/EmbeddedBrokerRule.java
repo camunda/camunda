@@ -80,7 +80,7 @@ public class EmbeddedBrokerRule extends ExternalResource
             // How to make it better: https://github.com/camunda-tngp/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
                 .dependency(TopicSubscriptionServiceNames.subscriptionManagementServiceName(DEFAULT_LOG_NAME))
-                .dependency(TransportServiceNames.serverSocketBindingReceiveBufferName(TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME))
+                .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .dependency(taskQueueInstanceStreamProcessorServiceName(DEFAULT_LOG_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);

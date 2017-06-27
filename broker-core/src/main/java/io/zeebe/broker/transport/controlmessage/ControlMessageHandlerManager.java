@@ -1,15 +1,3 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.broker.transport.controlmessage;
 
 import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
@@ -22,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.dispatcher.Dispatcher;
@@ -31,10 +20,17 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.util.actor.ActorReference;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.*;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.TransitionState;
+import io.zeebe.util.state.WaitState;
 import io.zeebe.util.time.ClockUtil;
 
 public class ControlMessageHandlerManager implements Actor
@@ -81,12 +77,13 @@ public class ControlMessageHandlerManager implements Actor
 
     protected final ErrorResponseWriter errorResponseWriter;
     protected final BrokerEventMetadata eventMetada = new BrokerEventMetadata();
+    protected final ServerResponse response = new ServerResponse();
 
     protected final long requestTimeoutInMillis;
 
     public ControlMessageHandlerManager(
+            ServerOutput output,
             Dispatcher controlMessageDispatcher,
-            ErrorResponseWriter errorResponseWriter,
             long requestTimeoutInMillis,
             ActorScheduler actorScheduler,
             List<ControlMessageHandler> handlers)
@@ -94,7 +91,7 @@ public class ControlMessageHandlerManager implements Actor
         this.actorScheduler = actorScheduler;
         this.controlMessageDispatcher = controlMessageDispatcher;
         this.requestTimeoutInMillis = requestTimeoutInMillis;
-        this.errorResponseWriter = errorResponseWriter;
+        this.errorResponseWriter = new ErrorResponseWriter(output);
 
         for (ControlMessageHandler handler : handlers)
         {
@@ -220,9 +217,8 @@ public class ControlMessageHandlerManager implements Actor
             eventMetada.reset();
 
             eventMetada
-                .reqChannelId(requestHeaderDescriptor.channelId())
-                .reqConnectionId(requestHeaderDescriptor.connectionId())
-                .reqRequestId(requestHeaderDescriptor.requestId());
+                .requestId(requestHeaderDescriptor.requestId())
+                .requestStreamId(requestHeaderDescriptor.streamId());
 
             offset += ControlMessageRequestHeaderDescriptor.headerLength();
 
@@ -286,12 +282,12 @@ public class ControlMessageHandlerManager implements Actor
             }
             else if (hasTimeout(startTime))
             {
-                errorResponseWriter
+                final boolean success = errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_TIMEOUT)
                     .errorMessage("Timeout while handle control message.")
                     .failedRequest(requestBuffer, 0, requestBuffer.capacity())
-                    .metadata(eventMetada)
-                    .tryWriteResponseOrLogFailure();
+                    .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                // TODO: proper backpressure
 
                 context.take(TRANSITION_DEFAULT);
             }
@@ -308,12 +304,12 @@ public class ControlMessageHandlerManager implements Actor
         @Override
         public void work(Context context) throws Exception
         {
-            errorResponseWriter
+            final boolean success = errorResponseWriter
                 .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
                 .errorMessage("Cannot handle control message with type '%s'.", context.getLastRequestMessageType().name())
                 .failedRequest(requestBuffer, 0, requestBuffer.capacity())
-                .metadata(eventMetada)
-                .tryWriteResponseOrLogFailure();
+                .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+            // TODO: proper backpressure
 
             context.take(TRANSITION_DEFAULT);
         }

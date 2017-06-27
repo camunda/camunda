@@ -1,6 +1,7 @@
 package io.zeebe.client.task.impl.subscription;
 
-import io.zeebe.client.event.impl.EventSubscription;
+import org.slf4j.Logger;
+
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.TaskTopicClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
@@ -8,7 +9,6 @@ import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.client.task.impl.TaskEvent;
-import org.slf4j.Logger;
 
 public class TaskSubscriptionImpl
     extends EventSubscription<TaskSubscriptionImpl>
@@ -34,9 +34,10 @@ public class TaskSubscriptionImpl
             String lockOwner,
             int capacity,
             MsgPackMapper msgPackMapper,
-            boolean autoComplete)
+            boolean autoComplete,
+            EventAcquisition<TaskSubscriptionImpl> acqusition)
     {
-        super(capacity);
+        super(capacity, acqusition);
         this.taskClient = client;
         this.taskHandler = taskHandler;
         this.taskType = taskType;
@@ -131,6 +132,12 @@ public class TaskSubscriptionImpl
     }
 
     @Override
+    public String toString()
+    {
+        return "TaskSubscriptionImpl [taskType=" + taskType + ", subscriberKey=" + subscriberKey + "]";
+    }
+
+    @Override
     public String getTopicName()
     {
         return taskClient.getTopic().getTopicName();
@@ -140,11 +147,5 @@ public class TaskSubscriptionImpl
     public int getPartitionId()
     {
         return taskClient.getTopic().getPartitionId();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "TaskSubscriptionImpl [taskType=" + taskType + ", subscriberKey=" + subscriberKey + "]";
     }
 }

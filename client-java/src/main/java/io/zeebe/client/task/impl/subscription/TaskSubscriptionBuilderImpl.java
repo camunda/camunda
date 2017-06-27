@@ -2,7 +2,6 @@ package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
 
-import io.zeebe.client.event.impl.EventAcquisition;
 import io.zeebe.client.impl.TaskTopicClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.TaskHandler;
@@ -94,9 +93,10 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
                 lockOwner,
                 taskFetchSize,
                 msgPackMapper,
-                autoCompleteTasks);
+                autoCompleteTasks,
+                taskAcquisition);
 
-        taskAcquisition.newSubscriptionAsync(subscription).join();
+        taskAcquisition.newSubscriptionAsync(subscription);
 
         subscription.open();
 

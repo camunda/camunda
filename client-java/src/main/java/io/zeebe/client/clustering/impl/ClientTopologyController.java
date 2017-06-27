@@ -5,12 +5,10 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-import io.zeebe.transport.AsyncRequestController;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.state.SimpleStateMachineContext;
@@ -32,11 +30,11 @@ public class ClientTopologyController
     protected final ClosedState closedState = new ClosedState();
     protected final IdleState idleState = new IdleState();
 
-    protected final AsyncRequestController requestController;
+    protected final RequestResponseController requestController;
 
-    public ClientTopologyController(final ChannelManager channelManager, final TransportConnectionPool connectionPool)
+    public ClientTopologyController(final ClientTransport clientTransport)
     {
-        requestController = new AsyncRequestController(channelManager, connectionPool);
+        requestController = new RequestResponseController(clientTransport);
 
         stateMachine = StateMachine.builder(Context::new)
             .initialState(requestTopologyState)
@@ -68,7 +66,8 @@ public class ClientTopologyController
 
     public int doWork()
     {
-        return stateMachine.doWork();
+        int workCount = stateMachine.doWork();
+        return workCount += requestController.doWork();
     }
 
     public boolean isIdle()
@@ -82,8 +81,7 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            context.requestFuture = new CompletableFuture<>();
-            requestController.configure(context.socketAddress, context.bufferWriter, context.bufferReader, context.requestFuture);
+            requestController.open(context.socketAddress, context.bufferWriter, context.bufferReader);
 
             context.take(TRANSITION_DEFAULT);
 
@@ -98,26 +96,23 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final CompletableFuture<Integer> requestFuture = context.requestFuture;
-
-            if (requestFuture.isDone())
+            if (requestController.isResponseAvailable())
             {
-                try
-                {
-                    requestFuture.get();
-                    context.take(TRANSITION_DEFAULT);
-                }
-                catch (final ExecutionException e)
-                {
-                    context.exception = e.getCause();
-                    context.take(TRANSITION_FAILED);
-                }
+                context.resultFuture.complete(null);
+                context.take(TRANSITION_DEFAULT);
+
+                return 1;
+            }
+            else if (requestController.isFailed())
+            {
+                context.resultFuture.completeExceptionally(requestController.getFailure());
+                context.take(TRANSITION_FAILED);
 
                 return 1;
             }
             else
             {
-                return requestController.doWork();
+                return 0;
             }
         }
     }
@@ -128,30 +123,13 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final CompletableFuture<Void> resultFuture = context.resultFuture;
-
-            if (resultFuture != null && !resultFuture.isDone())
-            {
-                final Throwable exception = context.exception;
-
-                if (exception == null)
-                {
-                    resultFuture.complete(null);
-                }
-                else
-                {
-                    resultFuture.completeExceptionally(exception);
-                }
-
-            }
-
+            requestController.close();
             context.take(TRANSITION_DEFAULT);
 
             context.reset();
 
             return 1;
         }
-
     }
 
     private class IdleState implements WaitState<Context>
@@ -179,9 +157,6 @@ public class ClientTopologyController
         BufferWriter bufferWriter;
         BufferReader bufferReader;
 
-        CompletableFuture<Integer> requestFuture;
-        Throwable exception;
-
         // set during reset of context, e.g. on configure(...) and CloseState
         Instant nextRefresh;
 
@@ -198,9 +173,6 @@ public class ClientTopologyController
                 resultFuture.cancel(true);
             }
             resultFuture = null;
-
-            requestFuture = null;
-            exception = null;
 
             nextRefresh = Instant.now().plus(REFRESH_INTERVAL);
         }

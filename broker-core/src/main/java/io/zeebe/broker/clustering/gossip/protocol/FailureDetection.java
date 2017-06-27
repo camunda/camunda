@@ -3,6 +3,7 @@ package io.zeebe.broker.clustering.gossip.protocol;
 import static io.zeebe.clustering.gossip.PeerState.ALIVE;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.gossip.GossipContext;
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
 import io.zeebe.broker.clustering.gossip.data.Peer;
@@ -10,9 +11,8 @@ import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerSelector;
 import io.zeebe.broker.clustering.gossip.message.GossipResponse;
 import io.zeebe.broker.clustering.gossip.message.ProbeRequest;
-import io.zeebe.broker.clustering.util.RequestResponseController;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -164,8 +164,7 @@ public class FailureDetection
             this.request = new ProbeRequest();
             this.response = new GossipResponse();
 
-            final ChannelManager clientChannelManager = gossipContext.getClientChannelPool();
-            final TransportConnectionPool connections = gossipContext.getConnections();
+            final ClientTransport clientTransport = gossipContext.getClientTransport();
             final GossipConfiguration config = gossipContext.getConfig();
             final PeerSelector peerSelector = gossipContext.getPeerSelector();
 
@@ -182,7 +181,7 @@ public class FailureDetection
             for (int i = 0; i < capacity; i++)
             {
                 targets[i] = new Peer();
-                requestControllers[i] = new RequestResponseController(clientChannelManager, connections, config.failureDetectorTimeout);
+                requestControllers[i] = new RequestResponseController(clientTransport, config.failureDetectorTimeout);
             }
         }
 
@@ -231,7 +230,7 @@ public class FailureDetection
             {
                 final RequestResponseController controller = requestControllers[i];
                 final Peer target = targets[i];
-                controller.open(target.managementEndpoint(), request);
+                controller.open(target.managementEndpoint(), request, null);
             }
 
             context.take(TRANSITION_DEFAULT);

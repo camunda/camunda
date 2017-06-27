@@ -1,9 +1,13 @@
 package io.zeebe.broker.workflow.graph.transformer;
 
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.INPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.OUTPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZEEBE_NAMESPACE;
+
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.*;
+import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 
 /**
  * Represents a builder to create the IO mapping fluently.

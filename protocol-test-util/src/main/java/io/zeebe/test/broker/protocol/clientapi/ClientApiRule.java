@@ -1,77 +1,77 @@
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.*;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.requestresponse.client.RequestResponseChannelHandler;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPoolImpl;
-import io.zeebe.transport.spi.TransportChannelHandler;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
+import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
     public static final int DEFAULT_PARTITION_ID = 0;
 
-    protected Transport transport;
+    protected ClientTransport transport;
+    protected Dispatcher sendBuffer;
 
     protected final int port = 51015;
     protected final String host = "localhost";
-
-    protected ChannelManager clientChannelPool;
-    protected Channel clientChannel;
-
-    protected TransportConnectionPool connectionPool;
+    protected final SocketAddress brokerAddress;
+    protected RemoteAddress streamAddress;
 
     protected MsgPackHelper msgPackHelper;
     protected RawMessageCollector incomingMessageCollector;
 
+    public ClientApiRule()
+    {
+        this.brokerAddress = new SocketAddress(host, port);
+    }
+
     @Override
     protected void before() throws Throwable
     {
+
+        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler();
+
+        sendBuffer = Dispatchers.create("clientSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(scheduler)
+            .build();
+
         incomingMessageCollector = new RawMessageCollector();
-        transport = Transports.createTransport("testTransport")
-                .actorScheduler(ActorSchedulerBuilder.createDefaultScheduler())
+
+        transport = Transports.newClientTransport()
+                .inputListener(incomingMessageCollector)
+                .scheduler(scheduler)
+                .requestPoolSize(128)
+                .sendBuffer(sendBuffer)
                 .build();
-
-        connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 2, 64);
-
-        final TransportChannelHandler requestResponseHandler = broadcastingHandler(
-                incomingMessageCollector,
-                new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
-
-        clientChannelPool = transport.createClientChannelPool()
-                .transportChannelHandler(Protocols.REQUEST_RESPONSE, requestResponseHandler)
-                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, incomingMessageCollector)
-                .build();
-
-        openChannel();
 
         msgPackHelper = new MsgPackHelper();
+        streamAddress = transport.registerRemoteAddress(brokerAddress);
     }
 
     @Override
     protected void after()
     {
 
-        if (connectionPool != null)
+        if (sendBuffer != null)
         {
-            connectionPool.close();
-        }
-
-        if (clientChannel != null)
-        {
-            closeChannel();
+            sendBuffer.close();
         }
 
         if (transport != null)
@@ -82,14 +82,13 @@ public class ClientApiRule extends ExternalResource
 
     public ExecuteCommandRequestBuilder createCmdRequest()
     {
-        return new ExecuteCommandRequestBuilder(connectionPool, clientChannel.getStreamId(), msgPackHelper);
+        return new ExecuteCommandRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper);
     }
 
     public ControlMessageRequestBuilder createControlMessageRequest()
     {
-        return new ControlMessageRequestBuilder(connectionPool, clientChannel.getStreamId(), msgPackHelper);
+        return new ControlMessageRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper);
     }
-
 
     public ClientApiRule moveMessageStreamToTail()
     {
@@ -189,6 +188,11 @@ public class ClientApiRule extends ExternalResource
         return incomingMessages().filter(this::isCommandResponse);
     }
 
+    public void interruptAllChannels()
+    {
+        transport.interruptAllChannels();
+    }
+
     protected SubscribedEvent asSubscribedEvent(RawMessage message)
     {
         final SubscribedEvent event = new SubscribedEvent(message);
@@ -198,13 +202,13 @@ public class ClientApiRule extends ExternalResource
 
     protected boolean isCommandResponse(RawMessage message)
     {
-        return message.getProtocolId() == Protocols.REQUEST_RESPONSE &&
+        return message.isResponse() &&
                 isMessageOfType(message.getMessage(), ExecuteCommandResponseDecoder.TEMPLATE_ID);
     }
 
     protected boolean isSubscribedEvent(RawMessage message)
     {
-        return message.getProtocolId() == Protocols.FULL_DUPLEX_SINGLE_MESSAGE &&
+        return message.isMessage() &&
                 isMessageOfType(message.getMessage(), SubscribedEventDecoder.TEMPLATE_ID);
 
     }
@@ -216,66 +220,4 @@ public class ClientApiRule extends ExternalResource
 
         return headerDecoder.templateId() == type;
     }
-
-    public void closeChannel()
-    {
-        if (clientChannel == null)
-        {
-            throw new RuntimeException("No channel open");
-        }
-
-        clientChannelPool.closeAllChannelsAsync().join();
-        clientChannel = null;
-    }
-
-    public void openChannel()
-    {
-        if (clientChannel != null)
-        {
-            throw new RuntimeException("Cannot open more than one channel at once");
-        }
-
-        clientChannel = clientChannelPool.requestChannel(new SocketAddress(host, port));
-    }
-
-    protected TransportChannelHandler broadcastingHandler(TransportChannelHandler... handlers)
-    {
-        return new TransportChannelHandler()
-        {
-
-            @Override
-            public boolean onControlFrame(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-            {
-                Arrays.stream(handlers).forEach((h) -> h.onControlFrame(transportChannel, buffer, offset, length));
-                return true;
-            }
-
-            @Override
-            public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-            {
-                Arrays.stream(handlers).forEach((h) -> h.onChannelSendError(transportChannel, buffer, offset, length));
-            }
-
-            @Override
-            public boolean onChannelReceive(Channel transportChannel, DirectBuffer buffer, int offset, int length)
-            {
-                return Arrays.stream(handlers)
-                        .map((h) -> h.onChannelReceive(transportChannel, buffer, offset, length))
-                        .allMatch((b) -> true);
-            }
-
-            @Override
-            public void onChannelOpened(Channel transportChannel)
-            {
-                Arrays.stream(handlers).forEach((h) -> h.onChannelOpened(transportChannel));
-            }
-
-            @Override
-            public void onChannelClosed(Channel transportChannel)
-            {
-                Arrays.stream(handlers).forEach((h) -> h.onChannelClosed(transportChannel));
-            }
-        };
-    }
-
 }

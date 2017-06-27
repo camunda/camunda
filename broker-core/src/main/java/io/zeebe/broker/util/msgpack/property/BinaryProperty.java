@@ -1,6 +1,7 @@
 package io.zeebe.broker.util.msgpack.property;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.util.msgpack.value.BinaryValue;
 
 public class BinaryProperty extends BaseProperty<BinaryValue>

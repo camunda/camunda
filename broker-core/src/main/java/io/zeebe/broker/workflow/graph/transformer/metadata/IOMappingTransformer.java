@@ -1,6 +1,11 @@
 package io.zeebe.broker.workflow.graph.transformer.metadata;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.*;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.INPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.IO_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.MAPPING_ATTRIBUTE_SOURCE;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.MAPPING_ATTRIBUTE_TARGET;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.OUTPUT_MAPPING_ELEMENT;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZEEBE_NAMESPACE;
 import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
 
 import java.util.List;
@@ -9,6 +14,7 @@ import org.agrona.Strings;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+
 import io.zeebe.broker.workflow.graph.model.metadata.IOMapping;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.Mapping;

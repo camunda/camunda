@@ -2,19 +2,19 @@ package io.zeebe.broker.clustering.raft.service;
 
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.raft.RaftContext;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class RaftContextService implements Service<RaftContext>
 {
-    private final Injector<ChannelManager> clientChannelManagerInjector = new Injector<>();
-    private final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
-    private final Injector<Subscription> subscriptionInjector = new Injector<>();
-    private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+    private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+    private final Injector<BufferingServerTransport> replicationApiTransportInjector = new Injector<>();
     private final Injector<Peer> localPeerInjector = new Injector<>();
     private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
@@ -29,18 +29,15 @@ public class RaftContextService implements Service<RaftContext>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ChannelManager clientChannelManager = clientChannelManagerInjector.getValue();
-        final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
-        final Subscription subscription = subscriptionInjector.getValue();
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
+        final ClientTransport clientTransport = clientTransportInjector.getValue();
+        final BufferingServerTransport serverTransport = replicationApiTransportInjector.getValue();
+
         final Peer localPeer = localPeerInjector.getValue();
         final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         raftContext = new RaftContext();
-        raftContext.setClientChannelPool(clientChannelManager);
-        raftContext.setConnections(connectionPool);
-        raftContext.setSubscription(subscription);
-        raftContext.setSendBuffer(sendBuffer);
+        raftContext.setClientTransport(clientTransport);
+        raftContext.setServerTransport(serverTransport);
         raftContext.setRaftEndpoint(localPeer.replicationEndpoint());
         raftContext.setTaskScheduler(actorScheduler);
         raftContext.setServiceContainer(serviceContainer);
@@ -57,24 +54,14 @@ public class RaftContextService implements Service<RaftContext>
         return raftContext;
     }
 
-    public Injector<ChannelManager> getClientChannelManagerInjector()
+    public Injector<ClientTransport> getClientTransportInjector()
     {
-        return clientChannelManagerInjector;
+        return clientTransportInjector;
     }
 
-    public Injector<TransportConnectionPool> getTransportConnectionPoolInjector()
+    public Injector<BufferingServerTransport> getReplicationApiTransportInjector()
     {
-        return transportConnectionPoolInjector;
-    }
-
-    public Injector<Subscription> getSubscriptionInjector()
-    {
-        return subscriptionInjector;
-    }
-
-    public Injector<Dispatcher> getSendBufferInjector()
-    {
-        return sendBufferInjector;
+        return replicationApiTransportInjector;
     }
 
     public Injector<Peer> getLocalPeerInjector()

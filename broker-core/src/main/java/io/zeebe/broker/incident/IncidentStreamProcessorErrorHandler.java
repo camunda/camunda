@@ -13,6 +13,7 @@
 package io.zeebe.broker.incident;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;

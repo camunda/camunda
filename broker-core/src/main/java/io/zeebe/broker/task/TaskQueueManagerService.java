@@ -17,7 +17,9 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceN
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.*;
+import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
+import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
+import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.time.Duration;
 
@@ -28,19 +30,27 @@ import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
 import io.zeebe.broker.task.processor.TaskInstanceStreamProcessor;
-import io.zeebe.broker.transport.clientapi.*;
-import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.*;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
 
 public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager, Actor
 {
     protected static final String NAME = "task.queue.manager";
 
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
@@ -73,9 +83,10 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
-        final SubscribedEventWriter subscribedEventWriter = new SubscribedEventWriter(new SingleMessageWriter(sendBuffer));
+        final ServerTransport serverTransport = clientApiTransportInjector.getValue();
+
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(serverTransport.getOutput());
+        final SubscribedEventWriter subscribedEventWriter = new SubscribedEventWriter(serverTransport.getOutput());
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
 
@@ -153,9 +164,9 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return this;
     }
 
-    public Injector<Dispatcher> getSendBufferInjector()
+    public Injector<ServerTransport> getClientApiTransportInjector()
     {
-        return sendBufferInjector;
+        return clientApiTransportInjector;
     }
 
     public Injector<ScheduledExecutor> getExecutorInjector()

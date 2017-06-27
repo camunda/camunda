@@ -21,8 +21,9 @@ import java.util.function.Consumer;
 
 import io.zeebe.broker.Loggers;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import io.zeebe.util.actor.ActorReference;
+
 import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;

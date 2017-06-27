@@ -17,6 +17,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.util.HashMap;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -34,7 +36,6 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.time.ClockUtil;
-import org.agrona.DirectBuffer;
 
 public class TaskExpireLockStreamProcessor implements StreamProcessor
 {

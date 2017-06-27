@@ -1,44 +1,42 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.*;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.*;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
 import io.zeebe.broker.incident.IncidentStreamProcessorErrorHandler;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.cfg.StreamProcessorCfg;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.DeploymentStreamProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.actor.*;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
 
 public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Actor
 {
     protected static final String NAME = "workflow.queue.manager";
 
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
@@ -73,14 +71,14 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = deploymentStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
+        final ServerTransport transport = clientApiTransportInjector.getValue();
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
         final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter);
         final StreamProcessorService deploymentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
-                DEPLOYMENT_PROCESSOR_ID,
+                StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID,
                 deploymentStreamProcessor)
                 .eventFilter(DeploymentStreamProcessor.eventFilter());
 
@@ -97,8 +95,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
+        final ServerTransport transport = clientApiTransportInjector.getValue();
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
         final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream);
@@ -110,7 +108,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
         final StreamProcessorService workflowStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
-                WORKFLOW_INSTANCE_PROCESSOR_ID,
+                StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID,
                 workflowInstanceStreamProcessor)
                 .eventFilter(WorkflowInstanceStreamProcessor.eventFilter())
                 .errorHandler(errorHandler);
@@ -171,9 +169,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         return this;
     }
 
-    public Injector<Dispatcher> getSendBufferInjector()
+    public Injector<ServerTransport> getClientApiTransportInjector()
     {
-        return sendBufferInjector;
+        return clientApiTransportInjector;
     }
 
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()

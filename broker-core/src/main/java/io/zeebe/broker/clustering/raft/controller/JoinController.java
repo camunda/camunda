@@ -6,16 +6,17 @@ import static io.zeebe.clustering.gossip.RaftMembershipState.FOLLOWER;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.raft.Configuration;
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.message.JoinRequest;
 import io.zeebe.broker.clustering.raft.message.JoinResponse;
-import io.zeebe.broker.clustering.util.RequestResponseController;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -23,7 +24,6 @@ import io.zeebe.util.state.StateMachineAgent;
 import io.zeebe.util.state.StateMachineCommand;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
-import org.slf4j.Logger;
 
 public class JoinController
 {
@@ -163,7 +163,7 @@ public class JoinController
         {
             super(stateMachine);
             this.raft = raftContext.getRaft();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientTransport());
             this.joinRequest = new JoinRequest();
             this.joinResponse = new JoinResponse();
         }
@@ -211,7 +211,8 @@ public class JoinController
 
             if (member != null)
             {
-                requestController.open(member.endpoint(), joinRequest);
+                context.joinResponse.reset();
+                requestController.open(member.endpoint(), joinRequest, context.joinResponse);
 
                 context.position = position;
                 context.take(TRANSITION_DEFAULT);
@@ -262,15 +263,10 @@ public class JoinController
         @Override
         public void work(JoinContext context) throws Exception
         {
-            final RequestResponseController requestController = context.requestController;
             final JoinResponse joinResponse = context.joinResponse;
             final List<Member> cluster = context.members;
             final Raft raft = context.raft;
             final Member self = raft.member();
-
-            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
-            final int responseLength = requestController.getResponseLength();
-            joinResponse.wrap(responseBuffer, 0, responseLength);
 
             if (joinResponse.succeeded())
             {

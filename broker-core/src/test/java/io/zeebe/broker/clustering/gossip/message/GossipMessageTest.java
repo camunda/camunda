@@ -1,12 +1,15 @@
 package io.zeebe.broker.clustering.gossip.message;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.test.util.BufferWriterUtil.*;
-import static io.zeebe.util.buffer.BufferUtil.*;
+import static io.zeebe.test.util.BufferWriterUtil.assertEqualFieldsAfterWriteAndRead;
+import static io.zeebe.test.util.BufferWriterUtil.writeAndRead;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
+import org.junit.Test;
+
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.RaftMembership;
@@ -14,7 +17,6 @@ import io.zeebe.clustering.gossip.PeerState;
 import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.test.util.BufferWriterUtil;
 import io.zeebe.transport.SocketAddress;
-import org.junit.Test;
 
 
 public class GossipMessageTest

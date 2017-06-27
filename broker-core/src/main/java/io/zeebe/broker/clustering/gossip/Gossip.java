@@ -6,6 +6,8 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
@@ -15,10 +17,11 @@ import io.zeebe.broker.clustering.gossip.protocol.GossipController;
 import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.clustering.gossip.PeerState;
 import io.zeebe.clustering.gossip.RaftMembershipState;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import org.agrona.DirectBuffer;
 
 public class Gossip implements Actor
 {
@@ -27,8 +30,9 @@ public class Gossip implements Actor
     private final Peer peer;
     private final PeerList peers;
 
+    protected final ServerInputSubscription inputSubscription;
+
     private final GossipController gossipController;
-    private final GossipFragmentHandler fragmentHandler;
 
     private final DeferredCommandContext commandContext;
 
@@ -38,7 +42,11 @@ public class Gossip implements Actor
         this.peers = context.getPeers();
 
         this.gossipController = new GossipController(context);
-        this.fragmentHandler = new GossipFragmentHandler(this, context.getSubscription());
+        final BufferingServerTransport serverTransport = context.getServerTransport();
+        final GossipFragmentHandler fragmentHandler = new GossipFragmentHandler(gossipController);
+        inputSubscription = serverTransport
+                .openSubscription("gossip", fragmentHandler, fragmentHandler)
+                .join();
 
         this.commandContext = new DeferredCommandContext();
     }
@@ -85,7 +93,7 @@ public class Gossip implements Actor
         workcount += commandContext.doWork();
 
         workcount += gossipController.doWork();
-        workcount += fragmentHandler.doWork();
+        workcount += inputSubscription.poll();
 
         return workcount;
     }
@@ -98,16 +106,6 @@ public class Gossip implements Actor
     public PeerList peers()
     {
         return peers;
-    }
-
-    public int onGossipRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
-    {
-        return gossipController.onGossipRequest(buffer, offset, length, channelId, connectionId, requestId);
-    }
-
-    public int onProbeRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
-    {
-        return gossipController.onProbeRequest(buffer, offset, length, channelId, connectionId, requestId);
     }
 
     public static String fileName(String directory)

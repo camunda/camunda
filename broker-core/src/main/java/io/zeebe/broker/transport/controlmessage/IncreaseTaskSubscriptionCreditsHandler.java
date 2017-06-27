@@ -15,6 +15,7 @@ package io.zeebe.broker.transport.controlmessage;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
@@ -22,6 +23,7 @@ import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.transport.ServerOutput;
 
 public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
 {
@@ -36,11 +38,11 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     protected final ErrorResponseWriter errorResponseWriter;
 
 
-    public IncreaseTaskSubscriptionCreditsHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
+    public IncreaseTaskSubscriptionCreditsHandler(ServerOutput output, TaskSubscriptionManager manager)
     {
+        this.errorResponseWriter = new ErrorResponseWriter(output);
+        this.responseWriter = new ControlMessageResponseWriter(output);
         this.manager = manager;
-        this.responseWriter = responseWriter;
-        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetadata)
     {
         subscription.reset();
 
@@ -58,7 +60,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         if (subscription.getCredits() <= 0)
         {
-            sendError(eventMetada, buffer, "Cannot increase task subscription credits. Credits must be positive.");
+            sendError(eventMetadata, buffer, "Cannot increase task subscription credits. Credits must be positive.");
             return COMPLETED_FUTURE;
         }
 
@@ -69,27 +71,28 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         if (success)
         {
-            responseWriter
-                .brokerEventMetadata(eventMetada)
+            final boolean responseScheduled = responseWriter
                 .dataWriter(subscription)
-                .tryWriteResponse();
+                .tryWriteResponse(eventMetadata.getRequestStreamId(), eventMetadata.getRequestId());
+            // TODO: proper backpressure
+
             return COMPLETED_FUTURE;
         }
         else
         {
-            sendError(eventMetada, buffer, "Cannot increase task subscription credits. Capacities exhausted.");
+            sendError(eventMetadata, buffer, "Cannot increase task subscription credits. Capacities exhausted.");
             return COMPLETED_FUTURE;
         }
     }
 
     protected void sendError(BrokerEventMetadata metadata, DirectBuffer request, String errorMessage)
     {
-        errorResponseWriter
-            .metadata(metadata)
+        final boolean success = errorResponseWriter
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorMessage(errorMessage)
             .failedRequest(request, 0, request.capacity())
-            .tryWriteResponseOrLogFailure();
+            .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
+        // TODO: proper backpressure
     }
 
 }

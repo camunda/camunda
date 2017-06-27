@@ -5,10 +5,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.moandjiezana.toml.Toml;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.util.ReflectUtil;
-import org.slf4j.Logger;
 
 public class ConfigurationManagerImpl implements ConfigurationManager
 {

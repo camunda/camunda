@@ -4,20 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.cmd.BrokerRequestException;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferReader;
-import org.agrona.DirectBuffer;
 
 
 public class ClientTopologyManager implements Actor, BufferReader
@@ -35,9 +36,9 @@ public class ClientTopologyManager implements Actor, BufferReader
     protected Topology topology;
     protected CompletableFuture<Void> refreshFuture;
 
-    public ClientTopologyManager(final ChannelManager channelManager, final TransportConnectionPool connectionPool, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
+    public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
     {
-        this.clientTopologyController = new ClientTopologyController(channelManager, connectionPool);
+        this.clientTopologyController = new ClientTopologyController(transport);
         this.requestTopologyCmd = new RequestTopologyCmdImpl(null, objectMapper);
         this.topology = new TopologyImpl(initialBrokers);
 

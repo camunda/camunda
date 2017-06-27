@@ -4,7 +4,6 @@ import java.util.Properties;
 
 import io.zeebe.client.clustering.RequestTopologyCmd;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 
 public interface ZeebeClient extends AutoCloseable
 {
@@ -40,8 +39,6 @@ public interface ZeebeClient extends AutoCloseable
      *            the id of the topic partition
      */
     TopicClient topic(String topicName, int partitionId);
-
-    TransportConnectionPool getConnectionPool();
 
     RequestTopologyCmd requestTopology();
 

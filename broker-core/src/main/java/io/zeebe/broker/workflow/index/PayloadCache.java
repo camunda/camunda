@@ -12,6 +12,8 @@
  */
 package io.zeebe.broker.workflow.index;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.hashindex.Long2LongHashIndex;
@@ -19,7 +21,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.util.cache.ExpandableBufferCache;
-import org.agrona.DirectBuffer;
 
 /**
  * Cache of workflow instance payload. It contains an LRU cache of the payload

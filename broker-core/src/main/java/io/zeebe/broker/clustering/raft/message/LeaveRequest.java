@@ -7,6 +7,7 @@ import static io.zeebe.clustering.raft.LeaveRequestEncoder.topicNameHeaderLength
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.raft.LeaveRequestDecoder;
 import io.zeebe.clustering.raft.LeaveRequestEncoder;

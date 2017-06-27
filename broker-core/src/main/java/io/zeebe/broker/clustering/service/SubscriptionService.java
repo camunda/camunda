@@ -7,6 +7,7 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
+// TODO: still needed?
 public class SubscriptionService implements Service<Subscription>
 {
     private final Injector<Dispatcher> receiveBufferInjector = new Injector<>();

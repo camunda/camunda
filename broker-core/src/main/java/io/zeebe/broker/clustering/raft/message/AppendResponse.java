@@ -9,6 +9,7 @@ import static io.zeebe.clustering.raft.AppendResponseEncoder.topicNameHeaderLeng
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.raft.AppendResponseDecoder;
 import io.zeebe.clustering.raft.AppendResponseEncoder;

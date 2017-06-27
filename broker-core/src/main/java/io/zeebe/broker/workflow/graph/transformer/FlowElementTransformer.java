@@ -1,6 +1,7 @@
 package io.zeebe.broker.workflow.graph.transformer;
 
 import org.camunda.bpm.model.bpmn.instance.FlowElement;
+
 import io.zeebe.broker.workflow.graph.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.graph.model.ExecutableScope;
 

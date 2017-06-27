@@ -9,12 +9,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.agrona.LangUtil;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
-import org.agrona.LangUtil;
-import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable
 {
@@ -79,7 +80,7 @@ public class SystemContext implements AutoCloseable
         try
         {
             final CompletableFuture<?>[] startActions = requiredStartActions.toArray(new CompletableFuture[requiredStartActions.size()]);
-            CompletableFuture.allOf(startActions).get(10, TimeUnit.SECONDS);
+            CompletableFuture.allOf(startActions).get(10 * 10000, TimeUnit.SECONDS);
         }
         catch (Exception e)
         {

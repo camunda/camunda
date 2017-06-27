@@ -5,8 +5,8 @@ import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.message.ConfigureRequest;
-import io.zeebe.broker.clustering.util.RequestResponseController;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -137,7 +137,7 @@ public class ConfigureController
             this.raftContext = raftContext;
             this.member = member;
             this.configureRequest = new ConfigureRequest();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientTransport());
         }
 
         public void reset()
@@ -192,7 +192,7 @@ public class ConfigureController
             final Member member = context.member;
             final ConfigureRequest configureRequest = context.configureRequest;
 
-            controller.open(member.endpoint(), configureRequest);
+            controller.open(member.endpoint(), configureRequest, null);
 
             context.take(TRANSITION_DEFAULT);
         }

@@ -1,6 +1,6 @@
 package io.zeebe.broker.clustering.raft.controller;
 
-import static io.zeebe.protocol.clientapi.EventType.*;
+import static io.zeebe.protocol.clientapi.EventType.RAFT_EVENT;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.raft.Raft;

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+
 import io.zeebe.broker.workflow.graph.model.BpmnAspect;
 import io.zeebe.broker.workflow.graph.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.graph.model.ExecutableScope;

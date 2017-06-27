@@ -13,6 +13,7 @@
 package io.zeebe.broker.task.processor;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.IntegerProperty;
 import io.zeebe.broker.util.msgpack.property.LongProperty;
@@ -34,7 +35,7 @@ public class TaskSubscription extends UnpackedObject
     protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
     // transient field
-    protected int channelId = -1;
+    protected int streamId = -1;
 
     public TaskSubscription()
     {
@@ -53,9 +54,9 @@ public class TaskSubscription extends UnpackedObject
         return this;
     }
 
-    public TaskSubscription setChannelId(int channelId)
+    public TaskSubscription setStreamId(int streamId)
     {
-        this.channelId =  channelId;
+        this.streamId =  streamId;
         return this;
     }
 
@@ -115,9 +116,9 @@ public class TaskSubscription extends UnpackedObject
         return creditsProp.getValue();
     }
 
-    public int getChannelId()
+    public int getStreamId()
     {
-        return channelId;
+        return streamId;
     }
 
     public DirectBuffer getTopicName()

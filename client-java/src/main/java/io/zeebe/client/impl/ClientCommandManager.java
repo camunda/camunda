@@ -8,10 +8,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.impl.cmd.AbstractCmdImpl;
-import io.zeebe.transport.ChannelManager;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.Actor;
 
 
@@ -22,14 +22,12 @@ public class ClientCommandManager implements Actor
 
     protected final List<ClientCommandController<?>> commandControllers = new ArrayList<>();
 
-    protected final ChannelManager channelManager;
-    protected final TransportConnectionPool connectionPool;
+    protected final ClientTransport transport;
     protected final ClientTopologyManager topologyManager;
 
-    public ClientCommandManager(final ChannelManager channelManager, final TransportConnectionPool connectionPool, final ClientTopologyManager topologyManager)
+    public ClientCommandManager(final ClientTransport transport, final ClientTopologyManager topologyManager)
     {
-        this.channelManager = channelManager;
-        this.connectionPool = connectionPool;
+        this.transport = transport;
         this.topologyManager = topologyManager;
     }
 
@@ -64,7 +62,7 @@ public class ClientCommandManager implements Actor
 
         commandQueue.add(() ->
         {
-            final ClientCommandController<R> controller = new ClientCommandController<>(channelManager, connectionPool, topologyManager, command, future);
+            final ClientCommandController<R> controller = new ClientCommandController<>(transport, topologyManager, command, future);
             commandControllers.add(controller);
         });
 

@@ -1,12 +1,14 @@
 package io.zeebe.broker.clustering.gossip.data;
 
-import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.RaftMembershipsDecoder.*;
-import static io.zeebe.logstreams.log.LogStream.*;
-import static io.zeebe.util.StringUtil.*;
+import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.RaftMembershipsDecoder.partitionIdNullValue;
+import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.RaftMembershipsDecoder.termNullValue;
+import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static io.zeebe.util.StringUtil.fromBytes;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.clustering.gossip.RaftMembershipState;
 

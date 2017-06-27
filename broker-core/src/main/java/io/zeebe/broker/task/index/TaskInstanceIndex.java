@@ -12,16 +12,19 @@
  */
 package io.zeebe.broker.task.index;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.hashindex.Long2BytesHashIndex;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Index that maps <b>task instance key</b> to

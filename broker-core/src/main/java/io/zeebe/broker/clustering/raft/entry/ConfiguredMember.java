@@ -1,6 +1,7 @@
 package io.zeebe.broker.clustering.raft.entry;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.IntegerProperty;
 import io.zeebe.broker.util.msgpack.property.StringProperty;

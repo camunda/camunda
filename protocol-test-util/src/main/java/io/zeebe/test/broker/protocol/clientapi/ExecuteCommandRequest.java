@@ -6,13 +6,17 @@ import static io.zeebe.util.StringUtil.getBytes;
 
 import java.util.Map;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class ExecuteCommandRequest implements BufferWriter
@@ -21,18 +25,22 @@ public class ExecuteCommandRequest implements BufferWriter
     protected final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
 
+    protected final ClientOutput output;
+    protected final RemoteAddress target;
+
     protected String topicName;
     protected int partitionId = partitionIdNullValue();
     protected long key = keyNullValue();
     protected EventType eventType = EventType.NULL_VAL;
     protected byte[] encodedCmd;
 
-    protected final RequestResponseExchange requestResponseExchange;
+    protected ClientRequest request;
 
 
-    public ExecuteCommandRequest(final TransportConnectionPool connectionPool, final int channelId, final MsgPackHelper msgPackHelper)
+    public ExecuteCommandRequest(ClientOutput output, RemoteAddress target, final MsgPackHelper msgPackHelper)
     {
-        this.requestResponseExchange = new RequestResponseExchange(connectionPool, channelId);
+        this.output = output;
+        this.target = target;
         this.msgPackHelper = msgPackHelper;
     }
 
@@ -68,21 +76,27 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandRequest send()
     {
-        requestResponseExchange.sendRequest(this);
+        request = output.sendRequest(target, this);
         return this;
     }
 
     public ExecuteCommandResponse await()
     {
+        final DirectBuffer responseBuffer = request.join();
+        request.close();
+
         final ExecuteCommandResponse response = new ExecuteCommandResponse(msgPackHelper);
-        requestResponseExchange.awaitResponse(response);
+        response.wrap(responseBuffer, 0, responseBuffer.capacity());
         return response;
     }
 
     public ErrorResponse awaitError()
     {
+        final DirectBuffer responseBuffer = request.join();
+        request.close();
+
         final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-        requestResponseExchange.awaitResponse(errorResponse);
+        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
         return errorResponse;
     }
 

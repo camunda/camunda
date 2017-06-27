@@ -74,10 +74,9 @@ public class TaskSubscriptionTest
             .await();
 
         // when the transport channel is closed
-        apiRule.closeChannel();
+        apiRule.interruptAllChannels();
 
         // then the subscription has been closed, so we can create a new task and lock it for a new subscription
-        apiRule.openChannel();
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
         final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()

@@ -1,15 +1,3 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.broker.transport.controlmessage;
 
 import java.util.Arrays;
@@ -20,17 +8,18 @@ import io.zeebe.broker.clustering.handler.RequestTopologyHandler;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class ControlMessageHandlerManagerService implements Service<ControlMessageHandlerManager>
 {
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+    protected final Injector<ServerTransport> transportInjector = new Injector<>();
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
@@ -51,25 +40,29 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     {
         final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
 
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final ControlMessageResponseWriter controlMessageResponseWriter = new ControlMessageResponseWriter(sendBuffer);
-        final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter(sendBuffer);
-
+        final ServerTransport transport = transportInjector.getValue();
         final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
         final Gossip gossip = gossipInjector.getValue();
 
+        final ServerOutput output = transport.getOutput();
+
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
-            new AddTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new IncreaseTaskSubscriptionCreditsHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new RemoveTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter),
-            new RequestTopologyHandler(gossip, controlMessageResponseWriter, errorResponseWriter)
+            new AddTaskSubscriptionHandler(output, taskSubscriptionManager),
+            new IncreaseTaskSubscriptionCreditsHandler(output, taskSubscriptionManager),
+            new RemoveTaskSubscriptionHandler(output, taskSubscriptionManager),
+            new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),
+            new RequestTopologyHandler(output, gossip)
         );
 
-        service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, actorScheduler, controlMessageHandlers);
+        service = new ControlMessageHandlerManager(
+                transport.getOutput(),
+                controlMessageBuffer,
+                controlMessageRequestTimeoutInMillis,
+                actorScheduler,
+                controlMessageHandlers);
 
         context.async(service.openAsync());
     }
@@ -86,9 +79,9 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         return service;
     }
 
-    public Injector<Dispatcher> getSendBufferInjector()
+    public Injector<ServerTransport> getTransportInjector()
     {
-        return sendBufferInjector;
+        return transportInjector;
     }
 
     public Injector<Dispatcher> getControlMessageBufferInjector()

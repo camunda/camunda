@@ -1,21 +1,21 @@
 package io.zeebe.client.task.impl.subscription;
 
-import io.zeebe.client.impl.cmd.ChannelAwareResponseResult;
-import io.zeebe.transport.Channel;
+import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
+import io.zeebe.transport.RemoteAddress;
 
-public class EventSubscriptionCreationResult implements ChannelAwareResponseResult
+public class EventSubscriptionCreationResult implements ReceiverAwareResponseResult
 {
     protected final long subscriberKey;
-    protected Channel receiveChannel;
+    protected RemoteAddress eventPublisher;
 
     public EventSubscriptionCreationResult(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
     }
 
-    public Channel getReceiveChannel()
+    public RemoteAddress getEventPublisher()
     {
-        return receiveChannel;
+        return eventPublisher;
     }
 
     public long getSubscriberKey()
@@ -24,9 +24,9 @@ public class EventSubscriptionCreationResult implements ChannelAwareResponseResu
     }
 
     @Override
-    public void setChannel(Channel channel)
+    public void setReceiver(RemoteAddress receiver)
     {
-        this.receiveChannel = channel;
+        this.eventPublisher = receiver;
     }
 
 }

@@ -15,12 +15,14 @@ package io.zeebe.broker.transport.controlmessage;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.transport.ServerOutput;
 
 public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
 {
@@ -31,11 +33,11 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public RemoveTaskSubscriptionHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
+    public RemoveTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
     {
+        this.errorResponseWriter = new ErrorResponseWriter(output);
+        this.responseWriter = new ControlMessageResponseWriter(output);
         this.manager = manager;
-        this.responseWriter = responseWriter;
-        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -57,19 +59,19 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
         {
             if (failure == null)
             {
-                responseWriter
-                    .brokerEventMetadata(eventMetada)
+                final boolean success = responseWriter
                     .dataWriter(subscription)
-                    .tryWriteResponse();
+                    .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                // TODO: proper backpressure
             }
             else
             {
-                errorResponseWriter
-                    .metadata(eventMetada)
+                final boolean success = errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                     .errorMessage("Cannot remove task subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure();
+                    .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                // TODO: proper backpressure
             }
             return null;
         });

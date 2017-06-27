@@ -2,6 +2,7 @@ package io.zeebe.broker.workflow.data;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.broker.util.msgpack.property.BinaryProperty;
 import io.zeebe.broker.util.msgpack.property.EnumProperty;

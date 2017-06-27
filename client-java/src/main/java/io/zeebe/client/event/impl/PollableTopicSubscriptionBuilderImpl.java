@@ -2,6 +2,7 @@ package io.zeebe.client.event.impl;
 
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
+import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.EnsureUtil;
 
 public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscriptionBuilder

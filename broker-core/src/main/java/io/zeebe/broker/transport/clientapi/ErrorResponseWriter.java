@@ -1,7 +1,7 @@
 package io.zeebe.broker.transport.clientapi;
 
-import static java.lang.String.format;
 import static io.zeebe.util.StringUtil.getBytes;
+import static java.lang.String.format;
 
 import java.nio.charset.StandardCharsets;
 
@@ -9,11 +9,12 @@ import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.dispatcher.Dispatcher;
+
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.slf4j.Logger;
@@ -30,19 +31,17 @@ public class ErrorResponseWriter implements BufferWriter
     protected ErrorCode errorCode;
     protected byte[] errorMessage;
 
-    protected BrokerEventMetadata metadata;
+    protected final ServerOutput output;
+    protected final ServerResponse response = new ServerResponse();
 
-    protected final ResponseWriter responseWriter;
-
-    public ErrorResponseWriter(Dispatcher sendBuffer)
+    public ErrorResponseWriter()
     {
-        this.responseWriter = new ResponseWriter(sendBuffer);
+        this(null);
     }
 
-    public ErrorResponseWriter metadata(BrokerEventMetadata metadata)
+    public ErrorResponseWriter(ServerOutput output)
     {
-        this.metadata = metadata;
-        return this;
+        this.output = output;
     }
 
     public ErrorResponseWriter errorCode(ErrorCode errorCode)
@@ -69,25 +68,6 @@ public class ErrorResponseWriter implements BufferWriter
         return this;
     }
 
-    public boolean tryWriteResponse()
-    {
-        EnsureUtil.ensureNotNull("metadata", metadata);
-        EnsureUtil.ensureNotNull("error code", errorCode);
-        EnsureUtil.ensureNotNull("error message", errorMessage);
-
-        try
-        {
-            return responseWriter.tryWrite(
-                    metadata.getReqChannelId(),
-                    metadata.getReqConnectionId(),
-                    metadata.getReqRequestId(),
-                    this);
-        }
-        finally
-        {
-            reset();
-        }
-    }
 
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
@@ -111,9 +91,9 @@ public class ErrorResponseWriter implements BufferWriter
             .putFailedRequest(failedRequestBuffer, 0, failedRequestBuffer.capacity());
     }
 
-    public boolean tryWriteResponseOrLogFailure()
+    public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId)
     {
-        final boolean isWritten = tryWriteResponse();
+        final boolean isWritten = tryWriteResponse(output, streamId, requestId);
 
         if (!isWritten)
         {
@@ -124,6 +104,37 @@ public class ErrorResponseWriter implements BufferWriter
         }
 
         return isWritten;
+    }
+
+
+    public boolean tryWriteResponseOrLogFailure(int streamId, long requestId)
+    {
+        return tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+    }
+
+    public boolean tryWriteResponse(ServerOutput output, int streamId, long requestId)
+    {
+        EnsureUtil.ensureNotNull("error code", errorCode);
+        EnsureUtil.ensureNotNull("error message", errorMessage);
+
+        try
+        {
+            response.reset()
+                .remoteStreamId(streamId)
+                .writer(this)
+                .requestId(requestId);
+
+            return output.sendResponse(response);
+        }
+        finally
+        {
+            reset();
+        }
+    }
+
+    public boolean tryWriteResponse(int streamId, long requestId)
+    {
+        return tryWriteResponse(this.output, streamId, requestId);
     }
 
     @Override
@@ -139,8 +150,6 @@ public class ErrorResponseWriter implements BufferWriter
 
     protected void reset()
     {
-        metadata = null;
-
         errorCode = null;
         errorMessage = null;
 

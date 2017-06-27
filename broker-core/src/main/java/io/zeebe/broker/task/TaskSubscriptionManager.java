@@ -21,8 +21,13 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -30,6 +35,7 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
+
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
@@ -38,11 +44,13 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class TaskSubscriptionManager implements Actor
+public class TaskSubscriptionManager implements Actor, TransportListener
 {
     protected static final String NAME = "taskqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
@@ -423,6 +431,17 @@ public class TaskSubscriptionManager implements Actor
         {
             streamProcessors.remove(streamProcessor);
         }
+    }
+
+    @Override
+    public void onConnectionEstablished(RemoteAddress remoteAddress)
+    {
+    }
+
+    @Override
+    public void onConnectionClosed(RemoteAddress remoteAddress)
+    {
+        onClientChannelCloseAsync(remoteAddress.getStreamId());
     }
 
 }

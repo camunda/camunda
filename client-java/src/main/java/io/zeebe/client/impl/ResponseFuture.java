@@ -6,22 +6,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
+
 import io.zeebe.client.impl.cmd.ClientErrorResponseHandler;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.requestresponse.client.PooledTransportRequest;
-import io.zeebe.transport.requestresponse.client.RequestTimeoutException;
+import io.zeebe.transport.ClientRequest;
 
 public class ResponseFuture<R> implements Future<R>
 {
-    protected final PooledTransportRequest request;
+    protected final ClientRequest request;
     protected final ClientResponseHandler<R> responseHandler;
     protected final ClientErrorResponseHandler errorResponseHandler = new ClientErrorResponseHandler();
 
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
-    public ResponseFuture(PooledTransportRequest request, ClientResponseHandler<R> responseHandler)
+    public ResponseFuture(ClientRequest request, ClientResponseHandler<R> responseHandler)
     {
         this.request = request;
         this.responseHandler = responseHandler;
@@ -30,69 +29,57 @@ public class ResponseFuture<R> implements Future<R>
     @Override
     public R get() throws InterruptedException, ExecutionException
     {
-        R result = null;
-
         try
         {
-            result = get(request.getRequestTimeout(), TimeUnit.MILLISECONDS);
+            // TODO: what should be default timeout?
+            return get(30, TimeUnit.SECONDS);
         }
         catch (TimeoutException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
-
-        return result;
     }
 
     @Override
     public R get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        R responseObject = null;
-
         try
         {
-            final boolean responseAvailable = request.awaitResponse(timeout, unit);
-
-            if (responseAvailable)
-            {
-                final DirectBuffer responseBuffer = request.getResponseBuffer();
-
-                messageHeaderDecoder.wrap(responseBuffer, 0);
-
-                final int schemaId = messageHeaderDecoder.schemaId();
-                final int templateId = messageHeaderDecoder.templateId();
-                final int blockLength = messageHeaderDecoder.blockLength();
-                final int version = messageHeaderDecoder.version();
-
-                final int responseMessageOffset = messageHeaderDecoder.encodedLength();
-
-                if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
-                {
-                    responseObject = responseHandler.readResponse(responseBuffer, responseMessageOffset, blockLength, version);
-                }
-                else
-                {
-                    final Throwable exception = errorResponseHandler.createException(responseBuffer, responseMessageOffset, blockLength, version);
-
-                    throw new ExecutionException(exception);
-                }
-            }
-            else
-            {
-                final String exceptionMessage = String.format("Provided timeout of %s ms reached.", unit.toMillis(timeout));
-                throw new TimeoutException(exceptionMessage);
-            }
+            final DirectBuffer rawResponse = request.get(timeout, unit);
+            return decodeResponse(rawResponse);
         }
-        catch (RequestTimeoutException exception)
+        catch (TimeoutException e)
         {
-            throw new TimeoutException(exception.getMessage());
+            final String exceptionMessage = String.format("Provided timeout of %s ms reached.", unit.toMillis(timeout));
+            throw new TimeoutException(exceptionMessage);
         }
         finally
         {
             request.close();
         }
+    }
 
-        return responseObject;
+    protected R decodeResponse(DirectBuffer rawResponse) throws ExecutionException
+    {
+        messageHeaderDecoder.wrap(rawResponse, 0);
+
+        final int schemaId = messageHeaderDecoder.schemaId();
+        final int templateId = messageHeaderDecoder.templateId();
+        final int blockLength = messageHeaderDecoder.blockLength();
+        final int version = messageHeaderDecoder.version();
+
+        final int responseMessageOffset = messageHeaderDecoder.encodedLength();
+
+        if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
+        {
+            return responseHandler.readResponse(rawResponse, responseMessageOffset, blockLength, version);
+        }
+        else
+        {
+            final Throwable exception = errorResponseHandler.createException(rawResponse, responseMessageOffset, blockLength, version);
+
+            throw new ExecutionException(exception);
+        }
     }
 
     @Override
@@ -104,13 +91,13 @@ public class ResponseFuture<R> implements Future<R>
     @Override
     public boolean isCancelled()
     {
-        return false;
+        return request.isCancelled();
     }
 
     @Override
     public boolean isDone()
     {
-        return request.pollResponse();
+        return request.isDone();
     }
 
 }

@@ -4,6 +4,7 @@ import static io.zeebe.clustering.gossip.ProbeEncoder.hostHeaderLength;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.clustering.gossip.MessageHeaderDecoder;
 import io.zeebe.clustering.gossip.MessageHeaderEncoder;
 import io.zeebe.clustering.gossip.ProbeDecoder;

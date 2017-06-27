@@ -14,6 +14,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import io.zeebe.transport.RemoteAddress;
+
 public class PollableTopicSubscriptionTest
 {
 
@@ -99,10 +101,10 @@ public class PollableTopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
-        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
 
         // when
         try
@@ -122,7 +124,7 @@ public class PollableTopicSubscriptionTest
     }
 
     @Test
-    public void shouldCloseSubscriptionOnChannelClose()
+    public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
     {
         // given
         broker.stubTopicSubscriptionApi(123L);
@@ -133,7 +135,12 @@ public class PollableTopicSubscriptionTest
             .open();
 
         // when
-        broker.closeServerSocketBinding();
+        broker.closeTransport();
+
+        // TODO:
+        // * reopening the subscription takes a rather long time (up to 5 topology refreshes, which is slow when the remote is not reachable)
+        // * transport must cancel requests faster
+        Thread.sleep(10000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());

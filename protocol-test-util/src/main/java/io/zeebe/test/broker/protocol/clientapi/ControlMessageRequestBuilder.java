@@ -5,15 +5,16 @@ import java.util.Map;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.RemoteAddress;
 
 public class ControlMessageRequestBuilder
 {
     protected ControlMessageRequest request;
 
-    public ControlMessageRequestBuilder(TransportConnectionPool connectionPool, int channelId, MsgPackHelper msgPackHelper)
+    public ControlMessageRequestBuilder(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
-        request = new ControlMessageRequest(connectionPool, channelId, msgPackHelper);
+        request = new ControlMessageRequest(output, target, msgPackHelper);
     }
 
     public ControlMessageRequest send()

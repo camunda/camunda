@@ -1,6 +1,5 @@
 package io.zeebe.broker.clustering.raft.controller;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
@@ -8,11 +7,9 @@ import io.zeebe.broker.clustering.raft.message.PollRequest;
 import io.zeebe.broker.clustering.raft.message.PollResponse;
 import io.zeebe.broker.clustering.raft.state.LogStreamState;
 import io.zeebe.broker.clustering.raft.util.Quorum;
-import io.zeebe.broker.clustering.util.RequestResponseController;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.transport.ChannelManager;
+import io.zeebe.transport.RequestResponseController;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -160,9 +157,7 @@ public class PollController
 
             this.context = context;
 
-            final ChannelManager clientChannelManager = context.getClientChannelPool();
-            final TransportConnectionPool connections = context.getConnections();
-            this.requestController = new RequestResponseController(clientChannelManager, connections);
+            this.requestController = new RequestResponseController(context.getClientTransport());
 
             this.pollRequest = new PollRequest();
             this.pollResponse = new PollResponse();
@@ -219,7 +214,8 @@ public class PollController
             final SocketAddress endpoint = context.endpoint;
             final PollRequest pollRequest = context.pollRequest;
 
-            requestController.open(endpoint, pollRequest);
+            context.pollResponse.reset();
+            requestController.open(endpoint, pollRequest, context.pollResponse);
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -257,17 +253,11 @@ public class PollController
         @Override
         public void work(PollContext context) throws Exception
         {
-            final RequestResponseController requestController = context.requestController;
             final PollResponse pollResponse = context.pollResponse;
             final RaftContext raftContext = context.context;
             final Quorum quorum = context.quorum;
 
             final Raft raft = raftContext.getRaft();
-
-            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
-            final int responseLength = requestController.getResponseLength();
-
-            pollResponse.wrap(responseBuffer, 0, responseLength);
 
             final int pollResponseTerm = pollResponse.term();
 

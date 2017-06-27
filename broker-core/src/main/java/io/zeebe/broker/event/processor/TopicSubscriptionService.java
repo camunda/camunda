@@ -4,32 +4,50 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.ConfigurationManager;
-import io.zeebe.broker.transport.clientapi.*;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.*;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class TopicSubscriptionService implements Service<TopicSubscriptionService>, Actor
+import io.zeebe.broker.event.TopicSubscriptionServiceNames;
+import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.system.ConfigurationManager;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport. ServerTransport;
+import io.zeebe.transport.TransportListener;
+import io.zeebe.util.DeferredCommandContext;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+
+public class TopicSubscriptionService implements Service<TopicSubscriptionService>, Actor, TransportListener
 {
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final SubscriptionCfg config;
 
     protected ActorScheduler actorScheduler;
     protected ServiceStartContext serviceContext;
     protected Map<DirectBuffer, Int2ObjectHashMap<TopicSubscriptionManagementProcessor>> managersByLog = new HashMap<>();
+    protected ServerOutput serverOutput;
 
     protected ActorReference actorRef;
 
@@ -39,7 +57,6 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         .onAdd(this::onStreamAdded)
         .onRemove(this::onStreamRemoved)
         .build();
-
 
     public TopicSubscriptionService(ConfigurationManager configurationManager)
     {
@@ -58,9 +75,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         return actorSchedulerInjector;
     }
 
-    public Injector<Dispatcher> getSendBufferInjector()
+    public Injector< ServerTransport> getClientApiTransportInjector()
     {
-        return sendBufferInjector;
+        return clientApiTransportInjector;
     }
 
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
@@ -71,9 +88,15 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     @Override
     public void start(ServiceStartContext startContext)
     {
+        final ServerTransport transport = clientApiTransportInjector.getValue();
+        this.serverOutput = transport.getOutput();
+
         actorScheduler = actorSchedulerInjector.getValue();
         asyncContext = new DeferredCommandContext();
         this.serviceContext = startContext;
+
+        final CompletableFuture<Void> registration = transport.registerChannelListener(this);
+        startContext.async(registration);
 
         actorRef = actorScheduler.schedule(this);
     }
@@ -90,9 +113,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         {
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
                 logStreamServiceName,
-                new CommandResponseWriter(sendBufferInjector.getValue()),
-                new ErrorResponseWriter(sendBufferInjector.getValue()),
-                () -> new SubscribedEventWriter(new SingleMessageWriter(sendBufferInjector.getValue())),
+                new CommandResponseWriter(serverOutput),
+                new ErrorResponseWriter(serverOutput),
+                () -> new SubscribedEventWriter(serverOutput),
                 serviceContext
                 );
 
@@ -216,6 +239,17 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         }
 
         return null;
+    }
+
+    @Override
+    public void onConnectionEstablished(RemoteAddress remoteAddress)
+    {
+    }
+
+    @Override
+    public void onConnectionClosed(RemoteAddress remoteAddress)
+    {
+        onClientChannelCloseAsync(remoteAddress.getStreamId());
     }
 
 }

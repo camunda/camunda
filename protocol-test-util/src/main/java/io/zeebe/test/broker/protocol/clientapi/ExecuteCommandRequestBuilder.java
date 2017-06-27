@@ -5,16 +5,17 @@ import java.util.Map;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.RemoteAddress;
 
 
 public class ExecuteCommandRequestBuilder
 {
     protected ExecuteCommandRequest request;
 
-    public ExecuteCommandRequestBuilder(TransportConnectionPool connectionPool, int channelId, MsgPackHelper msgPackHelper)
+    public ExecuteCommandRequestBuilder(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
-        this.request = new ExecuteCommandRequest(connectionPool, channelId, msgPackHelper);
+        this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
     }
 
     public ExecuteCommandResponse sendAndAwait()

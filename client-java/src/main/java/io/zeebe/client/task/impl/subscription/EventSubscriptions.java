@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
-import io.zeebe.client.impl.Loggers;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
-import io.zeebe.client.event.impl.EventSubscription;
 import org.slf4j.Logger;
+
+import io.zeebe.client.impl.Loggers;
+import io.zeebe.transport.RemoteAddress;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
@@ -69,44 +71,35 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         }
     }
 
-    public void abortSubscriptionsOnChannel(final int channelId)
+    public void reopenSubscriptionsForRemote(RemoteAddress remoteAddress)
     {
-        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.abortAsync());
-        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.abortAsync());
+        forAllDoConsume(managedSubscriptions, s ->
+        {
+            if (s.getEventSource().equals(remoteAddress))
+            {
+                s.reopenAsync();
+            }
+        });
+
+        forAllDoConsume(pollableSubscriptions, s ->
+        {
+            if (s.getEventSource().equals(remoteAddress))
+            {
+                s.reopenAsync();
+            }
+        });
     }
 
-    public void suspendSubscriptionsOnChannel(final int channelId)
-    {
-        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.suspendAsync());
-        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.suspendAsync());
-    }
-
-    public void reopenSubscriptionsOnChannel(int channelId)
-    {
-        doForSubscriptionsOnChannel(pollableSubscriptions, channelId, s -> s.reopenAsync());
-        doForSubscriptionsOnChannel(managedSubscriptions, channelId, s -> s.reopenAsync());
-    }
-
-    protected void doForSubscriptionsOnChannel(List<T> subscriptions, int channelId, Consumer<T> action)
+    protected void doForSubscriptionsWithRemote(List<T> subscriptions, RemoteAddress remoteAddress, Consumer<T> action)
     {
         for (int i = 0; i < subscriptions.size(); i++)
         {
             final T subscription = subscriptions.get(i);
-            if (subscription.getReceiveChannelId() == channelId)
+            if (subscription.getEventSource().equals(remoteAddress))
             {
                 action.accept(subscription);
             }
         }
-    }
-
-    public List<T> getManagedSubscriptions()
-    {
-        return managedSubscriptions;
-    }
-
-    public List<T> getPollableSubscriptions()
-    {
-        return pollableSubscriptions;
     }
 
     public void removeSubscription(final T subscription)
@@ -167,6 +160,38 @@ public class EventSubscriptions<T extends EventSubscription<T>>
                 }
             }
         }
+    }
+
+    public int maintainState()
+    {
+        int workCount = forAllDo(managedSubscriptions, s -> s.maintainState());
+        workCount += forAllDo(pollableSubscriptions, s -> s.maintainState());
+        return workCount;
+    }
+
+    protected int forAllDo(List<T> subscriptions, ToIntFunction<T> action)
+    {
+        int workCount = 0;
+
+        for (T subscription : subscriptions)
+        {
+            workCount += action.applyAsInt(subscription);
+        }
+
+        return workCount;
+    }
+
+    protected void forAllDoConsume(List<T> subscriptions, Consumer<T> action)
+    {
+        for (T subscription : subscriptions)
+        {
+            action.accept(subscription);
+        }
+    }
+
+    public int pollManagedSubscriptions()
+    {
+        return forAllDo(managedSubscriptions, s -> s.poll());
     }
 
 }

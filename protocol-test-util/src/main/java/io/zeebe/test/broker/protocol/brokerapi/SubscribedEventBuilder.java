@@ -7,27 +7,27 @@ import static io.zeebe.util.StringUtil.getBytes;
 import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
+
 import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.SubscribedEventEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
-import io.zeebe.transport.protocol.Protocols;
-import io.zeebe.transport.protocol.TransportHeaderDescriptor;
-import io.zeebe.transport.singlemessage.SingleMessageHeaderDescriptor;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class SubscribedEventBuilder implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final SubscribedEventEncoder bodyEncoder = new SubscribedEventEncoder();
-    protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
+    protected final TransportMessage message = new TransportMessage();
 
     protected final MsgPackHelper msgPackHelper;
-    protected final Dispatcher sendBuffer;
+    protected final ServerTransport transport;
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
     protected String topicName;
@@ -39,10 +39,10 @@ public class SubscribedEventBuilder implements BufferWriter
     protected EventType eventType;
     protected byte[] event;
 
-    public SubscribedEventBuilder(MsgPackHelper msgPackHelper, Dispatcher sendBuffer)
+    public SubscribedEventBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {
         this.msgPackHelper = msgPackHelper;
-        this.sendBuffer = sendBuffer;
+        this.transport = transport;
     }
 
     public SubscribedEventBuilder topicName(final String topicName)
@@ -98,36 +98,18 @@ public class SubscribedEventBuilder implements BufferWriter
         return new MapBuilder<>(this, this::event);
     }
 
-    public void push(int channelId)
+    public void push(RemoteAddress target)
     {
-        final long claimedOffset = sendBuffer.claim(
-                claimedFragment,
-                getLength() + TransportHeaderDescriptor.HEADER_LENGTH + SingleMessageHeaderDescriptor.HEADER_LENGTH,
-                channelId);
+        message.reset()
+            .remoteAddress(target)
+            .writer(this);
 
-        if (claimedOffset < 0)
+        final boolean success = transport.getOutput().sendMessage(message);
+
+        if (!success)
         {
-            throw new RuntimeException("Could not claim fragment on send buffer");
+            throw new RuntimeException("Could not schedule message on send buffer");
         }
-
-        writeMessageToFragment(this);
-        claimedFragment.commit();
-    }
-
-
-    protected void writeMessageToFragment(BufferWriter bodyWriter)
-    {
-        final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-        int offset = claimedFragment.getOffset();
-
-        // transport protocol header
-        transportHeaderDescriptor.wrap(buffer, offset)
-            .protocolId(Protocols.FULL_DUPLEX_SINGLE_MESSAGE);
-
-        offset += TransportHeaderDescriptor.HEADER_LENGTH;
-        offset += SingleMessageHeaderDescriptor.HEADER_LENGTH;
-
-        bodyWriter.write(buffer, offset);
     }
 
     @Override

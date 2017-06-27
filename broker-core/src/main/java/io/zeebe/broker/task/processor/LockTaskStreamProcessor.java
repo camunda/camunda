@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -186,7 +187,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             while (subscriptionIt.hasNext())
             {
                 final TaskSubscription subscription = subscriptionIt.next();
-                if (subscription.getChannelId() == channelId)
+                if (subscription.getStreamId() == channelId)
                 {
                     subscriptionIt.remove();
                     hasSubscriptions = onRemove(subscription);
@@ -324,7 +325,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             targetEventMetadata.reset();
 
             targetEventMetadata
-                .reqChannelId(lockSubscription.getChannelId())
+                .requestStreamId(lockSubscription.getStreamId())
                 .subscriberKey(lockSubscription.getSubscriberKey())
                 .protocolVersion(Constants.PROTOCOL_VERSION)
                 .raftTermId(targetStream.getTerm())

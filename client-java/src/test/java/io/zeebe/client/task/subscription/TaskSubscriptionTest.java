@@ -18,9 +18,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.impl.ZeebeClientImpl;
@@ -39,12 +47,7 @@ import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.TestUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import io.zeebe.transport.RemoteAddress;
 
 public class TaskSubscriptionTest
 {
@@ -296,7 +299,7 @@ public class TaskSubscriptionTest
                 .taskType("type")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         final MsgPackHelper msgPackHelper = new MsgPackHelper();
         final Map<String, Object> taskPayload = new HashMap<>();
@@ -322,7 +325,7 @@ public class TaskSubscriptionTest
                 .put("payload", msgPackHelper.encodeAsMsgPack(taskPayload))
                 .put("headers", taskHeaders)
                 .done()
-            .push(subscriptionChannelId);
+            .push(clientAddress);
 
         // then
         TestUtil.waitUntil(() -> !handler.getHandledTasks().isEmpty());
@@ -365,11 +368,11 @@ public class TaskSubscriptionTest
             .taskType("type2")
             .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "type1");
-        broker.pushLockedTask(subscriptionChannelId, 124L, 5L, 6L, "type2");
+        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "type1");
+        broker.pushLockedTask(clientAddress, 124L, 5L, 6L, "type2");
 
         // then
         TestUtil.waitUntil(() -> !handler1.getHandledTasks().isEmpty());
@@ -403,9 +406,9 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "type");
+        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "type");
 
         // when
         final Integer handledTasks = TestUtil.doRepeatedly(() -> subscription.poll(handler))
@@ -436,10 +439,10 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -474,10 +477,10 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -514,10 +517,10 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -550,10 +553,10 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -595,10 +598,10 @@ public class TaskSubscriptionTest
                 .taskType("bar")
                 .open();
 
-        final int subscriptionChannelId = getSubscribeRequests().findFirst().get().getChannelId();
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(subscriptionChannelId, 123L, 4L, 5L, "bar");
+        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -617,7 +620,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldCloseSubscriptionOnChannelClose()
+    public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
     {
         // given
         broker.stubTaskSubscriptionApi(123L);
@@ -631,7 +634,11 @@ public class TaskSubscriptionTest
             .open();
 
         // when
-        broker.closeServerSocketBinding();
+        broker.closeTransport();
+
+        // TODO: transport must determine faster that subscription open request does not succeed (including
+        //  topology refreshes)
+        Thread.sleep(10000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
@@ -682,17 +689,17 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .open();
 
-        final int clientChannelId = broker.getReceivedControlMessageRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
 
         for (int i = 0; i < taskCapacity + numExecutionThreads; i++)
         {
-            broker.pushLockedTask(clientChannelId, 123L, i, i, "foo");
+            broker.pushLockedTask(clientAddress, 123L, i, i, "foo");
         }
 
         TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
 
         // pushing one more event, exceeding client capacity
-        broker.pushLockedTask(clientChannelId, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "foo");
+        broker.pushLockedTask(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "foo");
 
         // waiting for the client to receive all pending tasks
         Thread.sleep(500L);
@@ -732,11 +739,11 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .open();
 
-        final int clientChannelId = broker.getReceivedControlMessageRequests().get(0).getChannelId();
+        final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
 
         for (int i = 0; i < subscriptionCapacity; i++)
         {
-            broker.pushLockedTask(clientChannelId, 123L, i, i, "foo");
+            broker.pushLockedTask(clientAddress, 123L, i, i, "foo");
         }
 
 

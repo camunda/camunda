@@ -1,6 +1,6 @@
 package io.zeebe.broker.clustering.gossip.protocol;
 
-import static io.zeebe.clustering.gossip.PeerState.*;
+import static io.zeebe.clustering.gossip.PeerState.SUSPECT;
 
 import java.util.concurrent.TimeUnit;
 
