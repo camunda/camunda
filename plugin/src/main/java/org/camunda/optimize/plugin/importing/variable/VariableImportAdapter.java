@@ -1,7 +1,9 @@
 package org.camunda.optimize.plugin.importing.variable;
 
+import javax.annotation.Resource;
 import java.util.List;
 
+@Resource
 public interface VariableImportAdapter {
 
   /**

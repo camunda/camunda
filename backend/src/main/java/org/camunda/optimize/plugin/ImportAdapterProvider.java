@@ -6,22 +6,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.context.support.XmlWebApplicationContext;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+@ComponentScan()
 @Component
 public class ImportAdapterProvider {
 
   @Autowired
   private ConfigurationService configurationService;
+
+  @Autowired(required = false)
+  private List<VariableImportAdapter> filters;
+
+  @Autowired
+  private ApplicationContext applicationContext;
 
   private Logger logger = LoggerFactory.getLogger(ImportAdapterProvider.class);
 
@@ -36,16 +49,17 @@ public class ImportAdapterProvider {
     for (String basePackage : basePackages) {
       beans.addAll(provider.findCandidateComponents(basePackage));
     }
-    List<VariableImportAdapter> enrichers = new ArrayList<>();
     for (BeanDefinition beanDefinition : beans) {
-      // The BeanDefinition class gives access to the Class<?> and other attributes.
-      String className = beanDefinition.getBeanClassName();
-      VariableImportAdapter adapter = createVariableImportAdapter(className);
-      if (adapter != null) {
-        enrichers.add(adapter);
-      }
-    }
-    return enrichers;
+     applicationContext.getAutowireCapableBeanFactory().initializeBean(
+         beanDefinition, beanDefinition.getClass().getName()
+     );
+   }
+    return extractVariableImportAdapter();
+  }
+
+  private List<VariableImportAdapter> extractVariableImportAdapter() {
+    Map<String, VariableImportAdapter> filters = applicationContext.getBeansOfType(VariableImportAdapter.class);
+    return new ArrayList<>(filters.values());
   }
 
   private VariableImportAdapter createVariableImportAdapter(String className) {
