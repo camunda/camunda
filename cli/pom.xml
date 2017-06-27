@@ -2,15 +2,17 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>tngp-cli</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>org.camunda.tngp</groupId>
     <artifactId>tngp-core-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
   </parent>
-  
-  
+
+
   <dependencies>
 
     <dependency>
@@ -21,24 +23,24 @@
 
 
     <dependency>
-    	<groupId>junit</groupId>
-    	<artifactId>junit</artifactId>
-    	<scope>test</scope>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.assertj</groupId>
-    	<artifactId>assertj-core</artifactId>
-    	<scope>test</scope>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-    	<groupId>org.camunda.tngp</groupId>
-    	<artifactId>tngp-broker-core</artifactId>
-    	<scope>test</scope>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>tngp-broker-core</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
-  <plugins>
+    <plugins>
       <!-- MAVEN SUREFIRE -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
