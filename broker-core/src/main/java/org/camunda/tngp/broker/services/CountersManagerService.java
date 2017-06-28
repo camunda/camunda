@@ -67,7 +67,8 @@ public class CountersManagerService implements Service<Counters>
                 countersManager.free(id);
             });
 
-            IoUtil.unmap(mappedCountersFile);
+//            see camunda-tngp/camunda-tngp#208
+//            IoUtil.unmap(mappedCountersFile);
         });
     }
 

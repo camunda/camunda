@@ -39,9 +39,8 @@ public class DispatcherService implements Service<Dispatcher>
         dispatcher = dispatcherBuilder
                 .name(ctx.getName())
                 .conductorExternallyManaged()
-//               see camunda-tngp/camunda-tngp#208
-//                .countersManager(counters.getCountersManager())
-//                .countersBuffer(counters.getCountersBuffer())
+                .countersManager(counters.getCountersManager())
+                .countersBuffer(counters.getCountersBuffer())
                 .build();
 
         conductorRef = actorSchedulerInjector.getValue().schedule(dispatcher.getConductor());
