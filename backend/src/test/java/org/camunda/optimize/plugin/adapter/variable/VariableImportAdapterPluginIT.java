@@ -42,6 +42,7 @@ public class VariableImportAdapterPluginIT {
 
   @Before
   public void setup() throws IOException {
+    embeddedOptimizeRule.resetImportStartIndexes();
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
@@ -57,7 +58,7 @@ public class VariableImportAdapterPluginIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void variableImportCanBeAdaptedByPlugin() throws OptimizeException {
+  public void variableImportCanBeAdaptedByPlugin() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util1");
     pluginProvider.resetAdapters();
@@ -78,7 +79,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void variableImportCanBeAdaptedBySeveralPlugins() throws OptimizeException {
+  public void variableImportCanBeAdaptedBySeveralPlugins() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages(
       "org.camunda.optimize.plugin.adapter.variable.util1,"+
@@ -105,7 +106,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void adapterWithoutDefaultConstructorIsNotAdded() throws OptimizeException {
+  public void adapterWithoutDefaultConstructorIsNotAdded() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.error1");
     pluginProvider.resetAdapters();
@@ -124,7 +125,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void notExistingAdapterDoesNotStopImportProcess() throws OptimizeException {
+  public void notExistingAdapterDoesNotStopImportProcess() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("foo.bar");
     pluginProvider.resetAdapters();
@@ -143,7 +144,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void adapterWithDefaultConstructorThrowingErrorDoesNotStopImportProcess() throws OptimizeException {
+  public void adapterWithDefaultConstructorThrowingErrorDoesNotStopImportProcess() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.error2");
     pluginProvider.resetAdapters();
@@ -162,7 +163,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void adapterCanBeUsedToEnrichVariableImport() throws OptimizeException {
+  public void adapterCanBeUsedToEnrichVariableImport() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util3");
     pluginProvider.resetAdapters();
@@ -181,7 +182,7 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void invalidPluginVariablesAreNotAddedToVariableImport() throws OptimizeException {
+  public void invalidPluginVariablesAreNotAddedToVariableImport() throws Exception {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util4");
     pluginProvider.resetAdapters();
@@ -209,15 +210,16 @@ public class VariableImportAdapterPluginIT {
     return variablesResponseDtos;
   }
 
-  private String deploySimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
+  private String deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws Exception {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
+      .name("aProcessName" + System.currentTimeMillis())
         .startEvent()
         .serviceTask()
           .camundaExpression("${true}")
         .endEvent()
       .done();
     ProcessInstanceEngineDto procInstance = engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    engineRule.waitForAllProcessesToFinish();
     return procInstance.getDefinitionId();
   }
 
