@@ -49,7 +49,7 @@ pipeline {
     }
     stage('Unit') {
       steps {
-        sh 'mvn -s settings.xml clean install'
+        sh 'mvn -Pproduction -s settings.xml clean install'
       }
       post {
         always {

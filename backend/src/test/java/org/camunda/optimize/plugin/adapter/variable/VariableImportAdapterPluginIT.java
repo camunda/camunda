@@ -49,6 +49,7 @@ public class VariableImportAdapterPluginIT {
   @After
   public void resetBasePackage() {
     configurationService.setVariableImportPluginBasePackages("");
+    pluginProvider.resetAdapters();
   }
 
   @Rule
@@ -175,7 +176,7 @@ public class VariableImportAdapterPluginIT {
     // when
     List<GetVariablesResponseDto> variablesResponseDtos = getVariables(processDefinitionId);
 
-    //then only half the variables are added to Optimize
+    //then extra variable is added to Optimize
     assertThat(variablesResponseDtos.size(), is(3));
   }
 
