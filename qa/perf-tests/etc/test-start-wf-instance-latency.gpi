@@ -10,4 +10,7 @@ set logscale x
 set xtics ('0%%' 1.0, '90%%' 10.0, '99%%' 100.0, '99.9%%' 1000.0, '99.99%%' 10000.0, '99.999%%' 100000.0, '99.9999%%' 1000000.0, '99.99999%%' 10000000.0)
 set xrange [1:100000000.0]
 
+# time stamp of the test
+set timestamp "%d/%m/%y %H:%M"
+
 plot 'data/test-start-wf-instance-latency.txt' using 4:1 with lines notitle
