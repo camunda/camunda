@@ -12,29 +12,22 @@
  */
 package org.camunda.tngp.broker.it.incident;
 
+import static org.camunda.tngp.broker.it.util.TopicEventRecorder.incidentEvent;
 import static org.camunda.tngp.broker.it.util.TopicEventRecorder.taskEvent;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.TopicEventRecorder;
-import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.IncidentEvent;
-import org.camunda.tngp.client.event.IncidentEventHandler;
-import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -63,27 +56,6 @@ public class IncidentTest
         .around(clientRule)
         .around(eventRecorder);
 
-    private IncidentEventRecoder incidentEventRecorder;
-    private TopicSubscription incidentTopicSubscription;
-
-    @Before
-    public void init()
-    {
-        incidentEventRecorder = new IncidentEventRecoder();
-
-        incidentTopicSubscription = clientRule.topic().newSubscription()
-            .name("incident")
-            .startAtHeadOfTopic()
-            .incidentEventHandler(incidentEventRecorder)
-            .open();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        incidentTopicSubscription.close();
-    }
-
     @Test
     public void shouldCreateAndResolveInputMappingIncident()
     {
@@ -96,9 +68,9 @@ public class IncidentTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
-        final IncidentEvent incident = incidentEventRecorder.getSingleIncidentEvent(eventType("CREATED"));
+        final IncidentEvent incident = eventRecorder.getSingleIncidentEvent(incidentEvent("CREATED")).getEvent();
 
         // when
         clientRule.workflowTopic().updatePayload()
@@ -109,7 +81,7 @@ public class IncidentTest
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("RESOLVED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
     }
 
     @Test
@@ -124,7 +96,7 @@ public class IncidentTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
         // when
         clientRule.workflowTopic().cancel()
@@ -132,7 +104,7 @@ public class IncidentTest
             .execute();
 
         // then
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("DELETED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
     }
 
     @Test
@@ -160,7 +132,7 @@ public class IncidentTest
             .open();
 
         // then an incident is created
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("CREATED")));
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
         // when the task retries are increased
         taskHandler.failTask = false;
@@ -174,33 +146,7 @@ public class IncidentTest
             .execute();
 
         // then the incident is deleted
-        waitUntil(() -> incidentEventRecorder.hasIncident(eventType("DELETED")));
-    }
-
-    private static final class IncidentEventRecoder implements IncidentEventHandler
-    {
-        private final List<IncidentEvent> events = new CopyOnWriteArrayList<>();
-
-        @Override
-        public void handle(EventMetadata metadata, IncidentEvent event) throws Exception
-        {
-            events.add(event);
-        }
-
-        public IncidentEvent getSingleIncidentEvent(Predicate<IncidentEvent> filter)
-        {
-            return events.stream().filter(filter).findFirst().orElseThrow(() -> new AssertionError("no event found"));
-        }
-
-        public boolean hasIncident(Predicate<IncidentEvent> filter)
-        {
-            return events.stream().anyMatch(filter);
-        }
-    }
-
-    private static Predicate<IncidentEvent> eventType(String type)
-    {
-        return incident -> incident.getEventType().equals(type);
+        waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
     }
 
     private static final class ControllableTaskHandler implements TaskHandler

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.assertj.core.util.Files;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
@@ -39,33 +40,32 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 @Ignore
-public class BrokerRestartTest
+public class BrokerRecoveryTest
 {
-
     private static final TngpModelInstance WORKFLOW = wrap(Bpmn.createExecutableProcess("process")
-            .startEvent("start")
-            .serviceTask("task")
-            .endEvent("end")
-            .done())
-            .taskDefinition("task", "foo", 3);
-
-    private static final TngpModelInstance WORKFLOW_TWO_TASKS = wrap(Bpmn.createExecutableProcess("process")
            .startEvent("start")
-           .serviceTask("task1")
-           .serviceTask("task2")
+           .serviceTask("task")
            .endEvent("end")
            .done())
-           .taskDefinition("task1", "foo", 3)
-           .taskDefinition("task2", "bar", 3);
+           .taskDefinition("task", "foo", 3);
+
+    private static final TngpModelInstance WORKFLOW_TWO_TASKS = wrap(Bpmn.createExecutableProcess("process")
+          .startEvent("start")
+          .serviceTask("task1")
+          .serviceTask("task2")
+          .endEvent("end")
+          .done())
+          .taskDefinition("task1", "foo", 3)
+          .taskDefinition("task2", "bar", 3);
 
     private static final TngpModelInstance WORKFLOW_INCIDENT = wrap(Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .done())
-            .taskDefinition("task", "test", 3)
-            .ioMapping("task")
-                .input("$.foo", "$.foo")
-                .done();
+           .startEvent()
+           .serviceTask("task")
+           .done())
+           .taskDefinition("task", "test", 3)
+           .ioMapping("task")
+               .input("$.foo", "$.foo")
+               .done();
 
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -97,7 +97,7 @@ public class BrokerRestartTest
         final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
 
         return TestFileUtil.readAsTextFileAndReplace(
-                BrokerRestartTest.class.getClassLoader().getResourceAsStream("persistent-broker.cfg.toml"),
+                BrokerRecoveryTest.class.getClassLoader().getResourceAsStream("recovery-broker.cfg.toml"),
                 StandardCharsets.UTF_8,
                 Collections.singletonMap("\\$\\{brokerFolder\\}", canonicallySeparatedPath));
     }
@@ -462,9 +462,20 @@ public class BrokerRestartTest
     {
         eventRecorder.stopRecordingEvents();
         clientRule.getClient().disconnect();
+        brokerRule.stopBroker();
 
-        brokerRule.restartBroker();
+        // delete snapshot and index files to trigger recovery
+        final File configDir = new File(tempFolder.getRoot().getAbsolutePath());
+        final File snapshotDir = new File(configDir, "snapshot");
+        final File indexDir = new File(configDir, "index");
 
+        assertThat(snapshotDir).exists().isDirectory();
+        assertThat(indexDir).exists().isDirectory();
+
+        Files.delete(snapshotDir);
+        Files.delete(indexDir);
+
+        brokerRule.startBroker();
         clientRule.getClient().connect();
         eventRecorder.startRecordingEvents();
     }

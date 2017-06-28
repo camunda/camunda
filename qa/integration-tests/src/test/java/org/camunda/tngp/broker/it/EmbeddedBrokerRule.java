@@ -12,11 +12,7 @@ import java.util.function.Supplier;
 import org.camunda.tngp.broker.Broker;
 import org.camunda.tngp.broker.event.TopicSubscriptionServiceNames;
 import org.camunda.tngp.broker.transport.TransportServiceNames;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.servicecontainer.*;
 import org.junit.rules.ExternalResource;
 
 public class EmbeddedBrokerRule extends ExternalResource
@@ -53,12 +49,12 @@ public class EmbeddedBrokerRule extends ExternalResource
         startBroker();
     }
 
-    protected void stopBroker()
+    public void stopBroker()
     {
         broker.close();
     }
 
-    protected void startBroker()
+    public void startBroker()
     {
         broker = new Broker(configSupplier.get());
 

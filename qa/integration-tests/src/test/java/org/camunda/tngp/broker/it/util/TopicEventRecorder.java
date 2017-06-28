@@ -22,10 +22,7 @@ import java.util.stream.Collectors;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.client.TopicClient;
-import org.camunda.tngp.client.event.EventMetadata;
-import org.camunda.tngp.client.event.TaskEvent;
-import org.camunda.tngp.client.event.TopicSubscription;
-import org.camunda.tngp.client.event.WorkflowInstanceEvent;
+import org.camunda.tngp.client.event.*;
 import org.junit.rules.ExternalResource;
 
 public class TopicEventRecorder extends ExternalResource
@@ -34,6 +31,7 @@ public class TopicEventRecorder extends ExternalResource
 
     private final List<ReceivedTaskEvent> taskEvents = new CopyOnWriteArrayList<>();
     private final List<ReceivedWorkflowEvent> wfEvents = new CopyOnWriteArrayList<>();
+    private final List<ReceivedIncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
 
     private final ClientRule clientRule;
     private final String topicName;
@@ -90,6 +88,7 @@ public class TopicEventRecorder extends ExternalResource
                 .name(SUBSCRIPTION_NAME)
                 .taskEventHandler((m, e) -> taskEvents.add(new ReceivedTaskEvent(m, e)))
                 .workflowInstanceEventHandler((m, e) -> wfEvents.add(new ReceivedWorkflowEvent(m, e)))
+                .incidentEventHandler((m, e) -> incidentEvents.add(new ReceivedIncidentEvent(m, e)))
                 .open();
         }
         else
@@ -137,6 +136,21 @@ public class TopicEventRecorder extends ExternalResource
         return taskEvents.stream().filter(matcher).findFirst().orElseThrow(() -> new AssertionError("no event found"));
     }
 
+    public boolean hasIncidentEvent(final Predicate<ReceivedIncidentEvent> matcher)
+    {
+        return incidentEvents.stream().anyMatch(matcher);
+    }
+
+    public List<ReceivedIncidentEvent> getIncidentEvents(final Predicate<ReceivedIncidentEvent> matcher)
+    {
+        return incidentEvents.stream().filter(matcher).collect(Collectors.toList());
+    }
+
+    public ReceivedIncidentEvent getSingleIncidentEvent(final Predicate<ReceivedIncidentEvent> matcher)
+    {
+        return incidentEvents.stream().filter(matcher).findFirst().orElseThrow(() -> new AssertionError("no event found"));
+    }
+
     public static Predicate<ReceivedWorkflowEvent> wfEvent(final String type)
     {
         return e -> e.getEvent().getEventType().equals(type);
@@ -155,6 +169,11 @@ public class TopicEventRecorder extends ExternalResource
     public static Predicate<ReceivedTaskEvent> taskRetries(final int retries)
     {
         return e -> e.getEvent().getRetries() == retries;
+    }
+
+    public static Predicate<ReceivedIncidentEvent> incidentEvent(final String type)
+    {
+        return e -> e.getEvent().getEventType().equals(type);
     }
 
     public class ReceivedTaskEvent
@@ -196,6 +215,28 @@ public class TopicEventRecorder extends ExternalResource
         }
 
         public WorkflowInstanceEvent getEvent()
+        {
+            return event;
+        }
+    }
+
+    public class ReceivedIncidentEvent
+    {
+        private final EventMetadata metadata;
+        private final IncidentEvent event;
+
+        ReceivedIncidentEvent(EventMetadata metadata, IncidentEvent event)
+        {
+            this.metadata = metadata;
+            this.event = event;
+        }
+
+        public EventMetadata getMetadata()
+        {
+            return metadata;
+        }
+
+        public IncidentEvent getEvent()
         {
             return event;
         }

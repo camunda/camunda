@@ -12,8 +12,8 @@
  */
 package org.camunda.tngp.broker.task.processor;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.util.HashMap;
 
@@ -233,7 +233,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
             final long position = targetLogStreamWriter
                     .producerId(streamProcessorId)
-                    .sourceEvent(targetLogStreamTopicName, targetLogStreamPartitionId, eventPosition)
+                    .sourceEvent(targetLogStreamTopicName, targetLogStreamPartitionId, lockedEvent.getPosition())
                     .key(eventKey)
                     .metadataWriter(targetEventMetadata)
                     .valueWriter(taskEvent)

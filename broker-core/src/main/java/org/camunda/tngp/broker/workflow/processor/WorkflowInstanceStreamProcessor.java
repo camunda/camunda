@@ -64,8 +64,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final EventProcessor sequenceFlowTakenEventProcessor = new ActiveWorkflowInstanceProcessor(new SequenceFlowTakenEventProcessor());
     protected final EventProcessor activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor());
     protected final EventProcessor activityActivatedEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityActivatedEventProcessor());
-    protected final EventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
     protected final EventProcessor activityCompletingEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityCompletingEventProcessor());
+
+    protected final EventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
+    protected final EventProcessor taskCreatedEventProcessor = new TaskCreatedProcessor();
 
     protected final Map<BpmnAspect, EventProcessor> aspectHandlers;
     {
@@ -297,6 +299,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         switch (taskEvent.getEventType())
         {
+            case CREATED:
+                eventProcessor = taskCreatedEventProcessor;
+                break;
+
             case COMPLETED:
                 eventProcessor = taskCompletedEventProcessor;
                 break;
@@ -472,8 +478,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
                 workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
 
-                setWorkflowInstancePayload(serviceTask.getIoMapping()
-                                                      .getInputMappings());
+                try
+                {
+                    setWorkflowInstancePayload(serviceTask.getIoMapping().getInputMappings());
+                }
+                catch (Exception e)
+                {
+                    // update the index in any case because further processors based on it (#311 should improve behavior)
+                    updateState();
+                    // re-throw the exception to create the incident
+                    throw e;
+                }
             }
             else
             {
@@ -502,6 +517,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
+            workflowInstanceIndex
+                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .setActivityKey(eventKey)
+                .write();
+
+            activityInstanceIndex
+                .newActivityInstance(eventKey)
+                .setActivityId(workflowInstanceEvent.getActivityId())
+                .setTaskKey(-1L)
+                .write();
+
             if (!isNilPayload(sourcePayload))
             {
                 payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, sourcePayload);
@@ -511,8 +537,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
-        private long taskKey;
-
         @Override
         public void processEvent()
         {
@@ -551,29 +575,49 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return taskKey = writeTaskEvent(writer.positionAsKey());
+            return writeTaskEvent(writer.positionAsKey());
+        }
+    }
+
+    private final class TaskCreatedProcessor implements EventProcessor
+    {
+        private boolean isActive;
+
+        // TODO event is ignored by recovery
+
+        @Override
+        public void processEvent()
+        {
+            isActive = false;
+
+            final TaskHeaders taskHeaders = taskEvent.headers();
+            final long activityInstanceKey = taskHeaders.getActivityInstanceKey();
+            if (activityInstanceKey > 0)
+            {
+                final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey()).getActivityInstanceKey();
+
+                isActive = activityInstanceKey == currentActivityInstanceKey;
+            }
         }
 
         @Override
         public void updateState()
         {
-            activityInstanceIndex
-                .wrapActivityInstanceKey(eventKey)
-                .setTaskKey(taskKey)
-                .write();
+            if (isActive)
+            {
+                activityInstanceIndex
+                    .wrapActivityInstanceKey(taskEvent.headers().getActivityInstanceKey())
+                    .setTaskKey(eventKey)
+                    .write();
+            }
         }
     }
 
     private final class SequenceFlowTakenEventProcessor implements EventProcessor
     {
-        private boolean isActivityReady;
-        private long writtenEventPosition;
-
         @Override
         public void processEvent()
         {
-            isActivityReady = false;
-
             final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
             final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
 
@@ -586,7 +630,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             else if (targetNode instanceof ExecutableServiceTask)
             {
                 workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_READY);
-                isActivityReady = true;
             }
             else
             {
@@ -597,25 +640,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writtenEventPosition = writeWorkflowEvent(writer.positionAsKey());
-        }
-
-        @Override
-        public void updateState()
-        {
-            if (isActivityReady)
-            {
-                workflowInstanceIndex
-                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .setActivityKey(writtenEventPosition)
-                    .write();
-
-                activityInstanceIndex
-                    .newActivityInstance(writtenEventPosition)
-                    .setActivityId(workflowInstanceEvent.getActivityId())
-                    .setTaskKey(-1L)
-                    .write();
-            }
+            return writeWorkflowEvent(writer.positionAsKey());
         }
     }
 
@@ -697,6 +722,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private final class DeployedWorkflowEventProcessor implements EventProcessor
     {
         protected final UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[BpmnTransformer.ID_MAX_LENGTH]);
+
+        // TODO event is ignored by recovery
 
         @Override
         public void processEvent()

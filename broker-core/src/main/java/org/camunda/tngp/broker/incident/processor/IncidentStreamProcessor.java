@@ -391,6 +391,8 @@ public class IncidentStreamProcessor implements StreamProcessor
     {
         private boolean isFailed;
 
+        // TODO event is ignored by recovery
+
         @Override
         public void processEvent()
         {
