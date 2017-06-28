@@ -171,8 +171,11 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
             actorRef.close();
 
-            indexStore.flush();
-            indexStore.close();
+            if (indexStore != null)
+            {
+                indexStore.flush();
+                indexStore.close();
+            }
         });
     }
 

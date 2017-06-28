@@ -275,24 +275,24 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
     private void clear()
     {
-        workflowDeploymentIndexStore.flush();
-        workflowPositionIndexStore.flush();
-        workflowVersionIndexStore.flush();
-        workflowInstanceIndexStore.flush();
-        activityInstanceIndexStore.flush();
-        workflowInstancePayloadIndexStore.flush();
-        incidentInstanceIndex.flush();
-        activityInstanceIndex.flush();
-        incidentTaskIndex.flush();
-        workflowDeploymentIndexStore.close();
-        workflowPositionIndexStore.close();
-        workflowVersionIndexStore.close();
-        workflowInstanceIndexStore.close();
-        activityInstanceIndexStore.close();
-        workflowInstancePayloadIndexStore.close();
-        incidentInstanceIndex.close();
-        activityInstanceIndex.close();
-        incidentTaskIndex.close();
+        flushAndCloseIndexStore(workflowDeploymentIndexStore);
+        flushAndCloseIndexStore(workflowPositionIndexStore);
+        flushAndCloseIndexStore(workflowVersionIndexStore);
+        flushAndCloseIndexStore(workflowInstanceIndexStore);
+        flushAndCloseIndexStore(activityInstanceIndexStore);
+        flushAndCloseIndexStore(workflowInstancePayloadIndexStore);
+        flushAndCloseIndexStore(incidentInstanceIndex);
+        flushAndCloseIndexStore(activityInstanceIndex);
+        flushAndCloseIndexStore(incidentTaskIndex);
+    }
+
+    protected void flushAndCloseIndexStore(final IndexStore indexStore)
+    {
+        if (indexStore != null)
+        {
+            indexStore.flush();
+            indexStore.close();
+        }
     }
 
 }
