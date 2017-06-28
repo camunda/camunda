@@ -2,6 +2,7 @@ package org.camunda.tngp.client;
 
 import java.util.Properties;
 
+import org.camunda.tngp.client.clustering.RequestTopologyCmd;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
@@ -41,6 +42,8 @@ public interface TngpClient extends AutoCloseable
     TopicClient topic(String topicName, int partitionId);
 
     TransportConnectionPool getConnectionPool();
+
+    RequestTopologyCmd requestTopology();
 
     /**
      * Connects the client to the configured broker. Not thread-safe.

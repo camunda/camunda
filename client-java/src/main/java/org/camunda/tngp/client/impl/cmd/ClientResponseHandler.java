@@ -9,6 +9,6 @@ public interface ClientResponseHandler<R>
 
     int getResponseTemplateId();
 
-    R readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version);
+    R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version);
 
 }

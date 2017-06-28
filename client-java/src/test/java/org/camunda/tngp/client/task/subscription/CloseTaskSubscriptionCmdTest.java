@@ -12,11 +12,10 @@
  */
 package org.camunda.tngp.client.task.subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static org.camunda.tngp.util.VarDataUtil.readBytes;
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.*;
+import static org.camunda.tngp.util.VarDataUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 
@@ -24,7 +23,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.task.impl.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
@@ -54,11 +54,11 @@ public class CloseTaskSubscriptionCmdTest
     @Before
     public void setup()
     {
-        final ClientCmdExecutor clientCmdExecutor = mock(ClientCmdExecutor.class);
+        final ClientCommandManager commandManager = mock(ClientCommandManager.class);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        command = new CloseTaskSubscriptionCmdImpl(commandManager, objectMapper, new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }

@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.perftest.helper.FixedRateLatencyTest;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+
 
 public class CreateTaskLatencyTest extends FixedRateLatencyTest
 {
@@ -26,7 +26,7 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
 
     @Override
     @SuppressWarnings("rawtypes")
-    protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
+    protected Supplier<Future> requestFn(TngpClient client)
     {
         final TaskTopicClient taskClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
@@ -34,7 +34,7 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
         {
             return taskClient.create()
                 .taskType(TASK_TYPE)
-                .executeAsync(connection);
+                .executeAsync();
         };
     }
 

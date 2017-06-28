@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.it;
 
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.logstreams.log.LogStream.*;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -12,8 +11,8 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.TopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.transport.impl.ChannelImpl;
+import org.camunda.tngp.transport.impl.ChannelManagerImpl;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -52,16 +51,20 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
-    public void interruptBrokerConnection()
+    public void interruptBrokerConnections()
     {
-        final Channel channel = ((TngpClientImpl) client).getChannel();
-        try
+        final ChannelManagerImpl channelManager = (ChannelManagerImpl) ((TngpClientImpl) client).getChannelManager();
+
+        for (final ChannelImpl channel : channelManager.getManagedChannels())
         {
-            ((ChannelImpl) channel).getSocketChannel().shutdownOutput();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
+            try
+            {
+                channel.getSocketChannel().shutdownOutput();
+            }
+            catch (final IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 

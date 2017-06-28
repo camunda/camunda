@@ -12,15 +12,15 @@
  */
 package org.camunda.tngp.client.workflow.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.workflow.cmd.CancelWorkflowInstanceCmd;
 import org.camunda.tngp.protocol.clientapi.EventType;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, Void> implements CancelWorkflowInstanceCmd
 {
@@ -30,9 +30,9 @@ public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
 
     private long workflowInstanceKey;
 
-    public CancelWorkflowInstanceCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public CancelWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, WorkflowInstanceEvent.class, topicName, partitionId, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
-    protected Void getResponseValue(int channelId, long key, WorkflowInstanceEvent event)
+    protected Void getResponseValue(long key, WorkflowInstanceEvent event)
     {
         if (event.getEventType() == WorkflowInstanceEventType.CANCEL_WORKFLOW_INSTANCE_REJECTED)
         {

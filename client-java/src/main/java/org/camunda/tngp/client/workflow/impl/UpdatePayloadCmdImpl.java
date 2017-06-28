@@ -12,14 +12,14 @@
  */
 package org.camunda.tngp.client.workflow.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import java.io.InputStream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.workflow.cmd.UpdatePayloadCmd;
@@ -34,34 +34,34 @@ public class UpdatePayloadCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanc
 
     private long activityInstanceKey;
 
-    public UpdatePayloadCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, String topicName, int partitionId)
+    public UpdatePayloadCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, WorkflowInstanceEvent.class, topicName, partitionId, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
     }
 
     @Override
-    public UpdatePayloadCmd activityInstanceKey(long activityInstanceKey)
+    public UpdatePayloadCmd activityInstanceKey(final long activityInstanceKey)
     {
         this.activityInstanceKey = activityInstanceKey;
         return this;
     }
 
     @Override
-    public UpdatePayloadCmd workflowInstanceKey(long workflowInstanceKey)
+    public UpdatePayloadCmd workflowInstanceKey(final long workflowInstanceKey)
     {
         this.workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
         return this;
     }
 
     @Override
-    public UpdatePayloadCmd payload(InputStream payload)
+    public UpdatePayloadCmd payload(final InputStream payload)
     {
         this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
         return this;
     }
 
     @Override
-    public UpdatePayloadCmd payload(String payload)
+    public UpdatePayloadCmd payload(final String payload)
     {
         this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
         return this;
@@ -89,7 +89,7 @@ public class UpdatePayloadCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanc
     }
 
     @Override
-    protected Void getResponseValue(int channelId, long key, WorkflowInstanceEvent event)
+    protected Void getResponseValue(final long key, final WorkflowInstanceEvent event)
     {
         if (event.getEventType() == WorkflowInstanceEventType.UPDATE_PAYLOAD_REJECTED)
         {

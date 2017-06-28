@@ -6,7 +6,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.perftest.helper.MaxRateThroughputTest;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -52,7 +51,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 
     @Override
     @SuppressWarnings("rawtypes")
-    protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
+    protected Supplier<Future> requestFn(TngpClient client)
     {
         final WorkflowTopicClient workflows = client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
@@ -60,7 +59,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
         {
             return workflows.create()
                 .bpmnProcessId("process")
-                .executeAsync(connection);
+                .executeAsync();
         };
     }
 

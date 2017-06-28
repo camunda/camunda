@@ -24,7 +24,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.task.impl.IncreaseTaskSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
@@ -54,11 +55,11 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
     @Before
     public void setup()
     {
-        final ClientCmdExecutor clientCmdExecutor = mock(ClientCmdExecutor.class);
+        final ClientCommandManager commandManager = mock(ClientCommandManager.class);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new IncreaseTaskSubscriptionCreditsCmdImpl(clientCmdExecutor, objectMapper, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        command = new IncreaseTaskSubscriptionCreditsCmdImpl(commandManager, objectMapper, new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }

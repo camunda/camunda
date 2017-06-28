@@ -1,20 +1,18 @@
 package org.camunda.tngp.client.task.impl;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.task.cmd.UpdateTaskRetriesCmd;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements UpdateTaskRetriesCmd
 {
@@ -27,9 +25,9 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public UpdateTaskRetriesCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public UpdateTaskRetriesCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicName, partitionId, TASK_EVENT);
+        super(commandManager, objectMapper, topic, TaskEvent.class, TASK_EVENT);
     }
 
     @Override
@@ -115,7 +113,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     }
 
     @Override
-    protected Long getResponseValue(int channelId, long key, TaskEvent event)
+    protected Long getResponseValue(long key, TaskEvent event)
     {
         long result = -1;
 

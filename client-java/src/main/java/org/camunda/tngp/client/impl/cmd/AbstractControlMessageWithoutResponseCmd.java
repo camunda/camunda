@@ -12,22 +12,21 @@
  */
 package org.camunda.tngp.client.impl.cmd;
 
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
+import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
 public abstract class AbstractControlMessageWithoutResponseCmd<E> extends AbstractControlMessageCmd<E, Void>
 {
 
-    public AbstractControlMessageWithoutResponseCmd(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> messageType,
-            ControlMessageType controlMessageType)
+    public AbstractControlMessageWithoutResponseCmd(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic, final Class<E> messageType, final ControlMessageType controlMessageType)
     {
-        super(cmdExecutor, objectMapper, messageType, controlMessageType);
+        super(commandManager, objectMapper, topic, messageType, controlMessageType);
     }
 
     @Override
-    protected Void getResponseValue(int channelId, E data)
+    protected Void getResponseValue(final E data)
     {
         return null;
     }

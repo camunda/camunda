@@ -25,38 +25,36 @@ import org.camunda.tngp.client.workflow.impl.UpdatePayloadCmdImpl;
 public class WorkflowTopicClientImpl implements WorkflowTopicClient
 {
     protected final TngpClientImpl client;
-    protected final String topicName;
-    protected final int partitionId;
+    protected final Topic topic;
 
     public WorkflowTopicClientImpl(final TngpClientImpl client, final String topicName, final int partitionId)
     {
         this.client = client;
-        this.topicName = topicName;
-        this.partitionId = partitionId;
+        this.topic = new Topic(topicName, partitionId);
     }
 
     @Override
     public CreateDeploymentCmd deploy()
     {
-        return new CreateDeploymentCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new CreateDeploymentCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public CreateWorkflowInstanceCmd create()
     {
-        return new CreateWorkflowInstanceCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new CreateWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public CancelWorkflowInstanceCmd cancel()
     {
-        return new CancelWorkflowInstanceCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new CancelWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public UpdatePayloadCmd updatePayload()
     {
-        return new UpdatePayloadCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new UpdatePayloadCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
 }

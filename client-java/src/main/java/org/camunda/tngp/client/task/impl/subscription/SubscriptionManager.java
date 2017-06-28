@@ -55,8 +55,8 @@ public class SubscriptionManager implements TransportChannelListener
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
-        this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
-        this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions);
+        this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions, client.getChannelManager());
+        this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions, client.getChannelManager());
         this.taskCollector = new SubscribedEventCollector(receiveBufferSubscription, taskAcquisition, topicSubscriptionAcquisition);
 
         this.numExecutionThreads = numExecutionThreads;

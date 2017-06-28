@@ -33,7 +33,7 @@ public class ClientReconnectTest
         // given
         final long initialTaskKey = createTask();
 
-        clientRule.interruptBrokerConnection();
+        clientRule.interruptBrokerConnections();
 
         // when
         final long newTaskKey = TestUtil.doRepeatedly(() -> createTask())

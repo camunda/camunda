@@ -10,11 +10,10 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.ClientProperties;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.task.cmd.CreateTaskCmd;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class NonBlockingTaskCreator
@@ -48,36 +47,33 @@ public class NonBlockingTaskCreator
 
             final String payload = "{}";
 
-            try (final TransportConnection connection = connectionPool.openConnection())
+            final long time = System.currentTimeMillis();
+
+            long tasksCreated = 0;
+
+            final List<Future<Long>> inFlightRequests = new LinkedList<>();
+
+            while (tasksCreated < numOfRequets)
             {
-                final long time = System.currentTimeMillis();
 
-                long tasksCreated = 0;
-
-                final List<Future<Long>> inFlightRequests = new LinkedList<>();
-
-                while (tasksCreated < numOfRequets)
+                if (inFlightRequests.size() < maxConcurrentRequests)
                 {
+                    final CreateTaskCmd cmd = asyncTaskService
+                            .create()
+                            .taskType("greeting")
+                            .addHeader("some", "value")
+                            .payload(payload);
 
-                    if (inFlightRequests.size() < maxConcurrentRequests)
-                    {
-                        final CreateTaskCmd cmd = asyncTaskService
-                                .create()
-                                .taskType("greeting")
-                                .addHeader("some", "value")
-                                .payload(payload);
-
-                        inFlightRequests.add(cmd.executeAsync(connection));
-                        tasksCreated++;
-                    }
-
-                    poll(inFlightRequests);
+                    inFlightRequests.add(cmd.executeAsync());
+                    tasksCreated++;
                 }
 
-                awaitAll(inFlightRequests);
-
-                System.out.println("Took: " + (System.currentTimeMillis() - time));
+                poll(inFlightRequests);
             }
+
+            awaitAll(inFlightRequests);
+
+            System.out.println("Took: " + (System.currentTimeMillis() - time));
 
         }
 

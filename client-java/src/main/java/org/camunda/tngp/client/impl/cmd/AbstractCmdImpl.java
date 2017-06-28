@@ -5,37 +5,39 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 
 import org.camunda.tngp.client.cmd.ClientCommand;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
 {
     protected static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    protected final ClientCmdExecutor cmdExecutor;
+    private final ClientCommandManager commandManager;
+    protected final Topic topic;
 
-    public AbstractCmdImpl(final ClientCmdExecutor cmdExecutor)
+    public AbstractCmdImpl(final ClientCommandManager commandManager, final Topic topic)
     {
-        this.cmdExecutor = cmdExecutor;
-    }
-
-    @Override
-    public R execute(final TransportConnection connection)
-    {
-        return cmdExecutor.execute(this, connection);
+        this.commandManager = commandManager;
+        this.topic = topic;
     }
 
     @Override
     public R execute()
     {
-        return cmdExecutor.execute(this);
+        return commandManager.execute(this);
     }
 
     @Override
-    public Future<R> executeAsync(final TransportConnection connection)
+    public Future<R> executeAsync()
     {
-        return cmdExecutor.executeAsync(this, connection);
+        return commandManager.executeAsync(this);
+    }
+
+    @Override
+    public Topic getTopic()
+    {
+        return topic;
     }
 
     public abstract ClientResponseHandler<R> getResponseHandler();

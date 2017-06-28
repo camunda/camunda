@@ -33,7 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
 import org.camunda.tngp.client.workflow.impl.CreateDeploymentCmdImpl;
@@ -75,11 +76,11 @@ public class CreateDeploymentCmdTest
     @Before
     public void setup()
     {
-        final ClientCmdExecutor clientCmdExecutor = mock(ClientCmdExecutor.class);
+        final ClientCommandManager commandManager = mock(ClientCommandManager.class);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateDeploymentCmdImpl(clientCmdExecutor, objectMapper, TOPIC_NAME, PARTITION_ID);
+        command = new CreateDeploymentCmdImpl(commandManager, objectMapper, new Topic(TOPIC_NAME, PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }
@@ -212,7 +213,7 @@ public class CreateDeploymentCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final DeploymentResult deploymentResult = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final DeploymentResult deploymentResult = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(deploymentResult.getKey()).isEqualTo(2L);
@@ -243,7 +244,7 @@ public class CreateDeploymentCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final DeploymentResult deploymentResult = command.getResponseHandler().readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final DeploymentResult deploymentResult = command.getResponseHandler().readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(deploymentResult.getErrorMessage()).isEqualTo("error");

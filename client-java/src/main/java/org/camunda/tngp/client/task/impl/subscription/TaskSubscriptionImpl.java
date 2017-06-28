@@ -133,13 +133,13 @@ public class TaskSubscriptionImpl
     @Override
     public String getTopicName()
     {
-        return taskClient.getTopicName();
+        return taskClient.getTopic().getTopicName();
     }
 
     @Override
     public int getPartitionId()
     {
-        return taskClient.getPartitionId();
+        return taskClient.getTopic().getPartitionId();
     }
 
     @Override

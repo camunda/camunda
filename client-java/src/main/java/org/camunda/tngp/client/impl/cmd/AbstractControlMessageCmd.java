@@ -12,22 +12,22 @@
  */
 package org.camunda.tngp.client.impl.cmd;
 
-import static org.camunda.tngp.protocol.clientapi.ControlMessageType.NULL_VAL;
-import static org.camunda.tngp.util.VarDataUtil.readBytes;
+import static org.camunda.tngp.protocol.clientapi.ControlMessageType.*;
+import static org.camunda.tngp.util.VarDataUtil.*;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.RequestWriter;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>
 {
@@ -41,12 +41,14 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
 
     protected byte[] serializedCommand;
 
-    public AbstractControlMessageCmd(ClientCmdExecutor cmdExecutor,
+    public AbstractControlMessageCmd(
+            ClientCommandManager commandManager,
             ObjectMapper objectMapper,
+            Topic topic,
             Class<E> messageType,
             ControlMessageType controlMessageType)
     {
-        super(cmdExecutor);
+        super(commandManager, topic);
 
         if (controlMessageType == null || controlMessageType == NULL_VAL)
         {
@@ -136,7 +138,7 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     }
 
     @Override
-    public R readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version)
+    public R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         R result = null;
 
@@ -146,7 +148,7 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
 
         final E data = readData(dataBuffer);
 
-        result = getResponseValue(channelId, data);
+        result = getResponseValue(data);
 
         return result;
     }
@@ -163,5 +165,5 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
         }
     }
 
-    protected abstract R getResponseValue(int channelId, E data);
+    protected abstract R getResponseValue(E data);
 }

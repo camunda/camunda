@@ -1,11 +1,10 @@
 package org.camunda.tngp.client.task.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
@@ -15,16 +14,12 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    private final String topicName;
-    private final int partitionId;
     private long subscriptionId = -1L;
     private int credits = 0;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
-        this.topicName = topicName;
-        this.partitionId = partitionId;
+        super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(final long subscriptionId)
@@ -43,9 +38,8 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     public void validate()
     {
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
         ensureGreaterThan("credits", credits, 0);
+        topic.validate();
     }
 
     @Override
@@ -59,8 +53,8 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     protected Object writeCommand()
     {
         subscription.setSubscriberKey(subscriptionId);
-        subscription.setTopicName(topicName);
-        subscription.setPartitionId(partitionId);
+        subscription.setTopicName(topic.getTopicName());
+        subscription.setPartitionId(topic.getPartitionId());
         subscription.setCredits(credits);
 
         return subscription;

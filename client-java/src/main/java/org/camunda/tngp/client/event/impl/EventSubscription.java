@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
+import org.camunda.tngp.transport.Channel;
 import org.camunda.tngp.util.CheckedConsumer;
 import org.camunda.tngp.util.state.concurrent.SharedStateMachine;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     /*
      * The channel that events are received on
      */
-    protected int receiveChannelId;
+    protected Channel receiveChannel;
 
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
     protected final AtomicInteger eventsProcessedSinceLastReplenishment = new AtomicInteger(0);
@@ -75,12 +76,17 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public int getReceiveChannelId()
     {
-        return receiveChannelId;
+        return receiveChannel != null ? receiveChannel.getStreamId() : -1;
     }
 
-    public void setReceiveChannelId(int receiveChannelId)
+    public Channel getReceiveChannel()
     {
-        this.receiveChannelId = receiveChannelId;
+        return receiveChannel;
+    }
+
+    public void setReceiveChannel(Channel receiveChannel)
+    {
+        this.receiveChannel = receiveChannel;
     }
 
     public int capacity()

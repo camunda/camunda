@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.perftest.helper.MaxRateThroughputTest;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+
 
 public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputTest
 {
@@ -35,7 +35,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
 
     @Override
     @SuppressWarnings("rawtypes")
-    protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
+    protected Supplier<Future> requestFn(TngpClient client)
     {
         final TaskTopicClient tasksClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
@@ -43,7 +43,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
         {
             return tasksClient.create()
                     .taskType(TASK_TYPE)
-                    .executeAsync(connection);
+                    .executeAsync();
         };
     }
 

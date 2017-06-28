@@ -82,7 +82,7 @@ public abstract class FixedRateLatencyTest
                 // ignore
             };
 
-            final Supplier<Future> requestFn = requestFn(client, conection);
+            final Supplier<Future> requestFn = requestFn(client);
 
             TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
@@ -109,7 +109,7 @@ public abstract class FixedRateLatencyTest
                 histogram.recordValue(latency);
             };
 
-            final Supplier<Future> requestFn = requestFn(client, conection);
+            final Supplier<Future> requestFn = requestFn(client);
 
             final int errors = TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, requestRate, timeMs);
 
@@ -122,5 +122,5 @@ public abstract class FixedRateLatencyTest
         TestHelper.gc();
     }
 
-    protected abstract Supplier<Future> requestFn(TngpClient client, TransportConnection conection);
+    protected abstract Supplier<Future> requestFn(TngpClient client);
 }

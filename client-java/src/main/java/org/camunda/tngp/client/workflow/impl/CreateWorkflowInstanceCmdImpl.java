@@ -1,19 +1,18 @@
 package org.camunda.tngp.client.workflow.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import java.io.InputStream;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.ClientCommandRejectedException;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.protocol.clientapi.EventType;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a command to create a workflow instance.
@@ -25,9 +24,9 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    public CreateWorkflowInstanceCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public CreateWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, WorkflowInstanceEvent.class, topicName, partitionId, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
     }
 
     @Override
@@ -84,7 +83,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
-    protected WorkflowInstance getResponseValue(final int channelId, final long key, final WorkflowInstanceEvent event)
+    protected WorkflowInstance getResponseValue(final long key, final WorkflowInstanceEvent event)
     {
         if (event.getEventType() == WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED)
         {

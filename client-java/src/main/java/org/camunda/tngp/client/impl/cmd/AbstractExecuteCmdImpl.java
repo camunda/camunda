@@ -14,7 +14,6 @@ package org.camunda.tngp.client.impl.cmd;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.*;
 import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.*;
-import static org.camunda.tngp.util.EnsureUtil.*;
 import static org.camunda.tngp.util.StringUtil.*;
 import static org.camunda.tngp.util.VarDataUtil.*;
 
@@ -24,7 +23,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
@@ -41,20 +41,17 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     protected final ObjectMapper objectMapper;
     protected final Class<E> eventType;
     protected final EventType commandEventType;
-    protected final String topicName;
-    protected final int partitionId;
 
     protected byte[] serializedCommand;
 
     public AbstractExecuteCmdImpl(
-        final ClientCmdExecutor cmdExecutor,
+        final ClientCommandManager commandManager,
         final ObjectMapper objectMapper,
+        final Topic topic,
         final Class<E> eventType,
-        final String topicName,
-        final int partitionId,
         final EventType commandEventType)
     {
-        super(cmdExecutor);
+        super(commandManager, topic);
 
         if (commandEventType == null || commandEventType == NULL_VAL)
         {
@@ -64,8 +61,6 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         this.objectMapper = objectMapper;
         this.eventType = eventType;
         this.commandEventType = commandEventType;
-        this.topicName = topicName;
-        this.partitionId = partitionId;
     }
 
     @Override
@@ -82,7 +77,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         return headerEncoder.encodedLength() +
                 commandRequestEncoder.sbeBlockLength() +
                 topicNameHeaderLength() +
-                getBytes(topicName).length +
+                getBytes(topic.getTopicName()).length +
                 commandHeaderLength() +
                 serializedCommand.length;
     }
@@ -109,10 +104,10 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         }
 
         commandRequestEncoder
-            .partitionId(partitionId)
+            .partitionId(topic.getPartitionId())
             .key(key)
             .eventType(commandEventType)
-            .topicName(topicName)
+            .topicName(topic.getTopicName())
             .putCommand(serializedCommand, 0, serializedCommand.length);
 
         serializedCommand = null;
@@ -159,7 +154,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     }
 
     @Override
-    public R readResponse(final int channelId, final DirectBuffer responseBuffer, final int offset, final int blockLength, final int version)
+    public R readResponse(final DirectBuffer responseBuffer, final int offset, final int blockLength, final int version)
     {
         responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
@@ -172,7 +167,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         final E event = readEvent(eventBuffer);
 
-        return getResponseValue(channelId, key, event);
+        return getResponseValue(key, event);
     }
 
     protected E readEvent(final byte[] buffer)
@@ -190,10 +185,9 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     @Override
     public void validate()
     {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        topic.validate();
     }
 
-    protected abstract R getResponseValue(int channelId, long key, E event);
+    protected abstract R getResponseValue(long key, E event);
 
 }

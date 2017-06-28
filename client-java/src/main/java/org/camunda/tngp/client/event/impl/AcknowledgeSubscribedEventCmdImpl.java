@@ -1,7 +1,8 @@
 package org.camunda.tngp.client.event.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.EnsureUtil;
@@ -10,9 +11,9 @@ public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<To
 {
     protected final TopicSubscriptionEvent ack = new TopicSubscriptionEvent();
 
-    public AcknowledgeSubscribedEventCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public AcknowledgeSubscribedEventCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, TopicSubscriptionEvent.class, topicName, partitionId, EventType.SUBSCRIPTION_EVENT);
+        super(commandManager, objectMapper, topic, TopicSubscriptionEvent.class, EventType.SUBSCRIPTION_EVENT);
     }
 
     @Override
@@ -54,7 +55,7 @@ public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<To
     }
 
     @Override
-    protected Long getResponseValue(int channelId, long key, TopicSubscriptionEvent event)
+    protected Long getResponseValue(long key, TopicSubscriptionEvent event)
     {
         return key;
     }

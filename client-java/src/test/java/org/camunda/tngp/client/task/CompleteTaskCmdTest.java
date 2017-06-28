@@ -30,7 +30,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.task.impl.CompleteTaskCmdImpl;
@@ -67,11 +68,11 @@ public class CompleteTaskCmdTest
     @Before
     public void setup()
     {
-        final ClientCmdExecutor clientCmdExecutor = mock(ClientCmdExecutor.class);
+        final ClientCommandManager commandManager = mock(ClientCommandManager.class);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_NAME, PARTITION_ID);
+        completeTaskCommand = new CompleteTaskCmdImpl(commandManager, objectMapper, new Topic(TOPIC_NAME, PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }
@@ -173,7 +174,7 @@ public class CompleteTaskCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(2L);
@@ -202,7 +203,7 @@ public class CompleteTaskCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(-1L);

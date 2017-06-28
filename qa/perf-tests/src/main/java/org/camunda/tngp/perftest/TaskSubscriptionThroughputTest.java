@@ -1,11 +1,8 @@
 package org.camunda.tngp.perftest;
 
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
-import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
-import static org.camunda.tngp.perftest.helper.TestHelper.printProperties;
+import static org.camunda.tngp.client.ClientProperties.*;
+import static org.camunda.tngp.perftest.CommonProperties.*;
+import static org.camunda.tngp.perftest.helper.TestHelper.*;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -19,7 +16,6 @@ import org.camunda.tngp.client.task.TaskSubscription;
 import org.camunda.tngp.perftest.helper.TestHelper;
 import org.camunda.tngp.perftest.reporter.FileReportWriter;
 import org.camunda.tngp.perftest.reporter.RateReporter;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public class TaskSubscriptionThroughputTest
 {
@@ -120,18 +116,15 @@ public class TaskSubscriptionThroughputTest
         final int numTasks = Integer.parseInt(properties.getProperty(TEST_NUM_TASKS));
         final int setUpTimeMs = Integer.parseInt(properties.getProperty(TEST_SETUP_TIMEMS));
 
-        try (TransportConnection connection = client.getConnectionPool().openConnection())
-        {
-            final Supplier<Future> request = () -> client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
-                    .taskType(TASK_TYPE)
-                    .executeAsync(connection);
+        final Supplier<Future> request = () -> client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
+                .taskType(TASK_TYPE)
+                .executeAsync();
 
-            TestHelper.executeAtFixedRate(
-                request,
-                (l) ->
-                { },
-                numTasks / (int) TimeUnit.MILLISECONDS.toSeconds(setUpTimeMs),
-                setUpTimeMs);
-        }
+        TestHelper.executeAtFixedRate(
+            request,
+            (l) ->
+            { },
+            numTasks / (int) TimeUnit.MILLISECONDS.toSeconds(setUpTimeMs),
+            setUpTimeMs);
     }
 }

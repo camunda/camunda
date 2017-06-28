@@ -1,12 +1,10 @@
 package org.camunda.tngp.client.task.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageCmd;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
@@ -15,18 +13,14 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
 {
     protected final TaskSubscription subscription = new TaskSubscription();
 
-    private final String topicName;
-    private final int partitionId;
     private String taskType;
     private long lockDuration = -1L;
     private String lockOwner;
     private int initialCredits = -1;
 
-    public CreateTaskSubscriptionCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
+    public CreateTaskSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
-        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION);
-        this.topicName = topicName;
-        this.partitionId = partitionId;
+        super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION);
     }
 
     public CreateTaskSubscriptionCmdImpl lockOwner(final String lockOwner)
@@ -56,8 +50,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     @Override
     public void validate()
     {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        topic.validate();
         ensureNotNull("task type", taskType);
         ensureNotNullOrEmpty("lock owner", lockOwner);
         ensureGreaterThan("lock duration", lockDuration, 0);
@@ -76,8 +69,8 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     @Override
     protected Object writeCommand()
     {
-        subscription.setTopicName(topicName);
-        subscription.setPartitionId(partitionId);
+        subscription.setTopicName(topic.getTopicName());
+        subscription.setPartitionId(topic.getPartitionId());
         subscription.setTaskType(taskType);
         subscription.setLockDuration(lockDuration);
         subscription.setLockOwner(lockOwner);
@@ -87,9 +80,9 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     }
 
     @Override
-    protected EventSubscriptionCreationResult getResponseValue(final int channelId, final TaskSubscription data)
+    protected EventSubscriptionCreationResult getResponseValue(final TaskSubscription data)
     {
-        return new EventSubscriptionCreationResult(data.getSubscriberKey(), channelId);
+        return new EventSubscriptionCreationResult(data.getSubscriberKey());
     }
 
 }

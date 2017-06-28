@@ -1,17 +1,19 @@
 package org.camunda.tngp.client.task.impl.subscription;
 
-public class EventSubscriptionCreationResult
+import org.camunda.tngp.client.impl.cmd.ChannelAwareResponseResult;
+import org.camunda.tngp.transport.Channel;
+
+public class EventSubscriptionCreationResult implements ChannelAwareResponseResult
 {
     protected final long subscriberKey;
-    protected final int receiveChannel;
+    protected Channel receiveChannel;
 
-    public EventSubscriptionCreationResult(long subscriberKey, int receiveChannel)
+    public EventSubscriptionCreationResult(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
-        this.receiveChannel = receiveChannel;
     }
 
-    public int getReceiveChannelId()
+    public Channel getReceiveChannel()
     {
         return receiveChannel;
     }
@@ -19,6 +21,12 @@ public class EventSubscriptionCreationResult
     public long getSubscriberKey()
     {
         return subscriberKey;
+    }
+
+    @Override
+    public void setChannel(Channel channel)
+    {
+        this.receiveChannel = channel;
     }
 
 }

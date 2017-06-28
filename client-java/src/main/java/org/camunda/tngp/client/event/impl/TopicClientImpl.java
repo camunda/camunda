@@ -16,18 +16,18 @@ import org.camunda.tngp.client.TopicClient;
 import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
 import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.impl.Topic;
+
 
 public class TopicClientImpl implements TopicClient
 {
     protected final TngpClientImpl client;
-    protected final String topicName;
-    protected final int partitionId;
+    protected final Topic topic;
 
-    public TopicClientImpl(TngpClientImpl client, final String topicName, int partitionId)
+    public TopicClientImpl(final TngpClientImpl client, final String topicName, final int partitionId)
     {
         this.client = client;
-        this.topicName = topicName;
-        this.partitionId = partitionId;
+        this.topic = new Topic(topicName, partitionId);
     }
 
     @Override
@@ -44,27 +44,22 @@ public class TopicClientImpl implements TopicClient
 
     public CreateTopicSubscriptionCmdImpl createTopicSubscription()
     {
-        return new CreateTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new CreateTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
     {
-        return new CloseTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new CloseTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     public AcknowledgeSubscribedEventCmdImpl acknowledgeEvent()
     {
-        return new AcknowledgeSubscribedEventCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
+        return new AcknowledgeSubscribedEventCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
-    public String getTopicName()
+    public Topic getTopic()
     {
-        return topicName;
-    }
-
-    public int getPartitionId()
-    {
-        return partitionId;
+        return topic;
     }
 
 }

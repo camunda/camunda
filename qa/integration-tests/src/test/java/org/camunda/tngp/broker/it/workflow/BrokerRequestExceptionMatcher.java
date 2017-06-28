@@ -1,15 +1,16 @@
 package org.camunda.tngp.broker.it.workflow;
 
 import org.camunda.tngp.client.cmd.BrokerRequestException;
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
 public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestException>
 {
 
-    protected int expectedDetailCode;
+    protected ErrorCode expectedDetailCode;
 
-    public static BrokerRequestExceptionMatcher brokerException(int expectedDetailCode)
+    public static BrokerRequestExceptionMatcher brokerException(ErrorCode expectedDetailCode)
     {
         final BrokerRequestExceptionMatcher matcher = new BrokerRequestExceptionMatcher();
         matcher.expectedDetailCode = expectedDetailCode;
@@ -26,7 +27,7 @@ public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestExce
 
         final BrokerRequestException exception = (BrokerRequestException) item;
 
-        return expectedDetailCode == exception.getDetailCode();
+        return expectedDetailCode == exception.getErrorCode();
     }
 
     @Override

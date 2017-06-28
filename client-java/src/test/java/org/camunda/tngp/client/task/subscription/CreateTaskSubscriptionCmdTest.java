@@ -25,7 +25,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.ClientCommandManager;
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.client.task.impl.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscription;
@@ -59,11 +60,11 @@ public class CreateTaskSubscriptionCmdTest
     @Before
     public void setup()
     {
-        final ClientCmdExecutor clientCmdExecutor = mock(ClientCmdExecutor.class);
+        final ClientCommandManager commandManager = mock(ClientCommandManager.class);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        command = new CreateTaskSubscriptionCmdImpl(commandManager, objectMapper, new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }
@@ -124,11 +125,10 @@ public class CreateTaskSubscriptionCmdTest
         responseEncoder.putData(jsonData, 0, jsonData.length);
 
         // when
-        final EventSubscriptionCreationResult result = responseHandler.readResponse(5, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final EventSubscriptionCreationResult result = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(result.getSubscriberKey()).isEqualTo(3L);
-        assertThat(result.getReceiveChannelId()).isEqualTo(5);
     }
 
     @Test

@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
+import org.camunda.tngp.client.clustering.RequestTopologyCmd;
+import org.camunda.tngp.client.clustering.impl.ClientTopologyManager;
+import org.camunda.tngp.client.clustering.impl.RequestTopologyCmdImpl;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.task.impl.subscription.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -19,27 +22,20 @@ import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.transport.*;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.util.actor.ActorReference;
 import org.camunda.tngp.util.actor.ActorScheduler;
 import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class TngpClientImpl implements TngpClient
 {
-    public static final int DEFAULT_RESOURCE_ID = 0;
-    public static final int DEFAULT_SHARD_ID = 0;
-
     protected final Properties initializationProperties;
 
     protected final Transport transport;
     protected final TransportConnectionPool connectionPool;
-    protected final DataFramePool dataFramePool;
-    protected Channel channel;
     protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
     protected ActorScheduler transportActorScheduler;
-
-    protected ClientCmdExecutor cmdExecutor;
 
     protected final ObjectMapper objectMapper;
 
@@ -47,29 +43,22 @@ public class TngpClientImpl implements TngpClient
 
     protected ChannelManager channelManager;
 
+    protected final ClientTopologyManager topologyManager;
+    protected final ClientCommandManager commandManager;
+
+    protected ActorReference topologyManagerActorReference;
+    protected ActorReference commandManagerActorReference;
+
+    protected boolean connected = false;
+
+
     public TngpClientImpl(final Properties properties)
     {
         ClientProperties.setDefaults(properties);
         this.initializationProperties = properties;
 
-        final String brokerContactPoint = properties.getProperty(BROKER_CONTACTPOINT);
+        contactPoint = SocketAddress.from(properties.getProperty(BROKER_CONTACTPOINT));
 
-        String hostName = brokerContactPoint;
-        int port = -1;
-
-        final int portDelimiter = hostName.indexOf(":");
-        if (portDelimiter != -1)
-        {
-            hostName = hostName.substring(0, portDelimiter);
-            port = Integer.parseInt(brokerContactPoint.substring(portDelimiter + 1, brokerContactPoint.length()));
-        }
-        else
-        {
-            final String errorMessage = String.format("Tngp Client config properts %s has wrong value: '%s' Needs to have format [hostname]:[port]", BROKER_CONTACTPOINT, brokerContactPoint);
-            throw new RuntimeException(errorMessage);
-        }
-
-        contactPoint = new SocketAddress(hostName, port);
         final int maxConnections = Integer.parseInt(properties.getProperty(CLIENT_MAXCONNECTIONS));
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
@@ -97,9 +86,6 @@ public class TngpClientImpl implements TngpClient
             .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
-        dataFramePool = DataFramePool.newBoundedPool(maxRequests, transport.getSendBuffer());
-
-        cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -121,37 +107,46 @@ public class TngpClientImpl implements TngpClient
                 .requestResponseProtocol(connectionPool)
                 .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
                 .build();
+
+        topologyManager = new ClientTopologyManager(channelManager, connectionPool, objectMapper, contactPoint);
+        commandManager = new ClientCommandManager(channelManager, connectionPool, topologyManager);
     }
 
     @Override
     public void connect()
     {
-        channel = channelManager.requestChannel(contactPoint);
-
-        cmdExecutor.setChannel(channel);
+        commandManagerActorReference = transportActorScheduler.schedule(commandManager);
+        topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
 
         subscriptionManager.start();
+
+        connected = true;
     }
 
     @Override
     public void disconnect()
     {
-        subscriptionManager.closeAllSubscriptions();
+        if (connected)
+        {
+            subscriptionManager.closeAllSubscriptions();
+            subscriptionManager.stop();
 
-        subscriptionManager.stop();
+            topologyManagerActorReference.close();
+            topologyManagerActorReference = null;
 
-        cmdExecutor.setChannel(null);
-        channelManager.closeAllChannelsAsync().join();
-        channel = null;
+            commandManagerActorReference.close();
+            commandManagerActorReference = null;
+
+            channelManager.closeAllChannelsAsync().join();
+
+            connected = false;
+        }
     }
 
     @Override
     public void close()
     {
-        if (isConnected())
-        {
-            disconnect();
-        }
+        disconnect();
 
         subscriptionManager.close();
 
@@ -185,21 +180,16 @@ public class TngpClientImpl implements TngpClient
         transportActorScheduler.close();
     }
 
-    protected boolean isConnected()
+    @Override
+    public RequestTopologyCmd requestTopology()
     {
-        return channel != null;
+        return new RequestTopologyCmdImpl(commandManager, objectMapper);
     }
-
 
     @Override
     public TransportConnectionPool getConnectionPool()
     {
         return connectionPool;
-    }
-
-    public DataFramePool getDataFramePool()
-    {
-        return dataFramePool;
     }
 
     @Override
@@ -226,14 +216,24 @@ public class TngpClientImpl implements TngpClient
         return new TopicClientImpl(this, topicName, partitionId);
     }
 
-    public ClientCmdExecutor getCmdExecutor()
+    public ClientCommandManager getCommandManager()
     {
-        return cmdExecutor;
+        return commandManager;
+    }
+
+    public ClientTopologyManager getTopologyManager()
+    {
+        return topologyManager;
     }
 
     public SubscriptionManager getSubscriptionManager()
     {
         return subscriptionManager;
+    }
+
+    public ChannelManager getChannelManager()
+    {
+        return channelManager;
     }
 
     public ObjectMapper getObjectMapper()
@@ -244,10 +244,5 @@ public class TngpClientImpl implements TngpClient
     public Properties getInitializationProperties()
     {
         return initializationProperties;
-    }
-
-    public Channel getChannel()
-    {
-        return channel;
     }
 }

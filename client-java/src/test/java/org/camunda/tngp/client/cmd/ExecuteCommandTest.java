@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
+import org.camunda.tngp.client.impl.Topic;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.junit.Rule;
@@ -51,7 +52,7 @@ public class ExecuteCommandTest
     {
         ClientCommand(EventType commandEventType)
         {
-            super(null, null, Void.class, "test-topic", 0, commandEventType);
+            super(null, null, new Topic("test-topic", 0), Void.class, commandEventType);
         }
 
         @Override
@@ -66,7 +67,7 @@ public class ExecuteCommandTest
         }
 
         @Override
-        protected Void getResponseValue(int channelId, long key, Void event)
+        protected Void getResponseValue(long key, Void event)
         {
             return null;
         }

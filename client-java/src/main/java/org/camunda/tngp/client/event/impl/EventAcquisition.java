@@ -10,6 +10,7 @@ import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.subscription.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.subscription.SubscribedEventHandler;
+import org.camunda.tngp.transport.ChannelManager;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.actor.Actor;
 import org.camunda.tngp.util.state.concurrent.SharedStateMachine;
@@ -24,17 +25,19 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     protected static final int STATE_BUFFER_SIZE = 1024 * 1024 * 2;
 
     protected final EventSubscriptions<T> subscriptions;
+    private final ChannelManager channelManager;
     protected DeferredCommandContext asyncContext;
     protected String name;
 
     protected final SharedStateMachineBlueprint<T> subscriptionLifecycle;
     protected final SharedStateMachineManager<T> stateMachineManager;
 
-    public EventAcquisition(String name, EventSubscriptions<T> subscriptions)
+    public EventAcquisition(String name, EventSubscriptions<T> subscriptions, final ChannelManager channelManager)
     {
         this.name = name;
         this.asyncContext = new DeferredCommandContext();
         this.subscriptions = subscriptions;
+        this.channelManager = channelManager;
         this.subscriptionLifecycle = new SharedStateMachineBlueprint<T>()
                 .onState(EventSubscription.STATE_OPENING, this::openSubscription)
                 .onState(EventSubscription.STATE_CLOSED, this::removeSubscription)
@@ -46,9 +49,9 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         this.stateMachineManager = new SharedStateMachineManager<>(stateChangeBuffer);
     }
 
-    public EventAcquisition(EventSubscriptions<T> subscriptions)
+    public EventAcquisition(EventSubscriptions<T> subscriptions, final ChannelManager channelManager)
     {
-        this("event-acquisition", subscriptions);
+        this("event-acquisition", subscriptions, channelManager);
     }
 
     @Override
@@ -100,7 +103,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
 
         subscription.setSubscriberKey(result.getSubscriberKey());
-        subscription.setReceiveChannelId(result.getReceiveChannelId());
+        subscription.setReceiveChannel(result.getReceiveChannel());
         subscription.onOpen();
         subscriptions.onSubscriptionOpened(subscription);
     }
@@ -116,6 +119,10 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         try
         {
             subscription.requestSubscriptionClose();
+            if (channelManager != null)
+            {
+                channelManager.returnChannel(subscription.getReceiveChannel());
+            }
             subscription.onClose();
         }
         catch (Exception e)
@@ -127,6 +134,10 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
     protected void abortSubscription(T subscription)
     {
+        if (channelManager != null)
+        {
+            channelManager.returnChannel(subscription.getReceiveChannel());
+        }
         subscription.onAbort();
     }
 

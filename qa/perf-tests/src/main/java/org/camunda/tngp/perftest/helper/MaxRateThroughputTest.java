@@ -83,7 +83,7 @@ public abstract class MaxRateThroughputTest
                 // ignore
             };
 
-            final Supplier<Future> requestFn = requestFn(client, conection);
+            final Supplier<Future> requestFn = requestFn(client);
 
             TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
@@ -117,7 +117,7 @@ public abstract class MaxRateThroughputTest
 
             }.start();
 
-            final Supplier<Future> requestFn = requestFn(client, conection);
+            final Supplier<Future> requestFn = requestFn(client);
 
             TestHelper.executeAtMaxRate(requestFn, rateReporter, testTimeMs, maxConcurrentRequests);
 
@@ -131,6 +131,6 @@ public abstract class MaxRateThroughputTest
         TestHelper.gc();
     }
 
-    protected abstract Supplier<Future> requestFn(TngpClient client, TransportConnection conection);
+    protected abstract Supplier<Future> requestFn(TngpClient client);
 }
 

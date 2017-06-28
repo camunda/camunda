@@ -37,6 +37,7 @@ public class TaskQueueTest
     @Rule
     public Timeout testTimeout = Timeout.seconds(10);
 
+
     @Test
     public void shouldCreateTask()
     {
@@ -55,8 +56,8 @@ public class TaskQueueTest
     {
         final TngpClient client = clientRule.getClient();
 
-        thrown.expect(BrokerRequestException.class);
-        thrown.expectMessage(String.format("Cannot execute command. Topic with name '%s' and partition id '%d' not found", "unknown-topic", DEFAULT_PARTITION_ID));
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage(String.format("Cannot execute command. No broker for topic with name '%s' and partition id '%d' found", "unknown-topic", DEFAULT_PARTITION_ID));
 
         client.taskTopic("unknown-topic", DEFAULT_PARTITION_ID).create()
             .taskType("foo")
@@ -71,8 +72,8 @@ public class TaskQueueTest
     {
         final TngpClient client = clientRule.getClient();
 
-        thrown.expect(BrokerRequestException.class);
-        thrown.expectMessage(String.format("Cannot execute command. Topic with name '%s' and partition id '%d' not found", DEFAULT_TOPIC_NAME, 999));
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage(String.format("Cannot execute command. No broker for topic with name '%s' and partition id '%d' found", DEFAULT_TOPIC_NAME, 999));
 
         client.taskTopic(DEFAULT_TOPIC_NAME, 999).create()
             .taskType("foo")

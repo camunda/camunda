@@ -1,25 +1,27 @@
 package org.camunda.tngp.client.cmd;
 
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
+
 public class BrokerRequestException extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
 
-    public static final String ERROR_MESSAGE_FORMAT = "Request exception (%d): %s\n";
+    public static final String ERROR_MESSAGE_FORMAT = "Request exception (%s): %s\n";
 
-    protected final int errorCodeCode;
+    protected final ErrorCode errorCode;
     protected final String errorMessage;
 
-    public BrokerRequestException(int errorCode, String errorMessage)
+    public BrokerRequestException(final ErrorCode errorCode, final String errorMessage)
     {
         super(String.format(ERROR_MESSAGE_FORMAT, errorCode, errorMessage));
 
-        this.errorCodeCode = errorCode;
+        this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
 
-    public int getDetailCode()
+    public ErrorCode getErrorCode()
     {
-        return errorCodeCode;
+        return errorCode;
     }
 
     public String getErrorMessage()
