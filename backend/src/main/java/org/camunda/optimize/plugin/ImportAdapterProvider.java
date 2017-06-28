@@ -6,92 +6,113 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
-import org.springframework.web.context.support.XmlWebApplicationContext;
+import org.springframework.util.ClassUtils;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@ComponentScan()
 @Component
 public class ImportAdapterProvider {
 
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired(required = false)
-  private List<VariableImportAdapter> filters;
-
   @Autowired
   private ApplicationContext applicationContext;
+  @Autowired
+  private DefaultListableBeanFactory beanFactory;
+
+  private boolean initializedOnce = false;
+  private Set<BeanDefinition> loadedBeans;
 
   private Logger logger = LoggerFactory.getLogger(ImportAdapterProvider.class);
 
-  public List<VariableImportAdapter> getVariableImportAdapter() {
-
+  public void initAdapters() {
     ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
     // Filter to include only classes that have a particular annotation.
     provider.addIncludeFilter(new AssignableTypeFilter(VariableImportAdapter.class));
     // Find classes in the given package (or subpackages)
     String[] basePackages = configurationService.getVariableImportPluginBasePackagesAsArray();
-    Set<BeanDefinition> beans = new HashSet<>();
+    loadedBeans = new HashSet<>();
     for (String basePackage : basePackages) {
-      beans.addAll(provider.findCandidateComponents(basePackage));
+      loadedBeans.addAll(provider.findCandidateComponents(basePackage));
     }
-    for (BeanDefinition beanDefinition : beans) {
-     applicationContext.getAutowireCapableBeanFactory().initializeBean(
-         beanDefinition, beanDefinition.getClass().getName()
-     );
+    for (BeanDefinition beanDefinition : loadedBeans) {
+      if (validPlugin(beanDefinition)) {
+        String beanName = fetchName(beanDefinition);
+        if (!beanFactory.isBeanNameInUse(beanName)) {
+          beanFactory
+              .registerBeanDefinition(beanName, beanDefinition);
+        }
+      }
    }
-    return extractVariableImportAdapter();
   }
 
-  private List<VariableImportAdapter> extractVariableImportAdapter() {
-    Map<String, VariableImportAdapter> filters = applicationContext.getBeansOfType(VariableImportAdapter.class);
+  private boolean validPlugin(BeanDefinition beanDefinition) {
+    boolean result = false;
+    try {
+      result =  ClassUtils.hasConstructor(this.getClass().getClassLoader()
+          .loadClass(beanDefinition.getBeanClassName()));
+    } catch (ClassNotFoundException e) {
+      logger.debug("plugin [{}] is not valid", beanDefinition.getBeanClassName());
+    }
+
+    return result;
+  }
+
+  private String fetchName(BeanDefinition beanDefinition) {
+    String result = null;
+    try {
+       result = this.getClass().getClassLoader()
+          .loadClass(beanDefinition.getBeanClassName()).getSimpleName();
+    } catch (ClassNotFoundException e) {
+      logger.error("error while loading plugin", e);
+    }
+    if (result == null) {
+      //always works
+      result = beanDefinition.getBeanClassName();
+    }
+    return result;
+  }
+
+  public List<VariableImportAdapter> getAdapters() {
+    if (!initializedOnce) {
+      this.initAdapters();
+      this.initializedOnce = true;
+    }
+
+    Map<String, VariableImportAdapter> filters = new HashMap<>();
+    try {
+      filters =
+          applicationContext.getBeansOfType(VariableImportAdapter.class);
+    } catch (Exception e) {
+      logger.debug("error while instantiating plugins", e);
+    }
     return new ArrayList<>(filters.values());
   }
 
-  private VariableImportAdapter createVariableImportAdapter(String className) {
-    Object enricherObject = null;
-    try {
-      Class<?> clazz = Class.forName(className);
-      Constructor<?> cons = clazz.getConstructor();
-      enricherObject = cons.newInstance(new Object[]{});
-    } catch (ClassNotFoundException e) {
-      String message = "Was not able to add plugin to variable import! Could not find class "
-        + className + "!";
-      logger.error(message, e);
-      return null;
-    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-      String message = "Was not able to add plugin to variable import! Error during object creation of class "
-        + className + "! Please check if the default constructor can cause an exception!";
-      logger.error(message, e);
-      return null;
-    } catch (InstantiationException e) {
-      String message = "Was not able to add plugin to variable import! Found class "
-        + className + " could not be instantiated!";
-      logger.error(message, e);
-      return null;
-    }
-    if (enricherObject instanceof VariableImportAdapter) {
-      return (VariableImportAdapter) enricherObject;
-    } else {
-      logger.error("Was not able to add plugin to variable import! Found class {} is not of type {}.",
-        className, VariableImportAdapter.class.getSimpleName());
-      return null;
+  //used for testing mostly
+  public void resetAdapters() {
+    if (initializedOnce) {
+      this.initializedOnce = false;
+      for (BeanDefinition beanDefinition : loadedBeans) {
+        if (validPlugin(beanDefinition)) {
+          String simpleName = fetchName(beanDefinition);;
+          beanFactory.removeBeanDefinition(simpleName);
+          beanFactory.destroySingleton(simpleName);
+        }
+      }
     }
   }
-
 
 }

@@ -2,7 +2,6 @@ package org.camunda.optimize.service.es;
 
 
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
@@ -11,9 +10,7 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -21,15 +18,12 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collection;
 
-import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -123,6 +117,8 @@ public class ResilienceTest {
   }
 
   public Node elasticSearchTestNode() throws NodeValidationException, IOException, InterruptedException {
+    ArrayList classpathPlugins = new ArrayList();
+    classpathPlugins.add(Netty4Plugin.class);
     Node node = new MyNode(
         Settings.builder()
             .put("transport.type", "netty4")
@@ -130,7 +126,7 @@ public class ResilienceTest {
             .put("http.enabled", "true")
             .put("path.home", esFolder.getAbsolutePath())
             .build(),
-        asList(Netty4Plugin.class));
+        classpathPlugins);
     node.start();
 
     node.client().admin().cluster()

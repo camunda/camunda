@@ -11,6 +11,7 @@ import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingVariablesFinder;
 import org.camunda.optimize.service.importing.impl.IdBasedImportService;
 import org.camunda.optimize.service.importing.job.importing.VariableImportJob;
+import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,9 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   private VariableWriter variableWriter;
   @Autowired
   private MissingVariablesFinder missingVariablesFinder;
+
   @Autowired
-  private ImportAdapterProvider importAdapterProvider;
+  private ImportAdapterProvider importServiceProvider;
 
   @Override
   protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds) throws OptimizeException {
@@ -49,7 +51,7 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
     List<? extends PluginVariableDto> result = super.processNewEngineEntries(entries);
     List<PluginVariableDto> pluginVariableList = new ArrayList<>(result.size());
     pluginVariableList.addAll(result);
-    for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getVariableImportAdapter()) {
+    for (VariableImportAdapter variableImportAdapter : importServiceProvider.getAdapters()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     return convertPluginListToImportList(pluginVariableList);

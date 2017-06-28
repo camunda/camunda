@@ -3,6 +3,7 @@ package org.camunda.optimize.plugin.adapter.variable;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -37,11 +38,12 @@ public class VariableImportAdapterPluginIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;
+  private ImportAdapterProvider pluginProvider;
 
   @Before
   public void setup() throws IOException {
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    embeddedOptimizeRule.resetImportStartIndexes();
+    pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
 
   @After
@@ -57,6 +59,7 @@ public class VariableImportAdapterPluginIT {
   public void variableImportCanBeAdaptedByPlugin() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util1");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -79,6 +82,7 @@ public class VariableImportAdapterPluginIT {
     configurationService.setVariableImportPluginBasePackages(
       "org.camunda.optimize.plugin.adapter.variable.util1,"+
       "org.camunda.optimize.plugin.adapter.variable.util2");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "bar");
     variables.put("var2", "bar");
@@ -103,6 +107,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterWithoutDefaultConstructorIsNotAdded() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.error1");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -121,6 +126,7 @@ public class VariableImportAdapterPluginIT {
   public void notExistingAdapterDoesNotStopImportProcess() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("foo.bar");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -139,6 +145,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterWithDefaultConstructorThrowingErrorDoesNotStopImportProcess() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.error2");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -157,6 +164,7 @@ public class VariableImportAdapterPluginIT {
   public void adapterCanBeUsedToEnrichVariableImport() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util3");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -175,6 +183,7 @@ public class VariableImportAdapterPluginIT {
   public void invalidPluginVariablesAreNotAddedToVariableImport() throws OptimizeException {
     // given
     configurationService.setVariableImportPluginBasePackages("org.camunda.optimize.plugin.adapter.variable.util4");
+    pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
