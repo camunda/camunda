@@ -12,7 +12,8 @@
  */
 package org.camunda.tngp.util.buffer;
 
-import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.nio.charset.StandardCharsets;
 
@@ -20,7 +21,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-
 
 public final class BufferUtil
 {
@@ -99,18 +99,33 @@ public final class BufferUtil
      */
     public static DirectBuffer cloneBuffer(final DirectBuffer src)
     {
-        final int capacity = src.capacity();
+        return cloneBuffer(src, 0, src.capacity());
+    }
+
+    /**
+     * Creates a new instance of the src buffer class and copies the underlying bytes.
+     *
+     * @param src the buffer to copy from
+     * @param offset the offset to start in the src buffer
+     * @param length the number of bytes to clone
+     * @return the new buffer instance
+     */
+    public static DirectBuffer cloneBuffer(final DirectBuffer src, final int offset, final int length)
+    {
+        final int availableBytes = src.capacity() - offset;
+
+        ensureGreaterThanOrEqual("available bytes", availableBytes, length);
 
         if (src instanceof UnsafeBuffer)
         {
-            final byte[] dst = new byte[capacity];
-            src.getBytes(0, dst);
+            final byte[] dst = new byte[length];
+            src.getBytes(offset, dst);
             return new UnsafeBuffer(dst);
         }
         else if (src instanceof ExpandableArrayBuffer)
         {
-            final ExpandableArrayBuffer dst = new ExpandableArrayBuffer(capacity);
-            src.getBytes(0, dst, 0, capacity);
+            final ExpandableArrayBuffer dst = new ExpandableArrayBuffer(length);
+            src.getBytes(offset, dst, 0, length);
             return dst;
         }
         else
