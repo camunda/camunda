@@ -16,6 +16,7 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.node.Node;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
