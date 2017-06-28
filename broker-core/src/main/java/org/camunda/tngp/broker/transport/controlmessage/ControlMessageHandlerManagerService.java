@@ -15,6 +15,8 @@ package org.camunda.tngp.broker.transport.controlmessage;
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.tngp.broker.clustering.gossip.Gossip;
+import org.camunda.tngp.broker.clustering.handler.RequestTopologyHandler;
 import org.camunda.tngp.broker.event.handler.RemoveTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.task.TaskSubscriptionManager;
@@ -33,6 +35,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
+    protected final Injector<Gossip> gossipInjector = new Injector<>();
 
     protected final long controlMessageRequestTimeoutInMillis;
 
@@ -56,12 +59,14 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
+        final Gossip gossip = gossipInjector.getValue();
 
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
             new AddTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new IncreaseTaskSubscriptionCreditsHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new RemoveTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter)
+            new RemoveTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter),
+            new RequestTopologyHandler(gossip, controlMessageResponseWriter, errorResponseWriter)
         );
 
         service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, actorScheduler, controlMessageHandlers);
@@ -106,4 +111,8 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         return topicSubscriptionServiceInjector;
     }
 
+    public Injector<Gossip> getGossipInjector()
+    {
+        return gossipInjector;
+    }
 }

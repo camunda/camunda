@@ -1,8 +1,7 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
 
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +12,8 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
+import org.camunda.tngp.test.broker.protocol.brokerapi.data.TopicLeader;
+import org.camunda.tngp.test.broker.protocol.brokerapi.data.Topology;
 import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.SocketAddress;
@@ -25,8 +26,8 @@ import org.junit.rules.ExternalResource;
 public class StubBrokerRule extends ExternalResource
 {
 
-    public static final String TEST_TOPIC_NAME = "test-topic";
-    public static final int TEST_PARTITION_ID = 0;
+    public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC_NAME;
+    public static final int TEST_PARTITION_ID = DEFAULT_PARTITION_ID;
 
     protected final String host;
     protected final int port;
@@ -61,6 +62,11 @@ public class StubBrokerRule extends ExternalResource
         bindAddr = new SocketAddress(host, port);
 
         channelHandler = new StubResponseChannelHandler(transport.getSendBuffer(), msgPackHelper);
+
+        stubTopologyRequest(
+            new Topology()
+                .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID))
+        );
 
         openServerSocketBinding();
     }
@@ -167,6 +173,18 @@ public class StubBrokerRule extends ExternalResource
     {
         return new SubscribedEventBuilder(msgPackHelper, transport.getSendBuffer());
     }
+
+    public void stubTopologyRequest(final Topology topology)
+    {
+        onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+            .respondWith()
+            .data()
+                .put("topicLeaders", topology.getTopicLeaders())
+                .put("brokers", topology.getBrokers())
+                .done()
+            .register();
+    }
+
 
     public void stubTopicSubscriptionApi(long initialSubscriberKey)
     {

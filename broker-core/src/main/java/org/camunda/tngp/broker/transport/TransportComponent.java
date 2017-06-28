@@ -1,19 +1,11 @@
 package org.camunda.tngp.broker.transport;
 
-import static org.camunda.tngp.broker.event.TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE;
-import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
-import static org.camunda.tngp.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.MANAGEMENT_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
+import static org.camunda.tngp.broker.event.TopicSubscriptionServiceNames.*;
+import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.task.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -115,6 +107,7 @@ public class TransportComponent implements Component
             .dependency(ACTOR_SCHEDULER_SERVICE, controlMessageHandlerManagerService.getActorSchedulerInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
             .dependency(TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
+            .dependency(GOSSIP_SERVICE, controlMessageHandlerManagerService.getGossipInjector())
             .install();
 
         // make sure that all services are installed

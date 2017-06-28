@@ -52,10 +52,13 @@ public class ControlMessageRequest implements BufferReader
         bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         final int dataLength = bodyDecoder.dataLength();
-        data = msgPackHelper.readMsgPack(new DirectBufferInputStream(
+        if (dataLength > 0)
+        {
+            data = msgPackHelper.readMsgPack(new DirectBufferInputStream(
                 buffer,
                 bodyDecoder.limit() + ControlMessageRequestDecoder.dataHeaderLength(),
                 dataLength));
+        }
 
     }
 
