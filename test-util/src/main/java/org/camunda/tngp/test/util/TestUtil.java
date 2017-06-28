@@ -23,6 +23,11 @@ public class TestUtil
         doRepeatedly(() -> null).until((r) -> condition.getAsBoolean());
     }
 
+    public static void waitUntil(final BooleanSupplier condition, final int retries)
+    {
+        doRepeatedly(() -> null).until((r) -> condition.getAsBoolean(), retries);
+    }
+
     public static class Invocation<T>
     {
         protected Callable<T> callable;
@@ -37,9 +42,23 @@ public class TestUtil
             return until(resultCondition, (e) -> false);
         }
 
+        public T until(Function<T, Boolean> resultCondition, final int retries)
+        {
+            return until(resultCondition, (e) -> false, retries);
+        }
+
         public T until(final Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition)
         {
             final T result = whileConditionHolds((t) -> !resultCondition.apply(t), (e) -> !exceptionCondition.apply(e));
+
+            assertThat(resultCondition.apply(result)).isTrue();
+
+            return result;
+        }
+
+        public T until(final Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition, final int retries)
+        {
+            final T result = whileConditionHolds((t) -> !resultCondition.apply(t), (e) -> !exceptionCondition.apply(e), retries);
 
             assertThat(resultCondition.apply(result)).isTrue();
 
@@ -51,7 +70,17 @@ public class TestUtil
             return whileConditionHolds(resultCondition, (e) -> true);
         }
 
+        public T whileConditionHolds(Function<T, Boolean> resultCondition, final int retires)
+        {
+            return whileConditionHolds(resultCondition, (e) -> true, retires);
+        }
+
         public T whileConditionHolds(Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition)
+        {
+            return whileConditionHolds(resultCondition, exceptionCondition, MAX_RETRIES);
+        }
+
+        public T whileConditionHolds(Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition, final int retries)
         {
             int numTries = 0;
 
@@ -80,7 +109,7 @@ public class TestUtil
 
                 numTries++;
             }
-            while (numTries < MAX_RETRIES && resultCondition.apply(result));
+            while (numTries < retries && resultCondition.apply(result));
 
             return result;
         }
