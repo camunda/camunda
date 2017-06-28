@@ -70,6 +70,12 @@ public class SocketAddress implements Comparable<SocketAddress>
         return host(hostBytes, 0, hostBytes.length);
     }
 
+    // required for object mapper deserialization
+    public SocketAddress setHost(final String host)
+    {
+        return host(host);
+    }
+
     public String host()
     {
         final int hostLength = hostLength();
@@ -108,6 +114,12 @@ public class SocketAddress implements Comparable<SocketAddress>
     {
         this.port = port;
         return this;
+    }
+
+    // required for object mapper deserialization
+    public SocketAddress setPort(final int port)
+    {
+        return port(port);
     }
 
     public void reset()
