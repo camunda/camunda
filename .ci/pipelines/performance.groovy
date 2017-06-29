@@ -33,16 +33,6 @@ pipeline {
         ]) {}
       }
     }
-    stage('Unit') {
-      steps {
-        sh 'mvn -s settings.xml clean install'
-      }
-      post {
-        always {
-          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-        }
-      }
-    }
     stage('Performance') {
       steps {
         sh 'mvn -Pservice-perf-tests -f qa/service-performance-tests/pom.xml -s settings.xml clean verify'
