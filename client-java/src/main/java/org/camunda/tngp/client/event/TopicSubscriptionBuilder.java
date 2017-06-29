@@ -56,6 +56,14 @@ public interface TopicSubscriptionBuilder
     TopicSubscriptionBuilder incidentEventHandler(IncidentEventHandler handler);
 
     /**
+     * Registers a handler that handles all raft events.
+     *
+     * @param handler the handler to register
+     * @return this builder
+     */
+    TopicSubscriptionBuilder raftEventHandler(RaftEventHandler handler);
+
+    /**
      * Defines the position at which to start receiving events from.
      * A <code>position</code> greater than the current tail position
      * of the topic is equivalent to starting at the tail position. In this case,

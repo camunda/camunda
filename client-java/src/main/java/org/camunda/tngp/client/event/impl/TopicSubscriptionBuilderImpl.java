@@ -10,6 +10,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     protected TaskEventHandler taskEventHandler;
     protected WorkflowInstanceEventHandler wfEventHandler;
     protected IncidentEventHandler incidentEventHandler;
+    protected RaftEventHandler raftEventHandler;
 
     protected final TopicSubscriptionImplBuilder builder;
     protected final MsgPackMapper msgPackMapper;
@@ -53,10 +54,17 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     }
 
     @Override
+    public TopicSubscriptionBuilderImpl raftEventHandler(final RaftEventHandler raftEventHandler)
+    {
+        this.raftEventHandler = raftEventHandler;
+        return this;
+    }
+
+    @Override
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("name", builder.getName());
-        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && incidentEventHandler == null)
+        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && incidentEventHandler == null && raftEventHandler == null)
         {
             throw new RuntimeException("at least one handler must be set");
         }
@@ -86,6 +94,11 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         {
             final IncidentEvent incidentEvent = msgPackMapper.convert(event.getAsMsgPack(), IncidentEventImpl.class);
             incidentEventHandler.handle(event, incidentEvent);
+        }
+        else if (TopicEventType.RAFT == eventType && raftEventHandler != null)
+        {
+            final RaftEvent raftEvent = msgPackMapper.convert(event.getAsMsgPack(), RaftEventImpl.class);
+            raftEventHandler.handle(event, raftEvent);
         }
         else if (defaultEventHandler != null)
         {
