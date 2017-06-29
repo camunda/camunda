@@ -19,7 +19,7 @@ def startElasticsearch() {
       cd ./backend/target/it-elasticsearch
       wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.3.tar.gz
       tar -xzvf ./elasticsearch-5.4.3.tar.gz
-      ./elasticsearch-5.4.3/bin/elasticsearch &
+      ./elasticsearch-5.4.3/bin/elasticsearch -d
     '''
   }
 }
@@ -91,6 +91,7 @@ pipeline {
       }
     }
     stage('IT') {
+      timeout(time: 7, unit: 'MINUTES')
       steps {
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml clean verify'
