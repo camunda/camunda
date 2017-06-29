@@ -1,5 +1,8 @@
 package org.camunda.tngp.util.actor;
 
+import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
+import static org.agrona.BitUtil.next;
+
 public class ActorReferenceImpl implements ActorReference
 {
     private final Actor actor;
@@ -8,15 +11,18 @@ public class ActorReferenceImpl implements ActorReference
 
     // metrics
     private final long[] durationSamples;
+    private final int durationSamplesCapacity;
 
     private int nextDurationIndex = 0;
     private int durationSampleSize = 0;
     private volatile long durationAvg = 0;
 
+
     public ActorReferenceImpl(Actor actor, int durationSampleCount)
     {
         this.actor = actor;
-        this.durationSamples = new long[durationSampleCount];
+        durationSamplesCapacity = findNextPositivePowerOfTwo(durationSampleCount);
+        this.durationSamples = new long[durationSamplesCapacity];
     }
 
     public Actor getActor()
@@ -37,18 +43,20 @@ public class ActorReferenceImpl implements ActorReference
 
     public void addDurationSample(long duration)
     {
-        durationSamples[nextDurationIndex] = duration;
-
-        durationSampleSize = Math.min(durationSampleSize + 1, durationSamples.length);
-        nextDurationIndex = (nextDurationIndex + 1) % durationSamples.length;
-
-        // update average
-        int sum = 0;
-        for (int i = 0; i < durationSampleSize; i++)
+        if (durationSampleSize < durationSamplesCapacity)
         {
-            sum += durationSamples[i];
+            durationAvg = (durationAvg * durationSampleSize + duration) / (durationSampleSize + 1);
+
+            durationSampleSize += 1;
         }
-        durationAvg = sum / durationSampleSize;
+        else
+        {
+            final long oldestDuration = durationSamples[nextDurationIndex];
+            durationAvg = (durationAvg * durationSampleSize - oldestDuration + duration) / durationSampleSize;
+        }
+
+        durationSamples[nextDurationIndex] = duration;
+        nextDurationIndex = next(nextDurationIndex, durationSamplesCapacity);
     }
 
     public long getDuration()
