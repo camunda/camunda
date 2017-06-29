@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 
 public class DynamicActorSchedulerImpl implements ActorScheduler
 {
-    private final ExecutorService exeutorService;
+    private final ExecutorService executorService;
     private final Thread schedulerThread;
 
     private final ActorRunner[] runners;
@@ -21,10 +21,10 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
         runners = createTaskRunners(threadCount, runnerFactory);
         schedulerRunnable = schedulerFactory.apply(runners);
 
-        exeutorService = Executors.newFixedThreadPool(threadCount, new RunnerThreadFactory());
+        executorService = Executors.newFixedThreadPool(threadCount, new RunnerThreadFactory());
         for (int r = 0; r < runners.length; r++)
         {
-            exeutorService.execute(runners[r]);
+            executorService.execute(runners[r]);
         }
 
         schedulerThread = new Thread(schedulerRunnable, "actor-scheduler");
@@ -51,7 +51,7 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
     @Override
     public void close()
     {
-        exeutorService.shutdown();
+        executorService.shutdown();
 
         schedulerRunnable.close();
 
@@ -72,7 +72,7 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
 
         try
         {
-            exeutorService.awaitTermination(10, TimeUnit.SECONDS);
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
         }
         catch (Exception e)
         {

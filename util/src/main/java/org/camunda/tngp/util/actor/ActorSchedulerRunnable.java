@@ -6,6 +6,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
+/**
+ * The scheduler tries to balance the workload between the given runners
+ * periodically. The workload of an actor (i.e. the duration of one duty cycle
+ * in nano seconds) is measured by the runner and stored in the reference. In
+ * order to balance the work, it looks for the actor with the highest workload
+ * which can be moved from a runner with low workload to a runner with higher
+ * workload and not result in a new imbalance (actor workload <= runner workload
+ * difference / 2).
+ */
 public class ActorSchedulerRunnable implements Runnable
 {
     private final ConcurrentLinkedQueue<ActorReferenceImpl> unclaimedActors = new ConcurrentLinkedQueue<>();
@@ -30,7 +39,8 @@ public class ActorSchedulerRunnable implements Runnable
     private long waitTime;
     private long nextSchedulingTime = -1;
 
-    public ActorSchedulerRunnable(ActorRunner[] runners, Function<Actor, ActorReferenceImpl> actorRefFactory, double imbalanceThreshold, Duration initialBackoff, Duration maxBackoff)
+    public ActorSchedulerRunnable(ActorRunner[] runners, Function<Actor, ActorReferenceImpl> actorRefFactory, double imbalanceThreshold,
+            Duration initialBackoff, Duration maxBackoff)
     {
         this.runners = runners;
         this.actorRefFactory = actorRefFactory;

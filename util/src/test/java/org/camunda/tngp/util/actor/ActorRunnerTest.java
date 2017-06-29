@@ -139,6 +139,7 @@ public class ActorRunnerTest
         waitUntil(() -> actor2.invocations > 0);
 
         assertThat(actor1.invocations).isEqualTo(0);
+        assertThat(actorRunner.getActors()).hasSize(1);
     }
 
     @Test

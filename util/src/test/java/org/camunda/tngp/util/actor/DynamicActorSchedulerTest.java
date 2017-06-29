@@ -12,6 +12,7 @@
  */
 package org.camunda.tngp.util.actor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.util.TestUtil.waitUntil;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -69,7 +70,7 @@ public class DynamicActorSchedulerTest
         actorRefs = new ActorReferenceImpl[5];
         for (int i = 0; i < 5; i++)
         {
-            actorRefs[i] = new ActorReferenceImpl(DUMMY_ACTOR, 16);
+            actorRefs[i] = new ActorReferenceImpl(DUMMY_ACTOR, 4);
         }
 
         executorService = Executors.newSingleThreadExecutor();
@@ -99,6 +100,25 @@ public class DynamicActorSchedulerTest
         // then
         verify(mockRunner1, times(2)).submitActor(any());
         verify(mockRunner2, times(2)).submitActor(any());
+    }
+
+    @Test
+    public void shouldCalculateActorDurationAvg()
+    {
+        final ActorReferenceImpl actorRef = actorRefs[0];
+
+        // when
+        actorRef.addDurationSample(50);
+        actorRef.addDurationSample(40);
+        actorRef.addDurationSample(60);
+        actorRef.addDurationSample(50);
+
+        // then
+        assertThat(actorRef.getDuration()).isEqualTo(50);
+
+        actorRef.addDurationSample(90);
+
+        assertThat(actorRef.getDuration()).isEqualTo(60);
     }
 
     @Test
