@@ -91,11 +91,11 @@ pipeline {
       }
     }
     stage('IT') {
-      timeout(time: 7, unit: 'MINUTES')
       steps {
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml clean verify'
         stopElasticsearch()
+        timeout(time: 7, unit: 'MINUTES')
       }
       post {
         always {
