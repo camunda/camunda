@@ -22,6 +22,9 @@ deploy-broker: undeploy-broker
 
 undeploy-broker:
 	-scripts/undeploy-broker.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
+save-log:
+	-scripts/downloadLog.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
+
 local: $(eval BROKER_HOST = localhost)
  
 test-start-wf-instance-latency:
@@ -91,6 +94,6 @@ build:
 
 all-tests: test-create-task-throughput test-create-task-latency test-start-wf-instance-latency test-start-wf-instance-throughput
 
-jenkins: build deploy-broker all-tests clean
+jenkins: build deploy-broker all-tests save-log clean
 
-.PHONY: local deploy-broker undeploy-broker clean build test-start-wf-instance-latency test-create-task-throughput test-start-wf-instance-throughput all-tests jenkins
+.PHONY: save-log local deploy-broker undeploy-broker clean build test-start-wf-instance-latency test-create-task-throughput test-start-wf-instance-throughput all-tests jenkins

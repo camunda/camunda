@@ -180,6 +180,7 @@ export BROKER_HOST=192.168.0.21
 make -e clean build
 make -e deploy-broker
 make -e ${target}
+make -e save-log
 make -e clean
 """
 }
