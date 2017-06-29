@@ -95,6 +95,7 @@ pipeline {
       steps {
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml clean verify'
+        stopElasticsearch()
       }
       post {
         always {
@@ -103,7 +104,6 @@ pipeline {
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
         }
-        stopElasticsearch()
       }
 
     }
