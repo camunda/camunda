@@ -13,6 +13,8 @@
   <properties>
     <jetty.version>9.2.21.v20170120</jetty.version>
     <jersy.version>2.25</jersy.version>
+    <skip.elasticsearch>false</skip.elasticsearch>
+    <skip.unit.tests>false</skip.unit.tests>
   </properties>
 
   <dependencies>
@@ -235,6 +237,7 @@
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
           <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+          <skipTests>${skip.unit.tests}</skipTests>
         </configuration>
       </plugin>
 
@@ -348,6 +351,13 @@
     </profile>
 
     <profile>
+      <id>jenkins</id>
+      <properties>
+        <skip.elasticsearch>true</skip.elasticsearch>
+      </properties>
+    </profile>
+
+    <profile>
       <id>it</id>
 
       <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
@@ -378,6 +388,7 @@
 
         <cargo.timeout>240000</cargo.timeout>
         <cargo.deploy.timeout>60000</cargo.deploy.timeout>
+        <skip.unit.tests>true</skip.unit.tests>
       </properties>
 
       <dependencies>
@@ -447,7 +458,7 @@
               <timeout>60</timeout>
               <httpPort>9200</httpPort>
               <pathConf>${project.basedir}/src/test/es_conf</pathConf>
-              <skip>${skipTests}</skip>
+              <skip>${skip.elasticsearch}</skip>
               <logLevel>ERROR</logLevel>
             </configuration>
             <executions>

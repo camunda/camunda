@@ -11,6 +11,26 @@ def commitId() {
   }
 }
 
+def startElasticsearch() {
+  script {
+    sh '''
+      mkdir -p ./backend/target/it-elasticsearch
+      cd ./backend/target/it-elasticsearch
+      wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.3.tar.gz
+      tar -xzvf ./elasticsearch-5.4.3.tar.gz
+      ./elasticsearch-5.4.3/bin/elasticsearch -d
+    '''
+  }
+}
+
+def stopElasticsearch() {
+  script {
+    sh '''
+      kill -9  $(ps -ef | grep elasticsearch | awk \'{ print $2 }\')
+    '''
+  }
+}
+
 def backendModuleName = "backend"
 
 pipeline {
@@ -73,15 +93,17 @@ pipeline {
     }
     stage('IT') {
       steps {
-        sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'
+        startElasticsearch()
+        sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml clean verify'
       }
       post {
         always {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-          archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/logs/*.log', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
         }
+        stopElasticsearch()
       }
 
     }
