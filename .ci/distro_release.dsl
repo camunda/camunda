@@ -164,7 +164,7 @@ mavenJob(jobName)
           }
         }
 
-        downstream(downstreamProjects.join(','), 'SUCCESS')
+        //downstream(downstreamProjects.join(','), 'SUCCESS')
     }
 
     blockOnUpstreamProjects()
