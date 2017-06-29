@@ -38,7 +38,6 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
-@Ignore
 public class ResilienceTest {
 
   private File esFolder;

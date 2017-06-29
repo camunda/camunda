@@ -306,6 +306,9 @@
   <profiles>
     <profile>
       <id>docs</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
       <build>
         <plugins>
           <plugin>
