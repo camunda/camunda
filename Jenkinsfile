@@ -86,8 +86,9 @@ pipeline {
     }
     stage('IT') {
       steps {
+        sh 'mvn -s settings.xml -Pit,jenkins clean'
         startElasticsearch()
-        sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml clean verify'
+        sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml verify'
         stopElasticsearch()
         timeout(time: 7, unit: 'MINUTES')
       }
