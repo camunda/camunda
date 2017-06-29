@@ -14,6 +14,7 @@ def commitId() {
 def startElasticsearch() {
   script {
     sh '''
+      kill -9  $(ps -ef | grep elasticsearch | awk '{ print $2 }')
       mkdir -p ./backend/target/it-elasticsearch
       cd ./backend/target/it-elasticsearch
       wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.3.tar.gz
