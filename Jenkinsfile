@@ -40,7 +40,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr:'10'))
     // "wrapper" steps that should wrap the entire build execution
     timestamps()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 10, unit: 'MINUTES')
   }
 
   stages {
@@ -90,12 +90,11 @@ pipeline {
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml verify'
         stopElasticsearch()
-        timeout(time: 7, unit: 'MINUTES')
       }
       post {
         always {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/logs/*.log', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/elasticsearch-5.4.3/logs/*.log', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
         }
