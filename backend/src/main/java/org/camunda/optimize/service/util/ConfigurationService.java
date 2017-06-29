@@ -54,6 +54,8 @@ public class ConfigurationService {
   private int elasticsearchConnectionTimeout;
   @Value(("${camunda.optimize.es.scroll.timeout.ms}"))
   private int elasticsearchScrollTimeout;
+  @Value("${camunda.optimize.es.sampler.interval}")
+  private long samplerInterval;
 
   @Value("${camunda.optimize.es.index}")
   private String optimizeIndex;
@@ -130,6 +132,7 @@ public class ConfigurationService {
   private int esNumberOfShards;
   @Value("${camunda.optimize.es.import.handler.general.backoff.ms}")
   private long generalBackoff;
+
 
   public String getSecret() {
     return secret;
@@ -601,5 +604,9 @@ public class ConfigurationService {
       return new String[]{};
     }
     return basePackageArray;
+  }
+
+  public long getElasticsearchConnectionSamplerInterval() {
+    return samplerInterval;
   }
 }

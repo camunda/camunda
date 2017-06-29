@@ -2,6 +2,8 @@ package org.camunda.optimize.service.es;
 
 
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
@@ -70,8 +72,8 @@ public class ResilienceTest {
     //given
     Node testNode = elasticSearchTestNode();
 
-    //give time to transport client to reconnect
-    Thread.sleep(5000);
+    //give time to reconnect
+    Thread.sleep(1000);
     //when + then
     verifyIndexServed(optimize);
 
@@ -101,7 +103,22 @@ public class ResilienceTest {
     verifyIndexServed(optimize);
 
     optimize.stopOptimize();
+    stopElasticSearch(testNode);
+  }
+
+  private void stopElasticSearch(Node testNode) throws IOException, InterruptedException {
     testNode.close();
+    while (!testNode.isClosed()) {
+      Thread.sleep(1000);
+    }
+    try {
+      if (ClusterHealthStatus.RED.equals(testNode.client().admin().cluster()
+          .prepareHealth().setWaitForGreenStatus().get().getStatus())) {
+        System.out.println("OK");
+      }
+    } catch (Exception e) {
+      //nothing to do
+    }
   }
 
   private void verifyIndexServed(EmbeddedOptimizeRule optimize) {
@@ -129,8 +146,13 @@ public class ResilienceTest {
         classpathPlugins);
     node.start();
 
-    node.client().admin().cluster()
-        .prepareHealth().setWaitForGreenStatus().get();
+    while (!ClusterHealthStatus.GREEN.equals(node.client().admin().cluster()
+        .prepareHealth().setWaitForGreenStatus().get().getStatus())) {
+      Thread.sleep(1000);
+    }
+
+    Thread.sleep(1000);
+
 
     return node;
   }
