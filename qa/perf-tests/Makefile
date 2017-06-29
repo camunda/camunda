@@ -26,7 +26,7 @@ save-log:
 	-scripts/downloadLog.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
 
 local: $(eval BROKER_HOST = localhost)
- 
+
 test-start-wf-instance-latency:
 	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
 		 -Dtest.outputFileName=data/test-start-wf-instance-latency.txt \
@@ -90,7 +90,7 @@ clean: undeploy-broker
 	scripts/clean.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
 
 build:
-	cd ../.. && mvn clean package -U -DskipTests
+	cd ../.. && mvn clean package -U -B -DskipTests
 
 all-tests: test-create-task-throughput test-create-task-latency test-start-wf-instance-latency test-start-wf-instance-throughput
 
