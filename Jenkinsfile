@@ -12,9 +12,9 @@ def commitId() {
 }
 
 def startElasticsearch() {
+  stopElasticsearch()
   script {
-    sh '''
-      kill -9  $(ps aux | grep -v grep | grep elasticsearch | awk '{ print $2 }')
+    sh '''   
       mkdir -p ./backend/target/it-elasticsearch
       cd ./backend/target/it-elasticsearch
       wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.3.tar.gz
@@ -27,7 +27,10 @@ def startElasticsearch() {
 def stopElasticsearch() {
   script {
     sh '''
-      kill -9  $(ps aux | grep -v grep |grep elasticsearch | awk \'{ print $2 }\')
+      if [ -z $(ps aux | grep -v grep | grep elasticsearch | awk '{ print $2 }') ] 
+      then     
+        kill -9  $(ps aux | grep -v grep | grep elasticsearch | awk '{ print $2 }')
+      fi
     '''
   }
 }
