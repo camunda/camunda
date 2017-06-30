@@ -17,7 +17,6 @@
     <!-- TODO: Move to common parent -->
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
-    <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
   </properties>
 
   <dependencies>

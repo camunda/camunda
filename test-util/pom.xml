@@ -11,10 +11,6 @@
     <relativePath>../</relativePath>
   </parent>
 
-  <properties>
-    <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.camunda.tngp</groupId>

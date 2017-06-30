@@ -12,7 +12,6 @@
   </parent>
 
   <properties>
-    <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
     <jmh.version>1.11.2</jmh.version>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
   </properties>
