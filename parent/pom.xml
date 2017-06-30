@@ -28,11 +28,15 @@
     <version.junit>4.12</version.junit>
     <version.mockito>1.8.5</version.mockito>
     <version.assertj>3.8.0</version.assertj>
+    <version.msgpack>0.8.11</version.msgpack>
+    <version.jmh>1.11.2</version.jmh>
 
     <!-- maven plugins -->
     <version.compiler-plugin>3.5.1</version.compiler-plugin>
     <version.checkstyle-plugin>2.17</version.checkstyle-plugin>
     <version.surefire-plugin>2.20</version.surefire-plugin>
+    <version.build-helper-plugin>1.12</version.build-helper-plugin>
+    <version.shade-plugin>2.2</version.shade-plugin>
   </properties>
 
   <dependencyManagement>
@@ -41,6 +45,12 @@
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>msgpack-core</artifactId>
+        <version>${version.msgpack}</version>
       </dependency>
 
       <dependency>
@@ -63,6 +73,19 @@
         <version>${version.assertj}</version>
         <scope>test</scope>
       </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-core</artifactId>
+        <version>${version.jmh}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>${version.jmh}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -126,6 +149,21 @@
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
           </configuration>
+        </plugin>
+
+
+        <!-- Build Helper Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${version.build-helper-plugin}</version>
+        </plugin>
+
+        <!-- Shade Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${version.shade-plugin}</version>
         </plugin>
 
       </plugins>
