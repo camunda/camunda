@@ -63,8 +63,8 @@ public class ServiceGroupReferenceTest
         // when
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -76,15 +76,15 @@ public class ServiceGroupReferenceTest
     {
         // given
         serviceContainer.createService(service2Name, mockService2)
-            .group(group2Name)
-            .install();
+                        .group(group2Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -96,15 +96,15 @@ public class ServiceGroupReferenceTest
     {
         // given
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -117,14 +117,14 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
-        .groupReference(group1Name, collection(injectedServices))
-        .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
         serviceContainer.createService(service2Name, mockService2)
-        .group(group1Name)
-        .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -137,11 +137,11 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
 
         // when
         serviceContainer.doWorkUntilDone();
@@ -156,20 +156,22 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
         final InOrder inOrder = inOrder(mockService1, injectedServices);
-        inOrder.verify(mockService1).start(any(ServiceStartContext.class));
-        inOrder.verify(injectedServices).add(mockService2Value);
+        inOrder.verify(mockService1)
+               .start(any(ServiceStartContext.class));
+        inOrder.verify(injectedServices)
+               .add(mockService2Value);
     }
 
     @Test
@@ -177,21 +179,23 @@ public class ServiceGroupReferenceTest
     {
         // given
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // then
         final InOrder inOrder = inOrder(mockService1, injectedServices);
-        inOrder.verify(mockService1).start(any(ServiceStartContext.class));
-        inOrder.verify(injectedServices).add(mockService2Value);
+        inOrder.verify(mockService1)
+               .start(any(ServiceStartContext.class));
+        inOrder.verify(injectedServices)
+               .add(mockService2Value);
     }
 
     @Test
@@ -200,11 +204,11 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
@@ -213,8 +217,10 @@ public class ServiceGroupReferenceTest
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService2);
-        inOrder.verify(injectedServices).remove(mockService2Value);
-        inOrder.verify(mockService2).stop(any(ServiceStopContext.class));
+        inOrder.verify(injectedServices)
+               .remove(mockService2Value);
+        inOrder.verify(mockService2)
+               .stop(any(ServiceStopContext.class));
     }
 
     @Test
@@ -223,11 +229,11 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when
@@ -236,8 +242,10 @@ public class ServiceGroupReferenceTest
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService1);
-        inOrder.verify(mockService1).stop(any(ServiceStopContext.class));
-        inOrder.verify(injectedServices).remove(mockService2Value);
+        inOrder.verify(mockService1)
+               .stop(any(ServiceStopContext.class));
+        inOrder.verify(injectedServices)
+               .remove(mockService2Value);
     }
 
     @Test
@@ -246,11 +254,11 @@ public class ServiceGroupReferenceTest
         // given
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
-            .groupReference(group1Name, collection(injectedServices))
-            .install();
+                        .groupReference(group1Name, collection(injectedServices))
+                        .install();
         serviceContainer.createService(service2Name, mockService2)
-            .group(group1Name)
-            .install();
+                        .group(group1Name)
+                        .install();
         serviceContainer.doWorkUntilDone();
 
         // when

@@ -275,7 +275,7 @@ public class AsyncServiceStopTest
             {
                 stopContext.run(action);
             }
-            else if(future != null)
+            else if (future != null)
             {
                 stopContext.async(future);
             }

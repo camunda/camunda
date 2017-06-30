@@ -17,7 +17,7 @@ public class ControlledServiceContainer extends ServiceContainerImpl
 
     public void doWorkUntilDone()
     {
-        int maxIterations = 10000;
+        final int maxIterations = 10000;
         int iterations = 0;
 
         while (doWork() > 0)

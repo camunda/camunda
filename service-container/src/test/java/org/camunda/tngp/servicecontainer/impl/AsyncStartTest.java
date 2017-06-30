@@ -1,9 +1,7 @@
 package org.camunda.tngp.servicecontainer.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -275,7 +273,7 @@ public class AsyncStartTest
         serviceContainer.doWorkUntilDone();
 
         // when
-        CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -295,7 +293,7 @@ public class AsyncStartTest
     }
 
     @Test
-    public void shouldWaitForAsyncStartWhenRemovedConcurrently_failure()
+    public void shouldWaitForAsyncStartWhenRemovedConcurrentlyFailure()
     {
         // given
         final AsyncStartService service = new AsyncStartService();
@@ -306,7 +304,7 @@ public class AsyncStartTest
         serviceContainer.doWorkUntilDone();
 
         // when
-        CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
         serviceContainer.doWorkUntilDone();
 
         // then
@@ -340,7 +338,7 @@ public class AsyncStartTest
             {
                 startContext.run(action);
             }
-            else if(future != null)
+            else if (future != null)
             {
                 startContext.async(future);
             }

@@ -9,7 +9,7 @@ public interface ServiceName<S>
         return new ServiceNameImpl<>(name);
     }
 
-    static class ServiceNameImpl<S> implements ServiceName<S>
+    class ServiceNameImpl<S> implements ServiceName<S>
     {
         protected final String name;
 
@@ -43,18 +43,29 @@ public interface ServiceName<S>
         public boolean equals(Object obj)
         {
             if (this == obj)
+            {
                 return true;
+            }
             if (obj == null)
+            {
                 return false;
+            }
             if (getClass() != obj.getClass())
+            {
                 return false;
-            ServiceNameImpl other = (ServiceNameImpl) obj;
+            }
+            final ServiceNameImpl other = (ServiceNameImpl) obj;
             if (name == null)
             {
                 if (other.name != null)
+                {
                     return false;
-            } else if (!name.equals(other.name))
+                }
+            }
+            else if (!name.equals(other.name))
+            {
                 return false;
+            }
             return true;
         }
 

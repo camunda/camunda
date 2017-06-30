@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
-public class ServiceGroupReference<S>
+public final class ServiceGroupReference<S>
 {
     @SuppressWarnings("rawtypes")
-    private final static BiConsumer NOOP_CONSUMER = (n, v) ->
+    private static final BiConsumer NOOP_CONSUMER = (n, v) ->
     {
         // ignore
     };

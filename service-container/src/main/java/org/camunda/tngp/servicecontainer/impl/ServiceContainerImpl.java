@@ -44,7 +44,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
         LangUtil.rethrowUnchecked(t);
-//        t.printStackTrace();
+        //        t.printStackTrace();
     };
 
     protected ContainerState state = ContainerState.NEW;
@@ -57,19 +57,15 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     {
         idleStrategy = new WaitingIdleStrategy();
 
-        actorScheduler = new ActorSchedulerBuilder()
-                .runnerIdleStrategy(idleStrategy)
-                .runnerErrorHander(DEFAULT_ERROR_HANDLER)
-                .build();
+        actorScheduler = new ActorSchedulerBuilder().runnerIdleStrategy(idleStrategy)
+                                                    .runnerErrorHander(DEFAULT_ERROR_HANDLER)
+                                                    .build();
     }
 
     @Override
     public void start()
     {
-        cmdQueue.add(() ->
-        {
-            state = ContainerState.OPEN;
-        });
+        cmdQueue.add(() -> state = ContainerState.OPEN);
 
         idleStrategy.signalWorkAvailable();
 
@@ -78,7 +74,8 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
             actorRef = actorScheduler.schedule(this);
 
             final AtomicInteger threadCounter = new AtomicInteger();
-            actionsExecutor = Executors.newCachedThreadPool((r) -> new Thread(r, String.format("service-container-action-%d", threadCounter.getAndIncrement())));
+            actionsExecutor = Executors.newCachedThreadPool(
+                (r) -> new Thread(r, String.format("service-container-action-%d", threadCounter.getAndIncrement())));
         }
         else
         {
@@ -96,12 +93,12 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
 
         for (int i = 0; i < controllers.size(); i++)
         {
-            workCount += controllers.get(i).doWork();
+            workCount += controllers.get(i)
+                                    .doWork();
         }
 
         return workCount;
     }
-
 
     @Override
     public String name()
@@ -153,7 +150,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
             }
         });
 
-        future.whenComplete((r,t) ->
+        future.whenComplete((r, t) ->
         {
             if (t != null)
             {
@@ -208,7 +205,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
             }
         });
 
-        future.whenComplete((r,t) ->
+        future.whenComplete((r, t) ->
         {
             if (t != null)
             {
@@ -253,10 +250,8 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
                     serviceFutures[i] = removeService(controllers.get(i).name);
                 }
 
-                CompletableFuture.allOf(serviceFutures).whenComplete((r,t) ->
-                {
-                    containerCloseFuture.complete(null);
-                });
+                CompletableFuture.allOf(serviceFutures)
+                                 .whenComplete((r, t) -> containerCloseFuture.complete(null));
             }
             else
             {
@@ -286,7 +281,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     {
         final ServiceController serviceController = controllersByName.get(name);
 
-        if(serviceController != null && serviceController.isStarted())
+        if (serviceController != null && serviceController.isStarted())
         {
             return serviceController.service;
         }

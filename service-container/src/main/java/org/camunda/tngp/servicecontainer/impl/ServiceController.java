@@ -24,17 +24,18 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 @SuppressWarnings("rawtypes")
 public class ServiceController
 {
-    /** The operation currently being performed by the service controller */
+    /**
+     * The operation currently being performed by the service controller
+     */
     public enum ServiceOperation
     {
         /**
          * Service is being installed into the container
          */
-        INSTALLING,
-        /**
-         * Service is being removed from the container
-         */
-        REMOVING,
+        INSTALLING, /**
+     * Service is being removed from the container
+     */
+    REMOVING,
     }
 
     private static final String AWAIT_ASYNC_START = "AwaitAsyncStart";
@@ -59,7 +60,8 @@ public class ServiceController
 
     protected ServiceOperation operation = null;
     protected ServiceState state = stoppedState;
-    /** when a controller stops, it always goes first into the StopDependents -&gt; AwaitDependentsStop
+    /**
+     * when a controller stops, it always goes first into the StopDependents -&gt; AwaitDependentsStop
      * sequence. Then it performs the rest of the stop states, depending on how far it progressed
      * through it's lifecycle.
      */
@@ -76,24 +78,36 @@ public class ServiceController
     protected final ServiceName name;
     protected final ServiceName<?> groupName;
     protected final Service service;
-    /** this service's dependencies */
+    /**
+     * this service's dependencies
+     */
     protected final Set<ServiceName<?>> dependencies;
     protected final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
 
-    /** this service's unresolved dependencies */
+    /**
+     * this service's unresolved dependencies
+     */
     protected final List<ServiceName<?>> unresolvedDependencies = new ArrayList<>();
-    /** resolved services on which this service depends */
+    /**
+     * resolved services on which this service depends
+     */
     protected final List<ServiceController> resolvedDependencies = new ArrayList<>();
-    /** resolved services depending on this service */
+    /**
+     * resolved services depending on this service
+     */
     protected final List<ServiceController> resolvedDependents = new ArrayList<>();
-    /** this service's resolved references */
+    /**
+     * this service's resolved references
+     */
     protected List<ServiceGroupReferenceImpl> references;
 
     protected StartContextImpl startContext;
     protected StopContextImpl stopContext;
     protected final List<CompletableFuture<Void>> stopFutures = new ArrayList<>();
     protected CompletableFuture<Void> startFuture;
-    /** captures exception caught during installation operation of the service*/
+    /**
+     * captures exception caught during installation operation of the service
+     */
     protected Throwable installException;
 
     public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer)
@@ -116,7 +130,7 @@ public class ServiceController
             workCount += cmdQueue.drain(cmdHandler);
             workCount += state.doWork();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             onThrowable(t);
 
@@ -147,14 +161,14 @@ public class ServiceController
         LangUtil.rethrowUnchecked(t);
     }
 
-
     interface ServiceState
     {
         int doWork() throws Exception;
 
         default String getName()
         {
-            return getClass().getSimpleName().replaceFirst("State", "");
+            return getClass().getSimpleName()
+                             .replaceFirst("State", "");
         }
     }
 
@@ -174,10 +188,10 @@ public class ServiceController
 
                 if (controller != null)
                 {
-                   unresolvedIterator.remove();
-                   resolvedDependencies.add(controller);
-                   controller.resolvedDependents.add(ServiceController.this);
-                   ++workCount;
+                    unresolvedIterator.remove();
+                    resolvedDependencies.add(controller);
+                    controller.resolvedDependents.add(ServiceController.this);
+                    ++workCount;
                 }
             }
 
@@ -202,7 +216,8 @@ public class ServiceController
 
             for (int i = 0; i < resolvedDependencies.size() && allAvailable; i++)
             {
-                allAvailable &= resolvedDependencies.get(i).isStarted();
+                allAvailable &= resolvedDependencies.get(i)
+                                                    .isStarted();
             }
 
             if (allAvailable)
@@ -261,13 +276,12 @@ public class ServiceController
                         action.run();
                         future.complete(null);
                     }
-                    catch(Throwable t)
+                    catch (Throwable t)
                     {
                         future.completeExceptionally(t);
                     }
                 });
             }
-
 
             if (!startContext.isAsync())
             {
@@ -329,7 +343,6 @@ public class ServiceController
         }
     }
 
-
     class StopDependentsState implements ServiceState
     {
         @Override
@@ -347,10 +360,7 @@ public class ServiceController
             }
 
             CompletableFuture.allOf(stopFutures)
-            .whenComplete((r,t) ->
-            {
-                onDependentsStopped();
-            });
+                             .whenComplete((r, t) -> onDependentsStopped());
 
             state = awaitDependentsStop;
 
@@ -384,7 +394,7 @@ public class ServiceController
                             action.run();
                             future.complete(null);
                         }
-                        catch(Throwable t)
+                        catch (Throwable t)
                         {
                             t.printStackTrace();
                             future.completeExceptionally(t);
@@ -420,7 +430,10 @@ public class ServiceController
                 startContext.invalidate();
             }
 
-            injectors.values().stream().flatMap(Collection::stream).forEach(injector -> injector.uninject());
+            injectors.values()
+                     .stream()
+                     .flatMap(Collection::stream)
+                     .forEach(injector -> injector.uninject());
 
             for (ServiceGroupReferenceImpl reference : references)
             {
@@ -456,7 +469,7 @@ public class ServiceController
     {
         protected final String name;
 
-        public WaitingState(String name)
+        WaitingState(String name)
         {
             this.name = name;
         }
@@ -501,7 +514,8 @@ public class ServiceController
         {
             for (int i = 0; i < stopFutures.size(); i++)
             {
-                stopFutures.get(i).complete(null);
+                stopFutures.get(i)
+                           .complete(null);
             }
             stopFutures.clear();
 
@@ -546,7 +560,8 @@ public class ServiceController
         {
             validCheck();
             dependencyCheck(name);
-            return (S) container.getService(name).get();
+            return (S) container.getService(name)
+                                .get();
         }
 
         @Override
@@ -569,8 +584,7 @@ public class ServiceController
         {
             validCheck();
 
-            return new ServiceBuilder<>(name, service, container)
-                    .dependency(ServiceController.this.name);
+            return new ServiceBuilder<>(name, service, container).dependency(ServiceController.this.name);
         }
 
         @Override
@@ -581,13 +595,15 @@ public class ServiceController
             final ServiceController serviceController = container.getServiceController(name);
             if (serviceController == null)
             {
-                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Service not found.", name, ServiceController.this.name);
+                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Service not found.", name,
+                                                          ServiceController.this.name);
                 throw new IllegalArgumentException(errorMessage);
             }
 
             if (!serviceController.hasDependency(ServiceController.this.name))
             {
-                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. The context is not a dependency of the service.", name, ServiceController.this.name);
+                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. The context is not a dependency of the service.", name,
+                                                          ServiceController.this.name);
                 throw new IllegalArgumentException(errorMessage);
             }
 
@@ -625,7 +641,7 @@ public class ServiceController
 
         void validCheck()
         {
-            if(!isValid)
+            if (!isValid)
             {
                 throw new IllegalStateException("Service Context is invalid");
             }
@@ -635,7 +651,8 @@ public class ServiceController
         {
             if (!dependencies.contains(name))
             {
-                final String errorMessage = String.format("Cannot get service '%s' from context '%s'. Requested Service is not a dependency.", name, ServiceController.this.name);
+                final String errorMessage = String.format("Cannot get service '%s' from context '%s'. Requested Service is not a dependency.", name,
+                                                          ServiceController.this.name);
                 throw new IllegalArgumentException(errorMessage);
             }
         }
@@ -650,7 +667,7 @@ public class ServiceController
         {
             if (isAsync)
             {
-               throw new IllegalStateException("Context is already async. Cannnot call asyc() more than once.");
+                throw new IllegalStateException("Context is already async. Cannnot call asyc() more than once.");
             }
         }
 
@@ -732,7 +749,7 @@ public class ServiceController
 
         void validCheck()
         {
-            if(!isValid)
+            if (!isValid)
             {
                 throw new IllegalStateException("Service Context is invalid");
             }
@@ -742,7 +759,8 @@ public class ServiceController
         {
             if (!dependencies.contains(name))
             {
-                final String errorMessage = String.format("Cannot get service '%s' from context '%s'. Requested Service is not a dependency.", name, ServiceController.this.name);
+                final String errorMessage = String.format("Cannot get service '%s' from context '%s'. Requested Service is not a dependency.", name,
+                                                          ServiceController.this.name);
                 throw new IllegalArgumentException(errorMessage);
             }
         }
@@ -757,7 +775,7 @@ public class ServiceController
         {
             if (isAsync)
             {
-               throw new IllegalStateException("Context is already async. Cannnot call asyc() more than once.");
+                throw new IllegalStateException("Context is already async. Cannnot call asyc() more than once.");
             }
         }
 
@@ -892,13 +910,13 @@ public class ServiceController
     {
         cmdQueue.add(() ->
         {
-           if (isStarted())
-           {
-               final ServiceGroupReference injector = reference.getInjector();
-               final Object value = controller.service.get();
+            if (isStarted())
+            {
+                final ServiceGroupReference injector = reference.getInjector();
+                final Object value = controller.service.get();
 
-               injector.addValue(controller.name, value);
-           }
+                injector.addValue(controller.name, value);
+            }
         });
     }
 
