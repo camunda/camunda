@@ -110,6 +110,7 @@ public class EngineIntegrationRule extends TestWatcher {
         throw new RuntimeException("Something really bad happened during purge, " +
             "please check tomcat logs of engine-purge servlet");
       }
+      response.close();
     } catch (IOException e) {
       logger.error("Error during purge request", e);
     } finally {
@@ -125,6 +126,7 @@ public class EngineIntegrationRule extends TestWatcher {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
       });
+      response.close();
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(client, task);
       }
@@ -151,10 +153,12 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
     completePost.setEntity(new StringEntity("{}"));
     completePost.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+    response.close();
     response = client.execute(completePost);
     if (response.getStatusLine().getStatusCode() != 204) {
       throw new RuntimeException("Could not complete user task!");
     }
+    response.close();
   }
 
   private String getClaimTaskUri(String taskId) {
@@ -174,6 +178,7 @@ public class EngineIntegrationRule extends TestWatcher {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<ProcessDefinitionEngineDto> procDefs =
         objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+      response.close();
       assertThat(procDefs.size(), is(1));
       return procDefs.get(0).getId();
     } catch (IOException e) {
@@ -212,6 +217,7 @@ public class EngineIntegrationRule extends TestWatcher {
       CloseableHttpResponse response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       processInstanceDto = objectMapper.readValue(responseString, new TypeReference<HistoricProcessInstanceDto>() {});
+      response.close();
     } catch (IOException e) {
       logger.error("Could not get process definition for process instance: " + processInstanceId, e );
     } finally {
@@ -269,6 +275,7 @@ public class EngineIntegrationRule extends TestWatcher {
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      response.close();
     } catch (IOException e) {
       logger.error("Error during deployment request! Could not deploy the given process model!", e);
     }
@@ -331,7 +338,12 @@ public class EngineIntegrationRule extends TestWatcher {
     get.setURI(uri);
     CloseableHttpResponse response = client.execute(get);
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-    return objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+    List<ProcessDefinitionEngineDto> result = objectMapper.readValue(
+        responseString,
+        new TypeReference<List<ProcessDefinitionEngineDto>>() {}
+        );
+    response.close();
+    return result;
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
@@ -355,7 +367,10 @@ public class EngineIntegrationRule extends TestWatcher {
       ". Reason: " + response.getStatusLine().getReasonPhrase());
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-    return objectMapper.readValue(responseString, ProcessInstanceEngineDto.class);
+    ProcessInstanceEngineDto processInstanceEngineDto =
+        objectMapper.readValue(responseString, ProcessInstanceEngineDto.class);
+    response.close();
+    return processInstanceEngineDto;
 
   }
 
@@ -403,6 +418,7 @@ public class EngineIntegrationRule extends TestWatcher {
       } else {
         done = true;
       }
+      response.close();
     }
     client.close();
   }

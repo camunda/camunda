@@ -7,9 +7,8 @@
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
-
-  <logger name="org.glassfish.jersey.tracing" level="ALL" />
-  <logger name="org.camunda.optimize" level="warn" />
+  
+  <logger name="org.camunda.optimize" level="debug" />
 
   <root level="info">
     <appender-ref ref="STDOUT" />
