@@ -91,8 +91,6 @@ public class ImportScheduler extends Thread {
         pagesPassed = importResult.getPagesPassed();
         if (pagesPassed != 0) {
           postProcess(toExecute, importResult);
-        } else if (pagesPassed == 0) {
-          sleepAndReschedule(pagesPassed, toExecute);
         }
 
       } catch (RejectedExecutionException e) {

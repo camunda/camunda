@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing.job.schedule;
 
+import org.camunda.optimize.service.exceptions.BackoffException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.ImportService;
@@ -18,7 +19,7 @@ public abstract class ImportScheduleJob<S extends ImportService> {
   public ImportResult execute() throws OptimizeException {
     ImportResult result;
     if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
-      result = new ImportResult();
+      throw new BackoffException();
     } else {
       result =  importService.executeImport();
     }
