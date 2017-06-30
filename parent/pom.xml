@@ -1,9 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.camunda.tngp</groupId>
-  <artifactId>tngp-parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <name>Zeebe Parent</name>
+  <groupId>io.zeebe</groupId>
+  <artifactId>zb-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -14,24 +15,28 @@
     <relativePath />
   </parent>
 
-
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</nexus.release.repository>
+    <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
+    <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.6</version.agrona>
     <version.junit>4.12</version.junit>
     <version.mockito>1.8.5</version.mockito>
     <version.assertj>3.8.0</version.assertj>
-    <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+
+    <!-- maven plugins -->
+    <version.compiler-plugin>3.5.1</version.compiler-plugin>
+    <version.checkstyle-plugin>2.17</version.checkstyle-plugin>
+    <version.surefire-plugin>2.20</version.surefire-plugin>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-
       <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
@@ -61,67 +66,86 @@
     </dependencies>
   </dependencyManagement>
 
-
   <modules>
     <module>build-tools</module>
   </modules>
 
   <build>
-    <plugins>
+    <pluginManagement>
+      <plugins>
+        <!-- MAVEN COMPILER -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.compiler-plugin}</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
 
-      <!-- MAVEN COMPILER -->
+        <!-- CHECKSTYLE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${version.checkstyle-plugin}</version>
+          <!-- dependency on build tool to reference the checkstyle cfg -->
+          <dependencies>
+            <dependency>
+              <groupId>io.zeebe</groupId>
+              <artifactId>zb-build-tools</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <configLocation>check/.checkstyle.xml</configLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <encoding>UTF-8</encoding>
+            <failOnViolation>true</failOnViolation>
+          </configuration>
+          <executions>
+            <execution>
+              <id>validate-java</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- MAVEN SUREFIRE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${version.surefire-plugin}</version>
+          <configuration>
+            <failIfNoTests>false</failIfNoTests>
+            <trimStackTrace>false</trimStackTrace>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          </configuration>
+        </plugin>
+
+      </plugins>
+
+    </pluginManagement>
+
+    <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
       </plugin>
 
-      <!-- CHECKSTYLE -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.17</version>
-        <!-- dependency on build tool to reference the checkstyle cfg --> 
-        <dependencies>
-          <dependency>
-            <groupId>org.camunda.tngp</groupId>
-            <artifactId>build-tools</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-          </dependency>
-        </dependencies>
-        <configuration>
-          <configLocation>check/.checkstyle.xml</configLocation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <encoding>UTF-8</encoding>
-          <failOnViolation>true</failOnViolation>
-        </configuration>
-        <executions>
-          <execution>
-            <id>validate-java</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
-      
-      <!-- MAVEN SUREFIRE -->
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.19</version>
-        <configuration>
-          <failIfNoTests>false</failIfNoTests>
-          <trimStackTrace>false</trimStackTrace>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
-        </configuration>
       </plugin>
 
     </plugins>
@@ -146,9 +170,9 @@
   </profiles>
 
   <scm>
-    <url>https://github.com/camunda-tngp/parent</url>
-    <connection>scm:git:git@github.com:camunda-tngp/parent.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/parent.git</developerConnection>
+    <url>https://github.com/camunda-tngp/zb-parent</url>
+    <connection>scm:git:git@github.com:camunda-tngp/zb-parent.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-parent.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

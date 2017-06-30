@@ -1,5 +1,5 @@
-def jobName = 'parent-DISTRO-maven-deploy'
-def repository = 'parent'
+def jobName = 'zb-parent-DISTRO-maven-deploy'
+def repository = 'zb-parent'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
@@ -102,7 +102,7 @@ mavenJob(jobName) {
   publishers {
     deployArtifacts {
       repositoryId 'camunda-nexus'
-      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots'
+      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots'
       uniqueVersion true
       evenIfUnstable false
     }
