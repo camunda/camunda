@@ -48,7 +48,7 @@ public class DispatcherBuilder
 
     protected ActorScheduler actorScheduler;
 
-    protected boolean agentExternallyManaged = false;
+    protected boolean conductorExternallyManaged = false;
 
     protected String[] subscriptionNames;
 
@@ -104,7 +104,7 @@ public class DispatcherBuilder
 
     public DispatcherBuilder conductorExternallyManaged()
     {
-        this.agentExternallyManaged = true;
+        this.conductorExternallyManaged = true;
         return this;
     }
 
@@ -231,7 +231,7 @@ public class DispatcherBuilder
         final DispatcherConductor conductor = new DispatcherConductor(dispatcherName, context, dispatcher);
         context.setConductor(conductor);
 
-        if (!agentExternallyManaged)
+        if (!conductorExternallyManaged)
         {
             Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
 
