@@ -1,0 +1,25 @@
+package io.zeebe.transport.requestresponse.client;
+
+public class PooledTransportRequestImpl extends TransportRequestImpl implements PooledTransportRequest
+{
+    protected final BoundedRequestPool pool;
+
+    public PooledTransportRequestImpl(BoundedRequestPool simpleRequestPool, int responseBufferSize, long requestTimeoutMillis)
+    {
+        super(responseBufferSize, requestTimeoutMillis);
+        this.pool = simpleRequestPool;
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            super.close();
+        }
+        finally
+        {
+            pool.reclaim(this);
+        }
+    }
+}

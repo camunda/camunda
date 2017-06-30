@@ -1,0 +1,10 @@
+package io.zeebe.transport.singlemessage;
+
+public class SingleMessageHeaderDescriptor
+{
+
+    // no header properties yet
+
+    public static final int HEADER_LENGTH = 0;
+
+}
