@@ -95,7 +95,7 @@ public class LogBlockIndexController implements Actor
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
-        this.actorScheduler = logStreamBuilder.getTaskScheduler();
+        this.actorScheduler = logStreamBuilder.getActorScheduler();
         this.commitPosition = commitPosition;
 
         this.deviation = logStreamBuilder.getDeviation();

@@ -75,7 +75,7 @@ public final class LogStreamImpl implements LogStream
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
-        this.actorScheduler = logStreamBuilder.getTaskScheduler();
+        this.actorScheduler = logStreamBuilder.getActorScheduler();
 
         commitPosition.setOrdered(INVALID_ADDRESS);
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition);
@@ -532,13 +532,9 @@ public final class LogStreamImpl implements LogStream
             return logName;
         }
 
-        public ActorScheduler getTaskScheduler()
+        public ActorScheduler getActorScheduler()
         {
-            if (actorScheduler == null)
-            {
-                Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
-            }
-
+            Objects.requireNonNull(actorScheduler, "No actor scheduler provided.");
             return actorScheduler;
         }
 
@@ -661,7 +657,7 @@ public final class LogStreamImpl implements LogStream
             ensureGreaterThanOrEqual("partitionId", partitionId, 0);
             Objects.requireNonNull(getLogStorage(), "logStorage");
             Objects.requireNonNull(getBlockIndex(), "blockIndex");
-            Objects.requireNonNull(getTaskScheduler(), "actorScheduler");
+            Objects.requireNonNull(getActorScheduler(), "actorScheduler");
             ensureFalse("deviation", deviation <= 0f || deviation > 1f);
 
             return new LogStreamImpl(this);

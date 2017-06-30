@@ -62,7 +62,7 @@ public class LogStreamController implements Actor
     {
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
-        this.actorScheduler = logStreamBuilder.getTaskScheduler();
+        this.actorScheduler = logStreamBuilder.getActorScheduler();
 
         this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
         this.writeBuffer = logStreamBuilder.getWriteBuffer();
