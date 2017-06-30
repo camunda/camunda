@@ -29,7 +29,9 @@ public class BackoffService {
       if (this.generalBackoffCounter < configurationService.getMaximumBackoff()) {
         this.generalBackoffCounter = this.generalBackoffCounter + 1;
       }
-      Thread.sleep(configurationService.getGeneralBackoff() * this.generalBackoffCounter);
+      long millis = configurationService.getGeneralBackoff() * this.generalBackoffCounter;
+      logger.debug("all jobs are backing off , sleeping for [{}] ms", millis);
+      Thread.sleep(millis);
     } catch (InterruptedException e) {
       logger.error("Interrupting backoff", e);
     }
