@@ -1,6 +1,6 @@
 package org.mockito.configuration;
 
-import org.camunda.tngp.test.util.TngpMockitoAnnotationEngine;
+import io.zeebe.test.util.TngpMockitoAnnotationEngine;
 
 public class MockitoConfiguration extends DefaultMockitoConfiguration
 {

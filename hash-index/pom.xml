@@ -1,18 +1,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>hash-index</artifactId>
+  <name>Zeebe Hash Index</name>
+  <artifactId>zb-hash-index</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>util-root</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-util-root</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <properties>
-    <jmh.version>1.11.2</jmh.version>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
   </properties>
 
@@ -49,18 +49,16 @@
         <dependency>
           <groupId>org.openjdk.jmh</groupId>
           <artifactId>jmh-core</artifactId>
-          <version>${jmh.version}</version>
         </dependency>
         <dependency>
           <groupId>org.openjdk.jmh</groupId>
           <artifactId>jmh-generator-annprocess</artifactId>
-          <version>${jmh.version}</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
           <groupId>org.agrona</groupId>
           <artifactId>agrona</artifactId>
-          <scope>compile</scope>          
+          <scope>compile</scope>
         </dependency>
       </dependencies>
 
@@ -69,7 +67,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.12</version>
             <executions>
               <execution>
                 <id>add-source</id>

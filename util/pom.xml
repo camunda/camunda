@@ -1,23 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>util</artifactId>
+  <name>Zeebe Util</name>
+  <artifactId>zb-util</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>util-root</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-util-root</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
-
-
-  <properties>
-    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <!-- TODO: Move to common parent -->
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -44,4 +37,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>
