@@ -1,5 +1,5 @@
 def gitBranch = 'master'
-def jobName = 'dispatcher-benchmarks'
+def jobName = 'zb-dispatcher-benchmarks'
 
 def buildScript =
 """\
@@ -17,7 +17,7 @@ job(jobName)
         {
             remote
             {
-                github 'camunda-tngp/dispatcher', 'ssh'
+                github 'camunda-tngp/zb-dispatcher', 'ssh'
                 credentials 'camunda-jenkins-github-ssh'
             }
             branch gitBranch

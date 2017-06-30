@@ -1,56 +1,68 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.camunda.tngp.dispatcher</groupId>
-  <artifactId>dispatcher-root</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <name>Zeebe Dispatcher Root</name>
+  <artifactId>zb-dispatcher-root</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
-  
+
+  <properties>
+    <version.util>0.1.0-SNAPSHOT</version.util>
+  </properties>
+
   <modules>
     <module>dispatcher</module>
     <module>benchmarks</module>
   </modules>
-  
+
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>util</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-util</artifactId>
+        <version>${version.util}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
-  <profiles>
-    <profile>
-      <id>sonatype-oss-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <configuration>
-              <!-- skip gpg signing as the release is not pushed to maven central -->
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <repositories>
+    <repository>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/dispatcher</url>
-    <connection>scm:git:git@github.com:camunda-tngp/dispatcher.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/dispatcher.git</developerConnection>
+    <url>https://github.com/camunda-tngp/zb-dispatcher</url>
+    <connection>scm:git:git@github.com:camunda-tngp/zb-dispatcher.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-dispatcher.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
