@@ -40,7 +40,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
 
         context = new ClusterManagerContext();
-        context.setTaskScheduler(actorScheduler);
+        context.setActorScheduler(actorScheduler);
         context.setLocalPeer(localPeer);
         context.setClientChannelPool(clientChannelManager);
         context.setConnections(connectionPool);

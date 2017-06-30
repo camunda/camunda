@@ -20,12 +20,12 @@ public class ClusterManagerContext
     private PeerList peers;
     private LogStreamsManager logStreamsManager;
 
-    public ActorScheduler getTaskScheduler()
+    public ActorScheduler getActorScheduler()
     {
         return actorScheduler;
     }
 
-    public void setTaskScheduler(ActorScheduler actorScheduler)
+    public void setActorScheduler(ActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
     }

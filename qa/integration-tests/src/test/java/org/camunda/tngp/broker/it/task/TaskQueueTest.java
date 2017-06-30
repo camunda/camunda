@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.it.task;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.logstreams.log.LogStream.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
@@ -97,7 +98,7 @@ public class TaskQueueTest
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
         thrown.expect(BrokerRequestException.class);
-        thrown.expectMessage("Actor does not exist or is not locked");
+        thrown.expectMessage("Task does not exist or is not locked");
 
         topicClient.complete()
             .taskKey(taskId)
