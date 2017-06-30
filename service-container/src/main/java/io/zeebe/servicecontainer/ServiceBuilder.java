@@ -41,7 +41,7 @@ public class ServiceBuilder<S>
         return this;
     }
 
-    public <T> ServiceBuilder<S> dependency(ServiceName<T> serviceName, Injector<T> injector)
+    public <T> ServiceBuilder<S> dependency(ServiceName<? extends T> serviceName, Injector<T> injector)
     {
         Collection<Injector<?>> injectors = injectedDependencies.get(serviceName);
         if (injectors == null)
