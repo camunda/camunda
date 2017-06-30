@@ -183,14 +183,7 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
@@ -199,6 +192,8 @@
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <encoding>UTF-8</encoding>
           <failOnViolation>true</failOnViolation>
+          <configLocation>check/.checkstyle.xml</configLocation>
+          <suppressionsLocation>../.suppressions.xml</suppressionsLocation>
         </configuration>
         <executions>
           <execution>
