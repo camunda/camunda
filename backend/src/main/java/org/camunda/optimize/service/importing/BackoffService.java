@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +33,7 @@ public class BackoffService {
       }
       long millis = configurationService.getGeneralBackoff() * this.generalBackoffCounter;
       logger.debug("all jobs are backing off , sleeping for [{}] ms", millis);
-      Thread.sleep(millis);
+      Thread.currentThread().sleep(millis);
     } catch (InterruptedException e) {
       logger.error("Interrupting backoff", e);
     }
@@ -82,4 +84,47 @@ public class BackoffService {
     this.generalBackoffCounter = STARTING_BACKOFF;
   }
 
+  public void handleSleep(int pagesPassed, ImportScheduleJob toExecute) {
+    long sleepTime = calculateSleepTime(pagesPassed, toExecute);
+    if (sleepTime > 0 && readyToSetTime(toExecute)) {
+      logDebugSleepInformation(sleepTime, toExecute);
+      toExecute.setTimeToExecute(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
+    } else if (toExecute.getTimeToExecute() == null || sleepTime <= 0) {
+      toExecute.setTimeToExecute(null);
+    }
+  }
+
+  private boolean readyToSetTime(ImportScheduleJob toExecute) {
+    return toExecute.getTimeToExecute() == null || ( toExecute.getTimeToExecute() != null && LocalDateTime.now().isAfter(toExecute.getTimeToExecute()));
+  }
+
+  /**
+   * Calculate sleep time for specific import job based on current progress
+   * of import.
+   *
+   * @param pagesPassed
+   * @param toExecute
+   * @return
+   */
+  private long calculateSleepTime(int pagesPassed, ImportScheduleJob toExecute) {
+    long jobBackoff = this.calculateJobBackoff(pagesPassed, toExecute);
+    long interval = configurationService.getImportHandlerWait();
+    long sleepTime = interval * jobBackoff;
+    return sleepTime;
+  }
+
+  private void logDebugSleepInformation(long sleepTime, ImportScheduleJob toExecute) {
+    if (toExecute != null) {
+      logger.debug(
+          "Cant schedule import of [{}], sleeping for [{}] ms",
+          toExecute.getImportService().getElasticsearchType(),
+          sleepTime
+      );
+    } else {
+      logger.debug(
+          "No data for import detected, sleeping for [{}] ms",
+          sleepTime
+      );
+    }
+  }
 }

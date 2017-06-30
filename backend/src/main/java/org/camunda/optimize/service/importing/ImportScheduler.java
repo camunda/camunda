@@ -91,6 +91,8 @@ public class ImportScheduler extends Thread {
         pagesPassed = importResult.getPagesPassed();
         if (pagesPassed != 0) {
           postProcess(toExecute, importResult);
+        } else if (pagesPassed == 0 && toExecute.isPageBased()) {
+          sleepAndReschedule(pagesPassed, toExecute);
         }
 
       } catch (RejectedExecutionException e) {
@@ -171,13 +173,7 @@ public class ImportScheduler extends Thread {
 
   private void sleepAndReschedule(int pagesPassed, ImportScheduleJob toExecute) {
     if (toExecute != null) {
-      long sleepTime = calculateSleepTime(pagesPassed, toExecute);
-
-      if (sleepTime > 0) {
-        toExecute.setTimeToExecute(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
-      } else {
-        toExecute.setTimeToExecute(null);
-      }
+      backoffService.handleSleep(pagesPassed,toExecute);
 
       try {
         this.importScheduleJobs.put(toExecute);
@@ -198,22 +194,6 @@ public class ImportScheduler extends Thread {
   }
 
   /**
-   * Calculate sleep time for specific import job based on current progress
-   * of import.
-   *
-   * @param pagesPassed
-   * @param toExecute
-   * @return
-   */
-  private long calculateSleepTime(int pagesPassed, ImportScheduleJob toExecute) {
-    long jobBackoff = backoffService.calculateJobBackoff(pagesPassed, toExecute);
-    long interval = configurationService.getImportHandlerWait();
-    long sleepTime = interval * jobBackoff;
-    logDebugSleepInformation(sleepTime, toExecute);
-    return sleepTime;
-  }
-
-  /**
    * Check if there is at least one job which does not have backoff time set.
    * @return
    */
@@ -226,21 +206,6 @@ public class ImportScheduler extends Thread {
       }
     }
     return result;
-  }
-
-  private void logDebugSleepInformation(long sleepTime, ImportScheduleJob toExecute) {
-    if (toExecute != null) {
-      logger.debug(
-          "Cant schedule import of [{}], sleeping for [{}] ms",
-          toExecute.getImportService().getElasticsearchType(),
-          sleepTime
-      );
-    } else {
-      logger.debug(
-          "No data for import detected, sleeping for [{}] ms",
-          sleepTime
-      );
-    }
   }
 
   protected void sleepAndReschedule(int pagesPassed) {

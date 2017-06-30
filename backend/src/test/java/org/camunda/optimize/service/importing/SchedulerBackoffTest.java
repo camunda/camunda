@@ -101,7 +101,10 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
     //when
     importScheduler.executeJob();
+    //since in reality executeJob will be invoked by sleeping thread, let it sleep properly
+    Thread.sleep(1000);
     importScheduler.executeJob();
+    Thread.sleep(1000);
     importScheduler.executeJob();
     importScheduler.executeJob();
     importScheduler.executeJob();
@@ -141,6 +144,8 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     }
 
     //when
+    importScheduler.executeJob();
+    importScheduler.executeJob();
     importScheduler.executeJob();
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
 
