@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer;
+package io.zeebe.servicecontainer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
+import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 
 public class ServiceBuilder<S>
 {

@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer.impl;
+package io.zeebe.servicecontainer.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,13 +13,13 @@ import java.util.function.Consumer;
 
 import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.servicecontainer.Injector;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceBuilder;
-import org.camunda.tngp.servicecontainer.ServiceGroupReference;
-import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceBuilder;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 @SuppressWarnings("rawtypes")
 public class ServiceController
@@ -828,7 +828,7 @@ public class ServiceController
         {
             // first, we wait for the async start actions to complete.
             // when complete, the service transitions into the stopDependentsState.
-            // SEE: org.camunda.tngp.servicecontainer.impl.ServiceController.StartContextImpl.accept(Object, Throwable)
+            // SEE: io.zeebe.servicecontainer.impl.ServiceController.StartContextImpl.accept(Object, Throwable)
             startContext.stopOnCompletion = true;
         }
         else if (firstStopState == null)

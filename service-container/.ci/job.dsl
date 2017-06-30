@@ -1,5 +1,5 @@
-def jobName = 'service-container-DISTRO-maven-deploy'
-def repository = 'service-container'
+def jobName = 'zb-service-container-DISTRO-maven-deploy'
+def repository = 'zb-service-container'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'

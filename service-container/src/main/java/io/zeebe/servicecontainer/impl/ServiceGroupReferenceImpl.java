@@ -1,8 +1,8 @@
-package org.camunda.tngp.servicecontainer.impl;
+package io.zeebe.servicecontainer.impl;
 
 import java.util.List;
 
-import org.camunda.tngp.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceGroupReference;
 
 @SuppressWarnings("rawtypes")
 public class ServiceGroupReferenceImpl

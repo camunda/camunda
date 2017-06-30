@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer.impl;
+package io.zeebe.servicecontainer.impl;
 
 import java.util.LinkedList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer.impl;
+package io.zeebe.servicecontainer.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,12 +12,12 @@ import java.util.function.Consumer;
 
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.servicecontainer.*;
-import org.camunda.tngp.util.LangUtil;
-import org.camunda.tngp.util.actor.Actor;
-import org.camunda.tngp.util.actor.ActorReference;
-import org.camunda.tngp.util.actor.ActorScheduler;
-import org.camunda.tngp.util.actor.ActorSchedulerBuilder;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.LangUtil;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
 
 public class ServiceContainerImpl implements Actor, ServiceContainer
 {

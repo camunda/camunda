@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer;
+package io.zeebe.servicecontainer;
 
 import java.util.Collection;
 import java.util.HashMap;

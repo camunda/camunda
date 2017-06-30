@@ -1,4 +1,4 @@
-package org.camunda.tngp.servicecontainer;
+package io.zeebe.servicecontainer;
 
 public interface ServiceStopContext extends AsyncContext
 {

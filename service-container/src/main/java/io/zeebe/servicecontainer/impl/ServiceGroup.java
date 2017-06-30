@@ -1,9 +1,9 @@
-package org.camunda.tngp.servicecontainer.impl;
+package io.zeebe.servicecontainer.impl;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.tngp.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceName;
 
 public class ServiceGroup
 {
