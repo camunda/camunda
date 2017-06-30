@@ -333,7 +333,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     {
         final int size = size();
         final int start = elementOffset(framedElementLength, 0);
-        final int end = elementOffset(framedElementLength, size);
+        final int end = framedElementLength * size;
 
         setMemory(start, end, (byte) 0);
         setSize(0);

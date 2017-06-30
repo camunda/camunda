@@ -304,7 +304,6 @@ public class CompactListTest
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/util/issues/14")
     public void shouldClearFullList()
     {
         // given
