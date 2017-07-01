@@ -12,27 +12,31 @@
  */
 package io.zeebe.hashindex;
 
+import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.hashindex.types.ByteArrayValueHandler;
 import io.zeebe.hashindex.types.LongKeyHandler;
+import org.agrona.BitUtil;
 
 /**
  * {@link HashIndex} that maps Long keys to Byte Array values. All values have a
- * fixed size which is defined on creation.
+ * max size which is defined on creation.
  */
 public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValueHandler>
 {
+    private final int valueMaxLength;
 
-    public Long2BytesHashIndex(IndexStore indexStore, int indexSize, int blockLength, int valueLength)
+    public Long2BytesHashIndex(int indexSize, int recordsPerBlock, int valueMaxLength)
     {
-        super(indexStore, LongKeyHandler.class, ByteArrayValueHandler.class, indexSize, blockLength, SIZE_OF_LONG, valueLength);
+        super(LongKeyHandler.class, ByteArrayValueHandler.class, indexSize, maxBlockLength(recordsPerBlock, valueMaxLength), SIZE_OF_LONG);
+        this.valueMaxLength = valueMaxLength;
     }
 
-    public Long2BytesHashIndex(IndexStore indexStore)
+    private static int maxBlockLength(int recordsPerBlock, int valueMaxLength)
     {
-        super(indexStore, LongKeyHandler.class, ByteArrayValueHandler.class);
+        return BLOCK_DATA_OFFSET + (recordsPerBlock * (RECORD_KEY_OFFSET + BitUtil.SIZE_OF_LONG + valueMaxLength));
     }
 
     public boolean get(long key, byte[] value)
@@ -44,7 +48,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
 
     public boolean put(long key, byte[] value)
     {
-        checkValueLength(value);
+        ensureValueMaxLengt(value);
 
         keyHandler.theKey = key;
         valueHandler.theValue = value;
@@ -58,13 +62,11 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
         return remove();
     }
 
-    protected void checkValueLength(byte[] value)
+    private void ensureValueMaxLengt(byte[] value)
     {
-        final int length = value.length;
-        if (length > recordValueLength)
+        if (value.length > valueMaxLength)
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected at most " + recordValueLength + ", but was " + length);
+            throw new IllegalArgumentException(String.format("Value exceeds max value length. Max value length is %d, got %d", valueMaxLength, value.length));
         }
     }
-
 }

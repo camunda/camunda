@@ -1,26 +1,26 @@
 package io.zeebe.hashindex;
 
-import io.zeebe.hashindex.store.IndexStore;
+import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
 import io.zeebe.hashindex.types.LongKeyHandler;
 import io.zeebe.hashindex.types.LongValueHandler;
-
-import static org.agrona.BitUtil.*;
+import org.agrona.BitUtil;
 
 public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandler>
 {
     public Long2LongHashIndex(
-            IndexStore indexStore,
             int indexSize,
-            int blockLength)
+            int recordsPerBlock)
     {
-        super(indexStore, LongKeyHandler.class, LongValueHandler.class, indexSize, blockLength, SIZE_OF_LONG, SIZE_OF_LONG);
+        super(LongKeyHandler.class, LongValueHandler.class, indexSize, maxBlockLength(recordsPerBlock), SIZE_OF_LONG);
     }
 
-    public Long2LongHashIndex(IndexStore indexStore)
+    private static int maxBlockLength(int recordsPerBlock)
     {
-        super(indexStore, LongKeyHandler.class, LongValueHandler.class);
+        return BLOCK_DATA_OFFSET + (recordsPerBlock * (RECORD_KEY_OFFSET + BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_LONG));
     }
-
 
     public long get(long key, long missingValue)
     {

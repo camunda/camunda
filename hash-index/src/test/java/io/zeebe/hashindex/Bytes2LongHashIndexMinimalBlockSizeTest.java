@@ -3,10 +3,7 @@ package io.zeebe.hashindex;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {
@@ -15,16 +12,13 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     byte[][] keys = new byte[16][64];
 
     Bytes2LongHashIndex index;
-    FileChannelIndexStore indexStore;
 
     @Before
     public void createIndex()
     {
         final int indexSize = 32;
 
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Bytes2LongHashIndex(indexStore, indexSize, 1, 64);
-        index = new Bytes2LongHashIndex(indexStore);
+        index = new Bytes2LongHashIndex(indexSize, 1, 64);
 
         // generate keys
         for (int i = 0; i < keys.length; i++)
@@ -41,7 +35,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     @After
     public void close()
     {
-        indexStore.close();
+        index.close();
     }
 
     @Test

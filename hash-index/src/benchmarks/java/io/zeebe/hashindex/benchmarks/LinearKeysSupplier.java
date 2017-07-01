@@ -7,7 +7,7 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Benchmark)
 public class LinearKeysSupplier
 {
-    long[] keys = new long[1000];
+    long[] keys = new long[Benchmarks.DATA_SET_SIZE];
 
     @Setup
     public void generateKeys()

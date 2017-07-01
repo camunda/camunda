@@ -1,27 +1,26 @@
 package io.zeebe.hashindex;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
 
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.hashindex.types.ByteArrayKeyHandler;
 import io.zeebe.hashindex.types.LongValueHandler;
-
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValueHandler>
 {
     public Bytes2LongHashIndex(
-            final IndexStore indexStore,
             final int indexSize,
             final int blockLength,
             final int keyLength)
     {
-        super(indexStore, ByteArrayKeyHandler.class, LongValueHandler.class, indexSize, blockLength, keyLength, SIZE_OF_LONG);
+        super(ByteArrayKeyHandler.class, LongValueHandler.class, indexSize, blockSize(blockLength, keyLength), keyLength);
     }
 
-    public Bytes2LongHashIndex(IndexStore indexStore)
+    private static int blockSize(int records, int keyLength)
     {
-        super(indexStore, ByteArrayKeyHandler.class, LongValueHandler.class);
+        return BLOCK_DATA_OFFSET + (records * (RECORD_KEY_OFFSET + keyLength + BitUtil.SIZE_OF_LONG));
     }
 
     public long get(byte[] key, long missingValue)
@@ -84,9 +83,9 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     protected void checkKeyLength(int providedKeyLength)
     {
-        if (providedKeyLength > recordKeyLength)
+        if (providedKeyLength > keyLength)
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected at most " + recordKeyLength + ", got " + providedKeyLength);
+            throw new IllegalArgumentException("Illegal byte array length: expected at most " + keyLength + ", got " + providedKeyLength);
         }
     }
 }

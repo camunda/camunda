@@ -1,11 +1,15 @@
 package io.zeebe.hashindex.types;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import io.zeebe.hashindex.IndexKeyHandler;
+import org.agrona.BitUtil;
+import org.agrona.UnsafeAccess;
+import sun.misc.Unsafe;
 
+@SuppressWarnings("restriction")
 public class LongKeyHandler implements IndexKeyHandler
 {
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+
     public long theKey;
 
     @Override
@@ -23,26 +27,32 @@ public class LongKeyHandler implements IndexKeyHandler
     }
 
     @Override
-    public void readKey(MutableDirectBuffer buffer, int recordKeyOffset)
-    {
-        theKey = buffer.getLong(recordKeyOffset);
-    }
-
-    @Override
-    public void writeKey(MutableDirectBuffer buffer, int recordKeyOffset)
-    {
-        buffer.putLong(recordKeyOffset, theKey);
-    }
-
-    @Override
-    public boolean keyEquals(DirectBuffer buffer, int recordKeyOffset)
-    {
-        return theKey == buffer.getLong(recordKeyOffset);
-    }
-
-    @Override
     public String toString()
     {
         return Long.valueOf(theKey).toString();
+    }
+
+    @Override
+    public int getKeyLength()
+    {
+        return BitUtil.SIZE_OF_LONG;
+    }
+
+    @Override
+    public void readKey(long keyAddr)
+    {
+        theKey = UNSAFE.getLong(keyAddr);
+    }
+
+    @Override
+    public void writeKey(long keyAddr)
+    {
+        UNSAFE.putLong(keyAddr, theKey);
+    }
+
+    @Override
+    public boolean keyEquals(long keyAddr)
+    {
+        return UNSAFE.getLong(keyAddr) == theKey;
     }
 }

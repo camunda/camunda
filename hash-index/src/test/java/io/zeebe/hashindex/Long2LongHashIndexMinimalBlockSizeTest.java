@@ -1,12 +1,9 @@
 package io.zeebe.hashindex;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class Long2LongHashIndexMinimalBlockSizeTest
@@ -14,24 +11,21 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     static final long MISSING_VALUE = -2;
 
     Long2LongHashIndex index;
-    FileChannelIndexStore indexStore;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void createIndex()
+    public void createIndex() throws Exception
     {
         final int indexSize = 16;
-
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, indexSize, 1);
+        index = new Long2LongHashIndex(indexSize, 1);
     }
 
     @After
     public void close()
     {
-        indexStore.close();
+        index.close();
     }
 
     @Test

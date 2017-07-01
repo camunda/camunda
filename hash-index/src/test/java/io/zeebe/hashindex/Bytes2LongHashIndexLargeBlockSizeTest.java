@@ -4,10 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class Bytes2LongHashIndexLargeBlockSizeTest
 {
@@ -15,7 +12,6 @@ public class Bytes2LongHashIndexLargeBlockSizeTest
 
     byte[][] keys = new byte[16][64];
 
-    FileChannelIndexStore indexStore;
     Bytes2LongHashIndex index;
 
     @Before
@@ -23,9 +19,7 @@ public class Bytes2LongHashIndexLargeBlockSizeTest
     {
         final int indexSize = 32;
 
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Bytes2LongHashIndex(indexStore, indexSize, 3, 64);
-        index = new Bytes2LongHashIndex(indexStore);
+        index = new Bytes2LongHashIndex(indexSize, 3, 64);
 
         // generate keys
         for (int i = 0; i < keys.length; i++)
@@ -42,7 +36,7 @@ public class Bytes2LongHashIndexLargeBlockSizeTest
     @After
     public void deleteTempFile()
     {
-        indexStore.close();
+        index.close();
     }
 
     @Test

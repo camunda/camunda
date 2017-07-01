@@ -6,6 +6,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 public class Benchmarks
 {
+    public static final int DATA_SET_SIZE = 10_000_000;
+
     public static void main(String... args) throws Exception
     {
 

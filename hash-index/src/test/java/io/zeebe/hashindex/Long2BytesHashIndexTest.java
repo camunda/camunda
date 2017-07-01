@@ -15,23 +15,18 @@ package io.zeebe.hashindex;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class Long2BytesHashIndexTest
 {
-    protected static final int INDEX_SIZE = 15;
+    protected static final int INDEX_SIZE = 16;
     protected static final int VALUE_LENGTH = 3 * SIZE_OF_BYTE;
 
     private static final byte[] VALUE = "bar".getBytes();
     private static final byte[] ANOTHER_VALUE = "plo".getBytes();
 
     private Long2BytesHashIndex index;
-    private FileChannelIndexStore indexStore;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -39,20 +34,13 @@ public class Long2BytesHashIndexTest
     @Before
     public void createIndex()
     {
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = newIndex();
-        assertThat(index.indexSize).isEqualTo(16);
-    }
-
-    protected Long2BytesHashIndex newIndex()
-    {
-        return new Long2BytesHashIndex(indexStore, INDEX_SIZE, 1, VALUE_LENGTH);
+        index = new Long2BytesHashIndex(INDEX_SIZE, 1, VALUE_LENGTH);
     }
 
     @After
     public void close()
     {
-        indexStore.close();
+        index.close();
     }
 
 
@@ -264,27 +252,8 @@ public class Long2BytesHashIndexTest
     }
 
     @Test
-    public void shouldAccessIndexWithNewObject()
-    {
-        // given
-        index.put(0, VALUE);
-        index.flush();
-        indexStore.flush();
-
-        // a second index working on the same index store (e.g. after broker restart)
-        final Long2BytesHashIndex newIndex = new Long2BytesHashIndex(indexStore);
-        newIndex.reInit();
-
-        // when
-        final byte[] value = new byte[VALUE_LENGTH];
-        newIndex.get(0, value);
-
-        // then
-        assertThat(value).isEqualTo(VALUE);
-    }
-
-    @Test
-    public void shouldNotOverwriteInsertedValue()
+    @Ignore("https://github.com/camunda-tngp/zb-util/issues/16")
+    public void shouldNotOverwriteValue()
     {
         // given
         final byte[] originalAnotherValue = ANOTHER_VALUE.clone();

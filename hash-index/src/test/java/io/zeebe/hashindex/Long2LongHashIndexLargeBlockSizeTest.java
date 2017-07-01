@@ -2,32 +2,30 @@ package io.zeebe.hashindex;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 public class Long2LongHashIndexLargeBlockSizeTest
 {
     static final long MISSING_VALUE = -2;
 
     Long2LongHashIndex index;
-    FileChannelIndexStore indexStore;
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void createIndex()
+    public void createIndex() throws Exception
     {
-        final int indexSize = 16;
-
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, indexSize, 3);
+        index = new Long2LongHashIndex(16, 3);
     }
 
     @After
     public void close()
     {
-        indexStore.close();
+        index.close();
     }
+
 
     @Test
     public void shouldReturnMissingValueForEmptyMap()

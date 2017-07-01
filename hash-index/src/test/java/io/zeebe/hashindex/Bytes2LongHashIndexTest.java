@@ -2,11 +2,7 @@ package io.zeebe.hashindex;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class Bytes2LongHashIndexTest
@@ -16,7 +12,6 @@ public class Bytes2LongHashIndexTest
     byte[][] keys = new byte[16][64];
 
     Bytes2LongHashIndex index;
-    FileChannelIndexStore indexStore;
 
     @Rule
     public ExpectedException expection = ExpectedException.none();
@@ -26,9 +21,7 @@ public class Bytes2LongHashIndexTest
     {
         final int indexSize = 32;
 
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Bytes2LongHashIndex(indexStore, indexSize, 1, 64);
-        index = new Bytes2LongHashIndex(indexStore);
+        index = new Bytes2LongHashIndex(indexSize, 1, 64);
 
         // generate keys
         for (int i = 0; i < keys.length; i++)
@@ -45,7 +38,7 @@ public class Bytes2LongHashIndexTest
     @After
     public void close()
     {
-        indexStore.close();
+        index.close();
     }
 
     @Test

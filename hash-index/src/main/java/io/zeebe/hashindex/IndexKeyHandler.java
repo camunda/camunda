@@ -1,18 +1,17 @@
 package io.zeebe.hashindex;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-
 public interface IndexKeyHandler
 {
     void setKeyLength(int keyLength);
 
     int keyHashCode();
 
-    void readKey(MutableDirectBuffer buffer, int recordKeyOffset);
+    boolean keyEquals(long keyAddr);
 
-    void writeKey(MutableDirectBuffer buffer, int recordKeyOffset);
+    void readKey(long keyAddr);
 
-    boolean keyEquals(DirectBuffer buffer, int offset);
+    void writeKey(long keyAddr);
+
+    int getKeyLength();
 
 }

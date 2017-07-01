@@ -58,7 +58,30 @@ public class Long2LongHashIndexBenchmark
 
     @Benchmark
     @Threads(1)
-    public long putNewValueBaseline(Long2LongHashMapSupplier hashMapSupplier, RandomKeysSupplier keysSupplier)
+    public long baselineLinearKeys(Long2LongHashMapSupplier hashMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final HashMap<Long, Long> index = hashMapSupplier.index;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            index.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += index.get(keys[i]);
+        }
+
+        return result;
+    }
+
+
+    @Benchmark
+    @Threads(1)
+    public long baselineRandomKeys(Long2LongHashMapSupplier hashMapSupplier, RandomKeysSupplier keysSupplier)
     {
         final HashMap<Long, Long> index = hashMapSupplier.index;
         final long[] keys = keysSupplier.keys;

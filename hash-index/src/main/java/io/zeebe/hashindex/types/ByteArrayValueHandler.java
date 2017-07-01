@@ -12,24 +12,34 @@
  */
 package io.zeebe.hashindex.types;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import io.zeebe.hashindex.IndexValueHandler;
+import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
 
+import io.zeebe.hashindex.IndexValueHandler;
+import org.agrona.UnsafeAccess;
+import sun.misc.Unsafe;
+
+@SuppressWarnings("restriction")
 public class ByteArrayValueHandler implements IndexValueHandler
 {
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+
     public byte[] theValue;
 
     @Override
-    public void readValue(DirectBuffer buffer, int offset, int length)
+    public int getValueLength()
     {
-        buffer.getBytes(offset, theValue, 0, length);
+        return theValue.length;
     }
 
     @Override
-    public void writeValue(MutableDirectBuffer buffer, int offset, int length)
+    public void writeValue(long writeValueAddr)
     {
-        buffer.putBytes(offset, theValue);
+        UNSAFE.copyMemory(theValue, ARRAY_BASE_OFFSET, null, writeValueAddr, getValueLength());
     }
 
+    @Override
+    public void readValue(long valueAddr, int valueLength)
+    {
+        UNSAFE.copyMemory(null, valueAddr, theValue, ARRAY_BASE_OFFSET, valueLength);
+    }
 }

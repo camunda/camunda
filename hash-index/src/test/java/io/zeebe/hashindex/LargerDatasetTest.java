@@ -1,33 +1,34 @@
 package io.zeebe.hashindex;
 
+import java.io.IOException;
+
 import org.agrona.BitUtil;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 public class LargerDatasetTest
 {
-    private static final int KEYS_TO_PUT = 500_000;
+    private static final int KEYS_TO_PUT = 1_000_000;
 
-    private static final int BLOCK_LENGTH = 128;
+    private static final int RECORDS_PER_BLOCK = 16;
 
-    private static final int INDEX_SIZE = BitUtil.findNextPositivePowerOfTwo(KEYS_TO_PUT / BLOCK_LENGTH);
+    private static final int INDEX_SIZE = BitUtil.findNextPositivePowerOfTwo(KEYS_TO_PUT / RECORDS_PER_BLOCK);
 
-    protected Long2LongHashIndex index;
-    FileChannelIndexStore indexStore;
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private Long2LongHashIndex index;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, INDEX_SIZE, BLOCK_LENGTH);
+        index = new Long2LongHashIndex(INDEX_SIZE, RECORDS_PER_BLOCK);
     }
 
     @After
     public void after()
     {
-        indexStore.close();
+        index.close();
     }
 
     @Test
@@ -35,7 +36,16 @@ public class LargerDatasetTest
     {
         for (int i = 0; i < KEYS_TO_PUT; i++)
         {
-            index.put(i, 0);
+            index.put(i, i);
         }
+
+        for (int i = 0; i < KEYS_TO_PUT; i++)
+        {
+            if (index.get(i, -1) != i)
+            {
+                throw new RuntimeException("Illegal value for " + i);
+            }
+        }
+
     }
 }

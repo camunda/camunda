@@ -1,14 +1,19 @@
 package io.zeebe.hashindex.types;
 
+import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
+
 import java.util.Arrays;
 
 import io.zeebe.hashindex.IndexKeyHandler;
-
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.UnsafeAccess;
+import sun.misc.Unsafe;
 
+@SuppressWarnings("restriction")
 public class ByteArrayKeyHandler implements IndexKeyHandler
 {
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+
     public byte[] theKey;
     public int keyLength;
 
@@ -38,6 +43,12 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
     }
 
     @Override
+    public int getKeyLength()
+    {
+        return keyLength;
+    }
+
+    @Override
     public int keyHashCode()
     {
         int result = 1;
@@ -51,27 +62,31 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
     }
 
     @Override
-    public void readKey(MutableDirectBuffer buffer, int recordKeyOffset)
+    public void readKey(long keyAddr)
     {
-        buffer.getBytes(recordKeyOffset, theKey, 0, keyLength);
+        UNSAFE.copyMemory(null, keyAddr, theKey, ARRAY_BASE_OFFSET, keyLength);
     }
 
     @Override
-    public void writeKey(MutableDirectBuffer buffer, int recordKeyOffset)
+    public void writeKey(long keyAddr)
     {
-        buffer.putBytes(recordKeyOffset, theKey, 0, keyLength);
+        UNSAFE.copyMemory(theKey, ARRAY_BASE_OFFSET, null, keyAddr, keyLength);
     }
 
     @Override
-    public boolean keyEquals(DirectBuffer buffer, int offset)
+    public boolean keyEquals(long keyAddr)
     {
+        final long thisOffset = ARRAY_BASE_OFFSET;
+        final long thatOffset = keyAddr;
+
         for (int i = 0; i < keyLength; i++)
         {
-            if (theKey[i] != buffer.getByte(offset + i))
+            if (UNSAFE.getByte(theKey, thisOffset + i) != UNSAFE.getByte(null, thatOffset + i))
             {
                 return false;
             }
         }
+
         return true;
     }
 

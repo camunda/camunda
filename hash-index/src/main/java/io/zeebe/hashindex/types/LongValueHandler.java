@@ -1,33 +1,33 @@
 package io.zeebe.hashindex.types;
 
-import static org.agrona.BitUtil.*;
-
 import io.zeebe.hashindex.IndexValueHandler;
+import org.agrona.BitUtil;
+import org.agrona.UnsafeAccess;
+import sun.misc.Unsafe;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-
+@SuppressWarnings("restriction")
 public class LongValueHandler implements IndexValueHandler
 {
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+
     public long theValue;
 
     @Override
-    public void readValue(DirectBuffer buffer, int offset, int length)
+    public int getValueLength()
     {
-        if (length < SIZE_OF_LONG)
-        {
-            throw new IllegalArgumentException("Cannot get long, length out of bounds.");
-        }
-        theValue = buffer.getLong(offset);
+        return BitUtil.SIZE_OF_LONG;
     }
 
     @Override
-    public void writeValue(MutableDirectBuffer buffer, int offset, int length)
+    public void writeValue(long writeValueAddr)
     {
-        if (length < SIZE_OF_LONG)
-        {
-            throw new IllegalArgumentException("Cannot write long value: long size out of bounds");
-        }
-        buffer.putLong(offset, theValue);
+        UNSAFE.putLong(writeValueAddr, theValue);
     }
+
+    @Override
+    public void readValue(long valueAddr, int valueLength)
+    {
+        theValue = UNSAFE.getLong(valueAddr);
+    }
+
 }

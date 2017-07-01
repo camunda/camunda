@@ -1,11 +1,10 @@
 package io.zeebe.hashindex;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-
 public interface IndexValueHandler
 {
-    void readValue(DirectBuffer buffer, int offset, int length);
+    int getValueLength();
 
-    void writeValue(MutableDirectBuffer buffer, int offset, int length);
+    void writeValue(long writeValueAddr);
+
+    void readValue(long valueAddr, int valueLength);
 }
