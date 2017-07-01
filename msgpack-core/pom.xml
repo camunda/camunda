@@ -1,12 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>msgpack-core</artifactId>
+  <name>Zeebe Msgpack Core</name>
+  <artifactId>zb-msgpack-core</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp.msgpack</groupId>
-    <artifactId>msgpack-json-path-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-msgpack-json-path-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
@@ -21,14 +22,16 @@
       <artifactId>jackson-dataformat-msgpack</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>test-util</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -1,20 +1,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>msgpack-json-path-benchmark</artifactId>
+  <name>Zeebe Msgpack Json Path Benchmark</name>
+  <artifactId>zb-msgpack-json-path-benchmark</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp.msgpack</groupId>
-    <artifactId>msgpack-json-path-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-msgpack-json-path-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <dependencies>
   
     <dependency>
-      <groupId>org.camunda.tngp.msgpack</groupId>
-      <artifactId>msgpack-json-path</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-json-path</artifactId>
     </dependency>
     
     <dependency>
@@ -28,4 +29,5 @@
       <version>2.2.0</version>
     </dependency>
   </dependencies>
+
 </project>

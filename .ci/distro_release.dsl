@@ -1,5 +1,5 @@
-def jobName = 'msgpack-json-path-DISTRO-maven-deploy'
-def repository = 'msgpack-json-path'
+def jobName = 'zb-msgpack-json-path-DISTRO-maven-deploy'
+def repository = 'zb-msgpack-json-path'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
@@ -102,7 +102,7 @@ mavenJob(jobName) {
   publishers {
     deployArtifacts {
       repositoryId 'camunda-nexus'
-      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots'
+      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots'
       uniqueVersion true
       evenIfUnstable false
     }

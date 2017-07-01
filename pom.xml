@@ -1,21 +1,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.camunda.tngp.msgpack</groupId>
-  <artifactId>msgpack-json-path-parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <name>Zeebe Msgpack Json Path Parent</name>
+  <artifactId>zb-msgpack-json-path-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
  
   <properties>
-    <version.msgpack>0.8.11</version.msgpack>
-    <version.util>1.0.0-alpha6</version.util>
+    <version.util>0.1.0-SNAPSHOT</version.util>
   </properties>
 
   <modules>
@@ -27,63 +26,62 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.camunda.tngp.msgpack</groupId>
-        <artifactId>msgpack-core</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.camunda.tngp.msgpack</groupId>
-        <artifactId>msgpack-json-path</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-core</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>hash-index</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-json-path</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-hash-index</artifactId>
         <version>${version.util}</version>
       </dependency>
+
       <dependency>
-        <groupId>org.msgpack</groupId>
-        <artifactId>msgpack-core</artifactId>
-        <version>${version.msgpack}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.msgpack</groupId>
-        <artifactId>jackson-dataformat-msgpack</artifactId>
-        <version>${version.msgpack}</version>
-      </dependency>
-      <dependency>
-       <groupId>org.camunda.tngp</groupId>
-       <artifactId>test-util</artifactId>
-       <scope>test</scope>
+       <groupId>io.zeebe</groupId>
+       <artifactId>zb-test-util</artifactId>
        <version>${version.util}</version>
      </dependency>
     </dependencies>
   </dependencyManagement>
 
-  <profiles>
-    <profile>
-      <id>sonatype-oss-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <configuration>
-              <!-- skip gpg signing as the release is not pushed to maven central -->
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <repositories>
+    <repository>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
 
   <scm>
-    <url>https://github.com/camunda-tngp/msgpack-json-path</url>
-    <connection>scm:git:git@github.com:camunda-tngp/msgpack-json-path.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/msgpack-json-path.git</developerConnection>
+    <url>https://github.com/camunda-tngp/zb-msgpack-json-path</url>
+    <connection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 </project>
