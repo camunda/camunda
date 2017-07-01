@@ -1,0 +1,60 @@
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.client.impl;
+
+import io.zeebe.client.WorkflowTopicClient;
+import io.zeebe.client.workflow.cmd.CancelWorkflowInstanceCmd;
+import io.zeebe.client.workflow.cmd.CreateDeploymentCmd;
+import io.zeebe.client.workflow.cmd.CreateWorkflowInstanceCmd;
+import io.zeebe.client.workflow.cmd.UpdatePayloadCmd;
+import io.zeebe.client.workflow.impl.CancelWorkflowInstanceCmdImpl;
+import io.zeebe.client.workflow.impl.CreateDeploymentCmdImpl;
+import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCmdImpl;
+import io.zeebe.client.workflow.impl.UpdatePayloadCmdImpl;
+
+public class WorkflowTopicClientImpl implements WorkflowTopicClient
+{
+    protected final ZeebeClientImpl client;
+    protected final Topic topic;
+
+    public WorkflowTopicClientImpl(final ZeebeClientImpl client, final String topicName, final int partitionId)
+    {
+        this.client = client;
+        this.topic = new Topic(topicName, partitionId);
+    }
+
+    @Override
+    public CreateDeploymentCmd deploy()
+    {
+        return new CreateDeploymentCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+    }
+
+    @Override
+    public CreateWorkflowInstanceCmd create()
+    {
+        return new CreateWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+    }
+
+    @Override
+    public CancelWorkflowInstanceCmd cancel()
+    {
+        return new CancelWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+    }
+
+    @Override
+    public UpdatePayloadCmd updatePayload()
+    {
+        return new UpdatePayloadCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+    }
+
+}

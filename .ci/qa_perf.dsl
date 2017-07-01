@@ -1,7 +1,7 @@
 // vim: set filetype=groovy:
 
 def gitBranch = 'master'
-def commonName = 'camunda-tngp-QA-performance'
+def commonName = 'zeebe-QA-performance'
 def triggerJobName = commonName + '-tests-trigger'
 
 
@@ -71,7 +71,7 @@ JOBS.each
             {
                 remote
                 {
-                    github 'camunda-tngp/camunda-tngp', 'ssh'
+                    github 'camunda-tngp/zeebe', 'ssh'
                     credentials 'camunda-jenkins-github-ssh'
                 }
                 branch gitBranch

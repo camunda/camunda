@@ -1,32 +1,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>tngp-core-parent</artifactId>
+  <name>Zeebe Core Parent</name>
+  <artifactId>zeebe-core-parent</artifactId>
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-root</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-root</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <properties>
-    <sbe.version>1.5.6</sbe.version>
-    <jmh.version>1.11.2</jmh.version>
-    <slf4j.version>1.7.23</slf4j.version>
-    <log4j.version>2.8.1</log4j.version>
-    <msgpack.version>0.8.11</msgpack.version>
-    <toml.version>0.5.1</toml.version>
-    <model.version>7.7.0</model.version>
-    <hamcrest.version>1.3</hamcrest.version>
-
     <!-- SUB PROJECTS -->
-    <util.version>1.0.0-SNAPSHOT</util.version>
-    <log.version>1.0.0-SNAPSHOT</log.version>
-    <tngp.msgpack.version>1.0.0-SNAPSHOT</tngp.msgpack.version>
-    <service.version>1.0.0-SNAPSHOT</service.version>
-    <dispatcher.version>1.0.0-SNAPSHOT</dispatcher.version>
-    <transport.version>1.0.0-SNAPSHOT</transport.version>
+    <version.util>0.1.0-SNAPSHOT</version.util>
+    <version.logstreams>0.1.0-SNAPSHOT</version.logstreams>
+    <version.zb-msgpack>0.1.0-SNAPSHOT</version.zb-msgpack>
+    <version.service>0.1.0-SNAPSHOT</version.service>
+    <version.dispatcher>0.1.0-SNAPSHOT</version.dispatcher>
+    <version.transport>0.1.0-SNAPSHOT</version.transport>
   </properties>
 
   <dependencyManagement>
@@ -34,148 +26,88 @@
     <dependencies>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>tngp-protocol</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>tngp-client-java</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>tngp-broker-core</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-broker-core</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>tngp-cli</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-cli</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>tngp-protocol-test-util</artifactId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>dispatcher</artifactId>
-        <version>${dispatcher.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-distribution</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>log</artifactId>
-        <version>${log.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-dispatcher</artifactId>
+        <version>${version.dispatcher}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>transport</artifactId>
-        <version>${transport.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-logstreams</artifactId>
+        <version>${version.logstreams}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>service-container</artifactId>
-        <version>${service.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-transport</artifactId>
+        <version>${version.transport}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>hash-index</artifactId>
-        <version>${util.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-service-container</artifactId>
+        <version>${version.service}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>test-util</artifactId>
-        <version>${util.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-hash-index</artifactId>
+        <version>${version.util}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp</groupId>
-        <artifactId>util</artifactId>
-        <version>${util.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-test-util</artifactId>
+        <version>${version.util}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.camunda.tngp.msgpack</groupId>
-        <artifactId>msgpack-json-path</artifactId>
-        <version>${tngp.msgpack.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-util</artifactId>
+        <version>${version.util}</version>
       </dependency>
 
       <dependency>
-        <groupId>com.moandjiezana.toml</groupId>
-        <artifactId>toml4j</artifactId>
-        <version>${toml.version}</version>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-json-path</artifactId>
+        <version>${version.zb-msgpack}</version>
       </dependency>
-
-      <dependency>
-        <groupId>uk.co.real-logic</groupId>
-        <artifactId>sbe-tool</artifactId>
-        <version>${sbe.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.msgpack</groupId>
-        <artifactId>msgpack-core</artifactId>
-        <version>${msgpack.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.msgpack</groupId>
-        <artifactId>jackson-dataformat-msgpack</artifactId>
-        <version>${msgpack.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.camunda.bpm.model</groupId>
-        <artifactId>camunda-bpmn-model</artifactId>
-        <version>${model.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j-impl</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-
-       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${version.junit}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>${version.assertj}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <version>${hamcrest.version}</version>
-       </dependency>
 
     </dependencies>
 
@@ -187,7 +119,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.17</version>
         <configuration>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <encoding>UTF-8</encoding>
@@ -207,35 +138,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <versionRange>[1.3.2,)</versionRange>
-                    <goals>
-                      <goal>java</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -249,12 +151,10 @@
         <dependency>
           <groupId>org.openjdk.jmh</groupId>
           <artifactId>jmh-core</artifactId>
-          <version>${jmh.version}</version>
         </dependency>
         <dependency>
           <groupId>org.openjdk.jmh</groupId>
           <artifactId>jmh-generator-annprocess</artifactId>
-          <version>${jmh.version}</version>
           <scope>provided</scope>
         </dependency>
       </dependencies>
@@ -264,7 +164,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.12</version>
             <executions>
               <execution>
                 <id>add-source</id>
@@ -284,7 +183,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
-            <version>2.2</version>
             <executions>
               <execution>
                 <phase>package</phase>
@@ -317,4 +215,5 @@
       </build>
     </profile>
   </profiles>
+
 </project>

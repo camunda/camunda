@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
-    package="org.camunda.tngp.clustering.management" id="5" version="1"
-    semanticVersion="0.1.0" description="Tngp Cluster Management Protocol" byteOrder="littleEndian">
+    package="io.zeebe.clustering.management" id="5" version="1"
+    semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
     <types>
 

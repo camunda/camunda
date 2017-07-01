@@ -15,7 +15,7 @@ else
   JAVA = java
 endif
 
-targetFile := ${shell ls target/tngp-qa-perf-tests-*-jar-with-dependencies.jar}
+targetFile := ${shell ls target/zeebe-qa-perf-tests-*-jar-with-dependencies.jar}
 
 deploy-broker: undeploy-broker
 	scripts/deploy-broker.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
@@ -28,60 +28,60 @@ save-log:
 local: $(eval BROKER_HOST = localhost)
 
 test-start-wf-instance-latency:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
 		 -Dtest.outputFileName=data/test-start-wf-instance-latency.txt \
 		 -cp ${targetFile} \
-		 org.camunda.tngp.perftest.StartWorkflowInstanceLatencyTest
+		 io.zeebe.perftest.StartWorkflowInstanceLatencyTest
 	gnuplot etc/test-start-wf-instance-latency.gpi
 
 test-start-wf-instance-throughput:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
 		 -Dtest.outputFileName=data/test-start-wf-instance-throughput.txt \
 		 -cp ${targetFile} \
-		 org.camunda.tngp.perftest.StartWorkflowInstanceThroughputTest
+		 io.zeebe.perftest.StartWorkflowInstanceThroughputTest
 	gnuplot \
          -e "outfile='data/test-start-wf-instance-throughput.png'; infile='data/test-start-wf-instance-throughput.txt'; plot_title='Start WF Instance Throughput'; plot_ylabel='Requests Sent'" \
          etc/throughput-graph.gpi
 
 test-create-task-latency:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-create-task-latency.txt \
          -cp ${targetFile} \
-         org.camunda.tngp.perftest.CreateTaskLatencyTest
+         io.zeebe.perftest.CreateTaskLatencyTest
 	gnuplot etc/test-create-task-latency.gpi
 
 test-create-task-throughput:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-create-task-throughput.txt \
          -cp ${targetFile} \
-         org.camunda.tngp.perftest.CreateTaskThroughputTest
+         io.zeebe.perftest.CreateTaskThroughputTest
 	gnuplot \
          -e "outfile='data/test-create-task-throughput.png'; infile='data/test-create-task-throughput.txt'; plot_title='Create Task Throughput'; plot_ylabel='Requests Sent'" \
          etc/throughput-graph.gpi
 
 test-create-task-throughput-idle-subscription:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-create-task-throughput-idle-subscription.txt \
          -cp ${targetFile} \
-         org.camunda.tngp.perftest.CreateTaskThroughputIdleSubscriptionTest
+         io.zeebe.perftest.CreateTaskThroughputIdleSubscriptionTest
 	gnuplot \
          -e "outfile='data/test-create-task-throughput-idle-subscription.png'; infile='data/test-create-task-throughput-idle-subscription.txt'; plot_title='Create Task Throughput'; plot_ylabel='Requests Sent'" \
          etc/throughput-graph.gpi
 
 test-task-subscription-throughput:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-task-subscription-throughput.txt \
          -cp ${targetFile} \
-         org.camunda.tngp.perftest.TaskSubscriptionThroughputTest
+         io.zeebe.perftest.TaskSubscriptionThroughputTest
 	gnuplot \
          -e "outfile='data/test-task-subscription-throughput.png'; infile='data/test-task-subscription-throughput.txt'; plot_title='Task Subscription Throughput'; plot_ylabel='Tasks Handled'" \
          etc/throughput-graph.gpi
 
 test-topic-subscription-throughput:
-	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+	$(JAVA) -Dzeebe.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-topic-subscription-throughput.txt \
          -cp ${targetFile} \
-         org.camunda.tngp.perftest.TopicSubscriptionThroughputTest
+         io.zeebe.perftest.TopicSubscriptionThroughputTest
 	gnuplot \
          -e "outfile='data/test-topic-subscription-throughput.png'; infile='data/test-topic-subscription-throughput.txt'; plot_title='Topic Subscription Throughput'; plot_ylabel='Events Received'" \
          etc/throughput-graph.gpi

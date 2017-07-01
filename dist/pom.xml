@@ -1,24 +1,25 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>tngp-distribution</artifactId>
+  <name>Zeebe Distribution</name>
+  <artifactId>zeebe-distribution</artifactId>
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-core-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-core-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>tngp-broker-core</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-broker-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>tngp-cli</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-cli</artifactId>
     </dependency>
   </dependencies>
 
@@ -27,7 +28,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
-        <version>1.10</version>
         <configuration>
           <configurationDirectory>conf</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
@@ -36,21 +36,21 @@
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
           <repositoryName>lib</repositoryName>
-          <assembleDirectory>${project.build.directory}/tngp-broker</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/zeebe-broker</assembleDirectory>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>
           </platforms>
           <programs>
             <program>
-              <mainClass>org.camunda.tngp.broker.StandaloneBroker</mainClass>
+              <mainClass>io.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
               <commandLineArguments>
-                <commandLineArgument>../conf/tngp.cfg.toml</commandLineArgument>
+                <commandLineArgument>../conf/zeebe.cfg.toml</commandLineArgument>
               </commandLineArguments>
             </program>
             <program>
-              <mainClass>org.camunda.tngp.cli.StandaloneClient</mainClass>
+              <mainClass>io.zeebe.cli.StandaloneClient</mainClass>
               <id>zeebe</id>
             </program>
           </programs>

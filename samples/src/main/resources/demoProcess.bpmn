@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:tngp="http://camunda.org/schema/tngp/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.5.0-nightly">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.5.0-nightly">
   <bpmn:process id="demoProcess" isExecutable="true">
     <bpmn:startEvent id="start" name="start">
       <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
@@ -13,25 +13,25 @@
     <bpmn:sequenceFlow id="SequenceFlow_148rk2p" sourceRef="taskC" targetRef="end" />
     <bpmn:serviceTask id="taskA" name="task A">
       <bpmn:extensionElements>
-        <tngp:taskDefinition type="foo" />
-        <tngp:ioMapping>
-          <tngp:input source="$.a" target="$.foo" />
-          <tngp:output source="$.foo" target="$.bar" />
-        </tngp:ioMapping>
+        <zeebe:taskDefinition type="foo" />
+        <zeebe:ioMapping>
+          <zeebe:input source="$.a" target="$.foo" />
+          <zeebe:output source="$.foo" target="$.bar" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06ytcxw</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="taskB" name="taks B">
       <bpmn:extensionElements>
-        <tngp:taskDefinition type="bar" />
+        <zeebe:taskDefinition type="bar" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_06ytcxw</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1oh45y7</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="taskC" name="taks C">
       <bpmn:extensionElements>
-        <tngp:taskDefinition type="foo" />
+        <zeebe:taskDefinition type="foo" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1oh45y7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_148rk2p</bpmn:outgoing>

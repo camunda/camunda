@@ -1,32 +1,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>tngp-samples</artifactId>
+  <name>Zeebe Samples</name>
+  <artifactId>zeebe-samples</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-core-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-core-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>tngp-client-java</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-client-java</artifactId>
     </dependency>
-    
+
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>test-util</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
@@ -54,5 +56,6 @@
       </plugin>
     </plugins>
   </build>
+
 </project>
 

@@ -4,18 +4,18 @@
   <id>distro</id>
 
   <includeBaseDirectory>true</includeBaseDirectory>
-  <baseDirectory>camunda-tngp-broker-${project.version}/</baseDirectory>
-  
+  <baseDirectory>zeebe-broker-${project.version}/</baseDirectory>
+
   <formats>
     <format>zip</format>
     <format>tar.gz</format>
   </formats>
-  
+
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/tngp-broker</directory>
+      <directory>${project.build.directory}/zeebe-broker</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
   </fileSets>
-  
+
 </assembly>

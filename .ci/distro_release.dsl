@@ -1,7 +1,7 @@
 // vim: set filetype=groovy:
 
-def jobName = 'camunda-tngp-DISTRO-maven-deploy'
-def repository = 'camunda-tngp'
+def jobName = 'zeebe-DISTRO-maven-deploy'
+def repository = 'zeebe'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
@@ -11,7 +11,7 @@ def mavenVersion = 'maven-3.3-latest'
 def mavenSettings = 'camunda-maven-settings'
 
 def downstreamProjects = [
-    'camunda-tngp-QA-performance-tests-trigger',
+    'zeebe-QA-performance-tests-trigger',
 ]
 
 
@@ -136,7 +136,7 @@ mavenJob(jobName)
         deployArtifacts
         {
             repositoryId 'camunda-nexus'
-            repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots'
+            repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots'
             uniqueVersion true
             evenIfUnstable false
         }

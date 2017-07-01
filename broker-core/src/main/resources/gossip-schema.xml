@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
-	package="org.camunda.tngp.clustering.gossip" id="3" version="1"
-	semanticVersion="0.1.0" description="Tngp Management Gossip Protocol" byteOrder="littleEndian">
+	package="io.zeebe.clustering.gossip" id="3" version="1"
+	semanticVersion="0.1.0" description="Zeebe Management Gossip Protocol" byteOrder="littleEndian">
 
     <types>
 

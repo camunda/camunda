@@ -1,0 +1,31 @@
+package io.zeebe.broker.task.data;
+
+public enum TaskEventType
+{
+    CREATE,
+    CREATED,
+
+    LOCK,
+    LOCKED,
+    LOCK_REJECTED,
+
+    COMPLETE,
+    COMPLETED,
+    COMPLETE_REJECTED,
+
+    EXPIRE_LOCK,
+    LOCK_EXPIRED,
+    LOCK_EXPIRATION_REJECTED,
+
+    FAIL,
+    FAILED,
+    FAIL_REJECTED,
+
+    UPDATE_RETRIES,
+    RETRIES_UPDATED,
+    UPDATE_RETRIES_REJECTED,
+
+    CANCEL,
+    CANCELED,
+    CANCEL_REJECTED;
+}

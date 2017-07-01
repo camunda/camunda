@@ -1,19 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>tngp-protocol</artifactId>
+  <name>Zeebe Protocol</name>
+  <artifactId>zeebe-protocol</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.camunda.tngp</groupId>
-    <artifactId>tngp-core-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-core-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
 
   <properties>
-    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <protocol.version>1</protocol.version>
   </properties>
 
@@ -29,6 +29,7 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
@@ -47,7 +48,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>2.6</version>
         <executions>
           <execution>
             <id>default-resources</id>
@@ -61,7 +61,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.1</version>
         <executions>
           <execution>
             <id>add-source</id>
@@ -80,7 +79,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>
@@ -118,7 +116,7 @@
           <dependency>
             <groupId>uk.co.real-logic</groupId>
             <artifactId>sbe-all</artifactId>
-            <version>1.5.5</version>
+            <version>${version.sbe}</version>
           </dependency>
         </dependencies>
       </plugin>
