@@ -1,20 +1,13 @@
 package org.camunda.tngp.broker.workflow.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_DEFINITION_ELEMENT;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_HEADERS_ELEMENT;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_HEADER_ELEMENT;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_RETRIES_ATTRIBUTE;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TNGP_NAMESPACE;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
 
 import java.util.stream.IntStream;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
-import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
@@ -69,19 +62,11 @@ public class BpmnValidationTests
     public void shouldNotBeValidIfMoreThanOneExecutableProcess()
     {
         // given
-        final BpmnModelInstance bpmnModelInstance = Bpmn.createEmptyModel();
-        final Definitions definitions = bpmnModelInstance.newInstance(Definitions.class);
-        definitions.setTargetNamespace(BPMN20_NS);
-        bpmnModelInstance.setDefinitions(definitions);
-
-        final Process process1 = bpmnModelInstance.newInstance(Process.class);
-        definitions.addChildElement(process1);
-        process1.setExecutable(true);
-        process1.setId("process1");
-        process1.builder().startEvent().endEvent().done();
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process1")
+            .startEvent().endEvent().done();
 
         final Process process2 = bpmnModelInstance.newInstance(Process.class);
-        definitions.addChildElement(process2);
+        bpmnModelInstance.getDefinitions().addChildElement(process2);
         process2.setExecutable(true);
         process2.setId("process2");
         process2.builder().startEvent().endEvent().done();
