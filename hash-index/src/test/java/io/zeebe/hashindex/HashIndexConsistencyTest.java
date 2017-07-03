@@ -40,10 +40,11 @@ public class HashIndexConsistencyTest
         // this is done in the broker when a snapshot is written
         index.flush();
 
+        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < numEntries; i++)
         {
-            final byte[] result = index.get(i);
-            assertThat(result).isNotNull();
+            assertThat(index.get(i, value)).isTrue();
+            assertThat(value).isEqualTo(VALUE);
         }
     }
 
@@ -59,10 +60,11 @@ public class HashIndexConsistencyTest
         }
 
 
+        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < numEntries; i++)
         {
-            final byte[] result = index.get(i);
-            assertThat(result).isNotNull();
+            assertThat(index.get(i, value)).isTrue();
+            assertThat(value).isEqualTo(VALUE);
         }
     }
 

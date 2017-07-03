@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,30 +57,32 @@ public class Long2BytesHashIndexTest
 
 
     @Test
-    public void shouldReturnNullForEmptyMap()
+    public void shouldReturnFalseForEmptyMap()
     {
         // given that the map is empty
-        assertThat(index.get(0)).isNull();
+        assertThat(index.get(0, new byte[VALUE_LENGTH])).isFalse();
     }
 
     @Test
-    public void shouldReturnNullForNonExistingKey()
+    public void shouldReturnFalseForNonExistingKey()
     {
         // given
         index.put(1, VALUE);
 
         // then
-        assertThat(index.get(0)).isNull();
+        assertThat(index.get(0, new byte[VALUE_LENGTH])).isFalse();
     }
 
     @Test
-    public void shouldReturnLongValueForKey()
+    public void shouldReturnValueForKey()
     {
         // given
         index.put(1, VALUE);
 
         // if then
-        assertThat(index.get(1)).isEqualTo(VALUE);
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.get(1, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
     }
 
     @Test
@@ -90,12 +91,12 @@ public class Long2BytesHashIndexTest
         // given
         index.put(1, VALUE);
 
-        // if
-        final byte[] removeResult = index.remove(1);
+        // if then
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.remove(1, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
 
-        //then
-        assertThat(removeResult).isEqualTo(VALUE);
-        assertThat(index.get(1)).isNull();
+        assertThat(index.get(1, value)).isFalse();
     }
 
     @Test
@@ -106,12 +107,15 @@ public class Long2BytesHashIndexTest
         index.put(2, ANOTHER_VALUE);
 
         // if
-        final byte[] removeResult = index.remove(1);
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.remove(1, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
 
         //then
-        assertThat(removeResult).isEqualTo(VALUE);
-        assertThat(index.get(1)).isNull();
-        assertThat(index.get(2)).isEqualTo(ANOTHER_VALUE);
+        assertThat(index.get(1, value)).isFalse();
+
+        assertThat(index.get(2, value)).isTrue();
+        assertThat(value).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -121,11 +125,12 @@ public class Long2BytesHashIndexTest
         index.put(1, VALUE);
 
         // if
-        final byte[] removeResult = index.remove(0);
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.remove(0, value)).isFalse();
 
         //then
-        assertThat(removeResult).isNull();
-        assertThat(index.get(1)).isEqualTo(VALUE);
+        assertThat(index.get(1, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
     }
 
     @Test
@@ -139,8 +144,13 @@ public class Long2BytesHashIndexTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(0)).isEqualTo(VALUE);
-        assertThat(index.get(1)).isEqualTo(ANOTHER_VALUE);
+
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.get(0, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
+
+        assertThat(index.get(1, value)).isTrue();
+        assertThat(value).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -155,8 +165,13 @@ public class Long2BytesHashIndexTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
-        assertThat(index.get(1)).isEqualTo(VALUE);
-        assertThat(index.get(3)).isEqualTo(ANOTHER_VALUE);
+
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.get(1, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
+
+        assertThat(index.get(3, value)).isTrue();
+        assertThat(value).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -172,9 +187,11 @@ public class Long2BytesHashIndexTest
             index.put(i, ANOTHER_VALUE);
         }
 
+        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i)).isEqualTo(i % 2 == 0 ? VALUE : ANOTHER_VALUE);
+            assertThat(index.get(i, value)).isTrue();
+            assertThat(value).isEqualTo(i % 2 == 0 ? VALUE : ANOTHER_VALUE);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -188,9 +205,11 @@ public class Long2BytesHashIndexTest
             index.put(i, i < 8 ? VALUE : ANOTHER_VALUE);
         }
 
+        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i)).isEqualTo(i < 8 ? VALUE : ANOTHER_VALUE);
+            assertThat(index.get(i, value)).isTrue();
+            assertThat(value).isEqualTo(i < 8 ? VALUE : ANOTHER_VALUE);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -241,11 +260,10 @@ public class Long2BytesHashIndexTest
         index.clear();
 
         // then
-        assertThat(index.get(0)).isNull();
+        assertThat(index.get(0, new byte[VALUE_LENGTH])).isFalse();
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/zb-util/issues/15")
     public void shouldAccessIndexWithNewObject()
     {
         // given
@@ -258,15 +276,15 @@ public class Long2BytesHashIndexTest
         newIndex.reInit();
 
         // when
-        final byte[] returnValue = newIndex.get(0);
+        final byte[] value = new byte[VALUE_LENGTH];
+        newIndex.get(0, value);
 
         // then
-        assertThat(returnValue).containsExactly(VALUE);
+        assertThat(value).isEqualTo(VALUE);
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/zb-util/issues/16")
-    public void shouldNotOverwriteValue()
+    public void shouldNotOverwriteInsertedValue()
     {
         // given
         final byte[] originalAnotherValue = ANOTHER_VALUE.clone();
@@ -274,10 +292,11 @@ public class Long2BytesHashIndexTest
         index.put(1, ANOTHER_VALUE);
 
         // when
-        index.get(0);
+        final byte[] value = new byte[VALUE_LENGTH];
+        index.get(0, value);
 
         // then
-        assertThat(ANOTHER_VALUE).containsExactly(originalAnotherValue);
+        assertThat(ANOTHER_VALUE).isEqualTo(originalAnotherValue);
     }
 
 }
