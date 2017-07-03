@@ -1,9 +1,9 @@
 package io.zeebe.client.cmd;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -16,7 +16,6 @@ import static org.mockito.Mockito.spy;
 import java.util.HashMap;
 import java.util.List;
 
-import org.agrona.MutableDirectBuffer;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.impl.ClientCommandController;
 import io.zeebe.client.task.cmd.CreateTaskCmd;
@@ -27,6 +26,7 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -199,7 +199,8 @@ public class ClientCommandManagerTest
         final List<ControlMessageRequest> receivedControlMessageRequests = broker.getReceivedControlMessageRequests();
         assertThat(receivedControlMessageRequests).hasSize(count);
 
-        receivedControlMessageRequests.forEach(request -> {
+        receivedControlMessageRequests.forEach(request ->
+        {
             assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
             assertThat(request.getData()).isNull();
         });
@@ -210,7 +211,8 @@ public class ClientCommandManagerTest
         final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
         assertThat(receivedCommandRequests).hasSize(count);
 
-        receivedCommandRequests.forEach(request -> {
+        receivedCommandRequests.forEach(request ->
+        {
             assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
             assertThat(request.getCommand().get("eventType")).isEqualTo("CREATE");
         });

@@ -2,7 +2,6 @@ package io.zeebe.broker.clustering.handler;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.gossip.Gossip;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
@@ -10,6 +9,7 @@ import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import org.agrona.DirectBuffer;
 
 public class RequestTopologyHandler implements ControlMessageHandler
 {
@@ -35,7 +35,8 @@ public class RequestTopologyHandler implements ControlMessageHandler
     public CompletableFuture<Void> handle(final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
         return gossip.getTopology()
-            .handle((topology, failure) -> {
+            .handle((topology, failure) ->
+            {
                 if (failure == null)
                 {
                     responseWriter

@@ -1,8 +1,9 @@
 package io.zeebe.broker.configuration;
 
-import static io.zeebe.broker.configuration.ConfigurationScenario.*;
+import static io.zeebe.broker.configuration.ConfigurationScenario.scenario;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -93,7 +94,7 @@ public class ConfigurationDirectoryTest
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
         final GlobalConfiguration globalConfiguration = configurationManager.getGlobalConfiguration();
         final String globalDirectory = globalConfiguration.getDirectory();

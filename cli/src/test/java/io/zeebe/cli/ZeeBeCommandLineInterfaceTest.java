@@ -1,5 +1,9 @@
 package io.zeebe.cli;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -10,7 +14,7 @@ public class ZeeBeCommandLineInterfaceTest
 
     //not sure if there is any other solution
     EmbeddedBrokerRule embeddedBroker;
-    static final String BPMN_FILE = ZeeBeCommandLineInterfaceTest.class.getClassLoader().getResource("demoProcess.bpmn").getPath().toString();
+    static final String BPMN_FILE = getPath("demoProcess.bpmn");
 
     public static Iterable<Object[]> data()
     {
@@ -22,7 +26,7 @@ public class ZeeBeCommandLineInterfaceTest
 
 
     @Test
-    public void shouldNotMeetException()
+    public void shouldNotMeetException() throws UnsupportedEncodingException
     {
         //given
         embeddedBroker = new EmbeddedBrokerRule();
@@ -41,6 +45,20 @@ public class ZeeBeCommandLineInterfaceTest
         //clean
         embeddedBroker.stopBroker();
 
+    }
+
+    private static String getPath(String classPathResource)
+    {
+        try
+        {
+            final URL resource = ZeeBeCommandLineInterfaceTest.class.getClassLoader().getResource(classPathResource);
+            final String path = resource.getPath().toString();
+            return URLDecoder.decode(path, StandardCharsets.UTF_8.name());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
 }

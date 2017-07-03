@@ -6,8 +6,10 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-import io.zeebe.broker.clustering.gossip.data.*;
+import io.zeebe.broker.clustering.gossip.data.Peer;
+import io.zeebe.broker.clustering.gossip.data.PeerList;
+import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
+import io.zeebe.broker.clustering.gossip.data.RaftMembership;
 import io.zeebe.broker.clustering.gossip.handler.GossipFragmentHandler;
 import io.zeebe.broker.clustering.gossip.protocol.GossipController;
 import io.zeebe.broker.clustering.handler.Topology;
@@ -16,6 +18,7 @@ import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
 
 public class Gossip implements Actor
 {
@@ -114,7 +117,8 @@ public class Gossip implements Actor
 
     public CompletableFuture<Topology> getTopology()
     {
-        return commandContext.runAsync(future -> {
+        return commandContext.runAsync(future ->
+        {
             final Topology topology = new Topology();
 
             // force update local peer in peer list to sync local raft changes

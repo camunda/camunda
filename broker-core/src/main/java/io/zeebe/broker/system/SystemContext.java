@@ -1,5 +1,6 @@
 package io.zeebe.broker.system;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,10 +9,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.agrona.LangUtil;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
+import org.agrona.LangUtil;
 
 public class SystemContext implements AutoCloseable
 {
@@ -109,7 +110,15 @@ public class SystemContext implements AutoCloseable
             final String directory = config.getDirectory();
             if (config.isTempDirectory())
             {
-                FileUtil.deleteFolder(directory);
+                try
+                {
+                    FileUtil.deleteFolder(directory);
+                }
+                catch (IOException e)
+                {
+                    System.err.println("Exception while deleting temp folder:");
+                    e.printStackTrace();
+                }
             }
         }
     }

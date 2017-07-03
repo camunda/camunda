@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.DirectBuffer;
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.cmd.BrokerRequestException;
 import io.zeebe.client.impl.Topic;
@@ -18,6 +17,7 @@ import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
 
 
 public class ClientTopologyManager implements Actor, BufferReader
@@ -75,7 +75,8 @@ public class ClientTopologyManager implements Actor, BufferReader
 
     public CompletableFuture<Void> refreshNow()
     {
-        return commandContext.runAsync(future -> {
+        return commandContext.runAsync(future ->
+        {
             if (clientTopologyController.isIdle())
             {
                 triggerRefresh();
