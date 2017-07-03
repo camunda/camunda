@@ -30,13 +30,21 @@
     <version.assertj>3.8.0</version.assertj>
     <version.msgpack>0.8.11</version.msgpack>
     <version.jmh>1.11.2</version.jmh>
+    <version.sbe>1.5.6</version.sbe>
+    <version.slf4j>1.7.23</version.slf4j>
+    <version.log4j>2.8.1</version.log4j>
+    <version.toml>0.5.1</version.toml>
+    <version.model>7.7.0</version.model>
+    <version.hamcrest>1.3</version.hamcrest>
 
     <!-- maven plugins -->
-    <version.compiler-plugin>3.5.1</version.compiler-plugin>
-    <version.checkstyle-plugin>2.17</version.checkstyle-plugin>
-    <version.surefire-plugin>2.20</version.surefire-plugin>
-    <version.build-helper-plugin>1.12</version.build-helper-plugin>
-    <version.shade-plugin>2.2</version.shade-plugin>
+    <plugin.version.compiler>3.5.1</plugin.version.compiler>
+    <plugin.version.checkstyle>2.17</plugin.version.checkstyle>
+    <plugin.version.surefire>2.20</plugin.version.surefire>
+    <plugin.version.build-helper>1.12</plugin.version.build-helper>
+    <plugin.version.shade>2.2</plugin.version.shade>
+    <plugin.version.appassembler>1.10</plugin.version.appassembler>
+    <plugin.version.exec>1.6.0</plugin.version.exec>
   </properties>
 
   <dependencyManagement>
@@ -89,6 +97,48 @@
         <version>${version.jmh}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.moandjiezana.toml</groupId>
+        <artifactId>toml4j</artifactId>
+        <version>${version.toml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>uk.co.real-logic</groupId>
+        <artifactId>sbe-tool</artifactId>
+        <version>${version.sbe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.bpm.model</groupId>
+        <artifactId>camunda-bpmn-model</artifactId>
+        <version>${version.model}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${version.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${version.log4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${version.log4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>${version.hamcrest}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -103,7 +153,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${version.compiler-plugin}</version>
+          <version>${plugin.version.compiler}</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -114,7 +164,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>${version.checkstyle-plugin}</version>
+          <version>${plugin.version.checkstyle}</version>
           <!-- dependency on build tool to reference the checkstyle cfg -->
           <dependencies>
             <dependency>
@@ -146,7 +196,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>${version.surefire-plugin}</version>
+          <version>${plugin.version.surefire}</version>
           <configuration>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
@@ -159,14 +209,54 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>${version.build-helper-plugin}</version>
+          <version>${plugin.version.build-helper}</version>
         </plugin>
 
         <!-- Shade Plugin -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>${version.shade-plugin}</version>
+          <version>${plugin.version.shade}</version>
+        </plugin>
+
+        <!-- App Assembler Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>appassembler-maven-plugin</artifactId>
+          <version>${plugin.version.appassembler}</version>
+        </plugin>
+
+        <!-- Exec Plugin -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${plugin.version.exec}</version>
+        </plugin>
+
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <versionRange>[1.3.2,)</versionRange>
+                    <goals>
+                      <goal>java</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
         </plugin>
 
       </plugins>
