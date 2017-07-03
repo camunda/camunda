@@ -17,10 +17,6 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-broker-core</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-cli</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -48,10 +44,6 @@
               <commandLineArguments>
                 <commandLineArgument>../conf/zeebe.cfg.toml</commandLineArgument>
               </commandLineArguments>
-            </program>
-            <program>
-              <mainClass>io.zeebe.cli.StandaloneClient</mainClass>
-              <id>zeebe</id>
             </program>
           </programs>
         </configuration>

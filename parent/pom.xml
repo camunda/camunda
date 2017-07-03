@@ -45,12 +45,6 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-cli</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
