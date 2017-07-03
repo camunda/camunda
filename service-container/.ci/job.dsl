@@ -102,7 +102,7 @@ mavenJob(jobName) {
   publishers {
     deployArtifacts {
       repositoryId 'camunda-nexus'
-      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots'
+      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots'
       uniqueVersion true
       evenIfUnstable false
     }
