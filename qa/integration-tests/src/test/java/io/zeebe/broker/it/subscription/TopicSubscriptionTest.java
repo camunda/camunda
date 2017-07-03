@@ -270,6 +270,33 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    public void shouldRepeatedlyRecoverSubscription() throws InterruptedException
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            // given
+            final TopicSubscription subscription = clientRule.topic().newSubscription()
+                                                             .handler(recordingHandler)
+                                                             .name(SUBSCRIPTION_NAME)
+                                                             .open();
+
+
+
+            clientRule.taskTopic().create()
+                      .addHeader("key", "value")
+                      .payload("{}")
+                      .taskType("foo")
+                      .execute();
+
+            // when
+            subscription.close();
+
+            // then
+            assertThat(subscription.isOpen()).isFalse();
+        }
+    }
+
+    @Test
     public void shouldOpenMultipleSubscriptionsOnSameTopic() throws IOException
     {
         // given
