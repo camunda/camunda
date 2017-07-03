@@ -1,25 +1,14 @@
 package io.zeebe.servicecontainer.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import io.zeebe.servicecontainer.*;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceBuilder;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 
 @SuppressWarnings("rawtypes")
 public class ServiceController
@@ -269,7 +258,7 @@ public class ServiceController
                 final CompletableFuture<Void> future = new CompletableFuture<>();
                 future.whenComplete(startContext);
 
-                container.executeShortRunning(()->
+                container.executeShortRunning(() ->
                 {
                     try
                     {
@@ -387,7 +376,7 @@ public class ServiceController
                     future.whenComplete(stopContext);
 
                     // wrap runnable
-                    container.executeShortRunning(()->
+                    container.executeShortRunning(() ->
                     {
                         try
                         {
