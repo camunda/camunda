@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 PID="$(ps aux | grep -v grep | grep elasticsearch | awk '{ print $2 }')"
 if [ -z "$PID" ]
