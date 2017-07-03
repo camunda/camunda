@@ -45,6 +45,7 @@
     <plugin.version.shade>2.2</plugin.version.shade>
     <plugin.version.appassembler>1.10</plugin.version.appassembler>
     <plugin.version.exec>1.6.0</plugin.version.exec>
+    <plugin.version.resources>2.6</plugin.version.resources>
   </properties>
 
   <dependencyManagement>
@@ -231,6 +232,13 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>${plugin.version.exec}</version>
+        </plugin>
+
+        <!-- Resources Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${plugin.version.resources}</version>
         </plugin>
 
         <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
