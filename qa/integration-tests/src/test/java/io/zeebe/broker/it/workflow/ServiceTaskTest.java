@@ -1,25 +1,26 @@
 package io.zeebe.broker.it.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.util.TopicEventRecorder.ReceivedWorkflowEvent;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 import io.zeebe.client.TaskTopicClient;
 import io.zeebe.client.WorkflowTopicClient;
 import io.zeebe.client.task.Task;
 import io.zeebe.client.workflow.cmd.WorkflowInstance;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -148,6 +149,152 @@ public class ServiceTaskTest
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
         waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
+    }
+
+    @Test
+    public void shouldMapPayloadIntoTask()
+    {
+        // given
+        workflowClient.deploy()
+            .bpmnModelInstance(
+                    oneTaskProcess("foo")
+                        .ioMapping("task")
+                            .input("$.foo", "$.bar")
+                            .done())
+            .execute();
+
+        workflowClient.create()
+                .bpmnProcessId("process")
+                .payload("{\"foo\":1}")
+                .execute();
+
+        // when
+        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
+
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner("owner")
+            .lockTime(Duration.ofMinutes(5))
+            .handler(recordingTaskHandler)
+            .open();
+
+        // then
+        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
+
+        final Task taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
+        assertThat(taskLockedEvent.getPayload()).isEqualTo("{\"bar\":1}");
+    }
+
+    @Test
+    public void shouldMapPayloadFromTask()
+    {
+        // given
+        workflowClient.deploy()
+            .bpmnModelInstance(
+                    oneTaskProcess("foo")
+                        .ioMapping("task")
+                            .output("$.foo", "$.bar")
+                            .done())
+            .execute();
+
+        workflowClient.create()
+                .bpmnProcessId("process")
+                .execute();
+
+        // when
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner("owner")
+            .lockTime(Duration.ofMinutes(5))
+            .handler(task ->
+            {
+                task.setPayload("{\"foo\":2}");
+                task.complete();
+            })
+            .open();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
+
+        final ReceivedWorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"));
+        assertThat(workflowEvent.getEvent().getPayload()).isEqualTo("{\"bar\":2}");
+    }
+
+    @Test
+    public void shouldModifyPayloadInTask()
+    {
+        // given
+        workflowClient.deploy()
+            .bpmnModelInstance(
+                    oneTaskProcess("foo")
+                        .ioMapping("task")
+                            .input("$.foo", "$.foo")
+                            .output("$.foo", "$.foo")
+                            .done())
+            .execute();
+
+        workflowClient.create()
+                .bpmnProcessId("process")
+                .payload("{\"foo\":1}")
+                .execute();
+
+        // when
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner("owner")
+            .lockTime(Duration.ofMinutes(5))
+            .handler(task ->
+            {
+                final String modifiedPayload = task.getPayload().replaceAll("1", "2");
+                task.setPayload(modifiedPayload);
+                task.complete();
+            })
+            .open();
+
+        // then
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
+
+        final ReceivedWorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"));
+        assertThat(workflowEvent.getEvent().getPayload()).isEqualTo("{\"foo\":2}");
+    }
+
+    @Test
+    public void shouldCompleteTasksFromMultipleProcesses()
+    {
+        // given
+        workflowClient.deploy()
+            .bpmnModelInstance(
+                    oneTaskProcess("foo")
+                        .ioMapping("task")
+                            .input("$.foo", "$.foo")
+                            .output("$.foo", "$.foo")
+                            .done())
+            .execute();
+
+        // when
+        final int instances = 10;
+        for (int i = 0; i < instances; i++)
+        {
+            workflowClient.create()
+                .bpmnProcessId("process")
+                .payload("{\"foo\":1}")
+                .execute();
+        }
+
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner("test")
+            .lockTime(Duration.ofMinutes(5))
+            .handler(task ->
+            {
+                task.setPayload("{\"foo\":2}");
+                task.complete();
+            })
+            .open();
+
+        // then
+        waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("COMPLETED")).size() == instances);
+        waitUntil(() -> eventRecorder.getWorkflowEvents(wfEvent("WORKFLOW_INSTANCE_COMPLETED")).size() == instances);
     }
 
 }
