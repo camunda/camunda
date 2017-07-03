@@ -12,15 +12,14 @@
  */
 package io.zeebe.broker.workflow.index;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.util.cache.ExpandableBufferCache;
+import org.agrona.DirectBuffer;
 
 /**
  * Cache of workflow instance payload. It contains an LRU cache of the payload
@@ -30,7 +29,7 @@ import io.zeebe.util.cache.ExpandableBufferCache;
  * When a payload is requested then the it is returned from the cache. If it is
  * not present in the cache then the payload event is seek in the log stream.
  */
-public class PayloadCache
+public class PayloadCache implements AutoCloseable
 {
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
 
@@ -40,10 +39,10 @@ public class PayloadCache
     private final ExpandableBufferCache cache;
     private final LogStreamReader logStreamReader;
 
-    public PayloadCache(IndexStore indexStore, int cacheSize, LogStreamReader logStreamReader)
+    public PayloadCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Long2LongHashIndex(indexStore, Short.MAX_VALUE, 256);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Long2LongHashIndex(Short.MAX_VALUE, 256);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;
         this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
@@ -94,6 +93,12 @@ public class PayloadCache
     public SnapshotSupport getSnapshotSupport()
     {
         return snapshotSupport;
+    }
+
+    @Override
+    public void close()
+    {
+        index.close();
     }
 
 }

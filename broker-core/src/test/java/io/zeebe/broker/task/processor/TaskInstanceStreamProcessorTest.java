@@ -1,18 +1,16 @@
 package io.zeebe.broker.task.processor;
 
-import static org.assertj.core.api.Assertions.*;
 import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
 import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.protocol.clientapi.EventType.*;
-import static io.zeebe.util.buffer.BufferUtil.*;
+import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
@@ -22,16 +20,14 @@ import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.broker.util.msgpack.MsgPackUtil;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.time.ClockUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -44,9 +40,6 @@ public class TaskInstanceStreamProcessorTest
 
     private final Instant now = Instant.now();
     private final long lockTime = now.plus(Duration.ofMinutes(5)).toEpochMilli();
-
-    @Mock
-    private IndexStore mockIndexStore;
 
     @Mock
     private LogStream mockLogStream;
@@ -76,7 +69,7 @@ public class TaskInstanceStreamProcessorTest
         when(mockLogStream.getPartitionId()).thenReturn(1);
         when(mockLogStream.getTerm()).thenReturn(TERM);
 
-        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore, mockTaskSubscriptionManager);
+        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
@@ -91,6 +84,7 @@ public class TaskInstanceStreamProcessorTest
     public void cleanUp()
     {
         ClockUtil.reset();
+        streamProcessor.onClose();
     }
 
     @Test

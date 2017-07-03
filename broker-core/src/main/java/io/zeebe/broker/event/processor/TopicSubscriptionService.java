@@ -4,35 +4,22 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.ConfigurationManager;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.clientapi.SingleMessageWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public class TopicSubscriptionService implements Service<TopicSubscriptionService>, Actor
 {
@@ -47,7 +34,6 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     protected ActorReference actorRef;
 
     protected DeferredCommandContext asyncContext;
-    protected IndexStore indexStore;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd(this::onStreamAdded)
@@ -96,20 +82,14 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     public void stop(ServiceStopContext stopContext)
     {
         actorRef.close();
-
-        indexStore.flush();
-        indexStore.close();
     }
 
     public void onStreamAdded(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
     {
         asyncContext.runAsync(() ->
         {
-            indexStore = newIndexStoreForLog(logStream.getLogName());
-
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
                 logStreamServiceName,
-                indexStore,
                 new CommandResponseWriter(sendBufferInjector.getValue()),
                 new ErrorResponseWriter(sendBufferInjector.getValue()),
                 () -> new SubscribedEventWriter(new SingleMessageWriter(sendBufferInjector.getValue())),
@@ -129,21 +109,6 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
                 );
         });
     }
-
-    protected IndexStore newIndexStoreForLog(String logName)
-    {
-        if (config.directory != null && !config.directory.isEmpty())
-        {
-            final String indexFile = String.format("%sack-index.%s.idx", config.directory, logName);
-            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-            return new FileChannelIndexStore(indexFileChannel);
-        }
-        else
-        {
-            throw new RuntimeException("Cannot create topic subscription processor index, no index file name provided.");
-        }
-    }
-
 
     protected CompletableFuture<Void> createStreamProcessorService(
             ServiceName<LogStream> logStreamName,

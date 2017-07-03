@@ -12,17 +12,14 @@
  */
 package io.zeebe.broker.incident;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.hashindex.store.FileChannelIndexStore.tempFileIndexStore;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentEventType;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
@@ -38,10 +35,9 @@ import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.buffer.BufferWriter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 public class IncidentStreamProcessorTest
@@ -71,7 +67,7 @@ public class IncidentStreamProcessorTest
 
         logStream.openAsync();
 
-        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(tempFileIndexStore(), tempFileIndexStore(), tempFileIndexStore());
+        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor();
         streamProcessorController = LogStreams
                 .createStreamProcessor("incident", 0, incidentStreamProcessor)
                 .sourceStream(logStream)

@@ -19,7 +19,6 @@ import java.nio.ByteOrder;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -30,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <li>active token count
  * <li>activity instance key
  */
-public class WorkflowInstanceIndex
+public class WorkflowInstanceIndex implements AutoCloseable
 {
     private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_LONG;
 
@@ -49,10 +48,10 @@ public class WorkflowInstanceIndex
     private long key;
     private boolean isRead = false;
 
-    public WorkflowInstanceIndex(final IndexStore indexStore)
+    public WorkflowInstanceIndex()
     {
-        this.index = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Long2BytesHashIndex(Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
     public SnapshotSupport getSnapshotSupport()
@@ -135,4 +134,9 @@ public class WorkflowInstanceIndex
         }
     }
 
+    @Override
+    public void close()
+    {
+        index.close();
+    }
 }

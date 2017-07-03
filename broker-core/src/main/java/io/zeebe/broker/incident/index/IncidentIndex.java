@@ -19,7 +19,6 @@ import java.nio.ByteOrder;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -49,10 +48,10 @@ public class IncidentIndex
     private long key;
     private boolean isRead = false;
 
-    public IncidentIndex(final IndexStore indexStore)
+    public IncidentIndex()
     {
-        this.index = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 64, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Long2BytesHashIndex(Short.MAX_VALUE, 64, INDEX_VALUE_SIZE);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
     public SnapshotSupport getSnapshotSupport()
@@ -133,6 +132,11 @@ public class IncidentIndex
         {
             throw new IllegalStateException("must call wrap() before");
         }
+    }
+
+    public void close()
+    {
+        index.close();
     }
 
 }

@@ -12,16 +12,13 @@
  */
 package io.zeebe.broker.workflow.index;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +30,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <li>activity id length
  * <li>activity id (max 255 chars)
  */
-public class ActivityInstanceIndex
+public class ActivityInstanceIndex implements AutoCloseable
 {
     private static final int SIZE_OF_ACTIVITY_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
@@ -54,10 +51,10 @@ public class ActivityInstanceIndex
     private long key;
     private boolean isRead = false;
 
-    public ActivityInstanceIndex(final IndexStore indexStore)
+    public ActivityInstanceIndex()
     {
-        this.index = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Long2BytesHashIndex(Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
     public SnapshotSupport getSnapshotSupport()
@@ -137,5 +134,11 @@ public class ActivityInstanceIndex
         {
             throw new IllegalStateException("must call wrap() before");
         }
+    }
+
+    @Override
+    public void close()
+    {
+        index.close();
     }
 }

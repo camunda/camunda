@@ -17,11 +17,8 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceN
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
+import static io.zeebe.broker.task.TaskQueueServiceNames.*;
 
-import java.nio.channels.FileChannel;
 import java.time.Duration;
 
 import io.zeebe.broker.logstreams.cfg.StreamProcessorCfg;
@@ -31,20 +28,13 @@ import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
 import io.zeebe.broker.task.processor.TaskInstanceStreamProcessor;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.SingleMessageWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
 
 public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager, Actor
 {
@@ -66,7 +56,6 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     protected ActorReference actorRef;
 
     protected ScheduledCommand scheduledCheckExpirationCmd;
-    protected IndexStore indexStore;
 
     public TaskQueueManagerService(final ConfigurationManager configurationManager)
     {
@@ -84,28 +73,13 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-
-
-        final String indexDirectory = streamProcessorCfg.directory;
-        if (indexDirectory != null && !indexDirectory.isEmpty())
-        {
-            final String indexFile = indexDirectory + "default.idx";
-            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-            indexStore = new FileChannelIndexStore(indexFileChannel);
-        }
-        else
-        {
-            throw new RuntimeException("Cannot create task stream processor index, no index file name provided.");
-        }
-
-
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final SubscribedEventWriter subscribedEventWriter = new SubscribedEventWriter(new SingleMessageWriter(sendBuffer));
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
 
-        final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(responseWriter, subscribedEventWriter, indexStore, taskSubscriptionManager);
+        final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(responseWriter, subscribedEventWriter, taskSubscriptionManager);
         final StreamProcessorService taskInstanceStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 TASK_QUEUE_STREAM_PROCESSOR_ID,
@@ -170,12 +144,6 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             }
 
             actorRef.close();
-
-            if (indexStore != null)
-            {
-                indexStore.flush();
-                indexStore.close();
-            }
         });
     }
 

@@ -17,18 +17,17 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.nio.ByteOrder;
 
-import org.agrona.DirectBuffer;
-import org.agrona.collections.LongLruCache;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.LongLruCache;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Cache of deployed workflows. It contains an LRU cache of the parsed workflows
@@ -39,7 +38,7 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
  * cache. If it is not present in the cache then the deployed event is seek in
  * the log stream.
  */
-public class WorkflowDeploymentCache
+public class WorkflowDeploymentCache implements AutoCloseable
 {
     private static final int SIZE_OF_PROCESS_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
@@ -55,10 +54,10 @@ public class WorkflowDeploymentCache
     private final LongLruCache<ExecutableWorkflow> cache;
     private final LogStreamReader logStreamReader;
 
-    public WorkflowDeploymentCache(IndexStore indexStore, int cacheSize, LogStreamReader logStreamReader)
+    public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;
         this.cache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
@@ -129,6 +128,12 @@ public class WorkflowDeploymentCache
             workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
         }
         return workflow;
+    }
+
+    @Override
+    public void close()
+    {
+        index.close();
     }
 
 }

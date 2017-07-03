@@ -46,7 +46,7 @@ public class MsgPackConverter
 
     public byte[] convertToMsgPack(final InputStream inputStream)
     {
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
         {
             convert(inputStream, outputStream, jsonFactory, msgPackFactory);
 
@@ -74,7 +74,7 @@ public class MsgPackConverter
     {
         final InputStream inputStream = new ByteArrayInputStream(msgPack);
 
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
         {
             convert(inputStream, outputStream, msgPackFactory, jsonFactory);
 

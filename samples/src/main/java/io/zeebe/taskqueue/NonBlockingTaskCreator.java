@@ -1,20 +1,12 @@
 package io.zeebe.taskqueue;
 
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.TaskTopicClient;
-import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.*;
 import io.zeebe.client.task.cmd.CreateTaskCmd;
-import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 
 public class NonBlockingTaskCreator
 {
@@ -38,11 +30,10 @@ public class NonBlockingTaskCreator
         final String topicName = "default-topic";
         final int partitionId = 0;
 
-        try (final ZeebeClient client = ZeebeClient.create(properties))
+        try (ZeebeClient client = ZeebeClient.create(properties))
         {
             client.connect();
 
-            final TransportConnectionPool connectionPool = client.getConnectionPool();
             final TaskTopicClient asyncTaskService = client.taskTopic(topicName, partitionId);
 
             final String payload = "{}";

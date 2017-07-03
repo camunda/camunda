@@ -12,17 +12,14 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import static org.agrona.BitUtil.*;
-import static io.zeebe.protocol.clientapi.EventType.*;
+import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.xml.validation.ValidationResults;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
@@ -34,14 +31,12 @@ import io.zeebe.broker.workflow.graph.WorkflowValidationResultFormatter;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import org.agrona.DirectBuffer;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class DeploymentStreamProcessor implements StreamProcessor
 {
@@ -69,12 +64,12 @@ public class DeploymentStreamProcessor implements StreamProcessor
 
     protected long eventKey;
 
-    public DeploymentStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
+    public DeploymentStreamProcessor(CommandResponseWriter responseWriter)
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
-        this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
     @Override
@@ -91,6 +86,12 @@ public class DeploymentStreamProcessor implements StreamProcessor
         logStreamPartitionId = sourceStream.getPartitionId();
 
         targetStream = context.getTargetStream();
+    }
+
+    @Override
+    public void onClose()
+    {
+        index.close();
     }
 
     public static MetadataFilter eventFilter()

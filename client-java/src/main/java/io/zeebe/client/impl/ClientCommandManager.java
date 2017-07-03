@@ -1,18 +1,15 @@
 package io.zeebe.client.impl;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.impl.cmd.AbstractCmdImpl;
 import io.zeebe.transport.ChannelManager;
 import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.actor.Actor;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 
 public class ClientCommandManager implements Actor
@@ -20,7 +17,7 @@ public class ClientCommandManager implements Actor
     protected final ManyToOneConcurrentArrayQueue<Runnable> commandQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> commandConsumer = Runnable::run;
 
-    protected final List<ClientCommandController<?>> commandControllers = new ArrayList<>();
+    protected final ClientCommandController[] commandControllers = new ClientCommandController[128];
 
     protected final ChannelManager channelManager;
     protected final TransportConnectionPool connectionPool;
@@ -38,18 +35,20 @@ public class ClientCommandManager implements Actor
     {
         int workCount = commandQueue.drain(commandConsumer);
 
-        final Iterator<ClientCommandController<?>> iterator = commandControllers.iterator();
-        while (iterator.hasNext())
+        for (int i = 0; i < commandControllers.length; i++)
         {
-            final ClientCommandController controller = iterator.next();
+            final ClientCommandController controller = commandControllers[i];
 
-            if (!controller.isClosed())
+            if (controller != null)
             {
-                workCount = controller.doWork();
-            }
-            else
-            {
-                iterator.remove();
+                if (!controller.isClosed())
+                {
+                    workCount = controller.doWork();
+                }
+                else
+                {
+                    commandControllers[i] = null;
+                }
             }
         }
 
@@ -65,7 +64,17 @@ public class ClientCommandManager implements Actor
         commandQueue.add(() ->
         {
             final ClientCommandController<R> controller = new ClientCommandController<>(channelManager, connectionPool, topologyManager, command, future);
-            commandControllers.add(controller);
+
+            for (int i = 0; i < commandControllers.length; i++)
+            {
+                if (commandControllers[i] == null)
+                {
+                    commandControllers[i] = controller;
+                    return;
+                }
+            }
+
+            future.completeExceptionally(new RuntimeException("Max num of commands reached"));
         });
 
         return future;

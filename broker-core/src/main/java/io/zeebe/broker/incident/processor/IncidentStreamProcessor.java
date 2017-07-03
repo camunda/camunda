@@ -13,9 +13,7 @@
 package io.zeebe.broker.incident.processor;
 
 import io.zeebe.broker.Constants;
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentEventType;
+import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.incident.index.IncidentIndex;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
@@ -24,11 +22,8 @@ import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
@@ -76,15 +71,15 @@ public class IncidentStreamProcessor implements StreamProcessor
     private LogStreamReader logStreamReader;
     private LogStream targetStream;
 
-    public IncidentStreamProcessor(IndexStore instanceIndexStore, IndexStore activityIndexStore, IndexStore taskIndexStore)
+    public IncidentStreamProcessor()
     {
-        this.activityInstanceIndex = new Long2LongHashIndex(activityIndexStore, Short.MAX_VALUE, 64);
-        this.failedTaskIndex = new Long2LongHashIndex(taskIndexStore, Short.MAX_VALUE, 64);
-        this.incidentIndex = new IncidentIndex(instanceIndexStore);
+        this.activityInstanceIndex = new Long2LongHashIndex(Short.MAX_VALUE, 64);
+        this.failedTaskIndex = new Long2LongHashIndex(Short.MAX_VALUE, 64);
+        this.incidentIndex = new IncidentIndex();
 
         this.indexSnapshot = new ComposedSnapshot(
-                new HashIndexSnapshotSupport<>(activityInstanceIndex, activityIndexStore),
-                new HashIndexSnapshotSupport<>(failedTaskIndex, taskIndexStore),
+                new HashIndexSnapshotSupport<>(activityInstanceIndex),
+                new HashIndexSnapshotSupport<>(failedTaskIndex),
                 incidentIndex.getSnapshotSupport());
     }
 
@@ -100,6 +95,14 @@ public class IncidentStreamProcessor implements StreamProcessor
         logStreamReader = new BufferedLogStreamReader(context.getSourceStream());
 
         targetStream = context.getTargetStream();
+    }
+
+    @Override
+    public void onClose()
+    {
+        activityInstanceIndex.close();
+        failedTaskIndex.close();
+        incidentIndex.close();
     }
 
     public static MetadataFilter eventFilter()

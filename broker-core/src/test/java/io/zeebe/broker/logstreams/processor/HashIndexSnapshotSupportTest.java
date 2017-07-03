@@ -12,40 +12,31 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import io.zeebe.hashindex.store.IndexStore;
+import org.agrona.IoUtil;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 public class HashIndexSnapshotSupportTest
 {
-    private IndexStore indexStore;
     private Long2LongHashIndex hashIndex;
     private HashIndexSnapshotSupport<Long2LongHashIndex> snapshotSupport;
 
-    @Before
-    public void init()
+    protected void initIndex(int indexSize, int blockLength)
     {
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
+        hashIndex = new Long2LongHashIndex(indexSize, blockLength);
+        snapshotSupport = new HashIndexSnapshotSupport<>(hashIndex);
     }
 
     @After
-    public void cleanup()
+    public void closeIndex()
     {
-        indexStore.close();
-    }
-
-    protected void initIndex(int indexSize, int blockLength)
-    {
-        hashIndex = new Long2LongHashIndex(indexStore, indexSize, blockLength);
-        snapshotSupport = new HashIndexSnapshotSupport<>(hashIndex, indexStore);
+        hashIndex.close();
     }
 
     @Test
@@ -115,7 +106,7 @@ public class HashIndexSnapshotSupportTest
         // note: this test uses an internal parameter for setup, which is of course not guaranteed to be
         //   used for anything.
         //   However, this is probably more focused than just testing with a "very large" index
-        final int snapshotBufferSize = HashIndexSnapshotSupport.BUFFER_SIZE;
+        final int snapshotBufferSize = IoUtil.BLOCK_SIZE;
         final int numEntries = (snapshotBufferSize / 16) + 1;
         initIndex(numEntries, numEntries);
 

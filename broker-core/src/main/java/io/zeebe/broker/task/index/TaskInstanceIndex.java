@@ -12,16 +12,13 @@
  */
 package io.zeebe.broker.task.index;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,10 +50,10 @@ public class TaskInstanceIndex
     private long key;
     private boolean isRead = false;
 
-    public TaskInstanceIndex(final IndexStore indexStore)
+    public TaskInstanceIndex()
     {
-        this.index = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
+        this.index = new Long2BytesHashIndex(Short.MAX_VALUE, 256, INDEX_VALUE_SIZE);
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
     public SnapshotSupport getSnapshotSupport()
@@ -135,6 +132,11 @@ public class TaskInstanceIndex
         {
             throw new IllegalStateException("must call wrapTaskInstanceKey() before");
         }
+    }
+
+    public void close()
+    {
+        index.close();
     }
 
 }

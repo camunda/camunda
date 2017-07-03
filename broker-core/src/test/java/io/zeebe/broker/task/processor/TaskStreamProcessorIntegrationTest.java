@@ -1,32 +1,24 @@
 package io.zeebe.broker.task.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessor;
@@ -36,10 +28,9 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.FluentMock;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.time.ClockUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
@@ -119,9 +110,8 @@ public class TaskStreamProcessorIntegrationTest
         logStream.openAsync();
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
-        final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
 
-        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, indexStore, mockTaskSubscriptionManager);
+        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
         taskInstanceStreamProcessorController = LogStreams.createStreamProcessor("task-instance", 0, taskInstanceStreamProcessor)
             .sourceStream(logStream)
             .targetStream(logStream)

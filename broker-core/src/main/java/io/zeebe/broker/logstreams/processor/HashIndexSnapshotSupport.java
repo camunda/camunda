@@ -14,30 +14,21 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import io.zeebe.hashindex.HashIndex;
-import io.zeebe.hashindex.store.IndexStore;
+import io.zeebe.hashindex.IndexSerializer;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.util.StreamUtil;
 
 public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements SnapshotSupport
 {
-    protected static final int BUFFER_SIZE = 4 * 1024;
+    private final T hashIndex;
 
-    protected final byte[] readBuffer = new byte[BUFFER_SIZE];
-    protected final ByteBuffer readBufferView = ByteBuffer.wrap(readBuffer);
+    private final IndexSerializer indexSerializer = new IndexSerializer();
 
-    protected final byte[] writeBuffer = new byte[BUFFER_SIZE];
-    protected final ByteBuffer writeBufferView = ByteBuffer.wrap(writeBuffer);
-
-    protected final T hashIndex;
-    protected final IndexStore indexStore;
-
-    public HashIndexSnapshotSupport(T hashIndex, IndexStore indexStore)
+    public HashIndexSnapshotSupport(T hashIndex)
     {
         this.hashIndex = hashIndex;
-        this.indexStore = indexStore;
+        this.indexSerializer.wrap(hashIndex);
     }
 
     public T getHashIndex()
@@ -48,56 +39,19 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     @Override
     public void writeSnapshot(OutputStream outputStream) throws Exception
     {
-        hashIndex.flush();
-
-        int read = -1;
-        int offset = 0;
-
-        do
-        {
-            readBufferView.position(0);
-            read = indexStore.read(readBufferView, offset);
-
-            if (read > 0)
-            {
-                outputStream.write(readBuffer, 0, read);
-
-                offset += read;
-            }
-        }
-        while (read > 0);
+        indexSerializer.writeToStream(outputStream);
     }
 
     @Override
     public void recoverFromSnapshot(InputStream inputStream) throws Exception
     {
-        int read = -1;
-        int offset = 0;
-
-        do
-        {
-            read = StreamUtil.read(inputStream, writeBuffer, 0);
-
-            if (read > 0)
-            {
-                writeBufferView.position(0);
-                indexStore.writeFully(writeBufferView, offset);
-
-                offset += read;
-            }
-        }
-        while (read > 0);
-
-        hashIndex.reInit();
+        indexSerializer.readFromStream(inputStream);
     }
 
     @Override
     public void reset()
     {
         hashIndex.clear();
-
-        readBufferView.clear();
-        writeBufferView.clear();
     }
 
 }

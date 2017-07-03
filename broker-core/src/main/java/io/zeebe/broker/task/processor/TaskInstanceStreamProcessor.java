@@ -4,7 +4,6 @@ import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -15,18 +14,14 @@ import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.task.index.TaskInstanceIndex;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.hashindex.store.IndexStore;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
@@ -40,7 +35,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected final CommandResponseWriter responseWriter;
     protected final SubscribedEventWriter subscribedEventWriter;
-    protected final IndexStore indexStore;
     protected final TaskSubscriptionManager taskSubscriptionManager;
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
@@ -65,14 +59,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected long eventKey = 0;
     protected long sourceEventPosition = 0;
 
-    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, IndexStore indexStore, TaskSubscriptionManager taskSubscriptionManager)
+    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, TaskSubscriptionManager taskSubscriptionManager)
     {
         this.responseWriter = responseWriter;
         this.subscribedEventWriter = subscribedEventWriter;
-        this.indexStore = indexStore;
         this.taskSubscriptionManager = taskSubscriptionManager;
 
-        taskIndex = new TaskInstanceIndex(indexStore);
+        this.taskIndex = new TaskInstanceIndex();
     }
 
     @Override
@@ -81,6 +74,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         return taskIndex.getSnapshotSupport();
     }
 
+    @Override
     public void onOpen(StreamProcessorContext context)
     {
         final LogStream sourceStream = context.getSourceStream();
@@ -88,6 +82,12 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         logStreamPartitionId = sourceStream.getPartitionId();
 
         targetStream = context.getTargetStream();
+    }
+
+    @Override
+    public void onClose()
+    {
+        taskIndex.close();
     }
 
     public static MetadataFilter eventFilter()

@@ -1,51 +1,38 @@
 package io.zeebe.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.protocol.clientapi.EventType.WORKFLOW_EVENT;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
-import io.zeebe.broker.task.data.TaskHeaders;
+import io.zeebe.broker.task.data.*;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
-import io.zeebe.broker.workflow.data.DeployedWorkflow;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEventType;
+import io.zeebe.broker.workflow.data.*;
 import io.zeebe.broker.workflow.graph.model.*;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
-import io.zeebe.broker.workflow.index.ActivityInstanceIndex;
-import io.zeebe.broker.workflow.index.PayloadCache;
-import io.zeebe.broker.workflow.index.WorkflowDeploymentCache;
-import io.zeebe.broker.workflow.index.WorkflowInstanceIndex;
+import io.zeebe.broker.workflow.index.*;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.clientapi.EventType;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -117,29 +104,24 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
-            IndexStore workflowPositionIndexStore,
-            IndexStore workflowVersionIndexStore,
-            IndexStore workflowInstanceIndexStore,
-            IndexStore activityInstanceIndexStore,
-            IndexStore payloadIndexStore,
             int deploymentCacheSize,
             int payloadCacheSize)
     {
         this.responseWriter = responseWriter;
         this.logStreamReader = new BufferedLogStreamReader();
 
-        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
+        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
 
-        this.workflowDeploymentCache = new WorkflowDeploymentCache(workflowPositionIndexStore, deploymentCacheSize, logStreamReader);
-        this.payloadCache = new PayloadCache(payloadIndexStore, payloadCacheSize, logStreamReader);
+        this.workflowDeploymentCache = new WorkflowDeploymentCache(deploymentCacheSize, logStreamReader);
+        this.payloadCache = new PayloadCache(payloadCacheSize, logStreamReader);
 
-        this.workflowInstanceIndex = new WorkflowInstanceIndex(workflowPositionIndexStore);
-        this.activityInstanceIndex = new ActivityInstanceIndex(activityInstanceIndexStore);
+        this.workflowInstanceIndex = new WorkflowInstanceIndex();
+        this.activityInstanceIndex = new ActivityInstanceIndex();
 
         this.payloadMappingProcessor = new MappingProcessor(4096);
 
         this.composedSnapshot = new ComposedSnapshot(
-                new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
+                new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex),
                 workflowInstanceIndex.getSnapshotSupport(),
                 activityInstanceIndex.getSnapshotSupport(),
                 workflowDeploymentCache.getSnapshotSupport(),
@@ -165,6 +147,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.logStreamBatchWriter = new LogStreamBatchWriterImpl(context.getTargetStream());
 
         this.targetStream = context.getTargetStream();
+    }
+
+    @Override
+    public void onClose()
+    {
+        latestWorkflowVersionIndex.close();
+        workflowInstanceIndex.close();
+        activityInstanceIndex.close();
+        workflowDeploymentCache.close();
+        payloadCache.close();
     }
 
     public static MetadataFilter eventFilter()

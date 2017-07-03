@@ -1,38 +1,27 @@
 package io.zeebe.broker.event.processor;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.*;
-import static io.zeebe.broker.system.SystemServiceNames.*;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.hashindex.store.IndexStore;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -53,7 +42,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
     protected final ServiceStartContext serviceContext;
     protected final Bytes2LongHashIndex ackIndex;
-    protected final IndexStore ackIndexStore;
 
     protected DeferredCommandContext cmdContext;
 
@@ -68,7 +56,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     public TopicSubscriptionManagementProcessor(
             ServiceName<LogStream> streamServiceName,
-            IndexStore ackIndexStore,
             CommandResponseWriter responseWriter,
             ErrorResponseWriter errorWriter,
             Supplier<SubscribedEventWriter> eventWriterFactory,
@@ -79,9 +66,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
-        this.ackIndexStore = ackIndexStore;
-        this.ackIndex = new Bytes2LongHashIndex(ackIndexStore, Short.MAX_VALUE, 256, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
-        this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex, ackIndexStore);
+        this.ackIndex = new Bytes2LongHashIndex(Short.MAX_VALUE, 256, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
+        this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex);
     }
 
     @Override
@@ -94,6 +80,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.logStreamPartitionId = sourceStream.getPartitionId();
 
         targetStream = context.getTargetStream();
+    }
+
+    @Override
+    public void onClose()
+    {
+        ackIndex.close();
     }
 
     @Override

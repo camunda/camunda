@@ -14,15 +14,9 @@ package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.*;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
-
-import java.nio.channels.FileChannel;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.*;
 
 import io.zeebe.broker.incident.IncidentStreamProcessorErrorHandler;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
@@ -33,17 +27,12 @@ import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.DeploymentStreamProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.hashindex.store.FileChannelIndexStore;
-import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
 
 public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Actor
 {
@@ -60,15 +49,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     protected DeferredCommandContext asyncContext;
     protected StreamProcessorCfg streamProcessorCfg;
     protected WorkflowCfg workflowCfg;
-    protected IndexStore workflowDeploymentIndexStore;
-    protected IndexStore workflowPositionIndexStore;
-    protected IndexStore workflowVersionIndexStore;
-    protected IndexStore workflowInstanceIndexStore;
-    protected IndexStore activityInstanceIndexStore;
-    protected IndexStore workflowInstancePayloadIndexStore;
-    protected IndexStore incidentInstanceIndex;
-    protected IndexStore activityInstanceIndex;
-    protected IndexStore incidentTaskIndex;
 
     protected ActorReference actorRef;
 
@@ -93,13 +73,11 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = deploymentStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        this.workflowDeploymentIndexStore = createIndexStore("workflow.deployment");
-
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
-        final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter, workflowDeploymentIndexStore);
+        final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter);
         final StreamProcessorService deploymentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 DEPLOYMENT_PROCESSOR_ID,
@@ -119,12 +97,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        workflowPositionIndexStore = createIndexStore("workflow.instance.position");
-        workflowVersionIndexStore = createIndexStore("workflow.instance.version");
-        workflowInstanceIndexStore = createIndexStore("workflow.instance");
-        activityInstanceIndexStore = createIndexStore("workflow.activity");
-        workflowInstancePayloadIndexStore = createIndexStore("workflow.instance.payload");
-
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
@@ -133,11 +105,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,
-                workflowPositionIndexStore,
-                workflowVersionIndexStore,
-                workflowInstanceIndexStore,
-                activityInstanceIndexStore,
-                workflowInstancePayloadIndexStore,
                 workflowCfg.deploymentCacheSize,
                 workflowCfg.payloadCacheSize);
 
@@ -161,15 +128,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<StreamProcessorController> streamProcessorServiceName = incidentStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-
-        incidentInstanceIndex = createIndexStore("incident.instance");
-        activityInstanceIndex = createIndexStore("incident.activity");
-        incidentTaskIndex = createIndexStore("incident.task");
-
-
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
-        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(incidentInstanceIndex, activityInstanceIndex, incidentTaskIndex);
+        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor();
 
         final StreamProcessorService incidentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
@@ -183,26 +144,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .dependency(SNAPSHOT_STORAGE_SERVICE, incidentStreamProcessorService.getSnapshotStorageInjector())
                 .dependency(ACTOR_SCHEDULER_SERVICE, incidentStreamProcessorService.getActorSchedulerInjector())
                 .install();
-    }
-
-    private IndexStore createIndexStore(final String indexName)
-    {
-        final IndexStore indexStore;
-
-
-        final String indexDirectory = streamProcessorCfg.directory;
-        if (indexDirectory != null && !indexDirectory.isEmpty())
-        {
-            final String indexFile = indexDirectory + indexName + ".idx";
-            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-            indexStore = new FileChannelIndexStore(indexFileChannel);
-        }
-        else
-        {
-            throw new RuntimeException("Cannot create stream processor index, no index file name provided.");
-        }
-
-        return indexStore;
     }
 
     @Override
@@ -221,8 +162,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         ctx.run(() ->
         {
             actorRef.close();
-
-            clear();
         });
     }
 
@@ -272,27 +211,4 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         return NAME;
     }
-
-    private void clear()
-    {
-        flushAndCloseIndexStore(workflowDeploymentIndexStore);
-        flushAndCloseIndexStore(workflowPositionIndexStore);
-        flushAndCloseIndexStore(workflowVersionIndexStore);
-        flushAndCloseIndexStore(workflowInstanceIndexStore);
-        flushAndCloseIndexStore(activityInstanceIndexStore);
-        flushAndCloseIndexStore(workflowInstancePayloadIndexStore);
-        flushAndCloseIndexStore(incidentInstanceIndex);
-        flushAndCloseIndexStore(activityInstanceIndex);
-        flushAndCloseIndexStore(incidentTaskIndex);
-    }
-
-    protected void flushAndCloseIndexStore(final IndexStore indexStore)
-    {
-        if (indexStore != null)
-        {
-            indexStore.flush();
-            indexStore.close();
-        }
-    }
-
 }
