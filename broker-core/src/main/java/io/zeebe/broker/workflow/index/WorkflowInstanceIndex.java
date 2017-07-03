@@ -17,11 +17,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
 
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.hashindex.Long2BytesHashIndex;
 import io.zeebe.hashindex.store.IndexStore;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Index that maps <b>workflow instance key</b> to
@@ -40,7 +40,8 @@ public class WorkflowInstanceIndex
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
+    private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
+    private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
 
     private final Long2BytesHashIndex index;
     private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
@@ -66,20 +67,13 @@ public class WorkflowInstanceIndex
 
     public void remove(long workflowInstanceKey)
     {
-        index.remove(workflowInstanceKey);
+        index.remove(workflowInstanceKey, rawBuffer);
     }
 
     public WorkflowInstanceIndex wrapWorkflowInstanceKey(long key)
     {
-        isRead = false;
-
-        final byte[] indexValue = index.get(key);
-        if (indexValue != null)
-        {
-            buffer.wrap(indexValue);
-            this.key = key;
-            isRead = true;
-        }
+        this.isRead = index.get(key, rawBuffer);
+        this.key = key;
 
         return this;
     }
