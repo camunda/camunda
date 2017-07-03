@@ -7,6 +7,7 @@ import static io.zeebe.logstreams.spi.LogStorage.*;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
@@ -153,7 +154,6 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
-
         if (nextReadAddr < 0)
         {
             // fallback: seek without index
@@ -380,10 +380,10 @@ public class BufferedLogStreamReader implements LogStreamReader
             {
                 return false;
             }
+            nextFragmentOffset = fragmentLength;
         }
 
-        final int nextFragmentLogEntryHeader = nextFragmentOffset + HEADER_LENGTH;
-        final long nextFragmentPosition = buffer.getLong(positionOffset(nextFragmentLogEntryHeader));
+        final long nextFragmentPosition = LogEntryDescriptor.getPosition(buffer, nextFragmentOffset);
 
         return canReadPosition(nextFragmentPosition);
     }
