@@ -14,13 +14,13 @@ def commitId() {
 def startElasticsearch() {
   stopElasticsearch()
   script {
-    sh 'sh ./start-es.sh'
+    sh 'sh ./.ci/scripts/start-es.sh'
   }
 }
 
 def stopElasticsearch() {
   script {
-    sh 'sh ./kill-es.sh'
+    sh 'sh ./.ci/scripts/kill-es.sh'
   }
 }
 
