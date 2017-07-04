@@ -3,12 +3,12 @@ package io.zeebe.client.event.impl;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.transport.Channel;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.state.concurrent.SharedStateMachine;
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.Logger;
 
 public abstract class EventSubscription<T extends EventSubscription<T>>
@@ -147,8 +147,13 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public CompletableFuture<T> closeAsync()
     {
+        if (getStateMachine().getCurrentState() == STATE_ABORTING)
+        {
+            return abortFuture;
+        }
+
         final CompletableFuture<T> closeFuture = new CompletableFuture<>();
-        if (stateMachine.makeStateTransitionAndDo(STATE_OPEN, STATE_CLOSING, (s) -> s.listenFor(STATE_CLOSED | STATE_ABORTED, 0, closeFuture)))
+        if (stateMachine.makeStateTransitionAndDo(STATE_OPEN | STATE_ABORTED, STATE_CLOSING, (s) -> s.listenFor(STATE_CLOSED | STATE_ABORTED, 0, closeFuture)))
         {
             return closeFuture;
         }
@@ -188,9 +193,13 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return stateMachine.makeStateTransition(STATE_SUSPENDED, STATE_OPENING);
     }
 
-    public void abortAsync()
+    private CompletableFuture<T> abortFuture;
+
+    public CompletableFuture<T> abortAsync()
     {
+        abortFuture = new CompletableFuture<>();
         stateMachine.makeStateTransition(STATE_ABORTING);
+        return abortFuture;
     }
 
     public void suspendAsync()
@@ -295,6 +304,11 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public void onAbort()
     {
         stateMachine.makeStateTransition(STATE_ABORTED);
+        if (abortFuture != null)
+        {
+            abortFuture.complete(null);
+            abortFuture = null;
+        }
     }
 
     public void onOpen()
