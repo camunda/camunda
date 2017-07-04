@@ -154,7 +154,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
         else
         {
-            throw new RuntimeException("Could not close subscription");
+            throw new RuntimeException("Could not close subscription in state: " + getStateMachine().getCurrentState());
         }
     }
 
