@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Service Container</name>
   <artifactId>zb-service-container</artifactId>
-  <version>0.1.0-alpha5</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -80,7 +80,7 @@
     <url>https://github.com/camunda-tngp/zb-service-container</url>
     <connection>scm:git:git@github.com:camunda-tngp/zb-service-container.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/zb-service-container.git</developerConnection>
-    <tag>0.1.0-alpha5</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
