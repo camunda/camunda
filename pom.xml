@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Util Root</name>
   <artifactId>zb-util-root</artifactId>
-  <version>0.1.0-alpha7</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -62,7 +62,7 @@
     <url>https://github.com/camunda-tngp/zb-util</url>
     <connection>scm:git:git@github.com:camunda-tngp/zb-util.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/zb-util.git</developerConnection>
-    <tag>0.1.0-alpha7</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
