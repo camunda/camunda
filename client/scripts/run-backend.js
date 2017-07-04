@@ -52,18 +52,23 @@ mvnCleanPackage.on('close', code => {
 
         return utils.waitForServer('http://localhost:9200')
           .then(() => {
+            console.log('Elastic search has been started!');
+            console.log('Starting backend...');
             const backendJar = utils.findFile(extractDir, '.jar');
             const config = utils.findPath(extractDir, [
               'environment',
               'environment.properties'
             ]);
+            const environmentDir = path.resolve(extractDir, 'environment');
+            const classpathSeparator = isWindows ? ';' : ':' ;
+            const classpath = environmentDir + classpathSeparator + backendJar;
 
             utils.changeFile(config, {
               regexp: /http:\/\/localhost:8080\/engine-rest/g,
               replacement: `http://localhost:${c7port}/engine-rest`
             });
 
-            runWithColor('java -jar ' + backendJar, 'BE', chalk.green);
+            runWithColor('java -cp ' + classpath + ' org.camunda.optimize.Main', 'BE', chalk.green);
 
             return utils.waitForServer('http://localhost:8090');
           });
