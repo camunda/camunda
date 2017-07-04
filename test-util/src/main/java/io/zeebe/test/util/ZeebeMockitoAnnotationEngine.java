@@ -8,7 +8,7 @@ import java.lang.reflect.Field;
 import org.mockito.Mockito;
 import org.mockito.internal.configuration.DefaultAnnotationEngine;
 
-public class TngpMockitoAnnotationEngine extends DefaultAnnotationEngine
+public class ZeebeMockitoAnnotationEngine extends DefaultAnnotationEngine
 {
 
     @Override
