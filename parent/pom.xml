@@ -4,7 +4,7 @@
   <name>Zeebe Parent</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zb-parent</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0-alpha2</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -312,7 +312,7 @@
     <url>https://github.com/camunda-tngp/zb-parent</url>
     <connection>scm:git:git@github.com:camunda-tngp/zb-parent.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/zb-parent.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>0.1.0-alpha2</tag>
   </scm>
 
 </project>
