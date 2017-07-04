@@ -6,12 +6,15 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+import io.zeebe.client.impl.Loggers;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import io.zeebe.client.event.impl.EventSubscription;
+import org.slf4j.Logger;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
+    protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     // topicName => partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
     protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> subscriptions = new HashMap<>();
@@ -45,12 +48,24 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     {
         for (final T subscription : pollableSubscriptions)
         {
-            subscription.close();
+            closeSubscription(subscription);
         }
 
         for (final T subscription : managedSubscriptions)
         {
+            closeSubscription(subscription);
+        }
+    }
+
+    protected void closeSubscription(EventSubscription<T> subscription)
+    {
+        try
+        {
             subscription.close();
+        }
+        catch (final Exception e)
+        {
+            LOGGER.error("Unable to close subscription with key: " + subscription.getSubscriberKey(), e);
         }
     }
 

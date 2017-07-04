@@ -171,13 +171,7 @@ public class TopicSubscriptionImpl
 
     protected void logEventHandlingError(Exception e, TopicEventImpl event, String resolution)
     {
-        LOGGER.error("Topic subscription " + name + ": Unhandled exception during handling of event " +
-                formatEvent(event) + ". " + resolution, e);
-    }
-
-    protected String formatEvent(TopicEventImpl event)
-    {
-        return String.format("[position=%s, key=%s, type=%s, content=%s]", event.getEventPosition(), event.getEventKey(), event.getEventType(), event.getJson());
+        LOGGER.error("Topic subscription " + name + ": Unhandled exception during handling of event " + event + ". " + resolution, e);
     }
 
     @Override
