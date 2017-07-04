@@ -23,6 +23,9 @@
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
+    <!-- zb-build-tools -->
+    <version.build-tools>0.1.0-SNAPSHOT</version.build-tools>
+
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.6</version.agrona>
     <version.junit>4.12</version.junit>
@@ -143,10 +146,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <modules>
-    <module>build-tools</module>
-  </modules>
-
   <build>
     <pluginManagement>
       <plugins>
@@ -171,7 +170,7 @@
             <dependency>
               <groupId>io.zeebe</groupId>
               <artifactId>zb-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>${version.build-tools}</version>
             </dependency>
           </dependencies>
           <configuration>
