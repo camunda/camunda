@@ -78,8 +78,8 @@ mavenJob(jobName) {
       overrideBuildParameters true
 
       parameters {
-        stringParam('RELEASE_VERSION', '0.0.1', 'Version to release')
-        stringParam('DEVELOPMENT_VERSION', '0.0.2-SNAPSHOT', 'Next development version')
+        stringParam('RELEASE_VERSION', '0.1.0', 'Version to release')
+        stringParam('DEVELOPMENT_VERSION', '0.2.0-SNAPSHOT', 'Next development version')
       }
 
       preBuildSteps {
