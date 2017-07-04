@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Msgpack Json Path Parent</name>
   <artifactId>zb-msgpack-json-path-parent</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0-alpha4</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -82,6 +82,6 @@
     <url>https://github.com/camunda-tngp/zb-msgpack-json-path</url>
     <connection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>0.1.0-alpha4</tag>
   </scm>
 </project>
