@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Logstreams</name>
   <artifactId>zb-logstreams</artifactId>
-  <version>0.1.0-alpha6</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -100,7 +100,7 @@
     <url>https://github.com/camunda-tngp/zb-logstreams</url>
     <connection>scm:git:git@github.com:camunda-tngp/zb-logstreams.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/zb-logstreams.git</developerConnection>
-    <tag>0.1.0-alpha6</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
