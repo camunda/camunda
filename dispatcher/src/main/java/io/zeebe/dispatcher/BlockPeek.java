@@ -3,7 +3,9 @@ package io.zeebe.dispatcher;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
@@ -12,7 +14,7 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 /**
  * Represents a block of fragments to read from.
  */
-public class BlockPeek
+public class BlockPeek implements Iterable<DirectBuffer>
 {
     protected ByteBuffer byteBuffer;
     protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
@@ -25,6 +27,8 @@ public class BlockPeek
 
     protected int newPartitionId;
     protected int newPartitionOffset;
+
+    protected DataFrameIterator iterator = new DataFrameIterator();
 
     public void setBlock(
             final ByteBuffer byteBuffer,
@@ -123,5 +127,46 @@ public class BlockPeek
     {
         return position(newPartitionId, newPartitionOffset);
     }
+
+    @Override
+    public Iterator<DirectBuffer> iterator()
+    {
+        iterator.reset();
+        return iterator;
+    }
+
+    protected class DataFrameIterator implements Iterator<DirectBuffer>
+    {
+
+        protected int iterationOffset;
+        protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+
+        public void reset()
+        {
+            iterationOffset = 0;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterationOffset < blockLength;
+        }
+
+        @Override
+        public DirectBuffer next()
+        {
+            final int dataFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(iterationOffset));
+            final int messageOffset = DataFrameDescriptor.messageOffset(iterationOffset);
+
+            buffer.wrap(bufferView, messageOffset, dataFragmentLength);
+
+            iterationOffset += DataFrameDescriptor.alignedLength(dataFragmentLength);
+
+            return buffer;
+        }
+
+
+    }
+
 
 }

@@ -434,7 +434,7 @@ public class Dispatcher implements AutoCloseable
 
     protected void ensureUniqueSubscriptionName(String subscriptionName)
     {
-        if (getSubscriptionByName(subscriptionName) != null)
+        if (findSubscriptionByName(subscriptionName) != null)
         {
             throw new IllegalStateException("subscription with name '" + subscriptionName + "' already exists");
         }
@@ -512,9 +512,24 @@ public class Dispatcher implements AutoCloseable
     /**
      * Returns the subscription with the given name.
      *
-     * @return the subscription or <code>null</code> if not exist
+     * @return the subscription
+     * @throws exception if no such subscription is opened
      */
     public Subscription getSubscriptionByName(String subscriptionName)
+    {
+        final Subscription subscription = findSubscriptionByName(subscriptionName);
+
+        if (subscription == null)
+        {
+            throw new RuntimeException("Subscription with name " + subscriptionName + " not registered");
+        }
+        else
+        {
+            return subscription;
+        }
+    }
+
+    protected Subscription findSubscriptionByName(String subscriptionName)
     {
         Subscription subscription = null;
 

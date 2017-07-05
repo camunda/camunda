@@ -1,10 +1,10 @@
 package io.zeebe.dispatcher;
 
-import static org.agrona.BitUtil.align;
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -14,14 +14,15 @@ import java.nio.charset.Charset;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
-import io.zeebe.dispatcher.impl.DispatcherContext;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import io.zeebe.dispatcher.impl.DispatcherContext;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 
 public class DispatcherPipelineModeTest
 {
@@ -104,7 +105,17 @@ public class DispatcherPipelineModeTest
         assertThat(subscription2.getName()).isEqualTo("s2");
         assertThat(subscription2.getId()).isEqualTo(1);
 
-        assertThat(dispatcher.getSubscriptionByName("nonExisting")).isNull();
+    }
+
+    @Test
+    public void shouldThrowExceptionForNonExistingSubscription()
+    {
+        // then
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Subscription with name nonExisting not registered");
+
+        // when
+        dispatcher.getSubscriptionByName("nonExisting");
     }
 
     @Test

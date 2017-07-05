@@ -228,6 +228,8 @@ public class DispatcherBuilder
             context,
             dispatcherName);
 
+        dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for conductor to do this
+
         final DispatcherConductor conductor = new DispatcherConductor(dispatcherName, context, dispatcher);
         context.setConductor(conductor);
 
