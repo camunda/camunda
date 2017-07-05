@@ -1,11 +1,11 @@
 package io.zeebe.broker.it.startup;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
@@ -30,15 +29,14 @@ import io.zeebe.client.workflow.cmd.WorkflowInstance;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.time.ClockUtil;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-@Ignore
 public class BrokerRestartTest
 {
 
@@ -367,10 +365,11 @@ public class BrokerRestartTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        final Instant now = ClockUtil.getCurrentTime();
-        ClockUtil.setCurrentTime(now.plusSeconds(60));
-
-        restartBroker();
+        restartBroker(() ->
+        {
+            final Instant now = ClockUtil.getCurrentTime();
+            ClockUtil.setCurrentTime(now.plusSeconds(60));
+        });
 
         recordingTaskHandler.clear();
 
@@ -460,11 +459,19 @@ public class BrokerRestartTest
 
     protected void restartBroker()
     {
+        restartBroker(() ->
+        { });
+    }
+
+    protected void restartBroker(Runnable onStop)
+    {
         eventRecorder.stopRecordingEvents();
         clientRule.getClient().disconnect();
+        brokerRule.stopBroker();
 
-        brokerRule.restartBroker();
+        onStop.run();
 
+        brokerRule.startBroker();
         clientRule.getClient().connect();
         eventRecorder.startRecordingEvents();
     }

@@ -12,12 +12,11 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.util.HashMap;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -35,6 +34,7 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
 
 public class TaskExpireLockStreamProcessor implements StreamProcessor
 {
@@ -48,7 +48,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     // TODO #161 - replace the index by a more efficient one
     protected HashMap<Long, ExpirationTimeBucket> index = new HashMap<>();
-    protected SnapshotSupport indexSnapshot = new SerializableWrapper<>(index);
+    protected SerializableWrapper<HashMap<Long, ExpirationTimeBucket>> indexSnapshot = new SerializableWrapper<>(index);
 
     protected DeferredCommandContext cmdQueue;
 
@@ -84,6 +84,9 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         targetStream = context.getTargetStream();
         targetLogStreamTopicName = targetStream.getTopicName();
         targetLogStreamPartitionId = targetStream.getPartitionId();
+
+        // restore index from snapshot
+        index = indexSnapshot.getObject();
     }
 
     public static MetadataFilter eventFilter()
