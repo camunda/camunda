@@ -145,16 +145,22 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
+    @SuppressWarnings("unchecked")
     public CompletableFuture<T> closeAsync()
     {
-        if (getStateMachine().getCurrentState() == STATE_ABORTING)
-        {
-            return abortFuture;
-        }
-
         final CompletableFuture<T> closeFuture = new CompletableFuture<>();
-        if (stateMachine.makeStateTransitionAndDo(STATE_OPEN | STATE_ABORTED, STATE_CLOSING, (s) -> s.listenFor(STATE_CLOSED | STATE_ABORTED, 0, closeFuture)))
+        if (stateMachine.makeStateTransitionAndDo(STATE_OPEN, STATE_CLOSING, (s) -> s.listenFor(STATE_CLOSED | STATE_ABORTED, 0, closeFuture)))
         {
+            return closeFuture;
+        }
+        else if (stateMachine.isInState(STATE_ABORTING))
+        {
+            stateMachine.listenFor(STATE_ABORTED, 0, closeFuture);
+            return closeFuture;
+        }
+        else if (stateMachine.isInState(STATE_ABORTED))
+        {
+            closeFuture.complete((T) this);
             return closeFuture;
         }
         else
@@ -193,13 +199,9 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return stateMachine.makeStateTransition(STATE_SUSPENDED, STATE_OPENING);
     }
 
-    private CompletableFuture<T> abortFuture;
-
-    public CompletableFuture<T> abortAsync()
+    public void abortAsync()
     {
-        abortFuture = new CompletableFuture<>();
         stateMachine.makeStateTransition(STATE_ABORTING);
-        return abortFuture;
     }
 
     public void suspendAsync()
@@ -304,11 +306,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public void onAbort()
     {
         stateMachine.makeStateTransition(STATE_ABORTED);
-        if (abortFuture != null)
-        {
-            abortFuture.complete(null);
-            abortFuture = null;
-        }
     }
 
     public void onOpen()
