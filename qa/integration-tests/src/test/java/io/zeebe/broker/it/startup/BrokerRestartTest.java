@@ -371,6 +371,7 @@ public class BrokerRestartTest
             ClockUtil.setCurrentTime(now.plusSeconds(60));
         });
 
+        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
         recordingTaskHandler.clear();
 
         clientRule.taskTopic().newTaskSubscription()
