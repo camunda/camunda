@@ -28,10 +28,16 @@
   <Loggers>
     <Logger name="io.zeebe" level="info">
       <AppenderRef ref="RollingFile"/>
+
+      <!-- remove to disable console logging -->
+      <AppenderRef ref="Console"/>
     </Logger>
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>
+
+      <!-- remove to disable console logging -->
+      <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
 
