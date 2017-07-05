@@ -18,9 +18,12 @@ import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.slf4j.Logger;
 
 public class ServiceContainerImpl implements Actor, ServiceContainer
 {
+    public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
+
     enum ContainerState
     {
         NEW, OPEN, CLOSING, CLOSED; // container is not reusable
@@ -44,7 +47,6 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
         LangUtil.rethrowUnchecked(t);
-        //        t.printStackTrace();
     };
 
     protected ContainerState state = ContainerState.NEW;
@@ -154,7 +156,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
         {
             if (t != null)
             {
-                t.printStackTrace();
+                LOG.error("Failed to build service", t);
             }
         });
 
@@ -209,8 +211,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
         {
             if (t != null)
             {
-                System.err.format("Failed to remove service %s:\n", serviceName);
-                t.printStackTrace();
+                LOG.error("Failed to remove service {}: {}", serviceName, t);
             }
         });
 

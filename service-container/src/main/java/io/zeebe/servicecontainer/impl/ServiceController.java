@@ -9,10 +9,13 @@ import java.util.function.Consumer;
 import io.zeebe.servicecontainer.*;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.slf4j.Logger;
 
 @SuppressWarnings("rawtypes")
 public class ServiceController
 {
+    public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
+
     /**
      * The operation currently being performed by the service controller
      */
@@ -140,8 +143,6 @@ public class ServiceController
 
     private void onThrowable(Throwable t)
     {
-        t.printStackTrace();
-
         if (operation == ServiceOperation.INSTALLING)
         {
             this.installException = t;
@@ -385,7 +386,6 @@ public class ServiceController
                         }
                         catch (Throwable t)
                         {
-                            t.printStackTrace();
                             future.completeExceptionally(t);
                         }
                     });
@@ -773,7 +773,7 @@ public class ServiceController
         {
             if (u != null)
             {
-                u.printStackTrace();
+                LOG.error("Failed to stop", u);
             }
 
             onAsyncStopCompleted();
