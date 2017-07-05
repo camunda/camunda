@@ -1,6 +1,5 @@
 package io.zeebe.client.task.impl.subscription;
 
-import org.agrona.concurrent.AgentRunner;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
 import io.zeebe.client.event.impl.*;
@@ -14,7 +13,7 @@ import io.zeebe.transport.Channel;
 import io.zeebe.transport.TransportChannelListener;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.concurrent.AgentRunner;
 
 public class SubscriptionManager implements TransportChannelListener
 {
