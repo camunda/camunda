@@ -12,15 +12,15 @@ def commitId() {
 }
 
 def startElasticsearch() {
-  stopElasticsearch()
+  stopAllOptimizeComponents()
   script {
     sh 'sh ./.ci/scripts/start-es.sh'
   }
 }
 
-def stopElasticsearch() {
+def stopAllOptimizeComponents() {
   script {
-    sh 'sh ./.ci/scripts/kill-es.sh'
+    sh 'sh ./.ci/scripts/kill-all-components.sh'
   }
 }
 
@@ -86,10 +86,11 @@ pipeline {
     }
     stage('IT') {
       steps {
+        stopAllOptimizeComponents()
         sh 'mvn -s settings.xml -Pit,jenkins clean'
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml verify'
-        stopElasticsearch()
+        stopAllOptimizeComponents()
       }
       post {
         always {
@@ -101,19 +102,19 @@ pipeline {
       }
 
     }
-     //stage('E2E') {
-      // steps {
-      //   sh 'sh ./start-e2e.sh'
-      // }
-      // post {
-      //   always {
-      //     junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-      //   }
-      //   failure {
-      //     archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
-      //   }
-      // }
-     // }
+    stage('E2E') {
+      steps {
+       sh 'sh ./start-e2e.sh'
+      }
+      post {
+        always {
+          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+        }
+        failure {
+          archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
+        }
+      }
+    }
     stage('Docs') {
       steps {
         sh 'mvn -s settings.xml -f ' + backendModuleName + '/pom.xml -DskipTests -Pdocs clean package'

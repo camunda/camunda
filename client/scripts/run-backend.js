@@ -12,11 +12,11 @@ const runWithColor = utils.runWithColor;
 
 const engineInitPromise = engine.init().catch(error => {
   console.error(error);
-  shell.exit(1);
+  shell.exit(0);
 });
 
 const mvnCwd = path.resolve(__dirname, '..', '..');
-const mvnCleanPackage = runWithColor('mvn clean package -Pproduction -DskipTests', 'maven', chalk.green, {
+const mvnCleanPackage = runWithColor('mvn -s settings.xml -Pproduction -DskipTests clean package', 'maven', chalk.green, {
   cwd: mvnCwd
 });
 
@@ -31,7 +31,7 @@ mvnCleanPackage.on('close', code => {
     .then(startBackend)
     .catch(error => {
       console.error(chalk.red('Start up failed', error));
-      shell.exit(1);
+      shell.exit(0);
     });
 
   function startBackend() {

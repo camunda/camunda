@@ -2,7 +2,7 @@
 echo "Starting E2E tests"
 sh ./start-selenium.sh &
 
-mvn clean package -Pproduction -DskipTests -Padd-license-key
+mvn -s settings.xml -Pproduction -DskipTests -Padd-license-key clean package
 
 RETRIES=6
 SLEEP_TIME=10
