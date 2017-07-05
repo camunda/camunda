@@ -13,7 +13,7 @@ import org.agrona.BitUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class CountersManagerService implements Service<Counters>
 {
@@ -45,7 +45,7 @@ public class CountersManagerService implements Service<Counters>
             final File countersFile = new File(countersFileName);
             countersFile.mkdirs();
 
-            LOG.info("Using {} for counters\n", countersFile.getAbsolutePath());
+            LOG.info("Using {} for counters", countersFile.getAbsolutePath());
 
             IoUtil.deleteIfExists(countersFile);
 

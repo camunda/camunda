@@ -14,7 +14,7 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
 import org.agrona.LangUtil;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable
 {

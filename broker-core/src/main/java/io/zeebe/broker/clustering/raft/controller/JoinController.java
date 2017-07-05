@@ -23,7 +23,7 @@ import io.zeebe.util.state.StateMachineAgent;
 import io.zeebe.util.state.StateMachineCommand;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class JoinController
 {

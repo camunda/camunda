@@ -16,7 +16,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class LogStreamState
 {

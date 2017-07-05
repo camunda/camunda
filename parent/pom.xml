@@ -13,12 +13,12 @@
 
   <properties>
     <!-- SUB PROJECTS -->
-    <version.util>0.1.0-alpha7</version.util>
-    <version.logstreams>0.1.0-alpha6</version.logstreams>
+    <version.util>0.1.0-SNAPSHOT</version.util>
+    <version.logstreams>0.1.0-SNAPSHOT</version.logstreams>
     <version.zb-msgpack>0.1.0-alpha4</version.zb-msgpack>
-    <version.service>0.1.0-alpha5</version.service>
-    <version.dispatcher>0.1.0-alpha5</version.dispatcher>
-    <version.transport>0.1.0-alpha8</version.transport>
+    <version.service>0.1.0-SNAPSHOT</version.service>
+    <version.dispatcher>0.1.0-SNAPSHOT</version.dispatcher>
+    <version.transport>0.1.0-SNAPSHOT</version.transport>
   </properties>
 
   <dependencyManagement>

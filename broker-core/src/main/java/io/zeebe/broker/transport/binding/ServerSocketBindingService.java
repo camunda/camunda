@@ -10,7 +10,7 @@ import io.zeebe.transport.ReceiveBufferChannelHandler;
 import io.zeebe.transport.ServerSocketBinding;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transport;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ServerSocketBindingService implements Service<ServerSocketBinding>
 {

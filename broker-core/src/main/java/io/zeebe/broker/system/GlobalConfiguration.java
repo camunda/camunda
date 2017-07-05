@@ -1,11 +1,12 @@
 package io.zeebe.broker.system;
 
-import static io.zeebe.util.FileUtil.*;
+import static io.zeebe.util.FileUtil.createTempDirectory;
+import static io.zeebe.util.FileUtil.getCanonicalPath;
 
 import java.io.File;
 
 import io.zeebe.broker.Loggers;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class GlobalConfiguration extends DirectoryConfiguration
 {

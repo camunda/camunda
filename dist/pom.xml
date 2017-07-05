@@ -28,7 +28,7 @@
           <configurationDirectory>conf</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <extraJvmArguments>-Xms128m</extraJvmArguments>
+          <extraJvmArguments>-Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml</extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
           <repositoryName>lib</repositoryName>

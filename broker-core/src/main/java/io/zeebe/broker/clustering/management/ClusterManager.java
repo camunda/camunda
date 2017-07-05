@@ -46,7 +46,7 @@ import io.zeebe.transport.ChannelManager;
 import io.zeebe.transport.protocol.Protocols;
 import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.actor.Actor;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
 {

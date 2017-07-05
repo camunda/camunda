@@ -25,7 +25,7 @@ import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.time.ClockUtil;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ScheduledExecutorImpl implements Actor, ScheduledExecutor
 {

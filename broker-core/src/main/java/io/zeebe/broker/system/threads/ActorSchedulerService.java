@@ -18,7 +18,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ActorSchedulerService implements Service<ActorScheduler>
 {

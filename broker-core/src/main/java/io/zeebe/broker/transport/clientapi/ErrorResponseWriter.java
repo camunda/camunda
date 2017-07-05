@@ -16,7 +16,7 @@ import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ErrorResponseWriter implements BufferWriter
 {

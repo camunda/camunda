@@ -9,7 +9,7 @@ import io.zeebe.transport.protocol.Protocols;
 import io.zeebe.util.PooledFuture;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.state.*;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class SingleMessageController
 {

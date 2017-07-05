@@ -9,7 +9,7 @@ import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class Broker implements AutoCloseable
 {
