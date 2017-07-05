@@ -252,7 +252,6 @@ public class Long2BytesHashIndexTest
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/zb-util/issues/16")
     public void shouldNotOverwriteValue()
     {
         // given
