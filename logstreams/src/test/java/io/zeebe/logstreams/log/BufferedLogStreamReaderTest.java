@@ -12,9 +12,29 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static io.zeebe.logstreams.log.MockLogStorage.newLogEntries;
+import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
+import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
+
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.buffer.DirectBufferReader;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,20 +46,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.nio.ByteBuffer;
-import java.util.NoSuchElementException;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static io.zeebe.logstreams.log.MockLogStorage.newLogEntries;
-import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
-import static io.zeebe.util.StringUtil.getBytes;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
 
 public class BufferedLogStreamReaderTest
 {
@@ -843,8 +849,7 @@ public class BufferedLogStreamReaderTest
 
     private void fillBuffer(MutableDirectBuffer buffer, int startIdex, int endIdx)
     {
-        int offset = startIdex;
-        for (; offset < endIdx; offset += 4)
+        for (int offset = startIdex; offset < endIdx; offset += BitUtil.SIZE_OF_INT)
         {
             buffer.putInt(offset, Integer.MAX_VALUE);
         }
