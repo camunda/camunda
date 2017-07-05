@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
@@ -25,9 +26,12 @@ import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.state.*;
+import org.slf4j.Logger;
 
 public class StreamProcessorController implements Actor
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_OPEN = 1;
     protected static final int TRANSITION_CLOSE = 2;
@@ -227,7 +231,7 @@ public class StreamProcessorController implements Actor
 
     protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
     {
-        e.printStackTrace();
+        LOG.error("Stream processor failed", e);
 
         context.take(TRANSITION_FAIL);
         context.completeFutureExceptionally(e);
@@ -382,8 +386,7 @@ public class StreamProcessorController implements Actor
             }
             else
             {
-                System.err.println(String.format("The log stream processor '%s' failed to process event. It stop processing further events.", streamProcessorContext.getName()));
-                context.getFailure().printStackTrace();
+                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events. {}", streamProcessorContext.getName(), context.getFailure());
 
                 context.take(TRANSITION_FAIL);
             }
@@ -440,7 +443,7 @@ public class StreamProcessorController implements Actor
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to write snapshot", e);
 
             if (snapshotWriter != null)
             {

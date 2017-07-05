@@ -1,9 +1,11 @@
 package io.zeebe.logstreams.impl.log.fs;
 
+import io.zeebe.logstreams.impl.Loggers;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.util.FileUtil;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +18,8 @@ import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
 
 public class FsLogSegment
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     public static final short INVALID_ADDR = -1;
 
     public static final short NO_DATA = -2;
@@ -77,7 +81,7 @@ public class FsLogSegment
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to close segment", e);
             }
         }
     }
@@ -168,7 +172,7 @@ public class FsLogSegment
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to allocate", e);
         }
 
         return allocated;
@@ -199,7 +203,7 @@ public class FsLogSegment
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to write", e);
                 return -1;
             }
         }

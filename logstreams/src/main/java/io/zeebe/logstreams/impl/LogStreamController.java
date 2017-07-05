@@ -24,9 +24,12 @@ import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
+import org.slf4j.Logger;
 
 public class LogStreamController implements Actor
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     protected static final int TRANSITION_FAIL = 3;
     protected static final int TRANSITION_RECOVER = 5;
 
@@ -182,7 +185,7 @@ public class LogStreamController implements Actor
                 }
                 catch (Exception e)
                 {
-                    System.err.println("Exception while invoking " + logStreamWriteErrorListener + ".");
+                    LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
                 }
             }
 
@@ -220,7 +223,7 @@ public class LogStreamController implements Actor
                 }
                 catch (Exception e)
                 {
-                    System.err.println("Exception while invoking " + logStreamWriteErrorListener + ".");
+                    LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
                 }
             }
 

@@ -22,6 +22,7 @@ import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
+import org.slf4j.Logger;
 
 /**
  * Represents the log block index controller, which creates the log block index
@@ -29,6 +30,8 @@ import io.zeebe.util.state.WaitState;
  */
 public class LogBlockIndexController implements Actor
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     /**
      * The default deviation is 10%. That means for blocks which are filled 90%
      * a block index will be created.
@@ -216,7 +219,7 @@ public class LogBlockIndexController implements Actor
                 }
                 else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
                 {
-                    System.err.println(String.format("Can't read from illegal address: %d", currentAddress));
+                    LOG.error("Can't read from illegal address: {}", currentAddress);
                 }
                 else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
                 {
@@ -303,7 +306,7 @@ public class LogBlockIndexController implements Actor
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to create snapshot", e);
 
                 if (snapshotWriter != null)
                 {

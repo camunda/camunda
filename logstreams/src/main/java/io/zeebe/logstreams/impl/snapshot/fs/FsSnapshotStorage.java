@@ -5,11 +5,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import io.zeebe.logstreams.impl.Loggers;
 import org.agrona.LangUtil;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import org.slf4j.Logger;
 
 public class FsSnapshotStorage implements SnapshotStorage
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     protected final FsSnapshotStorageConfiguration cfg;
 
     public FsSnapshotStorage(FsSnapshotStorageConfiguration cfg)
@@ -42,7 +46,7 @@ public class FsSnapshotStorage implements SnapshotStorage
             else
             {
                 // delete snapshot file since checksum does not exist anymore
-                System.err.println(String.format("Delete snapshot %s, no checksum file exists.", snapshotFile.getAbsolutePath()));
+                LOG.error("Delete snapshot {}, no checksum file exists.", snapshotFile.getAbsolutePath());
 
                 snapshotFile.delete();
             }

@@ -1,11 +1,12 @@
 package io.zeebe.logstreams.impl.log.fs;
 
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.ReadResultProcessor;
-import io.zeebe.util.FileUtil;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
+import static io.zeebe.util.FileUtil.moveFile;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,16 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
-import static io.zeebe.util.FileUtil.moveFile;
+import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.ReadResultProcessor;
+import io.zeebe.util.FileUtil;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class FsLogStorage implements LogStorage
 {
+    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
     protected static final int STATE_CREATED = 0;
     protected static final int STATE_OPENED = 1;
     protected static final int STATE_CLOSED = 2;
@@ -338,7 +342,6 @@ public class FsLogStorage implements LogStorage
         }
         catch (IOException e)
         {
-            e.printStackTrace();
             throw new RuntimeException("Fail to check consistency", e);
         }
     }
@@ -422,7 +425,7 @@ public class FsLogStorage implements LogStorage
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to delete folder {}: {}", logPath, e);
             }
         }
 
