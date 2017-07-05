@@ -1,17 +1,20 @@
 package io.zeebe.util.state.concurrent;
 
+import io.zeebe.util.Loggers;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.slf4j.Logger;
 
 /**
  * One central state machine manager that records and dispatches events for all state machines.
  */
 public class SharedStateMachineManager<T>
 {
+    public static final Logger LOG = Loggers.STATE_MACHINE_LOGGER;
 
     protected UnsafeBuffer tempBuf = new UnsafeBuffer(new byte[BitUtil.SIZE_OF_INT]);
     protected static final int DISPATCHES_PER_ITERATION = 32;
@@ -55,7 +58,7 @@ public class SharedStateMachineManager<T>
         }
         else
         {
-            System.err.println("Could not dispatch event for state machine " + stateMachineId + ";  not registered");
+            LOG.error("Could not dispatch event for state machine {};  not registered", stateMachineId);
         }
     }
 

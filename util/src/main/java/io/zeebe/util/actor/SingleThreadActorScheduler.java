@@ -15,8 +15,13 @@ package io.zeebe.util.actor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.zeebe.util.Loggers;
+import org.slf4j.Logger;
+
 public class SingleThreadActorScheduler implements ActorScheduler
 {
+    public static final Logger LOG = Loggers.ACTOR_LOGGER;
+
     private final ActorRunner runner;
     private final Thread runnerThread;
 
@@ -53,7 +58,7 @@ public class SingleThreadActorScheduler implements ActorScheduler
         }
         catch (Exception e)
         {
-            System.err.println("Actor Runner did not exit within 5 second");
+            LOG.error("Actor Runner did not exit within 5 second");
         }
     }
 

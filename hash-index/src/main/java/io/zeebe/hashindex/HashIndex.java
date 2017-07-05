@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
+import org.slf4j.Logger;
 
 /**
  * Simple index data structure using extensible hashing.
@@ -13,11 +14,11 @@ import org.agrona.CloseHelper;
  */
 public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
-    private static final String FINALIZER_WARNING = new StringBuilder()
-            .append("WARNING: HashIndex is being garbage collected but is not closed.\n")
-            .append("This means that the object is being de-referenced but the close() method has not been called.\n")
-            .append("HashIndex allocates memory off the heap which is not reclaimed unless close() is invoked.\n")
-            .toString();
+    public static final Logger LOG = Loggers.HASH_INDEX_LOGGER;
+
+    private static final String FINALIZER_WARNING = "WARNING: HashIndex is being garbage collected but is not closed.\n" +
+            "This means that the object is being de-referenced but the close() method has not been called.\n" +
+            "HashIndex allocates memory off the heap which is not reclaimed unless close() is invoked.\n";
 
     protected final K keyHandler;
     protected final K splitKeyHandler;
@@ -79,7 +80,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     {
         if (!isClosed.get())
         {
-            System.err.println(FINALIZER_WARNING);
+            LOG.error(FINALIZER_WARNING);
         }
 
     }

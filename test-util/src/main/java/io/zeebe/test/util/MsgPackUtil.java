@@ -21,7 +21,6 @@ public class MsgPackUtil
             throw new RuntimeException(e);
         }
         final byte[] bytes = packer.toByteArray();
-//        System.out.println(ByteUtil.bytesToBinary(bytes));
         return new UnsafeBuffer(bytes);
     }
 

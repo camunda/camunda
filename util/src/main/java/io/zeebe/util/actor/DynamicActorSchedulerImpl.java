@@ -8,8 +8,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.zeebe.util.Loggers;
+import org.slf4j.Logger;
+
 public class DynamicActorSchedulerImpl implements ActorScheduler
 {
+    public static final Logger LOG = Loggers.ACTOR_LOGGER;
+
     private final ExecutorService executorService;
     private final Thread schedulerThread;
 
@@ -67,7 +72,7 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
         }
         catch (Exception e)
         {
-            System.err.println("Actor Scheduler did not exit within 1 second");
+            LOG.error("Actor Scheduler did not exit within 1 second");
         }
 
         try
@@ -76,7 +81,7 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
         }
         catch (Exception e)
         {
-            System.err.println("Actor Runners did not exit within 10 seconds");
+            LOG.error("Actor Runners did not exit within 10 seconds");
         }
     }
 
