@@ -12,9 +12,10 @@
  */
 package io.zeebe.broker.it.subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -25,17 +26,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler.RecordedEvent;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.PollableTopicSubscription;
-import io.zeebe.client.event.TopicEvent;
-import io.zeebe.client.event.TopicEventHandler;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.*;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -44,8 +41,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TopicSubscriptionTest
 {
@@ -111,7 +106,7 @@ public class TopicSubscriptionTest
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
@@ -137,7 +132,7 @@ public class TopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
@@ -170,7 +165,7 @@ public class TopicSubscriptionTest
 
         // then
 
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
 
         assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
@@ -195,7 +190,7 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         final List<RecordedEvent> recordedTaskEvents = recordingHandler.getRecordedEvents().stream()
                 .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
@@ -212,7 +207,7 @@ public class TopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> subscription2Handler.numRecordedEvents() > 0);
+        waitUntil(() -> subscription2Handler.numRecordedEvents() > 0);
 
         // only the second event is pushed to the second subscription
         final RecordedEvent firstEvent = subscription2Handler.getRecordedEvents().get(0);
@@ -238,7 +233,7 @@ public class TopicSubscriptionTest
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         // the events are nevertheless received, although they have a lower position
         assertThat(recordingHandler.numRecordedTaskEvents() == 2);
@@ -280,13 +275,14 @@ public class TopicSubscriptionTest
                                                              .name(SUBSCRIPTION_NAME)
                                                              .open();
 
-
-
             clientRule.taskTopic().create()
                       .addHeader("key", "value")
                       .payload("{}")
                       .taskType("foo")
                       .execute();
+
+            final int eventCount = i;
+            waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= eventCount);
 
             // when
             subscription.close();
@@ -294,6 +290,8 @@ public class TopicSubscriptionTest
             // then
             assertThat(subscription.isOpen()).isFalse();
         }
+
+        assertThat(recordingHandler.numRecordedEvents()).isGreaterThan(100);
     }
 
     @Test
@@ -321,8 +319,8 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
-        TestUtil.waitUntil(() -> secondEventHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> secondEventHandler.numRecordedTaskEvents() == 2);
 
         // then
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
@@ -356,7 +354,7 @@ public class TopicSubscriptionTest
         Thread.sleep(handlingIntervalLength.toMillis() * numExpectedEvents);
 
         // at least CREATE and CREATED of the task, but we may have already handled a third event (e.g. raft)
-        TestUtil.waitUntil(() -> handler.numInvocations() >= numExpectedEvents);
+        waitUntil(() -> handler.numInvocations() >= numExpectedEvents);
         assertThat(handler.hasDetectedParallelism()).isFalse();
     }
 
@@ -406,7 +404,7 @@ public class TopicSubscriptionTest
             .open();
 
         // that was received by the subscription
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         subscription.close();
 
@@ -433,7 +431,7 @@ public class TopicSubscriptionTest
                 .open();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() > 0);
+        waitUntil(() -> recordingHandler.numRecordedEvents() > 0);
 
         final long firstEventPositionAfterReopen = recordingHandler.getRecordedEvents()
                 .get(0)
@@ -603,8 +601,8 @@ public class TopicSubscriptionTest
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
-        TestUtil.waitUntil(() -> anotherRecordingHandler.numRecordedTaskEvents() >= 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
+        waitUntil(() -> anotherRecordingHandler.numRecordedTaskEvents() >= 2);
 
         topic0subscription.close();
         topic1Subscription.close();
@@ -656,7 +654,7 @@ public class TopicSubscriptionTest
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
         assertThat(recordingHandler.getRecordedEvents())
             .filteredOn((re) -> re.getMetadata().getEventType() == TopicEventType.UNKNOWN)
@@ -689,7 +687,7 @@ public class TopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() > subscriptionCapacity);
+        waitUntil(() -> recordingHandler.numRecordedEvents() > subscriptionCapacity);
     }
 
 }
