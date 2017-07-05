@@ -1,12 +1,11 @@
 package io.zeebe.broker.clustering.raft.state;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 
 import java.nio.ByteBuffer;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
@@ -15,9 +14,16 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.logging.log4j.Logger;
 
 public class LogStreamState
 {
+
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
+
     protected final LogStream stream;
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
@@ -149,8 +155,8 @@ public class LogStreamState
 
         if (addr >= 0)
         {
+            LOG.debug("truncate log storage at address: {}", addr);
             logStorage.truncate(addr);
-            System.out.println("truncate log storage: " + addr);
         }
         else
         {

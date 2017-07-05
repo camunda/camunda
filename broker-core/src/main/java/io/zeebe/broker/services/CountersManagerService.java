@@ -3,6 +3,7 @@ package io.zeebe.broker.services;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.metrics.cfg.MetricsCfg;
 import io.zeebe.servicecontainer.Service;
@@ -12,9 +13,12 @@ import org.agrona.BitUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersManager;
+import org.apache.logging.log4j.Logger;
 
 public class CountersManagerService implements Service<Counters>
 {
+    public static final Logger LOG = Loggers.SERVICES_LOGGER;
+
     public static final int COUNTERS_FILE_SIZE = 1024 * 1024 * 4;
     public static final int LABELS_BUFFER_OFFSET = 0;
     public static final int LABELS_BUFFER_SIZE = (int) (COUNTERS_FILE_SIZE * 0.75);
@@ -41,7 +45,7 @@ public class CountersManagerService implements Service<Counters>
             final File countersFile = new File(countersFileName);
             countersFile.mkdirs();
 
-            System.out.format("Using %s for counters.\n", countersFile.getAbsolutePath());
+            LOG.info("Using {} for counters\n", countersFile.getAbsolutePath());
 
             IoUtil.deleteIfExists(countersFile);
 
@@ -63,7 +67,7 @@ public class CountersManagerService implements Service<Counters>
         {
             countersManager.forEach((id, label) ->
             {
-                System.err.format("Freeing counter %s \n", label);
+                LOG.error("Freeing counter {}", label);
                 countersManager.free(id);
 
             });

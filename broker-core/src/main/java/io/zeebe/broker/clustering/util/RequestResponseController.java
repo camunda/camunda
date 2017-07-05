@@ -2,6 +2,7 @@ package io.zeebe.broker.clustering.util;
 
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import io.zeebe.transport.Channel;
@@ -20,9 +21,12 @@ import io.zeebe.util.state.StateMachineAgent;
 import io.zeebe.util.state.StateMachineCommand;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
+import org.apache.logging.log4j.Logger;
 
 public class RequestResponseController
 {
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_FAILED = 2;
@@ -271,7 +275,8 @@ public class RequestResponseController
         @Override
         public void onFailure(RequestResponseContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to open channel", e);
+
             context.take(TRANSITION_FAILED);
         }
     }
@@ -308,7 +313,8 @@ public class RequestResponseController
         @Override
         public void onFailure(RequestResponseContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to open request", e);
+
             context.take(TRANSITION_FAILED);
         }
     }
@@ -333,7 +339,8 @@ public class RequestResponseController
         @Override
         public void onFailure(RequestResponseContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to send request", e);
+
             context.take(TRANSITION_FAILED);
         }
     }
@@ -358,7 +365,8 @@ public class RequestResponseController
         @Override
         public void onFailure(RequestResponseContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to poll request", e);
+
             context.take(TRANSITION_FAILED);
         }
     }

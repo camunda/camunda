@@ -19,14 +19,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.time.ClockUtil;
+import org.apache.logging.log4j.Logger;
 
 public class ScheduledExecutorImpl implements Actor, ScheduledExecutor
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     protected static final String NAME = "scheduled-executor";
 
     protected final List<ScheduledCommandImpl> scheduledCommands = new ArrayList<>();
@@ -136,8 +140,7 @@ public class ScheduledExecutorImpl implements Actor, ScheduledExecutor
             }
             catch (Exception e)
             {
-                System.err.println("Failed to execute scheduled command.");
-                e.printStackTrace();
+                LOG.error("Failed to execute scheduled command", e);
             }
         }
 

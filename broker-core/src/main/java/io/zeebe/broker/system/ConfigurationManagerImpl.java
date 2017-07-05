@@ -5,12 +5,16 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.util.ReflectUtil;
 
 import com.moandjiezana.toml.Toml;
+import org.apache.logging.log4j.Logger;
 
 public class ConfigurationManagerImpl implements ConfigurationManager
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     protected Toml toml;
     protected GlobalConfiguration globalConfiguration;
 
@@ -23,7 +27,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         else
         {
             final File file = new File(filePath);
-            System.out.println("Using config file " + file.getAbsolutePath());
+            LOG.info("Using config file " + file.getAbsolutePath());
             toml = new Toml().read(file);
         }
 
@@ -39,7 +43,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         }
         else
         {
-            System.out.println("Using provided configuration stream");
+            LOG.info("Using provided configuration stream");
             toml = new Toml().read(configStream);
         }
 
@@ -49,7 +53,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
 
     public void initDefault()
     {
-        System.out.println("No configuration provided, using default configuration.");
+        LOG.info("No configuration provided, using default configuration.");
         toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("zeebe.default.cfg.toml"));
     }
 

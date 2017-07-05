@@ -1,5 +1,6 @@
 package io.zeebe.broker.transport.binding;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -9,9 +10,12 @@ import io.zeebe.transport.ReceiveBufferChannelHandler;
 import io.zeebe.transport.ServerSocketBinding;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transport;
+import org.apache.logging.log4j.Logger;
 
 public class ServerSocketBindingService implements Service<ServerSocketBinding>
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final Injector<Transport> transportInjector = new Injector<>();
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
 
@@ -38,7 +42,7 @@ public class ServerSocketBindingService implements Service<ServerSocketBinding>
             .thenAccept((binding) ->
             {
                 serverSocketBinding = binding;
-                System.out.format("Bound %s to %s.\n", bindingName, bindAddress);
+                LOG.info("Bound {} to {}", bindingName, bindAddress);
             }));
     }
 

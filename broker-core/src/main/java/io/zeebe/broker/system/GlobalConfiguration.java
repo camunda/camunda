@@ -4,8 +4,13 @@ import static io.zeebe.util.FileUtil.*;
 
 import java.io.File;
 
+import io.zeebe.broker.Loggers;
+import org.apache.logging.log4j.Logger;
+
 public class GlobalConfiguration extends DirectoryConfiguration
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     public static final String GLOBAL_DIRECTORY_DEFAULT = "./data";
     public static final String GLOBAL_DIRECTORY_TEMP = "zeebe-data-";
 
@@ -33,7 +38,7 @@ public class GlobalConfiguration extends DirectoryConfiguration
 
         directory = getCanonicalPath(directory);
 
-        System.out.println(String.format("Using directory: %s", directory));
+        LOG.info("Using data directory: {}", directory);
     }
 
     public boolean isTempDirectory()

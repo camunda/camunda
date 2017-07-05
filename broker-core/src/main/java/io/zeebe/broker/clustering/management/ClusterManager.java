@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import io.zeebe.broker.clustering.channel.ClientChannelManagerService;
@@ -45,9 +46,12 @@ import io.zeebe.transport.ChannelManager;
 import io.zeebe.transport.protocol.Protocols;
 import io.zeebe.transport.requestresponse.client.TransportConnectionPool;
 import io.zeebe.util.actor.Actor;
+import org.apache.logging.log4j.Logger;
 
 public class ClusterManager implements Actor
 {
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     private final ClusterManagerContext context;
     private final ServiceContainer serviceContainer;
 
@@ -102,7 +106,7 @@ public class ClusterManager implements Actor
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                LOG.error("Unable to create directory {}: {}", dir, e);
             }
         }
 

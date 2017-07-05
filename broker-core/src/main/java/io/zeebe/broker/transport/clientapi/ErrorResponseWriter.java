@@ -5,6 +5,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 
 import java.nio.charset.StandardCharsets;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -15,9 +16,12 @@ import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
+import org.apache.logging.log4j.Logger;
 
 public class ErrorResponseWriter implements BufferWriter
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
 
@@ -113,12 +117,12 @@ public class ErrorResponseWriter implements BufferWriter
 
         if (!isWritten)
         {
-            final  String failureMessage = String.format("Failed to write error response. Error code: '%s', error message: '%s'",
-                    errorCode.name(),
-                    new String(errorMessage, StandardCharsets.UTF_8));
-
-            System.err.println(failureMessage);
+            LOG.error("Failed to write error response. Error code: '{}', error message: '{}'",
+                errorCode.name(),
+                new String(errorMessage, StandardCharsets.UTF_8)
+            );
         }
+
         return isWritten;
     }
 

@@ -9,9 +9,12 @@ import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
+import org.apache.logging.log4j.Logger;
 
 public class Broker implements AutoCloseable
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     protected final SystemContext brokerContext;
 
     public Broker(String configFileLocation)
@@ -42,7 +45,8 @@ public class Broker implements AutoCloseable
     public void close()
     {
         brokerContext.close();
-        System.out.println("Broker closed.");
+
+        LOG.info("Broker closed");
     }
 
     public SystemContext getBrokerContext()

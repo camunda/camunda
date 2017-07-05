@@ -2,6 +2,7 @@ package io.zeebe.broker.clustering.raft.controller;
 
 import static io.zeebe.protocol.clientapi.EventType.*;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
@@ -18,9 +19,12 @@ import io.zeebe.util.state.StateMachineAgent;
 import io.zeebe.util.state.StateMachineCommand;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
+import org.apache.logging.log4j.Logger;
 
 public class AppendController
 {
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_CLOSE = 2;
@@ -244,7 +248,8 @@ public class AppendController
                 logStreamController.removeFailureListener(listener);
             }
 
-            e.printStackTrace();
+            LOG.error("Failed to write state", e);
+
             context.take(TRANSITION_FAIL);
         }
     }

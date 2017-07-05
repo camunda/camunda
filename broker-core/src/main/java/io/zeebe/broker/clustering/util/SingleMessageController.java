@@ -1,5 +1,6 @@
 package io.zeebe.broker.clustering.util;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.Channel;
 import io.zeebe.transport.ChannelManager;
@@ -7,16 +8,13 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.protocol.Protocols;
 import io.zeebe.util.PooledFuture;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.state.SimpleStateMachineContext;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.StateMachineAgent;
-import io.zeebe.util.state.StateMachineCommand;
-import io.zeebe.util.state.TransitionState;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.state.*;
+import org.apache.logging.log4j.Logger;
 
 public class SingleMessageController
 {
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_FAILED = 2;
@@ -184,7 +182,8 @@ public class SingleMessageController
         @Override
         public void onFailure(SingleMessageContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to open channel", e);
+
             context.take(TRANSITION_FAILED);
         }
     }
@@ -220,7 +219,8 @@ public class SingleMessageController
         @Override
         public void onFailure(SingleMessageContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to send message", e);
+
             context.take(TRANSITION_FAILED);
         }
     }

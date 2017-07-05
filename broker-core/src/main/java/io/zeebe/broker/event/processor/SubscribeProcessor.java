@@ -165,7 +165,6 @@ public class SubscribeProcessor implements EventProcessor
                 }
                 catch (CancellationException | ExecutionException e)
                 {
-                    e.printStackTrace();
                     final String errorMessage = e.getMessage();
 
                     failedRequestState.wrapError(errorMessage);

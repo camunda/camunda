@@ -9,13 +9,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
 import org.agrona.LangUtil;
+import org.apache.logging.log4j.Logger;
 
 public class SystemContext implements AutoCloseable
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     protected final ServiceContainer serviceContainer;
 
     protected final List<Component> components = new ArrayList<>();
@@ -79,8 +83,7 @@ public class SystemContext implements AutoCloseable
         }
         catch (Exception e)
         {
-            System.err.format("Could not start broker: %s\n", e.getMessage());
-//            e.printStackTrace();
+            LOG.error("Could not start broker", e);
             close();
             LangUtil.rethrowUnchecked(e);
         }
@@ -89,7 +92,7 @@ public class SystemContext implements AutoCloseable
 
     public void close()
     {
-        System.out.println("Closing...");
+        LOG.info("Closing...");
 
         try
         {
@@ -97,12 +100,11 @@ public class SystemContext implements AutoCloseable
         }
         catch (TimeoutException e)
         {
-            System.err.println("Failed to close broker within 10 seconds.");
+            LOG.error("Failed to close broker within 10 seconds", e);
         }
         catch (ExecutionException | InterruptedException e)
         {
-            System.err.println("Exception while closing broker:");
-            e.printStackTrace();
+            LOG.error("Exception while closing broker", e);
         }
         finally
         {
@@ -116,8 +118,7 @@ public class SystemContext implements AutoCloseable
                 }
                 catch (IOException e)
                 {
-                    System.err.println("Exception while deleting temp folder:");
-                    e.printStackTrace();
+                    LOG.error("Exception while deleting temp folder", e);
                 }
             }
         }

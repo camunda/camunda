@@ -6,6 +6,7 @@ import static io.zeebe.clustering.gossip.RaftMembershipState.FOLLOWER;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 import io.zeebe.broker.clustering.raft.Configuration;
 import io.zeebe.broker.clustering.raft.Member;
@@ -22,9 +23,12 @@ import io.zeebe.util.state.StateMachineAgent;
 import io.zeebe.util.state.StateMachineCommand;
 import io.zeebe.util.state.TransitionState;
 import io.zeebe.util.state.WaitState;
+import org.apache.logging.log4j.Logger;
 
 public class JoinController
 {
+    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_CLOSE = 2;
@@ -221,7 +225,7 @@ public class JoinController
         @Override
         public void onFailure(JoinContext context, Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to open request", e);
 
             context.take(TRANSITION_FAIL);
         }

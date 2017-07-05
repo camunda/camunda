@@ -1,5 +1,6 @@
 package io.zeebe.broker.transport.clientapi;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -7,9 +8,12 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerSocketBinding;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transport;
+import org.apache.logging.log4j.Logger;
 
 public class ClientApiSocketBindingService implements Service<ServerSocketBinding>
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final Injector<Transport> transportInjector = new Injector<>();
     protected final Injector<ClientApiMessageHandler> messageHandlerInjector = new Injector<>();
 
@@ -37,7 +41,7 @@ public class ClientApiSocketBindingService implements Service<ServerSocketBindin
             .thenAccept((binding) ->
             {
                 serverSocketBinding = binding;
-                System.out.format("Bound %s to %s.\n", bindingName, bindAddress);
+                LOG.info("Bound {} to {}", bindingName, bindAddress);
             }));
     }
 

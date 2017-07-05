@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.BusySpinIdleStrategy;
@@ -17,9 +18,12 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.apache.logging.log4j.Logger;
 
 public class ActorSchedulerService implements Service<ActorScheduler>
 {
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     static int maxThreadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
 
     protected final int availableThreads;
@@ -39,8 +43,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
 
         if (numberOfThreads > maxThreadCount)
         {
-            System.err.println("WARNING: configured thread count (" + numberOfThreads + ") is larger than maxThreadCount " +
-                    maxThreadCount + "). Falling back max thread count.");
+            LOG.warn("WARNING: configured thread count {} is larger than maxThreadCount {}. Falling back max thread count.", numberOfThreads, maxThreadCount);
             numberOfThreads = maxThreadCount;
         }
         else if (numberOfThreads < 1)
@@ -77,7 +80,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Unable to stop actor scheduler", e);
         }
     }
 
