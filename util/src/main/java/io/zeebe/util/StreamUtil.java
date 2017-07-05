@@ -3,13 +3,7 @@ package io.zeebe.util;
 import static io.zeebe.util.StringUtil.fromBytes;
 import static io.zeebe.util.StringUtil.getBytes;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,7 +15,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class StreamUtil
 {
     protected static final int DEFAULT_BUFFER_SIZE = 4 * 1024;
-    protected static final byte[] DEFAULT_STREAM_BUFFER = new byte[DEFAULT_BUFFER_SIZE];
 
     public static MessageDigest getDigest(final String algorithm)
     {
@@ -42,10 +35,12 @@ public class StreamUtil
 
     public static MessageDigest updateDigest(final MessageDigest messageDigest, final InputStream data) throws IOException
     {
+        final byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+
         int n;
-        while ((n = data.read(DEFAULT_STREAM_BUFFER)) > -1)
+        while ((n = data.read(buffer)) > -1)
         {
-            messageDigest.update(DEFAULT_STREAM_BUFFER, 0, n);
+            messageDigest.update(buffer, 0, n);
         }
         return messageDigest;
     }
@@ -66,11 +61,13 @@ public class StreamUtil
 
     public static int copy(final InputStream input, final OutputStream output) throws IOException
     {
+        final byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+
         int count = 0;
         int n;
-        while ((n = input.read(DEFAULT_STREAM_BUFFER)) > -1)
+        while ((n = input.read(buffer)) > -1)
         {
-            output.write(DEFAULT_STREAM_BUFFER, 0, n);
+            output.write(buffer, 0, n);
             count += n;
         }
         return count;
