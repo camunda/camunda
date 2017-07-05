@@ -1,10 +1,10 @@
 package io.zeebe.broker.it.task;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskRetries;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -158,8 +158,7 @@ public class TaskSubscriptionTest
         // when
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
         {
-            task.setPayload("{\"a\":3}");
-            task.complete();
+            task.complete("{\"a\":3}");
         });
 
         topicClient.newTaskSubscription()

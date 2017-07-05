@@ -97,6 +97,13 @@ public class TaskImpl implements Task
         state = STATE_COMPLETED;
     }
 
+    @Override
+    public void complete(String newPayload)
+    {
+        setPayload(newPayload);
+        complete();
+    }
+
     public void fail(Exception e)
     {
         tasksClient.fail()
