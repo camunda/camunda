@@ -34,7 +34,7 @@ public class TaskSubscriptionThroughputTest
     {
         final Properties properties = System.getProperties();
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
-        properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "8");
+        properties.putIfAbsent(CLIENT_EXECUTION_THREADS, "8");
         properties.putIfAbsent(CLIENT_MAXCONNECTIONS, "16");
         ClientProperties.setDefaults(properties);
         setDefaultProperties(properties);

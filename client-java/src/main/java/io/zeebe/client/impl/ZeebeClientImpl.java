@@ -35,7 +35,8 @@ public class ZeebeClientImpl implements ZeebeClient
     protected final TransportConnectionPool connectionPool;
     protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
-    protected ActorScheduler transportActorScheduler;
+
+    protected ActorScheduler actorScheduler;
 
     protected final ObjectMapper objectMapper;
 
@@ -62,13 +63,14 @@ public class ZeebeClientImpl implements ZeebeClient
         final int maxConnections = Integer.parseInt(properties.getProperty(CLIENT_MAXCONNECTIONS));
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
+        final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_EXECUTION_THREADS));
 
-        this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        this.actorScheduler = ActorSchedulerBuilder.createDefaultScheduler(numExecutionThreads);
 
         final TransportBuilder transportBuilder = Transports.createTransport("zeebe.client")
             .sendBufferSize(1024 * 1024 * sendBufferSize)
             .maxMessageLength(1024 * 1024)
-            .actorScheduler(transportActorScheduler);
+            .actorScheduler(actorScheduler);
 
         if (properties.containsKey(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
@@ -82,7 +84,7 @@ public class ZeebeClientImpl implements ZeebeClient
             .bufferSize(1024 * 1024 * sendBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)
-            .actorScheduler(transportActorScheduler)
+            .actorScheduler(actorScheduler)
             .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
@@ -91,12 +93,12 @@ public class ZeebeClientImpl implements ZeebeClient
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
 
         final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
         subscriptionManager = new SubscriptionManager(
                 this,
+                actorScheduler,
                 numExecutionThreads,
                 autoCompleteTasks,
                 prefetchCapacity,
@@ -115,8 +117,8 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public void connect()
     {
-        commandManagerActorReference = transportActorScheduler.schedule(commandManager);
-        topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
+        commandManagerActorReference = actorScheduler.schedule(commandManager);
+        topologyManagerActorReference = actorScheduler.schedule(topologyManager);
 
         subscriptionManager.start();
 
@@ -148,8 +150,6 @@ public class ZeebeClientImpl implements ZeebeClient
     {
         disconnect();
 
-        subscriptionManager.close();
-
         try
         {
             connectionPool.close();
@@ -177,7 +177,7 @@ public class ZeebeClientImpl implements ZeebeClient
             e.printStackTrace();
         }
 
-        transportActorScheduler.close();
+        actorScheduler.close();
     }
 
     @Override

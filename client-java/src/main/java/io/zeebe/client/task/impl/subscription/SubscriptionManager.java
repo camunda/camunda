@@ -24,9 +24,7 @@ public class SubscriptionManager implements TransportChannelListener
     protected final SubscribedEventCollector taskCollector;
     protected final MsgPackMapper msgPackMapper;
     protected final ZeebeClientImpl client;
-
-    protected final ActorScheduler executorActorScheduler;
-    protected final ActorScheduler acquisitionActorScheduler;
+    protected final ActorScheduler actorScheduler;
 
     protected ActorReference[] acquisitionActorRefs;
     protected ActorReference[] executorActorRefs;
@@ -46,12 +44,14 @@ public class SubscriptionManager implements TransportChannelListener
 
     public SubscriptionManager(
             ZeebeClientImpl client,
+            final ActorScheduler actorScheduler,
             int numExecutionThreads,
             boolean autoCompleteTasks,
             int topicSubscriptionPrefetchCapacity,
             Subscription receiveBufferSubscription)
     {
         this.client = client;
+        this.actorScheduler = actorScheduler;
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
@@ -64,9 +64,6 @@ public class SubscriptionManager implements TransportChannelListener
         this.msgPackMapper = new MsgPackMapper(client.getObjectMapper());
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
-
-        this.acquisitionActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
-        this.executorActorScheduler = ActorSchedulerBuilder.createDefaultScheduler(numExecutionThreads);
     }
 
     public void start()
@@ -81,21 +78,15 @@ public class SubscriptionManager implements TransportChannelListener
         stopExecution();
     }
 
-    public void close()
-    {
-        acquisitionActorScheduler.close();
-        executorActorScheduler.close();
-    }
-
     protected void startAcquisition()
     {
         if (acquisitionActorRefs == null)
         {
             acquisitionActorRefs = new ActorReference[3];
 
-            acquisitionActorRefs[0] = acquisitionActorScheduler.schedule(taskCollector);
-            acquisitionActorRefs[1] = acquisitionActorScheduler.schedule(taskAcquisition);
-            acquisitionActorRefs[2] = acquisitionActorScheduler.schedule(topicSubscriptionAcquisition);
+            acquisitionActorRefs[0] = actorScheduler.schedule(taskCollector);
+            acquisitionActorRefs[1] = actorScheduler.schedule(taskAcquisition);
+            acquisitionActorRefs[2] = actorScheduler.schedule(topicSubscriptionAcquisition);
         }
     }
 
@@ -117,8 +108,8 @@ public class SubscriptionManager implements TransportChannelListener
 
             for (int i = 0; i < executorActorRefs.length; i += 2)
             {
-                executorActorRefs[i] = executorActorScheduler.schedule(new SubscriptionExecutor(taskSubscriptions));
-                executorActorRefs[i + 1] = executorActorScheduler.schedule(new SubscriptionExecutor(topicSubscriptions));
+                executorActorRefs[i] = actorScheduler.schedule(new SubscriptionExecutor(taskSubscriptions));
+                executorActorRefs[i + 1] = actorScheduler.schedule(new SubscriptionExecutor(topicSubscriptions));
             }
         }
     }

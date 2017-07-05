@@ -2,6 +2,7 @@ package io.zeebe.client;
 
 import java.util.Properties;
 
+import io.zeebe.client.cmd.ClientCommand;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
 
@@ -36,10 +37,10 @@ public class ClientProperties
     public static final String CLIENT_THREADINGMODE = "zeebe.client.threadingmode";
 
     /**
-     * The number of threads for invocation of {@link TaskHandler}. Setting this value to 0 effectively disables
-     * managed task execution via {@link TaskSubscription}s.
+     * The number of threads for executing {@link ClientCommand} and processing {@link TaskHandler}.
+     * Setting this value to 0 effectively disables managed task execution via {@link TaskSubscription}s.
      */
-    public static final String CLIENT_TASK_EXECUTION_THREADS = "zeebe.client.tasks.execution.threads";
+    public static final String CLIENT_EXECUTION_THREADS = "zeebe.client.execution.threads";
 
     /**
      * True or false. Determines whether the task execution runtime automatically completes
@@ -70,7 +71,7 @@ public class ClientProperties
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "64");
         properties.putIfAbsent(CLIENT_SENDBUFFER_SIZE, "16");
         properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");
-        properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "2");
+        properties.putIfAbsent(CLIENT_EXECUTION_THREADS, "2");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_AUTOCOMPLETE, "true");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
     }
