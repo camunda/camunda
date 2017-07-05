@@ -1,9 +1,13 @@
 package io.zeebe.transport.requestresponse.client;
 
+import io.zeebe.transport.Loggers;
 import io.zeebe.util.BoundedArrayQueue;
+import org.slf4j.Logger;
 
 public class RequestQueue extends BoundedArrayQueue<TransportRequest>
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     public RequestQueue(int capacity)
     {
         super(capacity);
@@ -52,7 +56,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to get response", e);
             }
         }
     }
@@ -68,7 +72,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to clsoe request", e);
             }
         }
 

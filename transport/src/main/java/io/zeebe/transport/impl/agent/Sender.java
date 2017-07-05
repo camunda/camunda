@@ -2,6 +2,7 @@ package io.zeebe.transport.impl.agent;
 
 import java.util.concurrent.CompletableFuture;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -10,9 +11,11 @@ import io.zeebe.transport.impl.ChannelImpl;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.slf4j.Logger;
 
 public class Sender implements Actor
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected final DeferredCommandContext commandContext;
 
@@ -109,7 +112,7 @@ public class Sender implements Actor
         else
         {
             // ignore control frame
-            System.err.println("Sender: Not sending scheduled control frame for channel " + channelId + ". Channel not registered.");
+            LOG.error("Sender: Not sending scheduled control frame for channel {}. Channel not registered.", channelId);
         }
     }
 

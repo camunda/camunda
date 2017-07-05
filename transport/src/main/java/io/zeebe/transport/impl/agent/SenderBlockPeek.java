@@ -1,13 +1,17 @@
 package io.zeebe.transport.impl.agent;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.impl.ChannelImpl;
+import org.slf4j.Logger;
 
 public class SenderBlockPeek extends BlockPeek
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final UnsafeBuffer sendErrorBlock = new UnsafeBuffer(0, 0);
 
     private static final int MAX_BLOCK_SIZE = 1024 * 1024;
@@ -32,7 +36,7 @@ public class SenderBlockPeek extends BlockPeek
                 if (currentChannel == null || !currentChannel.isReady())
                 {
                     markFailed();
-                    System.err.println("Channel with id " + channelId + " not open.");
+                    LOG.error("Channel with id {} not open.", channelId);
                 }
                 else
                 {

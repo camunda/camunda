@@ -6,16 +6,20 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
 import static io.zeebe.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.DirectBuffer;
 import io.zeebe.transport.Channel;
 import io.zeebe.transport.protocol.TransportHeaderDescriptor;
 import io.zeebe.transport.spi.TransportChannelHandler;
+import org.slf4j.Logger;
 
 /**
  * A client for the request/response protocol
  */
 public class RequestResponseChannelHandler implements TransportChannelHandler
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     public static final short PROTOCOL_ID = 1;
 
     protected final TransportConnectionPoolImpl connectionManager;
@@ -71,12 +75,12 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 
                 if (!isHandled)
                 {
-                    System.err.println("Unhandled error of request " + requestId + " on connection " + connectionId);
+                    LOG.error("Unhandled error of request {} on connection {}", requestId, connectionId);
                 }
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to process send error", e);
             }
 
             scanOffset += alignedLength(dataFragmentLength);
@@ -101,7 +105,7 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
         {
             if (!connection.processResponse(buffer, requestResponseHeaderOffset, requestResponseMessageLength))
             {
-                System.err.println("Dropping protocol frame on connection " + connectionId);
+                LOG.error("Dropping protocol frame on connection {}", connectionId);
             }
         }
 

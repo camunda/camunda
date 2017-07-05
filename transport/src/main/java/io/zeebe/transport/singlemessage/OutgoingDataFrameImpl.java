@@ -1,5 +1,6 @@
 package io.zeebe.transport.singlemessage;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.ClaimedFragment;
@@ -7,9 +8,11 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.protocol.Protocols;
 import io.zeebe.transport.protocol.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferWriter;
+import org.slf4j.Logger;
 
 public class OutgoingDataFrameImpl implements OutgoingDataFrame
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
     protected TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
@@ -46,7 +49,7 @@ public class OutgoingDataFrameImpl implements OutgoingDataFrame
         }
         else
         {
-            System.err.println("Could not commit data frame. Claimed send buffer fragment not open");
+            LOG.error("Could not commit data frame. Claimed send buffer fragment not open");
         }
 
         // always close after commit, the frame is no longer useful once committed

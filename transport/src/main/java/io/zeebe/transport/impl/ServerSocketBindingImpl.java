@@ -13,15 +13,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import io.zeebe.transport.Loggers;
 import io.zeebe.transport.ServerSocketBinding;
 import io.zeebe.transport.impl.agent.Conductor;
 import io.zeebe.transport.spi.TransportChannelHandler;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.state.concurrent.SharedStateMachineBlueprint;
+import org.slf4j.Logger;
 
 public class ServerSocketBindingImpl implements ServerSocketBinding
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     public static final int STATE_NEW = -1;
     public static final int STATE_OPEN = 0;
     public static final int STATE_CLOSING = 1;
@@ -184,7 +188,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
                 catch (IOException e)
                 {
                     // ignore
-                    System.err.println("Could not interrupt channel");
+                    LOG.error("Could not interrupt channel");
                 }
             }
 
@@ -212,7 +216,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to close media", e);
         }
     }
 
@@ -241,7 +245,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed close channels", e);
             return CompletableFuture.completedFuture(null);
         }
     }

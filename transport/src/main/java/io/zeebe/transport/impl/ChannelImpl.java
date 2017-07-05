@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,9 +37,11 @@ import io.zeebe.util.IntObjectBiConsumer;
 import io.zeebe.util.PooledFuture;
 import io.zeebe.util.state.concurrent.SharedStateMachine;
 import io.zeebe.util.time.ClockUtil;
+import org.slf4j.Logger;
 
 public class ChannelImpl implements Channel
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected static final int INITIAL_CONTROL_FRAME_BUFFER_SIZE = 32;
 
@@ -146,7 +149,7 @@ public class ChannelImpl implements Channel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to send control frame", e);
             interrupt();
             return false;
         }
@@ -242,7 +245,7 @@ public class ChannelImpl implements Channel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to receive", e);
         }
 
         return bytesReceived;
@@ -295,7 +298,7 @@ public class ChannelImpl implements Channel
         }
         else
         {
-            System.err.println("Received unhandled control frame of type " + msgType);
+            LOG.error("Received unhandled control frame of type {}", msgType);
             return true;
         }
     }
@@ -332,7 +335,7 @@ public class ChannelImpl implements Channel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to write", e);
             interrupt();
         }
 
@@ -369,7 +372,7 @@ public class ChannelImpl implements Channel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to close media", e);
         }
     }
 
@@ -483,7 +486,7 @@ public class ChannelImpl implements Channel
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to init connect", e);
             interrupt();
             return false;
         }
@@ -498,7 +501,7 @@ public class ChannelImpl implements Channel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to finish connect", e);
             interrupt();
         }
     }

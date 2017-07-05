@@ -3,6 +3,7 @@ package io.zeebe.transport;
 import org.agrona.DirectBuffer;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.spi.TransportChannelHandler;
+import org.slf4j.Logger;
 
 /**
  * A simple implementation of {@link TransportChannelHandler} discarding errors and
@@ -12,6 +13,8 @@ import io.zeebe.transport.spi.TransportChannelHandler;
  */
 public class ReceiveBufferChannelHandler implements TransportChannelHandler
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected Dispatcher receiveBuffer;
 
     public ReceiveBufferChannelHandler(Dispatcher receiveBuffer)
@@ -34,7 +37,7 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
     @Override
     public void onChannelSendError(Channel transportChannel, DirectBuffer buffer, int offset, int length)
     {
-        System.err.println("send error on channel " + transportChannel);
+        LOG.error("Send error on channel {}", transportChannel);
     }
 
     @Override

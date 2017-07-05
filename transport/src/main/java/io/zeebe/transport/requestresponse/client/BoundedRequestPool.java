@@ -1,12 +1,16 @@
 package io.zeebe.transport.requestresponse.client;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.slf4j.Logger;
 
 /**
  * Threadsafe request pool which can be shared by multiple threads.
  */
 public class BoundedRequestPool implements TransportRequestPool
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final ManyToManyConcurrentArrayQueue<PooledTransportRequest> pooledRequests;
     protected final PooledTransportRequest[] requests;
     protected final int capacity;
@@ -41,7 +45,7 @@ public class BoundedRequestPool implements TransportRequestPool
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.error("Failed to close request", e);
             }
 
             requests[i] = null;
