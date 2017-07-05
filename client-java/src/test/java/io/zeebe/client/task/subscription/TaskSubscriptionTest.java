@@ -576,7 +576,7 @@ public class TaskSubscriptionTest
 
         final WaitingTaskHandler handler = new WaitingTaskHandler();
         final Properties clientProperties = ((ZeebeClientImpl) client).getInitializationProperties();
-        final int numExecutionThreads = Integer.parseInt(clientProperties.getProperty(ClientProperties.CLIENT_EXECUTION_THREADS));
+        final int numExecutionThreads = Integer.parseInt(clientProperties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
         final int taskCapacity = 4;
 
         clientRule.taskTopic().newTaskSubscription()
