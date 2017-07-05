@@ -20,7 +20,8 @@ public class StateMachine<C extends StateMachineContext>
 
     private final State<C> intialState;
 
-    private State<C> currentState;
+    // thread-safe for introspection
+    private volatile State<C> currentState;
     private C context;
 
 
@@ -123,6 +124,11 @@ public class StateMachine<C extends StateMachineContext>
     public State<C> getCurrentState()
     {
         return currentState;
+    }
+
+    public boolean isInState(State<C> state)
+    {
+        return currentState == state;
     }
 
     /**
