@@ -9,12 +9,15 @@ import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset
 
 import java.io.IOException;
 
+import io.zeebe.dispatcher.Loggers;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
-
+import org.slf4j.Logger;
 
 public class LogBuffer
 {
+    public static final Logger LOG = Loggers.DISPATCHER_LOGGER;
+
     protected final AllocatedBuffer rawBuffer;
 
     protected final LogBufferPartition[] partitions;
@@ -93,7 +96,7 @@ public class LogBuffer
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.error("Failed to close buffer", e);
         }
     }
 

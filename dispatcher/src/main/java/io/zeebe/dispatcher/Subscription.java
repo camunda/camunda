@@ -25,9 +25,12 @@ import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import org.slf4j.Logger;
 
 public class Subscription
 {
+    public static final Logger LOG = Loggers.DISPATCHER_LOGGER;
+
     protected final Position position;
     protected final LogBuffer logBuffer;
     protected final Dispatcher dispatcher;
@@ -142,7 +145,7 @@ public class Subscription
                 catch (RuntimeException e)
                 {
                     // TODO!
-                    e.printStackTrace();
+                    LOG.error("Failed to handle fragment", e);
                 }
 
                 if (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT)
