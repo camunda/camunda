@@ -72,7 +72,7 @@ public class CountersManagerService implements Service<Counters>
 
             });
 
-            // this could lead to seg faults - see camunda-tngp/zeebe#208
+            // caution: if the file is used after unmap then a segmentation fault occurs
             IoUtil.unmap(mappedCountersFile);
         });
     }
