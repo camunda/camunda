@@ -105,7 +105,6 @@ public class Sender implements Actor
                         }
                         else if (channelFuture.isCancelled() || channelFuture.isCompletedExceptionally())
                         {
-                            System.out.println("Next state: discarding");
                             context.take(DISCARD);
                         }
                     }
@@ -165,7 +164,6 @@ public class Sender implements Actor
         @Override
         public int doWork(SenderContext context) throws Exception
         {
-            System.out.println("discarding stuff");
             final BlockPeek blockPeek = context.blockPeek;
 
             if (sendFailureHandler != null)
@@ -190,7 +188,6 @@ public class Sender implements Actor
     {
         stateMachineAgent.addCommand((ctx) ->
         {
-            System.out.println("Sender " + this + ": Removing channel to " + c.getRemoteAddress().getAddress());
             channelMap.remove(c.getStreamId());
         });
     }
@@ -199,7 +196,6 @@ public class Sender implements Actor
     {
         stateMachineAgent.addCommand((ctx) ->
         {
-            System.out.println("Sender " + this + ": Registering channel to " + c.getRemoteAddress().getAddress());
             channelMap.put(c.getStreamId(), c);
         });
     }

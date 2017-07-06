@@ -35,9 +35,6 @@ public class ClientRequestPool implements AutoCloseable
 
         if (request != null)
         {
-            // TODO: this must communicate request failure in a different way
-            //   otherwise the calling code cannot decide if backpressure should be applied
-            //   or something else (e.g. abort request when request writer threw exception)
             boolean requestOpened = false;
 
             try

@@ -28,14 +28,8 @@ public class ClientSendFailureHandler implements FragmentHandler
             final ClientRequestImpl pendingRequest = requestPool.getOpenRequestById(requestId);
             if (pendingRequest != null)
             {
-                System.out.println("Failing request " + requestId);
                 // TODO: noch nicht so toll; wenn, dann sollte der Sende rhier eine Nachricht übergeben können
                 pendingRequest.fail(new RuntimeException("Could not send request"));
-            }
-            else
-            {
-
-                System.out.println("Not failing request " + requestId);
             }
 
         }

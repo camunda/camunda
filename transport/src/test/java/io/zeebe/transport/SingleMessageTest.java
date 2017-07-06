@@ -118,8 +118,4 @@ public class SingleMessageTest
         }
     }
 
-
-
-    // TODO: dieser und die anderen Tests hängen manchmal; hat eventuell damit zu tun, dass Control Frames nicht richtig (zum richtigen Zeitpunkt)
-    // geschrieben werden und deshalb nicht die erwünschte Zahl der Responses eintrifft
 }
