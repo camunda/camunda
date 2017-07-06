@@ -16,9 +16,7 @@
 
 
   <Loggers>
-    <Logger name="io.zeebe" level="info">
-      <AppenderRef ref="Console"/>
-    </Logger>
+    <Logger name="io.zeebe" level="info"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>
