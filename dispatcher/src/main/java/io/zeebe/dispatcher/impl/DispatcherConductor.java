@@ -2,9 +2,9 @@ package io.zeebe.dispatcher.impl;
 
 import java.util.function.Consumer;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.util.actor.Actor;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 /**
  * The conductor performs maintenance operations on the dispatcher
@@ -49,8 +49,11 @@ public class DispatcherConductor implements Actor, Consumer<DispatcherConductorC
     {
         int workCount = cmdQueue.drain(this);
 
-        workCount += dispatcher.updatePublisherLimit();
-        workCount += dispatcher.getLogBuffer().cleanPartitions();
+        if (!dispatcher.isClosed())
+        {
+            workCount += dispatcher.updatePublisherLimit();
+            workCount += dispatcher.getLogBuffer().cleanPartitions();
+        }
 
         return workCount;
     }

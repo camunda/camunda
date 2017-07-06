@@ -1,30 +1,19 @@
 package io.zeebe.dispatcher;
 
-import static org.agrona.BitUtil.align;
 import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
 import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.agrona.BitUtil.align;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
 public class Subscription
@@ -36,6 +25,8 @@ public class Subscription
     protected final Dispatcher dispatcher;
     protected final int id;
     protected final String name;
+
+    protected volatile boolean isClosed = false;
 
     public Subscription(Position position, int id, String name, Dispatcher dispatcher)
     {
@@ -64,23 +55,26 @@ public class Subscription
     {
         int fragmentsRead = 0;
 
-        final long currentPosition = position.get();
-
-        final long limit = dispatcher.subscriberLimit(this);
-
-        if (limit > currentPosition)
+        if (!isClosed)
         {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+            final long currentPosition = position.get();
 
-            fragmentsRead = pollFragments(partition,
-                    frgHandler,
-                    partitionId,
-                    partitionOffset,
-                    maxNumOfFragments,
-                    limit,
-                    false);
+            final long limit = dispatcher.subscriberLimit(this);
+
+            if (limit > currentPosition)
+            {
+                final int partitionId = partitionId(currentPosition);
+                final int partitionOffset = partitionOffset(currentPosition);
+                final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+
+                fragmentsRead = pollFragments(partition,
+                                              frgHandler,
+                                              partitionId,
+                                              partitionOffset,
+                                              maxNumOfFragments,
+                                              limit,
+                                              false);
+            }
         }
 
         return fragmentsRead;
@@ -176,25 +170,27 @@ public class Subscription
     {
         int fragmentsRead = 0;
 
-        final long currentPosition = position.get();
-
-        final long limit = dispatcher.subscriberLimit(this);
-
-        if (limit > currentPosition)
+        if (!isClosed)
         {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
+            final long currentPosition = position.get();
 
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+            final long limit = dispatcher.subscriberLimit(this);
 
-            fragmentsRead = pollFragments(partition,
-                    frgHandler,
-                    partitionId,
-                    partitionOffset,
-                    maxNumOfFragments,
-                    limit,
-                    true);
+            if (limit > currentPosition)
+            {
+                final int partitionId = partitionId(currentPosition);
+                final int partitionOffset = partitionOffset(currentPosition);
 
+                final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+
+                fragmentsRead = pollFragments(partition,
+                                              frgHandler,
+                                              partitionId,
+                                              partitionOffset,
+                                              maxNumOfFragments,
+                                              limit,
+                                              true);
+            }
         }
 
         return fragmentsRead;
@@ -207,6 +203,8 @@ public class Subscription
 
     public CompletableFuture<Void> closeAsnyc()
     {
+        isClosed = true;
+
         final CompletableFuture<Void> future = dispatcher.closeSubscriptionAsync(this);
         future.thenRun(() -> position.close());
         return future;
@@ -233,24 +231,27 @@ public class Subscription
     {
         int bytesAvailable = 0;
 
-        final long currentPosition = position.get();
-
-        final long limit = dispatcher.subscriberLimit(this);
-
-        if (limit > currentPosition)
+        if (!isClosed)
         {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
+            final long currentPosition = position.get();
 
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+            final long limit = dispatcher.subscriberLimit(this);
 
-            bytesAvailable = peekBlock(partition,
-                    availableBlock,
-                    partitionId,
-                    partitionOffset,
-                    maxBlockSize,
-                    limit,
-                    isStreamAware);
+            if (limit > currentPosition)
+            {
+                final int partitionId = partitionId(currentPosition);
+                final int partitionOffset = partitionOffset(currentPosition);
+
+                final LogBufferPartition partition = logBuffer.getPartition(partitionId);
+
+                bytesAvailable = peekBlock(partition,
+                                           availableBlock,
+                                           partitionId,
+                                           partitionOffset,
+                                           maxBlockSize,
+                                           limit,
+                                           isStreamAware);
+            }
         }
 
         return bytesAvailable;

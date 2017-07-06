@@ -9,14 +9,14 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.DispatcherContext;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
 
 
 /**
@@ -44,7 +44,7 @@ public class Dispatcher implements AutoCloseable
 
     protected final int mode;
 
-    protected boolean closed = false;
+    protected volatile boolean isClosed = false;
 
     public Dispatcher(
             LogBuffer logBuffer,
@@ -137,40 +137,45 @@ public class Dispatcher implements AutoCloseable
      */
     public long offer(DirectBuffer msg, int start, int length, int streamId)
     {
-        final long limit = publisherLimit.getVolatile();
-
-        final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-        final int partitionOffset = partition.getTailCounterVolatile();
-        final long position = position(activePartitionId, partitionOffset);
-
         long newPosition = -1;
 
-        if (position < limit)
+        if (!isClosed)
         {
-            final int newOffset;
+            final long limit = publisherLimit.getVolatile();
 
-            if (length < maxFrameLength)
+            final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+            final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+
+            final int partitionOffset = partition.getTailCounterVolatile();
+            final long position = position(activePartitionId, partitionOffset);
+
+
+            if (position < limit)
             {
-                newOffset = logAppender.appendFrame(partition,
-                        activePartitionId,
-                        msg,
-                        start,
-                        length,
-                        streamId);
-            }
-            else
-            {
-                final String exceptionMessage = String.format("Message length of %s is larger than max frame length of %s",
-                        length, maxFrameLength);
-                throw new RuntimeException(exceptionMessage);
-            }
+                final int newOffset;
 
-            newPosition = updatePublisherPosition(activePartitionId, newOffset);
+                if (length < maxFrameLength)
+                {
+                    newOffset = logAppender.appendFrame(partition,
+                                                        activePartitionId,
+                                                        msg,
+                                                        start,
+                                                        length,
+                                                        streamId);
+                }
+                else
+                {
+                    final String exceptionMessage = String.format("Message length of %s is larger than max frame length of %s",
+                                                                  length, maxFrameLength);
+                    throw new RuntimeException(exceptionMessage);
+                }
 
-            publisherPosition.proposeMaxOrdered(newPosition);
+                newPosition = updatePublisherPosition(activePartitionId, newOffset);
+
+                publisherPosition.proposeMaxOrdered(newPosition);
+            }
         }
+
         return newPosition;
     }
 
@@ -250,36 +255,40 @@ public class Dispatcher implements AutoCloseable
      */
     public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength)
     {
-        final long limit = publisherLimit.getVolatile();
-
-        final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-        final int partitionOffset = partition.getTailCounterVolatile();
-        final long position = position(activePartitionId, partitionOffset);
-
         long newPosition = -1;
 
-        if (position < limit)
+        if (!isClosed)
         {
-            final int newOffset;
+            final long limit = publisherLimit.getVolatile();
 
-            if (batchLength < maxFrameLength)
+            final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+            final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
+
+            final int partitionOffset = partition.getTailCounterVolatile();
+            final long position = position(activePartitionId, partitionOffset);
+
+
+            if (position < limit)
             {
-                newOffset = logAppender.claim(partition,
-                        activePartitionId,
-                        batch,
-                        fragmentCount,
-                        batchLength);
-            }
-            else
-            {
-                throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
-            }
+                final int newOffset;
 
-            newPosition = updatePublisherPosition(activePartitionId, newOffset);
+                if (batchLength < maxFrameLength)
+                {
+                    newOffset = logAppender.claim(partition,
+                                                  activePartitionId,
+                                                  batch,
+                                                  fragmentCount,
+                                                  batchLength);
+                }
+                else
+                {
+                    throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
+                }
 
-            publisherPosition.proposeMaxOrdered(newPosition);
+                newPosition = updatePublisherPosition(activePartitionId, newOffset);
+
+                publisherPosition.proposeMaxOrdered(newPosition);
+            }
         }
 
         return newPosition;
@@ -309,22 +318,25 @@ public class Dispatcher implements AutoCloseable
     {
         long limit = -1;
 
-        if (mode == MODE_PUB_SUB)
+        if (!isClosed)
         {
-            limit = publisherPosition.get();
-        }
-        else
-        {
-            final int subscriberId = subscription.getId();
-            if (subscriberId == 0)
+            if (mode == MODE_PUB_SUB)
             {
                 limit = publisherPosition.get();
             }
             else
             {
-                // in pipelining mode, a subscriber's limit is the position of the
-                // previous subscriber
-                limit = subscriptions[subscriberId - 1].getPosition();
+                final int subscriberId = subscription.getId();
+                if (subscriberId == 0)
+                {
+                    limit = publisherPosition.get();
+                }
+                else
+                {
+                    // in pipelining mode, a subscriber's limit is the position of the
+                    // previous subscriber
+                    limit = subscriptions[subscriberId - 1].getPosition();
+                }
             }
         }
 
@@ -333,41 +345,46 @@ public class Dispatcher implements AutoCloseable
 
     public int updatePublisherLimit()
     {
-        long lastSubscriberPosition = -1;
+        int isUpdated = 0;
 
-        if (subscriptions.length > 0)
+        if (!isClosed)
         {
-            lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
+            long lastSubscriberPosition = -1;
 
-            if (MODE_PUB_SUB == mode && subscriptions.length > 1)
+            if (subscriptions.length > 0)
             {
-                for (int i = 0; i < subscriptions.length - 1; i++)
+                lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
+
+                if (MODE_PUB_SUB == mode && subscriptions.length > 1)
                 {
-                    lastSubscriberPosition = Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
+                    for (int i = 0; i < subscriptions.length - 1; i++)
+                    {
+                        lastSubscriberPosition = Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
+                    }
                 }
             }
-        }
-        else
-        {
-            lastSubscriberPosition = publisherLimit.get() - logWindowLength;
+            else
+            {
+                lastSubscriberPosition = publisherLimit.get() - logWindowLength;
+            }
+
+            int partitionId = partitionId(lastSubscriberPosition);
+            int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
+            if (partitionOffset >= logBuffer.getPartitionSize())
+            {
+                ++partitionId;
+                partitionOffset = logWindowLength;
+
+            }
+            final long proposedPublisherLimit = position(partitionId, partitionOffset);
+
+            if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
+            {
+                isUpdated = 1;
+            }
         }
 
-        int partitionId = partitionId(lastSubscriberPosition);
-        int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
-        if (partitionOffset >= logBuffer.getPartitionSize())
-        {
-            ++partitionId;
-            partitionOffset = logWindowLength;
-
-        }
-        final long proposedPublisherLimit = position(partitionId, partitionOffset);
-
-        if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
-        {
-            return 1;
-        }
-
-        return 0;
+        return isUpdated;
     }
 
     /**
@@ -452,7 +469,7 @@ public class Dispatcher implements AutoCloseable
 
     protected void doCloseSubscription(Subscription subscriptionToClose)
     {
-        if (closed)
+        if (isClosed)
         {
             return; // don't need to adjust the subscriptions when closed
         }
@@ -501,15 +518,24 @@ public class Dispatcher implements AutoCloseable
     {
         Subscription subscription = null;
 
-        for (int i = 0; i < subscriptions.length; i++)
+        if (!isClosed)
         {
-            if (subscriptions[i].getName().equals(subscriptionName))
+            for (int i = 0; i < subscriptions.length; i++)
             {
-                subscription = subscriptions[i];
-                break;
+                if (subscriptions[i].getName().equals(subscriptionName))
+                {
+                    subscription = subscriptions[i];
+                    break;
+                }
             }
         }
+
         return subscription;
+    }
+
+    public boolean isClosed()
+    {
+        return isClosed;
     }
 
     @Override
@@ -520,31 +546,31 @@ public class Dispatcher implements AutoCloseable
 
     public CompletableFuture<Void> closeAsync()
     {
-        closed = true;
-
-        publisherLimit.close();
-        publisherPosition.close();
-
-        final CompletableFuture<?>[] subScriptionFutures = new CompletableFuture<?>[subscriptions.length];
-
-        for (int i = 0; i < subscriptions.length; i++)
+        return addToDispatcherCommandQueue(() ->
         {
-            final CompletableFuture<Void> subscriptionFuture = subscriptions[i].closeAsnyc();
-            subScriptionFutures[i] = subscriptionFuture;
-        }
+            isClosed = true;
 
-        final CompletableFuture<Void> future =
-                CompletableFuture.allOf(subScriptionFutures)
-                    .thenRun(() ->
-                    {
-                        logBuffer.close();
-                        if (context.getConductorReference() != null)
-                        {
-                            context.getConductorReference().close();
-                        }
-                    });
+            publisherLimit.close();
+            publisherPosition.close();
 
-        return future;
+            final CompletableFuture<?>[] subScriptionFutures = new CompletableFuture<?>[subscriptions.length];
+            for (int i = 0; i < subscriptions.length; i++)
+            {
+                final CompletableFuture<Void> subscriptionFuture = subscriptions[i].closeAsnyc();
+                subScriptionFutures[i] = subscriptionFuture;
+            }
+
+            return subScriptionFutures;
+        })
+        .thenCompose(CompletableFuture::allOf)
+        .thenRun(() ->
+        {
+            logBuffer.close();
+            if (context.getConductorReference() != null)
+            {
+                context.getConductorReference().close();
+            }
+        });
     }
 
     protected CompletableFuture<Void> addToDispatcherCommandQueue(Runnable runnable)
@@ -581,12 +607,6 @@ public class Dispatcher implements AutoCloseable
         return logBuffer;
     }
 
-    public void setPublisherLimitOrdered(int limit)
-    {
-        this.publisherLimit.setOrdered(limit);
-
-    }
-
     public int getMaxFrameLength()
     {
         return maxFrameLength;
@@ -594,7 +614,14 @@ public class Dispatcher implements AutoCloseable
 
     public long getPublisherPosition()
     {
-        return publisherPosition.get();
+        if (isClosed)
+        {
+            return -1L;
+        }
+        else
+        {
+            return publisherPosition.get();
+        }
     }
 
     public int getSubscriberCount()
