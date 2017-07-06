@@ -4,6 +4,7 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -355,7 +356,6 @@ public class BrokerRecoveryTest
     }
 
     @Test
-    @Ignore
     public void shouldReceiveLockExpiredTasksAfterRestart()
     {
         // given
@@ -380,7 +380,13 @@ public class BrokerRecoveryTest
             ClockUtil.setCurrentTime(now.plusSeconds(60));
         });
 
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
+        // wait until stream processor and scheduler process the lock task event which is not re-processed on recovery
+        doRepeatedly(() ->
+        {
+            final Instant now = ClockUtil.getCurrentTime();
+            ClockUtil.setCurrentTime(now.plusSeconds(60));
+            return null;
+        }).until(t -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
 
         recordingTaskHandler.clear();
 
