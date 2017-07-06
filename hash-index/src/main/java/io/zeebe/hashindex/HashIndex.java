@@ -16,7 +16,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
     public static final Logger LOG = Loggers.HASH_INDEX_LOGGER;
 
-    private static final String FINALIZER_WARNING = "WARNING: HashIndex is being garbage collected but is not closed.\n" +
+    private static final String FINALIZER_WARNING = "HashIndex is being garbage collected but is not closed.\n" +
             "This means that the object is being de-referenced but the close() method has not been called.\n" +
             "HashIndex allocates memory off the heap which is not reclaimed unless close() is invoked.\n";
 
