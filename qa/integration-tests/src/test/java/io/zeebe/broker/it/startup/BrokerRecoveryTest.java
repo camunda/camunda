@@ -350,7 +350,6 @@ public class BrokerRecoveryTest
         assertThat(taskHandler.getHandledTasks()).isEmpty();
     }
 
-    @Ignore("Fail to lock task while recovery - see #333")
     @Test
     public void shouldReceiveLockExpiredTasksAfterRestart()
     {

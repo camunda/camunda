@@ -5,7 +5,10 @@ import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -27,7 +30,10 @@ import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -445,45 +451,6 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
-    }
-
-    @Test
-    public void shouldRejectLockTaskIfLockTimeIsNotInFuture()
-    {
-        // given
-        mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE)
-                .setType(TASK_TYPE));
-
-        // when
-        mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
-                .setLockTime(now.toEpochMilli()));
-
-        // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
-
-        verify(mockResponseWriter, times(1)).tryWriteResponse();
-        verify(mockSubscribedEventWriter, never()).tryWriteMessage();
-    }
-
-    @Test
-    public void shouldRejectLockTaskIfLockTimeIsNull()
-    {
-        // given
-        mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
-
-        // when
-        mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
-                .setLockTime(0));
-
-        // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
-
-        verify(mockResponseWriter, times(1)).tryWriteResponse();
-        verify(mockSubscribedEventWriter, never()).tryWriteMessage();
     }
 
     @Test

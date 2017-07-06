@@ -14,13 +14,16 @@ import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.task.index.TaskInstanceIndex;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
@@ -222,9 +225,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
 
-            final boolean isLockable = state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED;
-
-            if (isLockable && taskEvent.getLockTime() > ClockUtil.getCurrentTimeInMillis())
+            if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED)
             {
                 taskEvent.setEventType(TaskEventType.LOCKED);
                 isLocked = true;
