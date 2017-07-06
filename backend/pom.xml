@@ -486,7 +486,7 @@
           </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <version>2.19.1</version>
+            <version>2.20</version>
             <configuration>
               <redirectTestOutputToFile>true</redirectTestOutputToFile>
               <properties>
