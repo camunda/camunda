@@ -3,11 +3,7 @@ package io.zeebe.transport.impl;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -188,7 +184,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
                 catch (IOException e)
                 {
                     // ignore
-                    LOG.error("Could not interrupt channel");
+                    LOG.error("Could not interrupt channel", e);
                 }
             }
 
