@@ -15,6 +15,11 @@ package io.zeebe.util.state;
 public class NoSuchTransitionException extends RuntimeException
 {
 
+    public NoSuchTransitionException(State<?> currentState, int transitionId)
+    {
+        super("Cannot take transition " + transitionId + " when in state " + currentState);
+    }
+
     private static final long serialVersionUID = 1L;
 
 }

@@ -42,6 +42,11 @@ public class DirectBufferWriter implements BufferWriter
         return this;
     }
 
+    public DirectBufferWriter wrap(DirectBuffer buffer)
+    {
+        return wrap(buffer, 0, buffer.capacity());
+    }
+
     public void reset()
     {
         buffer = null;

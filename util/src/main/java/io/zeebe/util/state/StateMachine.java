@@ -51,7 +51,7 @@ public class StateMachine<C extends StateMachineContext>
 
         if (!hasTaken)
         {
-            throw new NoSuchTransitionException();
+            throw new NoSuchTransitionException(currentState, transitionId);
         }
     }
 
