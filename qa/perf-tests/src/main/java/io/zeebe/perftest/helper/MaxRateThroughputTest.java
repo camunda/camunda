@@ -14,7 +14,6 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.perftest.CommonProperties;
 import io.zeebe.perftest.reporter.FileReportWriter;
 import io.zeebe.perftest.reporter.RateReporter;
-import io.zeebe.transport.requestresponse.client.TransportConnection;
 
 public abstract class MaxRateThroughputTest
 {
@@ -71,24 +70,21 @@ public abstract class MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected void executeWarmup(Properties properties, ZeebeClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        System.out.format("Executing warmup\n");
+
+        final int warmupRequestRate = Integer.parseInt(properties.getProperty(TEST_WARMUP_REQUESTRATE));
+        final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_WARMUP_TIMEMS));
+
+        final Consumer<Long> noopLatencyConsumer = (latency) ->
         {
-            System.out.format("Executing warmup\n");
+            // ignore
+        };
 
-            final int warmupRequestRate = Integer.parseInt(properties.getProperty(TEST_WARMUP_REQUESTRATE));
-            final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_WARMUP_TIMEMS));
+        final Supplier<Future> requestFn = requestFn(client);
 
-            final Consumer<Long> noopLatencyConsumer = (latency) ->
-            {
-                // ignore
-            };
+        TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
-            final Supplier<Future> requestFn = requestFn(client);
-
-            TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
-
-            System.out.println("Finished warmup.");
-        }
+        System.out.println("Finished warmup.");
 
         TestHelper.gc();
     }
@@ -96,37 +92,34 @@ public abstract class MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected void executeTest(Properties properties, ZeebeClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        System.out.format("Executing test\n");
+
+        final int testTimeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
+        final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(TEST_MAX_CONCURRENT_REQUESTS));
+        final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
+
+        final FileReportWriter fileReportWriter = new FileReportWriter();
+        final RateReporter rateReporter = new RateReporter(1, TimeUnit.SECONDS, fileReportWriter);
+
+        new Thread()
         {
-            System.out.format("Executing test\n");
-
-            final int testTimeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
-            final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(TEST_MAX_CONCURRENT_REQUESTS));
-            final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
-
-            final FileReportWriter fileReportWriter = new FileReportWriter();
-            final RateReporter rateReporter = new RateReporter(1, TimeUnit.SECONDS, fileReportWriter);
-
-            new Thread()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    rateReporter.doReport();
-                }
+                rateReporter.doReport();
+            }
 
-            }.start();
+        }.start();
 
-            final Supplier<Future> requestFn = requestFn(client);
+        final Supplier<Future> requestFn = requestFn(client);
 
-            TestHelper.executeAtMaxRate(requestFn, rateReporter, testTimeMs, maxConcurrentRequests);
+        TestHelper.executeAtMaxRate(requestFn, rateReporter, testTimeMs, maxConcurrentRequests);
 
-            System.out.format("Finished test.\n");
+        System.out.format("Finished test.\n");
 
-            rateReporter.exit();
+        rateReporter.exit();
 
-            fileReportWriter.writeToFile(outputFileName);
-        }
+        fileReportWriter.writeToFile(outputFileName);
 
         TestHelper.gc();
     }

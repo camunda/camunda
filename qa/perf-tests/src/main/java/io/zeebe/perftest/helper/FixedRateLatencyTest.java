@@ -10,10 +10,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.HdrHistogram.Histogram;
+
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.perftest.CommonProperties;
-import io.zeebe.transport.requestresponse.client.TransportConnection;
 
 public abstract class FixedRateLatencyTest
 {
@@ -70,24 +70,21 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeWarmup(Properties properties, ZeebeClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        System.out.format("Executing warmup\n");
+
+        final int warmupRequestRate = Integer.parseInt(properties.getProperty(TEST_WARMUP_REQUESTRATE));
+        final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_WARMUP_TIMEMS));
+
+        final Consumer<Long> noopLatencyConsumer = (latency) ->
         {
-            System.out.format("Executing warmup\n");
+            // ignore
+        };
 
-            final int warmupRequestRate = Integer.parseInt(properties.getProperty(TEST_WARMUP_REQUESTRATE));
-            final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_WARMUP_TIMEMS));
+        final Supplier<Future> requestFn = requestFn(client);
 
-            final Consumer<Long> noopLatencyConsumer = (latency) ->
-            {
-                // ignore
-            };
+        TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
-            final Supplier<Future> requestFn = requestFn(client);
-
-            TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
-
-            System.out.println("Finished warmup.");
-        }
+        System.out.println("Finished warmup.");
 
         TestHelper.gc();
     }
@@ -95,29 +92,26 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeTest(Properties properties, ZeebeClient client)
     {
-        try (TransportConnection conection = client.getConnectionPool().openConnection())
+        System.out.format("Executing test\n");
+
+        final int requestRate = Integer.parseInt(properties.getProperty(TEST_REQUESTRATE));
+        final int timeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
+
+        final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
+
+        final Consumer<Long> noopLatencyConsumer = (latency) ->
         {
-            System.out.format("Executing test\n");
+            histogram.recordValue(latency);
+        };
 
-            final int requestRate = Integer.parseInt(properties.getProperty(TEST_REQUESTRATE));
-            final int timeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
+        final Supplier<Future> requestFn = requestFn(client);
 
-            final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
+        final int errors = TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, requestRate, timeMs);
 
-            final Consumer<Long> noopLatencyConsumer = (latency) ->
-            {
-                histogram.recordValue(latency);
-            };
+        System.out.format("Finished test. Errors (failed to send request due to backpressure): %d\n", errors);
 
-            final Supplier<Future> requestFn = requestFn(client);
-
-            final int errors = TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, requestRate, timeMs);
-
-            System.out.format("Finished test. Errors (failed to send request due to backpressure): %d\n", errors);
-
-            final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
-            TestHelper.recordHistogram(histogram, outputFileName);
-        }
+        final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
+        TestHelper.recordHistogram(histogram, outputFileName);
 
         TestHelper.gc();
     }

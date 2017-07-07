@@ -1,8 +1,11 @@
 package io.zeebe.perftest;
 
-import static io.zeebe.client.ClientProperties.*;
-import static io.zeebe.perftest.CommonProperties.*;
-import static io.zeebe.perftest.helper.TestHelper.*;
+import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static io.zeebe.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
+import static io.zeebe.client.ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY;
+import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
+import static io.zeebe.perftest.helper.TestHelper.printProperties;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -35,7 +38,6 @@ public class TopicSubscriptionThroughputTest
         final Properties properties = System.getProperties();
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "8");
-        properties.putIfAbsent(CLIENT_MAXCONNECTIONS, "16");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "12000");
         ClientProperties.setDefaults(properties);
         setDefaultProperties(properties);
