@@ -9,7 +9,6 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,10 +38,9 @@ public class MissingEntriesFinderIT {
 
     // given
     deployImportAndDeployAgainProcess();
-    embeddedOptimizeRule.resetImportStartIndexes();
 
     // when I trigger the import a second time
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then only the new entities are imported
@@ -76,7 +74,7 @@ public class MissingEntriesFinderIT {
 
   private void deployImportAndDeployAgainProcess() throws InterruptedException, OptimizeException {
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     deployAndStartSimpleServiceTask();
   }

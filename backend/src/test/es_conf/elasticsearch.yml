@@ -86,3 +86,4 @@
 # Require explicit names when deleting indices:
 #
 #action.destructive_requires_name: true
+path.repo: ["./_snapshots/es_it_repository"]

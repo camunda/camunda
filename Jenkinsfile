@@ -24,6 +24,12 @@ def stopAllOptimizeComponents() {
   }
 }
 
+def copySnapshots() {
+  script {
+    sh 'sh ./.ci/scripts/copy_snapshots.sh'
+  }
+}
+
 def backendModuleName = "backend"
 
 pipeline {
@@ -91,11 +97,13 @@ pipeline {
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml verify'
         stopAllOptimizeComponents()
+        copySnapshots()
       }
       post {
         always {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/elasticsearch-5.4.3/logs/*.log', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/elasticsearch-5.4.3/_snapshots/', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
         }
@@ -112,6 +120,7 @@ pipeline {
         }
         failure {
           archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
+          archiveArtifacts artifacts: '**/distro/target/distro/log/*', onlyIfSuccessful: false
         }
       }
     }

@@ -63,7 +63,7 @@ public class ProcessDefinitionBaseImportIT {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(0));
 
     // when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100));
@@ -76,23 +76,10 @@ public class ProcessDefinitionBaseImportIT {
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
 
     // when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100));
-  }
-
-  @Test
-  public void importProgressReporterIntermediateImportState() throws OptimizeException, IOException {
-    // given
-    createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-    createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
-
-    // when
-    embeddedOptimizeRule.importEngineEntities();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
   }
 
   @Test
@@ -102,7 +89,7 @@ public class ProcessDefinitionBaseImportIT {
     String processDefinitionId = createAndSetProcessDefinition(createSimpleServiceTaskProcess());
 
     // when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // then
     allEntriesInElasticsearchHaveAllData(configurationService.getProcessInstanceType(), processDefinitionId);
@@ -114,7 +101,7 @@ public class ProcessDefinitionBaseImportIT {
   public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException, IOException {
     // given
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -132,7 +119,7 @@ public class ProcessDefinitionBaseImportIT {
   public void itIsPossibleToResetTheImportIndex() throws OptimizeException, IOException {
     // given
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.resetImportStartIndexes();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -151,11 +138,11 @@ public class ProcessDefinitionBaseImportIT {
   public void unfinishedActivitiesAreNotSkippedDuringImport() throws OptimizeException, IOException {
     // given
     createAndSetProcessDefinition(createSimpleUserTaskProcess());
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -172,7 +159,7 @@ public class ProcessDefinitionBaseImportIT {
     createAndSetProcessDefinition(createSimpleUserTaskProcess());
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then only the start event should be imported as the user task is not finished yet
@@ -181,6 +168,43 @@ public class ProcessDefinitionBaseImportIT {
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSource().get(EVENTS);
     assertThat(events.size(), is(1));
+  }
+
+  @Test
+  public void testDataFOrLatestProcessVersionImportedFirst() throws Exception {
+    //given
+    BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
+    String firstPd = createAndSetProcessDefinition(simpleUserTaskProcess);
+    String latestPd = createAndAddProcessDefinitionToImportList(simpleUserTaskProcess);
+
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    engineRule.startProcessInstance(firstPd, client);
+    engineRule.startProcessInstance(latestPd, client);
+    client.close();
+
+    configurationService.setProcessDefinitionsToImport(null);
+
+    //when
+    embeddedOptimizeRule.scheduleImport();
+    //first full round
+    embeddedOptimizeRule.importEngineEntitiesRound(true);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+
+    //second full round
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+
+    //then
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      assertThat(searchHitFields.getSource().get("processDefinitionId"), is(latestPd));
+    }
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, String expectedProcessDefinitionId) throws IOException {
@@ -215,7 +239,6 @@ public class ProcessDefinitionBaseImportIT {
     String processDefinitionId = createAndStartProcessDefinition(modelInstance);
     configurationService.setProcessDefinitionsToImport(processDefinitionId);
     embeddedOptimizeRule.reloadConfiguration();
-    embeddedOptimizeRule.updateImportIndexes();
     return processDefinitionId;
   }
 
@@ -238,7 +261,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private BpmnModelInstance createSimpleServiceTaskProcess() {
-    return Bpmn.createExecutableProcess("ASimpleServiceTaskProcess")
+    return Bpmn.createExecutableProcess("ASimpleServiceTaskProcess" + System.currentTimeMillis())
       .startEvent()
       .serviceTask()
         .camundaExpression("${true}")
@@ -247,7 +270,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private BpmnModelInstance createSimpleUserTaskProcess() {
-    return Bpmn.createExecutableProcess("ASimpleUserTaskProcess")
+    return Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
         .startEvent()
         .userTask()
         .endEvent()
@@ -272,7 +295,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private void deployAndStartSimpleServiceTask() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName")
         .startEvent()
         .serviceTask()
@@ -283,5 +306,23 @@ public class ProcessDefinitionBaseImportIT {
     variables.put("aVariable", "aStringVariables");
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
+
+  @Test
+  public void importProgressReporterIntermediateImportState() throws OptimizeException, IOException {
+    // given
+    createAndSetProcessDefinition(createSimpleServiceTaskProcess());
+    createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
+    embeddedOptimizeRule.scheduleImport();
+
+    // when
+    embeddedOptimizeRule.importEngineEntitiesRound(true);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound(false);
+
+    // then
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
+  }
+
 
 }

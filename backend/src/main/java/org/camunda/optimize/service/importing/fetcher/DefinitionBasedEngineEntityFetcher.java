@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.EngineConstantsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,7 +103,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
       try {
         xml = client
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-            .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+            .path(configurationService.getProcessDefinitionXmlEndpoint(procDef.getId()))
             .request(MediaType.APPLICATION_JSON)
             .acceptEncoding(UTF8)
             .get(ProcessDefinitionXmlEngineDto.class);
@@ -127,7 +128,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
           .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
           .queryParam(SORT_BY, SORT_TYPE_ID)
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+          .queryParam(EngineConstantsUtil.PROCESS_DEFINITION_ID, processDefinitionId)
           .request(MediaType.APPLICATION_JSON)
           .acceptEncoding(UTF8)
           .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
@@ -146,7 +147,7 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
         CountDto newCount = client
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
             .path(configurationService.getProcessDefinitionCountEndpoint())
-            .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+            .queryParam(EngineConstantsUtil.PROCESS_DEFINITION_ID, processDefinitionId)
             .request()
             .acceptEncoding(UTF8)
             .get(CountDto.class);

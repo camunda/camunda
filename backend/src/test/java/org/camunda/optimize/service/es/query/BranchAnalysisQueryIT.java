@@ -18,6 +18,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -41,6 +43,7 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class BranchAnalysisQueryIT {
+  private Logger logger = LoggerFactory.getLogger(BranchAnalysisQueryIT.class);
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String GATEWAY_ACTIVITY = "gw_1";
 
@@ -128,7 +131,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -166,7 +169,7 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
     startSimpleGatewayProcessAndTakeTask2(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -195,7 +198,7 @@ public class BranchAnalysisQueryIT {
     String processDefinitionId = deploySimpleGatewayProcessWithUserTask();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
     startSimpleGatewayProcessAndTakeTask2(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -226,7 +229,7 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
     String processDefinitionId2 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask2(processDefinitionId2);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -255,7 +258,7 @@ public class BranchAnalysisQueryIT {
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
     Date now = new Date();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -264,6 +267,7 @@ public class BranchAnalysisQueryIT {
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
     DataUtilHelper.addDateFilter("<=", "start_date", now, dto);
+    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, "<=", "start_date", now);
 
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
@@ -289,7 +293,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -323,7 +327,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -357,7 +361,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -412,7 +416,7 @@ public class BranchAnalysisQueryIT {
     startBypassProcessAndTakeLongWayWithoutTask(processDefinitionId);
     startBypassProcessAndTakeShortcut(processDefinitionId);
     startBypassProcessAndTakeLongWayWithTask(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -465,7 +469,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -527,7 +531,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("takeShortcut", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when

@@ -4,11 +4,9 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.ImportStrategy;
-import org.camunda.optimize.service.importing.ImportStrategyProvider;
+import org.camunda.optimize.service.importing.strategy.DefinitionBasedImportStrategy;
 import org.camunda.optimize.service.util.ConfigurationReloadable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -21,24 +19,18 @@ import java.util.Set;
 public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto>
   extends AbstractImportService <ENG, OPT> implements ConfigurationReloadable {
 
-  protected ImportStrategy importStrategy;
-
   @Autowired
-  protected ImportStrategyProvider importStrategyProvider;
+  protected DefinitionBasedImportStrategy importStrategy;
 
   protected Set<String> idsForPostProcessing;
 
   @PostConstruct
   protected void init() {
-    importStrategy = importStrategyProvider.getImportStrategyInstance();
     importStrategy.initializeImportIndex(getElasticsearchType(), getEngineImportMaxPageSize());
   }
 
   @Override
   public void reloadConfiguration(ApplicationContext context) {
-    DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getAutowireCapableBeanFactory();
-    beanFactory.destroySingleton("importStrategyProvider");
-    importStrategyProvider = (ImportStrategyProvider) context.getBean("importStrategyProvider");
     init();
   }
 
@@ -75,6 +67,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
     result.setPagesPassed(pagesWithData);
     result.setIdsToFetch(getIdsForPostProcessing());
+    this.idsForPostProcessing = null;
     return result;
   }
 
@@ -90,6 +83,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     importStrategy.resetImportIndex();
   }
 
+  //used for testing purposes
   public void updateImportIndex() {
     importStrategy.updateConfigurationSettings();
   }
@@ -106,4 +100,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
    */
   public abstract int getEngineEntityCount() throws OptimizeException;
 
+  public void reloadImportDefaults() {
+    this.importStrategy.reloadImportDefaults();
+  }
 }

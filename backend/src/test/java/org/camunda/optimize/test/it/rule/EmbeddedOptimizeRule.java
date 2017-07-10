@@ -5,10 +5,12 @@ import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportResult;
+import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.strategy.DefinitionBasedImportStrategy;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -33,15 +35,67 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private TestEmbeddedCamundaOptimize camundaOptimize;
 
-  public void importEngineEntities() throws OptimizeException {
-    getJobExecutor().startExecutingImportJobs();
-    for(ImportScheduleJob job : getScheduleFactory().createPagedJobs()) {
-      ImportResult result = job.execute();
-      for (ImportScheduleJob idJob : getScheduleFactory().createIndexedScheduleJobs(result.getIdsToFetch())) {
-        idJob.execute();
-      }
+  public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
+    scheduleAllJobsAndImportEngineEntities(true);
+  }
+
+  /**
+   * Schedule import of all entities, execute all available jobs sequentially
+   * until nothing more exists in scheduler queue.
+   *
+   * @param reset
+   * @throws OptimizeException
+   */
+  public void scheduleAllJobsAndImportEngineEntities(boolean reset) throws OptimizeException {
+    if (reset) {
+      this.resetImportStartIndexes();
     }
+    ImportScheduler scheduler = scheduleImport();
+
+    getJobExecutor().startExecutingImportJobs();
+
+    ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
+    while (nextToExecute != null) {
+      ImportResult result = nextToExecute.execute();
+      scheduler.postProcess(nextToExecute, result);
+      nextToExecute = scheduler.getNextToExecute();
+    }
+
     getJobExecutor().stopExecutingImportJobs();
+  }
+
+  /**
+   * Execute one round\job using import scheduler infrastructure
+   *
+   * NOTE: this method does not invoke scheduling of jobs
+   * @param reset
+   * @throws OptimizeException
+   */
+  public void importEngineEntitiesRound(boolean reset) throws OptimizeException {
+    if (reset) {
+      this.resetImportStartIndexes();
+    }
+
+    getJobExecutor().startExecutingImportJobs();
+    ImportScheduler scheduler = getImportScheduler();
+
+    ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
+    if (nextToExecute != null) {
+      ImportResult result = nextToExecute.execute();
+      scheduler.postProcess(nextToExecute, result);
+    }
+
+    getJobExecutor().stopExecutingImportJobs();
+  }
+
+  public ImportScheduler scheduleImport() {
+    ImportScheduler scheduler = getImportScheduler();
+    scheduler.scheduleProcessEngineImport();
+    return scheduler;
+  }
+
+  private ImportScheduler getImportScheduler() {
+    return camundaOptimize.getApplicationContext().getBean(ImportScheduler.class);
   }
 
   private ScheduleJobFactory getScheduleFactory() {
@@ -173,5 +227,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public ConfigurationService getConfigurationService() {
     return camundaOptimize.getConfigurationService();
+  }
+
+  public void reloadImportDefaults() {
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
+      importService.reloadImportDefaults();
+    }
   }
 }

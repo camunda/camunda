@@ -44,16 +44,15 @@ public class ProcessDefinitionRetrievalIT {
 
   @Before
   public void setUp() {
-    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   @Test
   public void getProcessDefinitionsWithMoreThenTen() throws Exception {
     for (int i = 0; i < 11; i++) {
       // given
-      deploySimpleServiceTaskProcessDefinition();
+      deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
     }
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -61,10 +60,11 @@ public class ProcessDefinitionRetrievalIT {
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+        });
 
     assertThat(definitions.size(), is(11));
   }
@@ -73,8 +73,9 @@ public class ProcessDefinitionRetrievalIT {
   public void getProcessDefinitions() throws Exception {
 
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    embeddedOptimizeRule.importEngineEntities();
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -82,29 +83,31 @@ public class ProcessDefinitionRetrievalIT {
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+        });
 
     // then
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
-    assertThat(definitions.get(0).getKey(), is(PROCESS_DEFINITION_KEY));
+    assertThat(definitions.get(0).getKey(), is(processId));
   }
 
   @Test
   public void getProcessDefinitionsWithXml() throws Exception {
 
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -113,25 +116,27 @@ public class ProcessDefinitionRetrievalIT {
         embeddedOptimizeRule.target("process-definition")
             .queryParam("includeXml", true)
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+        });
 
     // then
     assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(processDefinitionId ));
-    assertThat(definitions.get(0).getKey(), is(PROCESS_DEFINITION_KEY));
+    assertThat(definitions.get(0).getId(), is(processDefinitionId));
+    assertThat(definitions.get(0).getKey(), is(processId));
     assertThat(definitions.get(0).getBpmn20Xml(), is(Bpmn.convertToString(modelInstance)));
   }
 
   @Test
   public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() throws IOException, OptimizeException {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     engineRule.startProcessInstance(processDefinitionId);
     engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -139,37 +144,41 @@ public class ProcessDefinitionRetrievalIT {
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
+        });
 
     // then
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
-    assertThat(definitions.get(0).getKey(), is(PROCESS_DEFINITION_KEY));
+    assertThat(definitions.get(0).getKey(), is(processId));
   }
 
   @Test
   public void getProcessDefinitionXml() throws Exception {
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeRule.importEngineEntities();
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
-      embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/xml")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .get();
+        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/xml")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .get();
+
     String actualXml =
         response.readEntity(String.class);
 
@@ -178,14 +187,15 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void testGetProcessDefinitionsXml () throws IOException, OptimizeException {
+  public void testGetProcessDefinitionsXml() throws IOException, OptimizeException {
     // given
-    List <String> ids = new ArrayList<>();
-    for (int i = 0; i < 22; i++) {
-      String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
+    List<String> ids = new ArrayList<>();
+    for (int i = 0; i < 11; i++) {
+      String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+      String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
       ids.add(processDefinitionId);
     }
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -194,22 +204,22 @@ public class ProcessDefinitionRetrievalIT {
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .post(toPost);
-    Map<String,String> map =
-        response.readEntity(new GenericType<Map<String,String>>(){});
+
+    Map<String, String> map = response.readEntity(new GenericType<Map<String, String>>() {});
 
     // then
-    assertThat(map.size(), is(22));
+    assertThat(map.size(), is(11));
   }
 
-  private String deploySimpleServiceTaskProcessDefinition() throws IOException {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
+  private String deploySimpleServiceTaskProcessDefinition(String processId) throws IOException {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
     return processDefinitionId;
   }

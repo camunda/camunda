@@ -42,7 +42,6 @@ public class VariableRetrievalIT {
   @Before
   public void init() {
     simpleDateFormat = new SimpleDateFormat(elasticSearchRule.getDateFormat());
-    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   @Rule
@@ -69,7 +68,7 @@ public class VariableRetrievalIT {
       variables.put("var", i);
       engineRule.startProcessInstance(processDefinitionId, variables);
     }
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -92,7 +91,7 @@ public class VariableRetrievalIT {
     variables.put("var2", "value2");
     variables.put("var3", "value3");
     engineRule.startProcessInstance(processDefinitionId, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -128,7 +127,7 @@ public class VariableRetrievalIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", 12345);
     engineRule.startProcessInstance(processDefinitionId, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -153,7 +152,7 @@ public class VariableRetrievalIT {
     String processDefinitionId2 = deploySimpleProcessDefinition();
     variables.put("boolVar", 12345);
     engineRule.startProcessInstance(processDefinitionId2, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -181,7 +180,8 @@ public class VariableRetrievalIT {
 
     String processDefinitionId = deploySimpleProcessDefinition();
     engineRule.startProcessInstance(processDefinitionId, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.resetImportStartIndexes();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -215,7 +215,7 @@ public class VariableRetrievalIT {
         engineRule.startProcessInstance(processDefinitionId, variables);
       }
     }
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -240,7 +240,7 @@ public class VariableRetrievalIT {
     variables.put("var", "aValue");
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.startProcessInstance(processDefinitionId, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

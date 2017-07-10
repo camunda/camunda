@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.strategy;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;

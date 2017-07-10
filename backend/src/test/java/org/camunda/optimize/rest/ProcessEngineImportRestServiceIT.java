@@ -50,7 +50,7 @@ public class ProcessEngineImportRestServiceIT {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String token = embeddedOptimizeRule.getAuthenticationToken();
 

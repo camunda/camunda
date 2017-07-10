@@ -15,6 +15,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -41,6 +43,7 @@ import static org.hamcrest.core.Is.is;
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class DurationHeatMapQueryIT {
 
+  private Logger logger = LoggerFactory.getLogger(DurationHeatMapQueryIT.class);
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
 
@@ -66,7 +69,7 @@ public class DurationHeatMapQueryIT {
     variables.put("activityDuration", 20L);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -86,7 +89,7 @@ public class DurationHeatMapQueryIT {
     variables.put("activityDuration", 30L);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -99,7 +102,7 @@ public class DurationHeatMapQueryIT {
   @Test
   public void getHeatMapForMultipleActivities() throws Exception {
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .startEvent()
       .serviceTask(SERVICE_TASK_ID)
         .camundaExpression("${true}")
@@ -115,7 +118,7 @@ public class DurationHeatMapQueryIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -138,7 +141,7 @@ public class DurationHeatMapQueryIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -161,7 +164,7 @@ public class DurationHeatMapQueryIT {
     engineRule.startProcessInstance(processDefinitionId2, variables);
     engineRule.startProcessInstance(processDefinitionId2, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -185,7 +188,7 @@ public class DurationHeatMapQueryIT {
     variables.put("activityDuration", 600L);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -232,7 +235,7 @@ public class DurationHeatMapQueryIT {
     variables.put("activityDuration", 10L);
     engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -253,7 +256,7 @@ public class DurationHeatMapQueryIT {
       engineRule.startProcessInstance(processDefinitionId, variables);
     }
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -270,14 +273,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">";
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -290,7 +293,7 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 0,0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
@@ -303,14 +306,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">=";
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -323,7 +326,7 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 3, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
@@ -336,14 +339,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">=";
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -356,7 +359,7 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
@@ -369,14 +372,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<";
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -389,7 +392,7 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -404,7 +407,7 @@ public class DurationHeatMapQueryIT {
     Date past = historicProcessInstance.getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">";
@@ -414,7 +417,7 @@ public class DurationHeatMapQueryIT {
     operator = "<";
     type = "end_date";
     past = historicProcessInstance.getEndTime();
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 1000), dto);
+    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 2000), dto);
 
     //when
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
@@ -426,7 +429,7 @@ public class DurationHeatMapQueryIT {
     operator = ">";
     type = "start_date";
     past = historicProcessInstance.getStartTime();
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     operator = "<";
     type = "end_date";
     past = historicProcessInstance.getEndTime();
@@ -446,14 +449,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<";
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -466,7 +469,7 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -479,14 +482,14 @@ public class DurationHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<=";
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + 1000));
+    HeatMapQueryDto dto = getHeatMapQueryDtoInFuture(past, processDefinitionId, operator, type);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -499,14 +502,34 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 3, SERVICE_TASK_ID, 10L, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
+    dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
 
+  private HeatMapQueryDto getHeatMapQueryDtoInPast(Date past, String processDefinitionId, String operator, String type) {
+    HeatMapQueryDto dto;
+    dto = createHeatMapQueryWithDateFilter(
+        processDefinitionId,
+        operator,
+        type,
+        new Date(past.getTime() - 5000)
+    );
+    return dto;
+  }
+
+  private HeatMapQueryDto getHeatMapQueryDtoInFuture(Date past, String processDefinitionId, String operator, String type) {
+    return createHeatMapQueryWithDateFilter(
+        processDefinitionId,
+        operator,
+        type,
+        new Date(past.getTime() + 5000)
+    );
+  }
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(long timeToWait) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName")
       .startEvent()
       .serviceTask(SERVICE_TASK_ID)
@@ -515,11 +538,12 @@ public class DurationHeatMapQueryIT {
       .done();
     Map<String, Object> variables = new HashMap<>();
     variables.put("activityDuration", timeToWait);
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    ProcessInstanceEngineDto processInstanceEngineDto = engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return processInstanceEngineDto;
   }
 
   private String deploySimpleServiceTaskProcessDefinition() throws IOException {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .startEvent()
       .serviceTask(SERVICE_TASK_ID)
         .camundaExpression("${true}")
@@ -540,6 +564,7 @@ public class DurationHeatMapQueryIT {
   }
 
   private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
+    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
     DataUtilHelper.addDateFilter(operator, type, dateValue, dto);

@@ -3,12 +3,16 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
   classpath:org/springframework/beans/factory/xml/spring-beans-3.2.xsd
   http://www.springframework.org/schema/context
   classpath:org/springframework/context/config/spring-context-3.2.xsd
+  http://www.springframework.org/schema/util
+  classpath:org/springframework/beans/factory/xml/spring-util-3.2.xsd
   http://www.springframework.org/schema/tool
-  classpath:org/springframework/beans/factory/xml/spring-tool-3.0.xsd">
+  classpath:org/springframework/beans/factory/xml/spring-tool-3.2.xsd
+  ">
 
   <context:annotation-config/>
   <context:component-scan base-package="org.camunda.optimize.service"/>
@@ -24,7 +28,7 @@
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.provider.ImportStrategyProviderFactory"/>
+  <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
   <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
 

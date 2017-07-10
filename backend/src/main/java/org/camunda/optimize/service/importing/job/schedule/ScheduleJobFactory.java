@@ -36,7 +36,6 @@ public class ScheduleJobFactory {
   public List<ImportScheduleJob> createIndexedScheduleJobs(Set<String> idsToFetch) {
     List<ImportScheduleJob> jobs = new ArrayList<>();
     if (idsToFetch != null) {
-      jobs.add(createHistoricProcessInstanceScheduleJob(idsToFetch));
       Set<String> hviPage = new HashSet<>();
       for (String id : idsToFetch) {
         hviPage.add(id);

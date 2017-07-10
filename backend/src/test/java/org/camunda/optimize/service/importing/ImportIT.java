@@ -72,7 +72,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -88,7 +88,7 @@ public class ImportIT  {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(0));
 
     // when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100));
@@ -98,10 +98,11 @@ public class ImportIT  {
   public void importProgressReporterIntermediateImportState() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.reloadImportDefaults();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
@@ -117,7 +118,7 @@ public class ImportIT  {
         .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     int importProgress = embeddedOptimizeRule.getProgressValue();
@@ -132,7 +133,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -145,7 +146,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -161,13 +162,11 @@ public class ImportIT  {
         .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.importEngineEntities();
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importEngineEntities();
 
     // when
     engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -190,7 +189,7 @@ public class ImportIT  {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then only the start event should be imported as the user task is not finished yet
@@ -214,7 +213,7 @@ public class ImportIT  {
 
     Map<String, Object> variables = createPrimitiveTypeVariables();
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -243,7 +242,7 @@ public class ImportIT  {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", complexVariableDto);
     deployAndStartSimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -272,7 +271,7 @@ public class ImportIT  {
 
     Map<String, Object> variables = createPrimitiveTypeVariables();
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -348,7 +347,7 @@ public class ImportIT  {
   public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -366,7 +365,7 @@ public class ImportIT  {
   public void itIsPossibleToResetTheImportIndex() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.resetImportStartIndexes();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -410,7 +409,7 @@ public class ImportIT  {
     engineRule.deployAndStartProcess(model);
 
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.getAuthenticationToken();

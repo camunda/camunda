@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -37,9 +38,11 @@ public class StatusRestServiceIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private Client engineClient;
+  private ConfigurationService configurationService;
 
   @Before
   public void initClients() throws InvalidTokenException {
+    configurationService = embeddedOptimizeRule.getConfigurationService();
     engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
   }
 
@@ -131,6 +134,7 @@ public class StatusRestServiceIT {
     // given
     String errorMessage = "Error";
     Mockito.when(engineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
+    configurationService.setProcessDefinitionsToImport("test");
 
     // when
     Response response = embeddedOptimizeRule.target("status/import-progress")

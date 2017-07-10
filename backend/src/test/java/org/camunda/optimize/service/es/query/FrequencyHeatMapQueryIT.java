@@ -17,6 +17,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -37,6 +39,8 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class FrequencyHeatMapQueryIT {
+
+  private Logger logger = LoggerFactory.getLogger(FrequencyHeatMapQueryIT.class);
 
   private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_ACTIVITY = "testActivity";
@@ -61,7 +65,7 @@ public class FrequencyHeatMapQueryIT {
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
@@ -77,7 +81,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineRule.startProcessInstance(engineDto.getDefinitionId());
     deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -96,7 +100,7 @@ public class FrequencyHeatMapQueryIT {
 
     instanceDto = deployAndStartSimpleServiceTaskProcess();
     String processDefinitionId2 = instanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(processDefinitionId1);
@@ -125,7 +129,7 @@ public class FrequencyHeatMapQueryIT {
 
     ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
     String processDefinitionId = instanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(processDefinitionId);
@@ -165,7 +169,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     // when
     String operator = ">";
@@ -214,7 +218,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = ">=";
     String type = "start_date";
@@ -245,7 +249,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = ">=";
     String type = "end_date";
@@ -276,7 +280,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = "<";
     String type = "start_date";
@@ -307,7 +311,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = ">";
     String type = "start_date";
@@ -344,7 +348,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = "<";
     String type = "end_date";
@@ -375,7 +379,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     String operator = "<=";
     String type = "start_date";
@@ -411,6 +415,7 @@ public class FrequencyHeatMapQueryIT {
   }
 
   private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
+    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
     DataUtilHelper.addDateFilter(operator, type, dateValue, dto);

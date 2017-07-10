@@ -34,7 +34,7 @@
   <!-- provide a bean, but do not start it -->
   <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
-  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.provider.ImportStrategyProviderFactory"/>
+  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.strategy.ImportStrategyProviderFactory"/>
 
   <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>

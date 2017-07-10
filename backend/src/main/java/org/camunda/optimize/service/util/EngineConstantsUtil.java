@@ -10,6 +10,7 @@ public class EngineConstantsUtil {
   public static final String INCLUDE_VARIABLE_TYPE_IN = "variableTypeIn";
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String ID = "id";
 
   public static final String INCLUDE_ONLY_FINISHED_INSTANCES = "finished";
   public static final String TRUE = "true";
@@ -18,9 +19,11 @@ public class EngineConstantsUtil {
   public static final String SORT_TYPE_START_TIME = "startTime";
   public static final String SORT_TYPE_END_TIME = "endTime";
   public static final String SORT_TYPE_ID = "id";
+  public static final String SORT_TYPE_VERSION_TAG = "version";
   public static final String SORT_TYPE_INSTANCE_ID = "instanceId";
 
   public static final String SORT_ORDER = "sortOrder";
   public static final String SORT_ORDER_TYPE_ASCENDING = "asc";
+  public static final String SORT_ORDER_TYPE_DESCENDING = "desc";
 
 }

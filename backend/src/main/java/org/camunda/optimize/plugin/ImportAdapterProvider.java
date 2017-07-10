@@ -6,7 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -14,9 +16,11 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,9 +32,10 @@ public class ImportAdapterProvider {
   private ConfigurationService configurationService;
 
   @Autowired
-  private ApplicationContext applicationContext;
-  @Autowired
   private DefaultListableBeanFactory beanFactory;
+
+  @Resource
+  private List<VariableImportAdapter> registeredPlugins;
 
   private boolean initializedOnce = false;
   private Set<BeanDefinition> loadedBeans;
@@ -51,8 +56,18 @@ public class ImportAdapterProvider {
       if (validPlugin(beanDefinition)) {
         String beanName = fetchName(beanDefinition);
         if (!beanFactory.isBeanNameInUse(beanName)) {
-          beanFactory
-              .registerBeanDefinition(beanName, beanDefinition);
+          try {
+            beanFactory
+                .registerBeanDefinition(beanName, beanDefinition);
+            //looks for some reason that there might be glitch in classloading without this explicit cast
+            registeredPlugins.add(beanFactory.getBean(beanName, VariableImportAdapter.class));
+          } catch (Exception e) {
+            logger.debug("Cannot register plugin [{}]", beanName);
+            // if anything went wrong unregister
+            if (beanFactory.isBeanNameInUse(beanName)) {
+              beanFactory.removeBeanDefinition(beanName);
+            }
+          }
         }
       }
    }
@@ -73,8 +88,7 @@ public class ImportAdapterProvider {
   private String fetchName(BeanDefinition beanDefinition) {
     String result = null;
     try {
-       result = this.getClass().getClassLoader()
-          .loadClass(beanDefinition.getBeanClassName()).getSimpleName();
+       result = ClassUtils.forName(beanDefinition.getBeanClassName()).getSimpleName();
     } catch (ClassNotFoundException e) {
       logger.error("error while loading plugin", e);
     }
@@ -91,14 +105,7 @@ public class ImportAdapterProvider {
       this.initializedOnce = true;
     }
 
-    Map<String, VariableImportAdapter> filters = new HashMap<>();
-    try {
-      filters =
-          applicationContext.getBeansOfType(VariableImportAdapter.class);
-    } catch (Exception e) {
-      logger.debug("error while instantiating plugins", e);
-    }
-    return new ArrayList<>(filters.values());
+    return registeredPlugins;
   }
 
   //used for testing mostly
@@ -107,10 +114,25 @@ public class ImportAdapterProvider {
       this.initializedOnce = false;
       for (BeanDefinition beanDefinition : loadedBeans) {
         if (validPlugin(beanDefinition)) {
-          String simpleName = fetchName(beanDefinition);;
-          beanFactory.removeBeanDefinition(simpleName);
-          beanFactory.destroySingleton(simpleName);
+          try {
+            String simpleName = fetchName(beanDefinition);;
+            beanFactory.removeBeanDefinition(simpleName);
+            beanFactory.destroySingleton(simpleName);
+            unregisterPlugin(simpleName);
+          } catch (Exception e) {
+            //nothing to do
+          }
         }
+      }
+    }
+  }
+
+  private void unregisterPlugin(String simpleName) {
+    Iterator<VariableImportAdapter> pluginIterator = registeredPlugins.iterator();
+    while (pluginIterator.hasNext()) {
+      VariableImportAdapter plugin = pluginIterator.next();
+      if (plugin.getClass().getSimpleName().equals(simpleName)) {
+        pluginIterator.remove();
       }
     }
   }

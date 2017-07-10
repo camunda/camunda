@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -83,40 +81,54 @@ public class ImportScheduler extends Thread {
   protected void executeJob() {
     int pagesPassed = 0;
 
-    if (!importScheduleJobs.isEmpty()) {
-      ImportScheduleJob toExecute = importScheduleJobs.poll();
-      try {
 
-        ImportResult importResult = toExecute.execute();
-        pagesPassed = importResult.getPagesPassed();
-        if (pagesPassed != 0) {
-          postProcess(toExecute, importResult);
-        } else if (pagesPassed == 0 && toExecute.isPageBased()) {
-          sleepAndReschedule(pagesPassed, toExecute);
-        }
+    ImportScheduleJob toExecute = getNextToExecute();
 
-      } catch (RejectedExecutionException e) {
-        //nothing bad happened, we just have a lot of data to import
-        //next step is sleep
-        if (logger.isDebugEnabled()) {
-          logger.debug("import jobs capacity exceeded");
-          sleepAndReschedule(pagesPassed, toExecute);
-        }
-      } catch (OptimizeException op) {
-        // is thrown if there is a connection problem for instance
-        sleepAndReschedule(pagesPassed, toExecute);
-      } catch (Exception e) {
-        if (logger.isDebugEnabled()) {
-          logger.debug("error while executing import job", e);
-        }
-      }
-
+    if (toExecute != null) {
+      pagesPassed = executeAndGetPagesPassed(pagesPassed, toExecute);
     }
 
     if (importScheduleJobs.isEmpty()) {
       backoffService.backoffAndSleep();
       sleepAndReschedule(pagesPassed);
     }
+  }
+
+  public ImportScheduleJob getNextToExecute() {
+    ImportScheduleJob toExecute = null;
+    if (!importScheduleJobs.isEmpty()) {
+      toExecute = importScheduleJobs.poll();
+    }
+    return toExecute;
+  }
+
+  private int executeAndGetPagesPassed(int pagesPassed, ImportScheduleJob toExecute) {
+    try {
+
+      ImportResult importResult = toExecute.execute();
+      pagesPassed = importResult.getPagesPassed();
+      if (pagesPassed != 0) {
+        postProcess(toExecute, importResult);
+      } else if (pagesPassed == 0 && toExecute.isPageBased()) {
+        sleepAndReschedule(pagesPassed, toExecute);
+      }
+
+    } catch (RejectedExecutionException e) {
+      //nothing bad happened, we just have a lot of data to import
+      //next step is sleep
+      if (logger.isDebugEnabled()) {
+        logger.debug("import jobs capacity exceeded");
+        sleepAndReschedule(pagesPassed, toExecute);
+      }
+    } catch (OptimizeException op) {
+      // is thrown if there is a connection problem for instance
+      sleepAndReschedule(pagesPassed, toExecute);
+    } catch (Exception e) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("error while executing import job", e);
+      }
+    }
+    return pagesPassed;
   }
 
   /**
@@ -126,7 +138,7 @@ public class ImportScheduler extends Thread {
    * @param toExecute
    * @param importResult
    */
-  private void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
+  public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
       importScheduleJobs.addAll(scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch()));
     }

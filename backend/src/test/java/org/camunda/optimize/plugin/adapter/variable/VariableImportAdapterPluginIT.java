@@ -5,7 +5,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -42,7 +41,6 @@ public class VariableImportAdapterPluginIT {
 
   @Before
   public void setup() throws IOException {
-    embeddedOptimizeRule.resetImportStartIndexes();
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
@@ -68,7 +66,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var3", 1);
     variables.put("var4", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -91,7 +89,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var3", "bar");
     variables.put("var4", "bar");
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -114,7 +112,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -133,7 +131,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -152,7 +150,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -171,7 +169,7 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -189,7 +187,7 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

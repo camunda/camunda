@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.impl;
+package org.camunda.optimize.service.importing.strategy;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -8,7 +8,6 @@ import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportStrategy;
 import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -20,9 +19,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
@@ -44,13 +46,14 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
   private ImportJobExecutor importJobExecutor;
 
   private List<String> processDefinitionsToImport;
-  private List<String> alreadyImportProcessDefinitions;
+  private Set<String> alreadyImportedProcessDefinitions;
   private String currentProcessDefinition;
 
   private int totalEntitiesImported;
   private int importIndex;
   private int maxImportSize;
   private String elasticsearchType;
+  private boolean initialized = false;
 
   @Override
   public void initializeImportIndex(String elasticsearchType, int maxPageSize) {
@@ -62,7 +65,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
     if (dto.getImportIndex() > 0) {
       currentProcessDefinition = dto.getCurrentProcessDefinition();
-      alreadyImportProcessDefinitions = dto.getAlreadyImportedProcessDefinitions();
+      alreadyImportedProcessDefinitions = new HashSet(dto.getAlreadyImportedProcessDefinitions());
       importIndex = dto.getImportIndex();
       totalEntitiesImported = dto.getTotalEntitiesImported();
     }
@@ -74,27 +77,54 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
   }
 
   private void updateProcessDefinitionRelatedInformation() {
-    processDefinitionsToImport = getProcessDefinitionsToImport();
-    alreadyImportProcessDefinitions = new ArrayList<>(processDefinitionsToImport.size());
+    alreadyImportedProcessDefinitions = new HashSet<>(getProcessDefinitionsToImport().size());
     currentProcessDefinition = removeFirstItemFromProcessDefinitionsToImport();
   }
 
   private String removeFirstItemFromProcessDefinitionsToImport() {
-    return processDefinitionsToImport.remove(0);
+    String result = null;
+    if (!getProcessDefinitionsToImport().isEmpty()) {
+      result = getProcessDefinitionsToImport().remove(0);
+    }
+    return result;
   }
 
   private List<String> getProcessDefinitionsToImport() {
-    String[] procDefs = configurationService.getProcessDefinitionsToImportAsArray();
-    ensureNotEmpty(procDefs);
-    List<String> allProcDefsToImport = new LinkedList<>();
-    Collections.addAll(allProcDefsToImport, procDefs);
-    return allProcDefsToImport;
+    initializeDefinitionsIfNeeded();
+    return processDefinitionsToImport;
+  }
+
+  private void initializeDefinitionsIfNeeded() {
+    if (!initialized) {
+
+      List<String> configuredProcessDefinitions = new ArrayList<>(Arrays.asList(configurationService.getProcessDefinitionsToImportAsArray()));
+      if (configuredProcessDefinitions == null || configuredProcessDefinitions.size() == 0 && !this.initialized) {
+        configuredProcessDefinitions = initializeFromEngine();
+      }
+      this.initialized = true;
+      this.processDefinitionsToImport = configuredProcessDefinitions;
+    }
+  }
+
+  private List<String> initializeFromEngine() {
+    ArrayList<String> processDefinitionsToImport = new ArrayList<String>();
+    int currentStart = 0;
+    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxImportSize);
+
+    while (currentPage != null && !currentPage.isEmpty()) {
+      for (ProcessDefinitionEngineDto dto : currentPage) {
+        processDefinitionsToImport.add(dto.getId());
+      }
+      currentStart = currentStart + maxImportSize;
+      currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxImportSize);
+    }
+    return processDefinitionsToImport;
   }
 
   @Override
   public int adjustIndexWhenNoResultsFound(int pagesWithData) {
-    if (!processDefinitionsToImport.isEmpty()) {
-      alreadyImportProcessDefinitions.add(currentProcessDefinition);
+    if (!getProcessDefinitionsToImport().isEmpty()) {
+      alreadyImportedProcessDefinitions.add(currentProcessDefinition);
       currentProcessDefinition = removeFirstItemFromProcessDefinitionsToImport();
       importIndex = 0;
       pagesWithData = pagesWithData + 1;
@@ -125,7 +155,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
     dto.setTotalEntitiesImported(totalEntitiesImported);
     dto.setImportIndex(importIndex);
     dto.setCurrentProcessDefinition(currentProcessDefinition);
-    dto.setAlreadyImportedProcessDefinitions(alreadyImportProcessDefinitions);
+    dto.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
     DefinitionBasedImportIndexJob indexImportJob =
         new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
     try {
@@ -137,7 +167,7 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
 
   @Override
   public void resetImportIndex() {
-    updateProcessDefinitionRelatedInformation();
+    reloadImportDefaults();
     importIndex = 0;
     totalEntitiesImported = 0;
     persistImportIndexToElasticsearch();
@@ -160,11 +190,24 @@ public class DefinitionBasedImportStrategy implements ImportStrategy {
 
   @Override
   public Integer fetchHistoricActivityInstanceCount() throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricActivityInstanceCount(getProcessDefinitionsToImport());
+    return engineEntityFetcher.fetchHistoricActivityInstanceCount(getAllProcessDefinitions());
+  }
+
+  private List<String> getAllProcessDefinitions() {
+    ArrayList result = new ArrayList();
+    result.addAll(getProcessDefinitionsToImport());
+    result.add(currentProcessDefinition);
+    result.addAll(alreadyImportedProcessDefinitions);
+    return result;
   }
 
   @Override
   public Integer fetchProcessDefinitionCount() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionCount(getProcessDefinitionsToImport());
+    return engineEntityFetcher.fetchProcessDefinitionCount(getAllProcessDefinitions());
+  }
+
+  public void reloadImportDefaults() {
+    initialized = false;
+    updateProcessDefinitionRelatedInformation();
   }
 }

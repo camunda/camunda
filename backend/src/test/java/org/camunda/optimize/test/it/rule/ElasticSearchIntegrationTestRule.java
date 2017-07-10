@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryResponse;
+import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.byscroll.BulkByScrollResponse;
@@ -23,6 +25,7 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -43,6 +46,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private ObjectMapper objectMapper;
   private Properties properties;
   private Client esclient;
+  private static boolean repositoryCreated = false;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
@@ -54,6 +58,40 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private void init() {
     initObjectMapper();
     initTransport();
+  }
+
+  @Override
+  protected void failed(Throwable e, Description description) {
+    logger.info("test failure detected, preparing ES dump");
+
+    String repositoryName = description.getClassName().toLowerCase();
+
+    Settings settings = Settings.builder()
+        .put("location", "./")
+        .put("compress", false).build();
+
+    PutRepositoryResponse putRepositoryResponse = esclient.admin().cluster()
+        .preparePutRepository(repositoryName)
+        .setType("fs").setSettings(settings).get();
+
+    logger.info("created repository [{}]", repositoryName);
+
+
+    String snapshotName = description.getMethodName().toLowerCase();
+    logger.info("creating snapshot [{}]", snapshotName);
+    CreateSnapshotResponse createSnapshotResponse = esclient
+        .admin().cluster()
+        .prepareCreateSnapshot(repositoryName, snapshotName.toLowerCase())
+        .setWaitForCompletion(true)
+        .setIndices(properties.getProperty("camunda.optimize.es.index"))
+        .get();
+
+    int status = createSnapshotResponse.status().getStatus();
+    if (status == 200) {
+      logger.info("Snapshot was created");
+    } else {
+      logger.info("Snapshot return code [{}]", status);
+    }
   }
 
   private void initObjectMapper() {
@@ -102,6 +140,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
+    logger.info("cleaning up elasticsearch on finish");
     this.cleanUpElasticSearch();
     this.refreshOptimizeIndexInElasticsearch();
   }
