@@ -5,7 +5,7 @@ def repository = 'zeebe'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'verify source:jar javadoc:javadoc'
+def mvnGoals = 'clean license:check verify source:jar javadoc:javadoc'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettings = 'camunda-maven-settings'
