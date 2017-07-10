@@ -12,6 +12,10 @@
     <relativePath>../parent</relativePath>
   </parent>
 
+  <properties>
+    <license.header>COPYING-HEADER.txt</license.header>
+  </properties>
+
   <dependencies>
 
     <dependency>
