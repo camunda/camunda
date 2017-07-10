@@ -3,7 +3,7 @@ def repository = 'zb-logstreams'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'verify'
+def mvnGoals = 'clean license:check verify'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettings = 'camunda-maven-settings'
