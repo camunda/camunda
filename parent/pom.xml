@@ -6,6 +6,8 @@
   <artifactId>zb-parent</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
+  <inceptionYear>2017</inceptionYear>
+  <url>http://zeebe.io/</url>
 
   <parent>
     <groupId>org.camunda</groupId>
@@ -17,6 +19,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</nexus.release.repository>
     <!-- disable jdk8 javadoc checks on release build -->
@@ -43,6 +46,7 @@
     <!-- maven plugins -->
     <plugin.version.compiler>3.5.1</plugin.version.compiler>
     <plugin.version.checkstyle>2.17</plugin.version.checkstyle>
+    <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.surefire>2.20</plugin.version.surefire>
     <plugin.version.build-helper>1.12</plugin.version.build-helper>
     <plugin.version.shade>2.2</plugin.version.shade>
@@ -160,6 +164,39 @@
           </configuration>
         </plugin>
 
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <properties>
+              <owner>camunda services GmbH</owner>
+              <email>info@camunda.com</email>
+            </properties>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>add-license</id>
+              <phase>compile</phase>
+                <goals>
+                    <goal>format</goal>
+                </goals>
+            </execution>
+            <execution>
+              <id>check-license</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
         <!-- CHECKSTYLE -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -274,6 +311,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
