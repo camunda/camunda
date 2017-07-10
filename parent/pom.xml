@@ -187,13 +187,6 @@
                     <goal>format</goal>
                 </goals>
             </execution>
-            <execution>
-              <id>check-license</id>
-              <phase>verify</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
           </executions>
         </plugin>
 
