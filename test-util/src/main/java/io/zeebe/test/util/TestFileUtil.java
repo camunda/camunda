@@ -15,11 +15,7 @@
  */
 package io.zeebe.test.util;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,10 +26,7 @@ public class TestFileUtil
     public static InputStream readAsTextFileAndReplace(InputStream inputStream, Charset charset, Map<String, String> replacements)
     {
         final String fileContent;
-        try
-        (
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
-        )
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset)))
         {
             final StringBuilder sb = new StringBuilder();
 
