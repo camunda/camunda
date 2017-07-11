@@ -17,22 +17,16 @@
  */
 package io.zeebe.broker.incident;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.Constants;
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentEventType;
+import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorErrorHandler;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.clientapi.EventType;
+import org.agrona.DirectBuffer;
 
 public class IncidentStreamProcessorErrorHandler implements StreamProcessorErrorHandler
 {
@@ -58,21 +52,26 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     }
 
     @Override
-    public int onError(LoggedEvent failureEvent, Exception error)
+    public boolean canHandle(Exception error)
     {
-        int result = RESULT_REJECT;
+        return error instanceof MappingException;
+    }
+
+    @Override
+    public boolean onError(LoggedEvent failureEvent, Exception error)
+    {
+        boolean success = false;
 
         if (error instanceof MappingException)
         {
-            result = handlePayloadException(failureEvent, ErrorType.IO_MAPPING_ERROR, error);
+            success = handlePayloadException(failureEvent, ErrorType.IO_MAPPING_ERROR, error);
         }
 
-        return result;
+        return success;
     }
 
-    private int handlePayloadException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
+    private boolean handlePayloadException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
     {
-
         incidentEventMetadata.reset()
             .protocolVersion(Constants.PROTOCOL_VERSION)
             .eventType(EventType.INCIDENT_EVENT)
@@ -109,7 +108,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
                 .valueWriter(incidentEvent)
                 .tryWrite();
 
-        return position > 0 ? RESULT_SUCCESS : RESULT_FAILURE;
+        return position > 0;
     }
 
     private void setWorkflowInstanceData(LoggedEvent failureEvent)

@@ -22,16 +22,10 @@ import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventFilter;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.logstreams.processor.StreamProcessorErrorHandler;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotPositionProvider;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class StreamProcessorService implements Service<StreamProcessorController>
@@ -48,7 +42,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
     protected MetadataFilter customEventFilter;
     protected EventFilter customReprocessingEventFilter;
     protected boolean readOnly;
-    protected StreamProcessorErrorHandler errorHandler = (failedEvent, error) -> StreamProcessorErrorHandler.RESULT_REJECT;
+    protected StreamProcessorErrorHandler errorHandler;
 
     protected final MetadataFilter versionFilter = (m) ->
     {
@@ -126,6 +120,11 @@ public class StreamProcessorService implements Service<StreamProcessorController
             reprocessingEventFilter = reprocessingEventFilter.and(customReprocessingEventFilter);
         }
 
+        if (errorHandler == null)
+        {
+            errorHandler = new DefaultStreamProcessorErrorHandler();
+        }
+
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
             .sourceStream(sourceStream)
             .targetStream(targetStream)
@@ -196,6 +195,21 @@ public class StreamProcessorService implements Service<StreamProcessorController
             return metadataFilter.applies(metadata);
         }
 
+    }
+
+    protected static class DefaultStreamProcessorErrorHandler implements StreamProcessorErrorHandler
+    {
+        @Override
+        public boolean canHandle(Exception error)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onError(LoggedEvent failedEvent, Exception error)
+        {
+            return false;
+        }
     }
 
 }

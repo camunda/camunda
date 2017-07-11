@@ -18,9 +18,7 @@
 package io.zeebe.broker.incident.processor;
 
 import io.zeebe.broker.Constants;
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentEventType;
+import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.incident.index.IncidentIndex;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
@@ -29,14 +27,8 @@ import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
@@ -406,8 +398,6 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final class ResolveFailedProcessor implements EventProcessor
     {
         private boolean isFailed;
-
-        // TODO event is ignored by recovery
 
         @Override
         public void processEvent()

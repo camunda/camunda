@@ -15,9 +15,7 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -47,14 +45,8 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.time.ClockUtil;
 import org.assertj.core.util.Files;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class BrokerRecoveryTest
 {
@@ -108,9 +100,6 @@ public class BrokerRecoveryTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public Timeout testTimeout = Timeout.seconds(60 * 1000);
-
     protected static InputStream brokerConfig(String path)
     {
         final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
@@ -146,7 +135,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
-    @Ignore("Recovery fails because of missing deployment event - see #332")
     @Test
     public void shouldContinueWorkflowInstanceAtTaskAfterRestart()
     {
@@ -176,7 +164,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
-    @Ignore("Recovery fails because of missing deployment event - see #332")
     @Test
     public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart()
     {
@@ -210,7 +197,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
-    @Ignore("Recovery fails because of missing deployment event - see #332")
     @Test
     public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart()
     {
@@ -421,7 +407,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
 
-    @Ignore("Recovery fails because of missing deployment event - see #332")
     @Test
     public void shouldResolveIncidentAfterRestart()
     {
@@ -452,7 +437,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
     }
 
-    @Ignore("Recovery fails because of missing deployment event - see #332")
     @Test
     public void shouldResolveFailedIncidentAfterRestart()
     {
@@ -503,16 +487,13 @@ public class BrokerRecoveryTest
         clientRule.getClient().disconnect();
         brokerRule.stopBroker();
 
-        // delete snapshot and index files to trigger recovery
+        // delete snapshot files to trigger recovery
         final File configDir = new File(tempFolder.getRoot().getAbsolutePath());
         final File snapshotDir = new File(configDir, "snapshot");
-        // final File indexDir = new File(configDir, "index");
 
         assertThat(snapshotDir).exists().isDirectory();
-        // assertThat(indexDir).exists().isDirectory();
 
         Files.delete(snapshotDir);
-        // Files.delete(indexDir);
 
         onStop.run();
 

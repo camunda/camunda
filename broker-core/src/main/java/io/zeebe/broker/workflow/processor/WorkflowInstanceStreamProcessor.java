@@ -26,56 +26,30 @@ import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
-import io.zeebe.broker.task.data.TaskHeaders;
+import io.zeebe.broker.task.data.*;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
-import io.zeebe.broker.workflow.data.DeployedWorkflow;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEventType;
-import io.zeebe.broker.workflow.graph.model.BpmnAspect;
-import io.zeebe.broker.workflow.graph.model.ExecutableEndEvent;
-import io.zeebe.broker.workflow.graph.model.ExecutableFlowElement;
-import io.zeebe.broker.workflow.graph.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.graph.model.ExecutableSequenceFlow;
-import io.zeebe.broker.workflow.graph.model.ExecutableServiceTask;
-import io.zeebe.broker.workflow.graph.model.ExecutableStartEvent;
-import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.graph.model.*;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
-import io.zeebe.broker.workflow.index.ActivityInstanceIndex;
-import io.zeebe.broker.workflow.index.PayloadCache;
-import io.zeebe.broker.workflow.index.WorkflowDeploymentCache;
-import io.zeebe.broker.workflow.index.WorkflowInstanceIndex;
+import io.zeebe.broker.workflow.index.*;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.clientapi.EventType;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -617,8 +591,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         private boolean isActive;
 
-        // TODO event is ignored by recovery
-
         @Override
         public void processEvent()
         {
@@ -756,8 +728,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private final class DeployedWorkflowEventProcessor implements EventProcessor
     {
         protected final UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[BpmnTransformer.ID_MAX_LENGTH]);
-
-        // TODO event is ignored by recovery
 
         @Override
         public void processEvent()
