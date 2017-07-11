@@ -31,7 +31,7 @@ public class ActorSchedulerBuilderTest
     @Test
     public void shouldBuildSingleThreadSchedulerForSingleThread()
     {
-        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         assertThat(scheduler).isInstanceOf(SingleThreadActorScheduler.class);
     }
@@ -39,9 +39,20 @@ public class ActorSchedulerBuilderTest
     @Test
     public void shouldBuildDynamicThreadSchedulerForMultipleThreads()
     {
-        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler(2);
+        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("test", 2);
 
         assertThat(scheduler).isInstanceOf(DynamicActorSchedulerImpl.class);
+    }
+
+    @Test
+    public void shouldVerifyName()
+    {
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("name must not be null");
+
+        new ActorSchedulerBuilder()
+            .name(null)
+            .build();
     }
 
     @Test

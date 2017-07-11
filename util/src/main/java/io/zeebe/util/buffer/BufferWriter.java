@@ -38,5 +38,5 @@ public interface BufferWriter
      * @param buffer the buffer that this writer writes to
      * @param offset the offset in the buffer that the writer begins writing at
      */
-    void write(final MutableDirectBuffer buffer, final int offset);
+    void write(MutableDirectBuffer buffer, int offset);
 }

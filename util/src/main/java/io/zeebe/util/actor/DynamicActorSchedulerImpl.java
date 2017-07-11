@@ -15,10 +15,8 @@
  */
 package io.zeebe.util.actor;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,24 +28,26 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
 {
     public static final Logger LOG = Loggers.ACTOR_LOGGER;
 
+    private final String name;
     private final ExecutorService executorService;
     private final Thread schedulerThread;
 
     private final ActorRunner[] runners;
     private final ActorSchedulerRunnable schedulerRunnable;
 
-    public DynamicActorSchedulerImpl(int threadCount, Supplier<ActorRunner> runnerFactory, Function<ActorRunner[], ActorSchedulerRunnable> schedulerFactory)
+    public DynamicActorSchedulerImpl(String name, int threadCount, Supplier<ActorRunner> runnerFactory, Function<ActorRunner[], ActorSchedulerRunnable> schedulerFactory)
     {
+        this.name = name;
         runners = createTaskRunners(threadCount, runnerFactory);
         schedulerRunnable = schedulerFactory.apply(runners);
 
-        executorService = Executors.newFixedThreadPool(threadCount, new RunnerThreadFactory());
+        executorService = Executors.newFixedThreadPool(threadCount, new RunnerThreadFactory("actor-runner-" + name));
         for (int r = 0; r < runners.length; r++)
         {
             executorService.execute(runners[r]);
         }
 
-        schedulerThread = new Thread(schedulerRunnable, "actor-scheduler");
+        schedulerThread = new Thread(schedulerRunnable, "actor-scheduler-" + name);
         schedulerThread.start();
     }
 
@@ -103,17 +103,29 @@ public class DynamicActorSchedulerImpl implements ActorScheduler
     @Override
     public String toString()
     {
-        return schedulerRunnable.toString();
+        final StringBuilder builder = new StringBuilder();
+        builder.append("ActorScheduler [name=");
+        builder.append(name);
+        builder.append(", runners=");
+        builder.append(Arrays.toString(runners));
+        builder.append("]");
+        return builder.toString();
     }
 
     private final class RunnerThreadFactory implements ThreadFactory
     {
+        private final String namePrefix;
         private final AtomicInteger t = new AtomicInteger(0);
+
+        RunnerThreadFactory(String namePrefix)
+        {
+            this.namePrefix = namePrefix;
+        }
 
         @Override
         public Thread newThread(Runnable r)
         {
-            final String name = "actor-runner-" + t.incrementAndGet();
+            final String name = namePrefix + "-" + t.incrementAndGet();
 
             return new Thread(r, name);
         }

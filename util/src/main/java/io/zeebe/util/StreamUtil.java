@@ -19,9 +19,7 @@ import static io.zeebe.util.StringUtil.fromBytes;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import java.io.*;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
@@ -90,7 +88,7 @@ public class StreamUtil
 
     public static void write(final File file, final String data) throws IOException
     {
-        try (final FileOutputStream os = new FileOutputStream(file))
+        try (FileOutputStream os = new FileOutputStream(file))
         {
             os.write(getBytes(data));
         }
@@ -98,7 +96,7 @@ public class StreamUtil
 
     public static void write(final File file, final InputStream data, final MessageDigest messageDigest) throws IOException
     {
-        try (final DigestOutputStream os = new DigestOutputStream(new FileOutputStream(file), messageDigest))
+        try (DigestOutputStream os = new DigestOutputStream(new FileOutputStream(file), messageDigest))
         {
             copy(data, os);
         }
@@ -188,7 +186,7 @@ public class StreamUtil
         final byte[] byteBuffer = new byte[DEFAULT_BUFFER_SIZE];
         int readBytes;
 
-        try (final ByteArrayOutputStream buffer = new ByteArrayOutputStream())
+        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream())
         {
             while ((readBytes = input.read(byteBuffer, 0, byteBuffer.length)) != -1)
             {

@@ -17,16 +17,11 @@ package io.zeebe.util.actor;
 
 import static io.zeebe.util.TestUtil.waitUntil;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -62,7 +57,7 @@ public class SingleThreadActorSchedulerTest
 
         doAnswer(submitActorCallback).when(mockRunner).submitActor(any());
 
-        scheduler = new SingleThreadActorScheduler(() -> mockRunner, t -> new ActorReferenceImpl(t, 16));
+        scheduler = new SingleThreadActorScheduler("test", () -> mockRunner, t -> new ActorReferenceImpl(t, 16));
 
         actorRefs = new ActorReferenceImpl[3];
         for (int i = 0; i < 3; i++)

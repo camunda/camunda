@@ -28,6 +28,7 @@ import org.agrona.concurrent.IdleStrategy;
 
 public final class ActorSchedulerBuilder
 {
+    private String name = "default";
     private int threadCount = 1;
     private int baseIterationsPerActor = 1;
     private IdleStrategy runnerIdleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(1));
@@ -39,6 +40,12 @@ public final class ActorSchedulerBuilder
 
     private Duration durationSamplePeriod = Duration.ofMillis(1);
     private int durationSampleCount = 128;
+
+    public ActorSchedulerBuilder name(String name)
+    {
+        this.name = name;
+        return this;
+    }
 
     public ActorSchedulerBuilder threadCount(int threadCount)
     {
@@ -96,6 +103,7 @@ public final class ActorSchedulerBuilder
 
     public ActorScheduler build()
     {
+        ensureNotNull("name", name);
         ensureGreaterThan("thread count", threadCount, 0);
         ensureGreaterThan("base iterations per actor", baseIterationsPerActor, 0);
         ensureNotNull("runner idle strategy", runnerIdleStrategy);
@@ -115,24 +123,24 @@ public final class ActorSchedulerBuilder
         {
             final Function<ActorRunner[], ActorSchedulerRunnable> schedulerFactory = runners -> new ActorSchedulerRunnable(runners, actorRefFactory, imbalanceRunnerThreshold, schedulerInitialBackoff, schedulerMaxBackoff);
 
-            actorScheduler = new DynamicActorSchedulerImpl(threadCount, runnerFactory, schedulerFactory);
+            actorScheduler = new DynamicActorSchedulerImpl(name, threadCount, runnerFactory, schedulerFactory);
         }
         else
         {
-            actorScheduler = new SingleThreadActorScheduler(runnerFactory, actorRefFactory);
+            actorScheduler = new SingleThreadActorScheduler(name, runnerFactory, actorRefFactory);
         }
 
         return actorScheduler;
     }
 
-    public static ActorScheduler createDefaultScheduler()
+    public static ActorScheduler createDefaultScheduler(String name)
     {
-        return new ActorSchedulerBuilder().build();
+        return createDefaultScheduler("default", 1);
     }
 
-    public static ActorScheduler createDefaultScheduler(int threadCount)
+    public static ActorScheduler createDefaultScheduler(String name, int threadCount)
     {
-        return new ActorSchedulerBuilder().threadCount(threadCount).build();
+        return new ActorSchedulerBuilder().name(name).threadCount(threadCount).build();
     }
 
 }

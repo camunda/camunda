@@ -257,7 +257,7 @@ public class ActorSchedulerRunnable implements Runnable
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("ActorScheduler [runners=");
+        builder.append("ActorSchedulerRunnable [runners=");
         builder.append(Arrays.toString(runners));
         builder.append("]");
         return builder.toString();

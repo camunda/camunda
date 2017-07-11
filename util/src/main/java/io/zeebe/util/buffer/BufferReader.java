@@ -32,5 +32,5 @@ public interface BufferReader
      * @param offset the offset at which to start reading
      * @param length the length of the values to read
      */
-    void wrap(final DirectBuffer buffer, int offset, int length);
+    void wrap(DirectBuffer buffer, int offset, int length);
 }

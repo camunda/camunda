@@ -25,17 +25,19 @@ public class SingleThreadActorScheduler implements ActorScheduler
 {
     public static final Logger LOG = Loggers.ACTOR_LOGGER;
 
+    private final String name;
     private final ActorRunner runner;
     private final Thread runnerThread;
 
     private final Function<Actor, ActorReferenceImpl> actorRefFactory;
 
-    public SingleThreadActorScheduler(Supplier<ActorRunner> runnerFactory, Function<Actor, ActorReferenceImpl> actorRefFactory)
+    public SingleThreadActorScheduler(String name, Supplier<ActorRunner> runnerFactory, Function<Actor, ActorReferenceImpl> actorRefFactory)
     {
+        this.name = name;
         this.actorRefFactory = actorRefFactory;
 
         this.runner = runnerFactory.get();
-        this.runnerThread = new Thread(runner, "actor-runner");
+        this.runnerThread = new Thread(runner, "actor-runner-" + name);
 
         this.runnerThread.start();
     }
@@ -69,7 +71,9 @@ public class SingleThreadActorScheduler implements ActorScheduler
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("ActorScheduler [runner=");
+        builder.append("ActorScheduler [name=");
+        builder.append(name);
+        builder.append(", runner=");
         builder.append(runner);
         builder.append("]");
         return builder.toString();
