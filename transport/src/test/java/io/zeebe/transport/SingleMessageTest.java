@@ -43,7 +43,7 @@ public class SingleMessageTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
     }
 
     @After

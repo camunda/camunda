@@ -44,7 +44,7 @@ public class TransportChannelListenerTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
                 .bufferSize(32 * 1024 * 1024)

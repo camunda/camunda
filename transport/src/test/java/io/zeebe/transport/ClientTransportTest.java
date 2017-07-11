@@ -42,7 +42,7 @@ public class ClientTransportTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 //
 //        clientTransport = Transports.createTransport("client")
 //            .actorScheduler(actorScheduler)
