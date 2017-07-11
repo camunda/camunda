@@ -22,7 +22,6 @@ import org.junit.rules.ExpectedException;
 
 public class Bytes2LongHashIndexTest
 {
-    static final long MISSING_VALUE = -2;
 
     byte[][] keys = new byte[16][64];
 

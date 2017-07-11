@@ -46,7 +46,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *
  * <pre>
  *  +----------------------------+
- *  |          BLOCK COUT        |
+ *  |         BLOCK COUNT        |
  *  +----------------------------+
  *  |           Block 0          |
  *  +----------------------------+
@@ -107,12 +107,12 @@ public class HashIndexDescriptor
     public static final int BLOCK_LENGTH_OFFSET;
     public static final int BLOCK_ID_OFFSET;
     public static final int BLOCK_DEPTH_OFFSET;
+    public static final int BLOCK_HEADER_LENGTH;
     public static final int BLOCK_DATA_OFFSET;
 
     public static final int RECORD_VALUE_LENGTH_OFFSET;
     public static final int RECORD_KEY_OFFSET;
-
-    public static final byte TYPE_RECORD = 1;
+    public static final int RECORD_HEADER_LENGTH;
 
     static
     {
@@ -145,11 +145,27 @@ public class HashIndexDescriptor
 
         BLOCK_DATA_OFFSET = offset;
 
+        BLOCK_HEADER_LENGTH = offset;
+
+
         offset = 0;
 
         RECORD_VALUE_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         RECORD_KEY_OFFSET = offset;
+
+        RECORD_HEADER_LENGTH = RECORD_KEY_OFFSET;
     }
+
+    public static int getRecordLength(final int keyLength, final int valueLength)
+    {
+        return RECORD_HEADER_LENGTH + keyLength + valueLength;
+    }
+
+    public static long getRecordValueOffset(final long offset, final int keyLength)
+    {
+        return offset + RECORD_KEY_OFFSET + keyLength;
+    }
+
 }

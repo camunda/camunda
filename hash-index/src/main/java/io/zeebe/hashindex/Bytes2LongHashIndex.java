@@ -16,7 +16,7 @@
 package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
 
 import io.zeebe.hashindex.types.ByteArrayKeyHandler;
 import io.zeebe.hashindex.types.LongValueHandler;
@@ -35,7 +35,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     private static int blockSize(int records, int keyLength)
     {
-        return BLOCK_DATA_OFFSET + (records * (RECORD_KEY_OFFSET + keyLength + BitUtil.SIZE_OF_LONG));
+        return BLOCK_DATA_OFFSET + (records * getRecordLength(keyLength, BitUtil.SIZE_OF_LONG));
     }
 
     public long get(byte[] key, long missingValue)

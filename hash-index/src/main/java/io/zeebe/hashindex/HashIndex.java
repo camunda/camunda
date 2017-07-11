@@ -44,7 +44,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     private final int indexSize;
     private final int mask;
-    protected final int keyLength;
 
     protected final AtomicBoolean isClosed = new AtomicBoolean(false);
 
@@ -57,16 +56,15 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     {
         indexSize = BitUtil.findNextPositivePowerOfTwo(indexSize);
 
-        this.keyLength = keyLength;
         this.indexSize = indexSize;
         this.mask = this.indexSize - 1;
 
-        this.keyHandler = crateKeyHandlerInstance(keyHandlerType, keyLength);
-        this.splitKeyHandler = crateKeyHandlerInstance(keyHandlerType, keyLength);
+        this.keyHandler = createKeyHandlerInstance(keyHandlerType, keyLength);
+        this.splitKeyHandler = createKeyHandlerInstance(keyHandlerType, keyLength);
         this.valueHandler = createInstance(valueHandlerType);
 
         this.indexBuffer = new HashIndexBuffer(indexSize);
-        this.dataBuffer = new HashIndexDataBuffer(indexSize, maxBlockLength, keyLength);
+        this.dataBuffer = new HashIndexDataBuffer(maxBlockLength, keyLength);
 
         init();
 
@@ -108,7 +106,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         init();
     }
 
-    private static <K extends IndexKeyHandler> K crateKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
+    private static <K extends IndexKeyHandler> K createKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
     {
         final K keyHandler = createInstance(keyHandlerType);
         keyHandler.setKeyLength(keyLength);

@@ -16,12 +16,11 @@
 package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.hashindex.types.LongKeyHandler;
 import io.zeebe.hashindex.types.LongValueHandler;
-import org.agrona.BitUtil;
 
 public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandler>
 {
@@ -34,7 +33,7 @@ public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandl
 
     private static int maxBlockLength(int recordsPerBlock)
     {
-        return BLOCK_DATA_OFFSET + (recordsPerBlock * (RECORD_KEY_OFFSET + BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_LONG));
+        return BLOCK_DATA_OFFSET + (recordsPerBlock * getRecordLength(SIZE_OF_LONG, SIZE_OF_LONG));
     }
 
     public long get(long key, long missingValue)

@@ -16,12 +16,11 @@
 package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static io.zeebe.hashindex.HashIndexDescriptor.RECORD_KEY_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.hashindex.types.ByteArrayValueHandler;
 import io.zeebe.hashindex.types.LongKeyHandler;
-import org.agrona.BitUtil;
 
 /**
  * {@link HashIndex} that maps Long keys to Byte Array values. All values have a
@@ -39,7 +38,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
 
     private static int maxBlockLength(int recordsPerBlock, int valueMaxLength)
     {
-        return BLOCK_DATA_OFFSET + (recordsPerBlock * (RECORD_KEY_OFFSET + BitUtil.SIZE_OF_LONG + valueMaxLength));
+        return BLOCK_DATA_OFFSET + (recordsPerBlock * getRecordLength(SIZE_OF_LONG, valueMaxLength));
     }
 
     public boolean get(long key, byte[] value)
@@ -51,7 +50,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
 
     public boolean put(long key, byte[] value)
     {
-        ensureValueMaxLengt(value);
+        ensureValueMaxLength(value);
 
         keyHandler.theKey = key;
         valueHandler.theValue = value;
@@ -65,7 +64,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
         return remove();
     }
 
-    private void ensureValueMaxLengt(byte[] value)
+    private void ensureValueMaxLength(byte[] value)
     {
         if (value.length > valueMaxLength)
         {
