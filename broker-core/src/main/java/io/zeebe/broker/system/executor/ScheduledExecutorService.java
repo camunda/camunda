@@ -1,4 +1,4 @@
-/**
+/*
  * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
