@@ -22,15 +22,10 @@ import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.util.Properties;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.WorkflowTopicClient;
-import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.*;
 import io.zeebe.client.clustering.RequestTopologyCmd;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
@@ -38,12 +33,9 @@ import io.zeebe.client.event.impl.TopicClientImpl;
 import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.transport.*;
+import io.zeebe.util.actor.*;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
@@ -79,7 +71,7 @@ public class ZeebeClientImpl implements ZeebeClient
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
-        this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("transport");
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
             .bufferSize(1024 * 1024 * sendBufferSize)

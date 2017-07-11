@@ -21,19 +21,13 @@ import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStream
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_LOG_NAME;
 
 import java.io.InputStream;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import org.junit.rules.ExternalResource;
 
 public class EmbeddedBrokerRule extends ExternalResource
@@ -83,6 +77,8 @@ public class EmbeddedBrokerRule extends ExternalResource
     public void stopBroker()
     {
         broker.close();
+        broker = null;
+        System.gc();
     }
 
     public void startBroker()

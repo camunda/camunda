@@ -17,22 +17,15 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import java.util.stream.Stream;
 
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
@@ -50,6 +43,8 @@ public class ClientApiRule extends ExternalResource
     protected MsgPackHelper msgPackHelper;
     protected RawMessageCollector incomingMessageCollector;
 
+    private ActorScheduler scheduler;
+
     public ClientApiRule()
     {
         this.brokerAddress = new SocketAddress(host, port);
@@ -58,8 +53,7 @@ public class ClientApiRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-
-        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        scheduler = ActorSchedulerBuilder.createDefaultScheduler("client-rule");
 
         sendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
@@ -92,6 +86,11 @@ public class ClientApiRule extends ExternalResource
         if (transport != null)
         {
             transport.close();
+        }
+
+        if (scheduler != null)
+        {
+            scheduler.close();
         }
     }
 

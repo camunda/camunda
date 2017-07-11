@@ -15,14 +15,9 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
-import org.agrona.concurrent.AgentRunner;
-
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.event.impl.PollableTopicSubscriptionBuilderImpl;
-import io.zeebe.client.event.impl.TopicClientImpl;
-import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
-import io.zeebe.client.event.impl.TopicSubscriptionImpl;
+import io.zeebe.client.event.impl.*;
 import io.zeebe.client.impl.TaskTopicClientImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
@@ -31,9 +26,8 @@ import io.zeebe.client.task.TaskSubscriptionBuilder;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.actor.*;
+import org.agrona.concurrent.AgentRunner;
 
 public class SubscriptionManager implements TransportListener
 {
@@ -84,8 +78,8 @@ public class SubscriptionManager implements TransportListener
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
 
-        this.acquisitionActorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
-        this.executorActorScheduler = ActorSchedulerBuilder.createDefaultScheduler(numExecutionThreads);
+        this.acquisitionActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("acquisition");
+        this.executorActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("executors", numExecutionThreads);
     }
 
     public void start()

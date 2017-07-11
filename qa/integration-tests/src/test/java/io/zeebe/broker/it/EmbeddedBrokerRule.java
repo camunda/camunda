@@ -19,9 +19,7 @@ import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStream
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_LOG_NAME;
 
 import java.io.InputStream;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
@@ -56,6 +54,8 @@ public class EmbeddedBrokerRule extends ExternalResource
     protected void after()
     {
         stopBroker();
+        broker = null;
+        System.gc();
     }
 
     public void restartBroker()

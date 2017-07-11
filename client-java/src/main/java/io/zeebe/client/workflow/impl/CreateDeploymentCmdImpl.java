@@ -15,26 +15,21 @@
  */
 package io.zeebe.client.workflow.impl;
 
-import static io.zeebe.util.EnsureUtil.*;
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;
-import io.zeebe.client.workflow.cmd.CreateDeploymentCmd;
-import io.zeebe.client.workflow.cmd.DeploymentResult;
-import io.zeebe.client.workflow.cmd.WorkflowDefinition;
+import io.zeebe.client.workflow.cmd.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.util.StreamUtil;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEvent, DeploymentResult> implements CreateDeploymentCmd
 {
@@ -77,7 +72,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     {
         ensureNotNull("classpath resource", resourceName);
 
-        try (final InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourceName))
+        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourceName))
         {
             if (resourceStream != null)
             {
@@ -88,7 +83,8 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
                 throw new FileNotFoundException(resourceName);
             }
 
-        } catch (final IOException e)
+        }
+        catch (final IOException e)
         {
             final String exceptionMsg = String.format("Cannot deploy resource from classpath. %s", e.getMessage());
             throw new RuntimeException(exceptionMsg, e);
@@ -100,10 +96,11 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     {
         ensureNotNull("filename", filename);
 
-        try (final InputStream resourceStream = new FileInputStream(filename))
+        try (InputStream resourceStream = new FileInputStream(filename))
         {
             return resourceStream(resourceStream);
-        } catch (final IOException e)
+        }
+        catch (final IOException e)
         {
             final String exceptionMsg = String.format("Cannot deploy resource from file. %s", e.getMessage());
             throw new RuntimeException(exceptionMsg, e);

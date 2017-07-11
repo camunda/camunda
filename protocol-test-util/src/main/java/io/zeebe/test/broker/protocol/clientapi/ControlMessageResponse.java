@@ -19,14 +19,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.io.DirectBufferInputStream;
-import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
 
 public class ControlMessageResponse implements BufferReader
 {
@@ -72,7 +70,7 @@ public class ControlMessageResponse implements BufferReader
         final int dataLength = responseDecoder.dataLength();
         final int dataOffset = messageHeaderDecoder.encodedLength() + messageHeaderDecoder.blockLength() + ControlMessageResponseDecoder.dataHeaderLength();
 
-        try (final InputStream is = new DirectBufferInputStream(responseBuffer, dataOffset, dataLength))
+        try (InputStream is = new DirectBufferInputStream(responseBuffer, dataOffset, dataLength))
         {
             data = msgPackHelper.readMsgPack(is);
         }

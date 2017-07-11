@@ -25,22 +25,17 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.TopicLeader;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -75,7 +70,7 @@ public class StubBrokerRule extends ExternalResource
     protected void before() throws Throwable
     {
         msgPackHelper = new MsgPackHelper();
-        this.actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        this.actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("broker-rule");
 
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(actorScheduler)

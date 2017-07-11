@@ -21,22 +21,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.slf4j.Logger;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.slf4j.Logger;
 
 public class ActorSchedulerService implements Service<ActorScheduler>
 {
@@ -82,6 +77,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
         final ErrorHandler errorHandler = t -> t.printStackTrace();
 
         scheduler = new ActorSchedulerBuilder()
+                .name("broker")
                 .threadCount(availableThreads)
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(errorHandler)
