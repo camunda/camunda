@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
@@ -295,7 +296,11 @@ public class LogRecoveryTest
         // check if new log creates indices
         // perhaps not equal since he has to process all events
         final int newIndexSize = newLog.getLogBlockIndex().size();
-        assertThat(newIndexSize).isGreaterThan(0);
+        TestUtil.doRepeatedly(() ->
+        {
+            Thread.sleep(1000);
+            return null;
+        }).until((object) -> newIndexSize > 0);
         assertThat(indexSize).isLessThanOrEqualTo(newIndexSize);
 
         // write more events

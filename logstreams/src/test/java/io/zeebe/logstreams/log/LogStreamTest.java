@@ -31,9 +31,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -119,6 +117,7 @@ public class LogStreamTest
             .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE);
 
+        when(mockWriteBuffer.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
         when(mockWriteBuffer.getConductor()).thenReturn(mockWriteBufferConductor);
@@ -282,17 +281,17 @@ public class LogStreamTest
 
         // when log streaming is stopped
         logStream.closeLogStreamController();
+        verify(mockWriteBuffer).closeAsync();
         logStreamController.doWork(); // closing
         logStreamController.doWork(); // close
 
         // then
-        // log stream controller has stop running and reference is null
+        // log stream controller has stop running and reference is not null for reuse
         assertFalse(logStreamController.isRunning());
-        assertNull(logStream.getLogStreamController());
+        assertNotNull(logStream.getLogStreamController());
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
-        // verify(mockWriteBuffer).closeAsync();
 
         // agent and controller is removed from agent runner's
         verify(mockControllerRef).close();
@@ -323,30 +322,31 @@ public class LogStreamTest
         // given open log stream with stopped log stream controller
         logStream.openAsync();
         logStream.getLogBlockIndexController().doWork();
-        LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStreamController controller1 = logStream.getLogStreamController();
+        controller1.doWork();
 
         logStream.closeLogStreamController();
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
+        controller1.doWork(); // closing
+        controller1.doWork(); // close
 
         // when log streaming is started
         logStream.openLogStreamController();
-        logStreamController = logStream.getLogStreamController();
+        final LogStreamController controller2 = logStream.getLogStreamController();
 
         // then
-        // log stream controller has been set
-        assertNotNull(logStreamController);
-        logStreamController.doWork();
+        // log stream controller is reused
+        assertEquals(controller2, controller1);
+        assertNotNull(controller2);
+        controller2.doWork();
         // is running
-        assertTrue(logStreamController.isRunning());
+        assertTrue(controller2.isRunning());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
 
         // verify usage of agent runner service, only one times with mock because after re-opening new agent is used
         verify(mockActorScheduler).schedule(mockWriteBufferConductor);
-        verify(mockActorScheduler).schedule(logStreamController);
+        verify(mockActorScheduler, times(2)).schedule(controller2);
     }
 
     @Test
@@ -461,6 +461,8 @@ public class LogStreamTest
 
         // when log stream is closed
         final CompletableFuture<Void> completableFuture = logStream.closeAsync();
+        verify(mockWriteBuffer).closeAsync();
+
         logBlockIndexController.doWork(); //closing
         logBlockIndexController.doWork(); //close
 
@@ -476,6 +478,37 @@ public class LogStreamTest
 
         // and log storage was closed
         verify(mockLogStorage.getMock()).close();
+    }
+
+    @Test
+    public void shouldCloseLogStreamControllerAndAfterwardsStream()
+    {
+        // given open log stream
+        logStream.openAsync();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
+        logBlockIndexController.doWork();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
+        logStreamController.doWork();
+
+        // when log stream controller is closed
+        final CompletableFuture<Void> completableFuture = logStream.closeLogStreamController();
+        verify(mockWriteBuffer).closeAsync();
+
+        logStreamController.doWork(); // closing
+        logStreamController.doWork(); // close
+
+        // then future is complete
+        assertThat(completableFuture.isDone()).isTrue();
+        assertThat(logStream.getWriteBuffer()).isNull();
+        assertThat(logStreamController.isRunning()).isFalse();
+
+        // when log stream is closed
+        final CompletableFuture<Void> streamCloseFuture = logStream.closeAsync();
+
+        logBlockIndexController.doWork(); //closing
+        logBlockIndexController.doWork(); //close
+
+        assertThat(streamCloseFuture.isDone()).isTrue();
     }
 
     @Test
@@ -522,6 +555,7 @@ public class LogStreamTest
         logStreamController.doWork();
 
         logStream.closeAsync();
+        verify(mockWriteBuffer).closeAsync();
         logBlockIndexController.doWork(); //closing
         logBlockIndexController.doWork(); //close
 

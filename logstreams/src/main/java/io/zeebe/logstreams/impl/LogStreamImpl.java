@@ -15,25 +15,6 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
-import static io.zeebe.util.EnsureUtil.ensureFalse;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -47,6 +28,24 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static io.zeebe.util.EnsureUtil.ensureFalse;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -151,19 +150,15 @@ public final class LogStreamImpl implements LogStream
     @Override
     public CompletableFuture<Void> openAsync()
     {
-        final CompletableFuture<Void> logBlockIndexControllerFuture = logBlockIndexController.openAsync();
-        final CompletableFuture<Void> completableFuture;
         if (logStreamController != null)
         {
-            completableFuture = CompletableFuture.allOf(logBlockIndexControllerFuture,
-                logStreamController.openAsync());
+            return CompletableFuture.allOf(logBlockIndexController.openAsync(),
+                openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()));
         }
         else
         {
-            completableFuture = logBlockIndexControllerFuture;
+            return logBlockIndexController.openAsync();
         }
-
-        return completableFuture;
     }
 
     @Override
@@ -186,30 +181,17 @@ public final class LogStreamImpl implements LogStream
     @Override
     public CompletableFuture<Void> closeAsync()
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        final BiConsumer<Void, Throwable> closeLogStorage = (n, e) ->
+        if (writeBuffer != null)
         {
-            logStorage.close();
-            future.complete(null);
-        };
-
-        //write buffer close
-        final CompletableFuture<Void> logBlockIndexControllerClosingFuture =
-            logBlockIndexController.closeAsync();
-        if (logStreamController != null)
-        {
-            // can't close dispatcher since has no method to reopen
-            // TODO camunda-tngp/dispatcher#12
-            CompletableFuture.allOf(logBlockIndexControllerClosingFuture,
-                logStreamController.closeAsync())
-                .whenComplete(closeLogStorage);
+            return CompletableFuture.allOf(logBlockIndexController.closeAsync(),
+                writeBuffer.closeAsync()
+                           .thenApply((v) -> logStreamController.closeAsync())
+                           .thenAccept((v) -> logStorage.close()));
         }
         else
         {
-            logBlockIndexControllerClosingFuture.whenComplete(closeLogStorage);
+            return logBlockIndexController.closeAsync().thenAccept((v) -> logStorage.close());
         }
-
-        return future;
     }
 
     @Override
@@ -281,35 +263,21 @@ public final class LogStreamImpl implements LogStream
     @Override
     public CompletableFuture<Void> closeLogStreamController()
     {
-        final CompletableFuture<Void> completableFuture;
         if (logStreamController != null)
         {
-            completableFuture = new CompletableFuture<>();
-//            Dispatcher should be closed, but this will fail the integration tests
-//            see TODO camunda-tngp/logstreams#60
-//            writeBuffer.closeAsync()
-//                       .thenCompose((v) ->
-            logStreamController.closeAsync()
-                .handle((v, ex) ->
-                {
-                    writeBuffer = null;
-                    logStreamController = null;
-                    return ex != null
-                        ? completableFuture.completeExceptionally(ex)
-                        : completableFuture.complete(null);
-                });
+            return writeBuffer.closeAsync()
+                              .thenApply((v) -> logStreamController.closeAsync())
+                              .thenAccept((v) -> writeBuffer = null);
         }
         else
         {
-            completableFuture = CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
-        return completableFuture;
     }
 
     @Override
     public CompletableFuture<Void> openLogStreamController()
     {
-
         return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
@@ -323,21 +291,44 @@ public final class LogStreamImpl implements LogStream
     public CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler,
                                                            int maxAppendBlockSize)
     {
-        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(topicName, partitionId)
+        return openStreamControlling(actorScheduler, maxAppendBlockSize);
+    }
+
+    private CompletableFuture<Void> openStreamControlling(ActorScheduler actorScheduler, int maxAppendBlockSize)
+    {
+        if ((writeBuffer != null && writeBuffer.isClosed()) || writeBuffer == null)
+        {
+            final LogStreamBuilder logStreamBuilder = createNewBuilder(actorScheduler, maxAppendBlockSize);
+            writeBuffer = logStreamBuilder.getWriteBuffer();
+            if (logStreamController == null)
+            {
+                logStreamController = new LogStreamController(logStreamBuilder);
+            }
+            else
+            {
+                logStreamController.wrap(logStreamBuilder);
+            }
+        }
+        return logStreamController.openAsync();
+    }
+
+    private LogStreamBuilder createNewBuilder(ActorScheduler actorScheduler, int maxAppendBlockSize)
+    {
+        if (!logStorage.isOpen())
+        {
+            logStorage.open();
+        }
+        return new LogStreamBuilder(topicName, partitionId)
             .logStorage(logStorage)
             .logBlockIndex(blockIndex)
             .actorScheduler(actorScheduler)
             .maxAppendBlockSize(maxAppendBlockSize);
-
-        this.logStreamController = new LogStreamController(logStreamBuilder);
-        this.writeBuffer = logStreamBuilder.getWriteBuffer();
-        return logStreamController.openAsync();
     }
 
     @Override
     public Dispatcher getWriteBuffer()
     {
-        return logStreamController == null ? null : logStreamController.getWriteBuffer();
+        return writeBuffer;
     }
 
     @Override

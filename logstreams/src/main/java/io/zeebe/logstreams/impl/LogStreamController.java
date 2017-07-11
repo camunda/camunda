@@ -15,31 +15,29 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_CLOSE;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_DEFAULT;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_OPEN;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.logstreams.log.LogStreamFailureListener;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.TransitionState;
+import io.zeebe.util.state.WaitState;
+import org.agrona.MutableDirectBuffer;
+import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.MutableDirectBuffer;
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.TransitionState;
-import io.zeebe.util.state.WaitState;
-import org.slf4j.Logger;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static io.zeebe.logstreams.impl.LogStateMachineAgent.*;
 
 public class LogStreamController implements Actor
 {
@@ -61,15 +59,15 @@ public class LogStreamController implements Actor
     protected final LogStateMachineAgent stateMachine;
 
     //  MANDATORY //////////////////////////////////////////////////
-    protected final String name;
-    protected final LogStorage logStorage;
-    protected final ActorScheduler actorScheduler;
+    protected String name;
+    protected LogStorage logStorage;
+    protected ActorScheduler actorScheduler;
     protected ActorReference controllerRef;
     protected ActorReference writeBufferRef;
 
     protected final BlockPeek blockPeek = new BlockPeek();
-    protected final int maxAppendBlockSize;
-    protected final Dispatcher writeBuffer;
+    protected int maxAppendBlockSize;
+    protected Dispatcher writeBuffer;
     protected Subscription writeBufferSubscription;
     protected final Runnable openStateRunnable;
     protected final Runnable closedStateRunnable;
@@ -78,12 +76,7 @@ public class LogStreamController implements Actor
 
     public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        this.name = logStreamBuilder.getLogName();
-        this.logStorage = logStreamBuilder.getLogStorage();
-        this.actorScheduler = logStreamBuilder.getActorScheduler();
-
-        this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
-        this.writeBuffer = logStreamBuilder.getWriteBuffer();
+        wrap(logStreamBuilder);
 
         this.openStateRunnable = () ->
         {
@@ -106,6 +99,16 @@ public class LogStreamController implements Actor
                 .build(), openStateRunnable, closedStateRunnable);
     }
 
+    protected void wrap(LogStreamImpl.LogStreamBuilder logStreamBuilder)
+    {
+        this.name = logStreamBuilder.getLogName();
+        this.logStorage = logStreamBuilder.getLogStorage();
+        this.actorScheduler = logStreamBuilder.getActorScheduler();
+
+        this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
+        this.writeBuffer = logStreamBuilder.getWriteBuffer();
+    }
+
     @Override
     public int doWork()
     {
@@ -121,6 +124,11 @@ public class LogStreamController implements Actor
     protected LogStateMachineAgent getStateMachine()
     {
         return stateMachine;
+    }
+
+    protected int getMaxAppendBlockSize()
+    {
+        return maxAppendBlockSize;
     }
 
     protected class OpeningState implements TransitionState<LogContext>
