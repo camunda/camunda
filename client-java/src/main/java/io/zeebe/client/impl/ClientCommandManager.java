@@ -15,71 +15,69 @@
  */
 package io.zeebe.client.impl;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import java.util.concurrent.*;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.impl.cmd.AbstractCmdImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.Actor;
+import org.agrona.LangUtil;
 
 
 public class ClientCommandManager implements Actor
 {
-    protected final ManyToOneConcurrentArrayQueue<Runnable> commandQueue = new ManyToOneConcurrentArrayQueue<>(100);
-    protected final Consumer<Runnable> commandConsumer = Runnable::run;
+    private int capacity;
 
-    protected final List<ClientCommandController<?>> commandControllers = new ArrayList<>();
+    protected final ClientCommandController[] commandControllers;
+    protected final ArrayBlockingQueue<ClientCommandController> pooledCmds;
 
     protected final ClientTransport transport;
     protected final ClientTopologyManager topologyManager;
 
-    public ClientCommandManager(final ClientTransport transport, final ClientTopologyManager topologyManager)
+    public ClientCommandManager(final ClientTransport transport, final ClientTopologyManager topologyManager, int capacity)
     {
         this.transport = transport;
         this.topologyManager = topologyManager;
+        this.capacity = capacity;
+
+        this.pooledCmds = new ArrayBlockingQueue<>(capacity);
+        this.commandControllers = new ClientCommandController[capacity];
+
+        for (int i = 0; i < capacity; i++)
+        {
+            final ClientCommandController controller = new ClientCommandController(transport, topologyManager, ctrl -> pooledCmds.add(ctrl));
+            this.commandControllers[i] = controller;
+            this.pooledCmds.add(controller);
+        }
     }
 
     @Override
     public int doWork() throws Exception
     {
-        int workCount = commandQueue.drain(commandConsumer);
+        int wc = 0;
 
-        final Iterator<ClientCommandController<?>> iterator = commandControllers.iterator();
-        while (iterator.hasNext())
+        for (int i = 0; i < capacity; i++)
         {
-            final ClientCommandController controller = iterator.next();
-
-            if (!controller.isClosed())
-            {
-                workCount = controller.doWork();
-            }
-            else
-            {
-                iterator.remove();
-            }
+            final ClientCommandController controller = commandControllers[i];
+            wc += controller.doWork();
         }
 
-        return workCount;
+        return wc;
     }
 
     public <R> CompletableFuture<R> executeAsync(final AbstractCmdImpl<R> command)
     {
-        command.getRequestWriter().validate();
-
         final CompletableFuture<R> future = new CompletableFuture<>();
 
-        commandQueue.add(() ->
+        try
         {
-            final ClientCommandController<R> controller = new ClientCommandController<>(transport, topologyManager, command, future);
-            commandControllers.add(controller);
-        });
+            final ClientCommandController ctrl = pooledCmds.take();
+            ctrl.configure(command, future);
+        }
+        catch (InterruptedException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
 
         return future;
     }

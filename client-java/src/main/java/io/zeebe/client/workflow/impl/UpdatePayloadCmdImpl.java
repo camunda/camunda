@@ -33,13 +33,14 @@ public class UpdatePayloadCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanc
     private static final String ERROR_MESSAGE = "Failed to update payload of the workflow instance with key '%d'.";
 
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-    private final MsgPackConverter msgPackConverter = new MsgPackConverter();
+    private final MsgPackConverter msgPackConverter;
 
     private long activityInstanceKey;
 
-    public UpdatePayloadCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
+    public UpdatePayloadCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
         super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
+        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

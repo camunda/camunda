@@ -15,24 +15,20 @@
  */
 package io.zeebe.client.impl.cmd;
 
-import static io.zeebe.protocol.clientapi.ControlMessageType.*;
-import static io.zeebe.util.VarDataUtil.*;
+import static io.zeebe.protocol.clientapi.ControlMessageType.NULL_VAL;
+import static io.zeebe.util.VarDataUtil.readBytes;
 
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
-import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
-import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.util.buffer.RequestWriter;
+import io.zeebe.protocol.clientapi.*;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 
-public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>
+public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R> implements ClientResponseHandler<R>
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
@@ -64,25 +60,12 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     }
 
     @Override
-    public RequestWriter getRequestWriter()
+    public int writeCommand(ExpandableArrayBuffer buffer)
     {
-        return this;
-    }
+        validate();
 
-    @Override
-    public int getLength()
-    {
-        ensureCommandInitialized();
+        int offset = 0;
 
-        return headerEncoder.encodedLength() +
-                requestEncoder.sbeBlockLength() +
-                ControlMessageRequestEncoder.dataHeaderLength() +
-                serializedCommand.length;
-    }
-
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
         ensureCommandInitialized();
 
         headerEncoder.wrap(buffer, offset)
@@ -101,7 +84,11 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
 
         serializedCommand = null;
         reset();
+
+        return requestEncoder.limit();
     }
+
+    protected abstract void validate();
 
     private void ensureCommandInitialized()
     {

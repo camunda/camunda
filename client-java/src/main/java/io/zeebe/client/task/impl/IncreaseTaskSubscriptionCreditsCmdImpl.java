@@ -27,14 +27,15 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
-    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
+    protected final MsgPackConverter msgPackConverter;
 
     private long subscriptionId = -1L;
     private int credits = 0;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
+        this.msgPackConverter = msgPackConverter;
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(final long subscriptionId)

@@ -75,7 +75,7 @@ public class CreateTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        createTaskCommand = new CreateTaskCmdImpl(commandManager, objectMapper, new Topic(TOPIC_NAME, PARTITION_ID));
+        createTaskCommand = new CreateTaskCmdImpl(commandManager, objectMapper, msgPackConverter, new Topic(TOPIC_NAME, PARTITION_ID));
 
         writeBuffer.wrap(BUFFER);
     }

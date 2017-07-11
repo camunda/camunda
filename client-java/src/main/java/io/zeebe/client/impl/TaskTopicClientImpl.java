@@ -45,25 +45,25 @@ public class TaskTopicClientImpl implements TaskTopicClient
     @Override
     public CreateTaskCmd create()
     {
-        return new CreateTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CreateTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     @Override
     public FailTaskCmd fail()
     {
-        return new FailTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new FailTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     @Override
     public UpdateTaskRetriesCmd updateRetries()
     {
-        return new UpdateTaskRetriesCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new UpdateTaskRetriesCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     @Override
     public CompleteTaskCmd complete()
     {
-        return new CompleteTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CompleteTaskCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     @Override
@@ -80,17 +80,17 @@ public class TaskTopicClientImpl implements TaskTopicClient
 
     public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
     {
-        return new CreateTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CreateTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
     {
-        return new CloseTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CloseTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl increaseSubscriptionCredits()
     {
-        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public Topic getTopic()

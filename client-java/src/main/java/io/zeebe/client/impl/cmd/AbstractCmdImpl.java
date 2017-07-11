@@ -17,12 +17,12 @@ package io.zeebe.client.impl.cmd;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.client.cmd.ClientCommand;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
-import io.zeebe.util.buffer.RequestWriter;
+import org.agrona.ExpandableArrayBuffer;
 
 public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
 {
@@ -44,10 +44,12 @@ public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
     }
 
     @Override
-    public Future<R> executeAsync()
+    public CompletableFuture<R> executeAsync()
     {
         return commandManager.executeAsync(this);
     }
+
+    public abstract int writeCommand(ExpandableArrayBuffer writeBuffer);
 
     @Override
     public Topic getTopic()
@@ -56,7 +58,4 @@ public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
     }
 
     public abstract ClientResponseHandler<R> getResponseHandler();
-
-    public abstract RequestWriter getRequestWriter();
-
 }
