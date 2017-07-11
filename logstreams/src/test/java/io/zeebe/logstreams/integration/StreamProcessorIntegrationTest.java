@@ -69,7 +69,7 @@ public class StreamProcessorIntegrationTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         resourceCounter = new SerializableWrapper<>(new Counter());
 

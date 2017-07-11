@@ -48,7 +48,7 @@ public class LogIntegrationTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
