@@ -40,8 +40,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long get(byte[] key, long missingValue)
     {
-        checkKeyLength(key.length);
-
         keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
         get();
@@ -50,8 +48,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long get(DirectBuffer buffer, int offset, int length, long missingValue)
     {
-        checkKeyLength(length);
-
         keyHandler.setKey(buffer, offset, length);
         valueHandler.theValue = missingValue;
         get();
@@ -60,8 +56,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public boolean put(byte[] key, long value)
     {
-        checkKeyLength(key.length);
-
         keyHandler.setKey(key);
         valueHandler.theValue = value;
         return put();
@@ -69,8 +63,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public boolean put(DirectBuffer buffer, int offset, int length, long value)
     {
-        checkKeyLength(length);
-
         keyHandler.setKey(buffer, offset, length);
         valueHandler.theValue = value;
         return put();
@@ -78,8 +70,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long remove(byte[] key, long missingValue)
     {
-        checkKeyLength(key.length);
-
         keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
         remove();
@@ -88,19 +78,10 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long remove(DirectBuffer buffer, int offset, int length, long missingValue)
     {
-        checkKeyLength(length);
-
         keyHandler.setKey(buffer, offset, length);
         valueHandler.theValue = missingValue;
         remove();
         return valueHandler.theValue;
     }
 
-    protected void checkKeyLength(int providedKeyLength)
-    {
-        if (providedKeyLength > keyLength)
-        {
-            throw new IllegalArgumentException("Illegal byte array length: expected at most " + keyLength + ", got " + providedKeyLength);
-        }
-    }
 }

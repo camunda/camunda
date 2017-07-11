@@ -34,20 +34,16 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
 
     public void setKey(byte[] key)
     {
+        checkKeyLength(key.length);
         System.arraycopy(key, 0, this.theKey, 0, key.length);
-        if (key.length < this.keyLength)
-        {
-            Arrays.fill(this.theKey, key.length, this.keyLength, (byte) 0);
-        }
+        zeroRemainingBytes(key.length);
     }
 
     public void setKey(DirectBuffer buffer, int offset, int length)
     {
+        checkKeyLength(length);
         buffer.getBytes(offset, this.theKey, 0, length);
-        if (length < this.keyLength)
-        {
-            Arrays.fill(this.theKey, length, this.keyLength, (byte) 0);
-        }
+        zeroRemainingBytes(length);
     }
 
     @Override
@@ -103,6 +99,22 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
         }
 
         return true;
+    }
+
+    protected void checkKeyLength(final int providedLength)
+    {
+        if (providedLength > keyLength)
+        {
+            throw new IllegalArgumentException("Illegal byte array length: expected at most " + keyLength + ", got " + providedLength);
+        }
+    }
+
+    protected void zeroRemainingBytes(final int length)
+    {
+        if (length < keyLength)
+        {
+            Arrays.fill(theKey, length, keyLength, (byte) 0);
+        }
     }
 
 }
