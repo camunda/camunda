@@ -79,17 +79,12 @@ public class RaftService implements Service<Raft>
     @Override
     public void stop(ServiceStopContext ctx)
     {
-        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
-
-        raft.closeAsync().thenAccept((v) ->
-        {
-            actorRef.close();
-
-            raft.stream().closeAsync().whenComplete((v2, t) ->
-            {
-                closeFuture.complete(null);
-            });
-        });
+        final CompletableFuture<Void> closeFuture = raft.closeAsync()
+                                                        .thenCompose((v) ->
+                                                        {
+                                                            actorRef.close();
+                                                            return raft.stream().closeAsync();
+                                                        });
 
         ctx.async(closeFuture);
 
