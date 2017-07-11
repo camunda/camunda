@@ -15,24 +15,18 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.actor.*;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 
 public class ServiceContainerImpl implements Actor, ServiceContainer
@@ -74,9 +68,11 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     {
         idleStrategy = new WaitingIdleStrategy();
 
-        actorScheduler = new ActorSchedulerBuilder().runnerIdleStrategy(idleStrategy)
-                                                    .runnerErrorHander(DEFAULT_ERROR_HANDLER)
-                                                    .build();
+        actorScheduler = new ActorSchedulerBuilder()
+                .name("service-container")
+                .runnerIdleStrategy(idleStrategy)
+                .runnerErrorHander(DEFAULT_ERROR_HANDLER)
+                .build();
     }
 
     @Override
