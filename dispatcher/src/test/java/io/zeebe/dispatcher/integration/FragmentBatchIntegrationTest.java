@@ -47,7 +47,7 @@ public class FragmentBatchIntegrationTest
     @Before
     public void init()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler();
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 32)
