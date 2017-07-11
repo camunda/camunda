@@ -25,9 +25,15 @@ import io.zeebe.logstreams.log.LoggedEvent;
  */
 public interface StreamProcessorErrorHandler
 {
-    int RESULT_SUCCESS = 1;
-    int RESULT_FAILURE = -1;
-    int RESULT_REJECT = 0;
+
+    /**
+     * Check if the handler can this error.
+     *
+     * @param error
+     *            the occurred error
+     * @return <code>true</code>, if the error can be handled.
+     */
+    boolean canHandle(Exception error);
 
     /**
      * Handle the event processing error.
@@ -37,8 +43,7 @@ public interface StreamProcessorErrorHandler
      * @param error
      *            the occurred error
      *
-     * @return the result, should be one of {@link #RESULT_SUCCESS},
-     *         {@link #RESULT_REJECT}, {@link #RESULT_FAILURE}
+     * @return <code>true</code>, if the event is handled successfully.
      */
-    int onError(LoggedEvent failedEvent, Exception error);
+    boolean onError(LoggedEvent failedEvent, Exception error);
 }

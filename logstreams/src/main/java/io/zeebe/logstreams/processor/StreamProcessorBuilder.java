@@ -20,9 +20,7 @@ import java.util.Objects;
 
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPositionProvider;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.ActorScheduler;
 
@@ -178,7 +176,7 @@ public class StreamProcessorBuilder
 
         if (errorHandler == null)
         {
-            errorHandler = (event, failure) -> StreamProcessorErrorHandler.RESULT_REJECT;
+            errorHandler = new DefaultErrorHandler();
         }
     }
 
@@ -216,4 +214,18 @@ public class StreamProcessorBuilder
         return new StreamProcessorController(ctx);
     }
 
+    private static final class DefaultErrorHandler implements StreamProcessorErrorHandler
+    {
+        @Override
+        public boolean canHandle(Exception error)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onError(LoggedEvent failedEvent, Exception error)
+        {
+            return false;
+        }
+    }
 }

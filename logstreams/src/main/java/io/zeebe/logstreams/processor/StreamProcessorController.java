@@ -25,9 +25,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
 import io.zeebe.util.state.*;
 import org.slf4j.Logger;
 
@@ -234,7 +232,7 @@ public class StreamProcessorController implements Actor
 
     protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
     {
-        LOG.error("Stream processor failed", e);
+        LOG.error("Stream processor '{}' failed.", name(), e);
 
         context.take(TRANSITION_FAIL);
         context.completeFutureExceptionally(e);
@@ -377,19 +375,24 @@ public class StreamProcessorController implements Actor
         @Override
         public void work(Context context) throws Exception
         {
-            final int result = streamProcessorErrorHandler.onError(context.getEvent(), context.getFailure());
+            final Exception failure = context.getFailure();
 
-            if (result == StreamProcessorErrorHandler.RESULT_SUCCESS)
+            if (streamProcessorErrorHandler.canHandle(failure))
             {
-                context.take(TRANSITION_DEFAULT);
-            }
-            else if (result == StreamProcessorErrorHandler.RESULT_FAILURE)
-            {
-                // retry
+                final boolean handled = streamProcessorErrorHandler.onError(context.getEvent(), failure);
+
+                if (handled)
+                {
+                    context.take(TRANSITION_DEFAULT);
+                }
+                else
+                {
+                    // retry
+                }
             }
             else
             {
-                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events. {}", streamProcessorContext.getName(), context.getFailure());
+                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events. {}", name(), failure);
 
                 context.take(TRANSITION_FAIL);
             }
@@ -446,7 +449,7 @@ public class StreamProcessorController implements Actor
         }
         catch (Exception e)
         {
-            LOG.error("Failed to write snapshot", e);
+            LOG.error("Stream processor '%s' failed. Can not write snapshot.", name(), e);
 
             if (snapshotWriter != null)
             {
@@ -506,11 +509,13 @@ public class StreamProcessorController implements Actor
                 {
                     throw new IllegalStateException(
                             String.format("Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.",
-                                          streamProcessorContext.getName()));
+                                          name()));
                 }
             }
-            context.setSnapshotPosition(snapshotPosition);
 
+            streamProcessor.onOpen(streamProcessorContext);
+
+            context.setSnapshotPosition(snapshotPosition);
             context.take(TRANSITION_DEFAULT);
         }
 
@@ -526,25 +531,23 @@ public class StreamProcessorController implements Actor
         @Override
         public int doWork(Context context)
         {
-            // for read-only processors, we don't need to scan the log for further events
-            // that they might have written
+            // for read-only processors, we don't need to scan the log for
+            // further events that they might have written
             if (!isReadOnlyProcessor && targetLogStreamReader.hasNext())
             {
                 final LoggedEvent targetEvent = targetLogStreamReader.next();
-                processEvent(context, targetEvent);
+                processTargetEvent(context, targetEvent);
             }
             else
             {
                 // all events are re-processed
-                streamProcessor.onOpen(streamProcessorContext);
-
                 context.take(TRANSITION_DEFAULT);
                 context.completeFuture();
             }
             return 1;
         }
 
-        protected void processEvent(Context context, final LoggedEvent targetEvent)
+        protected void processTargetEvent(Context context, final LoggedEvent targetEvent)
         {
             // ignore events from other producers
             if (targetEvent.getProducerId() == streamProcessorContext.getId() &&
@@ -558,30 +561,51 @@ public class StreamProcessorController implements Actor
                     return;
                 }
 
-                // seek to the source event (assuming that the reader is near the position)
-                LoggedEvent sourceEvent = null;
-                long currentSourceEventPosition = -1;
-                while (sourceLogStreamReader.hasNext() && currentSourceEventPosition < sourceEventPosition)
-                {
-                    sourceEvent = sourceLogStreamReader.next();
-                    currentSourceEventPosition = sourceEvent.getPosition();
-                }
-
-                if (sourceEvent != null && currentSourceEventPosition == sourceEventPosition)
-                {
-                    // re-process the event from source stream
-                    final EventProcessor eventProcessor = streamProcessor.onEvent(sourceEvent);
-                    eventProcessor.processEvent();
-                    eventProcessor.updateState();
-                    streamProcessor.afterEvent();
-                }
-                else
+                final long lastReadPosition = processSourceEventsUntilPosition(sourceEventPosition);
+                if (lastReadPosition != sourceEventPosition)
                 {
                     // source or target log is maybe corrupted
-                    throw new IllegalStateException(String.format("Stream processor '%s' failed to reprocess. Cannot find source event of written event: %s",
-                                                                  streamProcessorContext.getName(), targetEvent));
+                    final String errorMessage = "Stream processor '%s' failed to reprocess. Cannot find source event of written event: %s";
+                    throw new IllegalStateException(String.format(errorMessage, streamProcessorContext.getName(), targetEvent));
                 }
             }
+        }
+
+        protected long processSourceEventsUntilPosition(final long sourceEventPosition)
+        {
+            // re-process the source event and all other events before (imitate the behavior while regular processing)
+            long currentEventPosition = -1;
+            while (sourceLogStreamReader.hasNext() && currentEventPosition < sourceEventPosition)
+            {
+                final LoggedEvent sourceEvent = sourceLogStreamReader.next();
+                currentEventPosition = sourceEvent.getPosition();
+
+                if (currentEventPosition <= sourceEventPosition && (eventFilter == null || eventFilter.applies(sourceEvent)))
+                {
+                    try
+                    {
+                        final EventProcessor eventProcessor = streamProcessor.onEvent(sourceEvent);
+
+                        if (eventProcessor != null)
+                        {
+                            eventProcessor.processEvent();
+                            eventProcessor.updateState();
+                            streamProcessor.afterEvent();
+
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // ignore re-processing failure if already handled
+                        if (!streamProcessorErrorHandler.canHandle(e))
+                        {
+                            final String errorMessage = "Stream processor '%s' failed to reprocess event: %s";
+                            throw new RuntimeException(String.format(errorMessage, streamProcessorContext.getName(), sourceEvent, e));
+                        }
+                    }
+                }
+            }
+            return currentEventPosition;
         }
 
         @Override

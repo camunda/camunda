@@ -15,32 +15,27 @@
  */
 package io.zeebe.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 
 public class StreamProcessorControllerTest
 {
-    private static final String STREAM_PROCESSOR_NAME = "name";
+    private static final String STREAM_PROCESSOR_NAME = "mock-processor";
     private static final int STREAM_PROCESSOR_ID = 1;
 
     private static final DirectBuffer SOURCE_LOG_STREAM_TOPIC_NAME = wrapString("source-topic");
@@ -910,6 +905,9 @@ public class StreamProcessorControllerTest
         when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
         when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
 
+        final LoggedEvent eventBefore = eventAt(2L);
+        mockSourceLogStreamReader.addEvent(eventBefore);
+
         when(mockSourceEvent.getPosition()).thenReturn(3L);
         mockSourceLogStreamReader.addEvent(mockSourceEvent);
 
@@ -927,12 +925,17 @@ public class StreamProcessorControllerTest
 
         final InOrder inOrder = inOrder(mockStreamProcessor, mockEventProcessor);
 
-        inOrder.verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        inOrder.verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
+
+        inOrder.verify(mockStreamProcessor).onEvent(eventBefore);
         inOrder.verify(mockEventProcessor).processEvent();
         inOrder.verify(mockEventProcessor).updateState();
         inOrder.verify(mockStreamProcessor).afterEvent();
 
-        inOrder.verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
+        inOrder.verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        inOrder.verify(mockEventProcessor).processEvent();
+        inOrder.verify(mockEventProcessor).updateState();
+        inOrder.verify(mockStreamProcessor).afterEvent();
 
         inOrder.verifyNoMoreInteractions();
     }
@@ -1140,13 +1143,45 @@ public class StreamProcessorControllerTest
 
         doThrow(new RuntimeException("expected exception")).when(mockEventProcessor).executeSideEffects();
 
-        when(mockErrorHandler.onError(any(), any())).thenReturn(StreamProcessorErrorHandler.RESULT_REJECT);
+        when(mockErrorHandler.canHandle(any())).thenReturn(false);
 
         open();
 
         // -> open, processing, error handling
         controller.doWork();
         controller.doWork();
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        // verify that it can't be recovered
+        targetLogStreamFailureListener.onFailed(2L);
+        targetLogStreamFailureListener.onRecovered();
+
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+    }
+
+    @Test
+    public void shouldFailIfReprocessingErrorIsNotHandled()
+    {
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        final RuntimeException expectedException = new RuntimeException("expected exception");
+        doThrow(expectedException).when(mockStreamProcessor).onEvent(mockSourceEvent);
+
+        when(mockErrorHandler.canHandle(any())).thenReturn(false);
+
+        open();
+        // -> recovery - no more events
         controller.doWork();
 
         assertThat(controller.isFailed()).isTrue();
@@ -1171,7 +1206,8 @@ public class StreamProcessorControllerTest
         final RuntimeException expectedException = new RuntimeException("expected exception");
         doThrow(expectedException).when(mockEventProcessor).executeSideEffects();
 
-        when(mockErrorHandler.onError(any(), any())).thenReturn(StreamProcessorErrorHandler.RESULT_SUCCESS);
+        when(mockErrorHandler.canHandle(any())).thenReturn(true);
+        when(mockErrorHandler.onError(any(), any())).thenReturn(true);
 
         // when process the first event
         open();
@@ -1200,7 +1236,8 @@ public class StreamProcessorControllerTest
         final RuntimeException expectedException = new RuntimeException("expected exception");
         doThrow(expectedException).when(mockEventProcessor).executeSideEffects();
 
-        when(mockErrorHandler.onError(any(), any())).thenReturn(StreamProcessorErrorHandler.RESULT_FAILURE, StreamProcessorErrorHandler.RESULT_SUCCESS);
+        when(mockErrorHandler.canHandle(any())).thenReturn(true);
+        when(mockErrorHandler.onError(any(), any())).thenReturn(false, true);
 
         // when
         open();
@@ -1215,6 +1252,40 @@ public class StreamProcessorControllerTest
         // then
         verify(mockErrorHandler, times(2)).onError(mockSourceEvent, expectedException);
         assertThat(controller.isOpen()).isTrue();
+    }
+
+    @Test
+    public void shouldHandleReprocessingError()
+    {
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        final LoggedEvent eventBefore = eventAt(2L);
+        mockSourceLogStreamReader.addEvent(eventBefore);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        final RuntimeException expectedException = new RuntimeException("expected exception");
+        doThrow(expectedException).when(mockStreamProcessor).onEvent(eventBefore);
+
+        when(mockErrorHandler.canHandle(any())).thenReturn(true);
+
+        open();
+        // -> recovery - no more events
+        controller.doWork();
+
+        // then the occurred error is handled
+        verify(mockErrorHandler).canHandle(expectedException);
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        verify(mockEventProcessor).processEvent();
+        verify(mockEventProcessor).updateState();
+        verify(mockStreamProcessor).afterEvent();
     }
 
     @Test
