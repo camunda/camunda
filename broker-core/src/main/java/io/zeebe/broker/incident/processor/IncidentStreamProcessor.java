@@ -108,6 +108,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         activityInstanceIndex.close();
         failedTaskIndex.close();
         incidentIndex.close();
+
+        logStreamReader.close();
     }
 
     public static MetadataFilter eventFilter()

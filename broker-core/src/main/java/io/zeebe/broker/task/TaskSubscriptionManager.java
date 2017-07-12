@@ -25,21 +25,11 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
@@ -53,7 +43,11 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 public class TaskSubscriptionManager implements Actor, TransportListener
 {
@@ -108,7 +102,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
                     backpressureRequest(r);
                 }
             });
-        this.backPressuredCreditsRequests = new CompactList(CreditsRequest.LENGTH, creditRequestBuffer.getCapacityUpperBound(), (size) -> ByteBuffer.allocate(size));
+        this.backPressuredCreditsRequests = new CompactList(CreditsRequest.LENGTH, creditRequestBuffer.getCapacityUpperBound(), new HeapBufferAllocator());
     }
 
     @Override

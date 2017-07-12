@@ -171,26 +171,28 @@ public class IncidentStreamProcessorTest
 
         final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
-        while (logStreamReader.hasNext())
+        try (BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream))
         {
-            final LoggedEvent event = logStreamReader.next();
-
-            eventMetadata.reset();
-            event.readMetadata(eventMetadata);
-
-            if (eventMetadata.getEventType() == EventType.INCIDENT_EVENT)
+            while (logStreamReader.hasNext())
             {
-                final MutableDirectBuffer buf = new UnsafeBuffer(new byte[event.getValueLength()]);
-                buf.putBytes(0, event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+                final LoggedEvent event = logStreamReader.next();
 
-                final IncidentEvent incidentEvent = new IncidentEvent();
-                incidentEvent.wrap(buf);
+                eventMetadata.reset();
+                event.readMetadata(eventMetadata);
 
-                incidentEvents.add(incidentEvent);
+                if (eventMetadata.getEventType() == EventType.INCIDENT_EVENT)
+                {
+                    final MutableDirectBuffer buf = new UnsafeBuffer(new byte[event.getValueLength()]);
+                    buf.putBytes(0, event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+
+                    final IncidentEvent incidentEvent = new IncidentEvent();
+                    incidentEvent.wrap(buf);
+
+                    incidentEvents.add(incidentEvent);
+                }
             }
+            return incidentEvents;
         }
-        return incidentEvents;
     }
 
     private long writeTaskEvent(long key, Consumer<TaskEvent> c)

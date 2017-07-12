@@ -17,9 +17,7 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
@@ -27,24 +25,11 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
@@ -53,11 +38,7 @@ import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
@@ -65,6 +46,13 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.FluentMock;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorIntegrationTest
 {
@@ -108,6 +96,7 @@ public class TaskStreamProcessorIntegrationTest
 //    private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
 
     private final TaskEvent followUpTaskEvent = new TaskEvent();
+    private BufferedLogStreamReader logStreamReader;
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
@@ -169,6 +158,8 @@ public class TaskStreamProcessorIntegrationTest
         taskSubscriptionStreamProcessorController.openAsync();
         taskExpireLockStreamProcessorController.openAsync();
 
+        logStreamReader = new BufferedLogStreamReader(logStream, true);
+
         logStreamWriter = new LogStreamWriterImpl(logStream);
         defaultBrokerEventMetadata.eventType(TASK_EVENT);
 
@@ -181,6 +172,8 @@ public class TaskStreamProcessorIntegrationTest
         taskInstanceStreamProcessorController.closeAsync();
         taskSubscriptionStreamProcessorController.closeAsync();
         taskExpireLockStreamProcessorController.closeAsync();
+
+        logStreamReader.close();
 
         logStream.closeAsync();
 
@@ -565,8 +558,6 @@ public class TaskStreamProcessorIntegrationTest
     private LoggedEvent getResultEventOf(long position)
     {
         taskScheduler.waitUntilDone();
-
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
 
         LoggedEvent loggedEvent = null;
         long sourceEventPosition = -1;
