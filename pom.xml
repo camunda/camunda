@@ -28,6 +28,11 @@
         <artifactId>zb-util</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-test-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

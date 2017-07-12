@@ -21,7 +21,7 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
     </dependency>
-  
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
@@ -30,6 +30,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

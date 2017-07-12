@@ -15,7 +15,9 @@
  */
 package io.zeebe.hashindex;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
@@ -50,7 +52,13 @@ public class IndexSerializer
 
     public void readFromStream(InputStream inputStream) throws IOException
     {
-        inputStream.read(buffer, 0, BitUtil.SIZE_OF_INT);
+        final int bytesRead = inputStream.read(buffer, 0, BitUtil.SIZE_OF_INT);
+
+        if (bytesRead < BitUtil.SIZE_OF_INT)
+        {
+            throw new IOException("Unable to read index snapshot version");
+        }
+
         final int version = bufferView.getInt(0);
 
         if (version != VERSION)

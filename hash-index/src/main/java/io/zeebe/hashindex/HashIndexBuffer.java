@@ -18,7 +18,10 @@ package io.zeebe.hashindex;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
@@ -71,11 +74,21 @@ public class HashIndexBuffer implements Closeable
 
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
-        for (int offset = 0; offset < length; offset += buffer.length)
+        int bytesRead = 0;
+        for (int offset = 0; offset < length; offset += bytesRead)
         {
             final int readLength = Math.min(buffer.length, length - offset);
-            inputStream.read(buffer, 0, readLength);
-            UNSAFE.copyMemory(buffer, ARRAY_BASE_OFFSET, null, addr + offset, readLength);
+            bytesRead = inputStream.read(buffer, 0, readLength);
+
+            if (bytesRead > 0)
+            {
+                UNSAFE.copyMemory(buffer, ARRAY_BASE_OFFSET, null, addr + offset, bytesRead);
+            }
+            else
+            {
+                throw new IOException("Unable to read full index buffer from input stream. " +
+                    "Only read " + offset + " bytes but expected " + length + " bytes.");
+            }
         }
     }
 }
