@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractControlMessageCmd;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
@@ -34,7 +33,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     private String lockOwner;
     private int initialCredits = -1;
 
-    public CreateTaskSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CreateTaskSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION);
     }
@@ -63,6 +62,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
         return this;
     }
 
+    @Override
     public void validate()
     {
         topic.validate();

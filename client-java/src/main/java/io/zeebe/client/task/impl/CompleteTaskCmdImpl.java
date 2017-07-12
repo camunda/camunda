@@ -32,7 +32,7 @@ import io.zeebe.client.task.cmd.CompleteTaskCmd;
 public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CompleteTaskCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
     protected String lockOwner;
@@ -40,10 +40,9 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public CompleteTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CompleteTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskEvent.class, TASK_EVENT);
-        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

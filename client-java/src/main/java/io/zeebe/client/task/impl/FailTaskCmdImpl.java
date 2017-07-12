@@ -32,7 +32,7 @@ import io.zeebe.client.task.cmd.FailTaskCmd;
 public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements FailTaskCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
     protected String lockOwner;
@@ -42,10 +42,9 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     protected Map<String, Object> headers = new HashMap<>();
     protected Exception failure;
 
-    public FailTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public FailTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskEvent.class, TASK_EVENT);
-        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

@@ -22,7 +22,6 @@ import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.workflow.cmd.CancelWorkflowInstanceCmd;
 import io.zeebe.protocol.clientapi.EventType;
 
@@ -34,7 +33,7 @@ public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
 
     private long workflowInstanceKey;
 
-    public CancelWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CancelWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
     }

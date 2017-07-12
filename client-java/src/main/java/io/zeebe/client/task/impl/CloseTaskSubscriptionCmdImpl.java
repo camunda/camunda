@@ -27,14 +27,13 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     private long subscriptionId = -1L;
 
-    public CloseTaskSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CloseTaskSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
-        this.msgPackConverter = msgPackConverter;
     }
 
     public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
@@ -43,6 +42,7 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
         return this;
     }
 
+    @Override
     public void validate()
     {
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);

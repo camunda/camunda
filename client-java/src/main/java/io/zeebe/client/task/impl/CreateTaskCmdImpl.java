@@ -32,17 +32,16 @@ import io.zeebe.client.task.cmd.CreateTaskCmd;
 public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateTaskCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected String taskType;
     protected int retries = DEFAULT_RETRIES;
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public CreateTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CreateTaskCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskEvent.class, TASK_EVENT);
-        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

@@ -30,7 +30,6 @@ import io.zeebe.client.clustering.RequestTopologyCmd;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
 import io.zeebe.client.event.impl.TopicClientImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -54,14 +53,13 @@ public class ZeebeClientImpl implements ZeebeClient
     protected SubscriptionManager subscriptionManager;
 
     protected final ClientTopologyManager topologyManager;
-    protected final ClientCommandManager apiCommandManager;
+    protected final ClientCommandManager commandManager;
 
     protected ActorReference topologyManagerActorReference;
     protected ActorReference commandManagerActorReference;
 
     protected boolean connected = false;
 
-    protected final MsgPackConverter msgPackConverter;
 
     public ZeebeClientImpl(final Properties properties)
     {
@@ -91,7 +89,7 @@ public class ZeebeClientImpl implements ZeebeClient
         transport = Transports.newClientTransport()
                 .messageMaxLength(1024 * 1024)
                 .messageReceiveBuffer(dataFrameReceiveBuffer)
-                .requestPoolSize(maxRequests + 16)
+                .requestPoolSize(maxRequests)
                 .scheduler(transportActorScheduler)
                 .sendBuffer(sendBuffer)
                 .build();
@@ -102,8 +100,6 @@ public class ZeebeClientImpl implements ZeebeClient
         objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        msgPackConverter = new MsgPackConverter();
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
@@ -118,7 +114,7 @@ public class ZeebeClientImpl implements ZeebeClient
         transport.registerChannelListener(subscriptionManager);
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
-        apiCommandManager = new ClientCommandManager(transport, topologyManager, maxRequests);
+        commandManager = new ClientCommandManager(transport, topologyManager);
     }
 
     @Override
@@ -126,7 +122,7 @@ public class ZeebeClientImpl implements ZeebeClient
     {
         if (!connected)
         {
-            commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
+            commandManagerActorReference = transportActorScheduler.schedule(commandManager);
             topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
 
             subscriptionManager.start();
@@ -195,7 +191,7 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public RequestTopologyCmd requestTopology()
     {
-        return new RequestTopologyCmdImpl(apiCommandManager, objectMapper);
+        return new RequestTopologyCmdImpl(commandManager, objectMapper);
     }
 
     @Override
@@ -224,7 +220,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
     public ClientCommandManager getCommandManager()
     {
-        return apiCommandManager;
+        return commandManager;
     }
 
     public ClientTopologyManager getTopologyManager()
@@ -250,10 +246,5 @@ public class ZeebeClientImpl implements ZeebeClient
     public ClientTransport getTransport()
     {
         return transport;
-    }
-
-    public MsgPackConverter getMsgPackConverter()
-    {
-        return msgPackConverter;
     }
 }

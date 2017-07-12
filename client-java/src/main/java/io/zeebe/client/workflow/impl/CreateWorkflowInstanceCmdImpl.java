@@ -37,12 +37,11 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     private static final String EXCEPTION_MSG = "Failed to create instance of workflow with BPMN process id '%s' and version '%d'.";
 
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    public CreateWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CreateWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
-        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

@@ -16,8 +16,14 @@
 package io.zeebe.client.impl;
 
 import io.zeebe.client.WorkflowTopicClient;
-import io.zeebe.client.workflow.cmd.*;
-import io.zeebe.client.workflow.impl.*;
+import io.zeebe.client.workflow.cmd.CancelWorkflowInstanceCmd;
+import io.zeebe.client.workflow.cmd.CreateDeploymentCmd;
+import io.zeebe.client.workflow.cmd.CreateWorkflowInstanceCmd;
+import io.zeebe.client.workflow.cmd.UpdatePayloadCmd;
+import io.zeebe.client.workflow.impl.CancelWorkflowInstanceCmdImpl;
+import io.zeebe.client.workflow.impl.CreateDeploymentCmdImpl;
+import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCmdImpl;
+import io.zeebe.client.workflow.impl.UpdatePayloadCmdImpl;
 
 public class WorkflowTopicClientImpl implements WorkflowTopicClient
 {
@@ -33,25 +39,25 @@ public class WorkflowTopicClientImpl implements WorkflowTopicClient
     @Override
     public CreateDeploymentCmd deploy()
     {
-        return new CreateDeploymentCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CreateDeploymentCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public CreateWorkflowInstanceCmd create()
     {
-        return new CreateWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CreateWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public CancelWorkflowInstanceCmd cancel()
     {
-        return new CancelWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CancelWorkflowInstanceCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     @Override
     public UpdatePayloadCmd updatePayload()
     {
-        return new UpdatePayloadCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new UpdatePayloadCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
 }

@@ -15,45 +15,76 @@
  */
 package io.zeebe.client.clustering.impl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.impl.Topic;
-import io.zeebe.transport.*;
+import io.zeebe.transport.SocketAddress;
 
 
 public class TopologyImpl implements Topology
 {
-    protected Map<Topic, RemoteAddress> topicLeaders;
-    protected List<RemoteAddress> brokers;
+
+    protected Map<Topic, SocketAddress> topicLeaders;
+    protected List<SocketAddress> brokers;
     protected final Random randomBroker = new Random();
 
+    // required for object mapper deserialization
     public TopologyImpl()
     {
         topicLeaders = new HashMap<>();
         brokers = new ArrayList<>();
     }
 
-    public void addBroker(RemoteAddress remoteAddress)
+    public TopologyImpl(final SocketAddress... initialBrokers)
     {
-        brokers.add(remoteAddress);
+        topicLeaders = new HashMap<>();
+        brokers = Arrays.asList(initialBrokers);
+    }
+
+    public Map<Topic, SocketAddress> getTopicLeaders()
+    {
+        return topicLeaders;
+    }
+
+    // required for object mapper deserialization
+    public TopologyImpl setTopicLeaders(final List<TopicLeader> topicLeaders)
+    {
+        this.topicLeaders = topicLeaders.stream()
+            .collect(Collectors.toMap(
+                TopicLeader::getTopic,
+                TopicLeader::getSocketAddress
+            ));
+
+        return this;
+    }
+
+    public List<SocketAddress> getBrokers()
+    {
+        return brokers;
+    }
+
+    // required for object mapper deserialization
+    public TopologyImpl setBrokers(final List<SocketAddress> brokers)
+    {
+        this.brokers = brokers;
+        return this;
     }
 
     @Override
-    public RemoteAddress getLeaderForTopic(Topic topic)
+    public SocketAddress getLeaderForTopic(final Topic topic)
     {
-        if (topic != null)
-        {
-            return topicLeaders.get(topic);
-        }
-        else
-        {
-            return getRandomBroker();
-        }
+        return topicLeaders.get(topic);
     }
 
     @Override
-    public RemoteAddress getRandomBroker()
+    public SocketAddress getRandomBroker()
     {
         if (!brokers.isEmpty())
         {
@@ -73,19 +104,6 @@ public class TopologyImpl implements Topology
             "topicLeaders=" + topicLeaders +
             ", brokers=" + brokers +
             '}';
-    }
-
-    public void update(TopologyResponse topologyDto, ClientTransport transport)
-    {
-        for (SocketAddress addr : topologyDto.getBrokers())
-        {
-            addBroker(transport.registerRemoteAddress(addr));
-        }
-
-        for (TopicLeader leader : topologyDto.getTopicLeaders())
-        {
-            topicLeaders.put(leader.getTopic(), transport.registerRemoteAddress(leader.getSocketAddress()));
-        }
     }
 
 }

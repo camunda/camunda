@@ -32,7 +32,7 @@ import io.zeebe.client.task.cmd.UpdateTaskRetriesCmd;
 public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements UpdateTaskRetriesCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected final MsgPackConverter msgPackConverter;
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
     protected int retries = -1;
@@ -40,10 +40,9 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public UpdateTaskRetriesCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public UpdateTaskRetriesCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskEvent.class, TASK_EVENT);
-        this.msgPackConverter = msgPackConverter;
     }
 
     @Override

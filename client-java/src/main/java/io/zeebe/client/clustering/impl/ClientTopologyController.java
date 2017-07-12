@@ -18,17 +18,23 @@ package io.zeebe.client.clustering.impl;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.state.*;
-import org.agrona.DirectBuffer;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.WaitState;
+
 
 public class ClientTopologyController
 {
-    public static final long REFRESH_INTERVAL = Duration.ofSeconds(10).toMillis();
+    public static final Duration REFRESH_INTERVAL = Duration.ofSeconds(10);
 
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_FAILED = 1;
@@ -39,11 +45,11 @@ public class ClientTopologyController
     protected final ClosedState closedState = new ClosedState();
     protected final IdleState idleState = new IdleState();
 
-    private final ClientOutput output;
+    protected final RequestResponseController requestController;
 
     public ClientTopologyController(final ClientTransport clientTransport)
     {
-        output = clientTransport.getOutput();
+        requestController = new RequestResponseController(clientTransport);
 
         stateMachine = StateMachine.builder(Context::new)
             .initialState(requestTopologyState)
@@ -55,7 +61,7 @@ public class ClientTopologyController
             .build();
     }
 
-    public ClientTopologyController configure(final RemoteAddress socketAddress, final BufferWriter bufferWriter, final BufferReader bufferReader, final CompletableFuture<Void> resultFuture)
+    public ClientTopologyController configure(final SocketAddress socketAddress, final BufferWriter bufferWriter, final BufferReader bufferReader, final CompletableFuture<Void> resultFuture)
     {
         stateMachine.reset();
 
@@ -66,7 +72,7 @@ public class ClientTopologyController
 
         final Context context = stateMachine.getContext();
         context.resultFuture = resultFuture;
-        context.remoteAddress = socketAddress;
+        context.socketAddress = socketAddress;
         context.bufferWriter = bufferWriter;
         context.bufferReader = bufferReader;
 
@@ -75,7 +81,8 @@ public class ClientTopologyController
 
     public int doWork()
     {
-        return stateMachine.doWork();
+        int workCount = stateMachine.doWork();
+        return workCount += requestController.doWork();
     }
 
     public boolean isIdle()
@@ -89,12 +96,9 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final ClientRequest request = output.sendRequest(context.remoteAddress, context.bufferWriter);
-            if (request != null)
-            {
-                context.request = request;
-                context.take(TRANSITION_DEFAULT);
-            }
+            requestController.open(context.socketAddress, context.bufferWriter, context.bufferReader);
+
+            context.take(TRANSITION_DEFAULT);
 
             return 1;
         }
@@ -107,40 +111,24 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            int workCount = 0;
-
-            final ClientRequest request = context.request;
-
-            if (request.isDone())
+            if (requestController.isResponseAvailable())
             {
-                try
-                {
-                    final DirectBuffer response = request.get();
-                    context.bufferReader.wrap(response, 0, response.capacity());
+                context.resultFuture.complete(null);
+                context.take(TRANSITION_DEFAULT);
 
-                    if (context.resultFuture != null)
-                    {
-                        context.resultFuture.complete(null);
-                    }
-                    context.take(TRANSITION_DEFAULT);
-                }
-                catch (Exception e)
-                {
-                    if (context.resultFuture != null)
-                    {
-                        context.resultFuture.completeExceptionally(e);
-                    }
-                    context.take(TRANSITION_FAILED);
-                }
-                finally
-                {
-                    request.close();
-                }
-
-                workCount = 1;
+                return 1;
             }
+            else if (requestController.isFailed())
+            {
+                context.resultFuture.completeExceptionally(requestController.getFailure());
+                context.take(TRANSITION_FAILED);
 
-            return workCount;
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
     }
 
@@ -150,7 +138,9 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
+            requestController.close();
             context.take(TRANSITION_DEFAULT);
+
             context.reset();
 
             return 1;
@@ -163,7 +153,7 @@ public class ClientTopologyController
         @Override
         public void work(final Context context) throws Exception
         {
-            if (System.currentTimeMillis() >= context.nextRefresh)
+            if (Instant.now().isAfter(context.nextRefresh))
             {
                 context.take(TRANSITION_DEFAULT);
             }
@@ -174,19 +164,16 @@ public class ClientTopologyController
 
     static class Context extends SimpleStateMachineContext
     {
-
         // can be null if automatic refresh was trigger
         CompletableFuture<Void> resultFuture;
 
-        ClientRequest request;
-
         // keep during reset to allow automatic refresh with last configuration
-        RemoteAddress remoteAddress;
+        SocketAddress socketAddress;
         BufferWriter bufferWriter;
         BufferReader bufferReader;
 
         // set during reset of context, e.g. on configure(...) and CloseState
-        long nextRefresh;
+        Instant nextRefresh;
 
         Context(final StateMachine<?> stateMachine)
         {
@@ -202,7 +189,7 @@ public class ClientTopologyController
             }
             resultFuture = null;
 
-            nextRefresh = System.currentTimeMillis() + REFRESH_INTERVAL;
+            nextRefresh = Instant.now().plus(REFRESH_INTERVAL);
         }
 
     }

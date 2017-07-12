@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.workflow.cmd.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.util.StreamUtil;
@@ -38,7 +37,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
 
     protected String resource;
 
-    public CreateDeploymentCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CreateDeploymentCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, DeploymentEvent.class, EventType.DEPLOYMENT_EVENT);
     }

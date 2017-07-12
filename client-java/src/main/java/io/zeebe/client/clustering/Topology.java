@@ -16,11 +16,12 @@
 package io.zeebe.client.clustering;
 
 import io.zeebe.client.impl.Topic;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 
 public interface Topology
 {
-    RemoteAddress getLeaderForTopic(Topic topic);
+    SocketAddress getLeaderForTopic(Topic topic);
 
-    RemoteAddress getRandomBroker();
+    SocketAddress getRandomBroker();
+
 }
