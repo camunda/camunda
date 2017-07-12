@@ -62,7 +62,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
+        this.index = new Bytes2LongHashIndex(8388608, 16, SIZE_OF_COMPOSITE_KEY);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;

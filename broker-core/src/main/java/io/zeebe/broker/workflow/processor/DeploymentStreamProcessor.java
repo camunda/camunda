@@ -78,7 +78,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.index = new Bytes2LongHashIndex(8388608, 16, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 

@@ -127,7 +127,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.responseWriter = responseWriter;
         this.logStreamReader = new BufferedLogStreamReader();
 
-        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
+        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(8388608, 16, SIZE_OF_PROCESS_ID);
 
         this.workflowDeploymentCache = new WorkflowDeploymentCache(deploymentCacheSize, logStreamReader);
         this.payloadCache = new PayloadCache(payloadCacheSize, logStreamReader);

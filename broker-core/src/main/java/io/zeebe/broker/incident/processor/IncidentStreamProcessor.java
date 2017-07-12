@@ -78,8 +78,8 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     public IncidentStreamProcessor()
     {
-        this.activityInstanceIndex = new Long2LongHashIndex(Short.MAX_VALUE, 64);
-        this.failedTaskIndex = new Long2LongHashIndex(Short.MAX_VALUE, 64);
+        this.activityInstanceIndex = new Long2LongHashIndex(8388608, 16);
+        this.failedTaskIndex = new Long2LongHashIndex(8388608, 16);
         this.incidentIndex = new IncidentIndex();
 
         this.indexSnapshot = new ComposedSnapshot(

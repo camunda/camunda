@@ -47,7 +47,7 @@ public class PayloadCache implements AutoCloseable
 
     public PayloadCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Long2LongHashIndex(Short.MAX_VALUE, 256);
+        this.index = new Long2LongHashIndex(8388608, 16);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;

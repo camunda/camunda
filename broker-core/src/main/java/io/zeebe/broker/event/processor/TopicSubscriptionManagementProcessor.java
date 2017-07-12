@@ -94,7 +94,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
-        this.ackIndex = new Bytes2LongHashIndex(Short.MAX_VALUE, 256, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
+        this.ackIndex = new Bytes2LongHashIndex(8388608, 16, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
         this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex);
     }
 
