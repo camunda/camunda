@@ -18,6 +18,8 @@ package io.zeebe.logstreams.log;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import io.zeebe.util.CloseableSilently;
+
 /**
  * Reads the log stream in an iterator-like pattern. Common usage:
  *
@@ -37,7 +39,7 @@ import java.util.NoSuchElementException;
  * </pre>
  *
  */
-public interface LogStreamReader extends Iterator<LoggedEvent>
+public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilently
 {
     /**
      * Initialize the reader and seek to the first event.

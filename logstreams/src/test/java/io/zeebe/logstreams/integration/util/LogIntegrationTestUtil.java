@@ -15,18 +15,13 @@
  */
 package io.zeebe.logstreams.integration.util;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
 
+import io.zeebe.logstreams.log.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
 
 public class LogIntegrationTestUtil
 {
@@ -54,33 +49,35 @@ public class LogIntegrationTestUtil
 
     public static void waitUntilWrittenKey(final LogStream log, final int key)
     {
-        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true);
-
-        logReader.seekToLastEvent();
-
-        long entryKey = 0;
-        while (entryKey < key - 1)
+        try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true))
         {
-            if (logReader.hasNext())
+            logReader.seekToLastEvent();
+
+            long entryKey = 0;
+            while (entryKey < key - 1)
             {
-                final LoggedEvent nextEntry = logReader.next();
-                entryKey = nextEntry.getKey();
+                if (logReader.hasNext())
+                {
+                    final LoggedEvent nextEntry = logReader.next();
+                    entryKey = nextEntry.getKey();
+                }
             }
         }
     }
 
     public static void waitUntilWrittenEvents(final LogStream log, final int eventCount)
     {
-        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true);
-
-        long count = 0;
-        while (count < eventCount)
+        try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true))
         {
-            if (logReader.hasNext())
+            long count = 0;
+            while (count < eventCount)
             {
-                logReader.next();
+                if (logReader.hasNext())
+                {
+                    logReader.next();
 
-                count += 1;
+                    count += 1;
+                }
             }
         }
     }

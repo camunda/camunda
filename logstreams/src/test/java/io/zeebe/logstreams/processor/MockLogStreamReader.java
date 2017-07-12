@@ -15,14 +15,9 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 
 public class MockLogStreamReader implements LogStreamReader
 {
@@ -134,6 +129,12 @@ public class MockLogStreamReader implements LogStreamReader
     public LogStream getMockingLog()
     {
         return mockingLog;
+    }
+
+    @Override
+    public void close()
+    {
+        events.clear();
     }
 
     protected static class Entry

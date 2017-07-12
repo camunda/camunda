@@ -16,20 +16,22 @@
 package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
-import static io.zeebe.logstreams.spi.LogStorage.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.allocation.*;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class BufferedLogStreamReader implements LogStreamReader
+public class BufferedLogStreamReader implements LogStreamReader, CloseableSilently
 {
     protected static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
@@ -53,6 +55,8 @@ public class BufferedLogStreamReader implements LogStreamReader
     protected LogStorage logStorage;
     protected LogBlockIndex blockIndex;
 
+    protected final BufferAllocator bufferAllocator = new DirectBufferAllocator();
+    protected AllocatedBuffer allocatedBuffer;
     protected ByteBuffer ioBuffer;
     protected int available;
     protected long nextReadAddr;
@@ -76,7 +80,8 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     public BufferedLogStreamReader(int initialBufferCapacity, boolean readUncommittedEntries)
     {
-        this.ioBuffer = ByteBuffer.allocateDirect(initialBufferCapacity);
+        this.allocatedBuffer = bufferAllocator.allocate(initialBufferCapacity);
+        this.ioBuffer = allocatedBuffer.getRawBuffer();
         this.buffer.wrap(ioBuffer);
         this.readUncommittedEntries = readUncommittedEntries;
     }
@@ -155,6 +160,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         iteratorState = IteratorState.UNINITIALIZED;
     }
 
+    @Override
     public boolean seek(long seekPosition)
     {
         clear();
@@ -322,7 +328,11 @@ public class BufferedLogStreamReader implements LogStreamReader
         if (ioBuffer.remaining() < requiredCapacity)
         {
             final int pos = ioBuffer.position();
-            final ByteBuffer newBuffer = ByteBuffer.allocateDirect(pos + requiredCapacity);
+
+            allocatedBuffer.close();
+
+            allocatedBuffer = bufferAllocator.allocate(pos + requiredCapacity);
+            final ByteBuffer newBuffer = allocatedBuffer.getRawBuffer();
 
             if (pos > 0)
             {
@@ -338,6 +348,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
     }
 
+    @Override
     public boolean hasNext()
     {
         ensureInitialized();
@@ -429,6 +440,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
     }
 
+    @Override
     public LoggedEvent next()
     {
         if (!hasNext())
@@ -463,6 +475,12 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         return curr.getPosition();
+    }
+
+    @Override
+    public void close()
+    {
+        allocatedBuffer.close();
     }
 
 }

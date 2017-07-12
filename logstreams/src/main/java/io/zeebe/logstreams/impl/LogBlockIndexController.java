@@ -16,9 +16,7 @@
 package io.zeebe.logstreams.impl;
 
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_CLOSE;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_DEFAULT;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.TRANSITION_OPEN;
+import static io.zeebe.logstreams.impl.LogStateMachineAgent.*;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
@@ -26,17 +24,14 @@ import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.TransitionState;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.actor.*;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocators;
+import io.zeebe.util.state.*;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
 /**
@@ -100,6 +95,7 @@ public class LogBlockIndexController implements Actor
     protected long nextAddress = INVALID_ADDRESS;
     protected int bufferSize;
     protected ByteBuffer ioBuffer;
+    protected AllocatedBuffer allocatedBuffer;
     protected CompletableFuture<Void> truncateFuture;
     protected Position commitPosition;
 
@@ -121,14 +117,17 @@ public class LogBlockIndexController implements Actor
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
         this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
         this.bufferSize = logStreamBuilder.getReadBlockSize();
-        ioBuffer = ByteBuffer.allocateDirect(bufferSize);
-        buffer.wrap(ioBuffer);
 
         this.openStateRunnable = () ->
         {
             actorRef = actorScheduler.schedule(this);
         };
-        this.closedStateRunnable = () -> actorRef.close();
+        this.closedStateRunnable = () ->
+        {
+            allocatedBuffer.close();
+
+            actorRef.close();
+        };
 
         this.stateMachine = new LogStateMachineAgent(
             StateMachine.<LogContext>builder(s -> new LogContext(s))
@@ -174,6 +173,10 @@ public class LogBlockIndexController implements Actor
         {
             try
             {
+                allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
+                ioBuffer = allocatedBuffer.getRawBuffer();
+                buffer.wrap(ioBuffer);
+
                 if (!logStorage.isOpen())
                 {
                     logStorage.open();
@@ -290,7 +293,11 @@ public class LogBlockIndexController implements Actor
         {
             // increase buffer and try again
             bufferSize *= 2;
-            ioBuffer = ByteBuffer.allocateDirect(bufferSize);
+
+            allocatedBuffer.close();
+
+            allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
+            ioBuffer = allocatedBuffer.getRawBuffer();
             buffer.wrap(ioBuffer);
         }
 

@@ -15,24 +15,12 @@
  */
 package io.zeebe.logstreams.impl;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.impl.PositionUtil;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.actor.ActorScheduler;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static io.zeebe.util.EnsureUtil.ensureFalse;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -40,12 +28,17 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
-import static io.zeebe.util.EnsureUtil.ensureFalse;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.impl.PositionUtil;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.*;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -102,11 +95,13 @@ public final class LogStreamImpl implements LogStream
     }
 
 
+    @Override
     public LogBlockIndexController getLogBlockIndexController()
     {
         return logBlockIndexController;
     }
 
+    @Override
     public LogStreamController getLogStreamController()
     {
         return logStreamController;
@@ -629,7 +624,10 @@ public final class LogStreamImpl implements LogStream
             if (writeBuffer == null)
             {
                 final BufferedLogStreamReader logReader = new BufferedLogStreamReader(getLogStorage(), getBlockIndex());
+
                 writeBuffer = initWriteBuffer(writeBuffer, logReader, logName, writeBufferSize);
+
+                logReader.close();
             }
             return writeBuffer;
         }

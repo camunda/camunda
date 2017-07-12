@@ -15,21 +15,14 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static io.zeebe.logstreams.log.MockLogStorage.newLogEntries;
 import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
@@ -37,13 +30,9 @@ import java.util.NoSuchElementException;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.buffer.DirectBufferReader;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -76,6 +65,12 @@ public class BufferedLogStreamReaderTest
         when(mockLogStream.getLogBlockIndex()).thenReturn(mockBlockIndex);
 
         reader = new BufferedLogStreamReader();
+    }
+
+    @After
+    public void cleanUp()
+    {
+        reader.close();
     }
 
     @Test
@@ -693,14 +688,16 @@ public class BufferedLogStreamReaderTest
         when(logStream.getCommitPosition()).thenReturn(5L);
 
         // given
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(512);
-        logStreamReader.wrap(logStream);
+        try (BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(512))
+        {
+            logStreamReader.wrap(logStream);
 
-        // when
-        final boolean found = logStreamReader.seek(3);
+            // when
+            final boolean found = logStreamReader.seek(3);
 
-        // then
-        assertThat(found).isTrue();
+            // then
+            assertThat(found).isTrue();
+        }
     }
 
     @Test
