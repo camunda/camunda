@@ -15,27 +15,58 @@
  */
 package io.zeebe.transport;
 
-import org.assertj.core.api.Assertions;
-import org.junit.After;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.agrona.DirectBuffer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.util.FailingBufferWriter;
+import io.zeebe.transport.util.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.buffer.DirectBufferWriter;
 
-@Ignore("https://github.com/camunda-tngp/zb-transport/issues/25")
 public class ClientTransportTest
 {
+
+    public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
+    public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
+    public static final SocketAddress SERVER_ADDRESS2 = new SocketAddress("localhost", 51116);
+
+    public static final int REQUEST_POOL_SIZE = 4;
+    public static final int SEND_BUFFER_SIZE = 16 * 1024;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
     protected ClientTransport clientTransport;
-    protected ServerTransport serverTransport;
+    protected DummyServerTransport serverTransport;
 
     private ActorScheduler actorScheduler;
 
@@ -43,543 +74,328 @@ public class ClientTransportTest
     public void setUp()
     {
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-//
-//        clientTransport = Transports.createTransport("client")
-//            .actorScheduler(actorScheduler)
-//            .channelKeepAlivePeriod(Integer.MAX_VALUE)
-//            .build();
-//
-//        serverTransport = Transports.createTransport("server")
-//                .actorScheduler(actorScheduler)
-//                .build();
-    }
+        closeables.manage(actorScheduler);
 
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
-        clientTransport.close();
-        serverTransport.close();
-        actorScheduler.close();
-    }
+        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+            .bufferSize(SEND_BUFFER_SIZE)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
+        closeables.manage(clientSendBuffer);
 
-    /*
-     * TODO: rename to ClientTransportTest
-     *
-     * TODO: test cases to write
-     *   - uses the same channel for two consecutive requests to the same remote
-     *   - uses different channel for different remotes
-     *   - should open new channel once channel has closed
-     *   - should close channels when transport closes
-     *   - should fail request when channel does not connect
-     *   - should return null when request pool capacity is exceeded
-     *   - should refill pool when request is closed; that request should be reusable (i.e. old state purged, etc.)
-     */
+        clientTransport = Transports.newClientTransport()
+                .sendBuffer(clientSendBuffer)
+                .requestPoolSize(REQUEST_POOL_SIZE)
+                .scheduler(actorScheduler)
+                .build();
+        closeables.manage(clientTransport);
+
+        serverTransport = new DummyServerTransport();
+        closeables.manage(serverTransport);
+    }
 
     @Test
-    public void fail()
+    public void shouldUseSameChannelForConsecutiveRequestsToSameRemote()
     {
-        Assertions.fail("implement this");
+        // given
+        serverTransport.listenOn(SERVER_ADDRESS1);
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput output = clientTransport.getOutput();
+
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+
+        final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
+
+        // when
+        TestUtil.doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1))
+            .until((r) -> messageCounter.get() == 2);
+
+        // then
+        assertThat(serverTransport.getClientChannels(SERVER_ADDRESS1)).hasSize(1);
     }
-//
-//    @Test
-//    public void shouldServeClientChannel()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        // when
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // then
-//        assertThat(channel.isReady()).isTrue();
-//        assertThat(channel.getRemoteAddress()).isEqualTo(addr);
-//    }
-//
-//    @Test
-//    public void shouldServeClientChannelAsync()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        // when
-//        final PooledFuture<Channel> channelFuture = channelManager.requestChannelAsync(addr);
-//
-//        // then
-//        final Channel channel = TestUtil
-//                .doRepeatedly(() -> channelFuture.poll())
-//                .until(c -> c != null);
-//        assertThat(channelFuture.isFailed()).isFalse();
-//
-//        assertThat(channel.isReady()).isTrue();
-//        assertThat(channel.getRemoteAddress()).isEqualTo(addr);
-//    }
-//
-//    @Test
-//    public void shouldReuseClientChannelsToSameRemoteAddress()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel stream1 = channelManager.requestChannel(addr);
-//
-//        // when
-//        final Channel stream2 = channelManager.requestChannel(addr);
-//
-//        // then
-//        assertThat(stream1).isSameAs(stream2);
-//    }
-//
-//    @Test
-//    public void shouldNotReuseStreamsToDifferentRemoteAddress()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr1 = new SocketAddress("localhost", 51115);
-//        final SocketAddress addr2 = new SocketAddress("localhost", 51116);
-//        serverTransport.createServerSocketBinding(addr1).bind();
-//        serverTransport.createServerSocketBinding(addr2).bind();
-//
-//        final Channel stream1 = channelManager.requestChannel(addr1);
-//
-//        // when
-//        final Channel stream2 = channelManager.requestChannel(addr2);
-//
-//        // then
-//        assertThat(stream2).isNotSameAs(stream1);
-//        assertThat(stream2.getStreamId()).isNotEqualTo(stream1.getStreamId());
-//    }
-//
-//    @Test
-//    public void shouldOpenNewChannelAfterChannelClose()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel1 = channelManager.requestChannel(addr);
-//        ((ChannelImpl) channel1).initiateClose();
-//        TestUtil.waitUntil(() -> channel1.isClosed());
-//
-//        // when
-//        final Channel channel2 = channelManager.requestChannel(addr);
-//
-//        // then
-//        assertThat(channel2).isNotSameAs(channel1);
-//        assertThat(channel2.getStreamId()).isNotEqualTo(channel1.getStreamId());
-//    }
-//
-//    @Test
-//    public void shouldCloseChannelsOnPoolClose()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // when
-//        channelManager.closeAllChannelsAsync().join();
-//
-//        // then
-//        assertThat(channel.isClosed()).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldEvictUnusedStreamWhenCapacityIsReached()
-//    {
-//        // given
-//        ClockUtil.setCurrentTime(new Date().getTime());
-//
-//        final int initialCapacity = 2;
-//
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .initialCapacity(initialCapacity)
-//                .build();
-//
-//        bindServerSocketsInPortRange(51115, initialCapacity + 1);
-//        final Channel[] channels = openStreamsInPortRange(channelManager, 51115, initialCapacity);
-//
-//        channelManager.returnChannel(channels[1]);
-//        ClockUtil.addTime(Duration.ofHours(1));
-//        channelManager.returnChannel(channels[0]);
-//
-//        // when
-//        final Channel newChannel = channelManager.requestChannel(new SocketAddress("localhost", 51115 + initialCapacity));
-//
-//        // then
-//        // there is no object reuse
-//        assertThat(channels).doesNotContain(newChannel);
-//
-//        // the least recently returned channel has been closed asynchronously
-//        TestUtil.waitUntil(() -> channels[1].isClosed());
-//        assertThat(channels[1].isClosed()).isTrue();
-//        assertThat(channels[0].isReady()).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldGrowPoolWhenCapacityIsExceeded()
-//    {
-//        final int initialCapacity = 2;
-//
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .initialCapacity(initialCapacity)
-//                .build();
-//
-//        bindServerSocketsInPortRange(51115, initialCapacity + 1);
-//
-//        // when
-//        final Channel[] channels = openStreamsInPortRange(channelManager, 51115, initialCapacity + 1);
-//
-//        // then all channels are open
-//        assertThat(channels).hasSize(initialCapacity + 1);
-//        for (Channel channel : channels)
-//        {
-//            assertThat(channel.isReady()).isTrue();
-//        }
-//    }
-//
-//    @Test
-//    public void shouldFailToServeAsyncWhenChannelConnectFails()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//
-//        // when
-//        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
-//
-//        // then
-//        TestUtil.waitUntil(() -> future.isFailed());
-//
-//        assertThat(future.isFailed()).isTrue();
-//        assertThat(future.poll()).isNull();
-//    }
-//
-//    @Test
-//    public void shouldFailToServeWhenChannelConnectFails()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//
-//        // then
-//        exception.expect(CompletionException.class);
-//
-//        // when
-//        channelManager.requestChannel(addr);
-//    }
-//
-//    @Test
-//    public void shouldAllowNullValuesOnReturnChannel()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool().build();
-//
-//        // when
-//        try
-//        {
-//            channelManager.returnChannel(null);
-//            // then there is no exception
-//        }
-//        catch (Exception e)
-//        {
-//            fail("should not throw exception");
-//        }
-//    }
-//
-//    @Test
-//    public void shouldResetFailedConnectFuturesOnRelease()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
-//
-//        TestUtil.waitUntil(() -> future.isFailed());
-//
-//        // when
-//        future.release();
-//
-//        // then
-//        assertThat(future.poll()).isNull();
-//        assertThat(future.isFailed()).isFalse();
-//    }
-//
-//    @Test
-//    public void shouldResetSuccessfulConnectFuturesOnRelease()
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final PooledFuture<Channel> future = channelManager.requestChannelAsync(addr);
-//        TestUtil.waitUntil(() -> future.poll() != null);
-//
-//        // when
-//        future.release();
-//
-//        // then
-//        assertThat(future.poll()).isNull();
-//        assertThat(future.isFailed()).isFalse();
-//    }
-//
-//    @Test
-//    public void shouldFailConcurrentRequestsForSameRemoteAddress()
-//    {
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//
-//        // when
-//        final PooledFuture<Channel> future1 = channelManager.requestChannelAsync(addr);
-//        final PooledFuture<Channel> future2 = channelManager.requestChannelAsync(addr);
-//        TestUtil.waitUntil(() -> future1.isFailed() && future2.isFailed());
-//
-//        // then
-//        assertThat(future1.isFailed()).isTrue();
-//        assertThat(future2.isFailed()).isTrue();
-//    }
-//
-//    /**
-//     * Reproducing a deadlock bug when a channel is attempted to be reopened while the transport is closing down
-//     */
-//    @Test
-//    public void shouldCloseTransportWithFailingChannel() throws IOException, InterruptedException
-//    {
-//        // given
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-//
-//        // when
-//        clientTransport.close();
-//
-//        // then
-//        assertThat(channel.isClosed()).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldReopenChannelOnInterruption() throws IOException
-//    {
-//        // given
-//        final RecordingChannelListener listener = new RecordingChannelListener();
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        clientTransport.registerChannelListener(listener);
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // when interrupting the channel
-//        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-//        TestUtil.waitUntil(() -> !listener.getInterruptedChannels().isEmpty());
-//
-//        // then
-//        TestUtil.waitUntil(() -> channel.isReady());
-//        assertThat(channel.isReady()).isTrue();
-//        assertThat(listener.getOpenedChannels()).containsExactly(channel, channel);
-//    }
-//    /**
-//     * This test does not work reliably due to timing issues. The timeout at which a failing
-//     * connection is detected is platform-specific, so the test cannot make an assumption
-//     * how long three failing reconnect attempts take.
-//     */
-//    @Test
-//    @Ignore("can be resolved with https://github.com/camunda-tngp/zb-transport/issues/20")
-//    public void shouldMakeAtMostThreeConsecutiveFailingAttemptsToReopen() throws Exception
-//    {
-//        // given
-//        final RecordingChannelListener listener = new RecordingChannelListener();
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .build();
-//
-//        clientTransport.registerChannelListener(listener);
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        final ServerSocketBinding serverSocketBinding = serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // when interrupting the channel permanently
-//        ((ServerSocketBindingImpl) serverSocketBinding).closeMedia();
-//        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-//
-//        // then
-//        TestUtil.waitUntil(() -> listener.getInterruptedChannels().size() == 4); // initial failure and three failed reopening attempts
-//        Thread.sleep(500L); // wait a bit for additional reopen tries
-//        assertThat(listener.getInterruptedChannels()).containsExactly(channel, channel, channel, channel);
-//        assertThat(channel.isClosed()).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldNotReopenChannelOnExpectedClose()
-//    {
-//        // given
-//        final RecordingChannelHandler listener = new RecordingChannelHandler();
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // when closing the channel unexpectedly
-//        ((ChannelImpl) channel).initiateClose();
-//        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
-//
-//        // then
-//        TestUtil.waitUntil(() -> channel.isClosed());
-//        assertThat(channel.isClosed()).isTrue();
-//        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel);
-//    }
-//
-//    @Test
-//    public void shouldBeAbleToSendOnReopenedChannel() throws IOException
-//    {
-//        // given
-//        final RecordingChannelHandler clientListener = new RecordingChannelHandler();
-//        final RecordingChannelHandler serverListener = new RecordingChannelHandler();
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, clientListener)
-//                .build();
-//
-//        final DataFramePool dataFramePool = DataFramePool.newBoundedPool(2, clientTransport.getSendBuffer());
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport
-//            .createServerSocketBinding(addr)
-//            .transportChannelHandler(serverListener)
-//            .bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // reopening the channel
-//        ((ChannelImpl) channel).getSocketChannel().shutdownInput();
-//        TestUtil.waitUntil(() -> clientListener.getChannelOpenInvocations().size() == 2);
-//
-//        // when
-//        dataFramePool.openFrame(channel.getStreamId(), 10).commit();
-//
-//        // then
-//        TestUtil.waitUntil(() -> !serverListener.getChannelReceiveMessageInvocations().isEmpty());
-//        assertThat(serverListener.getChannelReceiveMessageInvocations()).hasSize(1);
-//    }
-//
-//    @Test
-//    public void shouldNotReopenChannelIfNotConfigured() throws IOException
-//    {
-//        // given
-//        final RecordingChannelHandler listener = new RecordingChannelHandler();
-//        final ChannelManager channelManager = clientTransport
-//                .createClientChannelPool()
-//                .reopenChannelsOnException(false)
-//                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, listener)
-//                .build();
-//
-//        final SocketAddress addr = new SocketAddress("localhost", 51115);
-//        serverTransport.createServerSocketBinding(addr).bind();
-//
-//        final Channel channel = channelManager.requestChannel(addr);
-//
-//        // when closing the channel unexpectedly
-//        ((ChannelImpl) channel).getSocketChannel().socket().shutdownInput();
-//        TestUtil.waitUntil(() -> !listener.getChannelCloseInvocations().isEmpty());
-//
-//        // then
-//        TestUtil.waitUntil(() -> channel.isClosed());
-//        assertThat(channel.isClosed()).isTrue();
-//        assertThat(listener.getChannelOpenInvocations()).containsExactly(channel);
-//    }
-//
-//    @Test
-//    public void shouldEvictOldestUnusedChannelWhenManagerCapacityIsReached()
-//    {
-//        // given
-//        ClockUtil.setCurrentTime(Instant.now());
-//        final int portRangeStart = 51115;
-//        final int managerCapacity = 4;
-//        final ChannelManager channelManager = clientTransport.createClientChannelPool()
-//            .initialCapacity(managerCapacity)
-//            .build();
-//
-//        bindServerSocketsInPortRange(portRangeStart, managerCapacity + 1);
-//        final Channel[] channels = openStreamsInPortRange(channelManager, portRangeStart, managerCapacity);
-//
-//        // releasing all channels but the first one
-//        for (int i = 1; i < channels.length; i++)
-//        {
-//            ClockUtil.addTime(Duration.ofSeconds(1));
-//            channelManager.returnChannel(channels[i]);
-//        }
-//
-//        // when opening a new channel such that the capacity is exceeded
-//        openStreamsInPortRange(channelManager, portRangeStart + managerCapacity, 1);
-//
-//        // then the oldest unused channel is closed
-//        TestUtil.waitUntil(() -> channels[1].isClosed());
-//
-//        assertThat(channels[0].isReady()).isTrue();
-//        assertThat(channels[1].isClosed()).isTrue();
-//        assertThat(channels[2].isReady()).isTrue();
-//        assertThat(channels[3].isReady()).isTrue();
-//    }
-//
-//    protected Channel[] openStreamsInPortRange(ChannelManager pool, int firstPort, int range)
-//    {
-//        final Channel[] channels = new Channel[range];
-//        for (int i = 0; i < range; i++)
-//        {
-//            channels[i] = pool.requestChannel(new SocketAddress("localhost", firstPort + i));
-//        }
-//        return channels;
-//    }
-//
-//    protected void bindServerSocketsInPortRange(int firstPort, int range)
-//    {
-//        for (int i = 0; i < range + 1; i++)
-//        {
-//            serverTransport.createServerSocketBinding(new SocketAddress("localhost", firstPort + i)).bind();
-//        }
-//    }
+
+    @Test
+    public void shouldUseDifferentChannelsForDifferentRemotes()
+    {
+        // given
+        serverTransport.listenOn(SERVER_ADDRESS1);
+        serverTransport.listenOn(SERVER_ADDRESS2);
+        final ClientOutput output = clientTransport.getOutput();
+
+        final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final RemoteAddress remote2 = clientTransport.registerRemoteAddress(SERVER_ADDRESS2);
+
+        output.sendRequest(remote1, new DirectBufferWriter().wrap(BUF1));
+        output.sendRequest(remote2, new DirectBufferWriter().wrap(BUF1));
+
+        // when
+        final AtomicInteger messageCounter1 = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
+        final AtomicInteger messageCounter2 = serverTransport.acceptNextConnection(SERVER_ADDRESS2);
+
+        // then
+        TestUtil.doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1))
+            .until((r) -> messageCounter1.get() == 1);
+        TestUtil.doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS2))
+            .until((r) -> messageCounter2.get() == 1);
+
+        assertThat(serverTransport.getClientChannels(SERVER_ADDRESS1)).hasSize(1);
+        assertThat(serverTransport.getClientChannels(SERVER_ADDRESS2)).hasSize(1);
+    }
+
+    @Test
+    public void shouldOpenNewChannelOnceChannelIsClosed()
+    {
+        // given
+        serverTransport.listenOn(SERVER_ADDRESS1);
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput output = clientTransport.getOutput();
+
+        final ClientRequest request = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+        serverTransport.acceptNextConnection(SERVER_ADDRESS1);
+
+        serverTransport.getClientChannels(SERVER_ADDRESS1).get(0).close();
+        TestUtil.waitUntil(() -> request.isFailed());
+
+        // when
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+
+        // then
+        final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
+
+        TestUtil.doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1))
+            .until((r) -> messageCounter.get() == 1);
+
+        // then
+        assertThat(serverTransport.getClientChannels(SERVER_ADDRESS1)).hasSize(2);
+    }
+
+    @Test
+    public void shouldCloseChannelsWhenTransportCloses()
+    {
+        // given
+        serverTransport.listenOn(SERVER_ADDRESS1);
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput output = clientTransport.getOutput();
+
+        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+        final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
+        TestUtil.doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1)).until(i -> messageCounter.get() == 1);
+
+        // when
+        clientTransport.close();
+        serverTransport.receive(SERVER_ADDRESS1); // receive once more to make server recognize that channel has closed
+
+        // then
+        final TransportChannel channel = serverTransport.getClientChannels(SERVER_ADDRESS1).get(0);
+        TestUtil.waitUntil(() -> !channel.getNioChannel().isOpen());
+
+        assertThat(serverTransport.getClientChannels(SERVER_ADDRESS1)).hasSize(1);
+        assertThat(channel.getNioChannel().isOpen()).isFalse();
+    }
+
+    @Test
+    public void shouldFailRequestWhenChannelDoesNotConnect()
+    {
+        // given
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput output = clientTransport.getOutput();
+
+        // when
+        final ClientRequest request = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+
+        // then
+        TestUtil.waitUntil(() -> request.isFailed());
+
+        assertThat(request.isFailed()).isTrue();
+
+        try
+        {
+            request.get();
+            fail("Should not resolve");
+        }
+        catch (Exception e)
+        {
+            assertThat(e).isInstanceOf(ExecutionException.class);
+        }
+    }
+
+    @Test
+    public void shouldNotOpenRequestWhenClienRequestPoolCapacityIsExceeded()
+    {
+        // given
+        final ClientOutput clientOutput = clientTransport.getOutput();
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        for (int i = 0; i < REQUEST_POOL_SIZE; i++)
+        {
+            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        }
+
+        // when
+        final ClientRequest request = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+
+        // then
+        assertThat(request).isNull();
+
+    }
+
+    @Test
+    public void shouldReuseRequestOnceClosed()
+    {
+        // given
+        final ClientOutput clientOutput = clientTransport.getOutput();
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        for (int i = 0; i < REQUEST_POOL_SIZE - 1; i++)
+        {
+            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        }
+
+        final ClientRequest request = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        TestUtil.waitUntil(() -> request.isFailed());
+        request.close();
+
+        serverTransport.listenOn(SERVER_ADDRESS1); // don't let request fail next time
+
+        // when
+        final ClientRequest newRequest = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+
+        // then
+        assertThat(newRequest).isNotNull();
+        assertThat(newRequest).isSameAs(request); // testing object identity may be too strict from an API perspective but is good to identify technical issues
+
+        // and the request state should be reset
+        assertThat(newRequest.isDone()).isFalse();
+        assertThat(newRequest.isFailed()).isFalse();
+    }
+
+    @Test
+    public void shouldReturnRequestToPoolWhenBufferWriterFails()
+    {
+        // given
+        final FailingBufferWriter failingWriter = new FailingBufferWriter();
+        final DirectBufferWriter successfulWriter = new DirectBufferWriter().wrap(BUF1);
+
+        final ClientOutput clientOutput = clientTransport.getOutput();
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        for (int i = 0; i < REQUEST_POOL_SIZE; i++)
+        {
+            try
+            {
+                clientOutput.sendRequest(remoteAddress, failingWriter);
+            }
+            catch (FailingBufferWriterException e)
+            {
+                // expected
+            }
+        }
+
+        // when
+        final ClientRequest request = clientOutput.sendRequest(remoteAddress, successfulWriter);
+
+        // then
+        assertThat(request).isNotNull();
+    }
+
+    protected class DummyServerTransport implements AutoCloseable
+    {
+        protected Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
+        protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
+        protected RemoteAddressList remoteList = new RemoteAddressList();
+
+        public void listenOn(SocketAddress localAddress)
+        {
+            ServerSocketChannel socketChannel = null;
+            try
+            {
+                socketChannel = ServerSocketChannel.open();
+                socketChannel.bind(localAddress.toInetSocketAddress());
+                socketChannel.configureBlocking(true);
+                serverChannels.put(localAddress, socketChannel);
+            }
+            catch (IOException e1)
+            {
+                if (socketChannel != null)
+                {
+                    try
+                    {
+                        socketChannel.close();
+                    }
+                    catch (IOException e2)
+                    {
+                        throw new RuntimeException(e2);
+                    }
+                }
+                throw new RuntimeException(e1);
+            }
+        }
+
+        public AtomicInteger acceptNextConnection(SocketAddress localAddress)
+        {
+            final AtomicInteger messageCounter = new AtomicInteger(0);
+            acceptNextConnection(localAddress, messageCounter);
+            return messageCounter;
+        }
+
+        public List<TransportChannel> getClientChannels(SocketAddress localAddress)
+        {
+            return clientChannels.get(localAddress);
+        }
+
+        public void acceptNextConnection(SocketAddress localAddress, AtomicInteger messageCounter)
+        {
+            try
+            {
+                final SocketChannel clientChannel = serverChannels.get(localAddress).accept();
+                clientChannel.configureBlocking(false);
+                final RemoteAddress remoteAddress = remoteList.register(new SocketAddress((InetSocketAddress) clientChannel.getRemoteAddress()));
+
+                final TransportChannel c = new TransportChannel(
+                    null,
+                    remoteAddress,
+                    128,
+                    (b, o, l, streamId, failed) ->
+                    {
+                        messageCounter.incrementAndGet();
+                        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+                    },
+                    null,
+                    clientChannel);
+
+                clientChannels.computeIfAbsent(localAddress, a -> new ArrayList<>());
+                clientChannels.get(localAddress).add(c);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public int receive(SocketAddress localAddress)
+        {
+            return clientChannels.get(localAddress).stream().mapToInt(c -> c.receive()).sum();
+        }
+
+        public void close()
+        {
+            clientChannels.forEach((a, channels) -> channels.forEach(c -> c.close()));
+
+            for (ServerSocketChannel channel : serverChannels.values())
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

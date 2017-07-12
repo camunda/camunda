@@ -18,7 +18,10 @@ package io.zeebe.transport;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.RemoteAddressList;
@@ -64,14 +67,15 @@ public class ClientTransport implements AutoCloseable
         return remoteAddressList.getByStreamId(streamId);
     }
 
-    public CompletableFuture<Subscription> openSubscription(String subscriptionName)
+    public CompletableFuture<ClientInputMessageSubscription> openSubscription(String subscriptionName, ClientMessageHandler messageHandler)
     {
         if (receiveBuffer == null)
         {
             throw new RuntimeException("Cannot throw exception. No receive buffer in use");
         }
 
-        return receiveBuffer.openSubscriptionAsync(subscriptionName);
+        return receiveBuffer.openSubscriptionAsync(subscriptionName)
+                .thenApply(s -> new ClientInputMessageSubscriptionImpl(s, messageHandler, output, remoteAddressList));
     }
 
     public void registerChannelListener(TransportListener channelListener)
@@ -110,5 +114,39 @@ public class ClientTransport implements AutoCloseable
     public CompletableFuture<Void> closeAllChannels()
     {
         return transportActorContext.closeAllOpenChannels();
+    }
+
+    protected static class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
+    {
+
+        protected final Subscription subscription;
+        protected final FragmentHandler messageHandler;
+
+        public ClientInputMessageSubscriptionImpl(
+            Subscription subscription,
+            ClientMessageHandler messageHandler,
+            ClientOutput output,
+            RemoteAddressList remoteAddresses)
+        {
+            this.subscription = subscription;
+            this.messageHandler = new FragmentHandler()
+            {
+                @Override
+                public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+                {
+                    final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
+                    final boolean success = messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
+
+                    return success ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
+                }
+            };
+        }
+
+        @Override
+        public int poll()
+        {
+            return subscription.poll(messageHandler, Integer.MAX_VALUE);
+        }
+
     }
 }

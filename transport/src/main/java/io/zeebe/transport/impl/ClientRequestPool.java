@@ -46,7 +46,7 @@ public class ClientRequestPool implements AutoCloseable
     public ClientRequestImpl open(RemoteAddress remoteAddress, BufferWriter writer)
     {
 
-        final ClientRequestImpl request = availableRequests.poll();
+        ClientRequestImpl request = availableRequests.poll();
 
         if (request != null)
         {
@@ -65,7 +65,7 @@ public class ClientRequestPool implements AutoCloseable
                 if (!requestOpened)
                 {
                     availableRequests.add(request);
-                    return null;
+                    request = null;
                 }
             }
         }

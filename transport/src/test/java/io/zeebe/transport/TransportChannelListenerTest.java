@@ -19,12 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.util.actor.ActorScheduler;
@@ -33,6 +34,8 @@ import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class TransportChannelListenerTest
 {
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     private static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
     protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
@@ -47,36 +50,32 @@ public class TransportChannelListenerTest
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-                .bufferSize(32 * 1024 * 1024)
-                .subscriptions("sender")
-                .actorScheduler(actorScheduler)
-                .build();
+            .bufferSize(32 * 1024 * 1024)
+            .subscriptions("sender")
+            .actorScheduler(actorScheduler)
+            .build();
+        closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
             .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
+        closeables.manage(serverSendBuffer);
 
         clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(128)
             .scheduler(actorScheduler)
             .build();
+        closeables.manage(clientTransport);
 
         serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
             .bindAddress(ADDRESS.toInetSocketAddress())
             .scheduler(actorScheduler)
             .build(null, null);
-    }
-
-    @After
-    public void tearDown()
-    {
-        clientTransport.close();
-        serverTransport.close();
-        actorScheduler.close();
+        closeables.manage(serverTransport);
     }
 
     @Test

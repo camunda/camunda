@@ -21,12 +21,13 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -40,21 +41,15 @@ public class MixedProtocolsTest
     protected final TransportMessage message = new TransportMessage();
 
     private ActorScheduler actorScheduler;
-    protected ClientTransport clientTransport;
-    protected ServerTransport serverTransport;
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Before
     public void setup()
     {
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-    }
-
-    @After
-    public void tearDown()
-    {
-        clientTransport.close();
-        serverTransport.close();
-        actorScheduler.close();
+        closeables.manage(actorScheduler);
     }
 
     @Test
@@ -69,26 +64,30 @@ public class MixedProtocolsTest
             .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
+        closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
             .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
+        closeables.manage(serverSendBuffer);
 
-        clientTransport = Transports.newClientTransport()
+        final ClientTransport clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(128)
             .scheduler(actorScheduler)
             .build();
+        closeables.manage(clientTransport);
 
         final ReverseOrderChannelHandler handler = new ReverseOrderChannelHandler();
 
-        serverTransport = Transports.newServerTransport()
+        final ServerTransport serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
             .bindAddress(addr.toInetSocketAddress())
             .scheduler(actorScheduler)
             .build(handler, handler);
+        closeables.manage(serverTransport);
 
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(addr);
 

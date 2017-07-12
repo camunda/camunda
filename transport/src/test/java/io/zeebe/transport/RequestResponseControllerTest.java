@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,9 +31,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.util.FailingBufferWriter;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferReader;
 import io.zeebe.util.buffer.DirectBufferWriter;
 
@@ -125,7 +124,7 @@ public class RequestResponseControllerTest
         output.addStubRequests(request);
 
         final BufferReader responseReader = mock(BufferReader.class);
-        rrController.open(RECEIVER, new FailingWriter(), responseReader);
+        rrController.open(RECEIVER, new FailingBufferWriter(), responseReader);
 
         // when
         TestUtil.doRepeatedly(() -> rrController.doWork())
@@ -218,19 +217,5 @@ public class RequestResponseControllerTest
         rrController.open(RECEIVER, new DirectBufferWriter().wrap(BUF1), null);
     }
 
-    protected static class FailingWriter implements BufferWriter
-    {
-        @Override
-        public int getLength()
-        {
-            return 10;
-        }
-
-        @Override
-        public void write(MutableDirectBuffer buffer, int offset)
-        {
-            throw new RuntimeException("Could not write - expected");
-        }
-    }
 
 }

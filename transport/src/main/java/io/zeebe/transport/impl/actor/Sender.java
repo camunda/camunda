@@ -105,7 +105,7 @@ public class Sender implements Actor
                 final BlockPeek blockPeek = context.blockPeek;
                 final TransportChannel ch = channelMap.get(blockPeek.getStreamId());
 
-                if (ch != null)
+                if (ch != null && !ch.isClosed())
                 {
                     context.writeChannel = ch;
                     return true;

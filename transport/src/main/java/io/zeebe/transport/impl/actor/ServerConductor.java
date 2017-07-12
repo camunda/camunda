@@ -71,10 +71,13 @@ public class ServerConductor extends Conductor
 
             RemoteAddress remoteAddress = remoteAddressList.getByAddress(socketAddress);
 
-            if (remoteAddress == null)
+            if (remoteAddress != null)
             {
-                remoteAddress = remoteAddressList.register(socketAddress);
+                // make sure to generate a new stream id
+                remoteAddressList.retire(remoteAddress);
             }
+
+            remoteAddress = remoteAddressList.register(socketAddress);
 
             final TransportChannel ch = new TransportChannel(this,
                 remoteAddress,

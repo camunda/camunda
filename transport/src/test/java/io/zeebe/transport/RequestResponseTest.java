@@ -23,12 +23,13 @@ import java.util.Queue;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -42,21 +43,15 @@ public class RequestResponseTest
     protected DirectBufferWriter bufferWriter = new DirectBufferWriter();
 
     private ActorScheduler actorScheduler;
-    private ClientTransport clientTransport;
-    private ServerTransport serverTransport;
+
+    @Rule
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Before
     public void setup()
     {
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-    }
-
-    @After
-    public void teardown()
-    {
-        clientTransport.close();
-        serverTransport.close();
-        actorScheduler.close();
+        closeables.manage(actorScheduler);
     }
 
     @Test
@@ -70,20 +65,23 @@ public class RequestResponseTest
             .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
+        closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
             .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
+        closeables.manage(serverSendBuffer);
 
-        clientTransport = Transports.newClientTransport()
+        final ClientTransport clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(128)
             .scheduler(actorScheduler)
             .build();
+        closeables.manage(clientTransport);
 
-        serverTransport = Transports.newServerTransport()
+        final ServerTransport serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
             .bindAddress(addr.toInetSocketAddress())
             .scheduler(actorScheduler)
@@ -96,6 +94,7 @@ public class RequestResponseTest
                     .remoteStreamId(remote.getStreamId());
                 return output.sendResponse(response);
             });
+        closeables.manage(serverTransport);
 
         final int numRequests = 100_000;
         int numResponsesReceived = 0;

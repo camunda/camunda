@@ -17,6 +17,7 @@ package io.zeebe.transport;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -24,6 +25,7 @@ import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.time.ClockUtil;
 
+@Ignore
 public class ClientChannelKeepAliveTest
 {
     protected static final long KEEP_ALIVE_PERIOD = 1000;

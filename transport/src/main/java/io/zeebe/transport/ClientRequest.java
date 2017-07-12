@@ -30,4 +30,6 @@ public interface ClientRequest extends AutoCloseable, Future<DirectBuffer>
 
     @Override
     void close();
+
+    boolean isFailed();
 }

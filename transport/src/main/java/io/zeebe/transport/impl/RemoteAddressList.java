@@ -44,15 +44,24 @@ public class RemoteAddressList
 
         for (int i = 0; i < currSize; i++)
         {
-            final RemoteAddress remoteAddress = index[i];
-
-            if (remoteAddress.getAddress().equals(inetSocketAddress))
+            if (index[i] != null)
             {
-                return remoteAddress;
+                final RemoteAddress remoteAddress = index[i];
+
+                if (remoteAddress.getAddress().equals(inetSocketAddress))
+                {
+                    return remoteAddress;
+                }
             }
         }
 
         return null;
+    }
+
+    public void retire(RemoteAddress remote)
+    {
+        final int streamId = remote.getStreamId();
+        index[streamId] = null;
     }
 
     public synchronized RemoteAddress register(SocketAddress inetSocketAddress)

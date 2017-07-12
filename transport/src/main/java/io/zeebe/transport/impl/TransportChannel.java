@@ -186,7 +186,6 @@ public class TransportChannel
         return remoteAddress.getStreamId();
     }
 
-
     public void registerSelector(Selector selector, int ops)
     {
         try
@@ -262,6 +261,11 @@ public class TransportChannel
         }
     }
 
+    public boolean isClosed()
+    {
+        return STATE_FIELD.get(this) == CLOSED;
+    }
+
     private void doClose()
     {
         try
@@ -295,7 +299,10 @@ public class TransportChannel
             // invoke listener only once and only if connected was invoked as well
             if (STATE_FIELD.getAndSet(this, CLOSED) == CONNECTED)
             {
-                listener.onChannelDisconnected(this);
+                if (listener != null)
+                {
+                    listener.onChannelDisconnected(this);
+                }
             }
         }
     }
@@ -327,6 +334,11 @@ public class TransportChannel
     public void close()
     {
         doClose();
+    }
+
+    public SocketChannel getNioChannel()
+    {
+        return media;
     }
 
 }

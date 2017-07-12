@@ -214,6 +214,11 @@ public class ClientRequestImpl implements ClientRequest
         return STATE_FIELD.get(this) == AWAITING_RESPONSE;
     }
 
+    public boolean isFailed()
+    {
+        return STATE_FIELD.get(this) == FAILED;
+    }
+
     @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
