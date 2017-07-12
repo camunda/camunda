@@ -15,14 +15,15 @@
  */
 package io.zeebe.list;
 
-import static java.lang.Math.*;
 import static io.zeebe.list.CompactListDescriptor.*;
+import static java.lang.Math.max;
 
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Comparator;
-import java.util.function.Function;
 
+import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocator;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,8 +32,9 @@ import org.agrona.io.DirectBufferInputStream;
 /**
  * Compact, off-heap list datastructure
  */
-public class CompactList implements Iterable<MutableDirectBuffer>
+public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSilently
 {
+    protected final AllocatedBuffer allocatedBuffer;
     protected final UnsafeBuffer listBuffer;
     protected final UnsafeBuffer elementBuffer = new UnsafeBuffer(0, 0);
 
@@ -40,16 +42,18 @@ public class CompactList implements Iterable<MutableDirectBuffer>
 
     protected final CompactListIterator iterator;
 
-    public CompactList(int elementMaxLength, int capacity, Function<Integer, ByteBuffer> bufferAllocator)
+    public CompactList(int elementMaxLength, int capacity, BufferAllocator bufferAllocator)
     {
-        this(bufferAllocator.apply(requiredBufferCapacity(framedLength(elementMaxLength), capacity)), elementMaxLength, capacity);
+        this(bufferAllocator.allocate(requiredBufferCapacity(framedLength(elementMaxLength), capacity)), elementMaxLength, capacity);
     }
 
-    public CompactList(ByteBuffer underlyingBuffer, int elementMaxLength, int capacity)
+    public CompactList(AllocatedBuffer allocatedBuffer, int elementMaxLength, int capacity)
     {
+        this.allocatedBuffer = allocatedBuffer;
+
         framedElementLength = framedLength(elementMaxLength);
         final int requiredBufferCapacity = requiredBufferCapacity(framedElementLength, capacity);
-        final int bufferCapacity = underlyingBuffer.capacity();
+        final int bufferCapacity = allocatedBuffer.capacity();
 
         if (bufferCapacity < requiredBufferCapacity)
         {
@@ -58,7 +62,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         }
 
         listBuffer = new UnsafeBuffer(0, 0);
-        listBuffer.wrap(underlyingBuffer, 0, requiredBufferCapacity);
+        listBuffer.wrap(allocatedBuffer.getRawBuffer(), 0, requiredBufferCapacity);
 
         // write header
         listBuffer.putInt(sizeOffset(), 0);
@@ -76,6 +80,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         framedElementLength = framedLength(elementMaxLength);
 
         iterator = new CompactListIterator(this);
+        this.allocatedBuffer = null;
     }
 
     /**
@@ -420,5 +425,14 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     public InputStream toInputStream()
     {
         return new DirectBufferInputStream(listBuffer);
+    }
+
+    @Override
+    public void close()
+    {
+        if (allocatedBuffer != null)
+        {
+            allocatedBuffer.close();
+        }
     }
 }

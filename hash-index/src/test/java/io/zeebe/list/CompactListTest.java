@@ -15,18 +15,15 @@
  */
 package io.zeebe.list;
 
+import static io.zeebe.list.CompactListDescriptor.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.list.CompactListDescriptor.elementDataOffset;
-import static io.zeebe.list.CompactListDescriptor.elementOffset;
-import static io.zeebe.list.CompactListDescriptor.framedLength;
-import static io.zeebe.list.CompactListDescriptor.requiredBufferCapacity;
 
-import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 
+import io.zeebe.util.allocation.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -45,22 +42,24 @@ public class CompactListTest
     @Before
     public void setup()
     {
-        list = new CompactList(SIZE_OF_INT, 16, (bufferCapacity) -> ByteBuffer.allocateDirect(bufferCapacity));
+        list = new CompactList(SIZE_OF_INT, 16, new DirectBufferAllocator());
         writeBuffer.wrap(new byte[SIZE_OF_INT]);
         readBuffer.wrap(new byte[SIZE_OF_INT]);
     }
 
     @Test
-    public void shouldExceptionNotEnoughCapacity()
+    public void shouldExceptionNotEnoughCapacity() throws Exception
     {
         // given
-        final ByteBuffer underlyingBuffer = ByteBuffer.allocateDirect(0);
+        final AllocatedBuffer allocatedBuffer = BufferAllocators.allocateDirect(0);
 
         // then
         expectedExceptionRule.expect(IllegalArgumentException.class);
 
         // when
-        new CompactList(underlyingBuffer, 16, 10);
+        try (CompactList list = new CompactList(allocatedBuffer, 16, 10))
+        {
+        }
     }
 
     @Test

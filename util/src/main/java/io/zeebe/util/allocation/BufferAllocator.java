@@ -13,16 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util;
+package io.zeebe.util.allocation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class Loggers
+public interface BufferAllocator
 {
 
-    public static final Logger ACTOR_LOGGER = LoggerFactory.getLogger("io.zeebe.util.actor");
-    public static final Logger STATE_MACHINE_LOGGER = LoggerFactory.getLogger("io.zeebe.util.state");
-    public static final Logger IO_LOGGER = LoggerFactory.getLogger("io.zeebe.util.buffer");
+    AllocatedBuffer allocate(int capacity);
 
 }

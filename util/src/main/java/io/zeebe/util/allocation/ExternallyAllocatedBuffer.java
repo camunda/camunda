@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util;
+package io.zeebe.util.allocation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.nio.ByteBuffer;
 
-public class Loggers
+public class ExternallyAllocatedBuffer extends AllocatedBuffer
 {
 
-    public static final Logger ACTOR_LOGGER = LoggerFactory.getLogger("io.zeebe.util.actor");
-    public static final Logger STATE_MACHINE_LOGGER = LoggerFactory.getLogger("io.zeebe.util.state");
-    public static final Logger IO_LOGGER = LoggerFactory.getLogger("io.zeebe.util.buffer");
+    public ExternallyAllocatedBuffer(ByteBuffer buffer)
+    {
+        super(buffer);
+    }
+
+    @Override
+    public void close()
+    {
+        // nothing to do; buffer allocated externally
+    }
 
 }

@@ -15,6 +15,8 @@
  */
 package io.zeebe.util.actor;
 
+import io.zeebe.util.CloseableSilently;
+
 /**
  * Schedule the given agents and invoke them within a duty cycle.
  *
@@ -22,14 +24,11 @@ package io.zeebe.util.actor;
  * Use {@link ActorReference#close()} to remove a scheduled actor from the duty
  * cycle.
  */
-public interface ActorScheduler extends AutoCloseable
+public interface ActorScheduler extends CloseableSilently
 {
     /**
      * Schedule the given actor.
      */
     ActorReference schedule(Actor actor);
-
-    @Override
-    void close();
 
 }
