@@ -15,18 +15,11 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_INITIAL_PARTITION_ID_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset;
-
-import java.io.IOException;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
 
 import io.zeebe.dispatcher.Loggers;
+import io.zeebe.util.allocation.AllocatedBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
 import org.slf4j.Logger;
 
 public class LogBuffer
@@ -105,14 +98,7 @@ public class LogBuffer
 
     public void close()
     {
-        try
-        {
-            rawBuffer.close();
-        }
-        catch (IOException e)
-        {
-            LOG.error("Failed to close buffer", e);
-        }
+        rawBuffer.close();
     }
 
     public int getPartitionSize()

@@ -23,21 +23,18 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.agrona.BitUtil;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
-import org.agrona.concurrent.status.UnsafeBufferPosition;
 import io.zeebe.dispatcher.impl.DispatcherConductor;
 import io.zeebe.dispatcher.impl.DispatcherContext;
-import io.zeebe.dispatcher.impl.allocation.*;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.allocation.*;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.*;
 
 /**
  * Builder for a {@link Dispatcher}
@@ -266,7 +263,7 @@ public class DispatcherBuilder
         AllocatedBuffer allocatedBuffer = null;
         if (allocateInMemory)
         {
-            allocatedBuffer = new DirectBufferAllocator().allocate(new AllocationDescriptor(requiredCapacity));
+            allocatedBuffer = BufferAllocators.allocateDirect(requiredCapacity);
         }
         else
         {
@@ -286,8 +283,7 @@ public class DispatcherBuilder
                     throw new RuntimeException("File " + bufferFileName + " does not exist");
                 }
 
-                allocatedBuffer = new MappedFileAllocator()
-                    .allocate(new MappedFileAllocationDescriptor(requiredCapacity, bufferFile));
+                allocatedBuffer = BufferAllocators.allocateMappedFile(requiredCapacity, bufferFile);
             }
         }
         return allocatedBuffer;

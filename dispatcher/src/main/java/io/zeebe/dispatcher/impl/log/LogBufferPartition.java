@@ -15,13 +15,9 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_CLEAN;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_STATUS_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
 
-import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
-
+import io.zeebe.util.allocation.AllocatedBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class LogBufferPartition

@@ -15,12 +15,12 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
-import io.zeebe.dispatcher.impl.allocation.AllocationDescriptor;
-import io.zeebe.dispatcher.impl.allocation.DirectBufferAllocator;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocators;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,8 +39,8 @@ public class PartitionBuilderTest
     public void shouldSlicePartitions()
     {
         final int partitionSize = 1024;
-        final AllocatedBuffer buffer = new DirectBufferAllocator().allocate(new AllocationDescriptor(
-                (PARTITION_COUNT * partitionSize) + (PARTITION_COUNT * PARTITION_META_DATA_LENGTH)));
+        final int capacity = (PARTITION_COUNT * partitionSize) + (PARTITION_COUNT * PARTITION_META_DATA_LENGTH);
+        final AllocatedBuffer buffer = BufferAllocators.allocateDirect(capacity);
 
         final LogBufferPartition[] partitions = partitionBuilder.slicePartitions(partitionSize, buffer);
 

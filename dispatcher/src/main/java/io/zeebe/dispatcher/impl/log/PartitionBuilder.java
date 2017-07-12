@@ -15,15 +15,11 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.partitionDataSectionOffset;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.partitionMetadataSectionOffset;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
 
 import java.nio.ByteBuffer;
 
-import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
-
+import io.zeebe.util.allocation.AllocatedBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class PartitionBuilder

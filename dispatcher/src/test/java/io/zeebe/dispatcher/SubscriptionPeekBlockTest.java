@@ -15,32 +15,19 @@
  */
 package io.zeebe.dispatcher;
 
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import io.zeebe.dispatcher.impl.allocation.AllocatedBuffer;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 import org.junit.Before;
 import org.junit.Test;
 
