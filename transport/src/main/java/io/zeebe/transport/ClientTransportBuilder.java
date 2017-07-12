@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.transport.impl.ClientOutputImpl;
 import io.zeebe.transport.impl.ClientReceiveHandler;
 import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.ClientSendFailureHandler;
@@ -87,7 +88,7 @@ public class ClientTransportBuilder
     {
         validate();
         final ClientRequestPool clientRequestPool = new ClientRequestPool(requestPoolSize, sendBuffer);
-        final ClientOutput output = new ClientOutput(sendBuffer, clientRequestPool);
+        final ClientOutput output = new ClientOutputImpl(sendBuffer, clientRequestPool);
         final RemoteAddressList remoteAddressList = new RemoteAddressList();
 
         final TransportContext transportContext =
