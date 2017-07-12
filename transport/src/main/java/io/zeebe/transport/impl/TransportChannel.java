@@ -18,23 +18,19 @@ package io.zeebe.transport.impl;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.nio.channels.*;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocators;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TransportChannel
 {
@@ -48,6 +44,7 @@ public class TransportChannel
     private volatile int state = CLOSED;
 
     private final RemoteAddress remoteAddress;
+    private final AllocatedBuffer allocatedBuffer;
     private final ByteBuffer channelReadBuffer;
     private final UnsafeBuffer channelReadBufferView;
 
@@ -68,7 +65,8 @@ public class TransportChannel
         this.listener = listener;
         this.remoteAddress = remoteAddress;
         this.readHandler = readHandler;
-        this.channelReadBuffer = ByteBuffer.allocateDirect(2 * maxMessageSize);
+        this.allocatedBuffer = BufferAllocators.allocateDirect(2 * maxMessageSize);
+        this.channelReadBuffer = allocatedBuffer.getRawBuffer();
         this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
     }
 
@@ -284,6 +282,8 @@ public class TransportChannel
                     media.close();
                 }
             }
+
+            allocatedBuffer.close();
         }
         catch (Exception e)
         {
