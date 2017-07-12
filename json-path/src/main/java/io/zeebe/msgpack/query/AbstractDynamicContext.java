@@ -15,12 +15,11 @@
  */
 package io.zeebe.msgpack.query;
 
-import java.nio.ByteBuffer;
-
+import io.zeebe.list.CompactList;
+import io.zeebe.util.allocation.HeapBufferAllocator;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.list.CompactList;
 
 public abstract class AbstractDynamicContext
 {
@@ -43,7 +42,7 @@ public abstract class AbstractDynamicContext
         context = new CompactList(
             elementSize,
             capacity,
-            (size) -> ByteBuffer.allocate(size));
+            new HeapBufferAllocator());
         emptyElement = new UnsafeBuffer(new byte[elementSize]);
     }
 

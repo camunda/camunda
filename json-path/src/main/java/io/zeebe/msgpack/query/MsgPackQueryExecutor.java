@@ -15,14 +15,13 @@
  */
 package io.zeebe.msgpack.query;
 
-import java.nio.ByteBuffer;
-
-import org.agrona.BitUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.list.CompactList;
 import io.zeebe.msgpack.filter.MsgPackFilter;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackType;
+import io.zeebe.util.allocation.HeapBufferAllocator;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class MsgPackQueryExecutor implements MsgPackTokenVisitor
 {
@@ -49,7 +48,7 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor
 
     public MsgPackQueryExecutor()
     {
-        this.matchingPositions = new CompactList(RESULT_SIZE, MAX_RESULTS, (size) -> ByteBuffer.allocate(size));
+        this.matchingPositions = new CompactList(RESULT_SIZE, MAX_RESULTS, new HeapBufferAllocator());
     }
 
     public void init(MsgPackFilter[] filters, MsgPackFilterContext filterInstances)
@@ -60,6 +59,7 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor
         this.matchingPositions.clear();
     }
 
+    @Override
     public void visitElement(int position, MsgPackToken currentValue)
     {
         // count current element

@@ -20,6 +20,11 @@
     <!-- for CompactList -->
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zb-util</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zb-hash-index</artifactId>
     </dependency>
 

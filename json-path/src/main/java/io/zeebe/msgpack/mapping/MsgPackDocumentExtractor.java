@@ -17,10 +17,10 @@ package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryExecutor;
 import io.zeebe.msgpack.query.MsgPackTraverser;
+import org.agrona.DirectBuffer;
 
 /**
  * <p>
@@ -131,7 +131,7 @@ public final class MsgPackDocumentExtractor
         traverser.wrap(document, 0, document.capacity());
     }
 
-    public MsgPackTree extract(Mapping ...mappings)
+    public MsgPackTree extract(Mapping... mappings)
     {
         for (Mapping mapping : mappings)
         {
@@ -148,7 +148,7 @@ public final class MsgPackDocumentExtractor
                 {
                     executeLeafMapping(mapping.getSource());
                     documentTreeReference.addLeafNode(nodeId,
-                                                      (long) queryExecutor.currentResultPosition(),
+                                                      queryExecutor.currentResultPosition(),
                                                       queryExecutor.currentResultLength());
                 }
                 parentId = nodeId;
