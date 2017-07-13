@@ -17,8 +17,12 @@ package io.zeebe.protocol;
 
 import java.nio.ByteOrder;
 
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+
 public class Protocol
 {
+
+    public static final int PROTOCOL_VERSION = ExecuteCommandRequestDecoder.SCHEMA_VERSION;
 
     /**
      * The endianness of multibyte values encoded in the protocol. This MUST match the

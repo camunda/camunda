@@ -31,7 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;

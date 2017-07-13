@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -46,10 +46,10 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
     protected final MetadataFilter versionFilter = (m) ->
     {
-        if (m.getProtocolVersion() > Constants.PROTOCOL_VERSION)
+        if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION)
         {
             throw new RuntimeException(String.format("Cannot handle event with version newer " +
-                    "than what is implemented by broker (%d > %d)", m.getProtocolVersion(), Constants.PROTOCOL_VERSION));
+                    "than what is implemented by broker (%d > %d)", m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
         }
 
         return true;

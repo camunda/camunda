@@ -24,29 +24,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 
 
 public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler
@@ -109,12 +104,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 //        final int templateId = messageHeaderDecoder.templateId();
 //        final int clientVersion = messageHeaderDecoder.version();
 //
-//        if (clientVersion > Constants.PROTOCOL_VERSION)
+//        if (clientVersion > Protocol.PROTOCOL_VERSION)
 //        {
 //            return errorResponseWriter
 //                        .metadata(eventMetadata)
 //                        .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
-//                        .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Constants.PROTOCOL_VERSION)
+//                        .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Protocol.PROTOCOL_VERSION)
 //                        .failedRequest(buffer, messageOffset, messageLength)
 //                        .tryWriteResponseOrLogFailure();
 //        }
@@ -304,11 +299,11 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         final int clientVersion = messageHeaderDecoder.version();
 
 
-        if (clientVersion > Constants.PROTOCOL_VERSION)
+        if (clientVersion > Protocol.PROTOCOL_VERSION)
         {
             return errorResponseWriter
                 .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
-                .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Constants.PROTOCOL_VERSION)
+                .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Protocol.PROTOCOL_VERSION)
                 .failedRequest(buffer, offset, length)
                 .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
         }

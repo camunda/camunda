@@ -28,8 +28,8 @@ import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import java.util.EnumMap;
 import java.util.Map;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -376,7 +376,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .eventType(WORKFLOW_EVENT)
                 .raftTermId(targetStream.getTerm());
 
@@ -391,7 +391,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .eventType(TASK_EVENT)
                 .raftTermId(targetStream.getTerm());
 
@@ -937,7 +937,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             targetEventMetadata.reset();
             targetEventMetadata
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .protocolVersion(Protocol.PROTOCOL_VERSION)
                     .raftTermId(targetStream.getTerm())
                     .eventType(WORKFLOW_EVENT);
 
@@ -952,7 +952,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             targetEventMetadata.reset();
             targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .raftTermId(targetStream.getTerm())
                 .eventType(TASK_EVENT);
 
@@ -978,7 +978,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             targetEventMetadata.reset();
             targetEventMetadata
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .protocolVersion(Protocol.PROTOCOL_VERSION)
                     .raftTermId(targetStream.getTerm())
                     .eventType(WORKFLOW_EVENT);
 

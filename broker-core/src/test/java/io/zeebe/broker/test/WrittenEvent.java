@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.test;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 public class WrittenEvent<E>
 {

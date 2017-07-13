@@ -27,7 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;

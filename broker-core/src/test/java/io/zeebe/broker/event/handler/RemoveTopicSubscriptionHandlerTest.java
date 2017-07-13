@@ -33,7 +33,7 @@ import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;

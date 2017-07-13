@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;

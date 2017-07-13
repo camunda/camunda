@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;

@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.incident;
 
-import io.zeebe.broker.Constants;
 import io.zeebe.broker.incident.data.*;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.*;
@@ -73,7 +73,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     private boolean handlePayloadException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
     {
         incidentEventMetadata.reset()
-            .protocolVersion(Constants.PROTOCOL_VERSION)
+            .protocolVersion(Protocol.PROTOCOL_VERSION)
             .eventType(EventType.INCIDENT_EVENT)
             .raftTermId(logStream.getTerm());
 

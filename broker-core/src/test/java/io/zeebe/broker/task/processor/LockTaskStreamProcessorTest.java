@@ -32,10 +32,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
@@ -144,7 +144,7 @@ public class LockTaskStreamProcessorTest
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
-        assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(metadata.getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }

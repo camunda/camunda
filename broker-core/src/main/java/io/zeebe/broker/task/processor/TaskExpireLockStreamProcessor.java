@@ -22,10 +22,10 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.util.HashMap;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
@@ -236,7 +236,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
             targetEventMetadata
                 .reset()
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .eventType(TASK_EVENT)
                 .raftTermId(targetStream.getTerm());
 

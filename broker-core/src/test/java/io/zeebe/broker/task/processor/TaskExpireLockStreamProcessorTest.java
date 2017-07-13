@@ -27,10 +27,10 @@ import static org.mockito.Mockito.*;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.test.MockStreamProcessorController;
@@ -143,7 +143,7 @@ public class TaskExpireLockStreamProcessorTest
         assertThatBuffer(taskEvent.getType()).hasBytes(TASK_TYPE_BUFFER);
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
-        assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(metadata.getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
         assertThat(metadata.getRaftTermId()).isEqualTo(TARGET_LOG_STREAM_TERM);
 

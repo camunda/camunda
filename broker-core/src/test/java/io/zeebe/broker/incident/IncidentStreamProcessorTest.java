@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentEventType;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;

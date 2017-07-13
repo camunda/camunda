@@ -25,11 +25,11 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.task.CreditsRequest;
@@ -332,7 +332,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             targetEventMetadata
                 .requestStreamId(lockSubscription.getStreamId())
                 .subscriberKey(lockSubscription.getSubscriberKey())
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .raftTermId(targetStream.getTerm())
                 .eventType(TASK_EVENT);
 

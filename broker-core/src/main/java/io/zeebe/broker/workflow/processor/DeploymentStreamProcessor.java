@@ -27,12 +27,12 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
@@ -231,7 +231,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         {
             targetEventMetadata.reset();
             targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .eventType(DEPLOYMENT_EVENT)
                 .raftTermId(targetStream.getTerm());
 

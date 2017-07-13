@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -43,8 +44,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -165,7 +165,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestProtocolVersion() throws InterruptedException, ExecutionException
     {
         // given
-        final short clientProtocolVersion = Constants.PROTOCOL_VERSION - 1;
+        final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
         final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, clientProtocolVersion);
 
         // when

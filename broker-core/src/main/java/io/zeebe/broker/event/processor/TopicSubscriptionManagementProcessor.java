@@ -26,9 +26,7 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import io.zeebe.broker.Constants;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
@@ -45,8 +43,10 @@ import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
@@ -321,7 +321,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Constants.PROTOCOL_VERSION)
+            metadata.protocolVersion(Protocol.PROTOCOL_VERSION)
                 .raftTermId(targetStream.getTerm());
 
             return writer

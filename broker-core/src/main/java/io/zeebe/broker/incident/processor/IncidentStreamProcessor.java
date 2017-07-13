@@ -20,10 +20,10 @@ package io.zeebe.broker.incident.processor;
 import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
 import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.incident.data.*;
+import io.zeebe.broker.incident.data.ErrorType;
+import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.incident.data.IncidentEventType;
 import io.zeebe.broker.incident.index.IncidentIndex;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -31,10 +31,14 @@ import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.hashindex.Long2LongHashIndex;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 /**
  * Is responsible for the incident lifecycle.
@@ -224,7 +228,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata.eventType(EventType.INCIDENT_EVENT)
-            .protocolVersion(Constants.PROTOCOL_VERSION)
+            .protocolVersion(Protocol.PROTOCOL_VERSION)
             .raftTermId(targetStream.getTerm());
 
         return writer
@@ -372,7 +376,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 targetEventMetadata
                     .incidentKey(eventKey)
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .protocolVersion(Protocol.PROTOCOL_VERSION)
                     .raftTermId(targetStream.getTerm());
 
                 position = writer

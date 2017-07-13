@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;

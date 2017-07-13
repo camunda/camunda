@@ -20,6 +20,11 @@
   <dependencies>
 
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-util</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-tool</artifactId>
     </dependency>

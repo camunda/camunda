@@ -22,7 +22,7 @@ import static io.zeebe.protocol.clientapi.EventType.RAFT_EVENT;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamFailureListener;

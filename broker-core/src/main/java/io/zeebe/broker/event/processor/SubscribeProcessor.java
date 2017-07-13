@@ -21,10 +21,10 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -226,7 +226,7 @@ public class SubscribeProcessor implements EventProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Constants.PROTOCOL_VERSION)
+            metadata.protocolVersion(Protocol.PROTOCOL_VERSION)
                 .raftTermId(manager.getTargetStream().getTerm());
 
             subscriberEvent

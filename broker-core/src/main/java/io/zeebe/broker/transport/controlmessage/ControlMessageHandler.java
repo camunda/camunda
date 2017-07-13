@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 /**

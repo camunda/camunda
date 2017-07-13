@@ -42,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;

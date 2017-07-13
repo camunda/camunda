@@ -21,10 +21,10 @@ import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.Constants;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
@@ -190,7 +190,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata
-            .protocolVersion(Constants.PROTOCOL_VERSION)
+            .protocolVersion(Protocol.PROTOCOL_VERSION)
             .eventType(TASK_EVENT)
             .raftTermId(targetStream.getTerm());
 

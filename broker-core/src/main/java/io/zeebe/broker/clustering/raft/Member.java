@@ -21,7 +21,7 @@ import io.zeebe.broker.clustering.raft.controller.ConfigureController;
 import io.zeebe.broker.clustering.raft.controller.PollController;
 import io.zeebe.broker.clustering.raft.controller.ReplicationController;
 import io.zeebe.broker.clustering.raft.controller.VoteController;
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;

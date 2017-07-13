@@ -19,7 +19,7 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.Objects;
 
-import io.zeebe.broker.logstreams.BrokerEventMetadata;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.processor.StreamProcessor;
 
 /**
