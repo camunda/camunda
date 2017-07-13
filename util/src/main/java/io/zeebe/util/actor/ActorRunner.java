@@ -20,10 +20,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.zeebe.util.DeferredCommandContext;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
-import io.zeebe.util.DeferredCommandContext;
 
+/**
+ * Invokes the given actors in a loop. The amount of invocations depends on the
+ * actor's priority. Each actor is invoked up to a given number of times, or
+ * until it has no more work to do.
+ * <p>
+ * Example of one cycle: (baseIterations=10)
+ * <pre>
+ * Actor    Priority    Invocations (max)
+ * ======================================
+ * a1       100         100 * 10
+ * a2       50          50  * 10
+ * a3       1           1   * 10
+ * </pre>
+ */
 public class ActorRunner implements Runnable
 {
     private final DeferredCommandContext deferredCommands = new DeferredCommandContext(1024);
@@ -72,26 +86,41 @@ public class ActorRunner implements Runnable
 
         final long now = System.nanoTime();
 
-        final boolean sampling = lastSampleTime + samplePeriod < now;
+        boolean sampling = lastSampleTime + samplePeriod < now;
         if (sampling)
         {
             lastSampleTime = now;
         }
 
-        for (int i = 0; i < actors.size(); i++)
+        int currentWc = 1;
+        for (int p = 0; p < Actor.PRIORITY_HIGH && currentWc > 0; p++)
         {
-            final ActorReferenceImpl actor = actors.get(i);
+            currentWc = 0;
 
-            if (actor.isClosed())
+            for (int a = 0; a < actors.size(); a++)
             {
-                actors.remove(i);
-                i -= 1;
-                wc += 1;
+                final ActorReferenceImpl actor = actors.get(a);
+
+                if (actor.isClosed())
+                {
+                    actors.remove(a);
+                    a -= 1;
+                    currentWc += 1;
+                }
+                else
+                {
+                    final int priority = actor.getActor().getPriority(now);
+                    if (priority > p)
+                    {
+                        currentWc += runActor(actor, now, sampling);
+                    }
+                }
             }
-            else
-            {
-                wc += runActor(actor, now, sampling);
-            }
+
+            wc += currentWc;
+
+            // max one sample per cycle
+            sampling = false;
         }
 
         return wc;
@@ -131,11 +160,8 @@ public class ActorRunner implements Runnable
         int wc = 0;
 
         final Actor actor = actorRef.getActor();
-        final int priority = actor.getPriority(now);
-        final int maxIterations = priority * baseIterationsPerActor;
 
-        int i = 0;
-        for (; i < maxIterations; i++)
+        for (int i = 0; i < baseIterationsPerActor; i++)
         {
             final int work = actor.doWork();
             wc += work;

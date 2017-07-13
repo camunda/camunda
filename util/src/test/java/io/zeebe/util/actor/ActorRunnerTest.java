@@ -15,12 +15,10 @@
  */
 package io.zeebe.util.actor;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
@@ -30,9 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -183,16 +179,16 @@ public class ActorRunnerTest
     @Test
     public void shouldRecordActorDuration()
     {
-        final RecordingActor actor = new RecordingActor(3, Actor.PRIORITY_LOW);
+        final RecordingActor actor = new RecordingActor(BASE_ITERATIONS_PER_ACTOR * 100, Actor.PRIORITY_LOW);
         final ActorReferenceImpl actorRef = new ActorReferenceImpl(actor, 16);
 
         actorRunner.submitActor(actorRef);
 
         executorService.submit(actorRunner);
 
-        waitUntil(() -> actor.invocations > 0);
+        waitUntil(() -> actorRef.getDuration() > 0);
 
-        assertThat(actorRef.getDuration()).isGreaterThan(0L);
+        assertThat(actor.invocations).isGreaterThan(0);
     }
 
     private class RecordingActor implements Actor
