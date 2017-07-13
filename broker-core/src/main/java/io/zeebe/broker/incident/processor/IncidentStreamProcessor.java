@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.incident.processor;
 
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.incident.index.IncidentIndex;
@@ -78,8 +81,8 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     public IncidentStreamProcessor()
     {
-        this.activityInstanceIndex = new Long2LongHashIndex(8388608, 16);
-        this.failedTaskIndex = new Long2LongHashIndex(8388608, 16);
+        this.activityInstanceIndex = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
+        this.failedTaskIndex = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
         this.incidentIndex = new IncidentIndex();
 
         this.indexSnapshot = new ComposedSnapshot(

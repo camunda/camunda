@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
@@ -78,7 +80,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(8388608, 16, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.index = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 

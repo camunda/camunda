@@ -19,12 +19,12 @@ package io.zeebe.broker.event.processor;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
-import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.Constants;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
@@ -50,6 +50,7 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -94,7 +95,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
-        this.ackIndex = new Bytes2LongHashIndex(8388608, 16, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
+        this.ackIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
         this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex);
     }
 

@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.workflow.index;
 
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
@@ -47,7 +50,7 @@ public class PayloadCache implements AutoCloseable
 
     public PayloadCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Long2LongHashIndex(8388608, 16);
+        this.index = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;

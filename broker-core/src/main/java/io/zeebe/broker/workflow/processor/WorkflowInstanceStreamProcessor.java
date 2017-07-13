@@ -19,6 +19,8 @@ package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.protocol.clientapi.EventType.WORKFLOW_EVENT;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
@@ -140,7 +142,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.responseWriter = responseWriter;
         this.logStreamReader = new BufferedLogStreamReader();
 
-        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(8388608, 16, SIZE_OF_PROCESS_ID);
+        this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, SIZE_OF_PROCESS_ID);
 
         this.workflowDeploymentCache = new WorkflowDeploymentCache(deploymentCacheSize, logStreamReader);
         this.payloadCache = new PayloadCache(payloadCacheSize, logStreamReader);
