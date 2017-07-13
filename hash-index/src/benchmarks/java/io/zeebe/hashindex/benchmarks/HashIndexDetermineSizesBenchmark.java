@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.hashindex;
+package io.zeebe.hashindex.benchmarks;
 
 import io.zeebe.hashindex.types.ByteArrayKeyHandler;
 import org.agrona.BitUtil;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import io.zeebe.hashindex.*;
 
 public class HashIndexDetermineSizesBenchmark
 {
     private static final int KEYS_TO_PUT = 10_000_000;
     private static final int MAX_POWER = 12;
 
-    @Test
-    public void shouldDetermineOptimalValuesForLong2Long()
+    public static void benchmarkOptimalValuesForLong2Long()
     {
+        System.out.println("Long2LongHashIndex");
         System.out.println("Keys to put\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
@@ -57,9 +54,9 @@ public class HashIndexDetermineSizesBenchmark
         }
     }
 
-    @Test
-    public void shouldDetermineOptimalValuesForBytes2Long()
+    public static void benchmarkOptimalValuesForBytes2Long()
     {
+        System.out.println("Bytes2LongHashIndex");
         System.out.println("Keys to put\t\tKeylength\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
@@ -90,9 +87,9 @@ public class HashIndexDetermineSizesBenchmark
         }
     }
 
-    @Test
-    public void shouldDetermineOptimalValuesForLong2Bytes()
+    public static void benchmarkOptimalValuesForLong2Bytes()
     {
+        System.out.println("Long2BytesHashIndex");
         System.out.println("Keys to put\t\tvalueLength\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
@@ -121,5 +118,13 @@ public class HashIndexDetermineSizesBenchmark
             System.out.print("\t\t\t" + (endMillis - startMillis));
             index.close();
         }
+    }
+
+    public static void main(String[] args)
+    {
+        benchmarkOptimalValuesForLong2Long();
+        benchmarkOptimalValuesForLong2Bytes();
+        // Does not work since currently there is no bucket overflow implemented
+//        benchmarkOptimalValuesForBytes2Long();
     }
 }

@@ -30,7 +30,7 @@ public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandl
             int indexSize,
             int recordsPerBlock)
     {
-        super(LongKeyHandler.class, LongValueHandler.class, indexSize, maxBlockLength(recordsPerBlock), SIZE_OF_LONG);
+        super(indexSize, maxBlockLength(recordsPerBlock), SIZE_OF_LONG);
     }
 
     private static int maxBlockLength(int recordsPerBlock)

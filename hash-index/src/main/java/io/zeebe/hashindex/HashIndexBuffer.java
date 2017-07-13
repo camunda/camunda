@@ -36,7 +36,7 @@ public class HashIndexBuffer implements Closeable
 
     public HashIndexBuffer(int indexSize)
     {
-        length = indexSize * SIZE_OF_LONG;
+        length = Math.multiplyExact(indexSize, SIZE_OF_LONG);
         addr = UNSAFE.allocateMemory(length);
         clear();
     }

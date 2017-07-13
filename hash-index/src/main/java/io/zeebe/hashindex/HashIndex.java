@@ -17,6 +17,7 @@ package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.BitUtil;
@@ -35,12 +36,33 @@ import org.slf4j.Logger;
  */
 public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
+    private static final int KEY_HANDLER_IDX = 0;
+    private static final int VALUE_HANDLER_IDX = 1;
+    private static final String FINALIZER_WARNING = "HashIndex is being garbage collected but is not closed.\n" +
+        "This means that the object is being de-referenced but the close() method has not been called.\n" +
+        "HashIndex allocates memory off the heap which is not reclaimed unless close() is invoked.\n";
+
     public static final Logger LOG = Loggers.HASH_INDEX_LOGGER;
+
+    /**
+     * The maximum index size is 2^27, because it is the last power of two which fits into an integer after multiply with SIZE_OF_LONG (8 bytes).
+     * <p>
+     * The index size have to be multiplied with SIZE_OF_LONG to calculated the size of the index buffer,
+     * which have to be allocated to store all indices. The indices, which are stored in the index buffer, are longs.
+     */
     public static final int MAX_INDEX_SIZE = 1 << 27;
 
-    private static final String FINALIZER_WARNING = "HashIndex is being garbage collected but is not closed.\n" +
-            "This means that the object is being de-referenced but the close() method has not been called.\n" +
-            "HashIndex allocates memory off the heap which is not reclaimed unless close() is invoked.\n";
+    /**
+     * The optimal bucket count regarding to performance and memory usage.
+     * Was determined with help of some benchmarks see {@link io.zeebe.hashindex.benchmarks.HashIndexDetermineSizesBenchmark}.
+     */
+    public static final int OPTIMAL_BUCKET_COUNT = 16;
+
+    /**
+     * The optimal index size was calculated with regard to the {@link #OPTIMAL_BUCKET_COUNT}
+     * and a requirement to store 100_000_000 entries in the index.
+     */
+    public static final int OPTIMAL_INDEX_SIZE = 1 << 23;
 
     protected final K keyHandler;
     protected final K splitKeyHandler;
@@ -54,9 +76,38 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     protected final AtomicBoolean isClosed = new AtomicBoolean(false);
 
+    /**
+     * Creates an hash index object.
+     *
+     * <p>
+     * The index can store `X` entries, which is at maximum equal to `indexSize * maxBlockLength`.
+     * For each bucket a buffer will be allocated, with the size of `maxBlockLength * keyLength + {@link HashIndexDescriptor#BLOCK_BUFFER_HEADER_LENGTH}`.
+     * </p>
+     *
+     * <p>
+     * Note: it could happen that some hashes modulo the index size generate the same bucket id, which means
+     * some buckets can be filled more than other. This will end in a filled index, since one bucket is filled and can't
+     * be split again. In that case less then X entries can be stored in the index.
+     * To avoid this the implementation of the `IndexKeyHandler` have to provide a good one way function.
+     * </p>
+     *
+     * <b>Example:</b>
+     * <pre>
+     * Index with index size 6 and maxBlockLength of 3 * (VAL len + KEY len)
+     * KeyTable                Buckets:
+     * [bucket0]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * [bucket1]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * [bucket2]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * [bucket3]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * [bucket4]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * [bucket5]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * </pre>
+     *
+     * @param indexSize is the count of buckets, which should been used by the hash index
+     * @param maxBlockLength is the count of entries, which should fit into one bucket, already multiplied with the value and key size
+     * @param keyLength the length of the stored keys
+     */
     public HashIndex(
-            Class<K> keyHandlerType,
-            Class<V> valueHandlerType,
             int indexSize,
             int maxBlockLength,
             int keyLength)
@@ -64,9 +115,9 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         this.indexSize = ensureIndexSizeIsPowerOfTwo(indexSize);
         this.mask = this.indexSize - 1;
 
-        this.keyHandler = createKeyHandlerInstance(keyHandlerType, keyLength);
-        this.splitKeyHandler = createKeyHandlerInstance(keyHandlerType, keyLength);
-        this.valueHandler = createInstance(valueHandlerType);
+        this.keyHandler = createKeyHandlerInstance(keyLength);
+        this.splitKeyHandler = createKeyHandlerInstance(keyLength);
+        this.valueHandler = createInstance(VALUE_HANDLER_IDX);
 
         this.indexBuffer = new HashIndexBuffer(this.indexSize);
         this.dataBuffer = new HashIndexDataBuffer(maxBlockLength, keyLength);
@@ -131,22 +182,26 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         init();
     }
 
-    private static <K extends IndexKeyHandler> K createKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
+    private <K extends IndexKeyHandler> K createKeyHandlerInstance(int keyLength)
     {
-        final K keyHandler = createInstance(keyHandlerType);
+        final K keyHandler = createInstance(KEY_HANDLER_IDX);
         keyHandler.setKeyLength(keyLength);
         return keyHandler;
     }
 
-    private static <T> T createInstance(final Class<T> type)
+    @SuppressWarnings("unchecked")
+    private <T> T createInstance(int index)
     {
+        Class<T> tClass = null;
         try
         {
-            return type.newInstance();
+            tClass = (Class<T>) ((ParameterizedType) this.getClass()
+                                                            .getGenericSuperclass()).getActualTypeArguments()[index];
+            return tClass.newInstance();
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new RuntimeException("Could not instantiate " + type, e);
+            throw new RuntimeException("Could not instantiate " + tClass, e);
         }
     }
 

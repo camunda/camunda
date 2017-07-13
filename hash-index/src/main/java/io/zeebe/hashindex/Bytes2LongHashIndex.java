@@ -32,7 +32,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
             final int blockLength,
             final int keyLength)
     {
-        super(ByteArrayKeyHandler.class, LongValueHandler.class, indexSize, blockSize(blockLength, keyLength), keyLength);
+        super(indexSize, blockSize(blockLength, keyLength), keyLength);
     }
 
     private static int blockSize(int blockLength, int keyLength)

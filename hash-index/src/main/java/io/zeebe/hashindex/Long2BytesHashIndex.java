@@ -34,7 +34,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
 
     public Long2BytesHashIndex(int indexSize, int recordsPerBlock, int valueMaxLength)
     {
-        super(LongKeyHandler.class, ByteArrayValueHandler.class, indexSize, maxBlockLength(recordsPerBlock, valueMaxLength), SIZE_OF_LONG);
+        super(indexSize, maxBlockLength(recordsPerBlock, valueMaxLength), SIZE_OF_LONG);
         this.valueMaxLength = valueMaxLength;
     }
 
