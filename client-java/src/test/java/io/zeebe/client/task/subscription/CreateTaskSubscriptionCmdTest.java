@@ -23,40 +23,32 @@ import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.CreateTaskSubscriptionCmdImpl;
 import io.zeebe.client.task.impl.TaskSubscription;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
-import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
-import io.zeebe.protocol.clientapi.ControlMessageResponseEncoder;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.transport.RemoteAddress;
+import org.agrona.ExpandableArrayBuffer;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class CreateTaskSubscriptionCmdTest
 {
-    private static final byte[] BUFFER = new byte[1014 * 1024];
-
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
     private final ControlMessageResponseEncoder responseEncoder = new ControlMessageResponseEncoder();
 
-    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+    private final ExpandableArrayBuffer writeBuffer = new ExpandableArrayBuffer();
 
     private CreateTaskSubscriptionCmdImpl command;
     private ObjectMapper objectMapper;
@@ -74,9 +66,7 @@ public class CreateTaskSubscriptionCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateTaskSubscriptionCmdImpl(commandManager, objectMapper, new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
-
-        writeBuffer.wrap(BUFFER);
+        command = new CreateTaskSubscriptionCmdImpl(commandManager, objectMapper, new MsgPackConverter(), new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
     }
 
     @Test
@@ -90,7 +80,7 @@ public class CreateTaskSubscriptionCmdTest
             .initialCredits(5);
 
         // when
-        command.getRequestWriter().write(writeBuffer, 0);
+        command.writeCommand(writeBuffer);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);

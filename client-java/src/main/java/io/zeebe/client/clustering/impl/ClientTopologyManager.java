@@ -19,26 +19,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.cmd.BrokerRequestException;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
 
 
 public class ClientTopologyManager implements Actor, BufferReader
 {
-
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
@@ -48,14 +44,21 @@ public class ClientTopologyManager implements Actor, BufferReader
     protected final ClientTopologyController clientTopologyController;
     protected final List<CompletableFuture<Void>> refreshFutures;
 
-    protected Topology topology;
+    protected TopologyImpl topology;
     protected CompletableFuture<Void> refreshFuture;
+    private ClientTransport transport;
 
     public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
     {
+        this.transport = transport;
         this.clientTopologyController = new ClientTopologyController(transport);
         this.requestTopologyCmd = new RequestTopologyCmdImpl(null, objectMapper);
-        this.topology = new TopologyImpl(initialBrokers);
+        this.topology = new TopologyImpl();
+
+        for (SocketAddress socketAddress : initialBrokers)
+        {
+            topology.addBroker(transport.registerRemoteAddress(socketAddress));
+        }
 
         this.refreshFutures = new ArrayList<>();
         triggerRefresh();
@@ -77,7 +80,7 @@ public class ClientTopologyManager implements Actor, BufferReader
         return topology;
     }
 
-    public SocketAddress getLeaderForTopic(final Topic topic)
+    public RemoteAddress getLeaderForTopic(final Topic topic)
     {
         if (topic != null)
         {
@@ -138,13 +141,18 @@ public class ClientTopologyManager implements Actor, BufferReader
 
         final int responseMessageOffset = messageHeaderDecoder.encodedLength();
 
-        final ClientResponseHandler<Topology> responseHandler = requestTopologyCmd.getResponseHandler();
+        final ClientResponseHandler<TopologyResponse> responseHandler = requestTopologyCmd.getResponseHandler();
 
         if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
         {
             try
             {
-                topology = responseHandler.readResponse(buffer, responseMessageOffset, blockLength, version);
+                final TopologyResponse topologyDto = responseHandler.readResponse(buffer, responseMessageOffset, blockLength, version);
+                final TopologyImpl topology = new TopologyImpl();
+
+                topology.update(topologyDto, transport);
+
+                this.topology = topology;
             }
             catch (final Exception e)
             {

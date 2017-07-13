@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.util.EnsureUtil;
 
@@ -29,7 +30,7 @@ public class CloseTopicSubscriptionCmdImpl extends AbstractControlMessageWithout
     protected CloseSubscriptionRequest request = new CloseSubscriptionRequest();
     protected long subscriberKey;
 
-    public CloseTopicSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
+    public CloseTopicSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
         super(commandManager, objectMapper, topic, CloseSubscriptionRequest.class, ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION);
     }

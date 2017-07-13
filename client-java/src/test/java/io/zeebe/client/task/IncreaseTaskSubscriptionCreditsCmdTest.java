@@ -15,10 +15,10 @@
  */
 package io.zeebe.client.task;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.util.VarDataUtil.readBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -26,28 +26,23 @@ import java.io.IOException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.IncreaseTaskSubscriptionCreditsCmdImpl;
 import io.zeebe.client.task.impl.TaskSubscription;
-import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.protocol.clientapi.*;
+import org.agrona.ExpandableArrayBuffer;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class IncreaseTaskSubscriptionCreditsCmdTest
 {
-    private static final byte[] BUFFER = new byte[1014 * 1024];
-
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
 
-    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+    private final ExpandableArrayBuffer writeBuffer = new ExpandableArrayBuffer();
 
     private IncreaseTaskSubscriptionCreditsCmdImpl command;
     private ObjectMapper objectMapper;
@@ -62,9 +57,7 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new IncreaseTaskSubscriptionCreditsCmdImpl(commandManager, objectMapper, new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
-
-        writeBuffer.wrap(BUFFER);
+        command = new IncreaseTaskSubscriptionCreditsCmdImpl(commandManager, objectMapper, new MsgPackConverter(), new Topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID));
     }
 
     @Test
@@ -76,7 +69,7 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
             .credits(5);
 
         // when
-        command.getRequestWriter().write(writeBuffer, 0);
+        command.writeCommand(writeBuffer);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);

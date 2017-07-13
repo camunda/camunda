@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
 import io.zeebe.protocol.clientapi.EventType;
 
@@ -27,7 +28,7 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<Topic
 {
     protected final TopicSubscriberEvent subscription = new TopicSubscriberEvent();
 
-    public CreateTopicSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
+    public CreateTopicSubscriptionCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TopicSubscriberEvent.class, EventType.SUBSCRIBER_EVENT);
     }

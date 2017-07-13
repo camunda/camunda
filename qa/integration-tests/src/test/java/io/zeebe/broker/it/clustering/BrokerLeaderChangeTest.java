@@ -15,11 +15,11 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -30,16 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.TaskTopicClient;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.TopicClient;
+import io.zeebe.client.*;
 import io.zeebe.client.clustering.RequestTopologyCmd;
-import io.zeebe.client.clustering.Topology;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.clustering.impl.TopologyImpl;
+import io.zeebe.client.clustering.impl.*;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
@@ -236,7 +232,7 @@ public class BrokerLeaderChangeTest
         void waitForBroker(final SocketAddress socketAddress)
         {
             updateTopology()
-                .until(t -> t != null && ((TopologyImpl) t).getBrokers().contains(socketAddress),
+                .until(t -> t != null && t.getBrokers().contains(socketAddress),
                     "Failed to wait for %s be a known broker", socketAddress);
 
             LOG.info("Broker {} is known by the cluster", socketAddress);
@@ -244,18 +240,32 @@ public class BrokerLeaderChangeTest
 
         SocketAddress waitForLeader(final Topic topic, final Set<SocketAddress> socketAddresses)
         {
-            final SocketAddress leader = updateTopology()
-                .until(t -> t != null && socketAddresses.contains(t.getLeaderForTopic(topic)),
-                    "Failed to wait for %s become leader of topic %s", socketAddresses, topic)
-                .getLeaderForTopic(topic);
+            final TopologyResponse respose = updateTopology()
+                .until(t -> t != null && socketAddresses.contains(getLeaderForTopic(t, topic)),
+                    "Failed to wait for %s become leader of topic %s", socketAddresses, topic);
+
+            final SocketAddress leader = getLeaderForTopic(respose, topic);
 
             LOG.info("Broker {} is leader for topic {}", leader, topic);
             return leader;
         }
 
-        TestUtil.Invocation<Topology> updateTopology()
+        TestUtil.Invocation<TopologyResponse> updateTopology()
         {
             return doRepeatedly(requestTopologyCmd::execute);
+        }
+
+        static SocketAddress getLeaderForTopic(TopologyResponse resp, Topic topic)
+        {
+            for (TopicLeader leader : resp.getTopicLeaders())
+            {
+                if (topic.equals(leader.getTopic()))
+                {
+                    return leader.getSocketAddress();
+                }
+            }
+
+            return null;
         }
 
     }

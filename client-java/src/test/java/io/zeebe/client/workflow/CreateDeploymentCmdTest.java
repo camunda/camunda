@@ -15,17 +15,15 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
@@ -33,23 +31,17 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.workflow.cmd.DeploymentResult;
-import io.zeebe.client.workflow.impl.CreateDeploymentCmdImpl;
-import io.zeebe.client.workflow.impl.DeployedWorkflow;
-import io.zeebe.client.workflow.impl.DeploymentEvent;
-import io.zeebe.client.workflow.impl.DeploymentEventType;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.client.workflow.impl.*;
+import io.zeebe.protocol.clientapi.*;
+import org.agrona.ExpandableArrayBuffer;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -57,7 +49,6 @@ public class CreateDeploymentCmdTest
 {
     protected static final String TOPIC_NAME = "test-topic";
     private static final int PARTITION_ID = 1;
-    private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private static final BpmnModelInstance BPMN_MODEL_INSTANCE = Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -67,7 +58,7 @@ public class CreateDeploymentCmdTest
     private final ExecuteCommandRequestDecoder requestDecoder = new ExecuteCommandRequestDecoder();
     private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
 
-    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+    private final ExpandableArrayBuffer writeBuffer = new ExpandableArrayBuffer();
 
     private ObjectMapper objectMapper;
 
@@ -83,9 +74,7 @@ public class CreateDeploymentCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateDeploymentCmdImpl(commandManager, objectMapper, new Topic(TOPIC_NAME, PARTITION_ID));
-
-        writeBuffer.wrap(BUFFER);
+        command = new CreateDeploymentCmdImpl(commandManager, objectMapper, new MsgPackConverter(), new Topic(TOPIC_NAME, PARTITION_ID));
     }
 
     @Test
@@ -96,7 +85,7 @@ public class CreateDeploymentCmdTest
             .resourceString("myProcess");
 
         // when
-        command.getRequestWriter().write(writeBuffer, 0);
+        command.writeCommand(writeBuffer);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);
@@ -295,7 +284,7 @@ public class CreateDeploymentCmdTest
 
     private DeploymentEvent writeCommand(CreateDeploymentCmdImpl command) throws IOException, JsonParseException, JsonMappingException
     {
-        command.getRequestWriter().write(writeBuffer, 0);
+        command.writeCommand(writeBuffer);
 
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 

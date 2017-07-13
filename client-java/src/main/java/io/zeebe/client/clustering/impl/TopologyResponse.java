@@ -13,11 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.clustering;
+package io.zeebe.client.clustering.impl;
 
-import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.cmd.ClientCommand;
+import java.util.List;
 
-public interface RequestTopologyCmd extends ClientCommand<TopologyResponse>
+import io.zeebe.transport.SocketAddress;
+
+public class TopologyResponse
 {
+    private List<SocketAddress> brokers;
+
+    private List<TopicLeader> topicLeaders;
+
+    public List<SocketAddress> getBrokers()
+    {
+        return brokers;
+    }
+
+    public void setBrokers(List<SocketAddress> brokers)
+    {
+        this.brokers = brokers;
+    }
+
+    public List<TopicLeader> getTopicLeaders()
+    {
+        return topicLeaders;
+    }
+
+    public void setTopicLeaders(List<TopicLeader> topicLeaders)
+    {
+        this.topicLeaders = topicLeaders;
+    }
 }

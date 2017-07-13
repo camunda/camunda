@@ -47,17 +47,17 @@ public class TopicClientImpl implements TopicClient
 
     public CreateTopicSubscriptionCmdImpl createTopicSubscription()
     {
-        return new CreateTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CreateTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
     {
-        return new CloseTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new CloseTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public AcknowledgeSubscribedEventCmdImpl acknowledgeEvent()
     {
-        return new AcknowledgeSubscribedEventCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
+        return new AcknowledgeSubscribedEventCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
     }
 
     public Topic getTopic()

@@ -67,6 +67,7 @@ public interface ZeebeClient extends AutoCloseable
      */
     void disconnect();
 
+    @Override
     void close();
 
     static ZeebeClient create(Properties properties)

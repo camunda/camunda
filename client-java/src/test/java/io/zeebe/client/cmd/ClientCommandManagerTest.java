@@ -19,10 +19,6 @@ import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.core.AllOf.allOf;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doThrow;
@@ -38,13 +34,9 @@ import io.zeebe.client.task.impl.CreateTaskCmdImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.broker.protocol.brokerapi.*;
 import org.agrona.MutableDirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -126,7 +118,7 @@ public class ClientCommandManagerTest
 
         exception.expect(RuntimeException.class);
         exception.expectMessage("Cannot execute command. No broker for topic with name 'default-topic' and partition id '0' found.");
-        exception.expectCause(allOf(instanceOf(RuntimeException.class), hasMessage(equalTo("test"))));
+//        exception.expectCause(allOf(instanceOf(RuntimeException.class), hasMessage(equalTo("test"))));
 
         // when
         command.execute();

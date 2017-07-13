@@ -16,33 +16,23 @@
 package io.zeebe.client.impl;
 
 import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import java.util.function.Consumer;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.BrokerRequestException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.impl.cmd.AbstractCmdImpl;
-import io.zeebe.client.impl.cmd.ClientResponseHandler;
-import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestResponseController;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.client.impl.cmd.*;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.state.SimpleStateMachineContext;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.state.*;
+import org.agrona.*;
 
-public class ClientCommandController<R> implements BufferReader
+@SuppressWarnings("rawtypes")
+public class ClientCommandController implements BufferReader, BufferWriter
 {
-
     public static final int DEFAULT_RETRIES = 5;
 
     protected static final int TRANSITION_DEFAULT = 0;
@@ -52,7 +42,7 @@ public class ClientCommandController<R> implements BufferReader
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
-    protected final StateMachine<Context<R>> stateMachine;
+    protected final StateMachine<Context> stateMachine;
     protected final DetermineRemoteState determineRemoteState = new DetermineRemoteState();
     protected final RefreshTopologyState refreshTopologyState = new RefreshTopologyState();
     protected final AwaitTopologyRefreshState awaitTopologyRefreshState = new AwaitTopologyRefreshState();
@@ -63,21 +53,28 @@ public class ClientCommandController<R> implements BufferReader
     protected final ClosedState closedState = new ClosedState();
 
     protected final ClientTopologyManager topologyManager;
-    protected final AbstractCmdImpl<R> command;
-    protected final CompletableFuture<R> future;
 
-    protected final RequestResponseController requestController;
+    protected AbstractCmdImpl command;
+    protected CompletableFuture future;
 
-    public ClientCommandController(final ClientTransport transport, final ClientTopologyManager topologyManager, final AbstractCmdImpl<R> command, final CompletableFuture<R> future)
+    protected final ClientTransport transport;
+
+    protected final ExpandableArrayBuffer cmdBuffer = new ExpandableArrayBuffer();
+    protected int cmdLength = 0;
+
+    protected boolean isConfigured = false;
+
+    private Consumer<ClientCommandController> closeConsumer;
+
+    public ClientCommandController(final ClientTransport transport, final ClientTopologyManager topologyManager, Consumer<ClientCommandController> closeConsumer)
     {
+        this.transport = transport;
         this.topologyManager = topologyManager;
-        this.command = command;
-        this.future = future;
+        this.closeConsumer = closeConsumer;
 
-        this.requestController = new RequestResponseController(transport);
-
-        stateMachine = StateMachine.<Context<R>>builder(Context::new)
-            .initialState(determineRemoteState)
+        stateMachine = StateMachine.<Context>builder(Context::new)
+            .initialState(closedState)
+            .from(closedState).take(TRANSITION_DEFAULT).to(determineRemoteState)
             .from(determineRemoteState).take(TRANSITION_DEFAULT).to(executeRequestState)
             .from(determineRemoteState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyState)
             .from(determineRemoteState).take(TRANSITION_FAILED).to(failedState)
@@ -95,16 +92,36 @@ public class ClientCommandController<R> implements BufferReader
             .build();
     }
 
+    public void configure(final AbstractCmdImpl command, final CompletableFuture future)
+    {
+        this.command = command;
+        this.future = future;
+
+        cmdLength = command.writeCommand(cmdBuffer);
+
+        isConfigured = true;
+    }
+
     public int doWork()
     {
-        int workCount = stateMachine.doWork();
-        workCount += requestController.doWork();
-        return workCount;
+        return stateMachine.doWork();
     }
 
     public boolean isClosed()
     {
-        return stateMachine.getCurrentState() == closedState;
+        return stateMachine.getCurrentState() == closedState && !isConfigured;
+    }
+
+    @Override
+    public int getLength()
+    {
+        return cmdLength;
+    }
+
+    @Override
+    public void write(MutableDirectBuffer buffer, int offset)
+    {
+        buffer.putBytes(offset, cmdBuffer, 0, cmdLength);
     }
 
     @Override
@@ -119,19 +136,18 @@ public class ClientCommandController<R> implements BufferReader
 
         final int responseMessageOffset = messageHeaderDecoder.encodedLength();
 
-        final Context<R> context = stateMachine.getContext();
+        final Context context = stateMachine.getContext();
 
-        final ClientResponseHandler<R> responseHandler = command.getResponseHandler();
+        final ClientResponseHandler responseHandler = command.getResponseHandler();
 
         if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
         {
-            final R responseObject = responseHandler.readResponse(buffer, responseMessageOffset, blockLength, version);
+            final Object responseObject = responseHandler.readResponse(buffer, responseMessageOffset, blockLength, version);
 
             // expose request channel if need to keep a reference of it (e.g. subscriptions)
             if (responseObject instanceof ReceiverAwareResponseResult)
             {
-                final RemoteAddress receiver = requestController.getReceiverRemote();
-                ((ReceiverAwareResponseResult) responseObject).setReceiver(receiver);
+                ((ReceiverAwareResponseResult) responseObject).setReceiver(context.receiveRemote);
             }
 
             context.responseObject = responseObject;
@@ -149,10 +165,10 @@ public class ClientCommandController<R> implements BufferReader
 
     }
 
-    private class DetermineRemoteState implements State<Context<R>>
+    private class DetermineRemoteState implements State<Context>
     {
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             ++context.attempts;
 
@@ -172,12 +188,17 @@ public class ClientCommandController<R> implements BufferReader
                 return 0;
             }
 
-            final SocketAddress address = topologyManager.getLeaderForTopic(topic);
+            context.receiveRemote = topologyManager.getLeaderForTopic(topic);
 
-            if (address != null)
+            if (context.receiveRemote != null)
             {
-                requestController.open(address, command.getRequestWriter(), ClientCommandController.this);
-                context.take(TRANSITION_DEFAULT);
+                final ClientRequest request = transport.getOutput().sendRequest(context.receiveRemote, ClientCommandController.this);
+
+                if (request != null)
+                {
+                    context.request = request;
+                    context.take(TRANSITION_DEFAULT);
+                }
             }
             else
             {
@@ -188,11 +209,11 @@ public class ClientCommandController<R> implements BufferReader
         }
 
     }
-    private class RefreshTopologyState implements State<Context<R>>
+    private class RefreshTopologyState implements State<Context>
     {
 
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             context.topologyRefreshFuture = topologyManager.refreshNow();
             context.take(TRANSITION_DEFAULT);
@@ -200,10 +221,10 @@ public class ClientCommandController<R> implements BufferReader
         }
 
     }
-    private class AwaitTopologyRefreshState implements State<Context<R>>
+    private class AwaitTopologyRefreshState implements State<Context>
     {
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             int workCount = 0;
 
@@ -231,32 +252,34 @@ public class ClientCommandController<R> implements BufferReader
 
     }
 
-    private class ExecuteRequestState implements State<Context<R>>
+    private class ExecuteRequestState implements State<Context>
     {
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
-            if (requestController.isResponseAvailable())
+            final ClientRequest request = context.request;
+
+            if (request.isDone())
             {
-                requestController.close();
-                context.take(TRANSITION_DEFAULT);
-
-                return 1;
-            }
-            else if (requestController.isFailed())
-            {
-                final Exception failure = requestController.getFailure();
-                context.exception = failure;
-
-                requestController.close();
-
-                if (failure instanceof ClientCommandRejectedException)
+                try
                 {
+                    final DirectBuffer response = request.get();
+                    wrap(response, 0, response.capacity());
+
+                    context.take(TRANSITION_DEFAULT);
+                }
+                catch (ClientCommandRejectedException e)
+                {
+                    context.exception = e;
                     context.take(TRANSITION_FAILED);
                 }
-                else
+                catch (Throwable e)
                 {
                     context.take(TRANSITION_REFRESH_TOPOLOGY);
+                }
+                finally
+                {
+                    request.close();
                 }
 
                 return 1;
@@ -269,11 +292,11 @@ public class ClientCommandController<R> implements BufferReader
         }
     }
 
-    private class HandleResponseState implements State<Context<R>>
+    private class HandleResponseState implements State<Context>
     {
 
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             final ErrorCode errorCode = context.errorCode;
 
@@ -301,24 +324,29 @@ public class ClientCommandController<R> implements BufferReader
 
     }
 
-    private class FinishedState implements State<Context<R>>
+    private class FinishedState implements State<Context>
     {
 
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             future.complete(context.responseObject);
             context.take(TRANSITION_DEFAULT);
             return 1;
         }
 
+        @Override
+        public void onExit()
+        {
+            closeConsumer.accept(ClientCommandController.this);
+        }
     }
 
-    private class FailedState implements State<Context<R>>
+    private class FailedState implements State<Context>
     {
 
         @Override
-        public int doWork(final Context<R> context) throws Exception
+        public int doWork(final Context context) throws Exception
         {
             final ErrorCode errorCode = context.errorCode;
             Throwable exception = context.exception;
@@ -347,24 +375,38 @@ public class ClientCommandController<R> implements BufferReader
             return 1;
         }
 
-    }
-
-    private class ClosedState implements WaitState<Context<R>>
-    {
-
         @Override
-        public void work(final Context<R> context) throws Exception
+        public void onExit()
         {
-            context.reset();
+            closeConsumer.accept(ClientCommandController.this);
         }
     }
 
-    static class Context<R> extends SimpleStateMachineContext
+    private class ClosedState implements WaitState<Context>
     {
+
+        @Override
+        public void work(final Context context) throws Exception
+        {
+            if (isConfigured)
+            {
+                context.reset();
+                isConfigured = false;
+                context.take(TRANSITION_DEFAULT);
+            }
+        }
+    }
+
+    static class Context extends SimpleStateMachineContext
+    {
+        public RemoteAddress receiveRemote;
+
+        public ClientRequest request;
+
         CompletableFuture<Void> topologyRefreshFuture;
 
         int attempts;
-        R responseObject;
+        Object responseObject;
         ErrorCode errorCode = ErrorCode.NULL_VAL;
         MutableDirectBuffer errorBuffer;
         Throwable exception;

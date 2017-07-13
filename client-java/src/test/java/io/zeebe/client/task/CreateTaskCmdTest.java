@@ -15,12 +15,12 @@
  */
 package io.zeebe.client.task;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayInputStream;
@@ -32,20 +32,14 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.ClientResponseHandler;
 import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.task.impl.CreateTaskCmdImpl;
-import io.zeebe.client.task.impl.TaskEvent;
-import io.zeebe.client.task.impl.TaskEventType;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.client.task.impl.*;
+import io.zeebe.protocol.clientapi.*;
+import org.agrona.ExpandableArrayBuffer;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -53,14 +47,13 @@ public class CreateTaskCmdTest
 {
     protected static final String TOPIC_NAME = "test-topic";
     protected static final int PARTITION_ID = 1;
-    private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ExecuteCommandRequestDecoder requestDecoder = new ExecuteCommandRequestDecoder();
     private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
     private final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+    private final ExpandableArrayBuffer writeBuffer = new ExpandableArrayBuffer();
 
     private CreateTaskCmdImpl createTaskCommand;
     private ObjectMapper objectMapper;
@@ -75,9 +68,7 @@ public class CreateTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        createTaskCommand = new CreateTaskCmdImpl(commandManager, objectMapper, new Topic(TOPIC_NAME, PARTITION_ID));
-
-        writeBuffer.wrap(BUFFER);
+        createTaskCommand = new CreateTaskCmdImpl(commandManager, objectMapper, msgPackConverter, new Topic(TOPIC_NAME, PARTITION_ID));
     }
 
     @Test
@@ -92,7 +83,7 @@ public class CreateTaskCmdTest
             .payload("{ \"bar\" : 4 }");
 
         // when
-        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        createTaskCommand.writeCommand(writeBuffer);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);
@@ -135,7 +126,7 @@ public class CreateTaskCmdTest
             .payload(new ByteArrayInputStream(payload));
 
         // when
-        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        createTaskCommand.writeCommand(writeBuffer);
 
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
@@ -159,7 +150,7 @@ public class CreateTaskCmdTest
             .taskType("foo");
 
         // when
-        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        createTaskCommand.writeCommand(writeBuffer);
 
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
