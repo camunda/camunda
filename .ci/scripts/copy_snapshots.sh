@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -xe
 
 DIRECTORY=./backend/target/it-elasticsearch/elasticsearch-5.4.3/_snapshots/
 
