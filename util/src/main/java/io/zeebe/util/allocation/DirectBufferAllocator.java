@@ -16,14 +16,30 @@
 package io.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DirectBufferAllocator implements BufferAllocator
 {
+    private static final AtomicLong ALLOCATED_MEMORY = new AtomicLong();
 
     @Override
     public AllocatedBuffer allocate(int capacity)
     {
-        return new AllocatedDirectBuffer(ByteBuffer.allocateDirect(capacity));
+        final AllocatedDirectBuffer buffer = new AllocatedDirectBuffer(ByteBuffer.allocateDirect(capacity), DirectBufferAllocator::onFree);
+
+        ALLOCATED_MEMORY.addAndGet(capacity);
+
+        return buffer;
+    }
+
+    private static void onFree(AllocatedDirectBuffer buffer)
+    {
+        ALLOCATED_MEMORY.addAndGet(-buffer.capacity());
+    }
+
+    public static long getAllocatedMemoryInKb()
+    {
+        return ALLOCATED_MEMORY.get() / 1024;
     }
 
 }
