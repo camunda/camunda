@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.index;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
@@ -64,7 +62,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, SIZE_OF_COMPOSITE_KEY);
+        this.index = new Bytes2LongHashIndex(Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
 
         this.logStreamReader = logStreamReader;
