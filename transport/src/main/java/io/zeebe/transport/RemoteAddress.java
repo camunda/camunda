@@ -33,4 +33,11 @@ public class RemoteAddress
     {
         return addr;
     }
+
+    @Override
+    public String toString()
+    {
+        return "RemoteAddress{" + "streamId=" + streamId + ", addr=" + addr + '}';
+    }
+
 }
