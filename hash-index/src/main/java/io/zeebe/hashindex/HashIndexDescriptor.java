@@ -15,6 +15,7 @@
  */
 package io.zeebe.hashindex;
 
+import static java.lang.Math.addExact;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 
@@ -160,7 +161,7 @@ public class HashIndexDescriptor
 
     public static int getRecordLength(final int keyLength, final int valueLength)
     {
-        return RECORD_HEADER_LENGTH + keyLength + valueLength;
+        return addExact(RECORD_HEADER_LENGTH, addExact(keyLength, valueLength));
     }
 
     public static long getRecordValueOffset(final long offset, final int keyLength)

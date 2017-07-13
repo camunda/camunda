@@ -17,6 +17,8 @@ package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
 import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
+import static java.lang.Math.addExact;
+import static java.lang.Math.multiplyExact;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.hashindex.types.LongKeyHandler;
@@ -33,7 +35,7 @@ public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandl
 
     private static int maxBlockLength(int recordsPerBlock)
     {
-        return BLOCK_DATA_OFFSET + (recordsPerBlock * getRecordLength(SIZE_OF_LONG, SIZE_OF_LONG));
+        return addExact(BLOCK_DATA_OFFSET, multiplyExact(recordsPerBlock, getRecordLength(SIZE_OF_LONG, SIZE_OF_LONG)));
     }
 
     public long get(long key, long missingValue)

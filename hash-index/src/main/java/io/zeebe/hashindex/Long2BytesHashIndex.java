@@ -17,6 +17,8 @@ package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
 import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
+import static java.lang.Math.addExact;
+import static java.lang.Math.multiplyExact;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.hashindex.types.ByteArrayValueHandler;
@@ -38,7 +40,7 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
 
     private static int maxBlockLength(int recordsPerBlock, int valueMaxLength)
     {
-        return BLOCK_DATA_OFFSET + (recordsPerBlock * getRecordLength(SIZE_OF_LONG, valueMaxLength));
+        return addExact(BLOCK_DATA_OFFSET, multiplyExact(recordsPerBlock, getRecordLength(SIZE_OF_LONG, valueMaxLength)));
     }
 
     public boolean get(long key, byte[] value)

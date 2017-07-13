@@ -16,6 +16,8 @@
 package io.zeebe.hashindex;
 
 import static io.zeebe.hashindex.HashIndexDescriptor.*;
+import static java.lang.Math.addExact;
+import static java.lang.Math.multiplyExact;
 import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
 
 import java.io.IOException;
@@ -28,7 +30,7 @@ import sun.misc.Unsafe;
 @SuppressWarnings("restriction")
 public class HashIndexDataBuffer implements AutoCloseable
 {
-    private static final int ALLOCATION_FACTOR = 32;
+    public static final int ALLOCATION_FACTOR = 32;
 
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
@@ -55,7 +57,15 @@ public class HashIndexDataBuffer implements AutoCloseable
 
     private void init()
     {
-        length = BLOCK_BUFFER_HEADER_LENGTH + maxBlockLength * ALLOCATION_FACTOR;
+        try
+        {
+            length = addExact(BLOCK_BUFFER_HEADER_LENGTH, multiplyExact(maxBlockLength, ALLOCATION_FACTOR));
+        }
+        catch (final ArithmeticException e)
+        {
+            throw new IllegalStateException("Unable to allocate index data buffer", e);
+        }
+
         used = BLOCK_BUFFER_HEADER_LENGTH;
 
         addr = UNSAFE.allocateMemory(length);
@@ -226,10 +236,7 @@ public class HashIndexDataBuffer implements AutoCloseable
 
         if (newUsed > length)
         {
-            final long diff = ALLOCATION_FACTOR * maxBlockLength;
-            final long newLength = length + diff;
-            addr = UNSAFE.reallocateMemory(addr, newLength);
-            length = newLength;
+            increaseMemory(maxBlockLength);
         }
 
         final long blockOffset = used;
@@ -289,10 +296,7 @@ public class HashIndexDataBuffer implements AutoCloseable
         {
             if (used + bytesRead > length)
             {
-                final long diff = ALLOCATION_FACTOR * buffer.length;
-                final long newLength = length + diff;
-                addr = UNSAFE.reallocateMemory(addr, newLength);
-                length = newLength;
+                increaseMemory(buffer.length);
             }
 
             UNSAFE.copyMemory(buffer, ARRAY_BASE_OFFSET, null, getAddress(used), bytesRead);
@@ -318,4 +322,21 @@ public class HashIndexDataBuffer implements AutoCloseable
             UNSAFE.copyMemory(srcAddress, srcAddress + moveBytes, remainingBytes);
         }
     }
+
+    private void increaseMemory(final long addition)
+    {
+        final long newLength;
+        try
+        {
+            newLength = addExact(length, multiplyExact(addition, ALLOCATION_FACTOR));
+        }
+        catch (final ArithmeticException e)
+        {
+            throw new IllegalStateException("Unable increase index data buffer", e);
+        }
+
+        addr = UNSAFE.reallocateMemory(addr, newLength);
+        length = newLength;
+    }
+
 }

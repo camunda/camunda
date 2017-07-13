@@ -15,7 +15,12 @@
  */
 package io.zeebe.hashindex;
 
+import static io.zeebe.hashindex.HashIndexDataBuffer.ALLOCATION_FACTOR;
+import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.After;
 import org.junit.Test;
@@ -28,7 +33,6 @@ public class HashIndexTest
     public static final long MISSING_VALUE = 0;
 
     private Long2LongHashIndex index;
-
 
     @After
     public void tearDown()
@@ -71,6 +75,76 @@ public class HashIndexTest
         // and a value can be inserted and read again
         index.put(KEY, VALUE);
         assertThat(index.get(KEY, MISSING_VALUE)).isEqualTo(VALUE);
+    }
+
+    @Test
+    public void shouldThrowOnRecordLengthOverflow()
+    {
+        assertThatThrownBy(() ->
+            getRecordLength(1, Integer.MAX_VALUE)
+        )
+            .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+            getRecordLength(Integer.MAX_VALUE, 1)
+        )
+            .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+            getRecordLength(Integer.MAX_VALUE / 2, Integer.MAX_VALUE / 2)
+        )
+            .isInstanceOf(ArithmeticException.class);
+    }
+
+
+    @Test
+    public void shouldThrowOnMaxBockLengthOverflow()
+    {
+        assertThatThrownBy(() ->
+                new Long2LongHashIndex(1, Integer.MAX_VALUE)
+        )
+                .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+                new Long2LongHashIndex(1, Integer.MAX_VALUE / 20)
+        )
+                .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+                new Long2BytesHashIndex(1, Integer.MAX_VALUE, 8)
+        )
+                .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+                new Long2BytesHashIndex(1, Integer.MAX_VALUE / 20, 8)
+        )
+                .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+                new Bytes2LongHashIndex(1, Integer.MAX_VALUE, 8)
+        )
+                .isInstanceOf(ArithmeticException.class);
+
+        assertThatThrownBy(() ->
+                new Bytes2LongHashIndex(1, Integer.MAX_VALUE / 20, 8)
+        )
+                .isInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
+    public void shouldThrowOnLengthOverflowOnInitialAllocation()
+    {
+        assertThatThrownBy(() ->
+            new Long2LongHashIndex(1, maxRecordPerBlockForLong2LongIndex() + 1)
+        )
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Unable to allocate index data buffer")
+            .hasCauseInstanceOf(ArithmeticException.class);
+    }
+
+    private int maxRecordPerBlockForLong2LongIndex()
+    {
+        return (Integer.MAX_VALUE - BLOCK_DATA_OFFSET - BLOCK_DATA_OFFSET * ALLOCATION_FACTOR) / (getRecordLength(SIZE_OF_LONG, SIZE_OF_LONG) * ALLOCATION_FACTOR);
     }
 
 }
