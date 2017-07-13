@@ -38,9 +38,14 @@ public final class BufferUtil
 
     public static String bufferAsString(final DirectBuffer buffer)
     {
-        final byte[] bytes = new byte[buffer.capacity()];
+        return bufferAsString(buffer, 0, buffer.capacity());
+    }
 
-        buffer.getBytes(0, bytes);
+    public static String bufferAsString(final DirectBuffer buffer, final int offset, final int length)
+    {
+        final byte[] bytes = new byte[length];
+
+        buffer.getBytes(offset, bytes);
 
         return new String(bytes, StandardCharsets.UTF_8);
     }
