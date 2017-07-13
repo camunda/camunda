@@ -24,14 +24,14 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerRequestHandler;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
 import io.zeebe.util.actor.ActorScheduler;
+import org.slf4j.Logger;
 
 public class ServerTransportService implements Service<ServerTransport>
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
@@ -61,7 +61,8 @@ public class ServerTransportService implements Service<ServerTransport>
             .sendBuffer(sendBuffer)
             .scheduler(scheduler)
             .build(messageHandler, requestHandler);
-        System.out.format("Bound %s to %s.\n", readableName, bindAddress);
+
+        LOG.info("Bound {} to {}", readableName, bindAddress);
     }
 
     @Override

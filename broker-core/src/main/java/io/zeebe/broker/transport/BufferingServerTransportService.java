@@ -19,6 +19,7 @@ package io.zeebe.broker.transport;
 
 import java.net.InetSocketAddress;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -27,9 +28,12 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
+import org.slf4j.Logger;
 
 public class BufferingServerTransportService implements Service<BufferingServerTransport>
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
@@ -57,7 +61,8 @@ public class BufferingServerTransportService implements Service<BufferingServerT
             .sendBuffer(sendBuffer)
             .scheduler(scheduler)
             .buildBuffering(receiveBuffer);
-        System.out.format("Bound %s to %s.\n", readableName, bindAddress);
+
+        LOG.info("Bound {} to {}", readableName, bindAddress);
     }
 
     @Override
