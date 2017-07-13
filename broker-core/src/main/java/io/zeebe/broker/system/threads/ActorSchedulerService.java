@@ -81,7 +81,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
                 .threadCount(availableThreads)
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(errorHandler)
-                .baseIterationsPerActor(10)
+                .baseIterationsPerActor(50)
                 .build();
     }
 
