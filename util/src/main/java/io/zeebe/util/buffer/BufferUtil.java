@@ -232,4 +232,23 @@ public final class BufferUtil
         return new UnsafeBuffer(array);
     }
 
+    /**
+     * Does not care about overflows; just for convenience of writing int literals
+     */
+    public static MutableDirectBuffer wrapBytes(int... bytes)
+    {
+        return new UnsafeBuffer(intArrayToByteArray(bytes));
+    }
+
+    protected static byte[] intArrayToByteArray(int[] input)
+    {
+        final byte[] result = new byte[input.length];
+        for (int i = 0; i < input.length; i++)
+        {
+            result[i] = (byte) input[i];
+        }
+
+        return result;
+    }
+
 }
