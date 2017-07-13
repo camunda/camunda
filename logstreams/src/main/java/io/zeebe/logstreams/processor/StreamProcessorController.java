@@ -169,6 +169,12 @@ public class StreamProcessorController implements Actor
         return future;
     }
 
+    @Override
+    public int getPriority(long now)
+    {
+        return streamProcessor.getPriority(now);
+    }
+
     public CompletableFuture<Void> closeAsync()
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
