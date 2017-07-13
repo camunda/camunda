@@ -26,10 +26,14 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.*;
+import io.zeebe.util.allocation.DirectBufferAllocator;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
+    protected static final Logger LOG = TestLoggers.TEST_LOGGER;
+
     protected Broker broker;
 
     protected Supplier<InputStream> configSupplier;
@@ -56,6 +60,12 @@ public class EmbeddedBrokerRule extends ExternalResource
         stopBroker();
         broker = null;
         System.gc();
+
+        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
+        if (allocatedMemoryInKb > 0)
+        {
+            LOG.warn("There are still allocated direct buffers of a total size of {}kB.", allocatedMemoryInKb);
+        }
     }
 
     public void restartBroker()
