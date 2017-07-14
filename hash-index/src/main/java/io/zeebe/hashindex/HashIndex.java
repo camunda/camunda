@@ -52,6 +52,8 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
      */
     public static final int MAX_INDEX_SIZE = 1 << 27;
 
+
+
     /**
      * The optimal bucket count regarding to performance and memory usage.
      * Was determined with help of some benchmarks see {@link io.zeebe.hashindex.benchmarks.HashIndexDetermineSizesBenchmark}.
@@ -59,10 +61,16 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     public static final int OPTIMAL_BUCKET_COUNT = 16;
 
     /**
-     * The optimal index size was calculated with regard to the {@link #OPTIMAL_BUCKET_COUNT}
-     * and a requirement to store 100_000_000 entries in the index.
+     * The count of events which is expected to be stored into a hash index.
+     * NOTE: should be adjusted later to increase the {@link #OPTIMAL_INDEX_SIZE}.
      */
-    public static final int OPTIMAL_INDEX_SIZE = 1 << 23;
+    public static final int EXPECTED_EVENT_COUNT = 1 << 23;
+
+    /**
+     * The optimal index size was calculated with regard to the {@link #OPTIMAL_BUCKET_COUNT}
+     * and a requirement to store a count of entries, which is equal to {@link #EXPECTED_EVENT_COUNT}, in the index.
+     */
+    public static final int OPTIMAL_INDEX_SIZE =    EXPECTED_EVENT_COUNT / OPTIMAL_BUCKET_COUNT;
 
     protected final K keyHandler;
     protected final K splitKeyHandler;
