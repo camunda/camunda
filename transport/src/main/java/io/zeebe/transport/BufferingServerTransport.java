@@ -54,7 +54,7 @@ public class BufferingServerTransport extends ServerTransport
                 ServerRequestHandler requestHandler)
         {
             this.subscription = subscription;
-            this.fragmentHandler = new ServerReceiveHandler(output, addressList, messageHandler, requestHandler);
+            this.fragmentHandler = new ServerReceiveHandler(output, addressList, messageHandler, requestHandler, null);
         }
 
         @Override

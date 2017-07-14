@@ -42,6 +42,7 @@ public class ServerTransportBuilder
     private InetSocketAddress bindAddress;
     protected FragmentHandler receiveHandler;
     protected RemoteAddressList remoteAddressList;
+    protected ServerControlMessageListener controlMessageListener;
 
     public ServerTransportBuilder bindAddress(InetSocketAddress address)
     {
@@ -74,11 +75,17 @@ public class ServerTransportBuilder
         return this;
     }
 
+    public ServerTransportBuilder controlMessageListener(ServerControlMessageListener controlMessageListener)
+    {
+        this.controlMessageListener = controlMessageListener;
+        return this;
+    }
+
     public ServerTransport build(ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
     {
         remoteAddressList = new RemoteAddressList();
 
-        receiveHandler(new ServerReceiveHandler(output, remoteAddressList, messageHandler, requestHandler));
+        receiveHandler(new ServerReceiveHandler(output, remoteAddressList, messageHandler, requestHandler, controlMessageListener));
 
         validate();
 

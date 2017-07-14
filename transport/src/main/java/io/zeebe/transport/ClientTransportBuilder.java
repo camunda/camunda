@@ -35,8 +35,14 @@ import io.zeebe.util.actor.ActorScheduler;
 
 public class ClientTransportBuilder
 {
+    /**
+     * In the same order of magnitude of what apache and nginx use.
+     */
+    protected static final long DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = 5000;
+
     private int requestPoolSize = 64;
     private int messageMaxLength = 1024 * 512;
+    protected long keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
@@ -84,6 +90,12 @@ public class ClientTransportBuilder
         return this;
     }
 
+    public ClientTransportBuilder keepAlivePeriod(long keepAlivePeriod)
+    {
+        this.keepAlivePeriod = keepAlivePeriod;
+        return this;
+    }
+
     public ClientTransport build()
     {
         validate();
@@ -118,6 +130,7 @@ public class ClientTransportBuilder
         context.setReceiveHandler(receiveHandler);
         context.setSenderSubscription(sendBuffer.getSubscriptionByName("sender"));
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
+        context.setChannelKeepAlivePeriod(keepAlivePeriod);
         return context;
     }
 

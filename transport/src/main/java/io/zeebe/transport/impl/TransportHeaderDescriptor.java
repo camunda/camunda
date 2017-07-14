@@ -15,6 +15,8 @@
  */
 package io.zeebe.transport.impl;
 
+import java.nio.ByteOrder;
+
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -23,9 +25,13 @@ public class TransportHeaderDescriptor
 {
     public static final short REQUEST_RESPONSE = 0;
     public static final short FULL_DUPLEX_SINGLE_MESSAGE = 1;
+    public static final short CONTROL_MESSAGE = 2;
 
     public static final int PROTOCOL_ID_OFFSET;
     public static final int HEADER_LENGTH;
+
+    // do not change; must be stable for backwards/forwards compatibility
+    public static final ByteOrder HEADER_BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
     static
     {
@@ -63,7 +69,7 @@ public class TransportHeaderDescriptor
 
     public TransportHeaderDescriptor protocolId(short protocolId)
     {
-        buffer.putShort(PROTOCOL_ID_OFFSET, protocolId);
+        buffer.putShort(PROTOCOL_ID_OFFSET, protocolId, HEADER_BYTE_ORDER);
         return this;
     }
 
@@ -79,7 +85,7 @@ public class TransportHeaderDescriptor
 
     public int protocolId()
     {
-        return buffer.getShort(PROTOCOL_ID_OFFSET);
+        return buffer.getShort(PROTOCOL_ID_OFFSET, HEADER_BYTE_ORDER);
     }
 
 }

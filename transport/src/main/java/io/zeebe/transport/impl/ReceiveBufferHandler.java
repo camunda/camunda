@@ -22,6 +22,7 @@ import io.zeebe.dispatcher.FragmentHandler;
 
 public class ReceiveBufferHandler implements FragmentHandler
 {
+    private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
 
     protected final Dispatcher receiveBuffer;
 
@@ -40,6 +41,13 @@ public class ReceiveBufferHandler implements FragmentHandler
 
         if (!isMarkedFailed)
         {
+            transportHeaderDescriptor.wrap(buffer, offset);
+            if (transportHeaderDescriptor.protocolId() == TransportHeaderDescriptor.CONTROL_MESSAGE)
+            {
+                // don't forward control messages
+                return CONSUME_FRAGMENT_RESULT;
+            }
+
             final long offerPosition = receiveBuffer.offer(buffer, offset, length, streamId);
             if (offerPosition == -2)
             {

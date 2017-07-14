@@ -15,6 +15,7 @@
  */
 package io.zeebe.transport.impl.actor;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -26,15 +27,16 @@ import org.agrona.collections.Int2ObjectHashMap;
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.impl.ControlMessages;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.transport.impl.actor.Sender.SenderContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.ComposedState;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.time.ClockUtil;
 
 public class Sender implements Actor
 {
@@ -43,19 +45,29 @@ public class Sender implements Actor
     private final Subscription senderSubscription;
     private final int maxPeekSize;
     private final boolean isClient;
+    protected final long keepAlivePeriod;
     protected final FragmentHandler sendFailureHandler;
+
+    protected long lastKeepAlive = 0;
 
     private static final int DEFAULT = 0;
     private static final int DISCARD = 1;
+    private static final int SEND_NEXT_KEEP_ALIVE = 2;
 
+    private final PollState pollState = new PollState();
     private final ProcessState processState = new ProcessState();
     private final DiscardState discardState = new DiscardState();
+    private final SendKeepAliveState keepAliveState = new SendKeepAliveState();
 
     private final StateMachine<SenderContext> stateMachine = StateMachine.<SenderContext>builder((s) -> new SenderContext(s))
-        .initialState(processState)
+        .initialState(pollState)
+        .from(pollState).take(DEFAULT).to(processState)
+        .from(pollState).take(SEND_NEXT_KEEP_ALIVE).to(keepAliveState)
+        .from(keepAliveState).take(SEND_NEXT_KEEP_ALIVE).to(keepAliveState)
+        .from(keepAliveState).take(DEFAULT).to(pollState)
         .from(processState).take(DISCARD).to(discardState)
-        .from(processState).take(DEFAULT).to(processState)
-        .from(discardState).take(DEFAULT).to(processState)
+        .from(processState).take(DEFAULT).to(pollState)
+        .from(discardState).take(DEFAULT).to(pollState)
         .build();
 
     private StateMachineAgent<SenderContext> stateMachineAgent = new StateMachineAgent<>(stateMachine);
@@ -67,6 +79,7 @@ public class Sender implements Actor
         this.maxPeekSize = context.getMessageMaxLength() * 16;
         this.isClient = actorContext instanceof ClientActorContext;
         this.sendFailureHandler = context.getSendFailureHandler();
+        this.keepAlivePeriod = context.getChannelKeepAlivePeriod();
 
         actorContext.setSender(this);
     }
@@ -77,24 +90,38 @@ public class Sender implements Actor
         return stateMachineAgent.doWork();
     }
 
-    class ProcessState extends ComposedState<SenderContext>
+    class PollState implements State<SenderContext>
     {
-        private final PollState pollState = new PollState();
-        private final AwaitChannelState awaitChannelState = new AwaitChannelState();
-        private final WriteState writeState = new WriteState();
-
-        class PollState implements Step<SenderContext>
+        @Override
+        public int doWork(SenderContext context)
         {
-            @Override
-            public boolean doWork(SenderContext context)
-            {
-                context.reset();
+            context.reset();
 
+            final long now = ClockUtil.getCurrentTimeInMillis();
+            if (keepAlivePeriod > 0 && now - lastKeepAlive > keepAlivePeriod && !channelMap.isEmpty())
+            {
+                context.take(SEND_NEXT_KEEP_ALIVE);
+                lastKeepAlive = now;
+                return 1;
+            }
+            else
+            {
                 final int blockSize = senderSubscription.peekBlock(context.blockPeek, maxPeekSize, true);
 
-                return blockSize > 0;
+                if (blockSize > 0)
+                {
+                    context.take(DEFAULT);
+                }
+
+                return blockSize;
             }
         }
+    }
+
+    class ProcessState extends ComposedState<SenderContext>
+    {
+        private final AwaitChannelState awaitChannelState = new AwaitChannelState();
+        private final WriteState writeState = new WriteState();
 
         class AwaitChannelState implements Step<SenderContext>
         {
@@ -168,7 +195,7 @@ public class Sender implements Actor
         @Override
         protected List<Step<SenderContext>> steps()
         {
-            return Arrays.asList(pollState, awaitChannelState, writeState);
+            return Arrays.asList(awaitChannelState, writeState);
         }
 
     }
@@ -199,6 +226,94 @@ public class Sender implements Actor
         }
     }
 
+
+    class SendKeepAliveState extends ComposedState<SenderContext>
+    {
+
+        protected final SelectChannelStep selectStep = new SelectChannelStep();
+        protected final SendKeepAliveOnChannelStep sendStep = new SendKeepAliveOnChannelStep();
+
+        @Override
+        protected List<Step<SenderContext>> steps()
+        {
+            return Arrays.asList(selectStep, sendStep);
+        }
+
+        class SelectChannelStep implements Step<SenderContext>
+        {
+            @Override
+            public boolean doWork(SenderContext context)
+            {
+                if (context.channelIt == null)
+                {
+                    context.channelIt = channelMap.values().iterator();
+                }
+
+                if (context.channelIt.hasNext())
+                {
+                    context.writeChannel = context.channelIt.next();
+                }
+                else
+                {
+                    context.writeChannel = null;
+                }
+
+                context.keepAliveBuffer.clear();
+
+                return true;
+            }
+        }
+
+        class SendKeepAliveOnChannelStep implements Step<SenderContext>
+        {
+            @Override
+            public boolean doWork(SenderContext context)
+            {
+                if (context.writeChannel != null)
+                {
+                    boolean continueWithNextChannel = false;
+
+                    if (context.keepAliveBuffer.remaining() > 0)
+                    {
+                        final int bytesSent = context.writeChannel.write(context.keepAliveBuffer);
+
+                        if (bytesSent < 0)
+                        {
+                            // Just ignore the channel on failure.
+                            // No need to do anything else, as the channel will be closed
+                            // by other means.
+                            continueWithNextChannel = true;
+                        }
+                    }
+
+                    if (context.keepAliveBuffer.remaining() == 0)
+                    {
+                        continueWithNextChannel = true;
+                    }
+
+                    if (continueWithNextChannel)
+                    {
+                        context.take(SEND_NEXT_KEEP_ALIVE);
+                    }
+
+                    return continueWithNextChannel;
+                }
+                else
+                {
+                    context.take(DEFAULT);
+                    return true;
+                }
+            }
+        }
+
+        @Override
+        public boolean isInterruptable()
+        {
+            // avoids getting new channels registered or removed while iterating them
+            return false;
+        }
+    }
+
     public void removeChannel(TransportChannel c)
     {
         stateMachineAgent.addCommand((ctx) ->
@@ -211,6 +326,11 @@ public class Sender implements Actor
     {
         stateMachineAgent.addCommand((ctx) ->
         {
+            if (channelMap.isEmpty())
+            {
+                lastKeepAlive = ClockUtil.getCurrentTimeInMillis();
+            }
+
             channelMap.put(c.getStreamId(), c);
         });
     }
@@ -223,9 +343,14 @@ public class Sender implements Actor
         TransportChannel writeChannel;
         int bytesWritten;
 
+        Iterator<TransportChannel> channelIt;
+        final ByteBuffer keepAliveBuffer = ByteBuffer.allocate(ControlMessages.KEEP_ALIVE.capacity());
+
         SenderContext(StateMachine<?> stateMachine)
         {
             super(stateMachine);
+            ControlMessages.KEEP_ALIVE.getBytes(0, keepAliveBuffer, ControlMessages.KEEP_ALIVE.capacity());
+            keepAliveBuffer.flip();
         }
 
         @Override
@@ -234,6 +359,8 @@ public class Sender implements Actor
             writeChannel = null;
             bytesWritten = 0;
             channelFuture = null;
+            channelIt = null;
+            keepAliveBuffer.clear();
         }
     }
 }

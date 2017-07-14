@@ -25,6 +25,7 @@ import io.zeebe.util.actor.ActorReference;
 public class TransportContext
 {
     private int messageMaxLength;
+    private long channelKeepAlivePeriod = 0L;
 
     private ServerOutput serverOutput;
     private ClientOutput clientOutput;
@@ -152,5 +153,15 @@ public class TransportContext
     public void setServerSocketBinding(ServerSocketBinding serverSocketBinding)
     {
         this.serverSocketBinding = serverSocketBinding;
+    }
+
+    public void setChannelKeepAlivePeriod(long channelKeepAlivePeriod)
+    {
+        this.channelKeepAlivePeriod = channelKeepAlivePeriod;
+    }
+
+    public long getChannelKeepAlivePeriod()
+    {
+        return channelKeepAlivePeriod;
     }
 }

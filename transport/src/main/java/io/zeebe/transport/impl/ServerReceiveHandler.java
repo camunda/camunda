@@ -19,6 +19,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerControlMessageListener;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
@@ -30,24 +31,27 @@ public class ServerReceiveHandler implements FragmentHandler
     private final RemoteAddressList remoteAddressList;
     private final ServerMessageHandler messageHandler;
     private final ServerRequestHandler requestHandler;
+    private final ServerControlMessageListener controlMessageListener;
     protected final ServerOutput output;
 
     public ServerReceiveHandler(
             ServerOutput output,
             RemoteAddressList remoteAddressList,
             ServerMessageHandler messageHandler,
-            ServerRequestHandler requestHandler)
+            ServerRequestHandler requestHandler,
+            ServerControlMessageListener controlMessageListener)
     {
         this.output = output;
         this.remoteAddressList = remoteAddressList;
         this.messageHandler = messageHandler;
         this.requestHandler = requestHandler;
+        this.controlMessageListener = controlMessageListener;
     }
 
     @Override
     public int onFragment(DirectBuffer buffer, int readOffset, int length, int streamId, boolean isMarkedFailed)
     {
-        int result = FAILED_FRAGMENT_RESULT;
+        int result = CONSUME_FRAGMENT_RESULT;
 
         final RemoteAddress remoteAddress = remoteAddressList.getByStreamId(streamId);
 
@@ -70,10 +74,6 @@ public class ServerReceiveHandler implements FragmentHandler
                     final long requestId = requestResponseHeaderDescriptor.requestId();
                     result = requestHandler.onRequest(output, remoteAddress, buffer, readOffset, length, requestId) ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
                 }
-                else
-                {
-                    result = CONSUME_FRAGMENT_RESULT;
-                }
 
                 break;
 
@@ -83,15 +83,22 @@ public class ServerReceiveHandler implements FragmentHandler
                 {
                     result = messageHandler.onMessage(output, remoteAddress, buffer, readOffset, length) ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
                 }
-                else
+
+                break;
+
+            case TransportHeaderDescriptor.CONTROL_MESSAGE:
+
+                if (controlMessageListener != null)
                 {
-                    result = CONSUME_FRAGMENT_RESULT;
+                    final int messageType = buffer.getInt(readOffset, ControlMessages.CONTROL_MESSAGE_BYTEORDER);
+                    controlMessageListener.onMessage(output, remoteAddress, messageType);
                 }
 
                 break;
 
             default:
                 // ignore / fail
+                result = FAILED_FRAGMENT_RESULT;
 
         }
 
