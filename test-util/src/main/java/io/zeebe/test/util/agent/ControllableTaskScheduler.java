@@ -27,7 +27,7 @@ import org.junit.rules.ExternalResource;
 
 public class ControllableTaskScheduler extends ExternalResource implements ActorScheduler
 {
-    protected static final int MAX_WORK_COUNT = 1_000;
+    protected static final int MAX_WORK_COUNT = 1_000_000;
 
     protected AtomicBoolean isRunning = new AtomicBoolean(true);
 
