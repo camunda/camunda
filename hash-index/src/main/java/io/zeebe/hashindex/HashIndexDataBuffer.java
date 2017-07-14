@@ -79,6 +79,11 @@ public class HashIndexDataBuffer implements AutoCloseable
         UNSAFE.freeMemory(addr);
     }
 
+    public long getLength()
+    {
+        return length;
+    }
+
     private long getAddress(final long offset)
     {
         return addr + offset;

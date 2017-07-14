@@ -47,6 +47,11 @@ public class HashIndexBuffer implements Closeable
         UNSAFE.freeMemory(addr);
     }
 
+    public int getLength()
+    {
+        return length;
+    }
+
     public long getBlockOffset(int blockId)
     {
         return UNSAFE.getLong(addr + (blockId * SIZE_OF_LONG));

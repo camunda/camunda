@@ -126,6 +126,11 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     }
 
+    public long size()
+    {
+        return indexBuffer.getLength() + dataBuffer.getLength();
+    }
+
     private int ensureIndexSizeIsPowerOfTwo(final int indexSize)
     {
         final int powerOfTwo = BitUtil.findNextPositivePowerOfTwo(indexSize);

@@ -15,11 +15,12 @@
  */
 package io.zeebe.hashindex;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.agrona.BitUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -29,7 +30,16 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class IndexSerializer
 {
+    /**
+     * The version of the snapshot.
+     * Part of the metadata header, which will be written on every snapshot.
+     */
     private static final int VERSION = 1;
+
+    /**
+     * The size of the header, which contains meta data like the version of the snapshot etc.
+     */
+    private static final int METADATA_LEN = SIZE_OF_INT;
 
     private final byte[] buffer = new byte[IoUtil.BLOCK_SIZE];
     private final UnsafeBuffer bufferView = new UnsafeBuffer(buffer);
@@ -41,10 +51,15 @@ public class IndexSerializer
         this.index = index;
     }
 
+    public long serializationSize()
+    {
+        return index.size() + METADATA_LEN;
+    }
+
     public void writeToStream(OutputStream outputStream) throws IOException
     {
         bufferView.putInt(0, VERSION);
-        outputStream.write(buffer, 0, BitUtil.SIZE_OF_INT);
+        outputStream.write(buffer, 0, SIZE_OF_INT);
 
         index.getIndexBuffer().writeToStream(outputStream, buffer);
         index.getDataBuffer().writeToStream(outputStream, buffer);
@@ -52,9 +67,9 @@ public class IndexSerializer
 
     public void readFromStream(InputStream inputStream) throws IOException
     {
-        final int bytesRead = inputStream.read(buffer, 0, BitUtil.SIZE_OF_INT);
+        final int bytesRead = inputStream.read(buffer, 0, SIZE_OF_INT);
 
-        if (bytesRead < BitUtil.SIZE_OF_INT)
+        if (bytesRead < SIZE_OF_INT)
         {
             throw new IOException("Unable to read index snapshot version");
         }
