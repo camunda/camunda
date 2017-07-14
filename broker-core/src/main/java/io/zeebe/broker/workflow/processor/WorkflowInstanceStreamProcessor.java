@@ -26,9 +26,6 @@ import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import java.util.EnumMap;
 import java.util.Map;
 
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
@@ -53,12 +50,15 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.actor.Actor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -117,7 +117,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
      */
     protected final Bytes2LongHashIndex latestWorkflowVersionIndex;
 
-    protected final ComposedSnapshot composedSnapshot;
+    protected final ComposedHashIndexSnapshot composedSnapshot;
 
     protected LogStreamReader logStreamReader;
     protected LogStreamBatchWriter logStreamBatchWriter;
@@ -150,7 +150,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.payloadMappingProcessor = new MappingProcessor(4096);
 
-        this.composedSnapshot = new ComposedSnapshot(
+        this.composedSnapshot = new ComposedHashIndexSnapshot(
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex),
                 workflowInstanceIndex.getSnapshotSupport(),
                 activityInstanceIndex.getSnapshotSupport(),

@@ -22,11 +22,9 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
 
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Index that maps <b>incident key</b> to
@@ -60,7 +58,7 @@ public class IncidentIndex
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
-    public SnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport getSnapshotSupport()
     {
         return snapshotSupport;
     }

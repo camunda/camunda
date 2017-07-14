@@ -17,19 +17,15 @@
  */
 package io.zeebe.broker.workflow.index;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Index that maps <b>activity instance key</b> to
@@ -65,7 +61,7 @@ public class ActivityInstanceIndex implements AutoCloseable
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
-    public SnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport getSnapshotSupport()
     {
         return snapshotSupport;
     }

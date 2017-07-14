@@ -21,7 +21,6 @@ import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentEventType;
 import io.zeebe.broker.incident.index.IncidentIndex;
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
@@ -31,7 +30,8 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -86,7 +86,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         this.failedTaskIndex = new Long2LongHashIndex(Short.MAX_VALUE, 64);
         this.incidentIndex = new IncidentIndex();
 
-        this.indexSnapshot = new ComposedSnapshot(
+        this.indexSnapshot = new ComposedHashIndexSnapshot(
                 new HashIndexSnapshotSupport<>(activityInstanceIndex),
                 new HashIndexSnapshotSupport<>(failedTaskIndex),
                 incidentIndex.getSnapshotSupport());

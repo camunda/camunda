@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.HashIndexSnapshotSupport;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
@@ -40,6 +39,7 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
