@@ -13,31 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.snapshot;
+package io.zeebe.logstreams.snapshot.benchmarks;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.util.StreamUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.util.StreamUtil;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * A composition of one or more snapshots which are combined to a single snapshot.
  */
-public class ComposedSnapshot implements SnapshotSupport
+public class OldComposedSnapshot implements SnapshotSupport
 {
     protected final SnapshotSupport[] parts;
     protected final int count;
+    protected long processedBytes;
 
     protected final UnsafeBuffer headerBuffer;
     protected final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
 
-    public ComposedSnapshot(SnapshotSupport... parts)
+    public OldComposedSnapshot(SnapshotSupport... parts)
     {
         this.parts = parts;
         this.count = parts.length;
@@ -51,15 +52,22 @@ public class ComposedSnapshot implements SnapshotSupport
         headerBuffer = new UnsafeBuffer(new byte[headerLength]);
     }
 
+    public long getProcessedBytes()
+    {
+        return processedBytes;
+    }
+
     @Override
     public void writeSnapshot(OutputStream outputStream) throws Exception
     {
+        long writtenBytes = 0;
         try (ByteArrayOutputStream snapshotDataBuffer = new ByteArrayOutputStream())
         {
             int offset = 0;
 
             headerBuffer.putInt(offset, count);
             offset += SIZE_OF_INT;
+            writtenBytes = SIZE_OF_INT;
 
             for (int i = 0; i < count; i++)
             {
@@ -70,11 +78,14 @@ public class ComposedSnapshot implements SnapshotSupport
                 final int dataLength = snapshotDataBuffer.size() - dataOffset;
                 headerBuffer.putInt(offset, dataLength);
                 offset += SIZE_OF_INT;
+                writtenBytes += SIZE_OF_INT;
+                writtenBytes += dataLength;
             }
 
             outputStream.write(headerBuffer.byteArray());
             snapshotDataBuffer.writeTo(outputStream);
         }
+        processedBytes = writtenBytes;
     }
 
     @Override
@@ -84,9 +95,11 @@ public class ComposedSnapshot implements SnapshotSupport
         readBuffer.wrap(buffer);
 
         int offset = 0;
+        long readBytes;
 
         final int dataCount = readBuffer.getInt(offset);
         offset += SIZE_OF_INT;
+        readBytes = SIZE_OF_INT;
 
         if (dataCount != count)
         {
@@ -98,11 +111,13 @@ public class ComposedSnapshot implements SnapshotSupport
         {
             dataLength[i] =  readBuffer.getInt(offset);
             offset += SIZE_OF_INT;
+            readBytes += SIZE_OF_INT;
         }
 
         for (int i = 0; i < count; i++)
         {
             final int length = dataLength[i];
+            readBytes += length;
 
             try (InputStream dataInputStream = new ByteArrayInputStream(buffer, offset, length))
             {
@@ -111,6 +126,7 @@ public class ComposedSnapshot implements SnapshotSupport
 
             offset += length;
         }
+        processedBytes = readBytes;
     }
 
     @Override

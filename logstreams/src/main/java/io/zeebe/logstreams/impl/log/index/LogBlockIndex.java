@@ -15,9 +15,9 @@
  */
 package io.zeebe.logstreams.impl.log.index;
 
-import org.agrona.concurrent.AtomicBuffer;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.util.StreamUtil;
+import org.agrona.concurrent.AtomicBuffer;
 
 import java.io.InputStream;
 import java.io.OutputStream;
