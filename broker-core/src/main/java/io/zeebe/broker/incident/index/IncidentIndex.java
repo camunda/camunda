@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.incident.index;
 
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
+import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -54,7 +56,7 @@ public class IncidentIndex
 
     public IncidentIndex()
     {
-        this.index = new Long2BytesHashIndex(Short.MAX_VALUE, 64, INDEX_VALUE_SIZE);
+        this.index = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, INDEX_VALUE_SIZE);
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
