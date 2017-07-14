@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -41,8 +41,7 @@ public class EventsWriter {
   public void importEvents(List<EventDto> events) throws Exception {
     logger.debug("Writing [{}] events to elasticsearch", events.size());
 
-    BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk()
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     Map<String, List<EventDto>> processInstanceToEvents = new HashMap<>();
     for (EventDto e : events) {
@@ -56,7 +55,10 @@ public class EventsWriter {
     for (Map.Entry<String, List<EventDto>> entry : processInstanceToEvents.entrySet()) {
         addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
     }
-    addEventToProcessInstanceBulkRequest.get();
+    BulkResponse response = addEventToProcessInstanceBulkRequest.get();
+    if (response.hasFailures()) {
+      logger.warn("There were failures while writing events with message: {}", response.buildFailureMessage());
+    }
     eventBulkRequest.get();
   }
 
@@ -107,6 +109,7 @@ public class EventsWriter {
             processInstanceId)
         .setScript(updateScript)
         .setUpsert(newEntryIfAbsent, XContentType.JSON)
+        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
   }
 

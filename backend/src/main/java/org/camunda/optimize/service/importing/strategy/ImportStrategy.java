@@ -22,7 +22,7 @@ public interface ImportStrategy {
    * can adjust its index accordingly. E.g., the process definition
    * based strategy would switch to the next process definition.
    */
-  int adjustIndexWhenNoResultsFound(int pagesWithData);
+  boolean adjustIndexWhenNoResultsFound(boolean hasNewData);
 
 
   /**
@@ -59,21 +59,4 @@ public interface ImportStrategy {
    * entities that were missed during the first round.
    */
   void resetImportIndex();
-
-  /**
-   * As the configuration might be updated, this method updates all
-   * index information that are initially retrieved
-   * from the configuration.
-   */
-  void updateConfigurationSettings();
-
-  List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances();
-
-  List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls();
-
-  List<ProcessDefinitionEngineDto> fetchProcessDefinitions();
-
-  Integer fetchHistoricActivityInstanceCount() throws OptimizeException;
-
-  Integer fetchProcessDefinitionCount() throws OptimizeException;
 }

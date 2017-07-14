@@ -10,7 +10,6 @@ import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.importing.strategy.DefinitionBasedImportStrategy;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -35,30 +34,18 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private TestEmbeddedCamundaOptimize camundaOptimize;
 
-  public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
-    scheduleAllJobsAndImportEngineEntities(true);
-  }
-
   /**
    * Schedule import of all entities, execute all available jobs sequentially
    * until nothing more exists in scheduler queue.
-   *
-   * @param reset
-   * @throws OptimizeException
    */
-  public void scheduleAllJobsAndImportEngineEntities(boolean reset) throws OptimizeException {
-    if (reset) {
-      this.resetImportStartIndexes();
-    }
+  public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
     ImportScheduler scheduler = scheduleImport();
-
     getJobExecutor().startExecutingImportJobs();
 
-    ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
-    while (nextToExecute != null) {
+    while (scheduler.hasStillJobsToExecute()) {
+      ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
       ImportResult result = nextToExecute.execute();
       scheduler.postProcess(nextToExecute, result);
-      nextToExecute = scheduler.getNextToExecute();
     }
 
     getJobExecutor().stopExecutingImportJobs();
@@ -68,19 +55,13 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * Execute one round\job using import scheduler infrastructure
    *
    * NOTE: this method does not invoke scheduling of jobs
-   * @param reset
-   * @throws OptimizeException
    */
-  public void importEngineEntitiesRound(boolean reset) throws OptimizeException {
-    if (reset) {
-      this.resetImportStartIndexes();
-    }
-
+  public void importEngineEntitiesRound() throws OptimizeException {
     getJobExecutor().startExecutingImportJobs();
     ImportScheduler scheduler = getImportScheduler();
 
-    ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
-    if (nextToExecute != null) {
+    if (scheduler.hasStillJobsToExecute()) {
+      ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
       ImportResult result = nextToExecute.execute();
       scheduler.postProcess(nextToExecute, result);
     }
@@ -90,7 +71,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public ImportScheduler scheduleImport() {
     ImportScheduler scheduler = getImportScheduler();
-    scheduler.scheduleProcessEngineImport();
+    scheduler.scheduleNewImportRound();
     return scheduler;
   }
 
@@ -112,6 +93,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void starting(Description description) {
     startOptimize();
+    resetImportStartIndexes();
   }
 
   public String getAuthenticationToken() {
@@ -187,9 +169,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return indexes;
   }
 
-  public void updateImportIndexes() {
+  public void restartImportCycle() {
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.updateImportIndex();
+      importService.restartImportCycle();
     }
   }
 
@@ -229,9 +211,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return camundaOptimize.getConfigurationService();
   }
 
-  public void reloadImportDefaults() {
+  /**
+   * In case the engine got new process definitions, those are then added to the import list
+   */
+  public void updateDefinitionsToImport() {
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.reloadImportDefaults();
+      importService.updateDefinitionsToImport();
     }
   }
 }

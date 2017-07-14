@@ -6,15 +6,15 @@ import java.util.Set;
  * @author Askar Akhmerov
  */
 public class ImportResult {
-  private int pagesPassed;
+  private boolean engineHasStillNewData;
   private Set<String> idsToFetch;
 
-  public int getPagesPassed() {
-    return pagesPassed;
+  public boolean getEngineHasStillNewData() {
+    return engineHasStillNewData;
   }
 
-  public void setPagesPassed(int pagesPassed) {
-    this.pagesPassed = pagesPassed;
+  public void setEngineHasStillNewData(boolean engineHasStillNewData) {
+    this.engineHasStillNewData = engineHasStillNewData;
   }
 
   public Set<String> getIdsToFetch() {

@@ -13,25 +13,12 @@ import java.time.LocalDateTime;
  */
 public class PageBasedImportScheduleJob extends ImportScheduleJob<PaginatedImportService> {
 
-  private Integer indexBeforeExecution;
-  private Integer indexAfterExecution;
-
   public ImportResult execute() throws OptimizeException {
     if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
       throw new BackoffException();
     } else {
-      this.indexBeforeExecution = importService.getImportStartIndex();
       ImportResult executionResult = importService.executeImport();
-      this.indexAfterExecution = importService.getImportStartIndex();
       return executionResult;
     }
-  }
-
-  public Integer getIndexBeforeExecution() {
-    return indexBeforeExecution;
-  }
-
-  public Integer getIndexAfterExecution() {
-    return indexAfterExecution;
   }
 }

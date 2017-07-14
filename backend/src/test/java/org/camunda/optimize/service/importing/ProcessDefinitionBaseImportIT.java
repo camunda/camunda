@@ -8,6 +8,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -171,32 +172,27 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void testDataFOrLatestProcessVersionImportedFirst() throws Exception {
+  public void testDataForLatestProcessVersionImportedFirst() throws Exception {
     //given
     BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
-    String firstPd = createAndSetProcessDefinition(simpleUserTaskProcess);
-    String latestPd = createAndAddProcessDefinitionToImportList(simpleUserTaskProcess);
-
-    CloseableHttpClient client = HttpClientBuilder.create().build();
-    engineRule.startProcessInstance(firstPd, client);
-    engineRule.startProcessInstance(latestPd, client);
-    client.close();
-
-    configurationService.setProcessDefinitionsToImport(null);
+    engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    String latestPd = latestProcessInstance.getDefinitionId();
+    embeddedOptimizeRule.updateDefinitionsToImport();
 
     //when
     embeddedOptimizeRule.scheduleImport();
     //first full round
-    embeddedOptimizeRule.importEngineEntitiesRound(true);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
 
     //second full round
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -245,7 +241,7 @@ public class ProcessDefinitionBaseImportIT {
   private String createAndAddProcessDefinitionToImportList(BpmnModelInstance modelInstance) throws IOException {
     String processDefinitionId = createAndStartProcessDefinition(modelInstance);
     addProcessDefinitionIdToImportList(processDefinitionId);
-    embeddedOptimizeRule.updateImportIndexes();
+    embeddedOptimizeRule.resetImportStartIndexes();
     return processDefinitionId;
   }
 
@@ -315,10 +311,11 @@ public class ProcessDefinitionBaseImportIT {
     embeddedOptimizeRule.scheduleImport();
 
     // when
-    embeddedOptimizeRule.importEngineEntitiesRound(true);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
-    embeddedOptimizeRule.importEngineEntitiesRound(false);
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));

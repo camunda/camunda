@@ -8,6 +8,6 @@ public class MissingProcessInstanceFinder extends MissingEntitiesFinder<Historic
 
   @Override
   protected String elasticSearchType() {
-    return configurationService.getProcessInstanceType();
+    return configurationService.getProcessInstanceIdTrackingType();
   }
 }

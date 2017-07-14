@@ -10,9 +10,11 @@ import java.io.IOException;
 public class DefinitionImportIndexType extends StrictTypeMappingCreator {
 
   public static final String TOTAL_ENTITIES_IMPORTED = "totalEntitiesImported";
-  public static final String IMPORT_INDEX_FIELD = "importIndex";
+  public static final String CURRENT_DEFINITION_BASED_IMPORT_INDEX = "currentDefinitionBasedImportIndex";
   public static final String CURRENT_PROCESS_DEFINITION = "currentProcessDefinition";
   public static final String ALREADY_IMPORTED_PROCESS_DEFINITIONS = "alreadyImportedProcessDefinitions";
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String DEFINITION_BASED_IMPORT_INDEX = "definitionBasedImportIndex";
 
   @Override
   public String getType() {
@@ -25,14 +27,22 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
       .startObject(TOTAL_ENTITIES_IMPORTED)
         .field("type", "integer")
       .endObject()
-      .startObject(IMPORT_INDEX_FIELD)
+      .startObject(CURRENT_DEFINITION_BASED_IMPORT_INDEX)
         .field("type", "integer")
       .endObject()
       .startObject(CURRENT_PROCESS_DEFINITION)
         .field("type", "keyword")
       .endObject()
       .startObject(ALREADY_IMPORTED_PROCESS_DEFINITIONS)
-        .field("type", "keyword")
+        .field("type", "nested")
+        .startObject("properties")
+          .startObject(PROCESS_DEFINITION_ID)
+            .field("type", "keyword")
+          .endObject()
+          .startObject(DEFINITION_BASED_IMPORT_INDEX)
+            .field("type", "keyword")
+          .endObject()
+        .endObject()
       .endObject();
   }
 }

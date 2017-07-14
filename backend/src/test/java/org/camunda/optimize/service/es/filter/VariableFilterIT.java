@@ -57,7 +57,6 @@ public class VariableFilterIT {
   @Before
   public void init() {
     sdf = new SimpleDateFormat(elasticSearchRule.getDateFormat());
-    embeddedOptimizeRule.resetImportStartIndexes();
   }
 
   private final String TEST_DEFINITION = "testDefinition";
@@ -399,7 +398,7 @@ public class VariableFilterIT {
       engineRule.startProcessInstance(processDefinitionId, variables);
       variables.put("var", changeNumericValueToType(3, variableType));
       engineRule.startProcessInstance(processDefinitionId, variables);
-      embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities(false);
+      embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
@@ -536,7 +535,7 @@ public class VariableFilterIT {
       engineRule.startProcessInstance(processDefinitionId, variables);
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinitionId, variables);
-      embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities(false);
+      embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when

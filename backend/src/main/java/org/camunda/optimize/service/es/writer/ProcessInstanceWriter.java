@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +44,30 @@ public class ProcessInstanceWriter {
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     logger.debug("Writing [{}] process instances to elasticsearch", processInstances.size());
 
-    BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk()
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder processInstanceIdTrackerBulkRequest = esclient.prepareBulk();
+
     for (ProcessInstanceDto procInst : processInstances) {
+      addProcessInstanceIdTrackingRequest(processInstanceIdTrackerBulkRequest, procInst);
       addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
     }
-    processInstanceBulkRequest.get();
+    BulkResponse response = processInstanceBulkRequest.get();
+    if (response.hasFailures()) {
+      logger.warn("There were failures while writing process instances with message: {}",
+        response.buildFailureMessage()
+      );
+    }
+    processInstanceIdTrackerBulkRequest.get();
+  }
+
+  private void addProcessInstanceIdTrackingRequest(BulkRequestBuilder processInstanceIdTrackerBulkRequest, ProcessInstanceDto dto) {
+    processInstanceIdTrackerBulkRequest.add(
+        esclient.prepareIndex(
+            configurationService.getOptimizeIndex(),
+            configurationService.getProcessInstanceIdTrackingType(),
+            dto.getProcessInstanceId())
+            .setSource(Collections.emptyMap())
+    );
   }
 
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {
@@ -74,6 +93,7 @@ public class ProcessInstanceWriter {
         processInstanceId)
       .setScript(updateScript)
       .setUpsert(newEntryIfAbsent, XContentType.JSON)
+      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
 
   }

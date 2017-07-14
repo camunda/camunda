@@ -48,10 +48,10 @@ public class BackoffService {
     this.jobBackoffCounters.put(job,backoff);
   }
 
-  public long calculateJobBackoff(int pagesPassed, ImportScheduleJob toExecute) {
+  public long calculateJobBackoff(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
     long result;
     Long jobBackoff = getBackoffCounter(toExecute.getImportService().getElasticsearchType());
-    if (pagesPassed == 0) {
+    if (!engineHasStillNewData) {
       if (jobBackoff < configurationService.getMaximumBackoff()) {
         result = jobBackoff + 1;
         this.setJobBackoff(toExecute.getImportService().getElasticsearchType(), result);
@@ -78,14 +78,14 @@ public class BackoffService {
   }
 
   public void resetBackoffCounters() {
-    for (Map.Entry e : this.jobBackoffCounters.entrySet()) {
+    for (Map.Entry<String, Long> e : this.jobBackoffCounters.entrySet()) {
       e.setValue(STARTING_BACKOFF);
     }
     this.generalBackoffCounter = STARTING_BACKOFF;
   }
 
-  public void handleSleep(int pagesPassed, ImportScheduleJob toExecute) {
-    long sleepTime = calculateSleepTime(pagesPassed, toExecute);
+  public void handleSleep(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
+    long sleepTime = calculateSleepTime(engineHasStillNewData, toExecute);
     if (sleepTime > 0 && readyToSetTime(toExecute)) {
       logDebugSleepInformation(sleepTime, toExecute);
       toExecute.setTimeToExecute(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
@@ -101,13 +101,9 @@ public class BackoffService {
   /**
    * Calculate sleep time for specific import job based on current progress
    * of import.
-   *
-   * @param pagesPassed
-   * @param toExecute
-   * @return
    */
-  private long calculateSleepTime(int pagesPassed, ImportScheduleJob toExecute) {
-    long jobBackoff = this.calculateJobBackoff(pagesPassed, toExecute);
+  private long calculateSleepTime(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
+    long jobBackoff = this.calculateJobBackoff(engineHasStillNewData, toExecute);
     long interval = configurationService.getImportHandlerWait();
     long sleepTime = interval * jobBackoff;
     return sleepTime;

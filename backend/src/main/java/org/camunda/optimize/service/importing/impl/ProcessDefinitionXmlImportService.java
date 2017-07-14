@@ -31,12 +31,16 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
 
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint() throws OptimizeException {
-    return importStrategy.fetchProcessDefinitionXmls();
+    return engineEntityFetcher.fetchProcessDefinitionXml(
+      importStrategy.getCurrentDefinitionBasedImportIndex(),
+      getEngineImportMaxPageSize(),
+      importStrategy.getCurrentProcessDefinitionId()
+    );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return importStrategy.fetchProcessDefinitionCount();
+    return engineEntityFetcher.fetchProcessDefinitionCount(importStrategy.getAllProcessDefinitions());
   }
 
   @Override

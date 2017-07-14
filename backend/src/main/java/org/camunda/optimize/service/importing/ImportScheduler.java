@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.job.schedule.IdleImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
@@ -39,10 +40,11 @@ public class ImportScheduler extends Thread {
   protected BackoffService backoffService;
 
   private boolean enabled = true;
+  private boolean skipBackoffToCheckForNewDataInEngine = true;
 
   private LocalDateTime lastReset = LocalDateTime.now();
 
-  public void scheduleProcessEngineImport() {
+  public void scheduleNewImportRound() {
     logger.debug("Scheduling import of all paginated types");
     this.importScheduleJobs.addAll(scheduleJobFactory.createPagedJobs());
   }
@@ -52,7 +54,7 @@ public class ImportScheduler extends Thread {
     while (isEnabled()) {
       checkAndResetImportIndexing();
       logger.debug("Executing import round");
-      executeJob();
+      executeNextJob();
       logger.debug("Finished import round");
     }
   }
@@ -72,45 +74,57 @@ public class ImportScheduler extends Thread {
   @Override
   public void start() {
     logger.info("starting import scheduler thread");
-    this.scheduleProcessEngineImport();
+    this.scheduleNewImportRound();
     super.start();
     this.setName(SCHEDULER_NAME);
   }
 
-
-  protected void executeJob() {
-    int pagesPassed = 0;
-
-
-    ImportScheduleJob toExecute = getNextToExecute();
-
-    if (toExecute != null) {
-      pagesPassed = executeAndGetPagesPassed(pagesPassed, toExecute);
-    }
-
-    if (importScheduleJobs.isEmpty()) {
-      backoffService.backoffAndSleep();
-      sleepAndReschedule(pagesPassed);
+  protected void executeNextJob() {
+    if( hasStillJobsToExecute()) {
+      ImportScheduleJob toExecute = getNextToExecute();
+      executeGivenJob(toExecute);
+    } else {
+      backoffIfPossibleAndScheduleNewRound();
     }
   }
 
+  private void backoffIfPossibleAndScheduleNewRound() {
+    if(skipBackoffToCheckForNewDataInEngine) {
+      for (PaginatedImportService paginatedImportService : importServiceProvider.getPagedServices()) {
+        paginatedImportService.restartImportCycle();
+      }
+      skipBackoffToCheckForNewDataInEngine = false;
+    } else {
+      backoffService.backoffAndSleep();
+      skipBackoffToCheckForNewDataInEngine = true;
+    }
+    this.scheduleNewImportRound();
+  }
+
+  public boolean hasStillJobsToExecute() {
+    return !importScheduleJobs.isEmpty();
+  }
+
   public ImportScheduleJob getNextToExecute() {
-    ImportScheduleJob toExecute = null;
-    if (!importScheduleJobs.isEmpty()) {
+    ImportScheduleJob toExecute;
+    if (hasStillJobsToExecute()) {
       toExecute = importScheduleJobs.poll();
+    } else {
+      toExecute = new IdleImportScheduleJob();
     }
     return toExecute;
   }
 
-  private int executeAndGetPagesPassed(int pagesPassed, ImportScheduleJob toExecute) {
+  private void executeGivenJob(ImportScheduleJob toExecute) {
+    boolean engineHasStillNewData = false;
     try {
 
       ImportResult importResult = toExecute.execute();
-      pagesPassed = importResult.getPagesPassed();
-      if (pagesPassed != 0) {
+      engineHasStillNewData = importResult.getEngineHasStillNewData();
+      if (engineHasStillNewData) {
         postProcess(toExecute, importResult);
-      } else if (pagesPassed == 0 && toExecute.isPageBased()) {
-        sleepAndReschedule(pagesPassed, toExecute);
+      } else if (!engineHasStillNewData && toExecute.isPageBased()) {
+        sleepAndReschedule(engineHasStillNewData, toExecute);
       }
 
     } catch (RejectedExecutionException e) {
@@ -118,25 +132,21 @@ public class ImportScheduler extends Thread {
       //next step is sleep
       if (logger.isDebugEnabled()) {
         logger.debug("import jobs capacity exceeded");
-        sleepAndReschedule(pagesPassed, toExecute);
+        sleepAndReschedule(engineHasStillNewData, toExecute);
       }
     } catch (OptimizeException op) {
       // is thrown if there is a connection problem for instance
-      sleepAndReschedule(pagesPassed, toExecute);
+      sleepAndReschedule(engineHasStillNewData, toExecute);
     } catch (Exception e) {
       if (logger.isDebugEnabled()) {
         logger.debug("error while executing import job", e);
       }
     }
-    return pagesPassed;
   }
 
   /**
    * The job might create additional information for creation of other jobs based on it.
    * An example is import of HPI based on information obtained from HAI.
-   *
-   * @param toExecute
-   * @param importResult
    */
   public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
@@ -146,10 +156,8 @@ public class ImportScheduler extends Thread {
     if (toExecute.isPageBased()) {
       PageBasedImportScheduleJob typeCastedJob = (PageBasedImportScheduleJob) toExecute;
       rescheduleBasedOnPages(
-          importResult.getPagesPassed(),
-          typeCastedJob,
-          typeCastedJob.getIndexBeforeExecution(),
-          typeCastedJob.getIndexAfterExecution()
+          importResult.getEngineHasStillNewData(),
+          typeCastedJob
       );
     }
   }
@@ -157,35 +165,21 @@ public class ImportScheduler extends Thread {
   /**
    * Handle rescheduling of currently executed job based on pages that were fetched
    * from the engine and overall progress.
-   *
-   * @param pagesPassed
-   * @param toExecute
-   * @param startIndex
-   * @param endIndex
    */
-  private void rescheduleBasedOnPages(int pagesPassed, PageBasedImportScheduleJob toExecute, int startIndex, int endIndex) {
-    if (pagesPassed > 0) {
+  private void rescheduleBasedOnPages(boolean engineHasStillNewData, PageBasedImportScheduleJob toExecute) {
+    if (engineHasStillNewData) {
       logger.debug(
-          "Processed [{}] pages during data import run of [{}], scheduling one more run",
-          pagesPassed,
+          "Processed a page during data import run of [{}], scheduling one more run",
           toExecute.getImportService().getElasticsearchType()
       );
       importScheduleJobs.add(toExecute);
       backoffService.resetBackoff(toExecute);
     }
-    if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
-      logger.debug(
-          "Index of [{}] is [{}]",
-          toExecute.getImportService().getElasticsearchType(),
-          toExecute.getImportService().getImportStartIndex()
-      );
-      importScheduleJobs.add(toExecute);
-    }
   }
 
-  private void sleepAndReschedule(int pagesPassed, ImportScheduleJob toExecute) {
+  private void sleepAndReschedule(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
     if (toExecute != null) {
-      backoffService.handleSleep(pagesPassed,toExecute);
+      backoffService.handleSleep(engineHasStillNewData, toExecute);
 
       try {
         this.importScheduleJobs.put(toExecute);
@@ -198,16 +192,14 @@ public class ImportScheduler extends Thread {
       }
     }
 
-
     //just in case someone manually added a job
-    if (importScheduleJobs.isEmpty()) {
-      this.scheduleProcessEngineImport();
+    if (!hasStillJobsToExecute()) {
+      this.scheduleNewImportRound();
     }
   }
 
   /**
    * Check if there is at least one job which does not have backoff time set.
-   * @return
    */
   private boolean allJobsAreBackingOff() {
     boolean result = true;
@@ -218,10 +210,6 @@ public class ImportScheduler extends Thread {
       }
     }
     return result;
-  }
-
-  protected void sleepAndReschedule(int pagesPassed) {
-    this.sleepAndReschedule(pagesPassed, null);
   }
 
   public LocalDateTime getLastReset() {
@@ -236,5 +224,11 @@ public class ImportScheduler extends Thread {
     this.enabled = false;
   }
 
+  public boolean isSkipBackoffToCheckForNewDataInEngine() {
+    return skipBackoffToCheckForNewDataInEngine;
+  }
 
+  public void setSkipBackoffToCheckForNewDataInEngine(boolean skipBackoffToCheckForNewDataInEngine) {
+    this.skipBackoffToCheckForNewDataInEngine = skipBackoffToCheckForNewDataInEngine;
+  }
 }

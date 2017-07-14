@@ -1,13 +1,9 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
-import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -22,7 +18,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,7 +65,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
   @Test
   public void testJobsScheduled () {
-    importScheduler.scheduleProcessEngineImport();
+    importScheduler.scheduleNewImportRound();
     assertThat(importScheduler.importScheduleJobs.size(),is(importServiceProvider.getPagedServices().size()));
   }
 
@@ -80,12 +75,12 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     // given
     List<PaginatedImportService> services = mockImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
-    importScheduler.scheduleProcessEngineImport();
+    importScheduler.scheduleNewImportRound();
 
     // when
-    importScheduler.executeJob();
-    importScheduler.executeJob();
-    importScheduler.executeJob();
+    importScheduler.executeNextJob();
+    importScheduler.executeNextJob();
+    importScheduler.executeNextJob();
 
     // then
     for (ImportService service : services) {
@@ -94,21 +89,21 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
   }
 
   @Test
-  public void testProcessInstanceImportScheduledBasedOnaActivities () throws Exception {
+  public void testProcessInstanceImportScheduledBasedOnActivities () throws Exception {
     ImportResult result = new ImportResult();
-    result.setPagesPassed(1);
+    result.setEngineHasStillNewData(true);
     Set<String> piIds = new HashSet<>();
     piIds.add(TEST_ID);
     result.setIdsToFetch(piIds);
     when(services.get(0).executeImport()).thenReturn(result);
-    importScheduler.scheduleProcessEngineImport();
+    importScheduler.scheduleNewImportRound();
 
     //when
-    importScheduler.executeJob();
-    importScheduler.executeJob();
-    importScheduler.executeJob();
+    importScheduler.executeNextJob();
+    importScheduler.executeNextJob();
+    importScheduler.executeNextJob();
 
-    assertThat(importScheduler.importScheduleJobs.size(), is(4));
+    assertThat(importScheduler.importScheduleJobs.size(), is(5));
     ImportScheduleJob piJob = importScheduler.importScheduleJobs.poll();
     assertThat(piJob, is(instanceOf(IdBasedImportScheduleJob.class)));
     assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch(), is(notNullValue()));

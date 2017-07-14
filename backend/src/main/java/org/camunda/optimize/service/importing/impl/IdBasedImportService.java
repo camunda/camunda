@@ -31,7 +31,7 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
   public ImportResult executeImport() throws OptimizeException {
     ImportResult result = new ImportResult();
     if (this.getIdsForImport() != null && !getIdsForImport().isEmpty()) {
-      int pagesWithData = 0;
+      boolean engineHasStillNewData = false;
       logger.debug(
           "Importing based on [{}] IDs from type [{}]",
           this.getIdsForImport().size(),
@@ -42,12 +42,12 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
       List<ENG> newEngineEntities =
           getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
       if (!newEngineEntities.isEmpty()) {
-        pagesWithData = pagesWithData + 1;
         List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
         importToElasticSearch(newOptimizeEntities);
       }
+      engineHasStillNewData = !pageOfEngineEntities.isEmpty();
 
-      result.setPagesPassed(pagesWithData);
+      result.setEngineHasStillNewData(engineHasStillNewData);
       result.setIdsToFetch(getIdsForPostProcessing());
     }
     return result;

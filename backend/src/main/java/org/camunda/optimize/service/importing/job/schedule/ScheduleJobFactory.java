@@ -36,17 +36,38 @@ public class ScheduleJobFactory {
   public List<ImportScheduleJob> createIndexedScheduleJobs(Set<String> idsToFetch) {
     List<ImportScheduleJob> jobs = new ArrayList<>();
     if (idsToFetch != null) {
-      Set<String> hviPage = new HashSet<>();
-      for (String id : idsToFetch) {
-        hviPage.add(id);
-        if (hviPage.size() == configurationService.getMaxVariablesPageSize()) {
-          jobs.add(createHistoricVariableInstanceScheduleJob(hviPage));
-          hviPage = new HashSet<>();
-        }
-      }
-      jobs.add(createHistoricVariableInstanceScheduleJob(hviPage));
+      addHistoricVariableInstanceScheduleJobs(jobs, idsToFetch);
+      addHistoricProcessInstanceScheduleJobs(jobs, idsToFetch);
     }
     return jobs;
+  }
+
+  private void addHistoricVariableInstanceScheduleJobs(List<ImportScheduleJob> jobs, Set<String> idsToFetch) {
+    List<Set<String>> batches = splitUpSetIntoListOfBatches(idsToFetch, configurationService.getMaxVariablesPageSize());
+    for (Set<String> batch : batches) {
+      jobs.add(createHistoricVariableInstanceScheduleJob(batch));
+    }
+  }
+
+  private void addHistoricProcessInstanceScheduleJobs(List<ImportScheduleJob> jobs, Set<String> idsToFetch) {
+    List<Set<String>> batches = splitUpSetIntoListOfBatches(idsToFetch, configurationService.getEngineImportMaxPageSize());
+    for (Set<String> batch : batches) {
+      jobs.add(createHistoricProcessInstanceScheduleJob(batch));
+    }
+  }
+
+  private List<Set<String>> splitUpSetIntoListOfBatches(Set<String> ids, int batchSize) {
+    List<Set<String>> batches = new ArrayList<>();
+    Set<String> batch = new HashSet<>();
+    for (String id : ids) {
+      batch.add(id);
+      if( batch.size() >= batchSize) {
+        batches.add(batch);
+        batch = new HashSet<>();
+      }
+    }
+    batches.add(batch);
+    return batches;
   }
 
   private ImportScheduleJob createHistoricProcessInstanceScheduleJob(Set<String> idsToFetch) {

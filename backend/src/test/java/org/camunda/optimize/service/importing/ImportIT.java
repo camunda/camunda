@@ -4,13 +4,14 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -19,7 +20,6 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,6 +45,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
@@ -60,11 +61,6 @@ public class ImportIT  {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  @Before
-  public void setUp() {
-    embeddedOptimizeRule.resetImportStartIndexes();
-  }
 
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {
@@ -102,7 +98,7 @@ public class ImportIT  {
 
     // when
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.reloadImportDefaults();
+    embeddedOptimizeRule.updateDefinitionsToImport();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
@@ -212,13 +208,14 @@ public class ImportIT  {
       .done();
 
     Map<String, Object> variables = createPrimitiveTypeVariables();
-    engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    ProcessInstanceEngineDto instanceDto =
+      engineRule.deployAndStartProcessWithVariables(processModel, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String procDefId = engineRule.getProcessDefinitionId();
+    String procDefId = instanceDto.getDefinitionId();
     List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
         .request()
@@ -344,6 +341,45 @@ public class ImportIT  {
   }
 
   @Test
+  public void indexIsIncrementedEvenAfterReset() throws Exception {
+    // given
+    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    List<Integer> firstRoundIndexes =  embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    embeddedOptimizeRule.resetImportStartIndexes();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    List<Integer> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    for (int i = 0; i < firstRoundIndexes.size(); i++) {
+      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
+    }
+  }
+
+  @Test
+  public void restartImportCycleImportsNewEngineData() throws Exception {
+    // given
+    deployAndStartSimpleUserTask();
+    deployAndStartSimpleUserTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    deployAndStartSimpleUserTask();
+    embeddedOptimizeRule.restartImportCycle();
+    engineRule.finishAllUserTasks();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100));
+  }
+
+  @Test
   public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
@@ -358,6 +394,30 @@ public class ImportIT  {
     // then
     for (Integer index : indexes) {
       assertThat(index, greaterThan(0));
+    }
+  }
+
+  @Test
+  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws OptimizeException {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    List<Integer> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+
+    // and
+    deployAndStartSimpleServiceTask();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    List<Integer> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    for (int i = 0; i < firstRoundIndexes.size(); i++) {
+      assertThat(firstRoundIndexes.get(i), lessThan(secondsRoundIndexes.get(i)));
     }
   }
 
@@ -456,6 +516,15 @@ public class ImportIT  {
         .endEvent()
       .done();
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
+  }
+
+  private void deployAndStartSimpleUserTask() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
+        .startEvent()
+          .userTask()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, long responseCount) {

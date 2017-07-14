@@ -76,6 +76,7 @@ public class MissingEntriesFinderIT {
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    embeddedOptimizeRule.resetImportStartIndexes();
     deployAndStartSimpleServiceTask();
   }
 

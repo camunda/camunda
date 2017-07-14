@@ -36,12 +36,16 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
-    return importStrategy.fetchHistoricActivityInstances();
+    return engineEntityFetcher.fetchHistoricActivityInstances(
+      importStrategy.getCurrentDefinitionBasedImportIndex(),
+      getEngineImportMaxPageSize(),
+      importStrategy.getCurrentProcessDefinitionId()
+    );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return importStrategy.fetchHistoricActivityInstanceCount();
+    return engineEntityFetcher.fetchHistoricActivityInstanceCount(importStrategy.getAllProcessDefinitions());
   }
 
   @Override

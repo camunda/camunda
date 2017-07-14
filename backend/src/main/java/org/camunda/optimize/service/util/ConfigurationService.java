@@ -23,6 +23,7 @@ public class ConfigurationService {
   @Value("${camunda.optimize.engine.auth.enabled}")
   private boolean engineAuthenticationEnabled;
 
+  // optimize
   @Value("${camunda.optimize.serialization.date.format}")
   private String dateFormat;
   @Value("${camunda.optimize.engine.import.page.size.max}")
@@ -37,6 +38,8 @@ public class ConfigurationService {
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
   private int importExecutorThreadCount;
+  @Value("${camunda.optimize.engine.import.writer.number.of.retries}")
+  private int numberOfRetriesOnConflict;
   @Value("${camunda.optimize.engine.import.process-definition-list}")
   private String processDefinitionsToImport;
   @Value(("${camunda.optimize.variable.max.valueList.size}"))
@@ -63,6 +66,8 @@ public class ConfigurationService {
   private String eventType;
   @Value("${camunda.optimize.es.process.instance.type}")
   private String processInstanceType;
+  @Value("${camunda.optimize.es.process.instance.id.tracking.type}")
+  private String processInstanceIdTrackingType;
   @Value("${camunda.optimize.es.variable.type}")
   private String variableType;
   @Value("${camunda.optimize.es.heatmap.duration.target.value.type}")
@@ -125,7 +130,7 @@ public class ConfigurationService {
   @Value("${camunda.optimize.es.import.handler.max.backoff}")
   private long maximumBackoff;
   @Value("${camunda.optimize.es.settings.index.refresh_interval}")
-  private int esRefreshInterval;
+  private String esRefreshInterval;
   @Value("${camunda.optimize.es.settings.index.number_of_replicas}")
   private int esNumberOfReplicas;
   @Value("${camunda.optimize.es.settings.index.number_of_shards}")
@@ -354,7 +359,7 @@ public class ConfigurationService {
     this.processDefinitionsToImport = processDefinitionsToImport;
   }
 
-  public int getEsRefreshInterval() {
+  public String getEsRefreshInterval() {
     return esRefreshInterval;
   }
 
@@ -558,7 +563,7 @@ public class ConfigurationService {
     this.maximumBackoff = maximumBackoff;
   }
 
-  public void setEsRefreshInterval(int esRefreshInterval) {
+  public void setEsRefreshInterval(String esRefreshInterval) {
     this.esRefreshInterval = esRefreshInterval;
   }
 
@@ -590,6 +595,18 @@ public class ConfigurationService {
     return generalBackoff;
   }
 
+  public void setGeneralBackoff(long generalBackoff) {
+    this.generalBackoff = generalBackoff;
+  }
+
+  public long getSamplerInterval() {
+    return samplerInterval;
+  }
+
+  public void setSamplerInterval(long samplerInterval) {
+    this.samplerInterval = samplerInterval;
+  }
+
   public String getVariableImportPluginBasePackages() {
     return variableImportPluginBasePackages;
   }
@@ -608,5 +625,21 @@ public class ConfigurationService {
 
   public long getElasticsearchConnectionSamplerInterval() {
     return samplerInterval;
+  }
+
+  public String getProcessInstanceIdTrackingType() {
+    return processInstanceIdTrackingType;
+  }
+
+  public void setProcessInstanceIdTrackingType(String processInstanceIdTrackingType) {
+    this.processInstanceIdTrackingType = processInstanceIdTrackingType;
+  }
+
+  public int getNumberOfRetriesOnConflict() {
+    return numberOfRetriesOnConflict;
+  }
+
+  public void setNumberOfRetriesOnConflict(int numberOfRetriesOnConflict) {
+    this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
   }
 }

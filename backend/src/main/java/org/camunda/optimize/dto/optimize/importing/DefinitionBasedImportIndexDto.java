@@ -6,17 +6,17 @@ import java.util.List;
 
 public class DefinitionBasedImportIndexDto implements OptimizeDto {
 
-  protected int importIndex;
+  protected int currentDefinitionBasedImportIndex;
   protected int totalEntitiesImported;
   protected String currentProcessDefinition;
-  protected List<String> alreadyImportedProcessDefinitions;
+  protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
 
-  public int getImportIndex() {
-    return importIndex;
+  public int getCurrentDefinitionBasedImportIndex() {
+    return currentDefinitionBasedImportIndex;
   }
 
-  public void setImportIndex(int importIndex) {
-    this.importIndex = importIndex;
+  public void setCurrentDefinitionBasedImportIndex(int currentDefinitionBasedImportIndex) {
+    this.currentDefinitionBasedImportIndex = currentDefinitionBasedImportIndex;
   }
 
   public String getCurrentProcessDefinition() {
@@ -27,11 +27,12 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
     this.currentProcessDefinition = currentProcessDefinition;
   }
 
-  public List<String> getAlreadyImportedProcessDefinitions() {
+  public List<DefinitionImportInformation> getAlreadyImportedProcessDefinitions() {
     return alreadyImportedProcessDefinitions;
   }
 
-  public void setAlreadyImportedProcessDefinitions(List<String> alreadyImportedProcessDefinitions) {
+  public void setAlreadyImportedProcessDefinitions(List<DefinitionImportInformation>
+                                                     alreadyImportedProcessDefinitions) {
     this.alreadyImportedProcessDefinitions = alreadyImportedProcessDefinitions;
   }
 

@@ -55,17 +55,13 @@ public class FrequencyHeatMapQueryIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  @Before
-  public void setUp() {
-    embeddedOptimizeRule.resetImportStartIndexes();
-  }
-
   @Test
   public void getHeatMap() throws Exception {
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
@@ -101,6 +97,7 @@ public class FrequencyHeatMapQueryIT {
     instanceDto = deployAndStartSimpleServiceTaskProcess();
     String processDefinitionId2 = instanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(processDefinitionId1);
@@ -130,6 +127,7 @@ public class FrequencyHeatMapQueryIT {
     ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
     String processDefinitionId = instanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(processDefinitionId);
@@ -170,6 +168,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     String operator = ">";
@@ -219,6 +218,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">=";
     String type = "start_date";
@@ -250,6 +250,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">=";
     String type = "end_date";
@@ -281,6 +282,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<";
     String type = "start_date";
@@ -312,6 +314,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = ">";
     String type = "start_date";
@@ -349,6 +352,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<";
     String type = "end_date";
@@ -380,6 +384,7 @@ public class FrequencyHeatMapQueryIT {
     Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String operator = "<=";
     String type = "start_date";

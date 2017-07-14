@@ -17,7 +17,7 @@ public class ProcessEngineImportRestService {
 
   @GET
   public Response importDataFromEngine() {
-    importScheduler.scheduleProcessEngineImport();
+    importScheduler.scheduleNewImportRound();
     return Response.ok().build();
   }
 

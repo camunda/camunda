@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -69,13 +69,13 @@ public class VariableWriter {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
     BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk()
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
     //build map first
     Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
     for (VariableDto variable : variables) {
       if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
+        logger.warn("Variable [{}] is either a case definition variable or the type [{}] is not supported!");
         continue;
       }
 
@@ -95,7 +95,12 @@ public class VariableWriter {
     }
     try {
       if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
-        addVariablesToProcessInstanceBulkRequest.get();
+        BulkResponse response = addVariablesToProcessInstanceBulkRequest.get();
+        if (response.hasFailures()) {
+          logger.warn("There were failures while writing variables with message: {}",
+            response.buildFailureMessage()
+          );
+        }
       }
     } catch (NullPointerException e) {
       logger.error("NPE for PID [{}]" , e);
@@ -137,6 +142,7 @@ public class VariableWriter {
               processInstanceId)
           .setScript(updateScript)
           .setUpsert(newEntryIfAbsent, XContentType.JSON)
+          .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
       );
     }
 

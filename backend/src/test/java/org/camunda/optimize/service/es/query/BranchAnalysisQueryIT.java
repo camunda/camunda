@@ -68,11 +68,6 @@ public class BranchAnalysisQueryIT {
   private static final String END_EVENT_ID = "endEvent";
   private static final String USER_TASK_ID = "userTask";
 
-  @Before
-  public void setUp() {
-    embeddedOptimizeRule.resetImportStartIndexes();
-  }
-
   private String deploySimpleGatewayProcessDefinition() throws IOException, OptimizeException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
