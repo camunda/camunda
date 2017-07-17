@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import static io.zeebe.util.StreamUtil.readLong;
+import static io.zeebe.util.StreamUtil.writeLong;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -87,7 +89,7 @@ public class ComposedHashIndexSnapshot implements SnapshotSupport
         for (byte idx = 0; idx < count; idx++)
         {
             limitedInputStream.reset();
-            final long hashIndexSize = limitedInputStream.readLong();
+            final long hashIndexSize = readLong(inputStream);
             bytesRead += SIZE_OF_LONG;
             limitedInputStream.setLimit(hashIndexSize);
             parts[idx].recoverFromSnapshot(limitedInputStream);
@@ -103,18 +105,6 @@ public class ComposedHashIndexSnapshot implements SnapshotSupport
         {
             parts[i].reset();
         }
-    }
-
-    private static void writeLong(OutputStream outputStream, long longValue) throws IOException
-    {
-        outputStream.write((byte) longValue);
-        outputStream.write((byte) (longValue >>> 8));
-        outputStream.write((byte) (longValue >>> 16));
-        outputStream.write((byte) (longValue >>> 24));
-        outputStream.write((byte) (longValue >>> 32));
-        outputStream.write((byte) (longValue >>> 40));
-        outputStream.write((byte) (longValue >>> 48));
-        outputStream.write((byte) (longValue >>> 56));
     }
 
     private static final class LimitedInputStream extends InputStream
@@ -137,19 +127,6 @@ public class ComposedHashIndexSnapshot implements SnapshotSupport
         public void setLimit(long limit)
         {
             this.limit = limit;
-        }
-
-        public long readLong() throws IOException
-        {
-            long value = inputStream.read();
-            value += inputStream.read() << 8;
-            value += inputStream.read() << 16;
-            value += inputStream.read() << 24;
-            value += inputStream.read() << 32;
-            value += inputStream.read() << 40;
-            value += inputStream.read() << 48;
-            value += inputStream.read() << 56;
-            return value;
         }
 
         public byte readByte() throws IOException
