@@ -215,4 +215,28 @@ public class StreamUtil
         }
     }
 
+    public static void writeLong(OutputStream outputStream, long longValue) throws IOException
+    {
+        outputStream.write((byte) longValue);
+        outputStream.write((byte) (longValue >>> 8));
+        outputStream.write((byte) (longValue >>> 16));
+        outputStream.write((byte) (longValue >>> 24));
+        outputStream.write((byte) (longValue >>> 32));
+        outputStream.write((byte) (longValue >>> 40));
+        outputStream.write((byte) (longValue >>> 48));
+        outputStream.write((byte) (longValue >>> 56));
+    }
+
+    public static long readLong(InputStream inputStream) throws IOException
+    {
+        long value = inputStream.read();
+        value += ((long) inputStream.read() << 8);
+        value += ((long) inputStream.read() << 16);
+        value += ((long) inputStream.read() << 24);
+        value += ((long) inputStream.read() << 32);
+        value += ((long) inputStream.read() << 40);
+        value += ((long) inputStream.read() << 48);
+        value += ((long) inputStream.read() << 56);
+        return value;
+    }
 }

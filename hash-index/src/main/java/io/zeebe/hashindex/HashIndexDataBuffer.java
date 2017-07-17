@@ -283,7 +283,7 @@ public class HashIndexDataBuffer implements AutoCloseable
 
     public void writeToStream(OutputStream outputStream, byte[] buffer) throws IOException
     {
-        for (int offset = 0; offset < length; offset += buffer.length)
+        for (long offset = 0; offset < length; offset += buffer.length)
         {
             final int copyLength = (int) Math.min(buffer.length, length - offset);
             UNSAFE.copyMemory(null, getAddress(offset), buffer, ARRAY_BASE_OFFSET, copyLength);
@@ -296,7 +296,7 @@ public class HashIndexDataBuffer implements AutoCloseable
         used = 0;
         length = 0;
 
-        int bytesRead;
+        long bytesRead;
         while ((bytesRead = inputStream.read(buffer)) > 0)
         {
             if (used + bytesRead > length)
