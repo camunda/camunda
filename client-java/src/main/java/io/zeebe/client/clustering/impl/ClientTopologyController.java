@@ -18,13 +18,25 @@ package io.zeebe.client.clustering.impl;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-import io.zeebe.transport.*;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.state.*;
 import org.agrona.DirectBuffer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.zeebe.client.cmd.BrokerRequestException;
+import io.zeebe.client.impl.cmd.ClientResponseHandler;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.WaitState;
 
 public class ClientTopologyController
 {
@@ -33,42 +45,52 @@ public class ClientTopologyController
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_FAILED = 1;
 
+    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
+
     protected final StateMachine<Context> stateMachine;
     protected final RequestTopologyState requestTopologyState = new RequestTopologyState();
     protected final AwaitTopologyState awaitTopologyState = new AwaitTopologyState();
-    protected final ClosedState closedState = new ClosedState();
-    protected final IdleState idleState = new IdleState();
+    protected final InitState initState = new InitState();
+
+    protected final RequestTopologyCmdImpl requestTopologyCmd;
 
     private final ClientOutput output;
+    protected final Consumer<TopologyResponse> successCallback;
+    protected final Consumer<Exception> failureCallback;
+    protected final BufferWriter requestWriter;
 
-    public ClientTopologyController(final ClientTransport clientTransport)
+    public ClientTopologyController(
+            final ClientTransport clientTransport,
+            final ObjectMapper objectMapper,
+            final Consumer<TopologyResponse> successCallback,
+            final Consumer<Exception> failureCallback)
     {
         output = clientTransport.getOutput();
+        this.requestTopologyCmd = new RequestTopologyCmdImpl(null, objectMapper);
 
         stateMachine = StateMachine.builder(Context::new)
-            .initialState(requestTopologyState)
+            .initialState(initState)
+            .from(initState).take(TRANSITION_DEFAULT).to(requestTopologyState)
             .from(requestTopologyState).take(TRANSITION_DEFAULT).to(awaitTopologyState)
-            .from(awaitTopologyState).take(TRANSITION_DEFAULT).to(closedState)
-            .from(awaitTopologyState).take(TRANSITION_FAILED).to(closedState)
-            .from(closedState).take(TRANSITION_DEFAULT).to(idleState)
-            .from(idleState).take(TRANSITION_DEFAULT).to(requestTopologyState)
+            .from(awaitTopologyState).take(TRANSITION_DEFAULT).to(initState)
             .build();
+
+        this.successCallback = successCallback;
+        this.failureCallback = failureCallback;
+        this.requestWriter = requestTopologyCmd.getRequestWriter();
     }
 
-    public ClientTopologyController configure(final RemoteAddress socketAddress, final BufferWriter bufferWriter, final BufferReader bufferReader, final CompletableFuture<Void> resultFuture)
+    public ClientTopologyController triggerRefresh(final RemoteAddress socketAddress)
     {
+        ensureNotNull("socketAddress", socketAddress);
+
         stateMachine.reset();
 
-        ensureNotNull("socketAddress", socketAddress);
-        ensureNotNull("bufferWriter", bufferWriter);
-        ensureNotNull("bufferReader", bufferReader);
-        ensureNotNull("resultFuture", resultFuture);
-
         final Context context = stateMachine.getContext();
-        context.resultFuture = resultFuture;
         context.remoteAddress = socketAddress;
-        context.bufferWriter = bufferWriter;
-        context.bufferReader = bufferReader;
+
+        stateMachine.take(TRANSITION_DEFAULT);
 
         return this;
     }
@@ -78,9 +100,9 @@ public class ClientTopologyController
         return stateMachine.doWork();
     }
 
-    public boolean isIdle()
+    public boolean isRequestInProgress()
     {
-        return stateMachine.getCurrentState() == idleState;
+        return stateMachine.getCurrentState() != initState;
     }
 
     private class RequestTopologyState implements State<Context>
@@ -89,7 +111,7 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final ClientRequest request = output.sendRequest(context.remoteAddress, context.bufferWriter);
+            final ClientRequest request = output.sendRequest(context.remoteAddress, requestWriter);
             if (request != null)
             {
                 context.request = request;
@@ -98,7 +120,6 @@ public class ClientTopologyController
 
             return 1;
         }
-
     }
 
     private class AwaitTopologyState implements State<Context>
@@ -116,24 +137,16 @@ public class ClientTopologyController
                 try
                 {
                     final DirectBuffer response = request.get();
-                    context.bufferReader.wrap(response, 0, response.capacity());
-
-                    if (context.resultFuture != null)
-                    {
-                        context.resultFuture.complete(null);
-                    }
-                    context.take(TRANSITION_DEFAULT);
+                    final TopologyResponse topologyResponse = decodeTopology(response);
+                    successCallback.accept(topologyResponse);
                 }
                 catch (Exception e)
                 {
-                    if (context.resultFuture != null)
-                    {
-                        context.resultFuture.completeExceptionally(e);
-                    }
-                    context.take(TRANSITION_FAILED);
+                    failureCallback.accept(e);
                 }
                 finally
                 {
+                    context.take(TRANSITION_DEFAULT);
                     request.close();
                 }
 
@@ -144,49 +157,51 @@ public class ClientTopologyController
         }
     }
 
-    private class ClosedState implements State<Context>
+    protected TopologyResponse decodeTopology(DirectBuffer encodedTopology)
     {
+        messageHeaderDecoder.wrap(encodedTopology, 0);
 
-        @Override
-        public int doWork(final Context context) throws Exception
+        final int schemaId = messageHeaderDecoder.schemaId();
+        final int templateId = messageHeaderDecoder.templateId();
+        final int blockLength = messageHeaderDecoder.blockLength();
+        final int version = messageHeaderDecoder.version();
+
+        final int responseMessageOffset = messageHeaderDecoder.encodedLength();
+
+        final ClientResponseHandler<TopologyResponse> responseHandler = requestTopologyCmd.getResponseHandler();
+
+        if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
         {
-            context.take(TRANSITION_DEFAULT);
-            context.reset();
-
-            return 1;
+            try
+            {
+                return responseHandler.readResponse(encodedTopology, responseMessageOffset, blockLength, version);
+            }
+            catch (final Exception e)
+            {
+                throw new RuntimeException("Unable to parse topic list from broker response", e);
+            }
+        }
+        else
+        {
+            errorResponseDecoder.wrap(encodedTopology, 0, blockLength, version);
+            throw new BrokerRequestException(errorResponseDecoder.errorCode(), errorResponseDecoder.errorData());
         }
     }
 
-    private class IdleState implements WaitState<Context>
+    private class InitState implements WaitState<Context>
     {
-
         @Override
         public void work(final Context context) throws Exception
         {
-            if (System.currentTimeMillis() >= context.nextRefresh)
-            {
-                context.take(TRANSITION_DEFAULT);
-            }
         }
-
     }
-
 
     static class Context extends SimpleStateMachineContext
     {
-
-        // can be null if automatic refresh was trigger
-        CompletableFuture<Void> resultFuture;
-
         ClientRequest request;
 
         // keep during reset to allow automatic refresh with last configuration
         RemoteAddress remoteAddress;
-        BufferWriter bufferWriter;
-        BufferReader bufferReader;
-
-        // set during reset of context, e.g. on configure(...) and CloseState
-        long nextRefresh;
 
         Context(final StateMachine<?> stateMachine)
         {
@@ -196,15 +211,9 @@ public class ClientTopologyController
         @Override
         public void reset()
         {
-            if (resultFuture != null && !resultFuture.isDone())
-            {
-                resultFuture.cancel(true);
-            }
-            resultFuture = null;
-
-            nextRefresh = System.currentTimeMillis() + REFRESH_INTERVAL;
+            this.request = null;
+            this.remoteAddress = null;
         }
-
     }
 
 }

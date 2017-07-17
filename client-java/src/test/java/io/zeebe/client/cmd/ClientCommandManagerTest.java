@@ -18,6 +18,7 @@ package io.zeebe.client.cmd;
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -64,12 +65,10 @@ public class ClientCommandManagerTest
     public void testInitialTopologyRequest()
     {
         // when
-        stubTaskResponse();
-        createTaskCmd().execute();
+        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
         // then
         assertTopologyRefreshRequests(1);
-        assertCreateTaskRequests(1);
     }
 
     @Test

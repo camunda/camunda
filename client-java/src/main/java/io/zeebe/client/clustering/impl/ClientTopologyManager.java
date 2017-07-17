@@ -15,44 +15,46 @@
  */
 package io.zeebe.client.clustering.impl;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.clustering.Topology;
-import io.zeebe.client.cmd.BrokerRequestException;
 import io.zeebe.client.impl.Topic;
-import io.zeebe.client.impl.cmd.ClientResponseHandler;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import io.zeebe.util.buffer.BufferReader;
-import org.agrona.DirectBuffer;
+import io.zeebe.util.time.ClockUtil;
 
 
-public class ClientTopologyManager implements Actor, BufferReader
+public class ClientTopologyManager implements Actor
 {
-    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
+    public static final long REFRESH_INTERVAL = Duration.ofSeconds(10).toMillis();
 
     protected final DeferredCommandContext commandContext = new DeferredCommandContext();
 
-    protected final RequestTopologyCmdImpl requestTopologyCmd;
     protected final ClientTopologyController clientTopologyController;
     protected final List<CompletableFuture<Void>> refreshFutures;
 
     protected TopologyImpl topology;
-    protected CompletableFuture<Void> refreshFuture;
     private ClientTransport transport;
+    protected RemoteAddress topologyEndpoint;
+
+    protected long nextRequestTimestamp = 0L;
 
     public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
     {
         this.transport = transport;
-        this.clientTopologyController = new ClientTopologyController(transport);
-        this.requestTopologyCmd = new RequestTopologyCmdImpl(null, objectMapper);
+        this.clientTopologyController = new ClientTopologyController(
+                transport,
+                objectMapper,
+                this::onNewTopology,
+                this::failRefreshFutures);
         this.topology = new TopologyImpl();
 
         for (SocketAddress socketAddress : initialBrokers)
@@ -61,7 +63,7 @@ public class ClientTopologyManager implements Actor, BufferReader
         }
 
         this.refreshFutures = new ArrayList<>();
-        triggerRefresh();
+        topologyEndpoint = topology.getRandomBroker();
     }
 
     @Override
@@ -70,7 +72,19 @@ public class ClientTopologyManager implements Actor, BufferReader
         int workCount = 0;
 
         workCount += commandContext.doWork();
-        workCount += clientTopologyController.doWork();
+
+        if (clientTopologyController.isRequestInProgress())
+        {
+            workCount += clientTopologyController.doWork();
+        }
+        else
+        {
+            if (shouldRefreshTopology() && !clientTopologyController.isRequestInProgress())
+            {
+                clientTopologyController.triggerRefresh(topologyEndpoint);
+                workCount++;
+            }
+        }
 
         return workCount;
     }
@@ -96,75 +110,37 @@ public class ClientTopologyManager implements Actor, BufferReader
     {
         return commandContext.runAsync(future ->
         {
-            if (clientTopologyController.isIdle())
-            {
-                triggerRefresh();
-            }
-
             refreshFutures.add(future);
-
+            topologyEndpoint = topology.getRandomBroker(); // switch to a different broker on explicit refresh
         });
     }
 
-    protected void triggerRefresh()
+    protected boolean shouldRefreshTopology()
     {
-        refreshFuture = new CompletableFuture<>();
-
-        refreshFuture.handle((value, throwable) ->
-        {
-            if (throwable == null)
-            {
-                refreshFutures.forEach(f -> f.complete(value));
-            }
-            else
-            {
-                refreshFutures.forEach(f -> f.completeExceptionally(throwable));
-            }
-
-            refreshFutures.clear();
-
-            return null;
-        });
-
-        clientTopologyController.configure(topology.getRandomBroker(), requestTopologyCmd.getRequestWriter(), this, refreshFuture);
+        return nextRequestTimestamp < ClockUtil.getCurrentTimeInMillis() || !refreshFutures.isEmpty();
     }
 
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length)
+    protected void onNewTopology(TopologyResponse topologyResponse)
     {
-        messageHeaderDecoder.wrap(buffer, 0);
+        recordTopologyRefreshAttempt();
 
-        final int schemaId = messageHeaderDecoder.schemaId();
-        final int templateId = messageHeaderDecoder.templateId();
-        final int blockLength = messageHeaderDecoder.blockLength();
-        final int version = messageHeaderDecoder.version();
+        final TopologyImpl topology = new TopologyImpl();
+        topology.update(topologyResponse, transport);
+        this.topology = topology;
 
-        final int responseMessageOffset = messageHeaderDecoder.encodedLength();
-
-        final ClientResponseHandler<TopologyResponse> responseHandler = requestTopologyCmd.getResponseHandler();
-
-        if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
-        {
-            try
-            {
-                final TopologyResponse topologyDto = responseHandler.readResponse(buffer, responseMessageOffset, blockLength, version);
-                final TopologyImpl topology = new TopologyImpl();
-
-                topology.update(topologyDto, transport);
-
-                this.topology = topology;
-            }
-            catch (final Exception e)
-            {
-                throw new RuntimeException("Unable to parse topic list from broker response", e);
-            }
-        }
-        else
-        {
-            errorResponseDecoder.wrap(buffer, offset, blockLength, version);
-            throw new BrokerRequestException(errorResponseDecoder.errorCode(), errorResponseDecoder.errorData());
-        }
-
+        refreshFutures.forEach(f -> f.complete(null));
+        refreshFutures.clear();
     }
 
+    protected void failRefreshFutures(Exception e)
+    {
+        recordTopologyRefreshAttempt();
+        refreshFutures.forEach(f -> f.completeExceptionally(e));
+        refreshFutures.clear();
+    }
+
+    protected void recordTopologyRefreshAttempt()
+    {
+        nextRequestTimestamp = ClockUtil.getCurrentTimeInMillis() + REFRESH_INTERVAL;
+    }
 }

@@ -17,6 +17,7 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -43,9 +44,9 @@ public class StubResponseChannelHandler implements ServerRequestHandler
     protected final MsgPackHelper msgPackHelper;
 
     // can also be used for verification
-    protected final List<Object> allRequests = new ArrayList<>();
-    protected final List<ControlMessageRequest> controlMessageRequests = new ArrayList<>();
-    protected final List<ExecuteCommandRequest> commandRequests = new ArrayList<>();
+    protected final List<Object> allRequests = new CopyOnWriteArrayList<>();
+    protected final List<ControlMessageRequest> controlMessageRequests = new CopyOnWriteArrayList<>();
+    protected final List<ExecuteCommandRequest> commandRequests = new CopyOnWriteArrayList<>();
 
     protected ServerResponse response = new ServerResponse();
 
