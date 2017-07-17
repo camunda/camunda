@@ -185,22 +185,6 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     }
 
     @Test
-    public void cannotPutValueIfIndexFull()
-    {
-        // given
-        index.put(0, 0);
-        try
-        {
-            index.put(16, 0);
-            fail("Exception expected");
-        }
-        catch (final RuntimeException e)
-        {
-            // expected
-        }
-    }
-
-    @Test
     public void shouldThrowExceptionOnCollision()
     {
         index.put(0L, 1L);
