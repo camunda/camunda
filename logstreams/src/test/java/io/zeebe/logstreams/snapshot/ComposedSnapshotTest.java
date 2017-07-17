@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ComposedSnapshotTest
 {
-    public static final int IDX_ENTRY_COUNT = 10_000_000;
+    public static final int IDX_ENTRY_COUNT = 1_000_000;
     private Long2LongHashIndex long2LongHashIndex;
     private Bytes2LongHashIndex bytes2LongHashIndex;
     private Long2BytesHashIndex long2BytesHashIndex;
