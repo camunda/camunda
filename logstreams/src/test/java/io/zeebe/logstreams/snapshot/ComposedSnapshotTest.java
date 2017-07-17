@@ -18,6 +18,7 @@ package io.zeebe.logstreams.snapshot;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
 import io.zeebe.hashindex.Long2BytesHashIndex;
 import io.zeebe.hashindex.Long2LongHashIndex;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,8 +73,15 @@ public class ComposedSnapshotTest
         snapshotFile = tempFolder.newFile("snapshot");
     }
 
-    @Test
+    @After
+    public void cleanUp()
+    {
+        long2BytesHashIndex.close();
+        long2LongHashIndex.close();
+        bytes2LongHashIndex.close();
+    }
 
+    @Test
     public void shouldWriteAndRecoverLargeSnapshot() throws Exception
     {
         // given
@@ -88,18 +96,21 @@ public class ComposedSnapshotTest
 
         // when
         composedSnapshot.writeSnapshot(new FileOutputStream(snapshotFile));
+        final long processedBytes = composedSnapshot.getProcessedBytes();
 
-        // then no error occurs
+        // then no error during write occurs
         largeIndex.clear();
 
         // and when
         composedSnapshot.recoverFromSnapshot(new FileInputStream(snapshotFile));
 
-
+        // then all values are recovered
+        assertThat(composedSnapshot.getProcessedBytes()).isEqualTo(processedBytes);
         for (long idx = 0; idx < IDX_ENTRY_COUNT; idx++)
         {
             assertThat(largeIndex.get(idx, -1)).isEqualTo(idx);
         }
+        largeIndex.close();
     }
 
     @Test
@@ -111,6 +122,7 @@ public class ComposedSnapshotTest
                                           long2LongSnapshotSupport,
                                           bytes2LongSnapshotSupport);
         composedSnapshot.writeSnapshot(new FileOutputStream(snapshotFile));
+        final long processedBytes = composedSnapshot.getProcessedBytes();
 
         long2LongHashIndex.clear();
         long2BytesHashIndex.clear();
@@ -120,6 +132,8 @@ public class ComposedSnapshotTest
         composedSnapshot.recoverFromSnapshot(new FileInputStream(snapshotFile));
 
         // then
+        assertThat(composedSnapshot.getProcessedBytes()).isEqualTo(processedBytes);
+
         assertThat(long2LongHashIndex.get(15, -1)).isEqualTo(15);
 
         final byte bytes[] = new byte[2];
