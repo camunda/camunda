@@ -116,6 +116,11 @@ public class ClientTransport implements AutoCloseable
         return transportActorContext.closeAllOpenChannels();
     }
 
+    public long getChannelKeepAlivePeriod()
+    {
+        return transportContext.getChannelKeepAlivePeriod();
+    }
+
     protected static class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
     {
 

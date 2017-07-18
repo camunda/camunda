@@ -131,6 +131,16 @@ public class ClientChannelKeepAliveTest
     }
 
     @Test
+    public void shouldExposeKeepAliveProperty()
+    {
+        // when
+        final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
+
+        // then
+        assertThat(transport.getChannelKeepAlivePeriod()).isEqualTo(KEEP_ALIVE_PERIOD);
+    }
+
+    @Test
     public void shouldSendFirstKeepAlive()
     {
         // given
