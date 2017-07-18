@@ -36,7 +36,7 @@ public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
 
     public CancelWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
-        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
     }
 
     @Override

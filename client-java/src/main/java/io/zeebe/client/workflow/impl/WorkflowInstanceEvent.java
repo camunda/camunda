@@ -22,7 +22,8 @@ public class WorkflowInstanceEvent
 {
     protected String bpmnProcessId;
     protected int version = -1;
-    protected long workflowInstanceKey;
+    protected long workflowKey = -1L;
+    protected long workflowInstanceKey = -1L;
     protected WorkflowInstanceEventType eventType;
     protected String activityId;
     protected byte[] payload;
@@ -87,10 +88,21 @@ public class WorkflowInstanceEvent
         this.payload = payload;
     }
 
+    public long getWorkflowKey()
+    {
+        return workflowKey;
+    }
+
+    public void setWorkflowKey(long workflowKey)
+    {
+        this.workflowKey = workflowKey;
+    }
+
     public void reset()
     {
         bpmnProcessId = null;
         version = -1;
+        workflowKey = -1L;
         workflowInstanceKey = -1;
         eventType = null;
         activityId = null;

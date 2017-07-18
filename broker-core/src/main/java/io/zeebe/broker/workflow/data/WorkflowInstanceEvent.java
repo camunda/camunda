@@ -17,16 +17,11 @@
  */
 package io.zeebe.broker.workflow.data;
 
+import io.zeebe.broker.util.msgpack.UnpackedObject;
+import io.zeebe.broker.util.msgpack.property.*;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.BinaryProperty;
-import io.zeebe.broker.util.msgpack.property.EnumProperty;
-import io.zeebe.broker.util.msgpack.property.IntegerProperty;
-import io.zeebe.broker.util.msgpack.property.LongProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
 
 public class WorkflowInstanceEvent extends UnpackedObject
 {
@@ -37,13 +32,18 @@ public class WorkflowInstanceEvent extends UnpackedObject
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
     public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
     public static final String PROP_WORKFLOW_VERSION = "version";
+    public static final String PROP_WORKFLOW_KEY = "workflowKey";
     public static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
     private final EnumProperty<WorkflowInstanceEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowInstanceEventType.class);
+
     private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
+    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
+    private final LongProperty workflowKeyProp = new LongProperty(PROP_WORKFLOW_KEY, -1L);
+
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
-    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
+
     private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, NO_PAYLOAD);
 
     public WorkflowInstanceEvent()
@@ -51,9 +51,10 @@ public class WorkflowInstanceEvent extends UnpackedObject
         this
             .declareProperty(eventTypeProp)
             .declareProperty(bpmnProcessIdProp)
+            .declareProperty(versionProp)
+            .declareProperty(workflowKeyProp)
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
-            .declareProperty(versionProp)
             .declareProperty(payloadProp);
     }
 
@@ -126,6 +127,17 @@ public class WorkflowInstanceEvent extends UnpackedObject
     public WorkflowInstanceEvent setVersion(int version)
     {
         this.versionProp.setValue(version);
+        return this;
+    }
+
+    public long getWorkflowKey()
+    {
+        return workflowKeyProp.getValue();
+    }
+
+    public WorkflowInstanceEvent setWorkflowKey(long workflowKey)
+    {
+        this.workflowKeyProp.setValue(workflowKey);
         return this;
     }
 

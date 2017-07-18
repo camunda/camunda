@@ -17,22 +17,21 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -116,6 +115,40 @@ public class CreateDeploymentTest
         assertThat(deployedWorkflows).hasSize(1);
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 2);
+    }
+
+    @Test
+    public void shouldWriteWorkflowEvent()
+    {
+        // given
+        final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .done();
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                .done()
+                .sendAndAwait();
+
+        // then
+        final long deploymentKey = resp.key();
+        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_CREATED");
+
+        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents());
+        assertThat(workflowEvent.key()).isGreaterThanOrEqualTo(0L).isNotEqualTo(deploymentKey);
+        assertThat(workflowEvent.event())
+            .containsEntry(PROP_EVENT_TYPE, "CREATED")
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry("deploymentKey", deploymentKey)
+            .containsEntry(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance));
     }
 
     @Test

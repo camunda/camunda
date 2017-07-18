@@ -122,7 +122,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     public static MetadataFilter eventFilter()
     {
         return event -> event.getEventType() == EventType.INCIDENT_EVENT
-                || event.getEventType() == EventType.WORKFLOW_EVENT
+                || event.getEventType() == EventType.WORKFLOW_INSTANCE_EVENT
                 || event.getEventType() == EventType.TASK_EVENT;
     }
 
@@ -144,7 +144,7 @@ public class IncidentStreamProcessor implements StreamProcessor
                 eventProcessor = onIncidentEvent(event);
                 break;
 
-            case WORKFLOW_EVENT:
+            case WORKFLOW_INSTANCE_EVENT:
                 eventProcessor = onWorkflowInstanceEvent(event);
                 break;
 

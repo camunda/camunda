@@ -82,7 +82,7 @@ public class UpdatePayloadTest
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.eventType()).isEqualTo(EventType.WORKFLOW_EVENT);
+        assertThat(request.eventType()).isEqualTo(EventType.WORKFLOW_INSTANCE_EVENT);
         assertThat(request.key()).isEqualTo(2L);
         assertThat(request.getCommand())
             .containsEntry("eventType", "UPDATE_PAYLOAD")

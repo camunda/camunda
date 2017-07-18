@@ -68,7 +68,7 @@ public class ExecuteCommandRequestBuilder
 
     public ExecuteCommandRequestBuilder eventTypeWorkflow()
     {
-        return eventType(EventType.WORKFLOW_EVENT);
+        return eventType(EventType.WORKFLOW_INSTANCE_EVENT);
     }
 
 

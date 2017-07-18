@@ -207,7 +207,7 @@ public class IncidentStreamProcessorTest
 
     private long writeWorkflowInstanceEvent(long key, Consumer<WorkflowInstanceEvent> c)
     {
-        final BrokerEventMetadata workflowMetadata = new BrokerEventMetadata().eventType(EventType.WORKFLOW_EVENT);
+        final BrokerEventMetadata workflowMetadata = new BrokerEventMetadata().eventType(EventType.WORKFLOW_INSTANCE_EVENT);
 
         final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
         c.accept(workflowInstanceEvent);

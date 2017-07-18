@@ -786,7 +786,7 @@ public class IncidentTest
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
             .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
-            .eventType(EventType.WORKFLOW_EVENT)
+            .eventType(EventType.WORKFLOW_INSTANCE_EVENT)
             .key(activityInstanceKey)
             .command()
                 .put("eventType", WorkflowInstanceEventType.UPDATE_PAYLOAD)

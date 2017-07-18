@@ -24,13 +24,16 @@ public interface CreateWorkflowInstanceCmd extends SetPayloadCmd<WorkflowInstanc
 {
     /**
      * Represents the latest version of a deployed workflow definition.
-      */
+     */
     int LATEST_VERSION = -1;
 
     /**
-     * Sets the BPMN process id, which identifies the workflow definition.
+     * Sets the BPMN process id, which identifies the workflow definition. Can
+     * be combined with {@link #version(int)} or {@link #latestVersion()} but
+     * not with {@link #workflowKey(long)}.
      *
-     * @param id the id which identifies the workflow definition
+     * @param id
+     *            the id which identifies the workflow definition
      * @return the current create command
      */
     CreateWorkflowInstanceCmd bpmnProcessId(String id);
@@ -38,18 +41,32 @@ public interface CreateWorkflowInstanceCmd extends SetPayloadCmd<WorkflowInstanc
     /**
      * Sets the version, which corresponds to the deployed workflow definition.
      *
-     * If the version is set to {@link #LATEST_VERSION}, the latest version of the deployed workflow definition is used.
+     * If the version is set to {@link #LATEST_VERSION}, the latest version of
+     * the deployed workflow definition is used.
      *
-     * @param version the version of the workflow definition
+     * @param version
+     *            the version of the workflow definition
      * @return the current create command
      */
     CreateWorkflowInstanceCmd version(int version);
 
     /**
-     * Sets the version, which corresponds to the deployed workflow definition, to latest.
+     * Sets the version, which corresponds to the deployed workflow definition,
+     * to latest.
      *
      * @see {@link #version(int)}
      * @return the current create command
      */
     CreateWorkflowInstanceCmd latestVersion();
+
+    /**
+     * Sets the key which identifies the deployed workflow definition. Can not
+     * be combined with {@link #bpmnProcessId(String)}, {@link #version(int)} or
+     * {@link #latestVersion()}.
+     *
+     * @param workflowKey
+     *            the key of the deployed workflow
+     * @return the current create command
+     */
+    CreateWorkflowInstanceCmd workflowKey(long workflowKey);
 }

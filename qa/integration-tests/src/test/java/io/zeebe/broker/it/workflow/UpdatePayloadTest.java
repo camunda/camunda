@@ -17,7 +17,7 @@ package io.zeebe.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskType;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -82,10 +82,10 @@ public class UpdatePayloadTest
             .bpmnProcessId("process")
             .execute();
 
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_ACTIVATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED")));
 
         final long activtyInstanceKey = eventRecorder
-                .getSingleWorkflowEvent(wfEvent("ACTIVITY_ACTIVATED"))
+                .getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED"))
                 .getMetadata()
                 .getEventKey();
 
@@ -97,7 +97,7 @@ public class UpdatePayloadTest
             .execute();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("PAYLOAD_UPDATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("PAYLOAD_UPDATED")));
 
         clientRule.taskTopic().newTaskSubscription()
             .taskType("task-1")
@@ -135,10 +135,10 @@ public class UpdatePayloadTest
             })
             .open();
 
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
 
         final long activityInstanceKey = eventRecorder
-                .getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"))
+                .getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"))
                 .getMetadata()
                 .getEventKey();
 

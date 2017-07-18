@@ -15,13 +15,15 @@
  */
 package io.zeebe.client.event;
 
-public enum TopicEventType
+/**
+ * Handles workflow events.
+ */
+@FunctionalInterface
+public interface WorkflowEventHandler
 {
-    TASK,
-    WORKFLOW_INSTANCE,
-    WORKFLOW,
-    INCIDENT,
 
-    RAFT,
-    UNKNOWN
+    /**
+     * @param event the next event of the topic
+     */
+    void handle(EventMetadata metadata, WorkflowEvent event) throws Exception;
 }

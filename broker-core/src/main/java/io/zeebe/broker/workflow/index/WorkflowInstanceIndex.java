@@ -60,7 +60,7 @@ public class WorkflowInstanceIndex implements AutoCloseable
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport<Long2BytesHashIndex> getSnapshotSupport()
     {
         return snapshotSupport;
     }

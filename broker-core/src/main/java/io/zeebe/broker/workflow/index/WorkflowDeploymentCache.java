@@ -24,7 +24,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
@@ -36,8 +36,9 @@ import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Cache of deployed workflows. It contains an LRU cache of the parsed workflows
- * and an index which holds the position of the deployed workflow events.
+ * Cache of deployed workflows. It contains an LRU cache which maps the workflow
+ * key to the parsed workflow. Additionally, it holds an index which maps BPMN
+ * process id + version to workflow key.
  *
  * <p>
  * When a workflow is requested then the parsed workflow is returned from the
@@ -46,15 +47,18 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class WorkflowDeploymentCache implements AutoCloseable
 {
+    private static final int LATEST_VERSION = -1;
+
     private static final int SIZE_OF_PROCESS_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_COMPOSITE_KEY]);
 
-    private final WorkflowDeploymentEvent deploymentEvent = new WorkflowDeploymentEvent();
+    private final WorkflowEvent workflowEvent = new WorkflowEvent();
     private final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
-    private final Bytes2LongHashIndex index;
+    private final Bytes2LongHashIndex idVersionToKeyIndex;
+
     private final HashIndexSnapshotSupport<Bytes2LongHashIndex> snapshotSupport;
 
     private final LongLruCache<ExecutableWorkflow> cache;
@@ -62,15 +66,16 @@ public class WorkflowDeploymentCache implements AutoCloseable
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, SIZE_OF_COMPOSITE_KEY);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.idVersionToKeyIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, SIZE_OF_COMPOSITE_KEY);
+
+        this.snapshotSupport = new HashIndexSnapshotSupport<>(idVersionToKeyIndex);
 
         this.logStreamReader = logStreamReader;
         this.cache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
         { });
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport<Bytes2LongHashIndex> getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -81,38 +86,35 @@ public class WorkflowDeploymentCache implements AutoCloseable
         buffer.putInt(bpmnProcessId.capacity(), version, ByteOrder.LITTLE_ENDIAN);
     }
 
-    public void addDeployedWorkflow(DirectBuffer bpmnProcessId, int version, long deploymentEventPosition)
+    public void addDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
+    {
+        wrap(bpmnProcessId, version);
+        idVersionToKeyIndex.put(buffer.byteArray(), workflowKey);
+
+        // override the latest version by the given key
+        wrap(bpmnProcessId, LATEST_VERSION);
+        idVersionToKeyIndex.put(buffer.byteArray(), workflowKey);
+    }
+
+    public long getWorkflowKeyByIdAndLatestVersion(DirectBuffer bpmnProcessId)
+    {
+        return getWorkflowKeyByIdAndVersion(bpmnProcessId, LATEST_VERSION);
+    }
+
+    public long getWorkflowKeyByIdAndVersion(DirectBuffer bpmnProcessId, int version)
     {
         wrap(bpmnProcessId, version);
 
-        index.put(buffer.byteArray(), deploymentEventPosition);
+        return idVersionToKeyIndex.get(buffer.byteArray(), -1L);
     }
 
-    public boolean hasDeployedWorkflow(DirectBuffer bpmnProcessId, int version)
-    {
-        return getDeployedWorkflowPosition(bpmnProcessId, version) > 0;
-    }
-
-    private long getDeployedWorkflowPosition(DirectBuffer bpmnProcessId, int version)
-    {
-        wrap(bpmnProcessId, version);
-
-        return index.get(buffer, 0, buffer.capacity(), -1L);
-    }
-
-    public ExecutableWorkflow getWorkflow(DirectBuffer bpmnProcessId, int version)
+    public ExecutableWorkflow getWorkflow(long workflowKey)
     {
         ExecutableWorkflow workflow = null;
 
-        final long position = getDeployedWorkflowPosition(bpmnProcessId, version);
-        if (position >= 0)
+        if (workflowKey >= 0)
         {
-            workflow = cache.lookup(position);
-        }
-
-        if (workflow == null)
-        {
-            throw new RuntimeException("No workflow deployment event found.");
+            workflow = cache.lookup(workflowKey);
         }
 
         return workflow;
@@ -125,13 +127,15 @@ public class WorkflowDeploymentCache implements AutoCloseable
         final boolean found = logStreamReader.seek(position);
         if (found && logStreamReader.hasNext())
         {
-            final LoggedEvent workflowEvent = logStreamReader.next();
+            final LoggedEvent event = logStreamReader.next();
 
-            deploymentEvent.reset();
-            workflowEvent.readValue(deploymentEvent);
+            workflowEvent.reset();
+            event.readValue(workflowEvent);
 
             // currently, it can only be one
-            workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
+            workflow = bpmnTransformer.transform(workflowEvent.getBpmnXml()).get(0);
+
+            workflow.setVersion(workflowEvent.getVersion());
         }
         return workflow;
     }
@@ -139,7 +143,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     @Override
     public void close()
     {
-        index.close();
+        idVersionToKeyIndex.close();
     }
 
 }

@@ -27,16 +27,22 @@ public interface WorkflowInstance
     String getBpmnProcessId();
 
     /**
-     * The workflow instance key which identifies the workflow instance.
-     * @return the workflow instance key
-     */
-    long getWorkflowInstanceKey();
-
-    /**
      * The version of the workflow definition, which is used to created this instance,
      * @return the version of the workflow definition
      */
     int getVersion();
+
+    /**
+     * The key which identifies the deployed workflow definition.
+     * @return the key of the deployed workflow
+     */
+    long getWorkflowKey();
+
+    /**
+     * The workflow instance key which identifies the workflow instance.
+     * @return the workflow instance key
+     */
+    long getWorkflowInstanceKey();
 
     /**
      * The payload of the current running workflow instance.

@@ -16,7 +16,7 @@
 package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +29,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.broker.it.util.TopicEventRecorder.ReceivedWorkflowEvent;
+import io.zeebe.broker.it.util.TopicEventRecorder.ReceivedWorkflowInstanceEvent;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 import io.zeebe.client.TaskTopicClient;
 import io.zeebe.client.WorkflowTopicClient;
@@ -93,7 +93,7 @@ public class ServiceTaskTest
 
         // then
         assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
     @Test
@@ -163,7 +163,7 @@ public class ServiceTaskTest
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
     @Test
@@ -229,9 +229,9 @@ public class ServiceTaskTest
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
 
-        final ReceivedWorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"));
+        final ReceivedWorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
         assertThat(workflowEvent.getEvent().getPayload()).isEqualTo("{\"bar\":2}");
     }
 
@@ -267,9 +267,9 @@ public class ServiceTaskTest
             .open();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("ACTIVITY_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
 
-        final ReceivedWorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("ACTIVITY_COMPLETED"));
+        final ReceivedWorkflowInstanceEvent workflowEvent = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
         assertThat(workflowEvent.getEvent().getPayload()).isEqualTo("{\"foo\":2}");
     }
 
@@ -309,7 +309,7 @@ public class ServiceTaskTest
 
         // then
         waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("COMPLETED")).size() == instances);
-        waitUntil(() -> eventRecorder.getWorkflowEvents(wfEvent("WORKFLOW_INSTANCE_COMPLETED")).size() == instances);
+        waitUntil(() -> eventRecorder.getWorkflowInstanceEvents(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")).size() == instances);
     }
 
 }

@@ -15,16 +15,7 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.IncidentEvent;
-import io.zeebe.client.event.IncidentEventHandler;
-import io.zeebe.client.event.RaftEvent;
-import io.zeebe.client.event.RaftEventHandler;
-import io.zeebe.client.event.TaskEventHandler;
-import io.zeebe.client.event.TopicEventHandler;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.event.WorkflowInstanceEventHandler;
+import io.zeebe.client.event.*;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.EnsureUtil;
@@ -33,7 +24,8 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 {
     protected TopicEventHandler defaultEventHandler;
     protected TaskEventHandler taskEventHandler;
-    protected WorkflowInstanceEventHandler wfEventHandler;
+    protected WorkflowInstanceEventHandler wfInstanceEventHandler;
+    protected WorkflowEventHandler wfEventHandler;
     protected IncidentEventHandler incidentEventHandler;
     protected RaftEventHandler raftEventHandler;
 
@@ -67,6 +59,13 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     @Override
     public TopicSubscriptionBuilder workflowInstanceEventHandler(WorkflowInstanceEventHandler handler)
     {
+        this.wfInstanceEventHandler = handler;
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder workflowEventHandler(WorkflowEventHandler handler)
+    {
         this.wfEventHandler = handler;
         return this;
     }
@@ -89,7 +88,8 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("name", builder.getName());
-        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && incidentEventHandler == null && raftEventHandler == null)
+        if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && wfInstanceEventHandler == null && incidentEventHandler == null
+                && raftEventHandler == null)
         {
             throw new RuntimeException("at least one handler must be set");
         }
@@ -110,9 +110,14 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
             final TaskEventImpl taskEvent = msgPackMapper.convert(event.getAsMsgPack(), TaskEventImpl.class);
             taskEventHandler.handle(event, taskEvent);
         }
-        else if (TopicEventType.WORKFLOW_INSTANCE == eventType && wfEventHandler != null)
+        else if (TopicEventType.WORKFLOW_INSTANCE == eventType && wfInstanceEventHandler != null)
         {
-            final WorkflowInstanceEventImpl wfEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
+            final WorkflowInstanceEventImpl wfInstanceEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
+            wfInstanceEventHandler.handle(event, wfInstanceEvent);
+        }
+        else if (TopicEventType.WORKFLOW == eventType && wfEventHandler != null)
+        {
+            final WorkflowEventImpl wfEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowEventImpl.class);
             wfEventHandler.handle(event, wfEvent);
         }
         else if (TopicEventType.INCIDENT == eventType && incidentEventHandler != null)

@@ -15,18 +15,18 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.test.util.collection.MapBuilder;
 import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.util.collection.MapBuilder;
 
 public class TestTopicClient
 {
@@ -38,8 +38,9 @@ public class TestTopicClient
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
     public static final String PROP_WORKFLOW_BPMN_XML = "bpmnXml";
     public static final String PROP_WORKFLOW_VERSION = "version";
-    private static final String PROP_WORKFLOW_PAYLOAD = "payload";
+    public static final String PROP_WORKFLOW_PAYLOAD = "payload";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+    public static final String PROP_WORKFLOW_KEY = "workflowKey";
 
     private final ClientApiRule apiRule;
     private final String topicName;
@@ -73,7 +74,15 @@ public class TestTopicClient
 
     public long createWorkflowInstance(String bpmnProcessId)
     {
-        final ExecuteCommandResponse response = sendCreateWorkflowInstanceRequest(bpmnProcessId);
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+                .topicName(topicName)
+                .partitionId(partitionId)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+                .done()
+                .sendAndAwait();
 
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
 
@@ -87,52 +96,20 @@ public class TestTopicClient
 
     public long createWorkflowInstance(String bpmnProcessId, byte[] payload)
     {
-        final ExecuteCommandResponse response = sendCreateWorkflowInstanceRequest(bpmnProcessId, payload);
-
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
-
-        return response.key();
-    }
-
-    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId)
-    {
-        return apiRule.createCmdRequest()
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
                 .topicName(topicName)
                 .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+                    .put(PROP_WORKFLOW_PAYLOAD, payload)
                 .done()
                 .sendAndAwait();
-    }
 
-    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, byte[] payload)
-    {
-        return apiRule.createCmdRequest()
-            .topicName(topicName)
-            .partitionId(partitionId)
-            .eventTypeWorkflow()
-            .command()
-            .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
-            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-            .put(PROP_WORKFLOW_PAYLOAD, payload)
-            .done()
-            .sendAndAwait();
-    }
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
 
-    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, int version)
-    {
-        return apiRule.createCmdRequest()
-            .topicName(topicName)
-            .partitionId(partitionId)
-            .eventTypeWorkflow()
-            .command()
-            .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
-            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-            .put(PROP_WORKFLOW_VERSION, version)
-            .done()
-            .sendAndAwait();
+        return response.key();
     }
 
     public void completeTaskOfType(String taskType)
@@ -231,7 +208,7 @@ public class TestTopicClient
 
     public static Predicate<SubscribedEvent> workflowInstanceEvents()
     {
-        return e -> e.eventType() == EventType.WORKFLOW_EVENT;
+        return e -> e.eventType() == EventType.WORKFLOW_INSTANCE_EVENT;
     }
 
     public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType)
@@ -268,4 +245,15 @@ public class TestTopicClient
     {
         return incidentEvents().and(eventType(eventType));
     }
+
+    public static Predicate<SubscribedEvent> workflowEvents(String eventType)
+    {
+        return workflowEvents().and(eventType(eventType));
+    }
+
+    public static Predicate<SubscribedEvent> workflowEvents()
+    {
+        return e -> e.eventType() == EventType.WORKFLOW_EVENT;
+    }
+
 }

@@ -27,37 +27,31 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
-import io.zeebe.protocol.Protocol;
-import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.xml.validation.ValidationResults;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEventType;
+import io.zeebe.broker.workflow.data.*;
 import io.zeebe.broker.workflow.graph.WorkflowValidationResultFormatter;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import org.agrona.DirectBuffer;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-public class DeploymentStreamProcessor implements StreamProcessor
+public class DeploymentStreamProcessor implements StreamProcessor, EventProcessor
 {
-    protected final CreateDeploymentEventProcessor createDeploymentEventProcessor = new CreateDeploymentEventProcessor();
-
     protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final WorkflowDeploymentEvent deploymentEvent = new WorkflowDeploymentEvent();
+    protected final WorkflowEvent workflowEvent = new WorkflowEvent();
 
     protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
     protected final WorkflowValidationResultFormatter validationResultFormatter = new WorkflowValidationResultFormatter();
@@ -73,8 +67,11 @@ public class DeploymentStreamProcessor implements StreamProcessor
     protected int logStreamPartitionId;
 
     protected LogStream targetStream;
+    protected LogStreamBatchWriter logStreamBatchWriter;
+    protected int streamProcessorId;
 
     protected long eventKey;
+    protected long eventPosition;
 
     public DeploymentStreamProcessor(CommandResponseWriter responseWriter)
     {
@@ -97,6 +94,9 @@ public class DeploymentStreamProcessor implements StreamProcessor
         logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
 
+        streamProcessorId = context.getId();
+
+        logStreamBatchWriter = new LogStreamBatchWriterImpl(context.getTargetStream());
         targetStream = context.getTargetStream();
     }
 
@@ -118,6 +118,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         deploymentEvent.reset();
 
         eventKey = event.getKey();
+        eventPosition = event.getPosition();
 
         event.readMetadata(sourceEventMetadata);
         event.readValue(deploymentEvent);
@@ -127,7 +128,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         switch (deploymentEvent.getEventType())
         {
             case CREATE_DEPLOYMENT:
-                eventProcessor = createDeploymentEventProcessor;
+                eventProcessor = this;
                 break;
 
             default:
@@ -143,129 +144,154 @@ public class DeploymentStreamProcessor implements StreamProcessor
         deployedWorkflows.clear();
     }
 
-    private final class CreateDeploymentEventProcessor implements EventProcessor
+    @Override
+    public void processEvent()
     {
-        @Override
-        public void processEvent()
+        try
         {
-            try
+            final BpmnModelInstance bpmnModelInstance = bpmnTransformer.readModelFromBuffer(deploymentEvent.getBpmnXml());
+            final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+            if (!validationResults.hasErrors())
             {
-                final BpmnModelInstance bpmnModelInstance = bpmnTransformer.readModelFromBuffer(deploymentEvent.getBpmnXml());
-                final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+                deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
 
-                if (!validationResults.hasErrors())
-                {
-                    deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
-
-                    collectDeployedWorkflows(bpmnModelInstance);
-                }
-
-                if (validationResults.getErrorCount() > 0 || validationResults.getWarinigCount() > 0)
-                {
-                    final String errorMessage = generateErrorMessage(validationResults);
-                    deploymentEvent.setErrorMessage(errorMessage);
-                }
+                collectDeployedWorkflows(bpmnModelInstance);
             }
-            catch (Exception e)
+
+            if (validationResults.getErrorCount() > 0 || validationResults.getWarinigCount() > 0)
             {
-                final String errorMessage = generateErrorMessage(e);
+                final String errorMessage = generateErrorMessage(validationResults);
                 deploymentEvent.setErrorMessage(errorMessage);
             }
-
-            if (deployedWorkflows.isEmpty())
-            {
-                deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
-            }
+        }
+        catch (Exception e)
+        {
+            final String errorMessage = generateErrorMessage(e);
+            deploymentEvent.setErrorMessage(errorMessage);
         }
 
-        protected void collectDeployedWorkflows(final BpmnModelInstance bpmnModelInstance)
+        if (deployedWorkflows.isEmpty())
         {
-            final List<ExecutableWorkflow> workflows = bpmnTransformer.transform(bpmnModelInstance);
-            // currently, it can only be one process
-            final ExecutableWorkflow workflow = workflows.get(0);
-
-            final DirectBuffer bpmnProcessId = workflow.getId();
-
-            final int latestVersion = (int) index.get(bpmnProcessId.byteArray(), 0L);
-
-            final int version = latestVersion + 1;
-
-            deployedWorkflows.add(new DeployedWorkflow(bpmnProcessId.byteArray(), version));
-
-            deploymentEvent.deployedWorkflows().add()
-                .setBpmnProcessId(bpmnProcessId)
-                .setVersion(version);
+            deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
         }
+    }
 
-        protected String generateErrorMessage(final ValidationResults validationResults)
-        {
-            final StringWriter errorMessageWriter = new StringWriter();
+    protected void collectDeployedWorkflows(final BpmnModelInstance bpmnModelInstance)
+    {
+        final List<ExecutableWorkflow> workflows = bpmnTransformer.transform(bpmnModelInstance);
+        // currently, it can only be one process
+        final ExecutableWorkflow workflow = workflows.get(0);
 
-            validationResults.write(errorMessageWriter, validationResultFormatter);
+        final DirectBuffer bpmnProcessId = workflow.getId();
 
-            return errorMessageWriter.toString();
-        }
+        final int latestVersion = (int) index.get(bpmnProcessId.byteArray(), 0L);
+        final int version = latestVersion + 1;
 
-        protected String generateErrorMessage(final Exception e)
-        {
-            final StringWriter stacktraceWriter = new StringWriter();
+        deploymentEvent.deployedWorkflows().add()
+            .setBpmnProcessId(bpmnProcessId)
+            .setVersion(version);
 
-            e.printStackTrace(new PrintWriter(stacktraceWriter));
+        deployedWorkflows.add(new DeployedWorkflow(bpmnProcessId, version));
+    }
 
-            return String.format("Failed to deploy BPMN model: %s", stacktraceWriter);
-        }
+    protected String generateErrorMessage(final ValidationResults validationResults)
+    {
+        final StringWriter errorMessageWriter = new StringWriter();
 
-        @Override
-        public boolean executeSideEffects()
-        {
-            return responseWriter
-                    .topicName(logStreamTopicName)
-                    .partitionId(logStreamPartitionId)
-                    .key(eventKey)
-                    .eventWriter(deploymentEvent)
-                    .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
-        }
+        validationResults.write(errorMessageWriter, validationResultFormatter);
 
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .eventType(DEPLOYMENT_EVENT)
-                .raftTermId(targetStream.getTerm());
+        return errorMessageWriter.toString();
+    }
 
-            return writer
+    protected String generateErrorMessage(final Exception e)
+    {
+        final StringWriter stacktraceWriter = new StringWriter();
+
+        e.printStackTrace(new PrintWriter(stacktraceWriter));
+
+        return String.format("Failed to deploy BPMN model: %s", stacktraceWriter);
+    }
+
+    @Override
+    public boolean executeSideEffects()
+    {
+        return responseWriter
+                .topicName(logStreamTopicName)
+                .partitionId(logStreamPartitionId)
                 .key(eventKey)
+                .eventWriter(deploymentEvent)
+                .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
+    }
+
+    @Override
+    public long writeEvent(LogStreamWriter writer)
+    {
+        logStreamBatchWriter
+            .producerId(streamProcessorId)
+            .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
+
+        // write deployment event
+        targetEventMetadata.reset();
+        targetEventMetadata
+            .protocolVersion(Protocol.PROTOCOL_VERSION)
+            .eventType(DEPLOYMENT_EVENT)
+            .raftTermId(targetStream.getTerm());
+
+        logStreamBatchWriter.event()
+            .key(eventKey)
+            .metadataWriter(targetEventMetadata)
+            .valueWriter(deploymentEvent)
+            .done();
+
+        // write workflow events
+        targetEventMetadata.eventType(EventType.WORKFLOW_EVENT);
+
+        for (int i = 0; i < deployedWorkflows.size(); i++)
+        {
+            final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
+
+            workflowEvent.reset();
+            workflowEvent
+                .setEventType(WorkflowEventType.CREATED)
+                .setBpmnProcessId(deployedWorkflow.getBpmnProcessId())
+                .setVersion(deployedWorkflow.getVersion())
+                .setBpmnXml(deploymentEvent.getBpmnXml())
+                .setDeploymentKey(eventKey);
+
+            logStreamBatchWriter.event()
+                .positionAsKey()
                 .metadataWriter(targetEventMetadata)
-                .valueWriter(deploymentEvent)
-                .tryWrite();
+                .valueWriter(workflowEvent)
+                .done();
         }
 
-        @Override
-        public void updateState()
-        {
-            for (int i = 0; i < deployedWorkflows.size(); i++)
-            {
-                final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
+        return logStreamBatchWriter.tryWrite();
+    }
 
-                index.put(deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
-            }
+    @Override
+    public void updateState()
+    {
+        for (int i = 0; i < deployedWorkflows.size(); i++)
+        {
+            final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
+
+            index.put(deployedWorkflow.getBpmnProcessId().byteArray(), deployedWorkflow.getVersion());
         }
     }
 
     private static final class DeployedWorkflow
     {
-        private final byte[] bpmnProcessId;
+        private final DirectBuffer bpmnProcessId;
         private final int version;
 
-        DeployedWorkflow(byte[] bpmnProcessId, int version)
+        DeployedWorkflow(DirectBuffer bpmnProcessId, int version)
         {
             this.bpmnProcessId = bpmnProcessId;
             this.version = version;
         }
 
-        public byte[] getBpmnProcessId()
+        public DirectBuffer getBpmnProcessId()
         {
             return bpmnProcessId;
         }

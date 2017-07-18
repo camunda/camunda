@@ -63,6 +63,14 @@ public interface TopicSubscriptionBuilder
     TopicSubscriptionBuilder workflowInstanceEventHandler(WorkflowInstanceEventHandler handler);
 
     /**
+     * Registers a handler that handles all workflow events.
+     *
+     * @param handler the handler to register
+     * @return this builder
+     */
+    TopicSubscriptionBuilder workflowEventHandler(WorkflowEventHandler handler);
+
+    /**
      * Registers a handler that handles all incident events.
      *
      * @param handler the handler to register

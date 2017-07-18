@@ -17,24 +17,22 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
+import java.util.stream.Collectors;
+
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 
@@ -58,7 +56,15 @@ public class CreateWorkflowInstanceTest
     public void shouldRejectWorkflowInstanceCreation()
     {
         // when
-        final ExecuteCommandResponse resp = testClient.sendCreateWorkflowInstanceRequest("process");
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                .done()
+                .sendAndAwait();
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -71,7 +77,7 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    public void shouldCreateWorkflowInstance()
+    public void shouldCreateWorkflowInstanceByBpmnProcessId()
     {
         // given
         testClient.deploy(Bpmn.createExecutableProcess("process")
@@ -80,7 +86,147 @@ public class CreateWorkflowInstanceTest
                 .done());
 
         // when
-        final ExecuteCommandResponse resp = testClient.sendCreateWorkflowInstanceRequest("process");
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                .done()
+                .sendAndAwait();
+
+        // then
+        final SubscribedEvent workflowEvent = testClient.receiveSingleEvent(workflowEvents("CREATED"));
+        final long workflowKey = workflowEvent.key();
+
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.getEvent())
+            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceByBpmnProcessIdAndLatestVersion()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent("foo")
+                .endEvent()
+                .done());
+
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent("bar")
+                .endEvent()
+                .done());
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                    .put(PROP_WORKFLOW_VERSION, -1)
+                .done()
+                .sendAndAwait();
+
+        // then
+        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(Collectors.toList())
+                .get(1);
+        final long workflowKey = workflowEvent.key();
+
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
+
+        assertThat(event.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "bar")
+            .containsEntry(PROP_WORKFLOW_VERSION, 2)
+            .containsEntry(PROP_WORKFLOW_KEY, workflowKey);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceByBpmnProcessIdAndPreviosuVersion()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent("foo")
+                .endEvent()
+                .done());
+
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent("bar")
+                .endEvent()
+                .done());
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                    .put(PROP_WORKFLOW_VERSION, 1)
+                .done()
+                .sendAndAwait();
+
+        // then
+        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(Collectors.toList())
+                .get(0);
+        final long workflowKey = workflowEvent.key();
+
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
+
+        assertThat(event.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_KEY, workflowKey);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceByWorkflowKeyAndLatestVersion()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+              .startEvent("foo")
+              .endEvent()
+              .done());
+
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+              .startEvent("bar")
+              .endEvent()
+              .done());
+
+        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(Collectors.toList())
+                .get(1);
+        final long workflowKey = workflowEvent.key();
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_KEY, workflowKey)
+                .done()
+                .sendAndAwait();
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -89,62 +235,52 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getEvent())
             .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
-            .containsEntry(PROP_WORKFLOW_VERSION, 1);
+            .containsEntry(PROP_WORKFLOW_VERSION, 2)
+            .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
     }
 
     @Test
-    public void shouldCreateLatestVersionOfWorkflowInstance()
+    public void shouldCreateWorkflowInstanceByWorkflowKeyAndPreviousVersion()
     {
         // given
         testClient.deploy(Bpmn.createExecutableProcess("process")
-                .startEvent("foo")
+                .startEvent()
                 .endEvent()
                 .done());
 
         testClient.deploy(Bpmn.createExecutableProcess("process")
-                .startEvent("bar")
-                .endEvent()
-                .done());
+                  .startEvent()
+                  .endEvent()
+                  .done());
+
+        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(Collectors.toList())
+                .get(0);
+        final long workflowKey = workflowEvent.key();
 
         // when
-        final ExecuteCommandResponse resp = testClient.sendCreateWorkflowInstanceRequest("process");
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_KEY, workflowKey)
+                .done()
+                .sendAndAwait();
 
         // then
-        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
-
-        assertThat(event.event())
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.getEvent())
+            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "bar")
-            .containsEntry(PROP_WORKFLOW_VERSION, 2);
-    }
-
-    @Test
-    public void shouldCreatePreviousVersionOfWorkflowInstance()
-    {
-        // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
-                .startEvent("foo")
-                .endEvent()
-                .done());
-
-        testClient.deploy(Bpmn.createExecutableProcess("process")
-                .startEvent("bar")
-                .endEvent()
-                .done());
-
-        // when
-        final ExecuteCommandResponse resp = testClient.sendCreateWorkflowInstanceRequest("process", 1);
-
-        // then
-        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
-
-        assertThat(event.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1);
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
     }
 
     @Test
@@ -157,8 +293,16 @@ public class CreateWorkflowInstanceTest
             .done());
 
         // when
-        final ExecuteCommandResponse resp = testClient
-            .sendCreateWorkflowInstanceRequest("process", MSGPACK_PAYLOAD);
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                    .put(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD)
+                .done()
+                .sendAndAwait();
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -182,8 +326,18 @@ public class CreateWorkflowInstanceTest
                               .done());
 
         // when
-        final ExecuteCommandResponse resp = testClient
-            .sendCreateWorkflowInstanceRequest("process", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
+        final byte[] invalidPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
+
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeWorkflow()
+                .command()
+                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                    .put(PROP_WORKFLOW_PAYLOAD, invalidPayload)
+                .done()
+                .sendAndAwait();
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);

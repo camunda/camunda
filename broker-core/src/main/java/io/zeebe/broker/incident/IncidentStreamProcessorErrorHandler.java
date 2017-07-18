@@ -113,7 +113,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
     private void setWorkflowInstanceData(LoggedEvent failureEvent)
     {
-        if (failureEventMetadata.getEventType() == EventType.WORKFLOW_EVENT)
+        if (failureEventMetadata.getEventType() == EventType.WORKFLOW_INSTANCE_EVENT)
         {
             workflowInstanceEvent.reset();
             failureEvent.readValue(workflowInstanceEvent);

@@ -39,7 +39,7 @@ public class UpdatePayloadCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanc
 
     public UpdatePayloadCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
-        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
         this.msgPackConverter = msgPackConverter;
     }
 

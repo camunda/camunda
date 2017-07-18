@@ -15,13 +15,33 @@
  */
 package io.zeebe.client.event;
 
-public enum TopicEventType
+/**
+ * POJO representing an event of type {@link TopicEventType#WORKFLOW}.
+ */
+public interface WorkflowEvent
 {
-    TASK,
-    WORKFLOW_INSTANCE,
-    WORKFLOW,
-    INCIDENT,
+    /**
+     * @return the name of the type in the workflow's event lifecycle.
+     */
+    String getEventType();
 
-    RAFT,
-    UNKNOWN
+    /**
+     * @return the BPMN process id of the workflow.
+     */
+    String getBpmnProcessId();
+
+    /**
+     * @return the version of the deployed workflow this instance belongs to.
+     */
+    int getVersion();
+
+    /**
+     * @return the XML representation of the workflow.
+     */
+    String getBpmnXml();
+
+    /**
+     * @return the key of the deployment this workflow belongs to.
+     */
+    long getDeploymentKey();
 }

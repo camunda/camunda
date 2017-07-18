@@ -36,6 +36,11 @@ public interface WorkflowInstanceEvent
     int getVersion();
 
     /**
+     * @return the key of the deployed workflow this instance belongs to.
+     */
+    long getWorkflowKey();
+
+    /**
      * @return the key of the workflow instance
      */
     long getWorkflowInstanceKey();

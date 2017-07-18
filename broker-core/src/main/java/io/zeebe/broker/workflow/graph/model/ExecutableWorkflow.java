@@ -26,6 +26,8 @@ public class ExecutableWorkflow extends ExecutableScope
 {
     private final Map<DirectBuffer, ExecutableFlowElement> flowElementMap = new HashMap<>();
 
+    private int version;
+
     public ExecutableWorkflow()
     {
         setWorkflow(this);
@@ -40,6 +42,16 @@ public class ExecutableWorkflow extends ExecutableScope
     public Map<DirectBuffer, ExecutableFlowElement> getFlowElementMap()
     {
         return flowElementMap;
+    }
+
+    public void setVersion(int version)
+    {
+        this.version = version;
+    }
+
+    public int getVersion()
+    {
+        return version;
     }
 
 }

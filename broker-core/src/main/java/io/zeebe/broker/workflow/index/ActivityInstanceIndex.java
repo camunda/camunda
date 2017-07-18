@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.index;
 import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
 import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.*;
+
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
@@ -62,7 +63,7 @@ public class ActivityInstanceIndex implements AutoCloseable
         this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport<Long2BytesHashIndex> getSnapshotSupport()
     {
         return snapshotSupport;
     }

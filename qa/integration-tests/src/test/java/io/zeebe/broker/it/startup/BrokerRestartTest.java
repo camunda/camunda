@@ -17,7 +17,7 @@ package io.zeebe.broker.it.startup;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -137,7 +137,7 @@ public class BrokerRestartTest
             .execute();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CREATED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
     @Test
@@ -166,7 +166,7 @@ public class BrokerRestartTest
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
     @Test
@@ -199,7 +199,7 @@ public class BrokerRestartTest
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
     @Test
@@ -235,7 +235,7 @@ public class BrokerRestartTest
 
         // then
         waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("COMPLETED")).size() > 1);
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_COMPLETED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
     @Test

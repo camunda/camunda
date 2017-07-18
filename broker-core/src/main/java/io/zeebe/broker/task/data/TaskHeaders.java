@@ -17,21 +17,15 @@
  */
 package io.zeebe.broker.task.data;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 
 import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.ArrayProperty;
-import io.zeebe.broker.util.msgpack.property.IntegerProperty;
-import io.zeebe.broker.util.msgpack.property.LongProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
+import io.zeebe.broker.util.msgpack.property.*;
 import io.zeebe.broker.util.msgpack.value.ArrayValue;
 import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskHeaders extends UnpackedObject
 {
@@ -41,6 +35,7 @@ public class TaskHeaders extends UnpackedObject
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
     private final IntegerProperty workflowDefinitionVersionProp = new IntegerProperty("workflowDefinitionVersion", -1);
+    private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
@@ -54,6 +49,7 @@ public class TaskHeaders extends UnpackedObject
     {
         this.declareProperty(bpmnProcessIdProp)
             .declareProperty(workflowDefinitionVersionProp)
+            .declareProperty(workflowKeyProp)
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
             .declareProperty(activityInstanceKeyProp)
@@ -117,6 +113,17 @@ public class TaskHeaders extends UnpackedObject
     public TaskHeaders setActivityInstanceKey(long activityInstanceKey)
     {
         this.activityInstanceKeyProp.setValue(activityInstanceKey);
+        return this;
+    }
+
+    public long getWorkflowKey()
+    {
+        return workflowKeyProp.getValue();
+    }
+
+    public TaskHeaders setWorkflowKey(long workflowKey)
+    {
+        this.workflowKeyProp.setValue(workflowKey);
         return this;
     }
 

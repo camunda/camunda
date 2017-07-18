@@ -15,18 +15,15 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.task.impl.subscription.MsgPackField;
+import io.zeebe.client.event.WorkflowEvent;
 
-public class WorkflowInstanceEventImpl implements WorkflowInstanceEvent
+public class WorkflowEventImpl implements WorkflowEvent
 {
     private String eventType;
     private String bpmnProcessId;
     private int version;
-    private long workflowKey;
-    private long workflowInstanceKey;
-    private String activityId;
-    protected final MsgPackField payload = new MsgPackField();
+    private String bpmnXml;
+    private long deploymentKey;
 
     @Override
     public String getEventType()
@@ -62,69 +59,44 @@ public class WorkflowInstanceEventImpl implements WorkflowInstanceEvent
     }
 
     @Override
-    public long getWorkflowInstanceKey()
+    public long getDeploymentKey()
     {
-        return workflowInstanceKey;
+        return deploymentKey;
     }
 
-    public void setWorkflowInstanceKey(long workflowInstanceKey)
+    public void setDeploymentKey(long deploymentKey)
     {
-        this.workflowInstanceKey = workflowInstanceKey;
-    }
-
-    @Override
-    public String getActivityId()
-    {
-        return activityId;
-    }
-
-    public void setActivityId(String activityId)
-    {
-        this.activityId = activityId;
+        this.deploymentKey = deploymentKey;
     }
 
     @Override
-    public String getPayload()
+    public String getBpmnXml()
     {
-        return payload.getAsJson();
+        return bpmnXml;
     }
 
-    public void setPayload(byte[] msgPack)
+    public void setBpmnXml(String bpmnXml)
     {
-        this.payload.setMsgPack(msgPack);
-    }
-
-    @Override
-    public long getWorkflowKey()
-    {
-        return workflowKey;
-    }
-
-    public void setWorkflowKey(long workflowKey)
-    {
-        this.workflowKey = workflowKey;
+        this.bpmnXml = bpmnXml;
     }
 
     @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowInstanceEventImpl [eventType=");
+        builder.append("WorkflowEventImpl [eventType=");
         builder.append(eventType);
         builder.append(", bpmnProcessId=");
         builder.append(bpmnProcessId);
         builder.append(", version=");
         builder.append(version);
-        builder.append(", workflowKey=");
-        builder.append(workflowKey);
-        builder.append(", workflowInstanceKey=");
-        builder.append(workflowInstanceKey);
-        builder.append(", activityId=");
-        builder.append(activityId);
-        builder.append(", payload=");
-        builder.append(payload.getAsJson());
+        builder.append(", deploymentKey=");
+        builder.append(deploymentKey);
+        builder.append(", bpmnXml=");
+        builder.append(bpmnXml);
         builder.append("]");
         return builder.toString();
     }
+
 
 }

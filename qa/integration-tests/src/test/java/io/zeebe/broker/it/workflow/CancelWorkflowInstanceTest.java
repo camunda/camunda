@@ -17,7 +17,7 @@ package io.zeebe.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -82,7 +82,7 @@ public class CancelWorkflowInstanceTest
             .execute();
 
         // then
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class CancelWorkflowInstanceTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETE_REJECTED")));
 
         assertThat(eventRecorder.hasTaskEvent(taskEvent("CANCELED")));
-        assertThat(eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
+        assertThat(eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
     @Test
@@ -156,7 +156,7 @@ public class CancelWorkflowInstanceTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCK_REJECTED")));
 
         assertThat(eventRecorder.hasTaskEvent(taskEvent("CANCELED")));
-        assertThat(eventRecorder.hasWorkflowEvent(wfEvent("WORKFLOW_INSTANCE_CANCELED")));
+        assertThat(eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
 }

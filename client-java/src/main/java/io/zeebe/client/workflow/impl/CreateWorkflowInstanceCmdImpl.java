@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.workflow.impl;
 
-import static io.zeebe.util.EnsureUtil.*;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
 import java.io.InputStream;
 
@@ -34,14 +34,16 @@ import io.zeebe.protocol.clientapi.EventType;
  */
 public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, WorkflowInstance> implements CreateWorkflowInstanceCmd
 {
-    private static final String EXCEPTION_MSG = "Failed to create instance of workflow with BPMN process id '%s' and version '%d'.";
+    private static final String ILLEGAL_ARG_MSG = "Can not create a workflow instance. Need to provide either a workflow key or a BPMN process id with/without version.";
+    private static final String REJECTED_BY_ID_MSG = "Failed to create instance of workflow with BPMN process id '%s' and version '%d'.";
+    private static final String REJECTED_BY_KEY_MSG = "Failed to create instance of workflow with workflow key '%d'.";
 
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-    protected final MsgPackConverter msgPackConverter;
+    private final MsgPackConverter msgPackConverter;
 
     public CreateWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
-        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_EVENT);
+        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
         this.msgPackConverter = msgPackConverter;
     }
 
@@ -80,6 +82,13 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
+    public CreateWorkflowInstanceCmd workflowKey(long workflowKey)
+    {
+        this.workflowInstanceEvent.setWorkflowKey(workflowKey);
+        return this;
+    }
+
+    @Override
     protected Object writeCommand()
     {
         this.workflowInstanceEvent.setEventType(WorkflowInstanceEventType.CREATE_WORKFLOW_INSTANCE);
@@ -103,7 +112,16 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     {
         if (event.getEventType() == WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED)
         {
-            throw new ClientCommandRejectedException(String.format(EXCEPTION_MSG, event.getBpmnProcessId(), event.getVersion()));
+            final String errMsg;
+            if (event.getWorkflowKey() > 0)
+            {
+                errMsg = String.format(REJECTED_BY_KEY_MSG, event.getWorkflowKey());
+            }
+            else
+            {
+                errMsg = String.format(REJECTED_BY_ID_MSG, event.getBpmnProcessId(), event.getVersion());
+            }
+            throw new ClientCommandRejectedException(errMsg);
         }
         return new WorkflowInstanceImpl(event);
     }
@@ -112,7 +130,24 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     public void validate()
     {
         super.validate();
-        ensureNotNullOrEmpty("bpmnProcessId", workflowInstanceEvent.getBpmnProcessId());
-        ensureGreaterThanOrEqual("version", workflowInstanceEvent.getVersion(), LATEST_VERSION);
+
+        final String bpmnProcessId = workflowInstanceEvent.getBpmnProcessId();
+        final int version = workflowInstanceEvent.getVersion();
+
+        if (workflowInstanceEvent.getWorkflowKey() < 0)
+        {
+            if (bpmnProcessId == null || bpmnProcessId.isEmpty())
+            {
+                throw new RuntimeException(ILLEGAL_ARG_MSG);
+            }
+            ensureGreaterThanOrEqual("version", workflowInstanceEvent.getVersion(), LATEST_VERSION);
+        }
+        else
+        {
+            if ((bpmnProcessId != null && !bpmnProcessId.isEmpty()) || version != LATEST_VERSION)
+            {
+                throw new RuntimeException(ILLEGAL_ARG_MSG);
+            }
+        }
     }
 }

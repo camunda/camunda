@@ -26,12 +26,14 @@ public class WorkflowInstanceImpl implements WorkflowInstance
     protected String bpmnProcessId;
     protected long workflowInstanceKey;
     protected int version;
+    protected long workflowKey;
     protected MsgPackField payload = new MsgPackField();
 
     public WorkflowInstanceImpl(WorkflowInstanceEvent event)
     {
         this.bpmnProcessId = event.getBpmnProcessId();
         this.version = event.getVersion();
+        this.workflowKey = event.getWorkflowKey();
         this.workflowInstanceKey = event.getWorkflowInstanceKey();
         this.payload.setMsgPack(event.getPayload());
     }
@@ -79,4 +81,16 @@ public class WorkflowInstanceImpl implements WorkflowInstance
     {
         this.payload.setJson(payload);
     }
+
+    @Override
+    public long getWorkflowKey()
+    {
+        return workflowKey;
+    }
+
+    public void setWorkflowKey(long workflowKey)
+    {
+        this.workflowKey = workflowKey;
+    }
+
 }

@@ -98,7 +98,7 @@ public class PayloadCache implements AutoCloseable
         index.remove(workflowInstanceKey, -1L);
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public HashIndexSnapshotSupport<Long2LongHashIndex> getSnapshotSupport()
     {
         return snapshotSupport;
     }
