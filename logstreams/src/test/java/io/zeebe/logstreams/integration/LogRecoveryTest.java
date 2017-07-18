@@ -15,25 +15,23 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
 import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.test.util.TestUtil;
-import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.integration.util.LogIntegrationTestUtil;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.DirectBuffer;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
@@ -271,8 +269,7 @@ public class LogRecoveryTest
     }
 
     @Test
-    @Ignore
-    public void shouldRecoverEventPosition() throws InterruptedException, ExecutionException
+    public void shouldRecoverEventPosition()
     {
         final LogStream log = logStreamBuilder.build();
         log.setCommitPosition(Long.MAX_VALUE);
@@ -283,7 +280,7 @@ public class LogRecoveryTest
         waitUntilWrittenKey(log, 2 * WORK_COUNT_PER_BLOCK_IDX);
 
         log.close();
-        int indexSize = log.getLogBlockIndex().size();
+        final int indexSize = log.getLogBlockIndex().size();
         assertThat(indexSize).isGreaterThan(0);
 
         // re-open the log
@@ -293,22 +290,16 @@ public class LogRecoveryTest
 
         // check if new log creates indices
         // perhaps not equal since he has to process all events
-        final int newIndexSize = newLog.getLogBlockIndex().size();
-        TestUtil.doRepeatedly(() ->
-        {
-            Thread.sleep(5000);
-            return null;
-        }).until((object) -> newIndexSize > 0);
-        assertThat(indexSize).isLessThanOrEqualTo(newIndexSize);
+        TestUtil.waitUntil(() -> newLog.getLogBlockIndex().size() >= indexSize);
 
         // write more events
         writeLogEvents(newLog, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 2 * WORK_COUNT_PER_BLOCK_IDX);
         waitUntilWrittenKey(newLog, 4 * WORK_COUNT_PER_BLOCK_IDX);
 
         newLog.close();
-        indexSize = newLog.getLogBlockIndex().size();
+        final int newIndexSize = newLog.getLogBlockIndex().size();
         final int calculatesIndexSize = calculateIndexSize(4 * WORK_COUNT_PER_BLOCK_IDX);
-        assertThat(indexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
+        assertThat(newIndexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
 
         // assert that the event position is recovered after re-open and continues after the last event
         readLogAndAssertEvents(4 * WORK_COUNT_PER_BLOCK_IDX, calculatesIndexSize);
