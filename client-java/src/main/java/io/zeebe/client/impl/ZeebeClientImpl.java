@@ -88,16 +88,20 @@ public class ZeebeClientImpl implements ZeebeClient
 //                .countersManager(countersManager) // TODO: counters manager
             .build();
 
-        transport = Transports.newClientTransport()
-                .messageMaxLength(1024 * 1024)
-                .messageReceiveBuffer(dataFrameReceiveBuffer)
-                .requestPoolSize(maxRequests + 16)
-                .scheduler(transportActorScheduler)
-                .sendBuffer(sendBuffer)
-                .build();
+        final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
+            .messageMaxLength(1024 * 1024)
+            .messageReceiveBuffer(dataFrameReceiveBuffer)
+            .requestPoolSize(maxRequests + 16)
+            .scheduler(transportActorScheduler)
+            .sendBuffer(sendBuffer);
 
-        // TODO: configure keep-alive
-//        final long keepAlivePeriod = Long.parseLong(properties.getProperty(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD));
+        if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
+        {
+            final long keepAlivePeriod = Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD));
+            transportBuilder.keepAlivePeriod(keepAlivePeriod);
+        }
+
+        transport = transportBuilder.build();
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
