@@ -48,7 +48,6 @@ public class ClientChannelKeepAliveTest
     protected static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
     protected static final SocketAddress ADDRESS2 = new SocketAddress("localhost", 51116);
 
-    protected ServerTransport serverTransport;
     private ActorScheduler actorScheduler;
     private Dispatcher clientSendBuffer;
 
@@ -72,7 +71,7 @@ public class ClientChannelKeepAliveTest
         closeables.manage(clientSendBuffer);
 
         serverRecorder = new ControlMessageRecorder();
-        serverTransport = buildServerTransport(ADDRESS, serverRecorder);
+        buildServerTransport(ADDRESS, serverRecorder);
     }
 
     protected ServerTransport buildServerTransport(SocketAddress bindAddress, ControlMessageRecorder recorder)

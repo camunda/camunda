@@ -103,9 +103,8 @@ public class TransportChannelListenerTest
         assertThat(clientListener.getClosedConnections()).hasSize(1);
         assertThat(clientListener.getClosedConnections().get(0)).isSameAs(remoteAddress);
 
-        // TODO: cannot reliably wait for channel being closed on server-side, since
-        //   channel close notification happens asynchronously after client channel close
-//        assertThat(serverListener.closedChannels).hasSize(1);
+        TestUtil.waitUntil(() -> !serverListener.getClosedConnections().isEmpty());
+        assertThat(serverListener.getClosedConnections()).hasSize(1);
 
     }
 

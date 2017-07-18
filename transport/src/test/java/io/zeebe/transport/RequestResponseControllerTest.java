@@ -31,7 +31,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.util.FailingBufferWriter;
+import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.DirectBufferReader;

@@ -46,7 +46,6 @@ public class ClientTransportBuilder
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
-    protected ClientOutput output;
     private ActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
 

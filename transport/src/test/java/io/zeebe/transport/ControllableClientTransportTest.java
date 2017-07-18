@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -40,9 +39,6 @@ public class ControllableClientTransportTest
     public static final int SEND_BUFFER_SIZE = 16 * 1024;
 
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Rule
     public ControllableTaskScheduler scheduler = new ControllableTaskScheduler();

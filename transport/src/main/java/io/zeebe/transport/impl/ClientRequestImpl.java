@@ -80,7 +80,7 @@ public class ClientRequestImpl implements ClientRequest
 
         final int requiredLength = RequestResponseHeaderDescriptor.framedLength(TransportHeaderDescriptor.framedLength(writer.getLength()));
 
-        long claimedOffset = -2;
+        long claimedOffset;
 
         do
         {

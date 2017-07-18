@@ -84,7 +84,7 @@ public class ServerResponse implements BufferWriter
     {
         final int requiredLength = getLength();
 
-        long claimedOffset = -2;
+        long claimedOffset;
 
         do
         {

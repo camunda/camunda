@@ -73,7 +73,7 @@ public class TransportMessage
     {
         final int requiredLength = TransportHeaderDescriptor.framedLength(writer.getLength());
 
-        long claimedOffset = -2;
+        long claimedOffset;
 
         do
         {

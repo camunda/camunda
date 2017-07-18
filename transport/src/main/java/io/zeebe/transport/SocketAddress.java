@@ -252,7 +252,7 @@ public class SocketAddress implements Comparable<SocketAddress>
         final String portString = parts[1];
         try
         {
-            port = Integer.valueOf(portString);
+            port = Integer.parseInt(portString);
         }
         catch (final NumberFormatException e)
         {

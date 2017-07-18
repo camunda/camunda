@@ -33,17 +33,16 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.io.FailingBufferWriter;
+import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.RemoteAddressList;
 import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.util.FailingBufferWriter;
-import io.zeebe.transport.util.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
@@ -58,9 +57,6 @@ public class ClientTransportTest
 
     public static final int REQUEST_POOL_SIZE = 4;
     public static final int SEND_BUFFER_SIZE = 16 * 1024;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -302,7 +298,7 @@ public class ClientTransportTest
         assertThat(request).isNotNull();
     }
 
-    protected class DummyServerTransport implements AutoCloseable
+    protected static class DummyServerTransport implements AutoCloseable
     {
         protected Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
         protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
