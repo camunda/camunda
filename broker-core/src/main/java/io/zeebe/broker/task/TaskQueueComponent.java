@@ -25,7 +25,6 @@ import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 
 import io.zeebe.broker.system.Component;
-import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -37,7 +36,6 @@ public class TaskQueueComponent implements Component
     public void init(SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
-        final ConfigurationManager configurationManager = context.getConfigurationManager();
 
         final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService();
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
@@ -46,7 +44,7 @@ public class TaskQueueComponent implements Component
             .groupReference(LOG_STREAM_SERVICE_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
             .install();
 
-        final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService(configurationManager);
+        final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService();
         serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
             .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), taskQueueManagerService.getClientApiTransportInjector())
             .dependency(EXECUTOR_SERVICE, taskQueueManagerService.getExecutorInjector())

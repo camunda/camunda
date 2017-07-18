@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
 
-import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.SubscribedEventEncoder;
@@ -43,7 +42,6 @@ public class SubscribedEventBuilder implements BufferWriter
 
     protected final MsgPackHelper msgPackHelper;
     protected final ServerTransport transport;
-    protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
     protected String topicName;
     protected int partitionId;

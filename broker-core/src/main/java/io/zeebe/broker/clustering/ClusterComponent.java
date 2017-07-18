@@ -83,38 +83,6 @@ public class ClusterComponent implements Component
 
     protected void initGossip(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
-//        final String component = "gossip";
-//
-//        final GossipConfiguration gossip = config.gossip;
-//        int clientChannelManagerCapacity = gossip.numClientChannelMax;
-//        if (clientChannelManagerCapacity <= 0)
-//        {
-        // TODO: sollte diese lustige Rechnung irgendwo drin aufgehen?
-//            clientChannelManagerCapacity = gossip.disseminatorCapacity + (gossip.failureDetectionCapacity * gossip.failureDetectionProbeCapacity) + 1;
-//        }
-
-        // TODO: init server and client transport for receiving and making gossip requests
-//
-//        final TransportConnectionPoolService transportConnectionPoolService = new TransportConnectionPoolService();
-//        final ServiceName<TransportConnectionPool> transportConnectionPoolServiceName = transportConnectionPoolName(component);
-//        serviceContainer.createService(transportConnectionPoolServiceName, transportConnectionPoolService)
-//            .dependency(TRANSPORT, transportConnectionPoolService.getTransportInjector())
-//            .install();
-//
-//        final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(clientChannelManagerCapacity);
-//        final ServiceName<ChannelManager> clientChannelManagerServiceName = clientChannelManagerName(component);
-//        serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
-//            .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
-//            .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
-//            .dependency(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), clientChannelManagerService.getReceiveBufferInjector())
-//            .install();
-//
-//        final SubscriptionService subscriptionService = new SubscriptionService();
-//        final ServiceName<Subscription> subscriptionServiceName = subscriptionServiceName(component);
-//        serviceContainer.createService(subscriptionServiceName, subscriptionService)
-//            .dependency(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), subscriptionService.getReceiveBufferInjector())
-//            .install();
-
         final PeerSelectorService peerSelectorService = new PeerSelectorService();
         serviceContainer.createService(GOSSIP_PEER_SELECTOR_SERVICE, peerSelectorService)
             .dependency(PEER_LIST_SERVICE, peerSelectorService.getPeerListInjector())
@@ -138,27 +106,6 @@ public class ClusterComponent implements Component
 
     protected void initClusterManager(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
-//        final TransportConnectionPoolService transportConnectionPoolService = new TransportConnectionPoolService();
-//        final ServiceName<TransportConnectionPool> transportConnectionPoolServiceName = transportConnectionPoolName("management");
-//        serviceContainer.createService(transportConnectionPoolServiceName, transportConnectionPoolService)
-//            .dependency(TRANSPORT, transportConnectionPoolService.getTransportInjector())
-//            .install();
-
-        // TODO: make capacity of client channel manager configurable
-//        final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(100);
-//        final ServiceName<ChannelManager> clientChannelManagerServiceName = clientChannelManagerName("management");
-//        serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
-//            .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
-//            .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
-//            .dependency(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), clientChannelManagerService.getReceiveBufferInjector())
-//            .install();
-
-//        final SubscriptionService subscriptionService = new SubscriptionService();
-//        final ServiceName<Subscription> subscriptionServiceName = subscriptionServiceName("management");
-//        serviceContainer.createService(subscriptionServiceName, subscriptionService)
-//            .dependency(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), subscriptionService.getReceiveBufferInjector())
-//            .install();
-
         final ClusterManagerContextService clusterManagementContextService = new ClusterManagerContextService();
         serviceContainer.createService(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagementContextService)
             .dependency(TransportServiceNames.bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), clusterManagementContextService.getManagementApiTransportInjector())

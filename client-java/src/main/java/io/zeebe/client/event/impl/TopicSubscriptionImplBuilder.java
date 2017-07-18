@@ -94,7 +94,7 @@ public class TopicSubscriptionImplBuilder
                 name,
                 acquisition);
 
-        this.acquisition.newSubscriptionAsync(subscription);
+        this.acquisition.registerSubscriptionAsync(subscription);
 
         return subscription;
     }

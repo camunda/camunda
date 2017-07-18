@@ -27,7 +27,6 @@ import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanc
 
 import io.zeebe.broker.incident.IncidentStreamProcessorErrorHandler;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
-import io.zeebe.broker.logstreams.cfg.StreamProcessorCfg;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.system.ConfigurationManager;
@@ -62,14 +61,12 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
-    protected StreamProcessorCfg streamProcessorCfg;
     protected WorkflowCfg workflowCfg;
 
     protected ActorReference actorRef;
 
     public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
-        streamProcessorCfg = configurationManager.readEntry("index", StreamProcessorCfg.class);
         workflowCfg = configurationManager.readEntry("workflow", WorkflowCfg.class);
     }
 

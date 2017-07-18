@@ -18,14 +18,10 @@ package io.zeebe.client.event;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class RecordingEventHandler implements TopicEventHandler
 {
 
     protected List<RecordedEvent> events = new ArrayList<>();
-    protected ObjectMapper objectMapper = new ObjectMapper();
-
 
     @Override
     public void handle(EventMetadata metadata, TopicEvent event)

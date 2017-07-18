@@ -96,7 +96,7 @@ public class ConfigurationScenario
 
     private <T> void withConfiguration(String key, Class<T> cls, String parent, String child)
     {
-        specifications.add(new DirectorySpecification<T>(key, cls, new FileSpecification(parent, child)));
+        specifications.add(new DirectorySpecification<>(key, cls, new FileSpecification(parent, child)));
     }
 
     public List<DirectorySpecification<?>> getSpecifications()
@@ -216,7 +216,7 @@ public class ConfigurationScenario
 
     }
 
-    public class FileSpecification
+    public static class FileSpecification
     {
         private String parent;
         private String child;

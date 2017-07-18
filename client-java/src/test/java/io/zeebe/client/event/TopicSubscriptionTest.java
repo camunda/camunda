@@ -20,23 +20,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.impl.TopicSubscriptionImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.*;
+import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.Conditions;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 public class TopicSubscriptionTest
 {
@@ -320,7 +328,7 @@ public class TopicSubscriptionTest
                 .get();
 
         final List<Object> requests = broker.getAllReceivedRequests();
-        assertThat(requests.contains(lastAck));
+        assertThat(requests).contains(lastAck);
         assertThat(requests.indexOf(lastAck)).isLessThan(requests.indexOf(removeRequest));
     }
 
@@ -447,7 +455,7 @@ public class TopicSubscriptionTest
         client.disconnect();
 
         // then
-        assertThat(subscription.isClosed());
+        assertThat(subscription.isClosed()).isTrue();
     }
 
     @Test
@@ -801,7 +809,7 @@ public class TopicSubscriptionTest
                     && "SUBSCRIBE".equals(e.getCommand().get("eventType")));
     }
 
-    private class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler, IncidentEventHandler, WorkflowEventHandler
+    private static class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler, IncidentEventHandler, WorkflowEventHandler
     {
         public int numTopicEvents = 0;
         public int numTaskEvents = 0;

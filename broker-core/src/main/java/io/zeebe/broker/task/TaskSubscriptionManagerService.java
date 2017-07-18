@@ -34,8 +34,6 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
 
-    protected ServiceStartContext serviceContext;
-
     protected TaskSubscriptionManager service;
     protected ActorReference actorRef;
 

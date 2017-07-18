@@ -69,84 +69,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         this.controlMessageDispatcher = controlMessageDispatcher;
     }
 
-//    public boolean handleMessage(final Channel transportChannel, final DirectBuffer buffer, final int offset, final int length)
-//    {
-//        boolean isHandled = false;
-//
-//        cmdQueue.drain(cmdConsumer);
-//
-//        eventMetadata.reset();
-//        eventMetadata.reqChannelId(transportChannel.getStreamId());
-//
-//        int messageOffset = offset + TransportHeaderDescriptor.headerLength();
-//        int messageLength = length - TransportHeaderDescriptor.headerLength();
-//
-//        transportHeaderDescriptor.wrap(buffer, offset);
-//
-//        final int protocol = transportHeaderDescriptor.protocolId();
-//        if (protocol == REQUEST_RESPONSE)
-//        {
-//            requestResponseProtocolHeaderDescriptor.wrap(buffer, messageOffset);
-//
-//            eventMetadata.reqConnectionId(requestResponseProtocolHeaderDescriptor.connectionId());
-//            eventMetadata.reqRequestId(requestResponseProtocolHeaderDescriptor.requestId());
-//            messageOffset += RequestResponseProtocolHeaderDescriptor.headerLength();
-//            messageLength -= RequestResponseProtocolHeaderDescriptor.headerLength();
-//        }
-//        else if (protocol == FULL_DUPLEX_SINGLE_MESSAGE)
-//        {
-//            messageOffset += SingleMessageHeaderDescriptor.HEADER_LENGTH;
-//            messageLength -= SingleMessageHeaderDescriptor.HEADER_LENGTH;
-//        }
-//
-//        messageHeaderDecoder.wrap(buffer, messageOffset);
-//
-//        final int templateId = messageHeaderDecoder.templateId();
-//        final int clientVersion = messageHeaderDecoder.version();
-//
-//        if (clientVersion > Protocol.PROTOCOL_VERSION)
-//        {
-//            return errorResponseWriter
-//                        .metadata(eventMetadata)
-//                        .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
-//                        .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Protocol.PROTOCOL_VERSION)
-//                        .failedRequest(buffer, messageOffset, messageLength)
-//                        .tryWriteResponseOrLogFailure();
-//        }
-//
-//        eventMetadata.protocolVersion(clientVersion);
-//
-//        switch (templateId)
-//        {
-//            case ExecuteCommandRequestDecoder.TEMPLATE_ID:
-//
-//                isHandled = handleExecuteCommandRequest(
-//                        output,
-//
-//                        eventMetadata,
-//                        buffer,
-//                        messageOffset,
-//                        messageLength);
-//                break;
-//
-//            case ControlMessageRequestDecoder.TEMPLATE_ID:
-//
-//                isHandled = handleControlMessageRequest(eventMetadata, buffer, messageOffset, messageLength);
-//                break;
-//
-//            default:
-//                isHandled = errorResponseWriter
-//                        .metadata(eventMetadata)
-//                        .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-//                        .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
-//                        .failedRequest(buffer, messageOffset, messageLength)
-//                        .tryWriteResponseOrLogFailure();
-//                break;
-//        }
-//
-//        return isHandled;
-//    }
-
     protected boolean handleExecuteCommandRequest(
             final ServerOutput output,
             final RemoteAddress requestAddress,
@@ -227,7 +149,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             final int messageLength)
     {
         boolean isHandled = false;
-        long publishPosition = -1;
+        long publishPosition;
 
         do
         {

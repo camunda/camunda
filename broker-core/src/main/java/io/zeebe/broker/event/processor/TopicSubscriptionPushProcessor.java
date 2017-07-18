@@ -42,7 +42,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 {
 
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
-    protected final TopicSubscriptionEvent ack = new TopicSubscriptionEvent();
 
     protected LoggedEvent event;
 

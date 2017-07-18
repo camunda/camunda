@@ -23,7 +23,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -35,8 +34,6 @@ import io.zeebe.transport.ServerResponse;
 
 public class StubResponseChannelHandler implements ServerRequestHandler
 {
-
-    protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();

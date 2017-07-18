@@ -106,18 +106,6 @@ public class TaskStreamProcessorIntegrationTest
         when(mockResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
         when(mockSubscribedEventWriter.tryWriteMessage(anyInt())).thenReturn(true);
 
-//        doAnswer(invocation ->
-//        {
-//            final BrokerEventMetadata metadata =  (BrokerEventMetadata) invocation.getArguments()[0];
-//
-//            final UnsafeBuffer metadataBuffer = new UnsafeBuffer(new byte[metadata.getLength()]);
-//            metadata.write(metadataBuffer, 0);
-//
-//            lastBrokerEventMetadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
-//
-//            return invocation.getMock();
-//        }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
-
         final String rootPath = tempFolder.getRoot().getAbsolutePath();
 
         logStream = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)

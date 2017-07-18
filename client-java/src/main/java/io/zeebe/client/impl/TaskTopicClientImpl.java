@@ -85,12 +85,12 @@ public class TaskTopicClientImpl implements TaskTopicClient
 
     public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
     {
-        return new CloseTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CloseTaskSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl increaseSubscriptionCredits()
     {
-        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), client.getObjectMapper(), topic);
     }
 
     public Topic getTopic()

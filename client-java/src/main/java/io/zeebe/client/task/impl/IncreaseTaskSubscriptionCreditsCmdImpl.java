@@ -15,27 +15,26 @@
  */
 package io.zeebe.client.task.impl;
 
-import static io.zeebe.util.EnsureUtil.*;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.impl.ClientCommandManager;
 import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
-import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
-    protected final MsgPackConverter msgPackConverter;
 
     private long subscriptionId = -1L;
     private int credits = 0;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
     {
         super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
-        this.msgPackConverter = msgPackConverter;
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(final long subscriptionId)

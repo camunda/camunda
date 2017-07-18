@@ -21,7 +21,7 @@ public class BrokerRequestException extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
 
-    public static final String ERROR_MESSAGE_FORMAT = "Request exception (%s): %s\n";
+    public static final String ERROR_MESSAGE_FORMAT = "Request exception (%s): %s%n";
 
     protected final ErrorCode errorCode;
     protected final String errorMessage;

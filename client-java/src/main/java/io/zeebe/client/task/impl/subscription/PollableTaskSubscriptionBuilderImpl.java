@@ -101,7 +101,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
                 autoCompleteTasks,
                 taskAcquisition);
 
-        taskAcquisition.newSubscriptionAsync(subscription);
+        taskAcquisition.registerSubscriptionAsync(subscription);
 
         subscription.open();
 

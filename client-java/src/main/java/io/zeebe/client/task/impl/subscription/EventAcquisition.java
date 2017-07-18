@@ -68,26 +68,21 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
     }
 
-    public void onSubscriptionOpened(T subscription)
+    public void activateSubscription(T subscription)
     {
-        // TODO: rename method to something like exposeSubscription() ?!
-        this.subscriptions.onSubscriptionOpened(subscription);
+        this.subscriptions.activate(subscription);
     }
 
-    public void onSubscriptionTerminated(T subscription)
+    public void stopManageSubscription(T subscription)
     {
-        // TODO: rename method to something like disposeSubscription() ?!
-        // TODO: could also become one call
-        this.subscriptions.onSubscriptionClosed(subscription);
-        this.subscriptions.removeSubscription(subscription);
+        this.subscriptions.remove(subscription);
     }
 
-    // TODO: rename method
-    public CompletableFuture<T> newSubscriptionAsync(T subscription)
+    public CompletableFuture<T> registerSubscriptionAsync(T subscription)
     {
         return asyncContext.runAsync((future) ->
         {
-            subscriptions.addSubscription(subscription);
+            subscriptions.add(subscription);
         });
     }
 

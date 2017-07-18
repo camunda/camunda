@@ -188,7 +188,7 @@ public class ClientTopologyController
         }
     }
 
-    private class InitState implements WaitState<Context>
+    private static class InitState implements WaitState<Context>
     {
         @Override
         public void work(final Context context) throws Exception

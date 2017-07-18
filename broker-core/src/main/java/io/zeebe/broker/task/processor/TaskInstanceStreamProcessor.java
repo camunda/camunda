@@ -77,9 +77,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected LogStream targetStream;
 
-    protected long eventPosition = 0;
     protected long eventKey = 0;
-    protected long sourceEventPosition = 0;
 
     public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, TaskSubscriptionManager taskSubscriptionManager)
     {
@@ -128,9 +126,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     {
         taskIndex.reset();
 
-        eventPosition = event.getPosition();
         eventKey = event.getKey();
-        sourceEventPosition = event.getSourceEventPosition();
 
         event.readMetadata(sourceEventMetadata);
 

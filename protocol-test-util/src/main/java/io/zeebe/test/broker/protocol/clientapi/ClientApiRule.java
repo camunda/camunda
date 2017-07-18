@@ -35,8 +35,6 @@ public class ClientApiRule extends ExternalResource
     protected ClientTransport transport;
     protected Dispatcher sendBuffer;
 
-    protected final int port = 51015;
-    protected final String host = "localhost";
     protected final SocketAddress brokerAddress;
     protected RemoteAddress streamAddress;
 
@@ -46,6 +44,11 @@ public class ClientApiRule extends ExternalResource
     private ActorScheduler scheduler;
 
     public ClientApiRule()
+    {
+        this("localhost", 51015);
+    }
+
+    public ClientApiRule(String host, int port)
     {
         this.brokerAddress = new SocketAddress(host, port);
     }

@@ -36,7 +36,7 @@ public class TaskExecutorTest
         final TaskSubscriptionImpl subscription = mock(TaskSubscriptionImpl.class);
         when(subscription.isManagedSubscription()).thenReturn(true);
         when(subscription.poll()).thenReturn(34);
-        subscriptions.addSubscription(subscription);
+        subscriptions.add(subscription);
 
         final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions);
 

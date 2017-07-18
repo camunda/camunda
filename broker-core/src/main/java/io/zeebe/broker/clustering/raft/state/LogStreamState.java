@@ -60,7 +60,6 @@ public class LogStreamState
     protected long lastFlush = -1L;
 
     protected int bufferedEntriesOffset;
-    protected int currentBlockSize = 0;
 
     protected final BrokerEventMetadata entryMetadata;
     protected final LoggedEntryAddressSupplier addressableStreamReader;

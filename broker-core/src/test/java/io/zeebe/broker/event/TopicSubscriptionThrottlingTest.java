@@ -17,19 +17,19 @@
  */
 package io.zeebe.broker.event;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionThrottlingTest
 {
@@ -41,11 +41,9 @@ public class TopicSubscriptionThrottlingTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    protected long subscriberKey;
-
     public void openSubscription(int prefetchCapacity)
     {
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+        apiRule.createCmdRequest()
             .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(0)
             .eventTypeSubscriber()
@@ -56,7 +54,6 @@ public class TopicSubscriptionThrottlingTest
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
-        subscriberKey = response.key();
     }
 
     @Test

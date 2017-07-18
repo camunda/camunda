@@ -52,6 +52,8 @@ import io.zeebe.transport.SocketAddress;
 
 public class TransportComponent implements Component
 {
+    protected static final int MGMT_REQUEST_POOL_SIZE = 128;
+
     @Override
     public void init(SystemContext context)
     {
@@ -81,14 +83,13 @@ public class TransportComponent implements Component
         final CompletableFuture<Void> managementClientFuture = createClientTransport(serviceContainer,
                 MANAGEMENT_API_CLIENT_NAME,
                 transportComponentCfg.managementApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize),
-                128); // TODO: param
+                MGMT_REQUEST_POOL_SIZE);
 
         final CompletableFuture<Void> replicationClientFuture = createClientTransport(serviceContainer,
                 REPLICATION_API_CLIENT_NAME,
                 transportComponentCfg.replicationApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize),
-                128); // TODO: param
+                MGMT_REQUEST_POOL_SIZE);
 
-        // TODO: move the following services somewhere else?
         final ServiceName<Dispatcher> controlMessageBufferService = createReceiveBuffer(
             serviceContainer,
             CLIENT_API_SERVER_NAME,
@@ -136,7 +137,7 @@ public class TransportComponent implements Component
                 serviceContainer,
                 name,
                 bindAddr.toInetSocketAddress(),
-                socketBindingCfg.getReceiveBufferSize(defaultConfig.sendBufferSize), // TODO: consider renaming in global config
+                socketBindingCfg.getSendBufferSize(defaultConfig.sendBufferSize),
                 socketBindingCfg.getReceiveBufferSize(defaultConfig.defaultReceiveBufferSize));
     }
 
@@ -157,7 +158,7 @@ public class TransportComponent implements Component
                 serviceContainer,
                 name,
                 bindAddr.toInetSocketAddress(),
-                socketBindingCfg.getReceiveBufferSize(defaultConfig.sendBufferSize), // TODO: consider renaming in global config
+                socketBindingCfg.getSendBufferSize(defaultConfig.sendBufferSize),
                 requestHandlerService,
                 messageHandlerService);
     }

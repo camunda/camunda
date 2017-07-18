@@ -51,7 +51,6 @@ public class TransportServiceNames
         return ServiceName.newServiceName(String.format("transport.%s.server", identifier), ServerTransport.class);
     }
 
-    // TODO: kann man das mit generics mit serverTransport(..) vereinigen?
     public static ServiceName<BufferingServerTransport> bufferingServerTransport(String identifier)
     {
         return ServiceName.newServiceName(String.format("transport.%s.buffering-server", identifier), BufferingServerTransport.class);

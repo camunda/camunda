@@ -17,7 +17,10 @@ package io.zeebe.client.task.impl.subscription;
 
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.event.impl.*;
+import io.zeebe.client.event.impl.PollableTopicSubscriptionBuilderImpl;
+import io.zeebe.client.event.impl.TopicClientImpl;
+import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
+import io.zeebe.client.event.impl.TopicSubscriptionImpl;
 import io.zeebe.client.impl.TaskTopicClientImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
@@ -26,8 +29,9 @@ import io.zeebe.client.task.TaskSubscriptionBuilder;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.actor.*;
-import org.agrona.concurrent.AgentRunner;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
 
 public class SubscriptionManager implements TransportListener
 {
@@ -36,7 +40,6 @@ public class SubscriptionManager implements TransportListener
     protected final EventAcquisition<TopicSubscriptionImpl> topicSubscriptionAcquisition;
     protected final SubscribedEventCollector taskCollector;
     protected final MsgPackMapper msgPackMapper;
-    protected final ZeebeClientImpl client;
 
     protected final ActorScheduler executorActorScheduler;
     protected final ActorScheduler acquisitionActorScheduler;
@@ -44,8 +47,6 @@ public class SubscriptionManager implements TransportListener
     protected ActorReference[] acquisitionActorRefs;
     protected ActorReference[] executorActorRefs;
 
-    protected AgentRunner acquisitionRunner;
-    protected AgentRunner[] executionRunners;
     protected final int numExecutionThreads;
 
     protected final EventSubscriptions<TaskSubscriptionImpl> taskSubscriptions;
@@ -64,7 +65,6 @@ public class SubscriptionManager implements TransportListener
             int topicSubscriptionPrefetchCapacity,
             Subscription receiveBufferSubscription)
     {
-        this.client = client;
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 

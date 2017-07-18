@@ -132,18 +132,13 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             subscriberKey = result.getSubscriberKey();
             eventSource = result.getEventPublisher();
             resetProcessingState();
-            acquisition.onSubscriptionOpened(thisSubscription());
+            acquisition.activateSubscription(thisSubscription());
 
             context.take(TRANSITION_DEFAULT);
 
             return 1;
         }
 
-//        @Override
-//        public boolean isInterruptable()
-//        {
-//            return false;
-//        }
     }
 
     class OpenState implements State<SimpleStateMachineContext>
@@ -217,7 +212,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
                 closeFuture = null;
             }
 
-            acquisition.onSubscriptionTerminated(thisSubscription());
+            acquisition.stopManageSubscription(thisSubscription());
         }
     }
 
@@ -241,7 +236,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public CompletableFuture<T> closeAsync()
     {
         isCloseIssued.set(true);
-        final State<SimpleStateMachineContext> currentState = stateMachine.getCurrentState();
         final CompletableFuture<T> closeFuture = new CompletableFuture<>();
 
         if (isClosed())

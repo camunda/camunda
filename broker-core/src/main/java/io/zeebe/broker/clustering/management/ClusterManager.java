@@ -100,7 +100,6 @@ public class ClusterManager implements Actor
         this.fragmentHandler = new ClusterManagerFragmentHandler(this);
         this.invitationResponse = new InvitationResponse();
 
-        // TODO: kann man das hier blockierend machen?
         inputSubscription = context.getServerTransport()
                 .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
                 .join();

@@ -28,9 +28,7 @@ import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStream
 
 import java.time.Duration;
 
-import io.zeebe.broker.logstreams.cfg.StreamProcessorCfg;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
@@ -66,16 +64,10 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
-    protected StreamProcessorCfg streamProcessorCfg;
 
     protected ActorReference actorRef;
 
     protected ScheduledCommand scheduledCheckExpirationCmd;
-
-    public TaskQueueManagerService(final ConfigurationManager configurationManager)
-    {
-        streamProcessorCfg = configurationManager.readEntry("index", StreamProcessorCfg.class);
-    }
 
     @Override
     public void startTaskQueue(final String logName)

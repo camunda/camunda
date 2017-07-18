@@ -29,7 +29,7 @@ import io.zeebe.msgpack.spec.MsgPackWriter;
 
 public class StringValue extends BaseValue
 {
-    public static final String EMPTY_STRING = new String();
+    public static final String EMPTY_STRING = "";
 
     private MutableDirectBuffer bytes = new UnsafeBuffer(0, 0);
     private int length;

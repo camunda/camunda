@@ -34,12 +34,12 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     // topicName => partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
-    protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> subscriptions = new HashMap<>();
+    protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> activeSubscriptions = new HashMap<>();
 
     protected final List<T> pollableSubscriptions = new CopyOnWriteArrayList<>();
     protected final List<T> managedSubscriptions = new CopyOnWriteArrayList<>();
 
-    public void addSubscription(final T subscription)
+    public void add(final T subscription)
     {
         if (subscription.isManagedSubscription())
         {
@@ -117,9 +117,30 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         }
     }
 
-    public void removeSubscription(final T subscription)
+    public void remove(final T subscription)
     {
-        onSubscriptionClosed(subscription);
+        final String topicName = subscription.getTopicName();
+        final int partitionId = subscription.getPartitionId();
+
+        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = activeSubscriptions.get(topicName);
+        if (subscriptionsForTopic != null)
+        {
+            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
+            if (subscriptionsForPartition != null)
+            {
+                subscriptionsForPartition.remove(subscription.getSubscriberKey());
+
+                if (subscriptionsForPartition.isEmpty())
+                {
+                    subscriptionsForTopic.remove(partitionId);
+                }
+
+                if (subscriptionsForTopic.isEmpty())
+                {
+                    activeSubscriptions.remove(topicName);
+                }
+            }
+        }
 
         pollableSubscriptions.remove(subscription);
         managedSubscriptions.remove(subscription);
@@ -127,7 +148,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     public T getSubscription(final String topicName, final int partitionId, final long subscriberKey)
     {
-        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
+        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = activeSubscriptions.get(topicName);
 
         if (subscriptionsForTopic != null)
         {
@@ -143,38 +164,12 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         return null;
     }
 
-    public void onSubscriptionOpened(T subscription)
+    public void activate(T subscription)
     {
-        this.subscriptions
+        this.activeSubscriptions
             .computeIfAbsent(subscription.getTopicName(), topicName -> new Int2ObjectHashMap<>())
             .computeIfAbsent(subscription.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
             .put(subscription.getSubscriberKey(), subscription);
-    }
-
-    public void onSubscriptionClosed(T subscription)
-    {
-        final String topicName = subscription.getTopicName();
-        final int partitionId = subscription.getPartitionId();
-
-        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
-        if (subscriptionsForTopic != null)
-        {
-            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
-            if (subscriptionsForPartition != null)
-            {
-                subscriptionsForPartition.remove(subscription.getSubscriberKey());
-
-                if (subscriptionsForPartition.isEmpty())
-                {
-                    subscriptionsForTopic.remove(partitionId);
-                }
-
-                if (subscriptionsForTopic.isEmpty())
-                {
-                    subscriptions.remove(topicName);
-                }
-            }
-        }
     }
 
     public int maintainState()

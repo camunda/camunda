@@ -221,7 +221,7 @@ public class ClientCommandController implements BufferReader, BufferWriter
         }
 
     }
-    private class AwaitTopologyRefreshState implements State<Context>
+    private static class AwaitTopologyRefreshState implements State<Context>
     {
         @Override
         public int doWork(final Context context) throws Exception
@@ -292,7 +292,7 @@ public class ClientCommandController implements BufferReader, BufferWriter
         }
     }
 
-    private class HandleResponseState implements State<Context>
+    private static class HandleResponseState implements State<Context>
     {
 
         @Override

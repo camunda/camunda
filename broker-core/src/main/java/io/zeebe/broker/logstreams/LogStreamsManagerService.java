@@ -33,7 +33,6 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
 
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
-    protected ServiceStartContext serviceContext;
     protected LogStreamsCfg logStreamsCfg;
 
     protected LogStreamsManager service;
@@ -46,8 +45,6 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        this.serviceContext = serviceContext;
-
         serviceContext.run(() ->
         {
             service = new LogStreamsManager(logStreamsCfg, actorSchedulerInjector.getValue());
