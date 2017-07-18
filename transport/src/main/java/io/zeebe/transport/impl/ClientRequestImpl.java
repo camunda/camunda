@@ -59,7 +59,9 @@ public class ClientRequestImpl implements ClientRequest
 
     private volatile long requestId;
     private RemoteAddress remoteAddress;
-    protected Exception failure;
+
+    protected String failure;
+    protected Exception failureCause;
 
     private final MutableDirectBuffer responseBuffer = new ExpandableArrayBuffer();
     private final UnsafeBuffer responseBufferView = new UnsafeBuffer(0, 0);
@@ -144,11 +146,12 @@ public class ClientRequestImpl implements ClientRequest
         }
     }
 
-    public void fail(Exception e)
+    public void fail(String failure, Exception cause)
     {
         if (STATE_FIELD.compareAndSet(this, AWAITING_RESPONSE, FAILED))
         {
-            failure = e;
+            this.failure = failure;
+            this.failureCause = cause;
         }
     }
 
@@ -248,7 +251,7 @@ public class ClientRequestImpl implements ClientRequest
                     throw new ExecutionException(new RuntimeException("Request closed; If you see this exception, you should no longer hold this object (reuse)"));
 
                 case FAILED:
-                    throw new ExecutionException("Request failed", failure);
+                    throw new ExecutionException("Request failed - " + failure, failureCause);
 
                 default:
                     awaitResponseStreategy.idle();

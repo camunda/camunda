@@ -25,9 +25,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.impl.ControlMessages;
+import io.zeebe.transport.impl.SendFailureHandler;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.util.actor.Actor;
@@ -46,7 +46,7 @@ public class Sender implements Actor
     private final int maxPeekSize;
     private final boolean isClient;
     protected final long keepAlivePeriod;
-    protected final FragmentHandler sendFailureHandler;
+    protected final SendFailureHandler sendFailureHandler;
 
     protected long lastKeepAlive = 0;
 
@@ -147,11 +147,23 @@ public class Sender implements Actor
                         }
                         else if (channelFuture.isCancelled() || channelFuture.isCompletedExceptionally())
                         {
+                            try
+                            {
+                                channelFuture.get();
+                            }
+                            catch (Exception e)
+                            {
+                                // expected branch due to else-if check
+                                context.failure = "Could not open channel";
+                                context.failureCause = e;
+                            }
+
                             context.take(DISCARD);
                         }
                     }
                     else
                     {
+                        context.failure = "Channel is not open";
                         context.take(DISCARD);
                     }
                     return false;
@@ -171,6 +183,7 @@ public class Sender implements Actor
 
                 if (bytesWritten == -1)
                 {
+                    context.failure = "Could not write to channel";
                     context.take(DISCARD);
                     return false;
                 }
@@ -214,7 +227,13 @@ public class Sender implements Actor
                 while (messagesIt.hasNext())
                 {
                     final DirectBuffer nextMessage = messagesIt.next();
-                    sendFailureHandler.onFragment(nextMessage, 0, nextMessage.capacity(), blockPeek.getStreamId(), false);
+                    sendFailureHandler.onFragment(
+                            nextMessage,
+                            0,
+                            nextMessage.capacity(),
+                            blockPeek.getStreamId(),
+                            context.failure,
+                            context.failureCause);
                 }
             }
 
@@ -343,6 +362,9 @@ public class Sender implements Actor
         TransportChannel writeChannel;
         int bytesWritten;
 
+        String failure;
+        Exception failureCause;
+
         Iterator<TransportChannel> channelIt;
         final ByteBuffer keepAliveBuffer = ByteBuffer.allocate(ControlMessages.KEEP_ALIVE.capacity());
 
@@ -361,6 +383,8 @@ public class Sender implements Actor
             channelFuture = null;
             channelIt = null;
             keepAliveBuffer.clear();
+            failure = null;
+            failureCause = null;
         }
     }
 }

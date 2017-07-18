@@ -17,9 +17,7 @@ package io.zeebe.transport.impl;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.dispatcher.FragmentHandler;
-
-public class ClientSendFailureHandler implements FragmentHandler
+public class ClientSendFailureHandler implements SendFailureHandler
 {
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor = new RequestResponseHeaderDescriptor();
@@ -32,7 +30,7 @@ public class ClientSendFailureHandler implements FragmentHandler
     }
 
     @Override
-    public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+    public void onFragment(DirectBuffer buffer, int offset, int length, int streamId, String failure, Exception cause)
     {
         final int protocolId = transportHeaderDescriptor.wrap(buffer, offset).protocolId();
         if (protocolId == TransportHeaderDescriptor.REQUEST_RESPONSE)
@@ -43,13 +41,10 @@ public class ClientSendFailureHandler implements FragmentHandler
             final ClientRequestImpl pendingRequest = requestPool.getOpenRequestById(requestId);
             if (pendingRequest != null)
             {
-                // TODO: noch nicht so toll; wenn, dann sollte der Sende rhier eine Nachricht übergeben können
-                pendingRequest.fail(new RuntimeException("Could not send request"));
+                pendingRequest.fail(failure, cause);
             }
 
         }
-
-        return CONSUME_FRAGMENT_RESULT;
     }
 
 }

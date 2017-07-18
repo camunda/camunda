@@ -88,14 +88,14 @@ public class ClientRequestPool implements AutoCloseable
         return result;
     }
 
-    public void failPendingRequestsToRemote(RemoteAddress remote, Exception e)
+    public void failPendingRequestsToRemote(RemoteAddress remote, String reason)
     {
         for (int i = 0; i < requests.length; i++)
         {
             final ClientRequestImpl request = requests[i];
             if (request.isAwaitingResponse() && remote.equals(request.getRemoteAddress()))
             {
-                request.fail(e);
+                request.fail(reason, null);
             }
         }
     }

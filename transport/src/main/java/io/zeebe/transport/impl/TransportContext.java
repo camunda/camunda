@@ -41,7 +41,7 @@ public class TransportContext
     private ActorReference[] actorReferences;
 
     private FragmentHandler receiveHandler;
-    private FragmentHandler sendFailureHandler;
+    private SendFailureHandler sendFailureHandler;
 
     private ServerSocketBinding serverSocketBinding;
 
@@ -135,12 +135,12 @@ public class TransportContext
         return receiveHandler;
     }
 
-    public FragmentHandler getSendFailureHandler()
+    public SendFailureHandler getSendFailureHandler()
     {
         return sendFailureHandler;
     }
 
-    public void setSendFailureHandler(FragmentHandler sendFailureHandler)
+    public void setSendFailureHandler(SendFailureHandler sendFailureHandler)
     {
         this.sendFailureHandler = sendFailureHandler;
     }

@@ -127,7 +127,7 @@ public class Conductor implements Actor, ChannelLifecycleListener
         deferred.runAsync(() ->
         {
             transportChannels.remove(ch);
-            failRequestsOnChannel(ch);
+            failRequestsOnChannel(ch, "Socket channel has been disconnected");
             actorContext.removeChannel(ch);
 
             transportListeners.forEach(l ->
@@ -144,12 +144,12 @@ public class Conductor implements Actor, ChannelLifecycleListener
         });
     }
 
-    protected void failRequestsOnChannel(TransportChannel ch)
+    protected void failRequestsOnChannel(TransportChannel ch, String reason)
     {
         final ClientRequestPool clientRequestPool = transportContext.getClientRequestPool();
         if (clientRequestPool != null)
         {
-            clientRequestPool.failPendingRequestsToRemote(ch.getRemoteAddress(), new RuntimeException("Channel closed; will not receive a response"));
+            clientRequestPool.failPendingRequestsToRemote(ch.getRemoteAddress(), reason);
         }
     }
 
