@@ -21,6 +21,7 @@ import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
@@ -191,39 +192,47 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     class CheckLockExpirationCmd implements Runnable
     {
-
         @Override
         public void run()
         {
             if (index.size() > 0)
             {
-                for (long eventKey : index.keySet())
+                final Iterator<Long> eventKeyIt = index.keySet().iterator();
+
+                while (eventKeyIt.hasNext())
                 {
+                    final long eventKey = eventKeyIt.next();
                     final ExpirationTimeBucket expirationTimeBucket = index.get(eventKey);
 
                     final long eventPosition = expirationTimeBucket.getEventPosition();
                     final long lockExpirationTime = expirationTimeBucket.getExpirationTime();
 
-                    checkLockExpirationTime(eventKey, eventPosition, lockExpirationTime);
+                    if (lockExpired(lockExpirationTime))
+                    {
+                        final LoggedEvent taskLockedEvent = findEvent(eventPosition);
+                        writeLockExpireEvent(eventKey, taskLockedEvent);
+                        eventKeyIt.remove();
+                    }
                 }
             }
         }
 
-        protected void checkLockExpirationTime(long eventKey, final long eventPosition, final long lockExpirationTime)
+        protected boolean lockExpired(long lockExpirationTime)
         {
-            if (lockExpirationTime <= ClockUtil.getCurrentTimeInMillis())
-            {
-                final boolean found = targetLogStreamReader.seek(eventPosition);
-                if (found && targetLogStreamReader.hasNext())
-                {
-                    final LoggedEvent lockedEvent = targetLogStreamReader.next();
+            return lockExpirationTime <= ClockUtil.getCurrentTimeInMillis();
+        }
 
-                    writeLockExpireEvent(eventKey, lockedEvent);
-                }
-                else
-                {
-                    throw new IllegalStateException("Failed to check the task lock expiration time. Indexed task event not found in log stream.");
-                }
+        protected LoggedEvent findEvent(long position)
+        {
+            final boolean found = targetLogStreamReader.seek(position);
+
+            if (found && targetLogStreamReader.hasNext())
+            {
+                return targetLogStreamReader.next();
+            }
+            else
+            {
+                throw new IllegalStateException("Failed to check the task lock expiration time. Indexed task event not found in log stream.");
             }
         }
 
@@ -251,8 +260,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             if (position >= 0)
             {
                 lastWrittenEventPosition = position;
-
-                index.remove(eventKey);
             }
         }
     }
