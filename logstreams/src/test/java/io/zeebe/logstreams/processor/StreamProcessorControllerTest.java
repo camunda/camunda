@@ -964,6 +964,42 @@ public class StreamProcessorControllerTest
     }
 
     @Test
+    public void shouldReprocessEventBatchOnRecovery() throws Exception
+    {
+        reprocessingEventFilter.doFilter = true;
+
+        // read multiple events which has the same source event (i.e. event batch)
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(2L, 2L);
+
+        when(mockSourceEvent.getPosition()).thenReturn(2L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        open();
+        // -> recovery - no more events
+        controller.doWork();
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockTargetLogStreamReader, times(3)).hasNext();
+        verify(mockTargetLogStreamReader, times(2)).next();
+
+        // re-process the source event only
+        final InOrder inOrder = inOrder(mockStreamProcessor, mockEventProcessor);
+        inOrder.verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
+        inOrder.verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        inOrder.verify(mockEventProcessor).processEvent();
+        inOrder.verify(mockEventProcessor).updateState();
+        inOrder.verify(mockStreamProcessor).afterEvent();
+
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
     public void shouldIgnoreEventsFromOtherProducerOnRecovery() throws Exception
     {
         when(mockTargetLogStreamReader.hasNext()).thenReturn(true, true, false);

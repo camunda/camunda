@@ -15,7 +15,8 @@
  */
 package io.zeebe.logstreams.impl.test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.zeebe.logstreams.log.*;
 
@@ -115,7 +116,7 @@ public class MockLogStreamReader implements LogStreamReader
     {
         if (events.isEmpty())
         {
-            throw new NoSuchElementException();
+            return -1L;
         }
 
         return position;

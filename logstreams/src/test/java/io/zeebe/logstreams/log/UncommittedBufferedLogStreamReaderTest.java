@@ -15,20 +15,19 @@
  */
 package io.zeebe.logstreams.log;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.logstreams.log.MockLogStorage.*;
-import static io.zeebe.util.StringUtil.*;
+import static io.zeebe.logstreams.log.MockLogStorage.newLogEntries;
+import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
+import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.NoSuchElementException;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.util.buffer.DirectBufferReader;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.DirectBuffer;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -490,9 +489,7 @@ public class UncommittedBufferedLogStreamReaderTest
     @Test
     public void shouldNotGetPositionIfNotInitialized()
     {
-        thrown.expect(IllegalStateException.class);
-
-        reader.getPosition();
+        assertThat(reader.getPosition()).isLessThan(0);
     }
 
     @Test
@@ -503,9 +500,7 @@ public class UncommittedBufferedLogStreamReaderTest
 
         reader.wrap(mockLogStream);
 
-        thrown.expect(NoSuchElementException.class);
-
-        reader.getPosition();
+        assertThat(reader.getPosition()).isLessThan(0);
     }
 
     @Test

@@ -580,8 +580,8 @@ public class StreamProcessorController implements Actor
         protected long processSourceEventsUntilPosition(final long sourceEventPosition)
         {
             // re-process the source event and all other events before (imitate the behavior while regular processing)
-            long currentEventPosition = -1;
-            while (sourceLogStreamReader.hasNext() && currentEventPosition < sourceEventPosition)
+            long currentEventPosition = sourceLogStreamReader.getPosition();
+            while (currentEventPosition < sourceEventPosition && sourceLogStreamReader.hasNext())
             {
                 final LoggedEvent sourceEvent = sourceLogStreamReader.next();
                 currentEventPosition = sourceEvent.getPosition();

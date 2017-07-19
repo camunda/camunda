@@ -782,9 +782,7 @@ public class BufferedLogStreamReaderTest
     @Test
     public void shouldNotGetPositionIfNotInitialized()
     {
-        thrown.expect(IllegalStateException.class);
-
-        reader.getPosition();
+        assertThat(reader.getPosition()).isLessThan(0);
     }
 
     @Test
@@ -795,9 +793,7 @@ public class BufferedLogStreamReaderTest
 
         reader.wrap(mockLogStream);
 
-        thrown.expect(NoSuchElementException.class);
-
-        reader.getPosition();
+        assertThat(reader.getPosition()).isLessThan(0);
     }
 
     @Test
@@ -811,9 +807,7 @@ public class BufferedLogStreamReaderTest
 
         reader.wrap(mockLogStream);
 
-        thrown.expect(NoSuchElementException.class);
-
-        reader.getPosition();
+        assertThat(reader.getPosition()).isLessThan(0);
     }
 
     @Test

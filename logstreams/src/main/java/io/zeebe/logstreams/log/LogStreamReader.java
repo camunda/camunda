@@ -16,7 +16,6 @@
 package io.zeebe.logstreams.log;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import io.zeebe.util.CloseableSilently;
 
@@ -82,12 +81,8 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
     /**
      * Returns the current log position of the reader.
      *
-     * @return the current log position
-     *
-     * @throws NoSuchElementException
-     *             if the log is empty
-     * @throws IllegalStateException
-     *             if the log is not initialized
+     * @return the current log position, or negative value if the log is empty
+     *         or not initialized
      */
     long getPosition();
 }

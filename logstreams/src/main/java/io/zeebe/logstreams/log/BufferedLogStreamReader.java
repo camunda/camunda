@@ -467,14 +467,14 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
     @Override
     public long getPosition()
     {
-        ensureInitialized();
+        long position = -1L;
 
-        if (iteratorState == IteratorState.INITIALIZED_EMPTY_LOG || iteratorState == IteratorState.NOT_COMMITTED)
+        if (iteratorState == IteratorState.INITIALIZED || iteratorState == IteratorState.ACTIVE)
         {
-            throw new NoSuchElementException("No log entry available.");
+            position = curr.getPosition();
         }
 
-        return curr.getPosition();
+        return position;
     }
 
     @Override
