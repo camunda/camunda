@@ -17,7 +17,7 @@
   <modules>
     <module>util</module>
     <module>test-util</module>
-    <module>hash-index</module>
+    <module>zb-map</module>
     <module>compact-graph</module>
   </modules>
 
