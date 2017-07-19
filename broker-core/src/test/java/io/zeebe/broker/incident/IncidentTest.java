@@ -723,7 +723,7 @@ public class IncidentTest
 
     private void failTaskWithNoRetriesLeft()
     {
-        apiRule.openTaskSubscription(ClientApiRule.DEFAULT_TOPIC_NAME, ClientApiRule.DEFAULT_PARTITION_ID, "test").await();
+        apiRule.openTaskSubscription("test").await();
 
         final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("LOCKED"));
 

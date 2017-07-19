@@ -135,7 +135,7 @@ public class TestTopicClient
 
     public void completeTask(String taskType, byte[] payload, Predicate<SubscribedEvent> taskEventFilter)
     {
-        apiRule.openTaskSubscription(topicName, partitionId, taskType).await();
+        apiRule.openTaskSubscription(topicName, partitionId, taskType, 1000L).await();
 
         final SubscribedEvent taskEvent = apiRule
             .subscribedEvents()

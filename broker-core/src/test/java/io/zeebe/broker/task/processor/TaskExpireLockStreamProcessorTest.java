@@ -17,19 +17,30 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static io.zeebe.protocol.clientapi.EventType.*;
+import static io.zeebe.test.util.BufferAssert.*;
+import static io.zeebe.util.StringUtil.*;
+import static io.zeebe.util.buffer.BufferUtil.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.test.MockStreamProcessorController;
+import io.zeebe.broker.test.WrittenEvent;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,19 +48,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
-import io.zeebe.broker.test.MockStreamProcessorController;
-import io.zeebe.broker.test.WrittenEvent;
-import io.zeebe.logstreams.impl.test.MockLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.util.time.ClockUtil;
 
 public class TaskExpireLockStreamProcessorTest
 {
@@ -76,7 +74,8 @@ public class TaskExpireLockStreamProcessorTest
     @Mock
     private LogStream mockTargetLogStream;
 
-    private MockLogStreamReader mockTargetLogStreamReader;
+    @Mock
+    private LogStreamReader mockTargetLogStreamReader;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -92,8 +91,6 @@ public class TaskExpireLockStreamProcessorTest
     @Before
     public void setup() throws InterruptedException, ExecutionException
     {
-        mockTargetLogStreamReader = new MockLogStreamReader();
-
         MockitoAnnotations.initMocks(this);
 
         when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
@@ -129,7 +126,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(lockedEvent);
 
-        mockTargetLogStreamReader.addEvent(lockedEvent);
+        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
+        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -164,7 +163,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(lockedEvent);
 
-        mockTargetLogStreamReader.addEvent(lockedEvent);
+        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
+        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -175,31 +176,6 @@ public class TaskExpireLockStreamProcessorTest
 
         // then
         assertThat(mockController.getWrittenEvents()).hasSize(1);
-    }
-
-    @Test
-    public void shouldExpireMultipleLockedTasksAtOnce()
-    {
-        // given
-        ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
-
-        final LoggedEvent event1 = mockController.buildLoggedEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCKED));
-        final LoggedEvent event2 = mockController.buildLoggedEvent(3L, event -> event
-                .setEventType(TaskEventType.LOCKED));
-
-        mockTargetLogStreamReader.addEvent(event1);
-        mockTargetLogStreamReader.addEvent(event2);
-
-        mockController.processEvent(event1);
-        mockController.processEvent(event2);
-
-        // when
-        streamProcessor.checkLockExpirationAsync();
-        mockController.drainCommandQueue();
-
-        // then
-        assertThat(mockController.getWrittenEvents()).hasSize(2);
     }
 
     @Test
@@ -291,6 +267,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCKED));
+
+        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(false);
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(false);
 
         // when
         streamProcessor.checkLockExpirationAsync();

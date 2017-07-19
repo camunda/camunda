@@ -31,6 +31,7 @@ public class ClientApiRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
     public static final int DEFAULT_PARTITION_ID = 0;
+    public static final long DEFAULT_LOCK_DURATION = 1000L;
 
     protected ClientTransport transport;
     protected Dispatcher sendBuffer;
@@ -167,10 +168,14 @@ public class ClientApiRule extends ExternalResource
 
     public ControlMessageRequest openTaskSubscription(final String type)
     {
-        return openTaskSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, type);
+        return openTaskSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, type, DEFAULT_LOCK_DURATION);
     }
 
-    public ControlMessageRequest openTaskSubscription(final String topicName, final int partitionId, final String type)
+    public ControlMessageRequest openTaskSubscription(
+            final String topicName,
+            final int partitionId,
+            final String type,
+            long lockDuration)
     {
         return createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
@@ -178,7 +183,7 @@ public class ClientApiRule extends ExternalResource
                 .put("topicName", topicName)
                 .put("partitionId", partitionId)
                 .put("taskType", type)
-                .put("lockDuration", 1000L)
+                .put("lockDuration", lockDuration)
                 .put("lockOwner", "test")
                 .put("credits", 10)
                 .done()
@@ -227,7 +232,6 @@ public class ClientApiRule extends ExternalResource
     {
         return message.isMessage() &&
                 isMessageOfType(message.getMessage(), SubscribedEventDecoder.TEMPLATE_ID);
-
     }
 
     protected boolean isMessageOfType(DirectBuffer message, int type)

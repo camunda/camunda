@@ -52,6 +52,7 @@ import io.zeebe.util.actor.ActorScheduler;
 public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager, Actor
 {
     protected static final String NAME = "task.queue.manager";
+    public static final int LOCK_EXPIRATION_INTERVAL = 30; // in seconds
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
@@ -126,7 +127,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             .install()
             .thenRun(() ->
             {
-                scheduledCheckExpirationCmd = executor.scheduleAtFixedRate(expireLockStreamProcessor::checkLockExpirationAsync, Duration.ofSeconds(30));
+                scheduledCheckExpirationCmd = executor.scheduleAtFixedRate(expireLockStreamProcessor::checkLockExpirationAsync, Duration.ofSeconds(LOCK_EXPIRATION_INTERVAL));
             });
     }
 
