@@ -116,7 +116,6 @@ public class BrokerRecoveryTest
         ClockUtil.reset();
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldCreateWorkflowInstanceAfterRestart()
     {
@@ -136,7 +135,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CREATED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldContinueWorkflowInstanceAtTaskAfterRestart()
     {
@@ -166,7 +164,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart()
     {
@@ -200,7 +197,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart()
     {
@@ -237,7 +233,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldDeployNewWorkflowVersionAfterRestart()
     {
@@ -412,7 +407,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldResolveIncidentAfterRestart()
     {
@@ -443,7 +437,6 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
     }
 
-    @Ignore("Recovery of workflow deployment event fails - see https://github.com/camunda-tngp/zeebe/issues/353")
     @Test
     public void shouldResolveFailedIncidentAfterRestart()
     {
