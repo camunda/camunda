@@ -16,7 +16,7 @@ const engineInitPromise = engine.init().catch(error => {
 });
 
 const mvnCwd = path.resolve(__dirname, '..', '..');
-const mvnCleanPackage = runWithColor('mvn -s settings.xml -Pproduction -DskipTests clean package', 'maven', chalk.green, {
+const mvnCleanPackage = runWithColor('mvn -Pproduction -DskipTests clean package', 'maven', chalk.green, {
   cwd: mvnCwd
 });
 

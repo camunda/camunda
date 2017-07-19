@@ -71,8 +71,10 @@ export function loadHeatmap(view, filter) {
 }
 
 export function loadDiagram(processDefinitionId = getDefinitionId()) {
+  const url = '/api/process-definition/' + processDefinitionId + '/xml';
+
   dispatchAction(createLoadingDiagramAction());
-  get('/api/process-definition/' + processDefinitionId + '/xml')
+  get(url)
     .then(response => response.text())
     .then(result => {
       dispatchAction(createLoadingDiagramResultAction(result));

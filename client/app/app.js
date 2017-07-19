@@ -1,4 +1,9 @@
-require('./bootstrap');
+import './bootstrap';
+import runtime from 'serviceworker-webpack-plugin/lib/runtime';
+
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  runtime.register();
+}
 
 if (isPolyfillNeeded()) {
   require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {

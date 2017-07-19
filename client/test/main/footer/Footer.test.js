@@ -24,11 +24,11 @@ describe('<Footer>', () => {
   });
 
   it('should display current version', () => {
-    const version = 'awesome-test-version';
+    process.env.version = 'some-version';
 
-    update({version});
+    update();
 
-    expect(node).to.contain.text(version);
+    expect(node).to.contain.text(process.env.version);
   });
 
   it('should display import progress', () => {

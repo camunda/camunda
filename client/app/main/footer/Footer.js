@@ -8,7 +8,7 @@ export const Footer = withSelector(() => <footer>
         <Progress selector="progress" />
       </div>
       <div className="col-xs-10">
-        &copy; Camunda services GmbH 2017, All Rights Reserved / <span className="version"><Text property="version" /></span>
+        &copy; Camunda services GmbH 2017, All Rights Reserved / <span className="version"><Text property={() => process.env.version} /></span>
       </div>
     </div>
   </div>

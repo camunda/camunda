@@ -1,6 +1,8 @@
 var webpack = require('webpack');
 var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
+var ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
+var version = require('./scripts/version');
 
 module.exports = {
   cache: true,
@@ -98,6 +100,9 @@ module.exports = {
     ]
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.version': JSON.stringify(version)
+    }),
     new HtmlWebpackPlugin({
       title: 'Camunda Optimize',
       template: 'app/index.html',
@@ -117,6 +122,9 @@ module.exports = {
       template: 'app/error.html',
       favicon: 'app/favicon.ico',
       chunks: ['error']
+    }),
+    new ServiceWorkerWebpackPlugin({
+      entry: path.join(__dirname, 'app/sw.js')
     })
   ],
   devServer: {

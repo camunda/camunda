@@ -1,7 +1,8 @@
-var config = require('./webpack.config');
+var path = require('path');
 var webpack = require('webpack');
-var CompressionPlugin = require("compression-webpack-plugin");
+var CompressionPlugin = require('compression-webpack-plugin');
 var HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
+var config = require('./webpack.config');
 
 config.plugins = addProductionPlugins();
 config.module.loaders = correctLoadersForProduction(config.module.loaders);
