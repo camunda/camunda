@@ -37,7 +37,7 @@ public class HashIndexTest
     public static final long KEY = Long.MAX_VALUE;
     public static final long VALUE = Long.MAX_VALUE;
     public static final long MISSING_VALUE = 0;
-    public static final int DATA_COUNT = 10_000_000;
+    public static final int DATA_COUNT = 100_000;
 
     private Long2LongHashIndex index;
 
