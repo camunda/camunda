@@ -36,7 +36,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-hash-index</artifactId>
+      <artifactId>zb-map</artifactId>
       <version>${version.util}</version>
     </dependency>
 

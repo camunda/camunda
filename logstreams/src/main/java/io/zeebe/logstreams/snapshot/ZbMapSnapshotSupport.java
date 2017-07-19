@@ -15,28 +15,28 @@
  */
 package io.zeebe.logstreams.snapshot;
 
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.map.ZbMap;
+import io.zeebe.map.ZbMapSerializer;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import io.zeebe.hashindex.HashIndex;
-import io.zeebe.hashindex.IndexSerializer;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-
-public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements SnapshotSupport
+public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements SnapshotSupport
 {
-    private final T hashIndex;
+    private final T zbMap;
 
-    private final IndexSerializer indexSerializer = new IndexSerializer();
+    private final ZbMapSerializer indexSerializer = new ZbMapSerializer();
 
-    public HashIndexSnapshotSupport(T hashIndex)
+    public ZbMapSnapshotSupport(T zbMap)
     {
-        this.hashIndex = hashIndex;
-        this.indexSerializer.wrap(hashIndex);
+        this.zbMap = zbMap;
+        this.indexSerializer.wrap(zbMap);
     }
 
-    public T getHashIndex()
+    public T getZbMap()
     {
-        return hashIndex;
+        return zbMap;
     }
 
     public long snapshotSize()
@@ -59,7 +59,7 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     @Override
     public void reset()
     {
-        hashIndex.clear();
+        zbMap.clear();
     }
 
 }

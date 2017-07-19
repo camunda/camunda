@@ -15,7 +15,6 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -31,12 +30,12 @@ public class OldComposedSnapshotBenchmark
 {
     @Benchmark
     @Threads(1)
-    public long oldWriteSnapshot(FilledIndexOldSnapshotSupplier filledIndexOldSnapshotSupplier) throws Exception
+    public long oldWriteSnapshot(FilledMapOldSnapshotSupplier filledMapOldSnapshotSupplier) throws Exception
     {
         // given
-        final File tmpFile = filledIndexOldSnapshotSupplier.tmpFile;
+        final File tmpFile = filledMapOldSnapshotSupplier.tmpFile;
         final FileOutputStream outputStream = new FileOutputStream(tmpFile);
-        final OldComposedSnapshot oldComposedSnapshot = filledIndexOldSnapshotSupplier.oldComposedSnapshot;
+        final OldComposedSnapshot oldComposedSnapshot = filledMapOldSnapshotSupplier.oldComposedSnapshot;
 
         // run
         oldComposedSnapshot.writeSnapshot(outputStream);
@@ -47,12 +46,12 @@ public class OldComposedSnapshotBenchmark
 
     @Benchmark
     @Threads(1)
-    public long oldRecoverSnapshot(WrittenIndexOldSnapshotSupplier writtenIndexOldSnapshotSupplier) throws Exception
+    public long oldRecoverSnapshot(WrittenMapOldSnapshotSupplier writtenMapOldSnapshotSupplier) throws Exception
     {
         // given
-        final File tmpFile = writtenIndexOldSnapshotSupplier.tmpFile;
+        final File tmpFile = writtenMapOldSnapshotSupplier.tmpFile;
         final FileInputStream outputStream = new FileInputStream(tmpFile);
-        final OldComposedSnapshot oldComposedSnapshot = writtenIndexOldSnapshotSupplier.oldComposedSnapshot;
+        final OldComposedSnapshot oldComposedSnapshot = writtenMapOldSnapshotSupplier.oldComposedSnapshot;
 
         // run
         oldComposedSnapshot.recoverFromSnapshot(outputStream);

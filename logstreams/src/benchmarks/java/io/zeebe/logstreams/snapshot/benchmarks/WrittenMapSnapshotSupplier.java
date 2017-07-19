@@ -15,50 +15,48 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2LongZbMap;
 import org.openjdk.jmh.annotations.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Random;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
 
 /**
  *
  */
 @State(Scope.Benchmark)
-public class WrittenIndexSnapshotSupplier
+public class WrittenMapSnapshotSupplier
 {
-    private Long2LongHashIndex index;
+    private Long2LongZbMap map;
 
     File tmpFile;
-    ComposedHashIndexSnapshot composedHashIndexSnapshot;
+    ComposedZbMapSnapshot composedZbMapSnapshot;
 
     @Setup(Level.Iteration)
-    public void writeIndexSnapshot() throws Exception
+    public void writeMapSnapshot() throws Exception
     {
         tmpFile = new File("recoverIdxSnapshot-benchmark.txt");
-        index = new Long2LongHashIndex(Benchmarks.DATA_SET_SIZE / OPTIMAL_BUCKET_COUNT, OPTIMAL_BUCKET_COUNT);
+        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
 
         final Random random = new Random();
         for (int idx = 0; idx < Benchmarks.DATA_SET_SIZE; idx++)
         {
-            index.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
+            map.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
         }
-        composedHashIndexSnapshot = new ComposedHashIndexSnapshot(new HashIndexSnapshotSupport(index));
+        composedZbMapSnapshot = new ComposedZbMapSnapshot(new ZbMapSnapshotSupport(map));
 
-        composedHashIndexSnapshot.writeSnapshot(new FileOutputStream(tmpFile));
+        composedZbMapSnapshot.writeSnapshot(new FileOutputStream(tmpFile));
     }
 
     @TearDown(Level.Iteration)
-    public void closeIndex()
+    public void closeMap()
     {
-        index.close();
+        map.close();
         tmpFile.delete();
     }
 }

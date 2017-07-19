@@ -29,13 +29,13 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * A composition of one or more snapshots which are combined to a single snapshot.
  */
-public class ComposedHashIndexSnapshot implements SnapshotSupport
+public class ComposedZbMapSnapshot implements SnapshotSupport
 {
-    protected final HashIndexSnapshotSupport[] parts;
+    protected final ZbMapSnapshotSupport[] parts;
     protected final byte count;
     protected long processedBytes;
 
-    public ComposedHashIndexSnapshot(HashIndexSnapshotSupport... parts)
+    public ComposedZbMapSnapshot(ZbMapSnapshotSupport... parts)
     {
         this.parts = parts;
         this.count = (byte) parts.length;
@@ -64,12 +64,12 @@ public class ComposedHashIndexSnapshot implements SnapshotSupport
 
         for (byte i = 0; i < count; i++)
         {
-            final HashIndexSnapshotSupport part = parts[i];
-            final long hashIndexSize = part.snapshotSize();
-            writeLong(outputStream, hashIndexSize);
+            final ZbMapSnapshotSupport part = parts[i];
+            final long mapSize = part.snapshotSize();
+            writeLong(outputStream, mapSize);
             writtenBytes += SIZE_OF_LONG;
             part.writeSnapshot(outputStream);
-            writtenBytes += hashIndexSize;
+            writtenBytes += mapSize;
         }
         processedBytes = writtenBytes;
     }
@@ -89,11 +89,11 @@ public class ComposedHashIndexSnapshot implements SnapshotSupport
         for (byte idx = 0; idx < count; idx++)
         {
             limitedInputStream.reset();
-            final long hashIndexSize = readLong(inputStream);
+            final long mapSize = readLong(inputStream);
             bytesRead += SIZE_OF_LONG;
-            limitedInputStream.setLimit(hashIndexSize);
+            limitedInputStream.setLimit(mapSize);
             parts[idx].recoverFromSnapshot(limitedInputStream);
-            bytesRead += hashIndexSize;
+            bytesRead += mapSize;
         }
         processedBytes = bytesRead;
     }

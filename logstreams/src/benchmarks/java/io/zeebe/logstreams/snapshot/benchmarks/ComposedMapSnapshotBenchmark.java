@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -27,37 +27,37 @@ import java.io.FileOutputStream;
 
 
 @BenchmarkMode(Mode.SingleShotTime)
-public class ComposedHashIndexSnapshotBenchmark
+public class ComposedMapSnapshotBenchmark
 {
     @Benchmark
     @Threads(1)
-    public long writeSnapshot(FilledIndexSnapshotSupplier filledIndexSnapshotSupplier) throws Exception
+    public long writeSnapshot(FilledMapSnapshotSupplier filledMapSnapshotSupplier) throws Exception
     {
         // given
-        final File tmpFile = filledIndexSnapshotSupplier.tmpFile;
+        final File tmpFile = filledMapSnapshotSupplier.tmpFile;
         final FileOutputStream outputStream = new FileOutputStream(tmpFile);
-        final ComposedHashIndexSnapshot composedHashIndexSnapshot = filledIndexSnapshotSupplier.composedHashIndexSnapshot;
+        final ComposedZbMapSnapshot composedZbMapSnapshot = filledMapSnapshotSupplier.composedZbMapSnapshot;
 
         // run
-        composedHashIndexSnapshot.writeSnapshot(outputStream);
+        composedZbMapSnapshot.writeSnapshot(outputStream);
 
         // some bytes are writen
-        return composedHashIndexSnapshot.getProcessedBytes();
+        return composedZbMapSnapshot.getProcessedBytes();
     }
 
     @Benchmark
     @Threads(1)
-    public long recoverSnapshot(WrittenIndexSnapshotSupplier writtenIndexSnapshotSupplier) throws Exception
+    public long recoverSnapshot(WrittenMapSnapshotSupplier writtenMapSnapshotSupplier) throws Exception
     {
         // given
-        final File tmpFile = writtenIndexSnapshotSupplier.tmpFile;
+        final File tmpFile = writtenMapSnapshotSupplier.tmpFile;
         final FileInputStream outputStream = new FileInputStream(tmpFile);
-        final ComposedHashIndexSnapshot composedHashIndexSnapshot = writtenIndexSnapshotSupplier.composedHashIndexSnapshot;
+        final ComposedZbMapSnapshot composedZbMapSnapshot = writtenMapSnapshotSupplier.composedZbMapSnapshot;
 
         // run
-        composedHashIndexSnapshot.recoverFromSnapshot(outputStream);
+        composedZbMapSnapshot.recoverFromSnapshot(outputStream);
 
         // some bytes are writen
-        return composedHashIndexSnapshot.getProcessedBytes();
+        return composedZbMapSnapshot.getProcessedBytes();
     }
 }

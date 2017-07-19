@@ -15,9 +15,9 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import io.zeebe.hashindex.Bytes2LongHashIndex;
-import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.hashindex.Long2LongHashIndex;
+import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.Long2LongZbMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,20 +30,20 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
+import static io.zeebe.map.ZbMap.OPTIMAL_TABLE_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ComposedSnapshotTest
+public class ComposedZbMapSnapshotTest
 {
     public static final int IDX_ENTRY_COUNT = 1_000_000;
-    private Long2LongHashIndex long2LongHashIndex;
-    private Bytes2LongHashIndex bytes2LongHashIndex;
-    private Long2BytesHashIndex long2BytesHashIndex;
+    private Long2LongZbMap long2LongMap;
+    private Bytes2LongZbMap bytes2LongMap;
+    private Long2BytesZbMap long2BytesMap;
 
-    private HashIndexSnapshotSupport<Long2LongHashIndex> long2LongSnapshotSupport;
-    private HashIndexSnapshotSupport<Bytes2LongHashIndex> bytes2LongSnapshotSupport;
-    private HashIndexSnapshotSupport<Long2BytesHashIndex> long2bytesSnapshotSupport;
+    private ZbMapSnapshotSupport<Long2LongZbMap> long2LongSnapshotSupport;
+    private ZbMapSnapshotSupport<Bytes2LongZbMap> bytes2LongSnapshotSupport;
+    private ZbMapSnapshotSupport<Long2BytesZbMap> long2bytesSnapshotSupport;
 
 
     private File snapshotFile;
@@ -57,18 +57,18 @@ public class ComposedSnapshotTest
     @Before
     public void init() throws IOException
     {
-        long2LongHashIndex = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
-        long2LongHashIndex.put(15, 15);
+        long2LongMap = new Long2LongZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT);
+        long2LongMap.put(15, 15);
 
-        long2BytesHashIndex = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, 16);
-        long2BytesHashIndex.put(16, "16".getBytes());
+        long2BytesMap = new Long2BytesZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT, 16);
+        long2BytesMap.put(16, "16".getBytes());
 
-        bytes2LongHashIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, 16);
-        bytes2LongHashIndex.put("17".getBytes(), 17);
+        bytes2LongMap = new Bytes2LongZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT, 16);
+        bytes2LongMap.put("17".getBytes(), 17);
 
-        long2bytesSnapshotSupport = new HashIndexSnapshotSupport<>(long2BytesHashIndex);
-        long2LongSnapshotSupport = new HashIndexSnapshotSupport<>(long2LongHashIndex);
-        bytes2LongSnapshotSupport = new HashIndexSnapshotSupport<>(bytes2LongHashIndex);
+        long2bytesSnapshotSupport = new ZbMapSnapshotSupport<>(long2BytesMap);
+        long2LongSnapshotSupport = new ZbMapSnapshotSupport<>(long2LongMap);
+        bytes2LongSnapshotSupport = new ZbMapSnapshotSupport<>(bytes2LongMap);
 
         snapshotFile = tempFolder.newFile("snapshot");
     }
@@ -76,18 +76,18 @@ public class ComposedSnapshotTest
     @After
     public void cleanUp()
     {
-        long2BytesHashIndex.close();
-        long2LongHashIndex.close();
-        bytes2LongHashIndex.close();
+        long2BytesMap.close();
+        long2LongMap.close();
+        bytes2LongMap.close();
     }
 
     @Test
     public void shouldWriteAndRecoverLargeSnapshot() throws Exception
     {
         // given
-        final Long2LongHashIndex largeIndex = new Long2LongHashIndex(IDX_ENTRY_COUNT / OPTIMAL_BUCKET_COUNT, OPTIMAL_BUCKET_COUNT);
-        final HashIndexSnapshotSupport<Long2LongHashIndex> long2LongSnapshotSupport = new HashIndexSnapshotSupport<>(largeIndex);
-        final ComposedHashIndexSnapshot composedSnapshot = new ComposedHashIndexSnapshot(long2LongSnapshotSupport);
+        final Long2LongZbMap largeIndex = new Long2LongZbMap(IDX_ENTRY_COUNT / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
+        final ZbMapSnapshotSupport<Long2LongZbMap> long2LongSnapshotSupport = new ZbMapSnapshotSupport<>(largeIndex);
+        final ComposedZbMapSnapshot composedSnapshot = new ComposedZbMapSnapshot(long2LongSnapshotSupport);
 
         for (long idx = 0; idx < IDX_ENTRY_COUNT; idx++)
         {
@@ -117,16 +117,16 @@ public class ComposedSnapshotTest
     public void shouldRecoverParts() throws Exception
     {
         // given
-        final ComposedHashIndexSnapshot composedSnapshot =
-            new ComposedHashIndexSnapshot(long2bytesSnapshotSupport,
+        final ComposedZbMapSnapshot composedSnapshot =
+            new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
                                           long2LongSnapshotSupport,
                                           bytes2LongSnapshotSupport);
         composedSnapshot.writeSnapshot(new FileOutputStream(snapshotFile));
         final long processedBytes = composedSnapshot.getProcessedBytes();
 
-        long2LongHashIndex.clear();
-        long2BytesHashIndex.clear();
-        bytes2LongHashIndex.clear();
+        long2LongMap.clear();
+        long2BytesMap.clear();
+        bytes2LongMap.clear();
 
         // when
         composedSnapshot.recoverFromSnapshot(new FileInputStream(snapshotFile));
@@ -134,13 +134,13 @@ public class ComposedSnapshotTest
         // then
         assertThat(composedSnapshot.getProcessedBytes()).isEqualTo(processedBytes);
 
-        assertThat(long2LongHashIndex.get(15, -1)).isEqualTo(15);
+        assertThat(long2LongMap.get(15, -1)).isEqualTo(15);
 
         final byte bytes[] = new byte[2];
-        assertThat(long2BytesHashIndex.get(16, bytes)).isTrue();
+        assertThat(long2BytesMap.get(16, bytes)).isTrue();
         assertThat(bytes).isEqualTo("16".getBytes());
 
-        assertThat(bytes2LongHashIndex.get("17".getBytes(), -1)).isEqualTo(17);
+        assertThat(bytes2LongMap.get("17".getBytes(), -1)).isEqualTo(17);
     }
 
     @Test
@@ -148,30 +148,30 @@ public class ComposedSnapshotTest
     {
         thrown.expect(IllegalArgumentException.class);
 
-        new ComposedHashIndexSnapshot();
+        new ComposedZbMapSnapshot();
     }
 
     @Test
     public void shouldFailToRecoverIfPartsAreLessThanSnapshot() throws Exception
     {
-        new ComposedHashIndexSnapshot(long2bytesSnapshotSupport,
+        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport,
             bytes2LongSnapshotSupport).writeSnapshot(new FileOutputStream(snapshotFile));
 
         thrown.expect(IllegalStateException.class);
 
-        new ComposedHashIndexSnapshot(long2bytesSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
+        new ComposedZbMapSnapshot(long2bytesSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
     }
 
     @Test
     public void shouldFailToRecoverIfPartsAreMoreThanSnapshot() throws Exception
     {
-        new ComposedHashIndexSnapshot(long2bytesSnapshotSupport,
+        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport).writeSnapshot(new FileOutputStream(snapshotFile));
 
         thrown.expect(IllegalStateException.class);
 
-        new ComposedHashIndexSnapshot(long2bytesSnapshotSupport,
+        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport, bytes2LongSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
     }
 

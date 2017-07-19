@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import io.zeebe.hashindex.Long2LongHashIndex;
+import io.zeebe.map.Long2LongZbMap;
 import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Test;
@@ -25,21 +25,21 @@ import java.io.ByteArrayOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HashIndexSnapshotSupportTest
+public class ZbMapSnapshotSupportTest
 {
-    private Long2LongHashIndex hashIndex;
-    private HashIndexSnapshotSupport<Long2LongHashIndex> snapshotSupport;
+    private Long2LongZbMap long2LongZbMap;
+    private ZbMapSnapshotSupport<Long2LongZbMap> snapshotSupport;
 
     protected void initIndex(int indexSize, int blockLength)
     {
-        hashIndex = new Long2LongHashIndex(indexSize, blockLength);
-        snapshotSupport = new HashIndexSnapshotSupport<>(hashIndex);
+        long2LongZbMap = new Long2LongZbMap(indexSize, blockLength);
+        snapshotSupport = new ZbMapSnapshotSupport<>(long2LongZbMap);
     }
 
     @After
     public void closeIndex()
     {
-        hashIndex.close();
+        long2LongZbMap.close();
     }
 
     @Test
@@ -47,19 +47,19 @@ public class HashIndexSnapshotSupportTest
     {
         initIndex(16, 1);
 
-        hashIndex.put(0, 10);
-        hashIndex.put(1, 11);
+        long2LongZbMap.put(0, 10);
+        long2LongZbMap.put(1, 11);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         snapshotSupport.writeSnapshot(outputStream);
 
-        hashIndex.clear();
+        long2LongZbMap.clear();
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
         snapshotSupport.recoverFromSnapshot(inputStream);
 
-        assertThat(hashIndex.get(0, -1)).isEqualTo(10);
-        assertThat(hashIndex.get(1, -1)).isEqualTo(11);
+        assertThat(long2LongZbMap.get(0, -1)).isEqualTo(10);
+        assertThat(long2LongZbMap.get(1, -1)).isEqualTo(11);
     }
 
     @Test
@@ -67,20 +67,20 @@ public class HashIndexSnapshotSupportTest
     {
         initIndex(16, 1);
 
-        assertThat(hashIndex.blockCount()).isEqualTo(1);
+        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
 
-        hashIndex.put(0, 10);
-        hashIndex.put(1, 11);
+        long2LongZbMap.put(0, 10);
+        long2LongZbMap.put(1, 11);
 
-        assertThat(hashIndex.blockCount()).isEqualTo(2);
+        assertThat(long2LongZbMap.bucketCount()).isEqualTo(2);
 
         snapshotSupport.reset();
 
-        assertThat(hashIndex.get(0, -1)).isEqualTo(-1);
-        assertThat(hashIndex.get(1, -1)).isEqualTo(-1);
+        assertThat(long2LongZbMap.get(0, -1)).isEqualTo(-1);
+        assertThat(long2LongZbMap.get(1, -1)).isEqualTo(-1);
 
         // should only have the initial block
-        assertThat(hashIndex.blockCount()).isEqualTo(1);
+        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
     }
 
     @Test
@@ -88,7 +88,7 @@ public class HashIndexSnapshotSupportTest
     {
         initIndex(16, 1);
 
-        assertThat(hashIndex.blockCount()).isEqualTo(1);
+        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         snapshotSupport.writeSnapshot(outputStream);
@@ -99,7 +99,7 @@ public class HashIndexSnapshotSupportTest
         snapshotSupport.recoverFromSnapshot(inputStream);
 
         // should only have the initial block
-        assertThat(hashIndex.blockCount()).isEqualTo(1);
+        assertThat(long2LongZbMap.bucketCount()).isEqualTo(1);
     }
 
     @Test
@@ -115,14 +115,14 @@ public class HashIndexSnapshotSupportTest
 
         for (int i = 0; i < numEntries; i++)
         {
-            hashIndex.put(i, i);
+            long2LongZbMap.put(i, i);
         }
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         // when
         snapshotSupport.writeSnapshot(outputStream);
-        hashIndex.clear();
+        long2LongZbMap.clear();
 
         // then
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
@@ -130,7 +130,7 @@ public class HashIndexSnapshotSupportTest
 
         for (int i = 0; i < numEntries; i++)
         {
-            assertThat(hashIndex.get(i, -1)).isEqualTo(i);
+            assertThat(long2LongZbMap.get(i, -1)).isEqualTo(i);
         }
     }
 }

@@ -15,48 +15,46 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.hashindex.Long2LongHashIndex;
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2LongZbMap;
 import org.openjdk.jmh.annotations.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
 
 /**
  *
  */
 @State(Scope.Benchmark)
-public class FilledIndexOldSnapshotSupplier
+public class FilledMapOldSnapshotSupplier
 {
-    private Long2LongHashIndex index;
+    private Long2LongZbMap map;
 
     File tmpFile;
     OldComposedSnapshot oldComposedSnapshot;
 
     @Setup(Level.Iteration)
-    public void fillIndex() throws IOException
+    public void fillMap() throws IOException
     {
 
-        tmpFile = new File("writeIndexSnapshot-benchmark.old.txt");
-        index = new Long2LongHashIndex(Benchmarks.DATA_SET_SIZE / OPTIMAL_BUCKET_COUNT, OPTIMAL_BUCKET_COUNT);
+        tmpFile = new File("writeMapSnapshot-benchmark.old.txt");
+        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
 
         final Random random = new Random();
         for (int idx = 0; idx < Benchmarks.DATA_SET_SIZE; idx++)
         {
-            index.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
+            map.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
         }
-        oldComposedSnapshot = new OldComposedSnapshot(new HashIndexSnapshotSupport(index));
+        oldComposedSnapshot = new OldComposedSnapshot(new ZbMapSnapshotSupport(map));
     }
 
     @TearDown(Level.Iteration)
-    public void closeIndex()
+    public void closeMap()
     {
-        index.close();
+        map.close();
         tmpFile.delete();
     }
 }
