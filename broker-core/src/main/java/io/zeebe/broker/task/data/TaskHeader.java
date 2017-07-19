@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.task.data;
 
+import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
+import io.zeebe.msgpack.property.StringProperty;
 
 public class TaskHeader extends UnpackedObject
 {

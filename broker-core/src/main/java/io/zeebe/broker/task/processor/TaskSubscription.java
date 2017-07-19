@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.task.processor;
 
+import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.IntegerProperty;
-import io.zeebe.broker.util.msgpack.property.LongProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 
 public class TaskSubscription extends UnpackedObject
 {

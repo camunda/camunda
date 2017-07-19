@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import org.junit.Rule;
 import org.junit.Test;

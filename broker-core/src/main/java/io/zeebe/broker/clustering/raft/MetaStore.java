@@ -32,17 +32,17 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.clustering.raft.entry.ConfiguredMember;
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.ArrayProperty;
-import io.zeebe.broker.util.msgpack.property.IntegerProperty;
-import io.zeebe.broker.util.msgpack.property.LongProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
-import io.zeebe.broker.util.msgpack.value.ArrayValue;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LangUtil;

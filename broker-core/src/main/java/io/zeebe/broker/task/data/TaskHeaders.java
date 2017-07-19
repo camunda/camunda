@@ -19,10 +19,10 @@ package io.zeebe.broker.task.data;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.*;
-import io.zeebe.broker.util.msgpack.value.ArrayValue;
-import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.value.ArrayValue;
+import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

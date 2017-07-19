@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.data;
 
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.*;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

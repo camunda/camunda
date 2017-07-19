@@ -19,15 +19,15 @@ package io.zeebe.broker.workflow.data;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
 
+import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.broker.util.msgpack.UnpackedObject;
-import io.zeebe.broker.util.msgpack.property.ArrayProperty;
-import io.zeebe.broker.util.msgpack.property.EnumProperty;
-import io.zeebe.broker.util.msgpack.property.StringProperty;
-import io.zeebe.broker.util.msgpack.value.ArrayValue;
-import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
+import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 
 public class WorkflowDeploymentEvent extends UnpackedObject

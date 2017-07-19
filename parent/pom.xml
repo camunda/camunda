@@ -103,6 +103,12 @@
         <version>${version.zb-msgpack}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-value</artifactId>
+        <version>${version.zb-msgpack}</version>
+      </dependency>
+
     </dependencies>
 
   </dependencyManagement>

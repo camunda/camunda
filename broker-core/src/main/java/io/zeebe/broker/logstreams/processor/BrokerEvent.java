@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.broker.util.msgpack.Recyclable;
+import io.zeebe.msgpack.Recyclable;
 
 public interface BrokerEvent extends Recyclable
 {

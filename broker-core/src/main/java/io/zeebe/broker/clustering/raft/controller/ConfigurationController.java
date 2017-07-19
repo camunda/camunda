@@ -27,7 +27,7 @@ import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.broker.clustering.raft.RaftContext;
 import io.zeebe.broker.clustering.raft.entry.ConfigurationEntry;
 import io.zeebe.broker.clustering.raft.entry.ConfiguredMember;
-import io.zeebe.broker.util.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;

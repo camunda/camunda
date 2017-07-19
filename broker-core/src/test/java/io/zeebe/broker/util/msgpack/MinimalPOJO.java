@@ -17,7 +17,8 @@
  */
 package io.zeebe.broker.util.msgpack;
 
-import io.zeebe.broker.util.msgpack.property.LongProperty;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.LongProperty;
 
 public class MinimalPOJO extends UnpackedObject
 {

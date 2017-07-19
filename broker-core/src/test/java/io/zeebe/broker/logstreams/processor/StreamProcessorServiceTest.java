@@ -23,13 +23,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.test.MockStreamProcessorController;
-import io.zeebe.broker.util.msgpack.UnpackedObject;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.actor.ActorScheduler;
 import org.junit.Rule;
