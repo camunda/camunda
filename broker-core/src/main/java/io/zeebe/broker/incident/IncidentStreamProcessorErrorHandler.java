@@ -18,14 +18,13 @@
 package io.zeebe.broker.incident;
 
 import io.zeebe.broker.incident.data.*;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorErrorHandler;
 import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import org.agrona.DirectBuffer;
 
 public class IncidentStreamProcessorErrorHandler implements StreamProcessorErrorHandler
@@ -102,7 +101,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
         }
 
         final long position = logStreamWriter
-                .producerId(StreamProcessorIds.INCIDENT_PROCESSOR_ID)
+                // should not have a producer id since the event should be ignored while recovery
                 .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
                 .metadataWriter(incidentEventMetadata)
                 .valueWriter(incidentEvent)
