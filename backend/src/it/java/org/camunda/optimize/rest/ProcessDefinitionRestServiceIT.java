@@ -1,15 +1,15 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -442,12 +442,12 @@ public class ProcessDefinitionRestServiceIT {
     List<String> ids = new ArrayList<>();
     ids.add(expectedProcessDefinitionId);
     ids.add(expectedProcessDefinitionId_2);
-    Entity entity = Entity.entity(ids , MediaType.APPLICATION_JSON);
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("ids", ids.toArray())
             .request(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(entity);
+            .get();
     assertThat(response.getStatus(), is(200));
     Map<String,String> actual =
         response.readEntity(new GenericType<Map<String,String>>() {});

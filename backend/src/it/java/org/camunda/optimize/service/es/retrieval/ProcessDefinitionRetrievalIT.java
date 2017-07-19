@@ -15,10 +15,8 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -200,12 +198,12 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    Entity<List<String>> toPost = Entity.entity(ids, MediaType.APPLICATION_JSON);
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("ids", ids.toArray())
             .request()
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .post(toPost);
+            .get();
 
     Map<String, String> map = response.readEntity(new GenericType<Map<String, String>>() {});
 

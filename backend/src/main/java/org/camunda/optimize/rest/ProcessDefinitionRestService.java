@@ -115,11 +115,11 @@ public class ProcessDefinitionRestService {
    * @param ids List of process Definition ids for which the xmls have to be returned
    * @return The process definition xml requested.
    */
-  @POST
+  @GET
   @Path("/xml")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String,String> getProcessDefinitionsXml(List<String> ids) {
+  public Map<String,String> getProcessDefinitionsXml(@QueryParam("ids") List<String> ids) {
     return processDefinitionReader.getProcessDefinitionsXml(ids);
   }
 
