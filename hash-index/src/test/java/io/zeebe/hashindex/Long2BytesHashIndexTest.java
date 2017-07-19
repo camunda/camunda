@@ -226,11 +226,31 @@ public class Long2BytesHashIndexTest
     public void cannotPutValueIfIndexFull()
     {
         // given
+        index.setMaxTableSize(16);
         index.put(0, VALUE);
 
         thrown.expect(RuntimeException.class);
 
         index.put(16, ANOTHER_VALUE);
+    }
+
+    @Test
+    public void shouldResizeOnCollision()
+    {
+        // given
+        index.put(0L, VALUE);
+
+        // when
+        index.put(16L, ANOTHER_VALUE);
+
+        // then resize
+        assertThat(index.tableSize).isEqualTo(32);
+
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(index.get(0L, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
+        assertThat(index.get(16L, value)).isTrue();
+        assertThat(value).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test

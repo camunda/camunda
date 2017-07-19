@@ -15,23 +15,25 @@
  */
 package io.zeebe.hashindex.benchmarks;
 
-import io.zeebe.hashindex.types.ByteArrayKeyHandler;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
 import org.agrona.BitUtil;
 import io.zeebe.hashindex.*;
 
 public class HashIndexDetermineSizesBenchmark
 {
     private static final int KEYS_TO_PUT = 10_000_000;
-    private static final int MAX_POWER = 12;
+    private static final int MAX_POWER = 10;
+    private static final int DEFAULT_IDX_SIZE = HashIndex.DEFAULT_IDX_SIZE;
 
     public static void benchmarkOptimalValuesForLong2Long()
     {
         System.out.println("Long2LongHashIndex");
-        System.out.println("Keys to put\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
+        System.out.println("Keys to put\t\tIndexsize\t\tRecords per Block\t\tEnd IndexSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
-            final int indexSize = BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
+            final int indexSize = DEFAULT_IDX_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
             System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + indexSize + "\t\t\t\t\t\t" + recordsPerBlock);
             final Long2LongHashIndex index = new Long2LongHashIndex(indexSize, recordsPerBlock);
 
@@ -40,7 +42,7 @@ public class HashIndexDetermineSizesBenchmark
             {
                 index.put(i, i);
             }
-
+            System.out.print("\t\t\t\t" + index.getHashTableSize() / SIZE_OF_LONG);
             for (int i = 0; i < KEYS_TO_PUT; i++)
             {
                 if (index.get(i, -1) != i)
@@ -57,11 +59,11 @@ public class HashIndexDetermineSizesBenchmark
     public static void benchmarkOptimalValuesForBytes2Long()
     {
         System.out.println("Bytes2LongHashIndex");
-        System.out.println("Keys to put\t\tKeylength\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
+        System.out.println("Keys to put\t\tKeylength\t\tIndexsize\t\tRecords per Block\t\tEnd IndexSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
-            final int indexSize = BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
+            final int indexSize = DEFAULT_IDX_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
             final int keyLength = 1024;
             System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + keyLength + "\t\t\t" + indexSize + "\t\t\t\t\t\t" + recordsPerBlock);
             final Bytes2LongHashIndex index = new Bytes2LongHashIndex(indexSize, recordsPerBlock, keyLength);
@@ -72,7 +74,7 @@ public class HashIndexDetermineSizesBenchmark
                 final byte key[] = ("" + i).getBytes();
                 index.put(key, i);
             }
-
+            System.out.print("\t\t\t\t" + index.getHashTableSize() / SIZE_OF_LONG);
             for (int i = 0; i < KEYS_TO_PUT; i++)
             {
                 final byte key[] = ("" + i).getBytes();
@@ -90,11 +92,11 @@ public class HashIndexDetermineSizesBenchmark
     public static void benchmarkOptimalValuesForLong2Bytes()
     {
         System.out.println("Long2BytesHashIndex");
-        System.out.println("Keys to put\t\tvalueLength\t\tIndexsize\t\tRecords per Block\t\tDuration in ms");
+        System.out.println("Keys to put\t\tvalueLength\t\tIndexsize\t\tRecords per Block\t\tEnd IndexSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
-            final int indexSize = BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
+            final int indexSize = DEFAULT_IDX_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
             final int valueLength = 1024;
             System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + valueLength + "\t\t\t" + indexSize + "\t\t\t\t\t\t" + recordsPerBlock);
             final Long2BytesHashIndex index = new Long2BytesHashIndex(indexSize, recordsPerBlock, valueLength);
@@ -105,13 +107,14 @@ public class HashIndexDetermineSizesBenchmark
                 final byte key[] = ("" + i).getBytes();
                 index.put(i, key);
             }
+            System.out.print("\t\t\t\t" + index.getHashTableSize() / SIZE_OF_LONG);
 
             for (int i = 0; i < KEYS_TO_PUT; i++)
             {
                 final byte value[] = new byte[64];
                 if (!index.get(i, value))
                 {
-                    throw new RuntimeException("Illegal value " + new String(value) + " for " + i );
+                    throw new RuntimeException("Illegal value " + new String(value) + " for " + i);
                 }
             }
             final long endMillis = System.currentTimeMillis();

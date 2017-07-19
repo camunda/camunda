@@ -28,7 +28,7 @@ import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class HashIndexDataBuffer implements AutoCloseable
+public class HashTableBuckets implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
 
@@ -41,7 +41,7 @@ public class HashIndexDataBuffer implements AutoCloseable
     private long length;
     private long used;
 
-    public HashIndexDataBuffer(int maxBlockLength, int keyLength)
+    public HashTableBuckets(int maxBlockLength, int keyLength)
     {
         this.maxBlockLength = maxBlockLength;
         this.keyLength = keyLength;

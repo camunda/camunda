@@ -27,14 +27,14 @@ import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class HashIndexBuffer implements Closeable
+public class HashTable implements Closeable
 {
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    private final int length;
-    private final long addr;
+    private int length;
+    private long addr;
 
-    public HashIndexBuffer(int indexSize)
+    public HashTable(int indexSize)
     {
         length = Math.multiplyExact(indexSize, SIZE_OF_LONG);
         addr = UNSAFE.allocateMemory(length);
@@ -47,25 +47,41 @@ public class HashIndexBuffer implements Closeable
         UNSAFE.freeMemory(addr);
     }
 
+    public void clear()
+    {
+        UNSAFE.setMemory(addr, length, (byte) 0);
+    }
+
     public int getLength()
     {
         return length;
     }
 
-    public long getBlockOffset(int blockId)
+    public void resize(int indexSize)
+    {
+        final int newLength = Math.multiplyExact(indexSize, SIZE_OF_LONG);
+        if (newLength > length)
+        {
+            final int oldLength = length;
+            length = newLength;
+            addr = UNSAFE.reallocateMemory(addr, length);
+            UNSAFE.copyMemory(addr, addr + oldLength, length - oldLength);
+        }
+    }
+
+    // data
+
+    public long getBlockAddress(int blockId)
     {
         return UNSAFE.getLong(addr + (blockId * SIZE_OF_LONG));
     }
 
-    public void setBlockOffset(int blockId, long offset)
+    public void setBlockAddress(int blockId, long address)
     {
-        UNSAFE.putLong(addr + (blockId * SIZE_OF_LONG), offset);
+        UNSAFE.putLong(addr + (blockId * SIZE_OF_LONG), address);
     }
 
-    public void clear()
-    {
-        UNSAFE.setMemory(addr, length, (byte) 0);
-    }
+    // de-/serialize
 
     public void writeToStream(OutputStream outputStream, byte[] buffer) throws IOException
     {

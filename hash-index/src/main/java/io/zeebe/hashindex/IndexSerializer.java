@@ -61,7 +61,7 @@ public class IndexSerializer
         bufferView.putInt(0, VERSION);
         outputStream.write(buffer, 0, SIZE_OF_INT);
 
-        index.getIndexBuffer().writeToStream(outputStream, buffer);
+        index.getHashTable().writeToStream(outputStream, buffer);
         index.getDataBuffer().writeToStream(outputStream, buffer);
     }
 
@@ -81,7 +81,7 @@ public class IndexSerializer
             throw new RuntimeException(String.format("Cannot read index snapshot: expected version %d but got version %d", VERSION, version));
         }
 
-        index.getIndexBuffer().readFromStream(inputStream, buffer);
+        index.getHashTable().readFromStream(inputStream, buffer);
         index.getDataBuffer().readFromStream(inputStream, buffer);
     }
 

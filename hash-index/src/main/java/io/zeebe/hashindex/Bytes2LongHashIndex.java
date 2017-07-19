@@ -15,29 +15,25 @@
  */
 package io.zeebe.hashindex;
 
-import static io.zeebe.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static io.zeebe.hashindex.HashIndexDescriptor.getRecordLength;
-import static java.lang.Math.addExact;
-import static java.lang.Math.multiplyExact;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.hashindex.types.ByteArrayKeyHandler;
 import io.zeebe.hashindex.types.LongValueHandler;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValueHandler>
 {
-    public Bytes2LongHashIndex(
-            final int indexSize,
-            final int blockLength,
-            final int keyLength)
+    public Bytes2LongHashIndex(int maxKeyLength)
     {
-        super(indexSize, blockSize(blockLength, keyLength), keyLength);
+        super(maxKeyLength, SIZE_OF_LONG);
     }
 
-    private static int blockSize(int blockLength, int keyLength)
+    public Bytes2LongHashIndex(
+            final int indexSize,
+            final int blockCount,
+            final int maxKeyLength)
     {
-        return addExact(BLOCK_DATA_OFFSET, multiplyExact(blockLength, getRecordLength(keyLength, BitUtil.SIZE_OF_LONG)));
+        super(indexSize, blockCount, maxKeyLength, SIZE_OF_LONG);
     }
 
     public long get(byte[] key, long missingValue)

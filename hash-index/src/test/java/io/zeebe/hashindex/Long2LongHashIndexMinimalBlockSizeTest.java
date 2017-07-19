@@ -189,11 +189,28 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     @Test
     public void shouldThrowExceptionOnCollision()
     {
+        index.setMaxTableSize(16);
         index.put(0L, 1L);
 
         expectedException.expect(RuntimeException.class);
 
         // hash collision with 0L hashes to the same block. Block size = 1 => exception expected.
+        // resize not possible
         index.put(16L, 2L);
+    }
+
+    @Test
+    public void shouldResizeOnCollision()
+    {
+        // given
+        index.put(0L, 1L);
+
+        // when
+        index.put(16L, 2L);
+
+        // then resize
+        assertThat(index.tableSize).isEqualTo(32);
+        assertThat(index.get(0L, -1)).isEqualTo(1L);
+        assertThat(index.get(16L, -1)).isEqualTo(2L);
     }
 }
