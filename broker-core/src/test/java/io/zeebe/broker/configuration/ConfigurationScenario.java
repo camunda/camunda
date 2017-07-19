@@ -81,9 +81,9 @@ public class ConfigurationScenario
         return this;
     }
 
-    public ConfigurationScenario index(String parent, String child)
+    public ConfigurationScenario map(String parent, String child)
     {
-        withConfiguration("index", StreamProcessorCfg.class, parent, child);
+        withConfiguration("map", StreamProcessorCfg.class, parent, child);
         return this;
 
     }

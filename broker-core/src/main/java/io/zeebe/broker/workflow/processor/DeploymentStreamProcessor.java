@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
@@ -29,15 +27,20 @@ import java.util.List;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowDeploymentEventType;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.workflow.data.WorkflowEventType;
 import io.zeebe.broker.workflow.graph.WorkflowValidationResultFormatter;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
-import io.zeebe.hashindex.Bytes2LongHashIndex;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -58,8 +61,8 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
     protected final CommandResponseWriter responseWriter;
 
-    protected final Bytes2LongHashIndex index;
-    protected final HashIndexSnapshotSupport<Bytes2LongHashIndex> indexSnapshotSupport;
+    protected final Bytes2LongZbMap map;
+    protected final ZbMapSnapshotSupport<Bytes2LongZbMap> indexSnapshotSupport;
 
     protected final ArrayList<DeployedWorkflow> deployedWorkflows = new ArrayList<>();
 
@@ -77,8 +80,8 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
-        this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Bytes2LongZbMap(BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.indexSnapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
     @Override
@@ -103,7 +106,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     @Override
     public void onClose()
     {
-        index.close();
+        map.close();
     }
 
     public static MetadataFilter eventFilter()
@@ -185,7 +188,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
         final DirectBuffer bpmnProcessId = workflow.getId();
 
-        final int latestVersion = (int) index.get(bpmnProcessId.byteArray(), 0L);
+        final int latestVersion = (int) map.get(bpmnProcessId.byteArray(), 0L);
         final int version = latestVersion + 1;
 
         deploymentEvent.deployedWorkflows().add()
@@ -276,7 +279,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         {
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
 
-            index.put(deployedWorkflow.getBpmnProcessId().byteArray(), deployedWorkflow.getVersion());
+            map.put(deployedWorkflow.getBpmnProcessId().byteArray(), deployedWorkflow.getVersion());
         }
     }
 

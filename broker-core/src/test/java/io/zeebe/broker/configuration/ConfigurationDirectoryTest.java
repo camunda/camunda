@@ -55,7 +55,7 @@ public class ConfigurationDirectoryTest
                 .metrics(GLOBAL_DIRECTORY, "metrics")
                 .gossip(GLOBAL_DIRECTORY, "gossip")
                 .meta(GLOBAL_DIRECTORY, "meta")
-                .index(GLOBAL_DIRECTORY, "index")
+                .map(GLOBAL_DIRECTORY, "map")
                 .snapshot(GLOBAL_DIRECTORY, "snapshot")
                 .subscriptions(GLOBAL_DIRECTORY, "subscription")
                 .log(GLOBAL_DIRECTORY, "logs"),
@@ -65,7 +65,7 @@ public class ConfigurationDirectoryTest
                 .metrics(GLOBAL_DIRECTORY_DEFAULT, "metrics")
                 .gossip(GLOBAL_DIRECTORY_DEFAULT, "gossip")
                 .meta(GLOBAL_DIRECTORY_DEFAULT, "meta")
-                .index(GLOBAL_DIRECTORY_DEFAULT, "index")
+                .map(GLOBAL_DIRECTORY_DEFAULT, "map")
                 .snapshot(GLOBAL_DIRECTORY_DEFAULT, "snapshot")
                 .subscriptions(GLOBAL_DIRECTORY_DEFAULT, "subscription")
                 .log(GLOBAL_DIRECTORY_DEFAULT, "logs"),
@@ -75,7 +75,7 @@ public class ConfigurationDirectoryTest
                 .metrics(GLOBAL_DIRECTORY_TEMP, "metrics")
                 .gossip(GLOBAL_DIRECTORY_TEMP, "gossip")
                 .meta(GLOBAL_DIRECTORY_TEMP, "meta")
-                .index(GLOBAL_DIRECTORY_TEMP, "index")
+                .map(GLOBAL_DIRECTORY_TEMP, "map")
                 .snapshot(GLOBAL_DIRECTORY_TEMP, "snapshot")
                 .subscriptions(GLOBAL_DIRECTORY_TEMP, "subscription")
                 .log(GLOBAL_DIRECTORY_TEMP, "logs"),
@@ -85,7 +85,7 @@ public class ConfigurationDirectoryTest
                 .metrics(LOCAL_DIRECTORY, "my-metrics")
                 .gossip(LOCAL_DIRECTORY, "my-gossip")
                 .meta(LOCAL_DIRECTORY, "my-meta")
-                .index(LOCAL_DIRECTORY, "my-index")
+                .map(LOCAL_DIRECTORY, "my-map")
                 .snapshot(LOCAL_DIRECTORY, "my-snapshot")
                 .subscriptions(LOCAL_DIRECTORY, "my-subscription")
                 .log(LOCAL_DIRECTORY, "my-log-1")

@@ -23,7 +23,7 @@ public enum WorkflowDeploymentEventType
     DEPLOYMENT_CREATED(1),
     DEPLOYMENT_REJECTED(2);
 
-    // don't change the ids because the stream processor use them for the index
+    // don't change the ids because the stream processor use them for the map
     private final int id;
 
     WorkflowDeploymentEventType(int id)

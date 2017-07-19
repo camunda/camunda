@@ -53,7 +53,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     protected final Runnable checkLockExpirationCmd = new CheckLockExpirationCmd();
 
-    // TODO #161 - replace the index by a more efficient one
+    // TODO #161 - replace the map by a more efficient one
     protected HashMap<Long, ExpirationTimeBucket> index = new HashMap<>();
     protected SerializableWrapper<HashMap<Long, ExpirationTimeBucket>> indexSnapshot = new SerializableWrapper<>(index);
 
@@ -92,7 +92,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         targetLogStreamTopicName = targetStream.getTopicName();
         targetLogStreamPartitionId = targetStream.getPartitionId();
 
-        // restore index from snapshot
+        // restore map from snapshot
         index = indexSnapshot.getObject();
     }
 
@@ -138,7 +138,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            // just add event to index
+            // just add event to map
         }
 
         @Override
@@ -156,7 +156,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            // just remove event from index
+            // just remove event from map
         }
 
         @Override

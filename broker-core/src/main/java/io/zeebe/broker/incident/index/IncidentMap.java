@@ -17,25 +17,23 @@
  */
 package io.zeebe.broker.incident.index;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2BytesZbMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Index that maps <b>incident key</b> to
+ * Maps <b>incident key</b> to
  *
  * <li>incident state
  * <li>incident event position
  * <li>failure event position
  */
-public class IncidentIndex
+public class IncidentMap
 {
     private static final int STATE_OFFSET = 0;
     private static final int INCIDENT_EVENT_POSITION_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
@@ -48,19 +46,19 @@ public class IncidentIndex
     private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
     private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
 
-    private final Long2BytesHashIndex index;
-    private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
+    private final Long2BytesZbMap map;
+    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
 
-    public IncidentIndex()
+    public IncidentMap()
     {
-        this.index = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Long2BytesZbMap(INDEX_VALUE_SIZE);
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public ZbMapSnapshotSupport getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -72,12 +70,12 @@ public class IncidentIndex
 
     public void remove(long incidentKey)
     {
-        index.remove(incidentKey, rawBuffer);
+        map.remove(incidentKey, rawBuffer);
     }
 
-    public IncidentIndex wrapIncidentKey(long key)
+    public IncidentMap wrapIncidentKey(long key)
     {
-        this.isRead = index.get(key, rawBuffer);
+        this.isRead = map.get(key, rawBuffer);
         this.key = key;
 
         return this;
@@ -98,7 +96,7 @@ public class IncidentIndex
         return isRead ? buffer.getLong(FAILURE_EVENT_POSITION_OFFSET, BYTE_ORDER) : -1L;
     }
 
-    public IncidentIndex newIncident(long incidentKey)
+    public IncidentMap newIncident(long incidentKey)
     {
         key = incidentKey;
         isRead = true;
@@ -108,24 +106,24 @@ public class IncidentIndex
     public void write()
     {
         ensureRead();
-        index.put(key, buffer.byteArray());
+        map.put(key, buffer.byteArray());
     }
 
-    public IncidentIndex setState(short state)
+    public IncidentMap setState(short state)
     {
         ensureRead();
         buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
         return this;
     }
 
-    public IncidentIndex setIncidentEventPosition(long position)
+    public IncidentMap setIncidentEventPosition(long position)
     {
         ensureRead();
         buffer.putLong(INCIDENT_EVENT_POSITION_OFFSET, position, BYTE_ORDER);
         return this;
     }
 
-    public IncidentIndex setFailureEventPosition(long position)
+    public IncidentMap setFailureEventPosition(long position)
     {
         ensureRead();
         buffer.putLong(FAILURE_EVENT_POSITION_OFFSET, position, BYTE_ORDER);
@@ -142,7 +140,7 @@ public class IncidentIndex
 
     public void close()
     {
-        index.close();
+        map.close();
     }
 
 }

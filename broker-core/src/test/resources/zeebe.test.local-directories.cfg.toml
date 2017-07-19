@@ -17,8 +17,8 @@ directory = "/tmp/my-local-path/my-metrics"
 [snapshot]
 directory = "/tmp/my-local-path/my-snapshot"
 
-[index]
-directory = "/tmp/my-local-path/my-index"
+[map]
+directory = "/tmp/my-local-path/my-map"
 
 [subscriptions]
 directory = "/tmp/my-local-path/my-subscription"

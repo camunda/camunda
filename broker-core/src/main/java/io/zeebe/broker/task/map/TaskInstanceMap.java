@@ -15,29 +15,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.task.index;
+package io.zeebe.broker.task.map;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.*;
+
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.task.processor.TaskSubscription;
-import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2BytesZbMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Index that maps <b>task instance key</b> to
+ * Maps <b>task instance key</b> to
  *
  * <li> state
  * <li> lock owner length
  * <li> lock owner (max 64 chars)
  */
-public class TaskInstanceIndex
+public class TaskInstanceMap
 {
-    private static final int INDEX_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * TaskSubscription.LOCK_OWNER_MAX_LENGTH;
+    private static final int MAP_VALUE_SIZE = SIZE_OF_SHORT + SIZE_OF_INT + SIZE_OF_CHAR * TaskSubscription.LOCK_OWNER_MAX_LENGTH;
 
     private static final int STATE_OFFSET = 0;
     private static final int LOCK_OWNER_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
@@ -45,23 +44,23 @@ public class TaskInstanceIndex
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
+    private final byte[] rawBuffer = new byte[MAP_VALUE_SIZE];
     private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
     private final UnsafeBuffer lockOwnerBuffer = new UnsafeBuffer(0, 0);
 
-    private final Long2BytesHashIndex index;
-    private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
+    private final Long2BytesZbMap map;
+    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
 
-    public TaskInstanceIndex()
+    public TaskInstanceMap()
     {
-        this.index = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Long2BytesZbMap(MAP_VALUE_SIZE);
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public HashIndexSnapshotSupport getSnapshotSupport()
+    public ZbMapSnapshotSupport getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -73,12 +72,12 @@ public class TaskInstanceIndex
 
     public void remove(long workflowInstanceKey)
     {
-        index.remove(workflowInstanceKey, rawBuffer);
+        map.remove(workflowInstanceKey, rawBuffer);
     }
 
-    public TaskInstanceIndex wrapTaskInstanceKey(long key)
+    public TaskInstanceMap wrapTaskInstanceKey(long key)
     {
-        this.isRead = index.get(key, rawBuffer);
+        this.isRead = map.get(key, rawBuffer);
         this.key = key;
 
         return this;
@@ -103,7 +102,7 @@ public class TaskInstanceIndex
         return lockOwnerBuffer;
     }
 
-    public TaskInstanceIndex newTaskInstance(long taskInstanceKey)
+    public TaskInstanceMap newTaskInstance(long taskInstanceKey)
     {
         key = taskInstanceKey;
         isRead = true;
@@ -113,17 +112,17 @@ public class TaskInstanceIndex
     public void write()
     {
         ensureRead();
-        index.put(key, buffer.byteArray());
+        map.put(key, buffer.byteArray());
     }
 
-    public TaskInstanceIndex setState(short state)
+    public TaskInstanceMap setState(short state)
     {
         ensureRead();
         buffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
         return this;
     }
 
-    public TaskInstanceIndex setLockOwner(DirectBuffer lockOwner)
+    public TaskInstanceMap setLockOwner(DirectBuffer lockOwner)
     {
         ensureRead();
         buffer.putInt(LOCK_OWNER_LENGTH_OFFSET, lockOwner.capacity(), BYTE_ORDER);
@@ -141,7 +140,7 @@ public class TaskInstanceIndex
 
     public void close()
     {
-        index.close();
+        map.close();
     }
 
 }

@@ -32,11 +32,11 @@ import io.zeebe.broker.workflow.data.*;
 import io.zeebe.broker.workflow.graph.model.*;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
-import io.zeebe.broker.workflow.index.*;
+import io.zeebe.broker.workflow.map.*;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.processor.*;
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
@@ -90,11 +90,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final CommandResponseWriter responseWriter;
 
     protected final WorkflowInstanceIndex workflowInstanceIndex;
-    protected final ActivityInstanceIndex activityInstanceIndex;
+    protected final ActivityInstanceMap activityInstanceMap;
     protected final WorkflowDeploymentCache workflowDeploymentCache;
     protected final PayloadCache payloadCache;
 
-    protected final ComposedHashIndexSnapshot composedSnapshot;
+    protected final ComposedZbMapSnapshot composedSnapshot;
 
     protected LogStreamReader logStreamReader;
     protected LogStreamBatchWriter logStreamBatchWriter;
@@ -121,15 +121,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.payloadCache = new PayloadCache(payloadCacheSize, logStreamReader);
 
         this.workflowInstanceIndex = new WorkflowInstanceIndex();
-        this.activityInstanceIndex = new ActivityInstanceIndex();
+        this.activityInstanceMap = new ActivityInstanceMap();
 
         this.payloadMappingProcessor = new MappingProcessor(4096);
 
-        this.composedSnapshot = new ComposedHashIndexSnapshot(
-                workflowInstanceIndex.getSnapshotSupport(),
-                activityInstanceIndex.getSnapshotSupport(),
-                workflowDeploymentCache.getSnapshotSupport(),
-                payloadCache.getSnapshotSupport());
+        this.composedSnapshot = new ComposedZbMapSnapshot(
+            workflowInstanceIndex.getSnapshotSupport(),
+            activityInstanceMap.getSnapshotSupport(),
+            workflowDeploymentCache.getSnapshotSupport(),
+            payloadCache.getSnapshotSupport());
 
     }
 
@@ -163,7 +163,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     public void onClose()
     {
         workflowInstanceIndex.close();
-        activityInstanceIndex.close();
+        activityInstanceMap.close();
         workflowDeploymentCache.close();
         payloadCache.close();
     }
@@ -211,7 +211,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected void reset()
     {
         workflowInstanceIndex.reset();
-        activityInstanceIndex.reset();
+        activityInstanceMap.reset();
     }
 
     protected EventProcessor onWorkflowInstanceEvent(LoggedEvent event)
@@ -623,7 +623,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 }
                 catch (Exception e)
                 {
-                    // update the index in any case because further processors based on it (#311 should improve behavior)
+                    // update the map in any case because further processors based on it (#311 should improve behavior)
                     updateState();
                     // re-throw the exception to create the incident
                     throw e;
@@ -661,7 +661,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setActivityKey(eventKey)
                 .write();
 
-            activityInstanceIndex
+            activityInstanceMap
                 .newActivityInstance(eventKey)
                 .setActivityId(workflowInstanceEvent.getActivityId())
                 .setTaskKey(-1L)
@@ -743,7 +743,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             if (isActive)
             {
-                activityInstanceIndex
+                activityInstanceMap
                     .wrapActivityInstanceKey(taskEvent.headers().getActivityInstanceKey())
                     .setTaskKey(eventKey)
                     .write();
@@ -782,7 +782,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         private boolean isTaskOpen(long activityInstanceKey)
         {
             // task key = -1 when activity is left
-            return activityInstanceIndex.wrapActivityInstanceKey(activityInstanceKey).getTaskKey() == eventKey;
+            return activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getTaskKey() == eventKey;
         }
 
         @Override
@@ -796,7 +796,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             if (isActivityCompleted)
             {
-                activityInstanceIndex
+                activityInstanceMap
                     .setTaskKey(-1L)
                     .write();
             }
@@ -853,7 +853,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setActivityKey(-1L)
                 .write();
 
-            activityInstanceIndex.remove(eventKey);
+            activityInstanceMap.remove(eventKey);
         }
     }
 
@@ -881,7 +881,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setPayload(WorkflowInstanceEvent.NO_PAYLOAD);
 
                 activityInstanceKey = workflowInstanceIndex.getActivityInstanceKey();
-                taskKey = activityInstanceIndex.wrapActivityInstanceKey(activityInstanceKey).getTaskKey();
+                taskKey = activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getTaskKey();
 
                 isCanceled = true;
             }
@@ -944,7 +944,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
                     .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
                     .setWorkflowInstanceKey(eventKey)
-                    .setActivityId(activityInstanceIndex.getActivityId())
+                    .setActivityId(activityInstanceMap.getActivityId())
                     .setActivityInstanceKey(activityInstanceKey);
 
             logEntryBuilder
@@ -968,7 +968,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
                 .setVersion(workflowInstanceEvent.getVersion())
                 .setWorkflowInstanceKey(eventKey)
-                .setActivityId(activityInstanceIndex.getActivityId());
+                .setActivityId(activityInstanceMap.getActivityId());
 
             logEntryBuilder
                 .key(activityInstanceKey)
@@ -990,7 +990,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceIndex.remove(eventKey);
                 payloadCache.remove(eventKey);
-                activityInstanceIndex.remove(activityInstanceKey);
+                activityInstanceMap.remove(activityInstanceKey);
             }
         }
     }
@@ -1006,7 +1006,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey()).getActivityInstanceKey();
 
-            // the index contains the activity when it is ready, activated or completing
+            // the map contains the activity when it is ready, activated or completing
             // in this cases, the payload can be updated and it is taken for the next workflow instance event
             WorkflowInstanceEventType workflowInstanceEventType = WorkflowInstanceEventType.UPDATE_PAYLOAD_REJECTED;
             if (currentActivityInstanceKey > 0 && currentActivityInstanceKey == eventKey)

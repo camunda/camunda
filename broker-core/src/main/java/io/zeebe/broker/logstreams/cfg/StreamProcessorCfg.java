@@ -24,6 +24,6 @@ public class StreamProcessorCfg extends DirectoryConfiguration
     @Override
     protected String componentDirectoryName()
     {
-        return "index";
+        return "map";
     }
 }

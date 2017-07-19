@@ -15,28 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.index;
+package io.zeebe.broker.workflow.map;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
-import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2BytesZbMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Index that maps <b>activity instance key</b> to
+ * Maps <b>activity instance key</b> to
  *
  * <li>task instance key
  * <li>activity id length
  * <li>activity id (max 255 chars)
  */
-public class ActivityInstanceIndex implements AutoCloseable
+public class ActivityInstanceMap implements AutoCloseable
 {
     private static final int SIZE_OF_ACTIVITY_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
@@ -51,19 +49,19 @@ public class ActivityInstanceIndex implements AutoCloseable
     private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
     private final UnsafeBuffer activityIdBuffer = new UnsafeBuffer(new byte[SIZE_OF_ACTIVITY_ID]);
 
-    private final Long2BytesHashIndex index;
-    private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
+    private final Long2BytesZbMap map;
+    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
 
-    public ActivityInstanceIndex()
+    public ActivityInstanceMap()
     {
-        this.index = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Long2BytesZbMap(INDEX_VALUE_SIZE);
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public HashIndexSnapshotSupport<Long2BytesHashIndex> getSnapshotSupport()
+    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -75,12 +73,12 @@ public class ActivityInstanceIndex implements AutoCloseable
 
     public void remove(long activityInstanceKey)
     {
-        index.remove(activityInstanceKey, rawBuffer);
+        map.remove(activityInstanceKey, rawBuffer);
     }
 
-    public ActivityInstanceIndex wrapActivityInstanceKey(long key)
+    public ActivityInstanceMap wrapActivityInstanceKey(long key)
     {
-        this.isRead = index.get(key, rawBuffer);
+        this.isRead = map.get(key, rawBuffer);
         this.key = key;
 
         return this;
@@ -106,7 +104,7 @@ public class ActivityInstanceIndex implements AutoCloseable
         return activityIdBuffer;
     }
 
-    public ActivityInstanceIndex newActivityInstance(long activityInstanceKey)
+    public ActivityInstanceMap newActivityInstance(long activityInstanceKey)
     {
         key = activityInstanceKey;
         isRead = true;
@@ -116,10 +114,10 @@ public class ActivityInstanceIndex implements AutoCloseable
     public void write()
     {
         ensureRead();
-        index.put(key, buffer.byteArray());
+        map.put(key, buffer.byteArray());
     }
 
-    public ActivityInstanceIndex setActivityId(DirectBuffer activityId)
+    public ActivityInstanceMap setActivityId(DirectBuffer activityId)
     {
         ensureRead();
         buffer.putInt(ACTIVITY_ID_LENGTH_OFFSET, activityId.capacity(), BYTE_ORDER);
@@ -127,7 +125,7 @@ public class ActivityInstanceIndex implements AutoCloseable
         return this;
     }
 
-    public ActivityInstanceIndex setTaskKey(long taskKey)
+    public ActivityInstanceMap setTaskKey(long taskKey)
     {
         ensureRead();
         buffer.putLong(TASK_KEY_OFFSET, taskKey, BYTE_ORDER);
@@ -145,6 +143,6 @@ public class ActivityInstanceIndex implements AutoCloseable
     @Override
     public void close()
     {
-        index.close();
+        map.close();
     }
 }

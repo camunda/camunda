@@ -15,23 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.index;
-
-
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
+package io.zeebe.broker.workflow.map;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.hashindex.Long2LongHashIndex;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.util.cache.ExpandableBufferCache;
 import org.agrona.DirectBuffer;
 
 /**
  * Cache of workflow instance payload. It contains an LRU cache of the payload
- * and an index which holds the position of the payload events.
+ * and an map which holds the position of the payload events.
  *
  * <p>
  * When a payload is requested then the it is returned from the cache. If it is
@@ -41,16 +37,16 @@ public class PayloadCache implements AutoCloseable
 {
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
 
-    private final Long2LongHashIndex index;
-    private final HashIndexSnapshotSupport<Long2LongHashIndex> snapshotSupport;
+    private final Long2LongZbMap map;
+    private final ZbMapSnapshotSupport<Long2LongZbMap> snapshotSupport;
 
     private final ExpandableBufferCache cache;
     private final LogStreamReader logStreamReader;
 
     public PayloadCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.index = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Long2LongZbMap();
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
 
         this.logStreamReader = logStreamReader;
         this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
@@ -78,7 +74,7 @@ public class PayloadCache implements AutoCloseable
     {
         DirectBuffer payload = null;
 
-        final long position = index.get(workflowInstanceKey, -1L);
+        final long position = map.get(workflowInstanceKey, -1L);
 
         if (position > 0)
         {
@@ -89,16 +85,16 @@ public class PayloadCache implements AutoCloseable
 
     public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)
     {
-        index.put(workflowInstanceKey, payloadEventPosition);
+        map.put(workflowInstanceKey, payloadEventPosition);
         cache.put(payloadEventPosition, payload);
     }
 
     public void remove(long workflowInstanceKey)
     {
-        index.remove(workflowInstanceKey, -1L);
+        map.remove(workflowInstanceKey, -1L);
     }
 
-    public HashIndexSnapshotSupport<Long2LongHashIndex> getSnapshotSupport()
+    public ZbMapSnapshotSupport<Long2LongZbMap> getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -106,7 +102,7 @@ public class PayloadCache implements AutoCloseable
     @Override
     public void close()
     {
-        index.close();
+        map.close();
     }
 
 }

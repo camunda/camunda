@@ -15,21 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.index;
+package io.zeebe.broker.workflow.map;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.hashindex.Long2BytesHashIndex;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Long2BytesZbMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Index that maps <b>workflow instance key</b> to
+ * Maps <b>workflow instance key</b> to
  *
  * <li>workflow instance event position
  * <li>active token count
@@ -48,19 +46,19 @@ public class WorkflowInstanceIndex implements AutoCloseable
     private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
     private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
 
-    private final Long2BytesHashIndex index;
-    private final HashIndexSnapshotSupport<Long2BytesHashIndex> snapshotSupport;
+    private final Long2BytesZbMap map;
+    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
 
     public WorkflowInstanceIndex()
     {
-        this.index = new Long2BytesHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, INDEX_VALUE_SIZE);
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(index);
+        this.map = new Long2BytesZbMap(INDEX_VALUE_SIZE);
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public HashIndexSnapshotSupport<Long2BytesHashIndex> getSnapshotSupport()
+    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -72,12 +70,12 @@ public class WorkflowInstanceIndex implements AutoCloseable
 
     public void remove(long workflowInstanceKey)
     {
-        index.remove(workflowInstanceKey, rawBuffer);
+        map.remove(workflowInstanceKey, rawBuffer);
     }
 
     public WorkflowInstanceIndex wrapWorkflowInstanceKey(long key)
     {
-        this.isRead = index.get(key, rawBuffer);
+        this.isRead = map.get(key, rawBuffer);
         this.key = key;
 
         return this;
@@ -108,7 +106,7 @@ public class WorkflowInstanceIndex implements AutoCloseable
     public void write()
     {
         ensureRead();
-        index.put(key, buffer.byteArray());
+        map.put(key, buffer.byteArray());
     }
 
     public WorkflowInstanceIndex setPosition(long position)
@@ -143,6 +141,6 @@ public class WorkflowInstanceIndex implements AutoCloseable
     @Override
     public void close()
     {
-        index.close();
+        map.close();
     }
 }

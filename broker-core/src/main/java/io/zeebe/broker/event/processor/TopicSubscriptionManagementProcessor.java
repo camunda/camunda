@@ -19,8 +19,6 @@ package io.zeebe.broker.event.processor;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +31,6 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.hashindex.Bytes2LongHashIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -41,8 +38,9 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
@@ -70,7 +68,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final CommandResponseWriter responseWriter;
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
     protected final ServiceStartContext serviceContext;
-    protected final Bytes2LongHashIndex ackIndex;
+    protected final Bytes2LongZbMap ackMap;
 
     protected DeferredCommandContext cmdContext;
 
@@ -95,8 +93,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
-        this.ackIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
-        this.snapshotResource = new HashIndexSnapshotSupport<>(ackIndex);
+        this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
+        this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
     }
 
     @Override
@@ -114,7 +112,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     @Override
     public void onClose()
     {
-        ackIndex.close();
+        ackMap.close();
     }
 
     @Override
@@ -187,7 +185,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected void putAck(DirectBuffer subscriptionName, long ackPosition)
     {
-        ackIndex.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
+        ackMap.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
     }
 
     public CompletableFuture<Void> closePushProcessorAsync(long subscriberKey)
@@ -219,7 +217,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     public long determineResumePosition(DirectBuffer subscriptionName, long startPosition, boolean forceStart)
     {
-        final long lastAckedPosition = ackIndex.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
+        final long lastAckedPosition = ackMap.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
 
         if (forceStart)
         {

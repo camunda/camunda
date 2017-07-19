@@ -15,10 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.index;
+package io.zeebe.broker.workflow.map;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
@@ -27,17 +25,17 @@ import java.nio.ByteOrder;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
-import io.zeebe.hashindex.Bytes2LongHashIndex;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.map.Bytes2LongZbMap;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Cache of deployed workflows. It contains an LRU cache which maps the workflow
- * key to the parsed workflow. Additionally, it holds an index which maps BPMN
+ * key to the parsed workflow. Additionally, it holds an map which maps BPMN
  * process id + version to workflow key.
  *
  * <p>
@@ -57,25 +55,25 @@ public class WorkflowDeploymentCache implements AutoCloseable
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
     private final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
-    private final Bytes2LongHashIndex idVersionToKeyIndex;
+    private final Bytes2LongZbMap idVersionToKeyMap;
 
-    private final HashIndexSnapshotSupport<Bytes2LongHashIndex> snapshotSupport;
+    private final ZbMapSnapshotSupport<Bytes2LongZbMap> snapshotSupport;
 
     private final LongLruCache<ExecutableWorkflow> cache;
     private final LogStreamReader logStreamReader;
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.idVersionToKeyIndex = new Bytes2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT, SIZE_OF_COMPOSITE_KEY);
+        this.idVersionToKeyMap = new Bytes2LongZbMap(SIZE_OF_COMPOSITE_KEY);
 
-        this.snapshotSupport = new HashIndexSnapshotSupport<>(idVersionToKeyIndex);
+        this.snapshotSupport = new ZbMapSnapshotSupport<>(idVersionToKeyMap);
 
         this.logStreamReader = logStreamReader;
         this.cache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
         { });
     }
 
-    public HashIndexSnapshotSupport<Bytes2LongHashIndex> getSnapshotSupport()
+    public ZbMapSnapshotSupport<Bytes2LongZbMap> getSnapshotSupport()
     {
         return snapshotSupport;
     }
@@ -89,11 +87,11 @@ public class WorkflowDeploymentCache implements AutoCloseable
     public void addDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
     {
         wrap(bpmnProcessId, version);
-        idVersionToKeyIndex.put(buffer.byteArray(), workflowKey);
+        idVersionToKeyMap.put(buffer.byteArray(), workflowKey);
 
         // override the latest version by the given key
         wrap(bpmnProcessId, LATEST_VERSION);
-        idVersionToKeyIndex.put(buffer.byteArray(), workflowKey);
+        idVersionToKeyMap.put(buffer.byteArray(), workflowKey);
     }
 
     public long getWorkflowKeyByIdAndLatestVersion(DirectBuffer bpmnProcessId)
@@ -105,7 +103,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     {
         wrap(bpmnProcessId, version);
 
-        return idVersionToKeyIndex.get(buffer.byteArray(), -1L);
+        return idVersionToKeyMap.get(buffer.byteArray(), -1L);
     }
 
     public ExecutableWorkflow getWorkflow(long workflowKey)
@@ -143,7 +141,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     @Override
     public void close()
     {
-        idVersionToKeyIndex.close();
+        idVersionToKeyMap.close();
     }
 
 }

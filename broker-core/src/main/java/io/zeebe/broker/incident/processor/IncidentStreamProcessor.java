@@ -17,25 +17,22 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_BUCKET_COUNT;
-import static io.zeebe.hashindex.HashIndex.OPTIMAL_INDEX_SIZE;
-
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentEventType;
-import io.zeebe.broker.incident.index.IncidentIndex;
+import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.hashindex.Long2LongHashIndex;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.snapshot.ComposedHashIndexSnapshot;
-import io.zeebe.logstreams.snapshot.HashIndexSnapshotSupport;
+import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -51,10 +48,10 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private static final long NON_PERSISTENT_INCIDENT = -2L;
 
-    private final Long2LongHashIndex activityInstanceIndex;
-    private final Long2LongHashIndex failedTaskIndex;
+    private final Long2LongZbMap activityInstanceMap;
+    private final Long2LongZbMap failedTaskMap;
 
-    private final IncidentIndex incidentIndex;
+    private final IncidentMap incidentMap;
 
     private final SnapshotSupport indexSnapshot;
 
@@ -85,14 +82,14 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     public IncidentStreamProcessor()
     {
-        this.activityInstanceIndex = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
-        this.failedTaskIndex = new Long2LongHashIndex(OPTIMAL_INDEX_SIZE, OPTIMAL_BUCKET_COUNT);
-        this.incidentIndex = new IncidentIndex();
+        this.activityInstanceMap = new Long2LongZbMap();
+        this.failedTaskMap = new Long2LongZbMap();
+        this.incidentMap = new IncidentMap();
 
-        this.indexSnapshot = new ComposedHashIndexSnapshot(
-                new HashIndexSnapshotSupport<>(activityInstanceIndex),
-                new HashIndexSnapshotSupport<>(failedTaskIndex),
-                incidentIndex.getSnapshotSupport());
+        this.indexSnapshot = new ComposedZbMapSnapshot(
+            new ZbMapSnapshotSupport<>(activityInstanceMap),
+            new ZbMapSnapshotSupport<>(failedTaskMap),
+            incidentMap.getSnapshotSupport());
     }
 
     @Override
@@ -112,9 +109,9 @@ public class IncidentStreamProcessor implements StreamProcessor
     @Override
     public void onClose()
     {
-        activityInstanceIndex.close();
-        failedTaskIndex.close();
-        incidentIndex.close();
+        activityInstanceMap.close();
+        failedTaskMap.close();
+        incidentMap.close();
 
         logStreamReader.close();
     }
@@ -129,7 +126,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        incidentIndex.reset();
+        incidentMap.reset();
 
         eventKey = event.getKey();
         eventPosition = event.getPosition();
@@ -260,7 +257,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isTaskIncident = incidentEvent.getTaskKey() > 0;
             // ensure that the task is not resolved yet
-            isCreated = isTaskIncident ? failedTaskIndex.get(incidentEvent.getTaskKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
+            isCreated = isTaskIncident ? failedTaskMap.get(incidentEvent.getTaskKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
 
             if (isCreated)
             {
@@ -283,7 +280,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isCreated)
             {
-                incidentIndex
+                incidentMap
                     .newIncident(eventKey)
                     .setState(STATE_CREATED)
                     .setIncidentEventPosition(eventPosition)
@@ -292,11 +289,11 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 if (isTaskIncident)
                 {
-                    failedTaskIndex.put(incidentEvent.getTaskKey(), eventKey);
+                    failedTaskMap.put(incidentEvent.getTaskKey(), eventKey);
                 }
                 else
                 {
-                    activityInstanceIndex.put(incidentEvent.getActivityInstanceKey(), eventKey);
+                    activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), eventKey);
                 }
             }
         }
@@ -312,9 +309,9 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isResolving = false;
 
-            incidentKey = activityInstanceIndex.get(eventKey, -1L);
+            incidentKey = activityInstanceMap.get(eventKey, -1L);
 
-            if (incidentKey > 0 && incidentIndex.wrapIncidentKey(incidentKey).getState() == STATE_CREATED)
+            if (incidentKey > 0 && incidentMap.wrapIncidentKey(incidentKey).getState() == STATE_CREATED)
             {
                 incidentEvent.reset();
                 incidentEvent
@@ -344,12 +341,12 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isResolved = false;
 
-            incidentIndex.wrapIncidentKey(eventKey);
+            incidentMap.wrapIncidentKey(eventKey);
 
-            if (incidentIndex.getState() == STATE_CREATED)
+            if (incidentMap.getState() == STATE_CREATED)
             {
                 // re-write the failure event with new payload
-                failureEvent = findEvent(incidentIndex.getFailureEventPosition());
+                failureEvent = findEvent(incidentMap.getFailureEventPosition());
 
                 workflowInstanceEvent.reset();
                 failureEvent.readValue(workflowInstanceEvent);
@@ -397,7 +394,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isResolved)
             {
-                incidentIndex
+                incidentMap
                     .setState(STATE_RESOLVING)
                     .write();
             }
@@ -411,9 +408,9 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            incidentIndex.wrapIncidentKey(eventKey);
+            incidentMap.wrapIncidentKey(eventKey);
 
-            isFailed = incidentIndex.getState() == STATE_RESOLVING;
+            isFailed = incidentMap.getState() == STATE_RESOLVING;
         }
 
         @Override
@@ -421,7 +418,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isFailed)
             {
-                incidentIndex
+                incidentMap
                     .setState(STATE_CREATED)
                     .write();
             }
@@ -437,9 +434,9 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isDeleted = false;
 
-            incidentIndex.wrapIncidentKey(eventKey);
+            incidentMap.wrapIncidentKey(eventKey);
 
-            final long incidentEventPosition = incidentIndex.getIncidentEventPosition();
+            final long incidentEventPosition = incidentMap.getIncidentEventPosition();
 
             if (incidentEventPosition > 0)
             {
@@ -468,7 +465,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isDeleted)
             {
-                incidentIndex.remove(eventKey);
+                incidentMap.remove(eventKey);
             }
         }
     }
@@ -483,16 +480,16 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isResolved = false;
 
-            incidentKey = activityInstanceIndex.get(eventKey, -1L);
+            incidentKey = activityInstanceMap.get(eventKey, -1L);
 
             if (incidentKey > 0)
             {
-                incidentIndex.wrapIncidentKey(incidentKey);
+                incidentMap.wrapIncidentKey(incidentKey);
 
-                if (incidentIndex.getState() == STATE_RESOLVING)
+                if (incidentMap.getState() == STATE_RESOLVING)
                 {
                     // incident is resolved when read next activity lifecycle event
-                    final LoggedEvent incidentCreateEvent = findEvent(incidentIndex.getIncidentEventPosition());
+                    final LoggedEvent incidentCreateEvent = findEvent(incidentMap.getIncidentEventPosition());
 
                     incidentEvent.reset();
                     incidentCreateEvent.readValue(incidentEvent);
@@ -503,7 +500,7 @@ public class IncidentStreamProcessor implements StreamProcessor
                 }
                 else
                 {
-                    throw new IllegalStateException("inconsistent incident index");
+                    throw new IllegalStateException("inconsistent incident map");
                 }
             }
         }
@@ -519,8 +516,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isResolved)
             {
-                incidentIndex.remove(incidentKey);
-                activityInstanceIndex.remove(incidentEvent.getActivityInstanceKey(), -1L);
+                incidentMap.remove(incidentKey);
+                activityInstanceMap.remove(incidentEvent.getActivityInstanceKey(), -1L);
             }
         }
     }
@@ -533,13 +530,13 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            incidentKey = activityInstanceIndex.get(eventKey, -1L);
+            incidentKey = activityInstanceMap.get(eventKey, -1L);
 
             if (incidentKey > 0)
             {
-                incidentIndex.wrapIncidentKey(incidentKey);
+                incidentMap.wrapIncidentKey(incidentKey);
 
-                if (incidentIndex.getState() == STATE_CREATED || incidentIndex.getState() == STATE_RESOLVING)
+                if (incidentMap.getState() == STATE_CREATED || incidentMap.getState() == STATE_RESOLVING)
                 {
                     incidentEvent.setEventType(IncidentEventType.DELETE);
 
@@ -547,7 +544,7 @@ public class IncidentStreamProcessor implements StreamProcessor
                 }
                 else
                 {
-                    throw new IllegalStateException("inconsistent incident index");
+                    throw new IllegalStateException("inconsistent incident map");
                 }
             }
         }
@@ -563,8 +560,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isTerminated)
             {
-                incidentIndex.setState(STATE_DELETING).write();
-                activityInstanceIndex.remove(eventKey, -1L);
+                incidentMap.setState(STATE_DELETING).write();
+                activityInstanceMap.remove(eventKey, -1L);
             }
         }
     }
@@ -607,7 +604,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (!hasRetries)
             {
-                failedTaskIndex.put(eventKey, NON_PERSISTENT_INCIDENT);
+                failedTaskMap.put(eventKey, NON_PERSISTENT_INCIDENT);
             }
         }
     }
@@ -622,13 +619,13 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             isResolved = false;
 
-            incidentKey = failedTaskIndex.get(eventKey, -1L);
+            incidentKey = failedTaskMap.get(eventKey, -1L);
 
             if (incidentKey > 0)
             {
-                incidentIndex.wrapIncidentKey(incidentKey);
+                incidentMap.wrapIncidentKey(incidentKey);
 
-                if (incidentIndex.getState() == STATE_CREATED)
+                if (incidentMap.getState() == STATE_CREATED)
                 {
                     incidentEvent.setEventType(IncidentEventType.DELETE);
 
@@ -636,7 +633,7 @@ public class IncidentStreamProcessor implements StreamProcessor
                 }
                 else
                 {
-                    throw new IllegalStateException("inconsistent incident index");
+                    throw new IllegalStateException("inconsistent incident map");
                 }
             }
         }
@@ -652,7 +649,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isResolved || incidentKey == NON_PERSISTENT_INCIDENT)
             {
-                failedTaskIndex.remove(eventKey, -1L);
+                failedTaskMap.remove(eventKey, -1L);
             }
         }
     }

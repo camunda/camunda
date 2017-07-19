@@ -30,7 +30,7 @@ import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
-import io.zeebe.broker.task.index.TaskInstanceIndex;
+import io.zeebe.broker.task.map.TaskInstanceMap;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
@@ -67,7 +67,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final UpdateRetriesTaskProcessor updateRetriesTaskProcessor = new UpdateRetriesTaskProcessor();
     protected final CancelTaskProcessor cancelTaskProcessor = new CancelTaskProcessor();
 
-    protected final TaskInstanceIndex taskIndex;
+    protected final TaskInstanceMap taskIndex;
 
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
@@ -85,7 +85,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.subscribedEventWriter = subscribedEventWriter;
         this.taskSubscriptionManager = taskSubscriptionManager;
 
-        this.taskIndex = new TaskInstanceIndex();
+        this.taskIndex = new TaskInstanceMap();
     }
 
     @Override
