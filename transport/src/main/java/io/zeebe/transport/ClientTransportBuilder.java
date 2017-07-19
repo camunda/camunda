@@ -26,6 +26,7 @@ import io.zeebe.transport.impl.ClientReceiveHandler;
 import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.ClientSendFailureHandler;
 import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ClientActorContext;
 import io.zeebe.transport.impl.actor.ClientConductor;
@@ -39,15 +40,18 @@ public class ClientTransportBuilder
      * In the same order of magnitude of what apache and nginx use.
      */
     protected static final long DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = 5000;
+    protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
 
     private int requestPoolSize = 64;
     private int messageMaxLength = 1024 * 512;
     protected long keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
+    protected long channelConnectTimeout = DEFAULT_CHANNEL_CONNECT_TIMEOUT;
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
     private ActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
+    protected TransportChannelFactory channelFactory;
 
     public ClientTransportBuilder scheduler(ActorScheduler scheduler)
     {
@@ -95,6 +99,18 @@ public class ClientTransportBuilder
         return this;
     }
 
+    public ClientTransportBuilder channelConnectTimeout(long channelConnectTimeout)
+    {
+        this.channelConnectTimeout = channelConnectTimeout;
+        return this;
+    }
+
+    public ClientTransportBuilder channelFactory(TransportChannelFactory channelFactory)
+    {
+        this.channelFactory = channelFactory;
+        return this;
+    }
+
     public ClientTransport build()
     {
         validate();
@@ -130,6 +146,13 @@ public class ClientTransportBuilder
         context.setSenderSubscription(sendBuffer.getSubscriptionByName("sender"));
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
+        context.setChannelConnectTimeout(channelConnectTimeout);
+
+        if (channelFactory != null)
+        {
+            context.setChannelFactory(channelFactory);
+        }
+
         return context;
     }
 

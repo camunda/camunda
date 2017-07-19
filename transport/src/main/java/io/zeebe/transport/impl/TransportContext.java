@@ -26,6 +26,7 @@ public class TransportContext
 {
     private int messageMaxLength;
     private long channelKeepAlivePeriod = 0L;
+    private long channelConnectTimeout = 0L;
 
     private ServerOutput serverOutput;
     private ClientOutput clientOutput;
@@ -44,6 +45,8 @@ public class TransportContext
     private SendFailureHandler sendFailureHandler;
 
     private ServerSocketBinding serverSocketBinding;
+
+    private TransportChannelFactory channelFactory = new DefaultChannelFactory();
 
     public int getMessageMaxLength()
     {
@@ -163,5 +166,25 @@ public class TransportContext
     public long getChannelKeepAlivePeriod()
     {
         return channelKeepAlivePeriod;
+    }
+
+    public void setChannelConnectTimeout(long channelConnectTimeout)
+    {
+        this.channelConnectTimeout = channelConnectTimeout;
+    }
+
+    public long getChannelConnectTimeout()
+    {
+        return channelConnectTimeout;
+    }
+
+    public void setChannelFactory(TransportChannelFactory channelFactory)
+    {
+        this.channelFactory = channelFactory;
+    }
+
+    public TransportChannelFactory getChannelFactory()
+    {
+        return channelFactory;
     }
 }

@@ -18,19 +18,27 @@ package io.zeebe.transport.impl;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.util.*;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.zeebe.util.time.ClockUtil;
 
 public class TransportChannel
 {
@@ -54,6 +62,8 @@ public class TransportChannel
     private SocketChannel media;
     private CompletableFuture<Void> openFuture;
 
+    protected long beginConnectTimestamp;
+
     private List<SelectionKey> registeredKeys = Collections.synchronizedList(new ArrayList<>());
 
     public TransportChannel(
@@ -75,7 +85,6 @@ public class TransportChannel
             RemoteAddress remoteAddress,
             int maxMessageSize,
             FragmentHandler readHandler,
-            FragmentHandler sendFailureHandler,
             SocketChannel media)
     {
         this(listener, remoteAddress, maxMessageSize, readHandler);
@@ -214,14 +223,12 @@ public class TransportChannel
     {
         if (STATE_FIELD.compareAndSet(this, CLOSED, CONNECTING))
         {
+            this.beginConnectTimestamp = ClockUtil.getCurrentTimeInMillis();
             this.openFuture = openFuture;
 
             try
             {
-                media = SocketChannel.open();
-                media.setOption(StandardSocketOptions.TCP_NODELAY, true);
-                media.configureBlocking(false);
-                media.connect(remoteAddress.getAddress().toInetSocketAddress());
+                media = startConnectSocketChannel(remoteAddress.getAddress());
                 return true;
             }
             catch (Exception e)
@@ -236,6 +243,20 @@ public class TransportChannel
         {
             return false;
         }
+    }
+
+    protected SocketChannel startConnectSocketChannel(SocketAddress remote) throws IOException
+    {
+        final SocketChannel channel = SocketChannel.open();
+        channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+        channel.configureBlocking(false);
+        channel.connect(remote.toInetSocketAddress());
+        return channel;
+    }
+
+    public boolean hasBegunConnectingBefore(long timestamp)
+    {
+        return beginConnectTimestamp < timestamp;
     }
 
     public void finishConnect()
@@ -261,9 +282,21 @@ public class TransportChannel
         }
     }
 
+    public void failConnect(Exception cause)
+    {
+        openFuture.completeExceptionally(cause);
+        doClose();
+    }
+
+
     public boolean isClosed()
     {
         return STATE_FIELD.get(this) == CLOSED;
+    }
+
+    public boolean isConnecting()
+    {
+        return STATE_FIELD.get(this) == CONNECTING;
     }
 
     private void doClose()

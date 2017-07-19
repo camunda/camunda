@@ -24,11 +24,12 @@ import io.zeebe.transport.impl.selector.ConnectTransportPoller;
 
 public class ClientConductor extends Conductor
 {
-    private final ConnectTransportPoller connectTransportPoller = new ConnectTransportPoller();
+    private final ConnectTransportPoller connectTransportPoller;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
+        this.connectTransportPoller = new ConnectTransportPoller(context.getChannelConnectTimeout());
     }
 
     @Override
@@ -36,7 +37,7 @@ public class ClientConductor extends Conductor
     {
         int workCount = super.doWork();
 
-        workCount += connectTransportPoller.pollNow();
+        workCount += connectTransportPoller.doWork();
 
         return workCount;
     }
@@ -49,14 +50,15 @@ public class ClientConductor extends Conductor
 
             if (remoteAddress != null)
             {
-                final TransportChannel ch = new TransportChannel(this,
+                final TransportChannel channel = channelFactory.buildClientChannel(
+                    this,
                     remoteAddress,
                     transportContext.getMessageMaxLength(),
                     transportContext.getReceiveHandler());
 
-                if (ch.beginConnect(f))
+                if (channel.beginConnect(f))
                 {
-                    connectTransportPoller.addChannel(ch);
+                    connectTransportPoller.addChannel(channel);
                 }
             }
             else

@@ -18,35 +18,28 @@ package io.zeebe.transport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
-import io.zeebe.transport.impl.RemoteAddressList;
 import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.util.ControllableServerTransport;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.time.ClockUtil;
 
 public class ClientTransportTest
 {
@@ -62,14 +55,12 @@ public class ClientTransportTest
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     protected ClientTransport clientTransport;
-    protected DummyServerTransport serverTransport;
-
-    private ActorScheduler actorScheduler;
+    protected ControllableServerTransport serverTransport;
 
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
+        final ActorScheduler actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
         closeables.manage(actorScheduler);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
@@ -86,8 +77,14 @@ public class ClientTransportTest
                 .build();
         closeables.manage(clientTransport);
 
-        serverTransport = new DummyServerTransport();
+        serverTransport = new ControllableServerTransport();
         closeables.manage(serverTransport);
+    }
+
+    @After
+    public void tearDown()
+    {
+        ClockUtil.reset();
     }
 
     @Test
@@ -298,100 +295,5 @@ public class ClientTransportTest
         assertThat(request).isNotNull();
     }
 
-    protected static class DummyServerTransport implements AutoCloseable
-    {
-        protected Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
-        protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
-        protected RemoteAddressList remoteList = new RemoteAddressList();
 
-        public void listenOn(SocketAddress localAddress)
-        {
-            ServerSocketChannel socketChannel = null;
-            try
-            {
-                socketChannel = ServerSocketChannel.open();
-                socketChannel.bind(localAddress.toInetSocketAddress());
-                socketChannel.configureBlocking(true);
-                serverChannels.put(localAddress, socketChannel);
-            }
-            catch (IOException e1)
-            {
-                if (socketChannel != null)
-                {
-                    try
-                    {
-                        socketChannel.close();
-                    }
-                    catch (IOException e2)
-                    {
-                        throw new RuntimeException(e2);
-                    }
-                }
-                throw new RuntimeException(e1);
-            }
-        }
-
-        public AtomicInteger acceptNextConnection(SocketAddress localAddress)
-        {
-            final AtomicInteger messageCounter = new AtomicInteger(0);
-            acceptNextConnection(localAddress, messageCounter);
-            return messageCounter;
-        }
-
-        public List<TransportChannel> getClientChannels(SocketAddress localAddress)
-        {
-            return clientChannels.get(localAddress);
-        }
-
-        public void acceptNextConnection(SocketAddress localAddress, AtomicInteger messageCounter)
-        {
-            try
-            {
-                final SocketChannel clientChannel = serverChannels.get(localAddress).accept();
-                clientChannel.configureBlocking(false);
-                final RemoteAddress remoteAddress = remoteList.register(new SocketAddress((InetSocketAddress) clientChannel.getRemoteAddress()));
-
-                final TransportChannel c = new TransportChannel(
-                    null,
-                    remoteAddress,
-                    128,
-                    (b, o, l, streamId, failed) ->
-                    {
-                        messageCounter.incrementAndGet();
-                        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-                    },
-                    null,
-                    clientChannel);
-
-                clientChannels.computeIfAbsent(localAddress, a -> new ArrayList<>());
-                clientChannels.get(localAddress).add(c);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public int receive(SocketAddress localAddress)
-        {
-            return clientChannels.get(localAddress).stream().mapToInt(c -> c.receive()).sum();
-        }
-
-        public void close()
-        {
-            clientChannels.forEach((a, channels) -> channels.forEach(c -> c.close()));
-
-            for (ServerSocketChannel channel : serverChannels.values())
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }

@@ -17,18 +17,86 @@ package io.zeebe.transport.impl.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.function.ToIntFunction;
 
 import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
 
+import io.zeebe.transport.ChannelConnectTimeoutException;
 import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.util.time.ClockUtil;
 
 public class ConnectTransportPoller extends TransportPoller
 {
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 
     protected int channelCount = 0;
+    protected Queue<TransportChannel> connectingChannels = new ArrayDeque<>();
+
+    protected final boolean useConnectTimeout;
+    protected final long connectTimeout;
+    protected final String timeoutFailureMessage;
+
+    public ConnectTransportPoller(long connectTimeout)
+    {
+        this.useConnectTimeout = connectTimeout > 0;
+        this.connectTimeout = connectTimeout;
+        this.timeoutFailureMessage = "Could not connect socket channel in " +
+                connectTimeout + " milliseconds. Aborting connect attempt.";
+    }
+
+    public int doWork()
+    {
+        int workCount = pollNow();
+        if (useConnectTimeout)
+        {
+            workCount += enforceConnectTimeout();
+        }
+
+        return workCount;
+    }
+
+    public int enforceConnectTimeout()
+    {
+        final long currentTimeoutCutoff = ClockUtil.getCurrentTimeInMillis() - connectTimeout;
+
+        boolean currentChannelResolved;
+        int numChannelsResolved = 0;
+
+        while (!connectingChannels.isEmpty())
+        {
+            final TransportChannel nextChannel = connectingChannels.peek();
+            currentChannelResolved = false;
+
+            if (nextChannel.isConnecting())
+            {
+                if (nextChannel.hasBegunConnectingBefore(currentTimeoutCutoff))
+                {
+                    nextChannel.failConnect(new ChannelConnectTimeoutException(timeoutFailureMessage));
+                    currentChannelResolved = true;
+                }
+            }
+            else
+            {
+                currentChannelResolved = true;
+            }
+
+            if (currentChannelResolved)
+            {
+                connectingChannels.poll();
+                numChannelsResolved++;
+            }
+            else
+            {
+                break;
+            }
+
+        }
+
+        return numChannelsResolved;
+    }
 
     public int pollNow()
     {
@@ -68,6 +136,11 @@ public class ConnectTransportPoller extends TransportPoller
     public void addChannel(TransportChannel channel)
     {
         channel.registerSelector(selector, SelectionKey.OP_CONNECT);
+        if (useConnectTimeout)
+        {
+            connectingChannels.add(channel);
+        }
+
         ++channelCount;
     }
 

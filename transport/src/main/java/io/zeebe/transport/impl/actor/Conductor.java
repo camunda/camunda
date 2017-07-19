@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.RemoteAddressList;
 import io.zeebe.transport.impl.TransportChannel;
@@ -39,12 +40,14 @@ public class Conductor implements Actor, ChannelLifecycleListener
     private final List<TransportChannel> transportChannels = new ArrayList<>();
     private final ActorContext actorContext;
     protected final AtomicBoolean closing = new AtomicBoolean(false);
+    protected final TransportChannelFactory channelFactory;
 
     public Conductor(ActorContext actorContext, TransportContext context)
     {
         this.actorContext = actorContext;
         this.transportContext = context;
         this.remoteAddressList = context.getRemoteAddressList();
+        this.channelFactory = context.getChannelFactory();
 
         actorContext.setConductor(this);
     }

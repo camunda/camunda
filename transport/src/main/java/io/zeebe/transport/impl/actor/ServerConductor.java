@@ -79,11 +79,11 @@ public class ServerConductor extends Conductor
 
             remoteAddress = remoteAddressList.register(socketAddress);
 
-            final TransportChannel ch = new TransportChannel(this,
+            final TransportChannel ch = channelFactory.buildServerChannel(
+                this,
                 remoteAddress,
                 transportContext.getMessageMaxLength(),
                 transportContext.getReceiveHandler(),
-                null,
                 serverChannel);
 
             onChannelConnected(ch);
