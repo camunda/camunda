@@ -651,9 +651,9 @@ public class TaskSubscriptionTest
         // when
         broker.closeTransport();
 
-        // TODO: transport must determine faster that subscription open request does not succeed (including
-        //  topology refreshes)
-        Thread.sleep(10000L);
+        // * reopening the subscription takes a rather long time (up to 5 topology refreshes,
+        //   with default 500 milliseconds connect timeout)
+        Thread.sleep(5000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());

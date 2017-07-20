@@ -152,10 +152,9 @@ public class PollableTopicSubscriptionTest
         // when
         broker.closeTransport();
 
-        // TODO:
-        // * reopening the subscription takes a rather long time (up to 5 topology refreshes, which is slow when the remote is not reachable)
-        // * transport must cancel requests faster
-        Thread.sleep(10000L);
+        // * reopening the subscription takes a rather long time (up to 5 topology refreshes,
+        //   with default 500 milliseconds connect timeout)
+        Thread.sleep(5000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
