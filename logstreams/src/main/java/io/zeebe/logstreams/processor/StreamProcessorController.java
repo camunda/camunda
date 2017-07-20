@@ -398,7 +398,7 @@ public class StreamProcessorController implements Actor
             }
             else
             {
-                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events. {}", name(), failure);
+                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", name(), failure);
 
                 context.take(TRANSITION_FAIL);
             }
