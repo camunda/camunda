@@ -15,13 +15,14 @@
  */
 package io.zeebe.map;
 
+import static io.zeebe.map.BucketArray.ALLOCATION_FACTOR;
 import static io.zeebe.map.ZbMapDescriptor.BUCKET_DATA_OFFSET;
 import static io.zeebe.map.ZbMapDescriptor.getBlockLength;
-import static io.zeebe.map.BucketArray.ALLOCATION_FACTOR;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
 import org.agrona.BitUtil;
@@ -115,7 +116,7 @@ public class ZbMapTest
     }
 
     @Test
-    public void shouldPutNextPowerOfTwoForOddtableSize()
+    public void shouldPutNextPowerOfTwoForOddTableSize()
     {
         // given map not power of two
         final int tableSize = 3;
@@ -173,7 +174,7 @@ public class ZbMapTest
 
         // expect
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("map Full. Cannot resize the hash table to size: " + (1L << 28) +
+        expectedException.expectMessage("ZbMap is full. Cannot resize the hash table to size: " + (1L << 28) +
                                             ", reached max table size of " + ZbMap.MAX_TABLE_SIZE);
 
         // when
@@ -186,27 +187,125 @@ public class ZbMapTest
     }
 
     @Test
+    public void shouldUseOverflowToAddMoreElements()
+    {
+        // given entries which all have the same bucket id
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap.setMaxTableSize(4);
+        for (int i = 0; i < 4; i++)
+        {
+            putValue(zbMap, i * 4, i);
+        }
+
+        // when
+        putValue(zbMap, 16, 4);
+
+        // then overflow was used to add entries
+        assertThat(zbMap.bucketCount()).isEqualTo(7);
+        assertThat(zbMap.getBucketArray().getOccupiedBlocks()).isEqualTo(5);
+        for (int i = 0; i <= 4; i++)
+        {
+            assertThat(getValue(zbMap, i * 4, -1)).isEqualTo(i);
+        }
+
+        // finally
+        zbMap.close();
+    }
+
+    @Test
+    public void shouldDistributeEntriesFromOverflowBuckets()
+    {
+        // given
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        putValue(zbMap, 0, 0);
+        // split
+        putValue(zbMap, 2, 2);
+        // overflows
+        putValue(zbMap, 4, 4);
+
+        // when
+        putValue(zbMap, 8, 8);
+
+        // then table is resized, new bucket with id 4 is created during split
+        // - entry with key 4 should be relocated
+        assertThat(zbMap.getHashTableSize()).isEqualTo(8 * SIZE_OF_LONG);
+        assertThat(zbMap.bucketCount()).isEqualTo(5);
+
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
+        assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
+        assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
+
+        // finally
+        zbMap.close();
+    }
+
+    @Test
+    public void shouldDistributeEntriesFromOverflowBucketsToNewBucketWhichAgainOverflows()
+    {
+        // given
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        putValue(zbMap, 0, 0);
+        // split until bucket id 8 then overflows
+        putValue(zbMap, 16, 16);
+        // overflows
+        putValue(zbMap, 48, 48);
+
+        // fill splitted buckets
+        putValue(zbMap, 1, 1);
+        putValue(zbMap, 2, 2);
+        putValue(zbMap, 4, 4);
+        putValue(zbMap, 8, 8);
+
+        // when next value should be added which goes in the first bucket
+        putValue(zbMap, 80, 80);
+
+        // then table is resized, new bucket with id 16 is created during split
+        // - entries with key 16, 48 should be relocated
+        // to add 80, table will be again resized until 48 is relocate and 80 fits into overflow bucket
+        assertThat(zbMap.getHashTableSize()).isEqualTo(64 * SIZE_OF_LONG);
+        assertThat(zbMap.bucketCount()).isEqualTo(10);
+
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 16, -1)).isEqualTo(16);
+        assertThat(getValue(zbMap, 48, -1)).isEqualTo(48);
+        assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
+        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
+        assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
+        assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
+        assertThat(getValue(zbMap, 80, -1)).isEqualTo(80);
+
+        // finally
+        zbMap.close();
+    }
+
+    @Test
     public void shouldThrowExceptionIfTableSizeReachesMaxSize()
     {
         // given
+        // we will add 5 blocks, which is possible with the help of bucket overflow
+        // the first two are only used because of the even-odd key handler
+        // the last buckets get no values - so they will be always free
+        // after adding 5 entries we have buckets = entries + 2 (the plus are the free one)
+        // this means the load factor of 0.7 will be reached 5/7 = 0.71..
         final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap =
             new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         zbMap.setMaxTableSize(4);
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 5; i++)
         {
             putValue(zbMap, i, i);
         }
 
         // expect
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("map Full. Cannot resize the hash table to size: " + 8 +
+        expectedException.expectMessage("ZbMap is full. Cannot resize the hash table to size: " + 8 +
                                             ", reached max table size of " + 4);
 
-        // when
-        putValue(zbMap, 3, 3);
-
-        // finally
-        zbMap.close();
+        // when we now add another entry the table resize will be triggered
+        putValue(zbMap, 6, 3);
     }
 
     @Test
@@ -260,6 +359,43 @@ public class ZbMapTest
         assertThat(zbMap.getHashTableSize()).isEqualTo(2 * SIZE_OF_LONG);
         assertThat(zbMap.bucketCount()).isEqualTo(1);
         assertThat(getValue(zbMap, 0, -1)).isEqualTo(9);
+    }
+
+    @Test
+    public void shouldSplitOnUpdateEntryIfBucketSizeIsReached()
+    {
+        // given
+        final ZbMap<LongKeyHandler, ByteArrayValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, ByteArrayValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG) { };
+
+        for (int i = 0; i < 4; i++)
+        {
+            zbMap.keyHandler.theKey = i;
+            zbMap.valueHandler.theValue = "12".getBytes();
+            zbMap.put();
+        }
+
+        // when
+        zbMap.keyHandler.theKey = 3;
+        zbMap.valueHandler.theValue = "12345678".getBytes();
+        zbMap.put();
+
+        // then bucket limit was reached and bucket was split
+        assertThat(zbMap.bucketCount()).isEqualTo(2);
+
+        for (int i = 0; i < 3; i++)
+        {
+            zbMap.keyHandler.theKey = i;
+            zbMap.valueHandler.theValue = new byte[2];
+            final boolean wasFound = zbMap.get();
+            assertThat(wasFound).isTrue();
+            assertThat(zbMap.valueHandler.theValue).isEqualTo("12".getBytes());
+        }
+        zbMap.keyHandler.theKey = 3;
+        zbMap.valueHandler.theValue = new byte[8];
+        final boolean wasFound = zbMap.get();
+        assertThat(wasFound).isTrue();
+        assertThat(zbMap.valueHandler.theValue).isEqualTo("12345678".getBytes());
     }
 
     @Test

@@ -16,9 +16,6 @@
 package io.zeebe.map;
 
 import static io.zeebe.map.ZbMapDescriptor.BUCKET_DATA_OFFSET;
-import static io.zeebe.map.ZbMapDescriptor.getBlockLength;
-import static java.lang.Math.addExact;
-import static java.lang.Math.multiplyExact;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +38,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 {
     private static final int KEY_HANDLER_IDX = 0;
     private static final int VALUE_HANDLER_IDX = 1;
+
+    /**
+     * The load factor which is used to determine if the hash table should be increased or overflow should be used.
+     */
+    private static final double LOAD_FACTOR_OVERFLOW_LIMIT = 0.7D;
 
     public static final int DEFAULT_TABLE_SIZE = 32;
     public static final int DEFAULT_BLOCK_COUNT = 16;
@@ -80,10 +82,10 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     protected int maxTableSize;
     protected int tableSize;
     protected int mask;
-    protected final int maxBlockLength;
+    protected final int minBlockCountPerBucket;
 
+    private final Block blockHelperInstance = new Block();
     protected final AtomicBoolean isClosed = new AtomicBoolean(false);
-
 
     public ZbMap(int maxKeyLength, int maxValueLength)
     {
@@ -118,25 +120,23 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      * </pre>
      *
      * @param initialTableSize is the count of buckets, which should been used by the hash map
-     * @param blockCount the count of blocks in a bucket
+     * @param minBlockCount the minimal count of blocks which should fit in a bucket
      * @param maxKeyLength the max length of a key
      * @param maxValueLength the max length of a value
      */
-    public ZbMap(int initialTableSize, int blockCount, int maxKeyLength, int maxValueLength)
+    public ZbMap(int initialTableSize, int minBlockCount, int maxKeyLength, int maxValueLength)
     {
         this.keyHandler = createKeyHandlerInstance(maxKeyLength);
         this.splitKeyHandler = createKeyHandlerInstance(maxKeyLength);
         this.valueHandler = createInstance(VALUE_HANDLER_IDX);
 
         this.maxTableSize = MAX_TABLE_SIZE;
-        this.tableSize = ensuretableSizeIsPowerOfTwo(initialTableSize);
+        this.tableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
         this.mask = this.tableSize - 1;
+        this.minBlockCountPerBucket = minBlockCount;
 
         this.hashTable = new HashTable(this.tableSize);
-        maxBlockLength =
-            addExact(BUCKET_DATA_OFFSET,
-                     multiplyExact(blockCount, getBlockLength(maxKeyLength, maxValueLength)));
-        this.bucketArray = new BucketArray(maxBlockLength, maxKeyLength);
+        this.bucketArray = new BucketArray(minBlockCount, maxKeyLength, maxValueLength);
 
         init();
     }
@@ -151,7 +151,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         return hashTable.getLength() + bucketArray.getLength();
     }
 
-    private int ensuretableSizeIsPowerOfTwo(final int tableSize)
+    private int ensureTableSizeIsPowerOfTwo(final int tableSize)
     {
         final int powerOfTwo = BitUtil.findNextPositivePowerOfTwo(tableSize);
 
@@ -232,7 +232,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     public void setMaxTableSize(int maxTableSize)
     {
-        this.maxTableSize = ensuretableSizeIsPowerOfTwo(maxTableSize);
+        this.maxTableSize = ensureTableSizeIsPowerOfTwo(maxTableSize);
     }
 
     public int bucketCount()
@@ -251,32 +251,23 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
         while (!isPut && !isUpdated)
         {
-            final long bucketAddress = hashTable.getBucketAddress(bucketId);
+            long bucketAddress = hashTable.getBucketAddress(bucketId);
 
             if (scanForKey)
             {
-                final int bucketFillCount = bucketArray.getBucketFillCount(bucketAddress);
 
-                int blockOffset = BUCKET_DATA_OFFSET;
-                int blockVisited = 0;
-                boolean keyFound = false;
-
-                while (!keyFound && blockVisited < bucketFillCount)
+                final Block block = findBlock();
+                final boolean blockWasFound = block.wasFound();
+                if (blockWasFound)
                 {
-                    keyFound = bucketArray.keyEquals(keyHandler, bucketAddress, blockOffset);
-
-                    if (keyFound)
-                    {
-                        isUpdated = bucketArray.updateValue(valueHandler, bucketAddress, blockOffset);
-                    }
-
-                    blockOffset += bucketArray.getBlockLength(bucketAddress, blockOffset);
-                    blockVisited++;
+                    bucketAddress = block.getBucketAddress();
+                    final int blockOffset = block.getBlockOffset();
+                    isUpdated = bucketArray.updateValue(valueHandler, bucketAddress, blockOffset);
                 }
 
-                scanForKey = keyFound;
+                scanForKey = blockWasFound;
 
-                if (keyFound && !isUpdated)
+                if (blockWasFound && !isUpdated)
                 {
                     // key found but could not be updated since length of new value is greater than length of old value
                     // and bucket is filled. Need to split to make room
@@ -286,7 +277,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
             }
             else
             {
-                isPut = bucketArray.addRecord(bucketAddress, keyHandler, valueHandler);
+                isPut = bucketArray.addBlock(bucketAddress, keyHandler, valueHandler);
 
                 if (!isPut)
                 {
@@ -295,63 +286,74 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
                 }
             }
         }
-
         return isUpdated;
-    }
-
-    protected boolean get()
-    {
-        final int keyHashCode = keyHandler.keyHashCode();
-        final int bucketId = keyHashCode & mask;
-        final long bucketAddress = hashTable.getBucketAddress(bucketId);
-
-        final int bucketFillCount = bucketArray.getBucketFillCount(bucketAddress);
-        int blockOffset = BUCKET_DATA_OFFSET;
-        int blocksVisited = 0;
-        boolean keyFound = false;
-
-        while (!keyFound && blocksVisited < bucketFillCount)
-        {
-            keyFound = bucketArray.keyEquals(keyHandler, bucketAddress, blockOffset);
-
-            if (keyFound)
-            {
-                bucketArray.readValue(valueHandler, bucketAddress, blockOffset);
-            }
-
-            blockOffset += bucketArray.getBlockLength(bucketAddress, blockOffset);
-            blocksVisited++;
-        }
-
-        return keyFound;
     }
 
     protected boolean remove()
     {
+        final Block block = findBlock();
+        final boolean wasFound = block.wasFound();
+        if (wasFound)
+        {
+            final long bucketAddress = block.getBucketAddress();
+            final int blockOffset = block.getBlockOffset();
+            bucketArray.readValue(valueHandler, bucketAddress, blockOffset);
+            bucketArray.removeBlock(bucketAddress, blockOffset);
+        }
+        return wasFound;
+    }
+
+    protected boolean get()
+    {
+        final Block block = findBlock();
+        final boolean wasFound = block.wasFound();
+        if (wasFound)
+        {
+            bucketArray.readValue(valueHandler, block.getBucketAddress(), block.getBlockOffset());
+        }
+        return wasFound;
+    }
+
+
+
+
+    public Block findBlock()
+    {
+        final Block foundBlock = blockHelperInstance;
+        foundBlock.reset();
+
         final int keyHashCode = keyHandler.keyHashCode();
         final int bucketId = keyHashCode & mask;
-        final long bucketAddress = hashTable.getBucketAddress(bucketId);
-
-        final int bucketFillCount = bucketArray.getBucketFillCount(bucketAddress);
-        int blockOffset = BUCKET_DATA_OFFSET;
-        int blocksVisited = 0;
+        long bucketAddress = hashTable.getBucketAddress(bucketId);
         boolean keyFound = false;
 
-        while (!keyFound && blocksVisited < bucketFillCount)
+        do
         {
-            keyFound = bucketArray.keyEquals(keyHandler, bucketAddress, blockOffset);
+            final int bucketFillCount = bucketArray.getBucketFillCount(bucketAddress);
+            int blockOffset = bucketArray.getFirstBlockOffset(bucketAddress);
+            int blocksVisited = 0;
 
-            if (keyFound)
+            while (!keyFound && blocksVisited < bucketFillCount)
             {
-                bucketArray.readValue(valueHandler, bucketAddress, blockOffset);
-                bucketArray.removeRecord(bucketAddress, blockOffset);
+                keyFound = bucketArray.keyEquals(keyHandler, bucketAddress, blockOffset);
+
+                if (keyFound)
+                {
+                    foundBlock.set(bucketAddress, blockOffset);
+                }
+
+                blockOffset += bucketArray.getBlockLength(bucketAddress, blockOffset);
+                blocksVisited++;
             }
 
-            blockOffset += bucketArray.getBlockLength(bucketAddress, blockOffset);
-            blocksVisited++;
-        }
+            bucketAddress = bucketArray.getBucketOverflowPointer(bucketAddress);
+        } while (!keyFound && bucketAddress > 0);
+        return foundBlock;
+    }
 
-        return keyFound;
+    private double calculateLoadFactor()
+    {
+        return (double) bucketArray.getOccupiedBlocks() / (double) (bucketArray.getBucketCount() * minBlockCountPerBucket);
     }
 
     /**
@@ -366,30 +368,44 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         final int newBucketId = 1 << bucketDepth | filledBucketId;
         final int newBucketDepth = bucketDepth + 1;
 
+        if (newBucketId < tableSize)
+        {
+            createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
+        }
+        else
+        {
+            final double loadFactor = calculateLoadFactor();
+            if (loadFactor < LOAD_FACTOR_OVERFLOW_LIMIT)
+            {
+                bucketArray.overflow(filledBucketAddress);
+            }
+            else
+            {
+                final int newTableSize = tableSize << 1;
+                if (newTableSize <= maxTableSize)
+                {
+                    tableSize = newTableSize;
+                    mask = tableSize - 1;
+                    hashTable.resize(tableSize);
+                    createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
+                }
+                else
+                {
+                    throw new RuntimeException("ZbMap is full. Cannot resize the hash table to size: " + newTableSize +
+                                                   ", reached max table size of " + maxTableSize);
+
+                }
+            }
+        }
+    }
+
+    private void createNewBucket(long filledBucketAddress, int bucketDepth, int newBucketId, int newBucketDepth)
+    {
         // update filled block depth
         bucketArray.setBucketDepth(filledBucketAddress, newBucketDepth);
 
         // create new bucket
         final long newBucketAddress = bucketArray.allocateNewBucket(newBucketId, newBucketDepth);
-
-        if (newBucketId >= tableSize)
-        {
-            // TODO: implement overflow!
-            // if load factor is less then 0.7 we use overflow of buckets
-            final int newTableSize = tableSize << 1;
-            if (newTableSize <= maxTableSize)
-            {
-                tableSize = newTableSize;
-                mask = tableSize - 1;
-                hashTable.resize(tableSize);
-            }
-            else
-            {
-                throw new RuntimeException("map Full. Cannot resize the hash table to size: " + newTableSize +
-                                               ", reached max table size of " + maxTableSize);
-
-            }
-        }
 
         // distribute entries into correct blocks
         distributeEntries(filledBucketAddress, newBucketAddress, bucketDepth);
@@ -404,30 +420,34 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     private void distributeEntries(long filledBucketAddress, long newBucketAddress, int bucketDepth)
     {
-        final int bucketFillCount = bucketArray.getBucketFillCount(filledBucketAddress);
-        final int splitMask = 1 << bucketDepth;
-
-        int blockOffset = BUCKET_DATA_OFFSET;
-        int blocksVisited = 0;
-
-        while (blocksVisited < bucketFillCount)
+        do
         {
-            final int blockLength = bucketArray.getBlockLength(filledBucketAddress, blockOffset);
+            final int bucketFillCount = bucketArray.getBucketFillCount(filledBucketAddress);
+            final int splitMask = 1 << bucketDepth;
 
-            bucketArray.readKey(splitKeyHandler, filledBucketAddress, blockOffset);
-            final int keyHashCode = splitKeyHandler.keyHashCode();
+            int blockOffset = BUCKET_DATA_OFFSET;
+            int blocksVisited = 0;
 
-            if ((keyHashCode & splitMask) == splitMask)
+            while (blocksVisited < bucketFillCount)
             {
-                bucketArray.relocateBlock(filledBucketAddress, blockOffset, blockLength, newBucketAddress);
-            }
-            else
-            {
-                blockOffset += blockLength;
-            }
+                final int blockLength = bucketArray.getBlockLength(filledBucketAddress, blockOffset);
 
-            blocksVisited++;
-        }
+                bucketArray.readKey(splitKeyHandler, filledBucketAddress, blockOffset);
+                final int keyHashCode = splitKeyHandler.keyHashCode();
+
+                if ((keyHashCode & splitMask) == splitMask)
+                {
+                    bucketArray.relocateBlock(filledBucketAddress, blockOffset, newBucketAddress);
+                }
+                else
+                {
+                    blockOffset += blockLength;
+                }
+
+                blocksVisited++;
+            }
+            filledBucketAddress = bucketArray.getBucketOverflowPointer(filledBucketAddress);
+        } while (filledBucketAddress != 0);
     }
 
     public BucketArray getBucketArray()
@@ -438,5 +458,38 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     public HashTable getHashTable()
     {
         return hashTable;
+    }
+
+    private static class Block
+    {
+        private long bucketAddress;
+        private int blockOffset;
+
+        public void reset()
+        {
+            bucketAddress = -1;
+            blockOffset = -1;
+        }
+
+        public boolean wasFound()
+        {
+            return bucketAddress != -1 && blockOffset != -1;
+        }
+
+        public void set(long bucketAddress, int blockOffset)
+        {
+            this.bucketAddress = bucketAddress;
+            this.blockOffset = blockOffset;
+        }
+
+        public long getBucketAddress()
+        {
+            return bucketAddress;
+        }
+
+        public int getBlockOffset()
+        {
+            return blockOffset;
+        }
     }
 }

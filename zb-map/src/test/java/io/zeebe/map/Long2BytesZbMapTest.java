@@ -223,22 +223,58 @@ public class Long2BytesZbMapTest
     }
 
     @Test
-    public void cannotPutValueIfmapFull()
+    public void shouldUseOverflowToPutValue()
     {
         // given
         map.setMaxTableSize(16);
         map.put(0, VALUE);
 
-        thrown.expect(RuntimeException.class);
-
+        // when
         map.put(16, ANOTHER_VALUE);
+
+        // then overflow happens
+
+        // first bucket contains overflow pointer
+        final int firstBucketAddress = map.getBucketArray().getFirstBucketAddress();
+        assertThat(map.getBucketArray().getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
+
+        // get is possible
+        final byte[] bytes = new byte[VALUE_LENGTH];
+        map.get(0, bytes);
+        assertThat(bytes).isEqualTo(VALUE);
+
+        map.get(16, bytes);
+        assertThat(bytes).isEqualTo(ANOTHER_VALUE);
+
+    }
+
+    @Test
+    public void shouldUseOverflowOnCollisionIfMapIsNotFilled()
+    {
+        // given
+        map.put(0L, VALUE);
+
+        // when
+        map.put(16L, ANOTHER_VALUE);
+
+        // then resize
+        assertThat(map.tableSize).isEqualTo(16);
+
+        final byte[] value = new byte[VALUE_LENGTH];
+        assertThat(map.get(0L, value)).isTrue();
+        assertThat(value).isEqualTo(VALUE);
+        assertThat(map.get(16L, value)).isTrue();
+        assertThat(value).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
     public void shouldResizeOnCollision()
     {
         // given
-        map.put(0L, VALUE);
+        for (int i = 0; i < TABLE_SIZE; i++)
+        {
+            map.put(i, VALUE);
+        }
 
         // when
         map.put(16L, ANOTHER_VALUE);

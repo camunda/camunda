@@ -31,20 +31,26 @@ import sun.misc.Unsafe;
 public class BucketArray implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
+    public static final int OVERFLOW_BUCKET_ID = -1;
 
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
     private final int maxBucketLength;
-    private final int keyLength;
+    private final int maxKeyLength;
+    private final int maxValueLength;
 
     private long realAddress;
     private long length;
     private long used;
+    private long occupiedBlocks;
 
-    public BucketArray(int maxBucketLength, int keyLength)
+    public BucketArray(int minBlockCount, int maxKeyLength, int maxValueLength)
     {
-        this.maxBucketLength = maxBucketLength;
-        this.keyLength = keyLength;
+        this.maxBucketLength =
+            addExact(BUCKET_DATA_OFFSET,
+                     multiplyExact(minBlockCount, ZbMapDescriptor.getBlockLength(maxKeyLength, maxValueLength)));
+        this.maxKeyLength = maxKeyLength;
+        this.maxValueLength = maxValueLength;
 
         init();
     }
@@ -67,6 +73,7 @@ public class BucketArray implements AutoCloseable
         }
 
         used = BUCKET_BUFFER_HEADER_LENGTH;
+        this.occupiedBlocks = 0;
 
         realAddress = UNSAFE.allocateMemory(length);
 
@@ -79,9 +86,19 @@ public class BucketArray implements AutoCloseable
         UNSAFE.freeMemory(realAddress);
     }
 
+    public int getFirstBucketAddress()
+    {
+        return BUCKET_BUFFER_HEADER_LENGTH;
+    }
+
     public long getLength()
     {
         return length;
+    }
+
+    public long getMaxBucketLength()
+    {
+        return maxBucketLength;
     }
 
     private long getRealAddress(final long offset)
@@ -119,10 +136,30 @@ public class BucketArray implements AutoCloseable
         UNSAFE.putInt(getRealAddress(bucketAddress) + BUCKET_LENGTH_OFFSET, newbucketLength);
     }
 
+    public long getBucketOverflowPointer(long bucketAddress)
+    {
+        return UNSAFE.getLong(getRealAddress(bucketAddress) + BUCKET_OVERFLOW_POINTER_OFFSET);
+    }
+
+    public void setBucketOverflowPointer(long bucketAddress, long overflowPointer)
+    {
+        UNSAFE.putLong(getRealAddress(bucketAddress) + BUCKET_OVERFLOW_POINTER_OFFSET, overflowPointer);
+    }
+
+    public long getOccupiedBlocks()
+    {
+        return occupiedBlocks;
+    }
+
+    public int getFirstBlockOffset(long bucketAddress)
+    {
+        return ZbMapDescriptor.BUCKET_DATA_OFFSET;
+    }
+
     public int getBlockLength(long bucketAddress, int blockOffset)
     {
         final int valueLength = getBlockValueLength(bucketAddress, blockOffset);
-        return ZbMapDescriptor.getBlockLength(keyLength, valueLength);
+        return ZbMapDescriptor.getBlockLength(maxKeyLength, valueLength);
     }
 
     public int getBlockValueLength(long bucketAddress, int blockOffset)
@@ -147,7 +184,7 @@ public class BucketArray implements AutoCloseable
 
     public void readValue(ValueHandler valueHandler, long bucketAddress, int blockOffset)
     {
-        final long valueOffset = getBlockValueOffset(getRealAddress(bucketAddress) + blockOffset, keyLength);
+        final long valueOffset = getBlockValueOffset(getRealAddress(bucketAddress) + blockOffset, maxKeyLength);
         final int valueLength = getBlockValueLength(bucketAddress, blockOffset);
 
         valueHandler.readValue(valueOffset, valueLength);
@@ -158,7 +195,13 @@ public class BucketArray implements AutoCloseable
         final int currBucketLength = getBucketLength(bucketAddress);
         final int currValueLength = getBlockValueLength(bucketAddress, blockOffset);
 
-        final int diff = valueHandler.getValueLength() - currValueLength;
+        final int valueLength = valueHandler.getValueLength();
+        if (valueLength > maxValueLength)
+        {
+            throw new IllegalArgumentException("Value can't exceed the max value length of " + maxValueLength);
+        }
+
+        final int diff = valueLength - currValueLength;
         final int newBucketLength = currBucketLength + diff;
 
         final boolean canUpdate = newBucketLength <= maxBucketLength;
@@ -172,8 +215,8 @@ public class BucketArray implements AutoCloseable
 
             final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
 
-            setBlockValueLength(bucketAddress, blockOffset, valueHandler.getValueLength());
-            valueHandler.writeValue(getBlockValueOffset(blockAddress, keyLength));
+            setBlockValueLength(bucketAddress, blockOffset, valueLength);
+            valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
 
             setBucketLength(bucketAddress, newBucketLength);
         }
@@ -181,7 +224,7 @@ public class BucketArray implements AutoCloseable
         return canUpdate;
     }
 
-    public boolean addRecord(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler)
+    public boolean addBlock(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler)
     {
         final int blockOffset = getBucketLength(bucketAddress);
         final int blockLength = ZbMapDescriptor.getBlockLength(keyHandler.getKeyLength(), valueHandler.getValueLength());
@@ -195,16 +238,26 @@ public class BucketArray implements AutoCloseable
 
             setBlockValueLength(bucketAddress, blockOffset, valueHandler.getValueLength());
             keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
-            valueHandler.writeValue(getBlockValueOffset(blockAddress, keyLength));
+            valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
 
             setBucketLength(bucketAddress, newBucketLength);
             setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) + 1);
+            occupiedBlocks++;
+        }
+
+        if (!canAddRecord)
+        {
+            final long overflowBucketAddress = getBucketOverflowPointer(bucketAddress);
+            if (overflowBucketAddress > 0)
+            {
+                return addBlock(overflowBucketAddress, keyHandler, valueHandler);
+            }
         }
 
         return canAddRecord;
     }
 
-    public void removeRecord(long bucketAddress, int blockOffset)
+    public void removeBlock(long bucketAddress, int blockOffset)
     {
         final int blockLength = getBlockLength(bucketAddress, blockOffset);
         final int nextBlockOffset = blockOffset + blockLength;
@@ -213,6 +266,7 @@ public class BucketArray implements AutoCloseable
 
         setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) - 1);
         setBucketLength(bucketAddress, getBucketLength(bucketAddress) - blockLength);
+        occupiedBlocks--;
     }
 
     public void setBucketId(long bucketAddress, int newBlockId)
@@ -235,14 +289,29 @@ public class BucketArray implements AutoCloseable
         return UNSAFE.getInt(getRealAddress(bucketAddress) + BUCKET_DEPTH_OFFSET);
     }
 
+    public long overflow(long bucketAddress)
+    {
+        final long currentOverflowBucketAddress = getBucketOverflowPointer(bucketAddress);
+        if (currentOverflowBucketAddress > 0)
+        {
+            return overflow(currentOverflowBucketAddress);
+        }
+        else
+        {
+            final long overflowBucketAddress = allocateNewBucket(OVERFLOW_BUCKET_ID, 0);
+            setBucketOverflowPointer(bucketAddress, overflowBucketAddress);
+            return overflowBucketAddress;
+        }
+    }
+
     /**
      * Allocates new bucket and returns the bucket start address.
      *
-     * @param newBlockId the new block id
-     * @param newBlockDepth the new block depth
+     * @param newBucketId the new block id
+     * @param newBucketDepth the new block depth
      * @return the new block address
      */
-    public long allocateNewBucket(int newBlockId, int newBlockDepth)
+    public long allocateNewBucket(int newBucketId, int newBucketDepth)
     {
         final long newUsed = used + maxBucketLength;
 
@@ -255,8 +324,8 @@ public class BucketArray implements AutoCloseable
 
         used = newUsed;
 
-        setBucketId(bucketAddress, newBlockId);
-        setBucketDepth(bucketAddress, newBlockDepth);
+        setBucketId(bucketAddress, newBucketId);
+        setBucketDepth(bucketAddress, newBucketDepth);
         setBucketFillCount(bucketAddress, 0);
         setBucketLength(bucketAddress, BUCKET_HEADER_LENGTH);
 
@@ -265,27 +334,33 @@ public class BucketArray implements AutoCloseable
         return bucketAddress;
     }
 
-    public void relocateBlock(long bucketAddress, int blockOffset, int blockLength, long newBucketAddress)
+    public void relocateBlock(long bucketAddress, int blockOffset, long newBucketAddress)
     {
         final long srcBlockAddress = getRealAddress(bucketAddress) + blockOffset;
 
         final int destBucketLength = getBucketLength(newBucketAddress);
         final long destBlockAddress = getRealAddress(newBucketAddress) + destBucketLength;
 
+        final int blockLength = getBlockLength(bucketAddress, blockOffset);
         final int newBucketLength = destBucketLength + blockLength;
 
         if (newBucketLength > maxBucketLength)
         {
-            throw new IllegalStateException("Unable to move record to full block (" + newBucketLength + " > " + maxBucketLength + ")");
+            // overflow
+            final long overflowBucketAddress = overflow(newBucketAddress);
+            relocateBlock(bucketAddress, blockOffset, overflowBucketAddress);
         }
+        else
+        {
+            // copy to new block
+            UNSAFE.copyMemory(srcBlockAddress, destBlockAddress, blockLength);
+            setBucketFillCount(newBucketAddress, getBucketFillCount(newBucketAddress) + 1);
+            setBucketLength(newBucketAddress, newBucketLength);
 
-        // copy to new block
-        UNSAFE.copyMemory(srcBlockAddress, destBlockAddress, blockLength);
-        setBucketFillCount(newBucketAddress, getBucketFillCount(newBucketAddress) + 1);
-        setBucketLength(newBucketAddress, newBucketLength);
-
-        // remove from this block (compacts this block)
-        removeRecord(bucketAddress, blockOffset);
+            // remove from this block (compacts this block)
+            removeBlock(bucketAddress, blockOffset);
+            occupiedBlocks++;
+        }
     }
 
     public void writeToStream(OutputStream outputStream, byte[] buffer) throws IOException
@@ -301,7 +376,6 @@ public class BucketArray implements AutoCloseable
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
         used = 0;
-        length = 0;
 
         long bytesRead;
         while ((bytesRead = inputStream.read(buffer)) > 0)
@@ -319,15 +393,9 @@ public class BucketArray implements AutoCloseable
     private void moveRemainingMemory(long bucketAddress, int srcOffset, int moveBytes)
     {
         final int bucketLength = getBucketLength(bucketAddress);
-        final int newBucketLength = bucketLength + moveBytes;
 
         if (srcOffset < bucketLength)
         {
-            if (newBucketLength > maxBucketLength)
-            {
-                throw new IllegalStateException("Cannot move bytes out of max block length (" + newBucketLength + " > " + maxBucketLength + ")");
-            }
-
             final long srcAddress = getRealAddress(bucketAddress) + srcOffset;
             final int remainingBytes = bucketLength - srcOffset;
 
@@ -348,6 +416,8 @@ public class BucketArray implements AutoCloseable
         }
 
         realAddress = UNSAFE.reallocateMemory(realAddress, newLength);
+        UNSAFE.setMemory(realAddress + length, newLength - length, (byte) 0);
         length = newLength;
+
     }
 }

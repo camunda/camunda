@@ -17,7 +17,7 @@ package io.zeebe.map;
 
 import static java.lang.Math.addExact;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * The map has 2 Buffers: the "hash table buffer" and the "buckets buffer".
@@ -71,6 +71,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *  +---------------------------------------------------------------+
  *  |                         BUCKET DEPTH                          |
  *  +---------------------------------------------------------------+
+ *  |                         BUCKET OVERFLOW                       |
+ *  |                         POINTER                               |
+ *  +---------------------------------------------------------------+
  *  |                                                               |
  *  |                         BLOCK DATA                          ...
  * ...                                                              |
@@ -108,6 +111,8 @@ public class ZbMapDescriptor
     public static final int BUCKET_LENGTH_OFFSET;
     public static final int BUCKET_ID_OFFSET;
     public static final int BUCKET_DEPTH_OFFSET;
+    public static final int BUCKET_OVERFLOW_POINTER_OFFSET;
+
     public static final int BUCKET_HEADER_LENGTH;
     public static final int BUCKET_DATA_OFFSET;
 
@@ -143,6 +148,9 @@ public class ZbMapDescriptor
 
         BUCKET_DEPTH_OFFSET = offset;
         offset += SIZE_OF_INT;
+
+        BUCKET_OVERFLOW_POINTER_OFFSET = offset;
+        offset += SIZE_OF_LONG;
 
         BUCKET_DATA_OFFSET = offset;
 

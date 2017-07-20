@@ -35,8 +35,7 @@ public class Long2LongZbMapMinimalBlockSizeTest
     @Before
     public void createmap() throws Exception
     {
-        final int tableSize = 16;
-        map = new Long2LongZbMap(tableSize, 1);
+        map = new Long2LongZbMap(16, 1);
     }
 
     @After
@@ -185,12 +184,30 @@ public class Long2LongZbMapMinimalBlockSizeTest
 
         assertThat(map.bucketCount()).isEqualTo(16);
     }
+    @Test
+    public void shouldUseOverflowOnCollision()
+    {
+        // given
+        map.setMaxTableSize(16);
+        map.put(0L, 1L);
+
+        // when
+        map.put(16L, 2L);
+
+        // then
+        // hash collision with 0L hashes to the same block. Block size = 1 => overflow
+        assertThat(map.get(0, -1)).isEqualTo(1);
+        assertThat(map.get(16, -1)).isEqualTo(2);
+    }
 
     @Test
     public void shouldThrowExceptionOnCollision()
     {
         map.setMaxTableSize(16);
-        map.put(0L, 1L);
+        for (int i = 0; i < 16; i++)
+        {
+            map.put(i, i);
+        }
 
         expectedException.expect(RuntimeException.class);
 
@@ -203,14 +220,20 @@ public class Long2LongZbMapMinimalBlockSizeTest
     public void shouldResizeOnCollision()
     {
         // given
-        map.put(0L, 1L);
+        for (int i = 0; i < 16; i++)
+        {
+            map.put(i, i);
+        }
 
         // when
         map.put(16L, 2L);
 
         // then resize
         assertThat(map.tableSize).isEqualTo(32);
-        assertThat(map.get(0L, -1)).isEqualTo(1L);
+        for (int i = 0; i < 16; i++)
+        {
+            assertThat(map.get(i, -1)).isEqualTo(i);
+        }
         assertThat(map.get(16L, -1)).isEqualTo(2L);
     }
 }
