@@ -435,6 +435,10 @@ public class BrokerRecoveryTest
         // then
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+
+        assertThat(eventRecorder.getIncidentEvents(i -> true))
+            .extracting("event.eventType")
+            .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVED");
     }
 
     @Test
@@ -473,6 +477,10 @@ public class BrokerRecoveryTest
         // then
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+
+        assertThat(eventRecorder.getIncidentEvents(i -> true))
+            .extracting("event.eventType")
+            .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVE_FAILED", "RESOLVE", "RESOLVED");
     }
 
     protected void restartBroker()

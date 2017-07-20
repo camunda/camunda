@@ -18,6 +18,7 @@
 package io.zeebe.broker.incident;
 
 import io.zeebe.broker.incident.data.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorErrorHandler;
@@ -101,7 +102,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
         }
 
         final long position = logStreamWriter
-                // should not have a producer id since the event should be ignored while recovery
+                .producerId(StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID)
                 .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
                 .metadataWriter(incidentEventMetadata)
                 .valueWriter(incidentEvent)
