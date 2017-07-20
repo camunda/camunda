@@ -35,7 +35,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.time.ClockUtil;
@@ -228,7 +227,10 @@ public class TransportChannel
 
             try
             {
-                media = startConnectSocketChannel(remoteAddress.getAddress());
+                media = SocketChannel.open();
+                media.setOption(StandardSocketOptions.TCP_NODELAY, true);
+                media.configureBlocking(false);
+                media.connect(remoteAddress.getAddress().toInetSocketAddress());
                 return true;
             }
             catch (Exception e)
@@ -243,15 +245,6 @@ public class TransportChannel
         {
             return false;
         }
-    }
-
-    protected SocketChannel startConnectSocketChannel(SocketAddress remote) throws IOException
-    {
-        final SocketChannel channel = SocketChannel.open();
-        channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        channel.configureBlocking(false);
-        channel.connect(remote.toInetSocketAddress());
-        return channel;
     }
 
     public boolean hasBegunConnectingBefore(long timestamp)

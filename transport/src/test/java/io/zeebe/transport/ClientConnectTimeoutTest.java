@@ -19,8 +19,8 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import java.io.IOException;
-import java.net.StandardSocketOptions;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.time.Instant;
@@ -198,15 +198,10 @@ public class ClientConnectTimeoutTest
             return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler)
             {
                 @Override
-                protected SocketChannel startConnectSocketChannel(SocketAddress remote) throws IOException
+                public void registerSelector(Selector selector, int ops)
                 {
-                    final SocketChannel channel = SocketChannel.open();
-                    channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-                    channel.configureBlocking(false);
-
-                    // like the super method but don't invoke channel.connect
-
-                    return channel;
+                    // never register for OP_CONNECT such that channel never appears to have been connected
+                    super.registerSelector(selector, ops & ~SelectionKey.OP_CONNECT);
                 }
 
                 @Override
