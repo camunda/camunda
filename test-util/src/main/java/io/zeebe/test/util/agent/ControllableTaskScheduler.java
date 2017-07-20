@@ -19,10 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorReferenceImpl;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
 import org.junit.rules.ExternalResource;
 
 public class ControllableTaskScheduler extends ExternalResource implements ActorScheduler
@@ -48,11 +45,12 @@ public class ControllableTaskScheduler extends ExternalResource implements Actor
         }
     }
 
-    public void waitUntilDone()
+    public int waitUntilDone()
     {
+        int totalWorkCount = 0;
+
         if (isRunning.get())
         {
-            int totalWorkCount = 0;
             int workCount;
 
             do
@@ -85,6 +83,8 @@ public class ControllableTaskScheduler extends ExternalResource implements Actor
             }
             while (workCount > 0);
         }
+
+        return totalWorkCount;
     }
 
     @Override
