@@ -22,13 +22,9 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.map.types.ByteArrayValueHandler;
-import io.zeebe.map.types.LongKeyHandler;
-import io.zeebe.map.types.LongValueHandler;
+import io.zeebe.map.types.*;
 import org.agrona.BitUtil;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class ZbMapTest
@@ -81,8 +77,8 @@ public class ZbMapTest
     public void shouldIncreaseHashTable()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         assertThat(zbMap.getHashTableSize()).isEqualTo(4 * SIZE_OF_LONG);
 
         // when
@@ -122,8 +118,8 @@ public class ZbMapTest
         final int tableSize = 3;
 
         // when
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // then map size is set to next power of two
         assertThat(zbMap.tableSize).isEqualTo(4);
@@ -144,8 +140,8 @@ public class ZbMapTest
     public void shouldPutLargeBunchOfData()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // when
         for (int i = 0; i < DATA_COUNT; i++)
@@ -169,8 +165,8 @@ public class ZbMapTest
     public void shouldThrowExceptionIfTableSizeReachesDefaultMaxSize()
     {
         // given
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // expect
         expectedException.expect(RuntimeException.class);
@@ -190,8 +186,8 @@ public class ZbMapTest
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         zbMap.setMaxTableSize(4);
         for (int i = 0; i < 4; i++)
         {
@@ -217,8 +213,8 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBuckets()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         putValue(zbMap, 0, 0);
         // split
         putValue(zbMap, 2, 2);
@@ -246,8 +242,8 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBucketsToNewBucketWhichAgainOverflows()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         putValue(zbMap, 0, 0);
         // split until bucket id 8 then overflows
         putValue(zbMap, 16, 16);
@@ -286,13 +282,8 @@ public class ZbMapTest
     public void shouldThrowExceptionIfTableSizeReachesMaxSize()
     {
         // given
-        // we will add 5 blocks, which is possible with the help of bucket overflow
-        // the first two are only used because of the even-odd key handler
-        // the last buckets get no values - so they will be always free
-        // after adding 5 entries we have buckets = entries + 2 (the plus are the free one)
-        // this means the load factor of 0.7 will be reached 5/7 = 0.71..
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         zbMap.setMaxTableSize(4);
         for (int i = 0; i < 5; i++)
         {
@@ -312,8 +303,8 @@ public class ZbMapTest
     public void shouldUseNextPowerOfTwoForMaxSize()
     {
         // given
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // when
         zbMap.setMaxTableSize(3);
@@ -329,8 +320,8 @@ public class ZbMapTest
     public void shouldUseDefaultMaxTableSizeIfGivenSizeIsToLarge()
     {
         // given
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // when
         zbMap.setMaxTableSize(1 << 28);
@@ -346,8 +337,8 @@ public class ZbMapTest
     public void shouldOnlyUpdateEntry()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         // when
         for (int i = 0; i < 10; i++)
@@ -365,8 +356,8 @@ public class ZbMapTest
     public void shouldSplitOnUpdateEntryIfBucketSizeIsReached()
     {
         // given
-        final ZbMap<LongKeyHandler, ByteArrayValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, ByteArrayValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        final ZbMap<LongKeyHandler, ByteArrayValueHandler> zbMap = new ZbMap<LongKeyHandler, ByteArrayValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
 
         for (int i = 0; i < 4; i++)
         {

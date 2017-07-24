@@ -18,7 +18,9 @@ package io.zeebe.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.*;
 
+import io.zeebe.map.iterator.ZbBytes2LongMapEntry;
 import org.junit.*;
 
 public class Bytes2LongZbMapLargeBlockSizeTest
@@ -176,5 +178,29 @@ public class Bytes2LongZbMapLargeBlockSizeTest
         assertThat(map.get(keys[2], -1)).isEqualTo(2);
     }
 
+    @Test
+    public void shouldIterateOverMap()
+    {
+        // given
+        for (int i = 0; i < 16; i++)
+        {
+            map.put(keys[i], i);
+        }
+
+        // if then
+        final List<byte[]> foundKeys = new ArrayList<>();
+
+        final Iterator<ZbBytes2LongMapEntry> iterator = map.iterator();
+        while (iterator.hasNext())
+        {
+            final ZbBytes2LongMapEntry entry = iterator.next();
+
+            foundKeys.add(entry.getKey().clone());
+        }
+
+        assertThat(foundKeys)
+            .hasSameSizeAs(keys)
+            .contains(keys);
+    }
 
 }

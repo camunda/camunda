@@ -17,11 +17,16 @@ package io.zeebe.map;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import java.util.Iterator;
+
+import io.zeebe.map.iterator.ZbLong2LongMapEntry;
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
 
-public class Long2LongZbMap extends ZbMap<LongKeyHandler, LongValueHandler>
+public class Long2LongZbMap extends ZbMap<LongKeyHandler, LongValueHandler> implements Iterable<ZbLong2LongMapEntry>
 {
+    private ZbMapIterator<LongKeyHandler, LongValueHandler, ZbLong2LongMapEntry> iterator;
+
     public Long2LongZbMap()
     {
         super(SIZE_OF_LONG, SIZE_OF_LONG);
@@ -55,6 +60,21 @@ public class Long2LongZbMap extends ZbMap<LongKeyHandler, LongValueHandler>
         valueHandler.theValue = missingValue;
         remove();
         return valueHandler.theValue;
+    }
+
+    @Override
+    public Iterator<ZbLong2LongMapEntry> iterator()
+    {
+        if (iterator == null)
+        {
+            iterator = new ZbMapIterator<>(this, new ZbLong2LongMapEntry());
+        }
+        else
+        {
+            iterator.reset();
+        }
+
+        return iterator;
     }
 
 }

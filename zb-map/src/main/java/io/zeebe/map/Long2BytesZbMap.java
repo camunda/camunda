@@ -17,6 +17,9 @@ package io.zeebe.map;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import java.util.Iterator;
+
+import io.zeebe.map.iterator.ZbLong2BytesMapEntry;
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
 
@@ -24,8 +27,10 @@ import io.zeebe.map.types.LongKeyHandler;
  * {@link ZbMap} that maps Long keys to Byte Array values. All values have a
  * max size which is defined on creation.
  */
-public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler>
+public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler> implements Iterable<ZbLong2BytesMapEntry>
 {
+    private ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, ZbLong2BytesMapEntry> iterator;
+
     private final int valueMaxLength;
 
     public Long2BytesZbMap(int valueMaxLength)
@@ -69,5 +74,20 @@ public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler
         {
             throw new IllegalArgumentException(String.format("Value exceeds max value length. Max value length is %d, got %d", valueMaxLength, value.length));
         }
+    }
+
+    @Override
+    public Iterator<ZbLong2BytesMapEntry> iterator()
+    {
+        if (iterator == null)
+        {
+            iterator = new ZbMapIterator<>(this, new ZbLong2BytesMapEntry());
+        }
+        else
+        {
+            iterator.reset();
+        }
+
+        return iterator;
     }
 }

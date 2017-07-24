@@ -84,6 +84,15 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     protected int mask;
     protected final int minBlockCountPerBucket;
 
+    /**
+     * The number of times this HashMap has been structurally modified.
+     * Structural modifications are those that change the number of mappings in
+     * the HashMap or otherwise modify its internal structure (e.g., rehash).
+     * This field is used to make iterators fail-fast. (See
+     * ConcurrentModificationException).
+     */
+    protected int modCount;
+
     private final Block blockHelperInstance = new Block();
     protected final AtomicBoolean isClosed = new AtomicBoolean(false);
 
@@ -178,6 +187,8 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         {
             hashTable.setBucketAddress(idx, bucketAddress);
         }
+
+        modCount = 0;
     }
 
     public void close()
@@ -207,7 +218,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         init();
     }
 
-    private <K extends KeyHandler> K createKeyHandlerInstance(int maxKeyLength)
+    private K createKeyHandlerInstance(int maxKeyLength)
     {
         final K keyHandler = createInstance(KEY_HANDLER_IDX);
         keyHandler.setKeyLength(maxKeyLength);
@@ -263,6 +274,8 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
                     bucketAddress = block.getBucketAddress();
                     final int blockOffset = block.getBlockOffset();
                     isUpdated = bucketArray.updateValue(valueHandler, bucketAddress, blockOffset);
+
+                    modCount += 1;
                 }
 
                 scanForKey = blockWasFound;
@@ -284,6 +297,8 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
                     splitBucket(bucketAddress);
                     bucketId = keyHashCode & mask;
                 }
+
+                modCount += 1;
             }
         }
         return isUpdated;
@@ -299,6 +314,8 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
             final int blockOffset = block.getBlockOffset();
             bucketArray.readValue(valueHandler, bucketAddress, blockOffset);
             bucketArray.removeBlock(bucketAddress, blockOffset);
+
+            modCount += 1;
         }
         return wasFound;
     }

@@ -18,6 +18,11 @@ package io.zeebe.map;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
+import io.zeebe.map.iterator.ZbLong2BytesMapEntry;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -324,6 +329,32 @@ public class Long2BytesZbMapTest
 
         // then
         assertThat(ANOTHER_VALUE).isEqualTo(originalAnotherValue);
+    }
+
+    @Test
+    public void shouldIterateOverMap()
+    {
+        // given
+        final List<Long> keys = LongStream.range(0, 16).boxed().collect(Collectors.toList());
+
+        keys.forEach(k -> map.put(k, VALUE));
+
+        // if then
+        final List<Long> foundKeys = new ArrayList<>();
+
+        final Iterator<ZbLong2BytesMapEntry> iterator = map.iterator();
+        while (iterator.hasNext())
+        {
+            final ZbLong2BytesMapEntry entry = iterator.next();
+
+            assertThat(entry.getValue()).isEqualTo(VALUE);
+
+            foundKeys.add(entry.getKey());
+        }
+
+        assertThat(foundKeys)
+            .hasSameSizeAs(keys)
+            .hasSameElementsAs(keys);
     }
 
 }

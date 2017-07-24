@@ -17,10 +17,12 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
+import io.zeebe.map.iterator.ZbLong2LongMapEntry;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class Long2LongZbMapMinimalBlockSizeTest
@@ -236,4 +238,31 @@ public class Long2LongZbMapMinimalBlockSizeTest
         }
         assertThat(map.get(16L, -1)).isEqualTo(2L);
     }
+
+    @Test
+    public void shouldIterateOverMap()
+    {
+        // given
+        final List<Long> keys = LongStream.range(0, 16).boxed().collect(Collectors.toList());
+
+        keys.forEach(k -> map.put(k, k));
+
+        // if then
+        final List<Long> foundKeys = new ArrayList<>();
+
+        final Iterator<ZbLong2LongMapEntry> iterator = map.iterator();
+        while (iterator.hasNext())
+        {
+            final ZbLong2LongMapEntry entry = iterator.next();
+
+            assertThat(entry.getKey()).isEqualTo(entry.getValue());
+
+            foundKeys.add(entry.getKey());
+        }
+
+        assertThat(foundKeys)
+            .hasSameSizeAs(keys)
+            .hasSameElementsAs(keys);
+    }
+
 }
