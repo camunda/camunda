@@ -18,6 +18,8 @@ package io.zeebe.map.benchmarks;
 import java.util.HashMap;
 
 import io.zeebe.map.Long2LongZbMap;
+import net.openhft.chronicle.map.ChronicleMap;
+import org.mapdb.HTreeMap;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -26,6 +28,93 @@ import org.openjdk.jmh.annotations.Threads;
 @BenchmarkMode(Mode.Throughput)
 public class Long2LongZbMapBenchmark
 {
+    @Benchmark
+    @Threads(1)
+    public long randomKeysChronicleMap(Long2LongChronicleMapSupplier chronicleMapSupplier, RandomKeysSupplier randomKeysSupplier)
+    {
+        final ChronicleMap<Long, Long> map = chronicleMapSupplier.map;
+        final long[] keys = randomKeysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.get(keys[i]);
+        }
+
+        return result;
+    }
+
+    @Benchmark
+    @Threads(1)
+    public long linearKeysChronicleMap(Long2LongChronicleMapSupplier chronicleMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final ChronicleMap<Long, Long> map = chronicleMapSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.get(keys[i]);
+        }
+
+        return result;
+    }
+
+    @Benchmark
+    @Threads(1)
+    public long randomKeysMapDb(Long2LongMapDbSupplier mapDbSupplier, RandomKeysSupplier randomKeysSupplier)
+    {
+        final HTreeMap<Long, Long> map = mapDbSupplier.map;
+        final long[] keys = randomKeysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.get(keys[i]);
+        }
+
+        return result;
+    }
+
+    @Benchmark
+    @Threads(1)
+    public long linearKeysMapDb(Long2LongMapDbSupplier mapDbSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final HTreeMap<Long, Long> map = mapDbSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.get(keys[i]);
+        }
+
+        return result;
+    }
 
     @Benchmark
     @Threads(1)

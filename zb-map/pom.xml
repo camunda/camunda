@@ -82,6 +82,18 @@
           <artifactId>agrona</artifactId>
           <scope>compile</scope>
         </dependency>
+
+        <dependency>
+          <groupId>org.mapdb</groupId>
+          <artifactId>mapdb</artifactId>
+          <version>3.0.5</version>
+        </dependency>
+
+        <dependency>
+          <groupId>net.openhft</groupId>
+          <artifactId>chronicle-map</artifactId>
+          <version>3.13.0</version>
+        </dependency>
       </dependencies>
 
       <build>
