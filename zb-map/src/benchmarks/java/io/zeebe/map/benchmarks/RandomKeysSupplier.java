@@ -31,7 +31,7 @@ public class RandomKeysSupplier
 
         for (int k = 0; k < keys.length; k++)
         {
-            keys[k] = Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1);
+            keys[k] = Math.abs(random.nextLong());
         }
     }
 
