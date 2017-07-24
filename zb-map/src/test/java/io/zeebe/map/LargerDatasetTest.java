@@ -16,18 +16,19 @@
 package io.zeebe.map;
 
 import java.io.IOException;
+import java.util.Random;
 
-import org.agrona.BitUtil;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class LargerDatasetTest
 {
     private static final int KEYS_TO_PUT = 1_000_000;
 
-    private static final int RECORDS_PER_BLOCK = 16;
-
-    private static final int TABLE_SIZE = BitUtil.findNextPositivePowerOfTwo(KEYS_TO_PUT / RECORDS_PER_BLOCK);
+    private static final int BLOCKS_PER_BUCKET = 16;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -37,7 +38,7 @@ public class LargerDatasetTest
     @Before
     public void setUp() throws IOException
     {
-        map = new Long2LongZbMap(TABLE_SIZE, RECORDS_PER_BLOCK);
+        map = new Long2LongZbMap(32, BLOCKS_PER_BUCKET);
     }
 
     @After
@@ -61,6 +62,32 @@ public class LargerDatasetTest
                 throw new RuntimeException("Illegal value for " + i);
             }
         }
-
     }
+
+    @Test
+    public void shouldPutRandomElements()
+    {
+        // given
+        final long[] keys = new long[KEYS_TO_PUT];
+        final Random random = new Random();
+        for (int k = 0; k < keys.length; k++)
+        {
+            keys[k] = Math.abs(random.nextLong());
+        }
+
+        for (int i = 0; i < KEYS_TO_PUT; i++)
+        {
+            map.put(keys[i], i);
+        }
+
+        for (int i = 0; i < KEYS_TO_PUT; i++)
+        {
+            if (map.get(keys[i], -1) != i)
+            {
+                throw new RuntimeException("Illegal value for key: " + keys[i] + " index: " + i);
+            }
+        }
+    }
+
+
 }

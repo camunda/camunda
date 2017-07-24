@@ -28,7 +28,7 @@ public class ZbMapDetermineSizesBenchmark
     public static void benchmarkOptimalValuesForLong2Long()
     {
         System.out.println("Long2LongZbMap");
-        System.out.println("Keys to put\t\ttableSize\t\tRecords per Block\t\tEnd tableSize\t\tDuration in ms");
+        System.out.println("Keys to put\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
@@ -58,7 +58,7 @@ public class ZbMapDetermineSizesBenchmark
     public static void benchmarkOptimalValuesForBytes2Long()
     {
         System.out.println("Bytes2LongZbMap");
-        System.out.println("Keys to put\t\tKeylength\t\ttableSize\t\tRecords per Block\t\tEnd tableSize\t\tDuration in ms");
+        System.out.println("Keys to put\t\tKeylength\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
@@ -91,7 +91,7 @@ public class ZbMapDetermineSizesBenchmark
     public static void benchmarkOptimalValuesForLong2Bytes()
     {
         System.out.println("Long2BytesZbMap");
-        System.out.println("Keys to put\t\tvalueLength\t\ttableSize\t\tRecords per Block\t\tEnd tableSize\t\tDuration in ms");
+        System.out.println("Keys to put\t\tvalueLength\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
             final int recordsPerBlock = 1 << power;
@@ -125,7 +125,7 @@ public class ZbMapDetermineSizesBenchmark
     public static void main(String[] args)
     {
         benchmarkOptimalValuesForLong2Long();
-        benchmarkOptimalValuesForLong2Bytes();
+//        benchmarkOptimalValuesForLong2Bytes();
         // Does not work since currently there is no bucket overflow implemented
 //        benchmarkOptimalValuesForBytes2Long();
     }

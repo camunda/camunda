@@ -30,8 +30,7 @@ public class Long2LongZbMapSupplier
     @Setup(Level.Iteration)
     public void createmap() throws IOException
     {
-        final int entriesPerBlock = 16;
-        map = new Long2LongZbMap(BitUtil.findNextPositivePowerOfTwo(Benchmarks.DATA_SET_SIZE / entriesPerBlock), entriesPerBlock);
+        map = new Long2LongZbMap();
     }
 
     @TearDown(Level.Iteration)

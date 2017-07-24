@@ -186,23 +186,23 @@ public class ZbMapTest
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
-        zbMap.setMaxTableSize(4);
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap.setMaxTableSize(8);
         for (int i = 0; i < 4; i++)
         {
-            putValue(zbMap, i * 4, i);
+            putValue(zbMap, i * 8, i);
         }
 
         // when
-        putValue(zbMap, 16, 4);
+        putValue(zbMap, 32, 4);
 
         // then overflow was used to add entries
-        assertThat(zbMap.bucketCount()).isEqualTo(7);
+        assertThat(zbMap.bucketCount()).isEqualTo(8);
         assertThat(zbMap.getBucketArray().getOccupiedBlocks()).isEqualTo(5);
         for (int i = 0; i <= 4; i++)
         {
-            assertThat(getValue(zbMap, i * 4, -1)).isEqualTo(i);
+            assertThat(getValue(zbMap, i * 8, -1)).isEqualTo(i);
         }
 
         // finally
@@ -213,26 +213,26 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBuckets()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         putValue(zbMap, 0, 0);
-        // split
+        // split, split, split -> overflow
+        putValue(zbMap, 8, 8);
+        // fill bucket to reach load factor
         putValue(zbMap, 2, 2);
-        // overflows
-        putValue(zbMap, 4, 4);
 
         // when
-        putValue(zbMap, 8, 8);
+        putValue(zbMap, 16, 16);
 
-        // then table is resized, new bucket with id 4 is created during split
-        // - entry with key 4 should be relocated
-        assertThat(zbMap.getHashTableSize()).isEqualTo(8 * SIZE_OF_LONG);
-        assertThat(zbMap.bucketCount()).isEqualTo(5);
+        // then table is resized, new bucket with id 8 is created during split
+        // - entry with key 8 should be relocated
+        assertThat(zbMap.getHashTableSize()).isEqualTo(16 * SIZE_OF_LONG);
+        assertThat(zbMap.bucketCount()).isEqualTo(6);
 
         assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
-        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
-        assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
         assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
+        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
+        assertThat(getValue(zbMap, 16, -1)).isEqualTo(16);
 
         // finally
         zbMap.close();
@@ -282,12 +282,16 @@ public class ZbMapTest
     public void shouldThrowExceptionIfTableSizeReachesMaxSize()
     {
         // given
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
+        // we will add 3 blocks which all map to the idx 0, which is possible with the help of bucket overflow
+        // the last buckets get no values - so they will be always free
+        // after adding 3 entries we have buckets = entries + 2 (the plus are the free one)
+        // this means the load factor of 0.6 will be reached 4/6 = 0.666...
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+            new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         zbMap.setMaxTableSize(4);
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 3; i++)
         {
-            putValue(zbMap, i, i);
+            putValue(zbMap, 8 * i, i);
         }
 
         // expect
@@ -296,7 +300,7 @@ public class ZbMapTest
                                             ", reached max table size of " + 4);
 
         // when we now add another entry the table resize will be triggered
-        putValue(zbMap, 6, 3);
+        putValue(zbMap, 24, 5);
     }
 
     @Test

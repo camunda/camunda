@@ -208,17 +208,19 @@ public class BucketArray implements AutoCloseable
 
         if (canUpdate)
         {
-            final int currBlockLength = getBlockLength(bucketAddress, blockOffset);
-            final int nextBlockOffset = blockOffset + currBlockLength;
-
-            moveRemainingMemory(bucketAddress, nextBlockOffset, diff);
-
             final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
+            if (diff != 0)
+            {
+                final int currBlockLength = getBlockLength(bucketAddress, blockOffset);
+                final int nextBlockOffset = blockOffset + currBlockLength;
 
-            setBlockValueLength(bucketAddress, blockOffset, valueLength);
+                moveRemainingMemory(bucketAddress, nextBlockOffset, diff);
+
+                setBlockValueLength(bucketAddress, blockOffset, valueLength);
+                setBucketLength(bucketAddress, newBucketLength);
+            }
             valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
 
-            setBucketLength(bucketAddress, newBucketLength);
         }
 
         return canUpdate;

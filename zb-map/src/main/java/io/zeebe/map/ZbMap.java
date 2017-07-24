@@ -42,7 +42,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     /**
      * The load factor which is used to determine if the hash table should be increased or overflow should be used.
      */
-    private static final double LOAD_FACTOR_OVERFLOW_LIMIT = 0.7D;
+    private static final double LOAD_FACTOR_OVERFLOW_LIMIT = 0.6D;
 
     public static final int DEFAULT_TABLE_SIZE = 32;
     public static final int DEFAULT_BLOCK_COUNT = 16;
@@ -83,6 +83,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     protected int tableSize;
     protected int mask;
     protected final int minBlockCountPerBucket;
+    protected double loadFactorOverflowLimit;
 
     /**
      * The number of times this HashMap has been structurally modified.
@@ -143,6 +144,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         this.tableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
         this.mask = this.tableSize - 1;
         this.minBlockCountPerBucket = minBlockCount;
+        this.loadFactorOverflowLimit = LOAD_FACTOR_OVERFLOW_LIMIT;
 
         this.hashTable = new HashTable(this.tableSize);
         this.bucketArray = new BucketArray(minBlockCount, maxKeyLength, maxValueLength);
@@ -246,6 +248,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         this.maxTableSize = ensureTableSizeIsPowerOfTwo(maxTableSize);
     }
 
+    public void setLoadFactorOverflowLimit(double loadFactorOverflowLimit)
+    {
+        this.loadFactorOverflowLimit = loadFactorOverflowLimit;
+    }
+
     public int bucketCount()
     {
         return bucketArray.getBucketCount();
@@ -267,7 +274,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
             if (scanForKey)
             {
 
-                final Block block = findBlock();
+                final Block block = findBlockInBucket(bucketAddress);
                 final boolean blockWasFound = block.wasFound();
                 if (blockWasFound)
                 {
@@ -331,17 +338,18 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         return wasFound;
     }
 
+    private Block findBlock()
+    {
+        final int keyHashCode = keyHandler.keyHashCode();
+        final int bucketId = keyHashCode & mask;
+        final long bucketAddress = hashTable.getBucketAddress(bucketId);
+        return findBlockInBucket(bucketAddress);
+    }
 
-
-
-    public Block findBlock()
+    private Block findBlockInBucket(long bucketAddress)
     {
         final Block foundBlock = blockHelperInstance;
         foundBlock.reset();
-
-        final int keyHashCode = keyHandler.keyHashCode();
-        final int bucketId = keyHashCode & mask;
-        long bucketAddress = hashTable.getBucketAddress(bucketId);
         boolean keyFound = false;
 
         do
@@ -392,7 +400,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         else
         {
             final double loadFactor = calculateLoadFactor();
-            if (loadFactor < LOAD_FACTOR_OVERFLOW_LIMIT)
+            if (loadFactor < loadFactorOverflowLimit)
             {
                 bucketArray.overflow(filledBucketAddress);
             }
