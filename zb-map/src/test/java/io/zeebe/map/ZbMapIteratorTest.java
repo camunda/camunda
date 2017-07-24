@@ -153,6 +153,31 @@ public class ZbMapIteratorTest
     }
 
     @Test
+    public void shouldGetEntriesWithOverflowBuckets()
+    {
+        // given
+        putValue(map, 0L, 0L);
+        putValue(map, 4L, 0L);
+        putValue(map, 8L, 0L);
+        putValue(map, 16L, 0L);
+
+        // if then
+        final List<Long> foundKeys = new ArrayList<>();
+
+        iterator.reset();
+        while (iterator.hasNext())
+        {
+            final Long2LongMapEntry entry = iterator.next();
+
+            foundKeys.add(entry.key);
+        }
+
+        assertThat(foundKeys)
+            .hasSize(4)
+            .contains(0L, 4L, 8L, 16L);
+    }
+
+    @Test
     public void shouldResetIterator()
     {
         // given
