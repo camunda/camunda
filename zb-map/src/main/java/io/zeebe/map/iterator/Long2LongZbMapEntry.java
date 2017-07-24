@@ -15,22 +15,22 @@
  */
 package io.zeebe.map.iterator;
 
-import io.zeebe.map.types.ByteArrayKeyHandler;
+import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
 
-public class ZbBytes2LongMapEntry implements ZbMapEntry<ByteArrayKeyHandler, LongValueHandler>
+public class Long2LongZbMapEntry implements ZbMapEntry<LongKeyHandler, LongValueHandler>
 {
-    private byte[] key;
+    private long key;
     private long value;
 
     @Override
-    public void read(ByteArrayKeyHandler keyHander, LongValueHandler valueHandler)
+    public void read(LongKeyHandler keyHander, LongValueHandler valueHandler)
     {
         key = keyHander.theKey;
         value = valueHandler.theValue;
     }
 
-    public byte[] getKey()
+    public long getKey()
     {
         return key;
     }

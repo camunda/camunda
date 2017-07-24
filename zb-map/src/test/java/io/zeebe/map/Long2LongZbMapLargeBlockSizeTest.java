@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import io.zeebe.map.iterator.ZbLong2LongMapEntry;
+import io.zeebe.map.iterator.Long2LongZbMapEntry;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -223,10 +223,10 @@ public class Long2LongZbMapLargeBlockSizeTest
         // if then
         final List<Long> foundKeys = new ArrayList<>();
 
-        final Iterator<ZbLong2LongMapEntry> iterator = map.iterator();
+        final Iterator<Long2LongZbMapEntry> iterator = map.iterator();
         while (iterator.hasNext())
         {
-            final ZbLong2LongMapEntry entry = iterator.next();
+            final Long2LongZbMapEntry entry = iterator.next();
 
             assertThat(entry.getKey()).isEqualTo(entry.getValue());
 

@@ -19,14 +19,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.util.Iterator;
 
-import io.zeebe.map.iterator.ZbBytes2LongMapEntry;
+import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
 import io.zeebe.map.types.ByteArrayKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
 import org.agrona.DirectBuffer;
 
-public class Bytes2LongZbMap extends ZbMap<ByteArrayKeyHandler, LongValueHandler> implements Iterable<ZbBytes2LongMapEntry>
+public class Bytes2LongZbMap extends ZbMap<ByteArrayKeyHandler, LongValueHandler> implements Iterable<Bytes2LongZbMapEntry>
 {
-    private ZbMapIterator<ByteArrayKeyHandler, LongValueHandler, ZbBytes2LongMapEntry> iterator;
+    private ZbMapIterator<ByteArrayKeyHandler, LongValueHandler, Bytes2LongZbMapEntry> iterator;
 
     public Bytes2LongZbMap(int maxKeyLength)
     {
@@ -88,11 +88,11 @@ public class Bytes2LongZbMap extends ZbMap<ByteArrayKeyHandler, LongValueHandler
     }
 
     @Override
-    public Iterator<ZbBytes2LongMapEntry> iterator()
+    public Iterator<Bytes2LongZbMapEntry> iterator()
     {
         if (iterator == null)
         {
-            iterator = new ZbMapIterator<>(this, new ZbBytes2LongMapEntry());
+            iterator = new ZbMapIterator<>(this, new Bytes2LongZbMapEntry());
         }
         else
         {

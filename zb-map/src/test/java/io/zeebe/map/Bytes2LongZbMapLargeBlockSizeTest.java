@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.*;
 
-import io.zeebe.map.iterator.ZbBytes2LongMapEntry;
+import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
 import org.junit.*;
 
 public class Bytes2LongZbMapLargeBlockSizeTest
@@ -190,10 +190,10 @@ public class Bytes2LongZbMapLargeBlockSizeTest
         // if then
         final List<byte[]> foundKeys = new ArrayList<>();
 
-        final Iterator<ZbBytes2LongMapEntry> iterator = map.iterator();
+        final Iterator<Bytes2LongZbMapEntry> iterator = map.iterator();
         while (iterator.hasNext())
         {
-            final ZbBytes2LongMapEntry entry = iterator.next();
+            final Bytes2LongZbMapEntry entry = iterator.next();
 
             foundKeys.add(entry.getKey().clone());
         }

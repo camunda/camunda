@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import io.zeebe.map.iterator.ZbLong2BytesMapEntry;
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -342,10 +342,10 @@ public class Long2BytesZbMapTest
         // if then
         final List<Long> foundKeys = new ArrayList<>();
 
-        final Iterator<ZbLong2BytesMapEntry> iterator = map.iterator();
+        final Iterator<Long2BytesZbMapEntry> iterator = map.iterator();
         while (iterator.hasNext())
         {
-            final ZbLong2BytesMapEntry entry = iterator.next();
+            final Long2BytesZbMapEntry entry = iterator.next();
 
             assertThat(entry.getValue()).isEqualTo(VALUE);
 
