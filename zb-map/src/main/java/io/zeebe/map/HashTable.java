@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.agrona.BitUtil;
 import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
@@ -59,12 +60,15 @@ public class HashTable implements Closeable
 
     public void resize(int tableSize)
     {
+        tableSize = BitUtil.findNextPositivePowerOfTwo(tableSize);
         final int newLength = Math.multiplyExact(tableSize, SIZE_OF_LONG);
         if (newLength > length)
         {
             final int oldLength = length;
             length = newLength;
             realAddress = UNSAFE.reallocateMemory(realAddress, length);
+            // hash table was duplicated the new indices should point to the
+            // same corresponding buckets like there counter-part
             UNSAFE.copyMemory(realAddress, realAddress + oldLength, length - oldLength);
         }
     }

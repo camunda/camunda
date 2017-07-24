@@ -70,4 +70,29 @@ public class HashTableTest
         hashTable.resize(1 << 60);
     }
 
+    @Test
+    public void shouldUseNextPowerOfTwoOnResize()
+    {
+        // given
+        final HashTable hashTable = new HashTable(1);
+
+        // when
+        hashTable.resize(3);
+
+        // then
+        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+    }
+
+    @Test
+    public void shouldUseGivenPowerOfTwoOnResize()
+    {
+        // given
+        final HashTable hashTable = new HashTable(1);
+
+        // when
+        hashTable.resize(4);
+
+        // then
+        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+    }
 }

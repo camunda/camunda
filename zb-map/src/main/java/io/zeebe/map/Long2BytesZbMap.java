@@ -39,9 +39,9 @@ public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler
         this.valueMaxLength = valueMaxLength;
     }
 
-    public Long2BytesZbMap(int tableSize, int recordsPerBlock, int valueMaxLength)
+    public Long2BytesZbMap(int tableSize, int blocksPerBucket, int valueMaxLength)
     {
-        super(tableSize, recordsPerBlock, SIZE_OF_LONG, valueMaxLength);
+        super(tableSize, blocksPerBucket, SIZE_OF_LONG, valueMaxLength);
         this.valueMaxLength = valueMaxLength;
     }
 

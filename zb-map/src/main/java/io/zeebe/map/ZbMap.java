@@ -112,16 +112,19 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      *
      * <p>
      * Note: it could happen that some hashes modulo the map size generate the same bucket id, which means
-     * some buckets can be filled more than other. This will end in a filled map, since one bucket is filled and can't
-     * be split again. In that case less then X entries can be stored in the map.
-     * To avoid this the implementation of the `KeyHandler` have to provide a good one way function.
+     * some buckets can be filled more than other.
+     * The buckets will be tried to splitted in that case. Is the new generated bucket id larger than the table size
+     * the table will be dynamically resized (if the next size is smaller then the maximum size). If the
+     * current load factor is less then the maximum load factor the bucket will overflow before the table size is increased.
+     * To avoid this the implementation of the `KeyHandler` have to provide a good one way function, so the entries
+     * have a good distribution.
      * </p>
      *
      * <b>Example:</b>
      * <pre>
      * map with map size 6 and maxBlockLength of 3 * (VAL len + KEY len)
-     * KeyTable                Buckets:
-     * [bucket0]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
+     * KeyTable                Buckets:                                      Overflow
+     * [bucket0]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]  -> [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ] -> [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
      * [bucket1]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
      * [bucket2]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
      * [bucket3]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
@@ -129,7 +132,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      * [bucket5]      ->     [ [KEY | VAL] | [KEY | VAL] | [KEY | VAL] ]
      * </pre>
      *
-     * @param initialTableSize is the count of buckets, which should been used by the hash map
+     * @param initialTableSize is the count of buckets, which should been used initial by the hash map
      * @param minBlockCount the minimal count of blocks which should fit in a bucket
      * @param maxKeyLength the max length of a key
      * @param maxValueLength the max length of a value
@@ -243,7 +246,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         }
     }
 
-    public void setMaxTableSize(int maxTableSize)
+    protected void setMaxTableSize(int maxTableSize)
     {
         this.maxTableSize = ensureTableSizeIsPowerOfTwo(maxTableSize);
     }

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.list;
+package io.zeebe.util.collection;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  *

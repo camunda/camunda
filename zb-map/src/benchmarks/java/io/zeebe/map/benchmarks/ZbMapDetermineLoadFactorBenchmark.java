@@ -40,15 +40,15 @@ public class ZbMapDetermineLoadFactorBenchmark
         System.out.println("Long2LongZbMap - linear keys");
         for (int power = 2; power < MAX_POWER; power++)
         {
-            final int recordsPerBlock = 1 << power;
+            final int blocksPerBucket = 1 << power;
             System.out.println("\nKeys to put\t\ttableSize\t\tBlocks per bucket\t\tLoad factor\t\tEnd tableSize\t\tDuration in ms");
             for (int fac = 1; fac < 10; fac++)
             {
                 try
                 {
                     final double factor = (double) fac / (double) 10;
-                    System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + DEFAULT_TABLE_SIZE + "\t\t\t\t\t\t" + recordsPerBlock + "\t\t\t\t" + factor);
-                    final Long2LongZbMap map = new Long2LongZbMap(DEFAULT_TABLE_SIZE, recordsPerBlock);
+                    System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + DEFAULT_TABLE_SIZE + "\t\t\t\t\t\t" + blocksPerBucket + "\t\t\t\t" + factor);
+                    final Long2LongZbMap map = new Long2LongZbMap(DEFAULT_TABLE_SIZE, blocksPerBucket);
                     map.setLoadFactorOverflowLimit(factor);
 
                     final long startMillis = System.currentTimeMillis();
@@ -70,7 +70,7 @@ public class ZbMapDetermineLoadFactorBenchmark
                 }
                 catch (Exception e)
                 {
-                    System.out.println("\nBlocks per bucket " + recordsPerBlock + " to small for " + KEYS_TO_PUT + " entries." + e.getMessage());
+                    System.out.println("\nBlocks per bucket " + blocksPerBucket + " to small for " + KEYS_TO_PUT + " entries." + e.getMessage());
                 }
             }
         }
@@ -89,15 +89,15 @@ public class ZbMapDetermineLoadFactorBenchmark
         System.out.println("Long2LongZbMap - random keys");
         for (int power = 2; power < MAX_POWER; power++)
         {
-            final int recordsPerBlock = 1 << power;
+            final int blocksPerBucket = 1 << power;
             System.out.println("\nKeys to put\t\ttableSize\t\tBlocks per bucket\t\tLoad factor\t\tEnd tableSize\t\tDuration in ms");
             for (int fac = 1; fac < 10; fac++)
             {
                 try
                 {
                     final double factor = (double) fac / (double) 10;
-                    System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + DEFAULT_TABLE_SIZE + "\t\t\t\t\t\t" + recordsPerBlock + "\t\t\t\t" + factor);
-                    final Long2LongZbMap map = new Long2LongZbMap(DEFAULT_TABLE_SIZE, recordsPerBlock);
+                    System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + DEFAULT_TABLE_SIZE + "\t\t\t\t\t\t" + blocksPerBucket + "\t\t\t\t" + factor);
+                    final Long2LongZbMap map = new Long2LongZbMap(DEFAULT_TABLE_SIZE, blocksPerBucket);
                     map.setLoadFactorOverflowLimit(factor);
 
                     final long startMillis = System.currentTimeMillis();
@@ -119,7 +119,7 @@ public class ZbMapDetermineLoadFactorBenchmark
                 }
                 catch (Exception e)
                 {
-                    System.out.println("\nBlocks per bucket " + recordsPerBlock + " to small for " + KEYS_TO_PUT + " entries." + e.getMessage());
+                    System.out.println("\nBlocks per bucket " + blocksPerBucket + " to small for " + KEYS_TO_PUT + " entries." + e.getMessage());
                 }
             }
         }

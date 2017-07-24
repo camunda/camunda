@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.list;
+package io.zeebe.util.collection;
 
-import static io.zeebe.list.CompactListDescriptor.*;
+import static io.zeebe.util.collection.CompactListDescriptor.*;
 import static java.lang.Math.max;
 
 import java.io.InputStream;

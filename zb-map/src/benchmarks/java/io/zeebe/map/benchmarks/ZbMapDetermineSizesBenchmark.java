@@ -31,10 +31,10 @@ public class ZbMapDetermineSizesBenchmark
         System.out.println("Keys to put\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
-            final int recordsPerBlock = 1 << power;
-            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
-            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + recordsPerBlock);
-            final Long2LongZbMap map = new Long2LongZbMap(tableSize, recordsPerBlock);
+            final int blocksPerBucket = 1 << power;
+            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / blocksPerBucket));
+            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + blocksPerBucket);
+            final Long2LongZbMap map = new Long2LongZbMap(tableSize, blocksPerBucket);
 
             final long startMillis = System.currentTimeMillis();
             for (int i = 0; i < KEYS_TO_PUT; i++)
@@ -61,11 +61,11 @@ public class ZbMapDetermineSizesBenchmark
         System.out.println("Keys to put\t\tKeylength\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
-            final int recordsPerBlock = 1 << power;
-            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
+            final int blocksPerBucket = 1 << power;
+            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / blocksPerBucket));
             final int keyLength = 1024;
-            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + keyLength + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + recordsPerBlock);
-            final Bytes2LongZbMap map = new Bytes2LongZbMap(tableSize, recordsPerBlock, keyLength);
+            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + keyLength + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + blocksPerBucket);
+            final Bytes2LongZbMap map = new Bytes2LongZbMap(tableSize, blocksPerBucket, keyLength);
 
             final long startMillis = System.currentTimeMillis();
             for (int i = 0; i < KEYS_TO_PUT; i++)
@@ -94,11 +94,11 @@ public class ZbMapDetermineSizesBenchmark
         System.out.println("Keys to put\t\tvalueLength\t\ttableSize\t\tBlocks per Bucket\t\tEnd tableSize\t\tDuration in ms");
         for (int power = 1; power < MAX_POWER; power++)
         {
-            final int recordsPerBlock = 1 << power;
-            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / recordsPerBlock));
+            final int blocksPerBucket = 1 << power;
+            final int tableSize = DEFAULT_TABLE_SIZE; //BitUtil.findNextPositivePowerOfTwo((int) Math.ceil((double) KEYS_TO_PUT / blocksPerBucket));
             final int valueLength = 1024;
-            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + valueLength + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + recordsPerBlock);
-            final Long2BytesZbMap map = new Long2BytesZbMap(tableSize, recordsPerBlock, valueLength);
+            System.out.print("\n" + KEYS_TO_PUT + "\t\t\t" + valueLength + "\t\t\t" + tableSize + "\t\t\t\t\t\t" + blocksPerBucket);
+            final Long2BytesZbMap map = new Long2BytesZbMap(tableSize, blocksPerBucket, valueLength);
 
             final long startMillis = System.currentTimeMillis();
             for (int i = 0; i < KEYS_TO_PUT; i++)

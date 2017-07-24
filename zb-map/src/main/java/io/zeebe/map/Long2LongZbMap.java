@@ -34,9 +34,9 @@ public class Long2LongZbMap extends ZbMap<LongKeyHandler, LongValueHandler> impl
 
     public Long2LongZbMap(
             int tableSize,
-            int recordsPerBlock)
+            int blocksPerBucket)
     {
-        super(tableSize, recordsPerBlock, SIZE_OF_LONG, SIZE_OF_LONG);
+        super(tableSize, blocksPerBucket, SIZE_OF_LONG, SIZE_OF_LONG);
     }
 
     public long get(long key, long missingValue)

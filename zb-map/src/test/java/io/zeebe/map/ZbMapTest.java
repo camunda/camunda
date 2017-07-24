@@ -35,7 +35,7 @@ public class ZbMapTest
     public static final long MISSING_VALUE = 0;
     public static final int DATA_COUNT = 100_000;
 
-    private Long2LongZbMap map;
+    private ZbMap<LongKeyHandler, LongValueHandler> zbMap;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -52,9 +52,9 @@ public class ZbMapTest
     @After
     public void tearDown()
     {
-        if (map != null)
+        if (zbMap != null)
         {
-            map.close();
+            zbMap.close();
         }
     }
 
@@ -77,7 +77,7 @@ public class ZbMapTest
     public void shouldIncreaseHashTable()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         assertThat(zbMap.getHashTableSize()).isEqualTo(4 * SIZE_OF_LONG);
 
@@ -114,14 +114,14 @@ public class ZbMapTest
     @Test
     public void shouldPutNextPowerOfTwoForOddTableSize()
     {
-        // given map not power of two
+        // given zbMap not power of two
         final int tableSize = 3;
 
         // when
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
-        // then map size is set to next power of two
+        // then zbMap size is set to next power of two
         assertThat(zbMap.tableSize).isEqualTo(4);
 
         // and a values can be inserted and read again - put many values to trigger resize
@@ -140,7 +140,7 @@ public class ZbMapTest
     public void shouldPutLargeBunchOfData()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -156,9 +156,6 @@ public class ZbMapTest
         {
             assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
         }
-
-        // finally
-        zbMap.close();
     }
 
     @Test
@@ -168,26 +165,31 @@ public class ZbMapTest
         final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
-        // expect
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("ZbMap is full. Cannot resize the hash table to size: " + (1L << 28) +
-                                            ", reached max table size of " + ZbMap.MAX_TABLE_SIZE);
-
         // when
-        for (int i = 0; i < DATA_COUNT; i++)
+        try
         {
-            putValue(zbMap, i, i);
+            for (int i = 0; i < DATA_COUNT; i++)
+            {
+                putValue(zbMap, i, i);
+            }
         }
+        catch (RuntimeException rte)
+        {
+            assertThat(rte).hasMessage("ZbMap is full. Cannot resize the hash table to size: " + (1L << 28) +
+                                           ", reached max table size of " + ZbMap.MAX_TABLE_SIZE);
 
-        zbMap.close();
+        }
+        finally
+        {
+            zbMap.close();
+        }
     }
 
     @Test
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         zbMap.setMaxTableSize(8);
         for (int i = 0; i < 4; i++)
         {
@@ -204,16 +206,13 @@ public class ZbMapTest
         {
             assertThat(getValue(zbMap, i * 8, -1)).isEqualTo(i);
         }
-
-        // finally
-        zbMap.close();
     }
 
     @Test
     public void shouldDistributeEntriesFromOverflowBuckets()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+        zbMap =
             new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         putValue(zbMap, 0, 0);
         // split, split, split -> overflow
@@ -233,16 +232,13 @@ public class ZbMapTest
         assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
         assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
         assertThat(getValue(zbMap, 16, -1)).isEqualTo(16);
-
-        // finally
-        zbMap.close();
     }
 
     @Test
     public void shouldDistributeEntriesFromOverflowBucketsToNewBucketWhichAgainOverflows()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         putValue(zbMap, 0, 0);
         // split until bucket id 8 then overflows
@@ -273,20 +269,17 @@ public class ZbMapTest
         assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
         assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
         assertThat(getValue(zbMap, 80, -1)).isEqualTo(80);
-
-        // finally
-        zbMap.close();
     }
 
     @Test
     public void shouldThrowExceptionIfTableSizeReachesMaxSize()
     {
         // given
-        // we will add 3 blocks which all map to the idx 0, which is possible with the help of bucket overflow
+        // we will add 3 blocks which all zbMap to the idx 0, which is possible with the help of bucket overflow
         // the last buckets get no values - so they will be always free
         // after adding 3 entries we have buckets = entries + 2 (the plus are the free one)
         // this means the load factor of 0.6 will be reached 4/6 = 0.666...
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap =
+        zbMap =
             new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
         zbMap.setMaxTableSize(4);
         for (int i = 0; i < 3; i++)
@@ -315,9 +308,6 @@ public class ZbMapTest
 
         // then
         assertThat(zbMap.maxTableSize).isEqualTo(4);
-
-        // finally
-        zbMap.close();
     }
 
     @Test
@@ -332,16 +322,13 @@ public class ZbMapTest
 
         // then
         assertThat(zbMap.maxTableSize).isEqualTo(ZbMap.MAX_TABLE_SIZE);
-
-        // finally
-        zbMap.close();
     }
 
     @Test
     public void shouldOnlyUpdateEntry()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -396,35 +383,37 @@ public class ZbMapTest
     @Test
     public void shouldRoundToPowerOfTwo()
     {
-        // given map not power of two
+        // given zbMap not power of two
         final int tableSize = 11;
 
         // when
-        map = new Long2LongZbMap(tableSize, 1);
+        final Long2LongZbMap zbMap = new Long2LongZbMap(tableSize, 1);
 
-        // then map size is set to next power of two
-        assertThat(map.tableSize).isEqualTo(16);
+        // then zbMap size is set to next power of two
+        assertThat(zbMap.tableSize).isEqualTo(16);
 
         // and a value can be inserted and read again
-        map.put(KEY, VALUE);
-        assertThat(map.get(KEY, MISSING_VALUE)).isEqualTo(VALUE);
+        zbMap.put(KEY, VALUE);
+        assertThat(zbMap.get(KEY, MISSING_VALUE)).isEqualTo(VALUE);
+        zbMap.close();
     }
 
     @Test
     public void shouldUseLimitPowerOfTwo()
     {
-        // given map which is higher than the limit 1 << 27
+        // given zbMap which is higher than the limit 1 << 27
         final int tableSize = 1 << 28;
 
         // when
-        map = new Long2LongZbMap(tableSize, 1);
+        final Long2LongZbMap zbMap = new Long2LongZbMap(tableSize, 1);
 
-        // then map size is set to max value
-        assertThat(map.tableSize).isEqualTo(ZbMap.MAX_TABLE_SIZE);
+        // then zbMap size is set to max value
+        assertThat(zbMap.tableSize).isEqualTo(ZbMap.MAX_TABLE_SIZE);
 
         // and a value can be inserted and read again
-        map.put(KEY, VALUE);
-        assertThat(map.get(KEY, MISSING_VALUE)).isEqualTo(VALUE);
+        zbMap.put(KEY, VALUE);
+        assertThat(zbMap.get(KEY, MISSING_VALUE)).isEqualTo(VALUE);
+        zbMap.close();
     }
 
     @Test

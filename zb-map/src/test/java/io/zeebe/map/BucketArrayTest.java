@@ -306,7 +306,7 @@ public class BucketArrayTest
     public void shouldUpdateBlockValueWithSmallerValue()
     {
         // given bucket array with 1 bucket and two blocks
-        final BucketArray bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
+        bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
         final long newBucketAddress = bucketArray.allocateNewBucket(1, 1);
@@ -355,7 +355,7 @@ public class BucketArrayTest
     public void shouldUpdateBlockValueWithLargerValue()
     {
         // given bucket array with 1 bucket and two blocks
-        final BucketArray bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
+        bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
         final long newBucketAddress = bucketArray.allocateNewBucket(1, 1);
@@ -404,7 +404,7 @@ public class BucketArrayTest
     public void shouldThrowOnUpdateBlockValueWithTooLargerValue()
     {
         // given bucket array with 1 bucket and two blocks
-        final BucketArray bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
+        bucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
         final long newBucketAddress = bucketArray.allocateNewBucket(1, 1);
