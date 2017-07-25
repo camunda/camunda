@@ -28,8 +28,6 @@ public class StateMachineAgent<C extends StateMachineContext>
     protected final ManyToOneConcurrentArrayQueue<StateMachineCommand<C>> commandQueue;
     protected final Consumer<StateMachineCommand<C>> commandConsumer;
 
-    protected Integer drainLimit;
-
     public StateMachineAgent(StateMachine<C> stateMachine)
     {
         this(stateMachine, DEFAULT_COMMAND_QUEUE_CAPACITY);
@@ -43,31 +41,23 @@ public class StateMachineAgent<C extends StateMachineContext>
         this.commandConsumer = cmd -> cmd.execute(stateMachine.getContext());
     }
 
-    public StateMachineAgent<C> setDrainLimit(final Integer drainLimit)
-    {
-        this.drainLimit = drainLimit;
-        return this;
-    }
-
     public int doWork()
     {
         int workCount = 0;
 
         if (stateMachine.getCurrentState().isInterruptable())
         {
-            if (drainLimit != null)
-            {
-                workCount += commandQueue.drain(commandConsumer, drainLimit);
-            }
-            else
-            {
-                workCount += commandQueue.drain(commandConsumer);
-            }
+            workCount += drainCommandQueue();
         }
 
         workCount += stateMachine.doWork();
 
         return workCount;
+    }
+
+    protected int drainCommandQueue()
+    {
+        return commandQueue.drain(commandConsumer);
     }
 
     public State<C> getCurrentState()
