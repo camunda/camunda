@@ -157,24 +157,26 @@ public class ZbMapIteratorTest
     {
         // given
         putValue(map, 0L, 0L);
-        putValue(map, 4L, 0L);
-        putValue(map, 8L, 0L);
-        putValue(map, 16L, 0L);
+        putValue(map, 4L, 4L);
+        putValue(map, 8L, 8L);
+        putValue(map, 16L, 16L);
 
         // if then
-        final List<Long> foundKeys = new ArrayList<>();
+        final Map<Long, Long> foundValues = new HashMap<>();
 
         iterator.reset();
         while (iterator.hasNext())
         {
             final Long2LongMapEntry entry = iterator.next();
-
-            foundKeys.add(entry.key);
+            foundValues.put(entry.key, entry.value);
         }
 
-        assertThat(foundKeys)
+        assertThat(foundValues)
             .hasSize(4)
-            .contains(0L, 4L, 8L, 16L);
+            .containsEntry(0L, 0L)
+            .containsEntry(4L, 4L)
+            .containsEntry(8L, 8L)
+            .containsEntry(16L, 16L);
     }
 
     @Test
