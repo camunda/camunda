@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
-import io.zeebe.list.CompactList;
+import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.buffer.BufferReader;
 
 public class CreditsRequest implements BufferReader

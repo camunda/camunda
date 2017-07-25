@@ -21,7 +21,7 @@ import java.util.Iterator;
 
 import org.agrona.MutableDirectBuffer;
 
-import io.zeebe.list.CompactListIterator;
+import io.zeebe.util.collection.CompactListIterator;
 
 public class PeerListIterator implements Iterator<Peer>
 {

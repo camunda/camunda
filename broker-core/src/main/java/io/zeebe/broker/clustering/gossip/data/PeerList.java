@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
-import io.zeebe.list.CompactList;
+import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import org.agrona.DirectBuffer;
