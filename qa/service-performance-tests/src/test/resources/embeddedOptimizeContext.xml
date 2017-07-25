@@ -3,8 +3,11 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
   http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/util
+  http://www.springframework.org/schema/util/spring-util.xsd
   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
 >
 
@@ -25,6 +28,8 @@
 
   <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
 
+  <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"
@@ -33,8 +38,6 @@
 
   <!-- provide a bean, but do not start it -->
   <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
-
-  <bean id="importStrategyProvider"  class="org.camunda.optimize.service.importing.strategy.ImportStrategyProviderFactory"/>
 
   <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>
