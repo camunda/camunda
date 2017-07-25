@@ -105,7 +105,6 @@ public class ActorRunner implements Runnable
                 {
                     actors.remove(a);
                     a -= 1;
-                    currentWc += 1;
                 }
                 else
                 {
