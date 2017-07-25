@@ -56,16 +56,23 @@ public class EmbeddedBrokerRule extends ExternalResource
         this(() -> EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation));
     }
 
+    protected long startTime;
     @Override
     protected void before() throws Throwable
     {
+        startTime = System.currentTimeMillis();
         startBroker();
+        LOG.info("Broker startup time: " + (System.currentTimeMillis() - startTime));
+        startTime = System.currentTimeMillis();
     }
 
     @Override
     protected void after()
     {
+        LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
+        startTime = System.currentTimeMillis();
         stopBroker();
+        LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
 
         final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
         if (allocatedMemoryInKb > 0)
