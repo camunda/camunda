@@ -22,6 +22,7 @@ import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -48,7 +49,7 @@ public class CreateDeploymentTest
     @Test
     public void shouldCreateDeployment()
     {
-        // given
+        // givencharset
         final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
             .endEvent()
@@ -61,7 +62,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                    .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
 
@@ -89,7 +90,7 @@ public class CreateDeploymentTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                .put("bpmnXml", bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
@@ -106,7 +107,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                    .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
 
@@ -133,7 +134,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                    .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
 
@@ -148,8 +149,10 @@ public class CreateDeploymentTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry("deploymentKey", deploymentKey)
-            .containsEntry(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance));
+            .containsEntry(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance));
     }
+
+
 
     @Test
     public void shouldRejectDeploymentIfNotValid()
@@ -164,7 +167,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                    .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
 
@@ -186,7 +189,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", "not a workflow")
+                    .put("bpmnXml", "not a workflow".getBytes(UTF_8))
                 .done()
                 .sendAndAwait();
 
@@ -196,6 +199,11 @@ public class CreateDeploymentTest
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("Failed to deploy BPMN model");
+    }
+
+    private byte[] bpmnXml(final BpmnModelInstance modelInstance)
+    {
+        return Bpmn.convertToString(modelInstance).getBytes(UTF_8);
     }
 
 }

@@ -20,7 +20,7 @@ import java.util.List;
 public class DeploymentEvent
 {
     private DeploymentEventType eventType;
-    private String bpmnXml;
+    private byte[] bpmnXml;
 
     private List<DeployedWorkflow> deployedWorkflows;
 
@@ -36,12 +36,12 @@ public class DeploymentEvent
         this.eventType = eventType;
     }
 
-    public String getBpmnXml()
+    public byte[] getBpmnXml()
     {
         return bpmnXml;
     }
 
-    public void setBpmnXml(String bpmnXml)
+    public void setBpmnXml(byte[] bpmnXml)
     {
         this.bpmnXml = bpmnXml;
     }

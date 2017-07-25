@@ -27,7 +27,7 @@ public class WorkflowEvent extends UnpackedObject
 
     private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
     private final IntegerProperty versionProp = new IntegerProperty("version");
-    private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
+    private final BinaryProperty bpmnXmlProp = new BinaryProperty("bpmnXml");
 
     private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey");
 

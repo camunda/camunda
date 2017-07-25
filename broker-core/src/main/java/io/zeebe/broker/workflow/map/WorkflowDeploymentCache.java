@@ -51,6 +51,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_COMPOSITE_KEY]);
+    private int bufferLength;
 
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
     private final BpmnTransformer bpmnTransformer = new BpmnTransformer();
@@ -82,16 +83,18 @@ public class WorkflowDeploymentCache implements AutoCloseable
     {
         bpmnProcessId.getBytes(0, buffer, 0, bpmnProcessId.capacity());
         buffer.putInt(bpmnProcessId.capacity(), version, ByteOrder.LITTLE_ENDIAN);
+
+        bufferLength = bpmnProcessId.capacity() + SIZE_OF_INT;
     }
 
     public void addDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
     {
         wrap(bpmnProcessId, version);
-        idVersionToKeyMap.put(buffer.byteArray(), workflowKey);
+        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
 
         // override the latest version by the given key
         wrap(bpmnProcessId, LATEST_VERSION);
-        idVersionToKeyMap.put(buffer.byteArray(), workflowKey);
+        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
     }
 
     public long getWorkflowKeyByIdAndLatestVersion(DirectBuffer bpmnProcessId)
@@ -103,7 +106,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     {
         wrap(bpmnProcessId, version);
 
-        return idVersionToKeyMap.get(buffer.byteArray(), -1L);
+        return idVersionToKeyMap.get(buffer, 0, bufferLength, -1L);
     }
 
     public ExecutableWorkflow getWorkflow(long workflowKey)

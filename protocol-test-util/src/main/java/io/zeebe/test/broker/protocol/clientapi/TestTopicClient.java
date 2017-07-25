@@ -16,6 +16,7 @@
 package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
@@ -63,7 +64,7 @@ public class TestTopicClient
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT, "CREATE_DEPLOYMENT")
-                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance).getBytes(UTF_8))
                 .done()
                 .sendAndAwait();
 

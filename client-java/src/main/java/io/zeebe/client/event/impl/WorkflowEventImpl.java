@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.event.impl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import io.zeebe.client.event.WorkflowEvent;
 
 public class WorkflowEventImpl implements WorkflowEvent
@@ -22,7 +24,7 @@ public class WorkflowEventImpl implements WorkflowEvent
     private String eventType;
     private String bpmnProcessId;
     private int version;
-    private String bpmnXml;
+    private byte[] bpmnXml;
     private long deploymentKey;
 
     @Override
@@ -72,10 +74,10 @@ public class WorkflowEventImpl implements WorkflowEvent
     @Override
     public String getBpmnXml()
     {
-        return bpmnXml;
+        return new String(bpmnXml, UTF_8);
     }
 
-    public void setBpmnXml(String bpmnXml)
+    public void setBpmnXml(byte[] bpmnXml)
     {
         this.bpmnXml = bpmnXml;
     }
@@ -93,7 +95,7 @@ public class WorkflowEventImpl implements WorkflowEvent
         builder.append(", deploymentKey=");
         builder.append(deploymentKey);
         builder.append(", bpmnXml=");
-        builder.append(bpmnXml);
+        builder.append(getBpmnXml());
         builder.append("]");
         return builder.toString();
     }

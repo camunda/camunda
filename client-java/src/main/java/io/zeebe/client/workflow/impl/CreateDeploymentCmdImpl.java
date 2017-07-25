@@ -36,7 +36,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
 {
     protected final DeploymentEvent deploymentEvent = new DeploymentEvent();
 
-    protected String resource;
+    protected byte[] resource;
 
     public CreateDeploymentCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
     {
@@ -44,10 +44,16 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     }
 
     @Override
-    public CreateDeploymentCmd resourceString(final String resource)
+    public CreateDeploymentCmd resourceBytes(final byte[] resource)
     {
         this.resource = resource;
         return this;
+    }
+
+    @Override
+    public CreateDeploymentCmd resourceString(final String resource)
+    {
+        return resourceBytes(resource.getBytes(CHARSET));
     }
 
     @Override
@@ -59,7 +65,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
         {
             final byte[] bytes = StreamUtil.read(resourceStream);
 
-            return resourceString(new String(bytes, CHARSET));
+            return resourceBytes(bytes);
         }
         catch (final IOException e)
         {

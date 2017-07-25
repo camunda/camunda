@@ -20,22 +20,19 @@ package io.zeebe.broker.workflow.data;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
 
 import io.zeebe.msgpack.UnpackedObject;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.property.EnumProperty;
-import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.property.*;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ArrayValueIterator;
-import io.zeebe.msgpack.spec.MsgPackHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowDeploymentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
     private final EnumProperty<WorkflowDeploymentEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowDeploymentEventType.class);
-    private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
+    private final BinaryProperty bpmnXmlProp = new BinaryProperty("bpmnXml");
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
             "deployedWorkflows",

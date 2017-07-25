@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
@@ -28,23 +27,20 @@ import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 /**
@@ -102,7 +98,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_EVENT, "CREATE_DEPLOYMENT")
-                .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+                .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
@@ -137,7 +133,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_EVENT, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
@@ -326,7 +322,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_EVENT, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
@@ -549,7 +545,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_EVENT, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
@@ -597,4 +593,10 @@ public class WorkflowTaskIOMappingTest
             .isEqualTo(JSON_MAPPER.readTree(
                 "{'testAttr':'test', 'result':123}"));
     }
+
+    private byte[] bpmnXml(final ZeebeExtensions.ZeebeModelInstance modelInstance)
+    {
+        return Bpmn.convertToString(modelInstance).getBytes(UTF_8);
+    }
+
 }

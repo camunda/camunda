@@ -18,15 +18,15 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -61,7 +61,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                 .done()
                 .sendAndAwait();
@@ -71,7 +71,7 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, "WORKFLOW_INSTANCE_REJECTED")
+            .containsEntry(PROP_EVENT, "WORKFLOW_INSTANCE_REJECTED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
 
     }
@@ -91,7 +91,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                 .done()
                 .sendAndAwait();
@@ -104,7 +104,7 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
+            .containsEntry(PROP_EVENT, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
@@ -131,7 +131,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                     .put(PROP_WORKFLOW_VERSION, -1)
                 .done()
@@ -174,7 +174,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                     .put(PROP_WORKFLOW_VERSION, 1)
                 .done()
@@ -223,7 +223,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_KEY, workflowKey)
                 .done()
                 .sendAndAwait();
@@ -233,7 +233,7 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
+            .containsEntry(PROP_EVENT, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 2)
             .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
@@ -266,7 +266,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_KEY, workflowKey)
                 .done()
                 .sendAndAwait();
@@ -276,7 +276,7 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
+            .containsEntry(PROP_EVENT, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
@@ -298,7 +298,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                     .put(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD)
                 .done()
@@ -309,7 +309,7 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
+            .containsEntry(PROP_EVENT, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key())
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -333,7 +333,7 @@ public class CreateWorkflowInstanceTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
                     .put(PROP_WORKFLOW_PAYLOAD, invalidPayload)
                 .done()
@@ -344,8 +344,40 @@ public class CreateWorkflowInstanceTest
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
-            .containsEntry(PROP_EVENT_TYPE, "WORKFLOW_INSTANCE_REJECTED")
+            .containsEntry(PROP_EVENT, "WORKFLOW_INSTANCE_REJECTED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+    }
+
+    @Test
+    public void shouldCreateMultipleWorkflowInstancesForDifferentBpmnProcessIds()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("foo")
+                .startEvent()
+                .endEvent()
+                .done());
+
+        testClient.deploy(Bpmn.createExecutableProcess("baaaar")
+                .startEvent()
+                .endEvent()
+                .done());
+
+        // when
+        final long workflowInstanceKeyFoo = testClient.createWorkflowInstance("foo");
+        final long workflowInstanceKeyBaaaar = testClient.createWorkflowInstance("baaaar");
+
+        // then
+        final List<SubscribedEvent> workflowInstanceEvents = testClient.receiveEvents(workflowInstanceEvents("WORKFLOW_INSTANCE_CREATED"))
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertThat(workflowInstanceEvents.get(0).event())
+            .containsEntry("bpmnProcessId", "foo")
+            .containsEntry("workflowInstanceKey", workflowInstanceKeyFoo);
+
+        assertThat(workflowInstanceEvents.get(1).event())
+            .containsEntry("bpmnProcessId", "baaaar")
+            .containsEntry("workflowInstanceKey", workflowInstanceKeyBaaaar);
     }
 
 }

@@ -27,13 +27,11 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.msgpack.spec.*;
+import io.zeebe.test.util.collection.MapBuilder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackToken;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.test.util.collection.MapBuilder;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackUtil
@@ -96,7 +94,7 @@ public class MsgPackUtil
 
     public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg)
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 4]);
         encodeMsgPack(buffer, arg);
         return buffer;
     }
