@@ -15,7 +15,7 @@
  */
 package io.zeebe.msgpack.query;
 
-import io.zeebe.list.CompactList;
+import io.zeebe.util.collection.CompactList;
 import io.zeebe.msgpack.filter.MsgPackFilter;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackType;

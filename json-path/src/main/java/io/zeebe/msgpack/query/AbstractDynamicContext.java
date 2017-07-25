@@ -15,7 +15,7 @@
  */
 package io.zeebe.msgpack.query;
 
-import io.zeebe.list.CompactList;
+import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
