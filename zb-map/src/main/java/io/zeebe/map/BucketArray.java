@@ -36,19 +36,22 @@ public class BucketArray implements AutoCloseable
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
     private final int maxBucketLength;
+    private final int maxBucketBlockCount;
     private final int maxKeyLength;
     private final int maxValueLength;
 
     private long realAddress;
-    private long length;
-    private long used;
+    private long capacity;
+
+    private long countOfUsedBytes;
     private long occupiedBlocks;
 
-    public BucketArray(int minBlockCount, int maxKeyLength, int maxValueLength)
+    public BucketArray(int maxBucketBlockCount, int maxKeyLength, int maxValueLength)
     {
         this.maxBucketLength =
             addExact(BUCKET_DATA_OFFSET,
-                     multiplyExact(minBlockCount, ZbMapDescriptor.getBlockLength(maxKeyLength, maxValueLength)));
+                     multiplyExact(maxBucketBlockCount, ZbMapDescriptor.getBlockLength(maxKeyLength, maxValueLength)));
+        this.maxBucketBlockCount = maxBucketBlockCount;
         this.maxKeyLength = maxKeyLength;
         this.maxValueLength = maxValueLength;
 
@@ -65,19 +68,21 @@ public class BucketArray implements AutoCloseable
     {
         try
         {
-            length = addExact(BUCKET_BUFFER_HEADER_LENGTH, multiplyExact(maxBucketLength, ALLOCATION_FACTOR));
+            capacity = addExact(BUCKET_BUFFER_HEADER_LENGTH, multiplyExact(maxBucketLength, ALLOCATION_FACTOR));
         }
         catch (final ArithmeticException e)
         {
             throw new IllegalStateException("Unable to allocate map data buffer", e);
         }
 
-        used = BUCKET_BUFFER_HEADER_LENGTH;
+        countOfUsedBytes = BUCKET_BUFFER_HEADER_LENGTH;
         this.occupiedBlocks = 0;
 
-        realAddress = UNSAFE.allocateMemory(length);
+        realAddress = UNSAFE.allocateMemory(capacity);
 
-        UNSAFE.setMemory(realAddress, length, (byte) 0);
+        // init overflow pointers and bucket count - rest is not necessary
+        clearOverflowPointers(countOfUsedBytes, ALLOCATION_FACTOR);
+        setBucketCount(0);
     }
 
     @Override
@@ -91,9 +96,27 @@ public class BucketArray implements AutoCloseable
         return BUCKET_BUFFER_HEADER_LENGTH;
     }
 
-    public long getLength()
+    public long getCapacity()
     {
-        return length;
+        return capacity;
+    }
+
+    public long getCountOfUsedBytes()
+    {
+        return countOfUsedBytes;
+    }
+
+    public float getLoadFactor()
+    {
+        final int bucketCount = getBucketCount();
+        if (bucketCount <= 0)
+        {
+            return 0.0F;
+        }
+        else
+        {
+            return (float) occupiedBlocks / (float) (bucketCount * maxBucketBlockCount);
+        }
     }
 
     public long getMaxBucketLength()
@@ -158,18 +181,7 @@ public class BucketArray implements AutoCloseable
 
     public int getBlockLength(long bucketAddress, int blockOffset)
     {
-        final int valueLength = getBlockValueLength(bucketAddress, blockOffset);
-        return ZbMapDescriptor.getBlockLength(maxKeyLength, valueLength);
-    }
-
-    public int getBlockValueLength(long bucketAddress, int blockOffset)
-    {
-        return UNSAFE.getInt(getRealAddress(bucketAddress) + blockOffset + BLOCK_VALUE_LENGTH_OFFSET);
-    }
-
-    public void setBlockValueLength(long bucketAddress, int blockOffset, int valueLength)
-    {
-        UNSAFE.putInt(getRealAddress(bucketAddress) + blockOffset + BLOCK_VALUE_LENGTH_OFFSET, valueLength);
+        return ZbMapDescriptor.getBlockLength(maxKeyLength, maxValueLength);
     }
 
     public boolean keyEquals(KeyHandler keyHandler, long bucketAddress, int blockOffset)
@@ -185,69 +197,41 @@ public class BucketArray implements AutoCloseable
     public void readValue(ValueHandler valueHandler, long bucketAddress, int blockOffset)
     {
         final long valueOffset = getBlockValueOffset(getRealAddress(bucketAddress) + blockOffset, maxKeyLength);
-        final int valueLength = getBlockValueLength(bucketAddress, blockOffset);
-
-        valueHandler.readValue(valueOffset, valueLength);
+        valueHandler.readValue(valueOffset, maxValueLength);
     }
 
-    public boolean updateValue(ValueHandler valueHandler, long bucketAddress, int blockOffset)
+    public void updateValue(ValueHandler valueHandler, long bucketAddress, int blockOffset)
     {
-        final int currBucketLength = getBucketLength(bucketAddress);
-        final int currValueLength = getBlockValueLength(bucketAddress, blockOffset);
-
         final int valueLength = valueHandler.getValueLength();
         if (valueLength > maxValueLength)
         {
             throw new IllegalArgumentException("Value can't exceed the max value length of " + maxValueLength);
         }
 
-        final int diff = valueLength - currValueLength;
-        final int newBucketLength = currBucketLength + diff;
-
-        final boolean canUpdate = newBucketLength <= maxBucketLength;
-
-        if (canUpdate)
-        {
-            final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
-            if (diff != 0)
-            {
-                final int currBlockLength = getBlockLength(bucketAddress, blockOffset);
-                final int nextBlockOffset = blockOffset + currBlockLength;
-
-                moveRemainingMemory(bucketAddress, nextBlockOffset, diff);
-
-                setBlockValueLength(bucketAddress, blockOffset, valueLength);
-                setBucketLength(bucketAddress, newBucketLength);
-            }
-            valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
-
-        }
-
-        return canUpdate;
+        final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
+        valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
     }
 
     public boolean addBlock(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler)
     {
-        final int blockOffset = getBucketLength(bucketAddress);
-        final int blockLength = ZbMapDescriptor.getBlockLength(keyHandler.getKeyLength(), valueHandler.getValueLength());
-        final int newBucketLength = blockOffset + blockLength;
-
-        final boolean canAddRecord = newBucketLength <= maxBucketLength;
+        final int bucketFillCount = getBucketFillCount(bucketAddress);
+        final boolean canAddRecord = bucketFillCount < maxBucketBlockCount;
 
         if (canAddRecord)
         {
+            final int blockOffset = getBucketLength(bucketAddress);
+            final int blockLength = ZbMapDescriptor.getBlockLength(maxKeyLength, maxValueLength);
+            final int newBucketLength = blockOffset + blockLength;
+
             final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
 
-            setBlockValueLength(bucketAddress, blockOffset, valueHandler.getValueLength());
             keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
             valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
 
-            setBucketLength(bucketAddress, newBucketLength);
-            setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) + 1);
+            setBucketFillStatus(bucketAddress, bucketFillCount + 1, newBucketLength);
             occupiedBlocks++;
         }
-
-        if (!canAddRecord)
+        else
         {
             final long overflowBucketAddress = getBucketOverflowPointer(bucketAddress);
             if (overflowBucketAddress > 0)
@@ -261,14 +245,20 @@ public class BucketArray implements AutoCloseable
 
     public void removeBlock(long bucketAddress, int blockOffset)
     {
+        removeBlockFromBucket(bucketAddress, blockOffset);
+        occupiedBlocks--;
+    }
+
+    private void removeBlockFromBucket(long bucketAddress, int blockOffset)
+    {
         final int blockLength = getBlockLength(bucketAddress, blockOffset);
         final int nextBlockOffset = blockOffset + blockLength;
 
         moveRemainingMemory(bucketAddress, nextBlockOffset, -blockLength);
 
-        setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) - 1);
-        setBucketLength(bucketAddress, getBucketLength(bucketAddress) - blockLength);
-        occupiedBlocks--;
+        setBucketFillStatus(bucketAddress,
+                               getBucketFillCount(bucketAddress) - 1,
+                               getBucketLength(bucketAddress) - blockLength);
     }
 
     public void setBucketId(long bucketAddress, int newBlockId)
@@ -315,21 +305,22 @@ public class BucketArray implements AutoCloseable
      */
     public long allocateNewBucket(int newBucketId, int newBucketDepth)
     {
-        final long newUsed = used + maxBucketLength;
+        final long newUsed = countOfUsedBytes + maxBucketLength;
 
-        if (newUsed > length)
+        if (newUsed > capacity)
         {
+            final long oldCapacity = capacity;
             increaseMemory(maxBucketLength);
+            clearOverflowPointers(oldCapacity, ALLOCATION_FACTOR);
         }
 
-        final long bucketAddress = used;
+        final long bucketAddress = countOfUsedBytes;
 
-        used = newUsed;
+        countOfUsedBytes = newUsed;
 
         setBucketId(bucketAddress, newBucketId);
         setBucketDepth(bucketAddress, newBucketDepth);
-        setBucketFillCount(bucketAddress, 0);
-        setBucketLength(bucketAddress, BUCKET_HEADER_LENGTH);
+        setBucketFillStatus(bucketAddress, 0, BUCKET_HEADER_LENGTH);
 
         setBucketCount(getBucketCount() + 1);
 
@@ -338,15 +329,9 @@ public class BucketArray implements AutoCloseable
 
     public void relocateBlock(long bucketAddress, int blockOffset, long newBucketAddress)
     {
-        final long srcBlockAddress = getRealAddress(bucketAddress) + blockOffset;
+        final int destBucketFillCount = getBucketFillCount(newBucketAddress);
 
-        final int destBucketLength = getBucketLength(newBucketAddress);
-        final long destBlockAddress = getRealAddress(newBucketAddress) + destBucketLength;
-
-        final int blockLength = getBlockLength(bucketAddress, blockOffset);
-        final int newBucketLength = destBucketLength + blockLength;
-
-        if (newBucketLength > maxBucketLength)
+        if (destBucketFillCount >= maxBucketBlockCount)
         {
             // overflow
             final long overflowBucketAddress = overflow(newBucketAddress);
@@ -354,22 +339,35 @@ public class BucketArray implements AutoCloseable
         }
         else
         {
+            final long srcBlockAddress = getRealAddress(bucketAddress) + blockOffset;
+            final int destBucketLength = getBucketLength(newBucketAddress);
+            final long destBlockAddress = getRealAddress(newBucketAddress) + destBucketLength;
+
+            final int blockLength = getBlockLength(bucketAddress, blockOffset);
+            final int newBucketLength = destBucketLength + blockLength;
+
             // copy to new block
             UNSAFE.copyMemory(srcBlockAddress, destBlockAddress, blockLength);
-            setBucketFillCount(newBucketAddress, getBucketFillCount(newBucketAddress) + 1);
-            setBucketLength(newBucketAddress, newBucketLength);
+            setBucketFillStatus(newBucketAddress, destBucketFillCount + 1, newBucketLength);
 
             // remove from this block (compacts this block)
-            removeBlock(bucketAddress, blockOffset);
-            occupiedBlocks++;
+            removeBlockFromBucket(bucketAddress, blockOffset);
+
+            // TODO remove overflow buckets
         }
+    }
+
+    private void setBucketFillStatus(long bucketAddress, int newBucketFillCount, int newBucketLength)
+    {
+        setBucketFillCount(bucketAddress, newBucketFillCount);
+        setBucketLength(bucketAddress, newBucketLength);
     }
 
     public void writeToStream(OutputStream outputStream, byte[] buffer) throws IOException
     {
-        for (long offset = 0; offset < length; offset += buffer.length)
+        for (long offset = 0; offset < countOfUsedBytes; offset += buffer.length)
         {
-            final int copyLength = (int) Math.min(buffer.length, length - offset);
+            final int copyLength = (int) Math.min(buffer.length, countOfUsedBytes - offset);
             UNSAFE.copyMemory(null, getRealAddress(offset), buffer, ARRAY_BASE_OFFSET, copyLength);
             outputStream.write(buffer, 0, copyLength);
         }
@@ -377,19 +375,20 @@ public class BucketArray implements AutoCloseable
 
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
-        used = 0;
+        countOfUsedBytes = 0;
 
         long bytesRead;
         while ((bytesRead = inputStream.read(buffer)) > 0)
         {
-            if (used + bytesRead > length)
+            if (countOfUsedBytes + bytesRead > capacity)
             {
                 increaseMemory(buffer.length);
             }
 
-            UNSAFE.copyMemory(buffer, ARRAY_BASE_OFFSET, null, getRealAddress(used), bytesRead);
-            used += bytesRead;
+            UNSAFE.copyMemory(buffer, ARRAY_BASE_OFFSET, null, getRealAddress(countOfUsedBytes), bytesRead);
+            countOfUsedBytes += bytesRead;
         }
+        recalculateOccupiedBlocks();
     }
 
     private void moveRemainingMemory(long bucketAddress, int srcOffset, int moveBytes)
@@ -410,7 +409,7 @@ public class BucketArray implements AutoCloseable
         final long newLength;
         try
         {
-            newLength = addExact(length, multiplyExact(addition, ALLOCATION_FACTOR));
+            newLength = addExact(capacity, multiplyExact(addition, ALLOCATION_FACTOR));
         }
         catch (final ArithmeticException e)
         {
@@ -418,8 +417,25 @@ public class BucketArray implements AutoCloseable
         }
 
         realAddress = UNSAFE.reallocateMemory(realAddress, newLength);
-        UNSAFE.setMemory(realAddress + length, newLength - length, (byte) 0);
-        length = newLength;
+        capacity = newLength;
+    }
 
+    private void clearOverflowPointers(long startAddress, int countOfBuckets)
+    {
+        for (int i = 0; i < countOfBuckets; i++)
+        {
+            setBucketOverflowPointer(startAddress + i * maxBucketLength, 0);
+        }
+    }
+
+    private void recalculateOccupiedBlocks()
+    {
+        occupiedBlocks = 0;
+        long bucketAddress = BUCKET_BUFFER_HEADER_LENGTH;
+        while (bucketAddress < countOfUsedBytes)
+        {
+            occupiedBlocks += getBucketFillCount(bucketAddress);
+            bucketAddress += maxBucketLength;
+        }
     }
 }

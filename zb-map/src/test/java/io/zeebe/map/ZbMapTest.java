@@ -344,43 +344,6 @@ public class ZbMapTest
     }
 
     @Test
-    public void shouldSplitOnUpdateEntryIfBucketSizeIsReached()
-    {
-        // given
-        final ZbMap<LongKeyHandler, ByteArrayValueHandler> zbMap = new ZbMap<LongKeyHandler, ByteArrayValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
-
-        for (int i = 0; i < 4; i++)
-        {
-            zbMap.keyHandler.theKey = i;
-            zbMap.valueHandler.theValue = "12".getBytes();
-            zbMap.put();
-        }
-
-        // when
-        zbMap.keyHandler.theKey = 3;
-        zbMap.valueHandler.theValue = "12345678".getBytes();
-        zbMap.put();
-
-        // then bucket limit was reached and bucket was split
-        assertThat(zbMap.bucketCount()).isEqualTo(2);
-
-        for (int i = 0; i < 3; i++)
-        {
-            zbMap.keyHandler.theKey = i;
-            zbMap.valueHandler.theValue = new byte[2];
-            final boolean wasFound = zbMap.get();
-            assertThat(wasFound).isTrue();
-            assertThat(zbMap.valueHandler.theValue).isEqualTo("12".getBytes());
-        }
-        zbMap.keyHandler.theKey = 3;
-        zbMap.valueHandler.theValue = new byte[8];
-        final boolean wasFound = zbMap.get();
-        assertThat(wasFound).isTrue();
-        assertThat(zbMap.valueHandler.theValue).isEqualTo("12345678".getBytes());
-    }
-
-    @Test
     public void shouldRoundToPowerOfTwo()
     {
         // given zbMap not power of two
@@ -430,7 +393,7 @@ public class ZbMapTest
             .isInstanceOf(ArithmeticException.class);
 
         assertThatThrownBy(() ->
-            getBlockLength(Integer.MAX_VALUE / 2, Integer.MAX_VALUE / 2)
+            getBlockLength((Integer.MAX_VALUE / 2) + 1, (Integer.MAX_VALUE / 2) + 1)
         )
             .isInstanceOf(ArithmeticException.class);
     }
@@ -444,7 +407,7 @@ public class ZbMapTest
                 .isInstanceOf(ArithmeticException.class);
 
         assertThatThrownBy(() ->
-                new Long2LongZbMap(1, Integer.MAX_VALUE / 20)
+                new Long2LongZbMap(1, Integer.MAX_VALUE / 16)
         )
                 .isInstanceOf(ArithmeticException.class);
 
@@ -454,7 +417,7 @@ public class ZbMapTest
                 .isInstanceOf(ArithmeticException.class);
 
         assertThatThrownBy(() ->
-                new Long2BytesZbMap(1, Integer.MAX_VALUE / 20, 8)
+                new Long2BytesZbMap(1, Integer.MAX_VALUE / 16, 8)
         )
                 .isInstanceOf(ArithmeticException.class);
 
@@ -464,7 +427,7 @@ public class ZbMapTest
                 .isInstanceOf(ArithmeticException.class);
 
         assertThatThrownBy(() ->
-                new Bytes2LongZbMap(1, Integer.MAX_VALUE / 20, 8)
+                new Bytes2LongZbMap(1, Integer.MAX_VALUE / 16, 8)
         )
                 .isInstanceOf(ArithmeticException.class);
     }

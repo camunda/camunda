@@ -84,12 +84,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *
  * Each block has the following layout
  *
- *  * <pre>
+ * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                          Value Length                         |
- *  +---------------------------------------------------------------+
  *  |                             Key                              ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
@@ -97,7 +95,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
- *
  *
  */
 public class ZbMapDescriptor
@@ -116,9 +113,7 @@ public class ZbMapDescriptor
     public static final int BUCKET_HEADER_LENGTH;
     public static final int BUCKET_DATA_OFFSET;
 
-    public static final int BLOCK_VALUE_LENGTH_OFFSET;
     public static final int BLOCK_KEY_OFFSET;
-    public static final int BLOCK_HEADER_LENGTH;
 
     static
     {
@@ -156,20 +151,13 @@ public class ZbMapDescriptor
 
         BUCKET_HEADER_LENGTH = offset;
 
-
         offset = 0;
-
-        BLOCK_VALUE_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         BLOCK_KEY_OFFSET = offset;
-
-        BLOCK_HEADER_LENGTH = BLOCK_KEY_OFFSET;
     }
 
     public static int getBlockLength(final int keyLength, final int valueLength)
     {
-        return addExact(BLOCK_HEADER_LENGTH, addExact(keyLength, valueLength));
+        return addExact(keyLength, valueLength);
     }
 
     public static long getBlockValueOffset(final long offset, final int keyLength)

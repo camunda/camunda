@@ -42,7 +42,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     /**
      * The load factor which is used to determine if the hash table should be increased or overflow should be used.
      */
-    private static final double LOAD_FACTOR_OVERFLOW_LIMIT = 0.6D;
+    private static final float LOAD_FACTOR_OVERFLOW_LIMIT = 0.6F;
 
     public static final int DEFAULT_TABLE_SIZE = 32;
     public static final int DEFAULT_BLOCK_COUNT = 16;
@@ -107,7 +107,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      *
      * <p>
      * The map can store `X` entries, which is at maximum equal to `tableSize * maxBlockLength`.
-     * The maxBlockLength is equal to {@link ZbMapDescriptor#BUCKET_DATA_OFFSET} + (bucketCount * {@link ZbMapDescriptor#getRecordLength(maxKeyLength, maxValueLength)}))
+     * The maxBlockLength is equal to {@link ZbMapDescriptor#BUCKET_DATA_OFFSET} + (bucketCount * {@link ZbMapDescriptor#getBlockLength(int, int)}))
      * </p>
      *
      * <p>
@@ -162,7 +162,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     public long size()
     {
-        return hashTable.getLength() + bucketArray.getLength();
+        return hashTable.getLength() + bucketArray.getCountOfUsedBytes();
     }
 
     private int ensureTableSizeIsPowerOfTwo(final int tableSize)
@@ -276,27 +276,17 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
             if (scanForKey)
             {
-
                 final Block block = findBlockInBucket(bucketAddress);
                 final boolean blockWasFound = block.wasFound();
                 if (blockWasFound)
                 {
                     bucketAddress = block.getBucketAddress();
                     final int blockOffset = block.getBlockOffset();
-                    isUpdated = bucketArray.updateValue(valueHandler, bucketAddress, blockOffset);
-
+                    bucketArray.updateValue(valueHandler, bucketAddress, blockOffset);
                     modCount += 1;
+                    isUpdated = true;
                 }
-
                 scanForKey = blockWasFound;
-
-                if (blockWasFound && !isUpdated)
-                {
-                    // key found but could not be updated since length of new value is greater than length of old value
-                    // and bucket is filled. Need to split to make room
-                    splitBucket(bucketAddress);
-                    bucketId = keyHashCode & mask;
-                }
             }
             else
             {
@@ -379,11 +369,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         return foundBlock;
     }
 
-    private double calculateLoadFactor()
-    {
-        return (double) bucketArray.getOccupiedBlocks() / (double) (bucketArray.getBucketCount() * minBlockCountPerBucket);
-    }
-
     /**
      * splits a block performing the map update and relocation and compaction of blocks.
      */
@@ -402,7 +387,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         }
         else
         {
-            final double loadFactor = calculateLoadFactor();
+            final float loadFactor = bucketArray.getLoadFactor();
             if (loadFactor < loadFactorOverflowLimit)
             {
                 bucketArray.overflow(filledBucketAddress);

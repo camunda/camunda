@@ -65,7 +65,7 @@ public class BucketArrayTest
         // given bucketArray
         assertThat(bucketArray.getBucketCount()).isEqualTo(0);
         assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(0);
-        assertThat(bucketArray.getLength()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
+        assertThat(bucketArray.getCapacity()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class BucketArrayTest
         // then
         assertThat(newBucketAddress).isEqualTo(firstBucketAddress);
         assertThat(bucketArray.getBucketCount()).isEqualTo(1);
-        assertThat(bucketArray.getLength()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
+        assertThat(bucketArray.getCapacity()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
         assertThat(bucketArray.getBucketDepth(firstBucketAddress)).isEqualTo(1);
         assertThat(bucketArray.getBucketId(firstBucketAddress)).isEqualTo(1);
         assertThat(bucketArray.getBucketLength(firstBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET);
@@ -152,7 +152,7 @@ public class BucketArrayTest
         assertThat(newBucketAddress).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
 
         assertThat(bucketArray.getBucketCount()).isEqualTo(ALLOCATION_FACTOR + 1);
-        assertThat(bucketArray.getLength()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ((2 * ALLOCATION_FACTOR)  * bucketArray.getMaxBucketLength()));
+        assertThat(bucketArray.getCapacity()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ((2 * ALLOCATION_FACTOR)  * bucketArray.getMaxBucketLength()));
 
         final int firstBucketAddress = bucketArray.getFirstBucketAddress();
         for (int i = 0; i < ALLOCATION_FACTOR; i++)
@@ -177,12 +177,9 @@ public class BucketArrayTest
         // when
         bucketArray.clear();
 
-        // then
+        // then only count and overflow pointers are set to zero
         assertThat(bucketArray.getBucketCount()).isEqualTo(0);
-        assertThat(bucketArray.getLength()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
-        assertThat(bucketArray.getBucketDepth(newBucketAddress)).isEqualTo(0);
-        assertThat(bucketArray.getBucketId(newBucketAddress)).isEqualTo(0);
-        assertThat(bucketArray.getBucketLength(newBucketAddress)).isEqualTo(0);
+        assertThat(bucketArray.getCapacity()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
         assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(0);
     }
 
@@ -204,7 +201,7 @@ public class BucketArrayTest
         assertThat(wasAdded).isTrue();
         assertThat(newBlockOffset).isEqualTo(ZbMapDescriptor.BUCKET_DATA_OFFSET);
         assertThat(bucketArray.getBucketCount()).isEqualTo(1);
-        assertThat(bucketArray.getLength()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
+        assertThat(bucketArray.getCapacity()).isEqualTo(BUCKET_BUFFER_HEADER_LENGTH + ALLOCATION_FACTOR * bucketArray.getMaxBucketLength());
         assertThat(bucketArray.getBucketDepth(newBucketAddress)).isEqualTo(1);
         assertThat(bucketArray.getBucketId(newBucketAddress)).isEqualTo(1);
         assertThat(bucketArray.getBucketLength(newBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET + getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
@@ -212,7 +209,6 @@ public class BucketArrayTest
         assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(1);
 
         assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(SIZE_OF_LONG);
 
         final boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyEquals).isTrue();
@@ -263,14 +259,12 @@ public class BucketArrayTest
         wasAdded = bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
 
         // then
-        assertThat(wasAdded).isTrue();
+        assertThat(wasAdded).isFalse();
         assertThat(bucketArray.getBucketCount()).isEqualTo(1);
-        assertThat(bucketArray.getBucketLength(newBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET + 3 * getBlockLength(MAX_KEY_LEN, 1));
-        assertThat(bucketArray.getBucketFillCount(newBucketAddress)).isEqualTo(3);
-        assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(3);
+        assertThat(bucketArray.getBucketLength(newBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET + 2 * getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
+        assertThat(bucketArray.getBucketFillCount(newBucketAddress)).isEqualTo(2);
+        assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(2);
     }
-
-
 
     @Test
     public void shouldUpdateBlockValue()
@@ -290,7 +284,6 @@ public class BucketArrayTest
 
         // then
         assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(SIZE_OF_LONG);
 
         final boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyEquals).isTrue();
@@ -319,14 +312,10 @@ public class BucketArrayTest
 
         // when
         valueHandler.theValue = "new".getBytes();
-        final boolean wasUpdated = bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
+        bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
 
-        // then
-        assertThat(wasUpdated).isTrue();
-
-        // updated block
-        assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, 3));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(3);
+        // then updated block
+        assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
 
         keyHandler.theKey = 10;
         boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
@@ -338,7 +327,7 @@ public class BucketArrayTest
 
         // old block
         final int oldBlockOffset = newBlockOffset + bucketArray.getBlockLength(newBucketAddress, newBlockOffset);
-        assertThat(bucketArray.getBlockLength(newBucketAddress, oldBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, 5));
+        assertThat(bucketArray.getBlockLength(newBucketAddress, oldBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
 
         keyHandler.theKey = 11;
         keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, oldBlockOffset);
@@ -368,14 +357,10 @@ public class BucketArrayTest
 
         // when
         valueHandler.theValue = "hallo".getBytes();
-        final boolean wasUpdated = bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
+        bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
 
-        // then
-        assertThat(wasUpdated).isTrue();
-
-        // updated block
-        assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, 5));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(5);
+        // then updated block
+        assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
 
         keyHandler.theKey = 10;
         boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
@@ -387,7 +372,7 @@ public class BucketArrayTest
 
         // old block
         final int oldBlockOffset = newBlockOffset + bucketArray.getBlockLength(newBucketAddress, newBlockOffset);
-        assertThat(bucketArray.getBlockLength(newBucketAddress, oldBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, 3));
+        assertThat(bucketArray.getBlockLength(newBucketAddress, oldBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
 
         keyHandler.theKey = 11;
         keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, oldBlockOffset);
@@ -425,35 +410,6 @@ public class BucketArrayTest
     }
 
     @Test
-    public void shouldUpdateBlockAndIncreaseMaxBucketSize()
-    {
-        // given bucket array with 3 blocks
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
-        final long newBucketAddress = bucketArray.allocateNewBucket(1, 1);
-        keyHandler.theKey = 10;
-        valueHandler.theValue = "1".getBytes();
-        bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketArray.getFirstBlockOffset(newBucketAddress);
-
-        // when
-        valueHandler.theValue = "12".getBytes();
-        boolean wasUpdated = bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
-
-        // then
-        assertThat(wasUpdated).isTrue();
-
-        // when update increase bucket size
-        valueHandler.theValue = "123".getBytes();
-        wasUpdated = bucketArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
-
-        // then
-        assertThat(wasUpdated).isFalse();
-    }
-
-    @Test
     public void shouldRelocateBlock()
     {
         // given
@@ -478,7 +434,6 @@ public class BucketArrayTest
         assertThat(bucketArray.getOccupiedBlocks()).isEqualTo(1);
 
         assertThat(bucketArray.getBlockLength(newBucketAddress, newBlockOffset)).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(SIZE_OF_LONG);
 
         final boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyEquals).isTrue();
@@ -518,7 +473,6 @@ public class BucketArrayTest
 
         final int blockLength = bucketArray.getBlockLength(newBucketAddress, newBlockOffset);
         assertThat(blockLength).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(SIZE_OF_LONG);
 
         boolean keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyEquals).isTrue();
@@ -531,7 +485,6 @@ public class BucketArrayTest
 
         newBlockOffset += blockLength;
         assertThat(blockLength).isEqualTo(getBlockLength(MAX_KEY_LEN, MAX_VALUE_LEN));
-        assertThat(bucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(SIZE_OF_LONG);
 
         keyHandler.theKey = 10;
         keyEquals = bucketArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset);
@@ -730,7 +683,7 @@ public class BucketArrayTest
         // then
         final byte[] writtenBytes = outputStream.toByteArray();
 
-        assertThat(writtenBytes.length).isEqualTo((int) bucketArray.getLength());
+        assertThat(writtenBytes.length).isEqualTo((int) bucketArray.getCountOfUsedBytes());
         assertThat(writtenBytes[BUCKET_COUNT_OFFSET]).isEqualTo((byte) 1);
 
         // we can check the values simply since we use little endianness
@@ -738,7 +691,6 @@ public class BucketArrayTest
         assertThat(writtenBytes[(int) newBucketAddress + ZbMapDescriptor.BUCKET_ID_OFFSET]).isEqualTo((byte) 3);
         assertThat(writtenBytes[(int) newBucketAddress + ZbMapDescriptor.BUCKET_DEPTH_OFFSET]).isEqualTo((byte) 3);
 
-        assertThat(writtenBytes[(int) newBucketAddress + newBlockOffset]).isEqualTo((byte) 8);
         assertThat(writtenBytes[(int) newBucketAddress + newBlockOffset + BLOCK_KEY_OFFSET]).isEqualTo((byte) 10);
 
         assertThat(writtenBytes[(int) newBucketAddress + newBlockOffset + BLOCK_KEY_OFFSET + SIZE_OF_LONG]).isEqualTo((byte) 0xFF);
@@ -767,14 +719,13 @@ public class BucketArrayTest
         newBucketArray.readFromStream(inputStream, writeBuffer);
 
         // then
-        assertThat(newBucketArray.getLength()).isEqualTo((int) bucketArray.getLength());
+        assertThat(newBucketArray.getCapacity()).isEqualTo((int) bucketArray.getCapacity());
         assertThat(newBucketArray.getBucketCount()).isEqualTo(1);
+        assertThat(newBucketArray.getOccupiedBlocks()).isEqualTo(bucketArray.getOccupiedBlocks());
 
         assertThat(newBucketArray.getBucketFillCount(newBucketAddress)).isEqualTo(1);
         assertThat(newBucketArray.getBucketId(newBucketAddress)).isEqualTo(3);
         assertThat(newBucketArray.getBucketDepth(newBucketAddress)).isEqualTo(3);
-
-        assertThat(newBucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(8);
 
         newBucketArray.readKey(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyHandler.theKey).isEqualTo(10);
@@ -795,6 +746,7 @@ public class BucketArrayTest
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+        bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
         final int newBlockOffset = bucketArray.getFirstBlockOffset(newBucketAddress);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -804,22 +756,21 @@ public class BucketArrayTest
         // when
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
         final BucketArray newBucketArray = new BucketArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
-        bucketArray.allocateNewBucket(4, 4);
+        newBucketArray.allocateNewBucket(4, 4);
         keyHandler.theKey = 14;
         valueHandler.theValue = 0xAA;
-        bucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        bucketArray.getFirstBlockOffset(newBucketAddress);
+        newBucketArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+        newBucketArray.getFirstBlockOffset(newBucketAddress);
         newBucketArray.readFromStream(inputStream, writeBuffer);
 
         // then
-        assertThat(newBucketArray.getLength()).isEqualTo((int) bucketArray.getLength());
+        assertThat(newBucketArray.getCapacity()).isEqualTo((int) bucketArray.getCapacity());
         assertThat(newBucketArray.getBucketCount()).isEqualTo(1);
+        assertThat(newBucketArray.getOccupiedBlocks()).isEqualTo(bucketArray.getOccupiedBlocks());
 
-        assertThat(newBucketArray.getBucketFillCount(newBucketAddress)).isEqualTo(1);
+        assertThat(newBucketArray.getBucketFillCount(newBucketAddress)).isEqualTo(2);
         assertThat(newBucketArray.getBucketId(newBucketAddress)).isEqualTo(3);
         assertThat(newBucketArray.getBucketDepth(newBucketAddress)).isEqualTo(3);
-
-        assertThat(newBucketArray.getBlockValueLength(newBucketAddress, newBlockOffset)).isEqualTo(8);
 
         newBucketArray.readKey(keyHandler, newBucketAddress, newBlockOffset);
         assertThat(keyHandler.theKey).isEqualTo(10);
@@ -853,8 +804,9 @@ public class BucketArrayTest
         newBucketArray.readFromStream(inputStream, writeBuffer);
 
         // then
-        assertThat(newBucketArray.getLength()).isEqualTo((int) bucketArray.getLength());
+        assertThat(newBucketArray.getCountOfUsedBytes()).isEqualTo((int) bucketArray.getCountOfUsedBytes());
         assertThat(newBucketArray.getBucketCount()).isEqualTo(33);
+        assertThat(newBucketArray.getOccupiedBlocks()).isEqualTo(bucketArray.getOccupiedBlocks());
         newBucketArray.close();
     }
 }
