@@ -6,6 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
+import org.camunda.optimize.service.importing.fetcher.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,9 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
   @Autowired
   private MissingProcessDefinitionFinder processDefinitionFinder;
 
+  @Autowired
+  private ProcessDefinitionFetcher processDefinitionFetcher;
+
   @Override
   protected MissingEntitiesFinder<ProcessDefinitionEngineDto> getMissingEntitiesFinder() {
     return processDefinitionFinder;
@@ -32,16 +36,15 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
 
   @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitions(
-      importStrategy.getCurrentDefinitionBasedImportIndex(),
-      getEngineImportMaxPageSize(),
-      importStrategy.getCurrentProcessDefinitionId()
+    return processDefinitionFetcher.fetchProcessDefinitions(
+      importIndexHandler.getCurrentDefinitionBasedImportIndex(),
+      importIndexHandler.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionCount(importStrategy.getAllProcessDefinitions());
+    return processDefinitionFetcher.fetchProcessDefinitionCount(importIndexHandler.getAllProcessDefinitions());
   }
 
   @Override

@@ -93,9 +93,9 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     return totalCount;
   }
 
-  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXml(int indexOfFirstResult,
-                                                                       int maxPageSize,
-                                                                       String processDefinitionId) {
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult,
+                                                                        int maxPageSize,
+                                                                        String processDefinitionId) {
     List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId);
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>();
     for (ProcessDefinitionEngineDto procDef : procDefs) {

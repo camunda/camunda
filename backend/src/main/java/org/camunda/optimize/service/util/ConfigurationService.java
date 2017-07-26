@@ -26,14 +26,6 @@ public class ConfigurationService {
   // optimize
   @Value("${camunda.optimize.serialization.date.format}")
   private String dateFormat;
-  @Value("${camunda.optimize.engine.import.page.size.max}")
-  private int engineImportMaxPageSize;
-  @Value("${camunda.optimize.engine.import.process-definition-xml.page.size.max}")
-  private int engineImportProcessDefinitionXmlMaxPageSize;
-  @Value("${camunda.optimize.engine.import.process-instance.page.size.max}")
-  private int engineImportProcessInstanceMaxPageSize;
-  @Value("${camunda.optimize.engine.import.variable.page.size.max}")
-  private int maxVariablesPageSize;
   @Value("${camunda.optimize.engine.import.jobqueue.size.max}")
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
@@ -44,6 +36,27 @@ public class ConfigurationService {
   private String processDefinitionsToImport;
   @Value(("${camunda.optimize.variable.max.valueList.size}"))
   private int maxVariableValueListSize;
+
+  // pagination
+  @Value("${camunda.optimize.engine.import.page.size.max}")
+  private int engineImportMaxPageSize;
+  @Value("${camunda.optimize.engine.import.process-definition.page.size.max}")
+  private int engineImportProcessDefinitionMaxPageSize;
+  @Value("${camunda.optimize.engine.import.process-definition-xml.page.size.max}")
+  private int engineImportProcessDefinitionXmlMaxPageSize;
+  @Value("${camunda.optimize.engine.import.activity-instance.page.size.max}")
+  private int engineImportActivityInstanceMaxPageSize;
+  @Value("${camunda.optimize.engine.import.process-instance.page.size.max}")
+  private int engineImportProcessInstanceMaxPageSize;
+  @Value("${camunda.optimize.engine.import.variable.page.size.max}")
+  private int engineImportVariableInstanceMaxPageSize;
+
+  @Value("${camunda.optimize.engine.import.process-definition.page.size.min}")
+  private int engineImportProcessDefinitionMinPageSize;
+  @Value("${camunda.optimize.engine.import.process-definition-xml.page.size.min}")
+  private int engineImportProcessDefinitionXmlMinPageSize;
+  @Value("${camunda.optimize.engine.import.activity-instance.page.size.min}")
+  private int engineImportActivityInstanceMinPageSize;
 
   // plugins
   @Value(("${camunda.optimize.plugin.variable.import.base.packages}"))
@@ -322,17 +335,14 @@ public class ConfigurationService {
     return historicProcessInstanceCountEndpoint;
   }
 
-  public int getXmlDefinitionPageSize() {
-    ensureGreaterThanZero(engineImportProcessDefinitionXmlMaxPageSize);
-    return engineImportProcessDefinitionXmlMaxPageSize;
-  }
-
   public int getEngineImportProcessInstanceMaxPageSize() {
+    ensureGreaterThanZero(engineImportProcessInstanceMaxPageSize);
     return engineImportProcessInstanceMaxPageSize;
   }
 
-  public int getMaxVariablesPageSize() {
-    return maxVariablesPageSize;
+  public int getEngineImportVariableInstanceMaxPageSize() {
+    ensureGreaterThanZero(engineImportVariableInstanceMaxPageSize);
+    return engineImportVariableInstanceMaxPageSize;
   }
 
   public String getProcessDefinitionsToImport() {
@@ -407,8 +417,8 @@ public class ConfigurationService {
     this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
   }
 
-  public void setMaxVariablesPageSize(int maxVariablesPageSize) {
-    this.maxVariablesPageSize = maxVariablesPageSize;
+  public void setEngineImportVariableInstanceMaxPageSize(int engineImportVariableInstanceMaxPageSize) {
+    this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
   }
 
   public void setMaxJobQueueSize(int maxJobQueueSize) {
@@ -642,4 +652,50 @@ public class ConfigurationService {
   public void setNumberOfRetriesOnConflict(int numberOfRetriesOnConflict) {
     this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
   }
+
+  public int getEngineImportProcessDefinitionMaxPageSize() {
+    ensureGreaterThanZero(engineImportProcessDefinitionMaxPageSize);
+    return engineImportProcessDefinitionMaxPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionMaxPageSize(int engineImportProcessDefinitionMaxPageSize) {
+    this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
+  }
+
+  public int getEngineImportActivityInstanceMaxPageSize() {
+    ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
+    return engineImportActivityInstanceMaxPageSize;
+  }
+
+  public void setEngineImportActivityInstanceMaxPageSize(int engineImportActivityInstanceMaxPageSize) {
+    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
+  }
+
+  public int getEngineImportProcessDefinitionMinPageSize() {
+    ensureGreaterThanZero(engineImportProcessDefinitionMinPageSize);
+    return engineImportProcessDefinitionMinPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionMinPageSize(int engineImportProcessDefinitionMinPageSize) {
+    this.engineImportProcessDefinitionMinPageSize = engineImportProcessDefinitionMinPageSize;
+  }
+
+  public int getEngineImportProcessDefinitionXmlMinPageSize() {
+    ensureGreaterThanZero(engineImportProcessDefinitionXmlMinPageSize);
+    return engineImportProcessDefinitionXmlMinPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionXmlMinPageSize(int engineImportProcessDefinitionXmlMinPageSize) {
+    this.engineImportProcessDefinitionXmlMinPageSize = engineImportProcessDefinitionXmlMinPageSize;
+  }
+
+  public int getEngineImportActivityInstanceMinPageSize() {
+    ensureGreaterThanZero(engineImportActivityInstanceMinPageSize);
+    return engineImportActivityInstanceMinPageSize;
+  }
+
+  public void setEngineImportActivityInstanceMinPageSize(int engineImportActivityInstanceMinPageSize) {
+    this.engineImportActivityInstanceMinPageSize = engineImportActivityInstanceMinPageSize;
+  }
+
 }

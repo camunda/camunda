@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,17 +50,25 @@ public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
     QueryBuilder qb = idsQuery(elasticSearchType())
         .addIds(engineIds);
 
-    SearchResponse idsResp = esclient.prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(elasticSearchType())
-        .setQuery(qb)
-        .setFetchSource(false)
-        .setSize(configurationService.getEngineImportMaxPageSize())
-        .get();
-
     Set<String> idsAlreadyAddedToOptimize = new HashSet<>();
-    for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      idsAlreadyAddedToOptimize.add(searchHit.getId());
-    }
+    SearchResponse scrollResp = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes(elasticSearchType())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .setQuery(qb)
+        .setSize(1000)
+      .get();
+
+    do {
+      for (SearchHit searchHit : scrollResp.getHits().getHits()) {
+        idsAlreadyAddedToOptimize.add(searchHit.getId());
+      }
+
+      scrollResp = esclient
+        .prepareSearchScroll(scrollResp.getScrollId())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .get();
+    } while (scrollResp.getHits().getHits().length != 0);
 
     return idsAlreadyAddedToOptimize;
   }

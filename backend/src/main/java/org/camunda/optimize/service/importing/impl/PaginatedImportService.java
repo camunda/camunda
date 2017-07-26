@@ -4,8 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
-import org.camunda.optimize.service.importing.strategy.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.util.ConfigurationReloadable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,16 +20,13 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   extends AbstractImportService <ENG, OPT> implements ConfigurationReloadable {
 
   @Autowired
-  protected DefinitionBasedImportIndexHandler importStrategy;
-
-  @Autowired
-  protected DefinitionBasedEngineEntityFetcher engineEntityFetcher;
+  protected DefinitionBasedImportIndexHandler importIndexHandler;
 
   protected Set<String> idsForPostProcessing;
 
   @PostConstruct
   protected void init() {
-    importStrategy.initializeImportIndex(getElasticsearchType(), getEngineImportMaxPageSize());
+    importIndexHandler.initializeImportIndex(getElasticsearchType());
   }
 
   @Override
@@ -49,9 +45,9 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     ImportResult result = new ImportResult();
     boolean engineHasStillNewData = false;
     int searchedSize;
-    importStrategy.makeSureIsInitialized();
+    importIndexHandler.makeSureIsInitialized();
     logger.debug("Importing page from type [{}] with index starting from [{}].",
-        getElasticsearchType(), importStrategy.getRelativeImportIndex());
+        getElasticsearchType(), importIndexHandler.getRelativeImportIndex());
 
     List<ENG> pageOfEngineEntities = queryEngineRestPoint();
     searchedSize = pageOfEngineEntities.size();
@@ -63,11 +59,11 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
       List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
       importToElasticSearch(newOptimizeEntities);
     } else {
-      engineHasStillNewData = importStrategy.adjustIndexWhenNoResultsFound(engineHasStillNewData);
+      engineHasStillNewData = importIndexHandler.adjustIndexWhenNoResultsFound(engineHasStillNewData);
     }
 
-    importStrategy.moveImportIndex(searchedSize);
-    importStrategy.persistImportIndexToElasticsearch();
+    importIndexHandler.moveImportIndex(searchedSize);
+    importIndexHandler.persistImportIndexToElasticsearch();
 
     result.setEngineHasStillNewData(engineHasStillNewData);
     result.setIdsToFetch(getIdsForPostProcessing());
@@ -77,16 +73,12 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
 
 
-  protected int getEngineImportMaxPageSize() {
-    return configurationService.getEngineImportMaxPageSize();
-  }
-
   public int getImportStartIndex() {
-    return importStrategy.getAbsoluteImportIndex();
+    return importIndexHandler.getAbsoluteImportIndex();
   }
 
   public void resetImportStartIndex() {
-    importStrategy.resetImportIndex();
+    importIndexHandler.resetImportIndex();
   }
 
   /**
@@ -102,7 +94,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   public abstract int getEngineEntityCount() throws OptimizeException;
 
   public void updateDefinitionsToImport() {
-    this.importStrategy.updateDefinitionsToImportFromEngine();
+    this.importIndexHandler.updateDefinitionsToImportFromEngine();
   }
 
   /**
@@ -111,6 +103,6 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
    * all the once again, but starting from the last point we stopped at.
    */
   public void restartImportCycle() {
-    importStrategy.restartDefinitionBasedImportCycle();
+    importIndexHandler.restartDefinitionBasedImportCycle();
   }
 }

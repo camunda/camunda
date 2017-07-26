@@ -6,6 +6,7 @@ import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
+import org.camunda.optimize.service.importing.fetcher.ActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,9 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Autowired
   private MissingActivityFinder missingActivityFinder;
 
+  @Autowired
+  private ActivityInstanceFetcher activityInstanceFetcher;
+
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
     return missingActivityFinder;
@@ -36,16 +40,15 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
-    return engineEntityFetcher.fetchHistoricActivityInstances(
-      importStrategy.getCurrentDefinitionBasedImportIndex(),
-      getEngineImportMaxPageSize(),
-      importStrategy.getCurrentProcessDefinitionId()
+    return activityInstanceFetcher.fetchHistoricActivityInstances(
+      importIndexHandler.getCurrentDefinitionBasedImportIndex(),
+      importIndexHandler.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricActivityInstanceCount(importStrategy.getAllProcessDefinitions());
+    return activityInstanceFetcher.fetchHistoricActivityInstanceCount(importIndexHandler.getAllProcessDefinitions());
   }
 
   @Override

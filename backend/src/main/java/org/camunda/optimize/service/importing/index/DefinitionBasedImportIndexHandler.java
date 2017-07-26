@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.importing.strategy;
+package org.camunda.optimize.service.importing.index;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
+import org.camunda.optimize.service.importing.fetcher.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import java.util.Set;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DefinitionBasedImportIndexHandler implements ImportStrategy {
+public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private Logger logger = LoggerFactory.getLogger(DefinitionBasedImportIndexHandler.class);
 
@@ -35,7 +35,7 @@ public class DefinitionBasedImportIndexHandler implements ImportStrategy {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
+  private ProcessDefinitionFetcher processDefinitionFetcher;
   @Autowired
   private ImportJobExecutor importJobExecutor;
 
@@ -45,14 +45,12 @@ public class DefinitionBasedImportIndexHandler implements ImportStrategy {
 
   private int totalEntitiesImported;
   private int currentDefinitionBasedImportIndex;
-  private int maxImportSize;
   private String elasticsearchType;
   private boolean initialized = false;
 
   @Override
-  public void initializeImportIndex(String elasticsearchType, int maxPageSize) {
+  public void initializeImportIndex(String elasticsearchType) {
     this.elasticsearchType = elasticsearchType;
-    this.maxImportSize = maxPageSize;
     loadImportDefaults();
 
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
@@ -127,7 +125,7 @@ public class DefinitionBasedImportIndexHandler implements ImportStrategy {
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
     ArrayList<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
     int currentStart = 0;
-    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxImportSize);
+    List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
 
     while (currentPage != null && !currentPage.isEmpty()) {
       for (ProcessDefinitionEngineDto dto : currentPage) {
@@ -138,7 +136,7 @@ public class DefinitionBasedImportIndexHandler implements ImportStrategy {
         processDefinitionsToImport.add(definitionImportInformation);
       }
       currentStart = currentStart + currentPage.size();
-      currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxImportSize);
+      currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
     }
     return processDefinitionsToImport;
   }

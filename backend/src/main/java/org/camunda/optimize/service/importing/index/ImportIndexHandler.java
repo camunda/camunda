@@ -1,21 +1,13 @@
-package org.camunda.optimize.service.importing.strategy;
+package org.camunda.optimize.service.importing.index;
 
-import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-
-import java.util.List;
-
-public interface ImportStrategy {
+public interface ImportIndexHandler {
 
   /**
    * Initializes the import index.
    *
    * @param elasticsearchType to which the import index is refering to.
-   * @param maxPageSize       the maximum page size every page should contain.
    */
-  void initializeImportIndex(String elasticsearchType, int maxPageSize);
+  void initializeImportIndex(String elasticsearchType);
 
   /**
    * If there are no new engine entities found the import index

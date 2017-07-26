@@ -6,6 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
+import org.camunda.optimize.service.importing.fetcher.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,9 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   @Autowired
   private MissingProcessDefinitionXmlFinder xmlFinder;
 
+  @Autowired
+  private ProcessDefinitionXmlFetcher processDefinitionXmlFetcher;
+
   @Override
   protected MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> getMissingEntitiesFinder() {
     return xmlFinder;
@@ -31,16 +35,15 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
 
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionXml(
-      importStrategy.getCurrentDefinitionBasedImportIndex(),
-      getEngineImportMaxPageSize(),
-      importStrategy.getCurrentProcessDefinitionId()
+    return processDefinitionXmlFetcher.fetchProcessDefinitionXmls(
+      importIndexHandler.getCurrentDefinitionBasedImportIndex(),
+      importIndexHandler.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionCount(importStrategy.getAllProcessDefinitions());
+    return processDefinitionXmlFetcher.fetchProcessDefinitionCount(importIndexHandler.getAllProcessDefinitions());
   }
 
   @Override
@@ -69,9 +72,5 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessDefinitionXmlType();
-  }
-
-  protected int getEngineImportMaxPageSize() {
-    return configurationService.getXmlDefinitionPageSize();
   }
 }
