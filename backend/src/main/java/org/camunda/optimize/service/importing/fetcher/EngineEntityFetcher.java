@@ -115,7 +115,7 @@ public class EngineEntityFetcher {
           .path(configurationService.getProcessDefinitionEndpoint())
           .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
           .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-          .queryParam(SORT_BY, SORT_TYPE_VERSION_TAG)
+          .queryParam(SORT_BY, SORT_TYPE_ID)
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
           .request(MediaType.APPLICATION_JSON)
           .acceptEncoding(UTF8)

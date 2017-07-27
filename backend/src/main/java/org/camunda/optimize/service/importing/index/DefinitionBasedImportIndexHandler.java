@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.index;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
+import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInformation;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +48,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private int totalEntitiesImported;
   private int currentDefinitionBasedImportIndex;
+  private int maxImportSize;
   private String elasticsearchType;
   private boolean initialized = false;
 
@@ -123,22 +127,26 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   }
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
-    ArrayList<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
+    ArrayList<VersionedDefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
     int currentStart = 0;
     List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
 
     while (currentPage != null && !currentPage.isEmpty()) {
       for (ProcessDefinitionEngineDto dto : currentPage) {
-        DefinitionImportInformation definitionImportInformation =
-          new DefinitionImportInformation();
+        VersionedDefinitionImportInformation definitionImportInformation =
+          new VersionedDefinitionImportInformation();
         definitionImportInformation.setDefinitionBasedImportIndex(0);
         definitionImportInformation.setProcessDefinitionId(dto.getId());
+        definitionImportInformation.setVersion(dto.getVersion());
         processDefinitionsToImport.add(definitionImportInformation);
       }
       currentStart = currentStart + currentPage.size();
       currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
     }
-    return processDefinitionsToImport;
+    Collections.sort(processDefinitionsToImport, (o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()));
+    List<DefinitionImportInformation> result = new ArrayList<>();
+    result.addAll(processDefinitionsToImport);
+    return result;
   }
 
   @Override
