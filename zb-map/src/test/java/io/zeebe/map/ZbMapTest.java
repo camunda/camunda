@@ -15,9 +15,9 @@
  */
 package io.zeebe.map;
 
-import static io.zeebe.map.BucketArray.ALLOCATION_FACTOR;
-import static io.zeebe.map.ZbMapDescriptor.BUCKET_DATA_OFFSET;
-import static io.zeebe.map.ZbMapDescriptor.getBlockLength;
+import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,7 +43,7 @@ public class ZbMapTest
     public static class EvenOddKeyHandler extends LongKeyHandler
     {
         @Override
-        public int keyHashCode()
+        public long keyHashCode()
         {
             return (int) theKey & 1;
         }
@@ -201,7 +201,7 @@ public class ZbMapTest
 
         // then overflow was used to add entries
         assertThat(zbMap.bucketCount()).isEqualTo(8);
-        assertThat(zbMap.getBucketArray().getOccupiedBlocks()).isEqualTo(5);
+        assertThat(zbMap.getBucketBufferArray().getBlockCount()).isEqualTo(5);
         for (int i = 0; i <= 4; i++)
         {
             assertThat(getValue(zbMap, i * 8, -1)).isEqualTo(i);
@@ -438,8 +438,8 @@ public class ZbMapTest
         assertThatThrownBy(() ->
             new Long2LongZbMap(1, maxRecordPerBlockForLong2Longmap() + 1)
         )
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("Unable to allocate map data buffer")
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Maximum bucket buffer length exceeds integer maximum value.")
             .hasCauseInstanceOf(ArithmeticException.class);
     }
 

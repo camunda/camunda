@@ -29,7 +29,7 @@ import io.zeebe.map.iterator.ZbMapEntry;
 public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E extends ZbMapEntry<K, V>> implements Iterator<E>
 {
     private final ZbMap<K, V> map;
-    private final BucketArray bucketArray;
+    private final BucketBufferArray bucketBufferArray;
     private final E entry;
 
     private final K keyHandler;
@@ -48,7 +48,7 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
     public ZbMapIterator(ZbMap<K, V> map, E entry)
     {
         this.map = map;
-        this.bucketArray = map.bucketArray;
+        this.bucketBufferArray = map.bucketBufferArray;
         this.entry = entry;
 
         this.keyHandler = map.keyHandler;
@@ -63,11 +63,11 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
 
         currentBucket = 0;
 
-        currentBucketAddress = bucketArray.getFirstBucketAddress();
-        currentBucketOffset = bucketArray.getFirstBlockOffset(currentBucketAddress);
+        currentBucketAddress = bucketBufferArray.getFirstBucketOffset();
+        currentBucketOffset = bucketBufferArray.getFirstBlockOffset();
         currentBlock = 0;
 
-        hasNext = bucketArray.getBucketCount() > 0 && bucketArray.getBucketFillCount(currentBucketAddress) > 0;
+        hasNext = bucketBufferArray.getBucketCount() > 0 && bucketBufferArray.getBucketFillCount(currentBucketAddress) > 0;
     }
 
     @Override
@@ -90,18 +90,18 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
         }
 
         // read block
-        bucketArray.readKey(keyHandler, currentBucketAddress, currentBucketOffset);
-        bucketArray.readValue(valueHandler, currentBucketAddress, currentBucketOffset);
+        bucketBufferArray.readKey(keyHandler, currentBucketAddress, currentBucketOffset);
+        bucketBufferArray.readValue(valueHandler, currentBucketAddress, currentBucketOffset);
 
         entry.read(keyHandler, valueHandler);
 
         // move to next available block
         currentBlock = currentBlock + 1;
 
-        if (currentBlock < bucketArray.getBucketFillCount(currentBucketAddress))
+        if (currentBlock < bucketBufferArray.getBucketFillCount(currentBucketAddress))
         {
             // next block in the current bucket
-            currentBucketOffset += bucketArray.getBlockLength(currentBucketAddress, currentBucketOffset);
+            currentBucketOffset += bucketBufferArray.getBlockLength();
         }
         else
         {
@@ -112,16 +112,16 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
             do
             {
                 currentBucket += 1;
-                currentBucketAddress += bucketArray.getMaxBucketLength();
+                currentBucketAddress += bucketBufferArray.getMaxBucketLength();
 
             }
-            while (currentBucket < bucketArray.getBucketCount() && bucketArray.getBucketFillCount(currentBucketAddress) == 0);
+            while (currentBucket < bucketBufferArray.getBucketCount() && bucketBufferArray.getBucketFillCount(currentBucketAddress) == 0);
 
-            hasNext = currentBucket < bucketArray.getBucketCount();
+            hasNext = currentBucket < bucketBufferArray.getBucketCount();
 
             if (hasNext)
             {
-                currentBucketOffset = bucketArray.getFirstBlockOffset(currentBucketAddress);
+                currentBucketOffset = bucketBufferArray.getFirstBlockOffset();
             }
         }
 

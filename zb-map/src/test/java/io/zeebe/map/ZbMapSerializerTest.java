@@ -74,6 +74,7 @@ public class ZbMapSerializerTest
 
         writeAndReadmap(map);
 
+//        assertThat(map.get(8189, -1)).isEqualTo(8189);
         for (int i = 0; i < DATASET_SIZE; i++)
         {
             assertThat(map.get(i, NO_SUCH_KEY)).isEqualTo(i);
@@ -172,11 +173,14 @@ public class ZbMapSerializerTest
 
     private void writeAndReadmap(final ZbMap map) throws IOException
     {
+        final long sizeBefore = map.size();
         final InputStream inputStream = writemap(map);
 
         map.clear();
 
         readmap(map, inputStream);
+        final long sizeAfter = map.size();
+        assertThat(sizeBefore).isEqualTo(sizeAfter);
     }
 
     private InputStream writemap(final ZbMap map) throws IOException
@@ -185,6 +189,7 @@ public class ZbMapSerializerTest
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         mapSerializer.writeToStream(out);
+        assertThat((long) out.toByteArray().length).isEqualTo(mapSerializer.serializationSize());
 
         return new ByteArrayInputStream(out.toByteArray());
     }
@@ -193,6 +198,7 @@ public class ZbMapSerializerTest
     {
         mapSerializer.wrap(map);
         mapSerializer.readFromStream(inputStream);
+
     }
 
 }

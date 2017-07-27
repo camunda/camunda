@@ -19,7 +19,7 @@ public interface KeyHandler
 {
     void setKeyLength(int keyLength);
 
-    int keyHashCode();
+    long keyHashCode();
 
     boolean keyEquals(long keyAddr);
 

@@ -62,7 +62,7 @@ public class ZbMapSerializer
         outputStream.write(buffer, 0, SIZE_OF_INT);
 
         map.getHashTable().writeToStream(outputStream, buffer);
-        map.getBucketArray().writeToStream(outputStream, buffer);
+        map.getBucketBufferArray().writeToStream(outputStream, buffer);
     }
 
     public void readFromStream(InputStream inputStream) throws IOException
@@ -82,7 +82,7 @@ public class ZbMapSerializer
         }
 
         map.getHashTable().readFromStream(inputStream, buffer);
-        map.getBucketArray().readFromStream(inputStream, buffer);
+        map.getBucketBufferArray().readFromStream(inputStream, buffer);
     }
 
 }

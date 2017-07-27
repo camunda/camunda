@@ -240,8 +240,8 @@ public class Long2BytesZbMapTest
         // then overflow happens
 
         // first bucket contains overflow pointer
-        final int firstBucketAddress = map.getBucketArray().getFirstBucketAddress();
-        assertThat(map.getBucketArray().getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
+        final int firstBucketAddress = map.getBucketBufferArray().getFirstBucketOffset();
+        assertThat(map.getBucketBufferArray().getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
 
         // get is possible
         final byte[] bytes = new byte[VALUE_LENGTH];
