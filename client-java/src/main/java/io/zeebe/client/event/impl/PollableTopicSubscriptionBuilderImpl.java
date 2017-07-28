@@ -26,10 +26,12 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
 
     public PollableTopicSubscriptionBuilderImpl(
             TopicClientImpl client,
+            String topic,
+            int partition,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
             int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
+        implBuilder = new TopicSubscriptionImplBuilder(client, topic, partition, acquisition, prefetchCapacity);
     }
 
     @Override

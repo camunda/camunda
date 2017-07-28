@@ -87,15 +87,6 @@ public interface TopicSubscriptionBuilder
     TopicSubscriptionBuilder raftEventHandler(RaftEventHandler handler);
 
     /**
-     * Registers a handler that handles all noop events.
-     *
-     * @param handler the handler to register
-     * @return this builder
-     */
-    TopicSubscriptionBuilder noopEventHandler(NoopEventHandler handler);
-
-
-    /**
      * Defines the position at which to start receiving events from.
      * A <code>position</code> greater than the current tail position
      * of the topic is equivalent to starting at the tail position. In this case,

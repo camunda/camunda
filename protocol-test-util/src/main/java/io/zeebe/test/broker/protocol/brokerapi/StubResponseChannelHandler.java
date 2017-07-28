@@ -111,7 +111,7 @@ public class StubResponseChannelHandler implements ServerRequestHandler
 
         if (!requestHandled)
         {
-            throw new RuntimeException("no stub applies to request");
+            throw new RuntimeException(String.format("no stub applies to request with schema id %s and template id %s ", headerDecoder.schemaId(), headerDecoder.templateId()));
         }
         else
         {

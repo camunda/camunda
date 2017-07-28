@@ -18,7 +18,6 @@ package io.zeebe.perftest;
 import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static io.zeebe.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
 import static io.zeebe.client.ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY;
-import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_ID;
 import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 import static io.zeebe.perftest.helper.TestHelper.printProperties;
 
@@ -109,9 +108,9 @@ public class TopicSubscriptionThroughputTest
 
         final long testTimeNanos = TimeUnit.MILLISECONDS.toNanos(testTimeMs);
 
-        final TopicSubscription subscription = client.topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID)
-            .newSubscription()
-            .handler((m, e) -> reporter.increment())
+        final TopicSubscription subscription = client.topics()
+            .newSubscription(DEFAULT_TOPIC_NAME)
+            .handler(e -> reporter.increment())
             .name(SUBSCRIPTION_NAME)
             .startAtHeadOfTopic()
             .open();
@@ -130,8 +129,7 @@ public class TopicSubscriptionThroughputTest
         final int numTasks = Integer.parseInt(properties.getProperty(TEST_NUM_TASKS));
         final int setUpTimeMs = Integer.parseInt(properties.getProperty(TEST_SETUP_TIMEMS));
 
-        final Supplier<Future> request = () -> client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
-                .taskType(TASK_TYPE)
+        final Supplier<Future> request = () -> client.tasks().create(DEFAULT_TOPIC_NAME, TASK_TYPE)
                 .executeAsync();
 
         TestHelper.executeAtFixedRate(

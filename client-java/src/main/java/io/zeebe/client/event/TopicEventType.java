@@ -21,8 +21,10 @@ public enum TopicEventType
     WORKFLOW_INSTANCE,
     WORKFLOW,
     INCIDENT,
+    SUBSCRIBER,
+    SUBSCRIPTION,
+    DEPLOYMENT,
 
     RAFT,
-    NOOP,
     UNKNOWN
 }

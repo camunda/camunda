@@ -51,27 +51,22 @@ public class MultipleClientTest
     public void shouldOpenTopicSubscriptions()
     {
         // given
-        final List<TaskEvent> taskEventsClient1 = new CopyOnWriteArrayList<TaskEvent>();
-        final List<TaskEvent> taskEventsClient2 = new CopyOnWriteArrayList<TaskEvent>();
+        final List<TaskEvent> taskEventsClient1 = new CopyOnWriteArrayList<>();
+        final List<TaskEvent> taskEventsClient2 = new CopyOnWriteArrayList<>();
 
-        client1.topic().newSubscription()
+        client1.topics().newSubscription(client1.getDefaultTopic())
             .name("client-1")
-            .taskEventHandler((m, e) -> taskEventsClient1.add(e))
+            .taskEventHandler(e -> taskEventsClient1.add(e))
             .open();
 
-        client2.topic().newSubscription()
+        client2.topics().newSubscription(client2.getDefaultTopic())
             .name("client-2")
-            .taskEventHandler((m, e) -> taskEventsClient2.add(e))
+            .taskEventHandler(e -> taskEventsClient2.add(e))
             .open();
 
         // when
-        client1.taskTopic().create()
-            .taskType("foo")
-            .execute();
-
-        client2.taskTopic().create()
-            .taskType("bar")
-            .execute();
+        client1.tasks().create(client1.getDefaultTopic(), "foo").execute();
+        client2.tasks().create(client2.getDefaultTopic(), "bar").execute();
 
         // then
         waitUntil(() -> taskEventsClient1.size() + taskEventsClient2.size() >= 8);
@@ -87,14 +82,14 @@ public class MultipleClientTest
         final RecordingTaskHandler handler1 = new RecordingTaskHandler();
         final RecordingTaskHandler handler2 = new RecordingTaskHandler();
 
-        client1.taskTopic().newTaskSubscription()
+        client1.tasks().newTaskSubscription(client1.getDefaultTopic())
             .handler(handler1)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner("client1")
             .open();
 
-        client2.taskTopic().newTaskSubscription()
+        client2.tasks().newTaskSubscription(client2.getDefaultTopic())
             .handler(handler2)
             .taskType("bar")
             .lockTime(Duration.ofMinutes(5))
@@ -102,22 +97,17 @@ public class MultipleClientTest
             .open();
 
         // when
-        final Long taskKey1 = client1.taskTopic().create()
-                .taskType("foo")
-                .execute();
-
-        final Long taskKey2 = client1.taskTopic().create()
-                .taskType("bar")
-                .execute();
+        final TaskEvent task1 = client1.tasks().create(client1.getDefaultTopic(), "foo").execute();
+        final TaskEvent task2 = client1.tasks().create(client1.getDefaultTopic(), "bar").execute();
 
         // then
         waitUntil(() -> handler1.getHandledTasks().size() + handler2.getHandledTasks().size() >= 2);
 
         assertThat(handler1.getHandledTasks()).hasSize(1);
-        assertThat(handler1.getHandledTasks().get(0).getKey()).isEqualTo(taskKey1);
+        assertThat(handler1.getHandledTasks().get(0).getMetadata().getKey()).isEqualTo(task1.getMetadata().getKey());
 
         assertThat(handler2.getHandledTasks()).hasSize(1);
-        assertThat(handler2.getHandledTasks().get(0).getKey()).isEqualTo(taskKey2);
+        assertThat(handler2.getHandledTasks().get(0).getMetadata().getKey()).isEqualTo(task2.getMetadata().getKey());
     }
 
 }

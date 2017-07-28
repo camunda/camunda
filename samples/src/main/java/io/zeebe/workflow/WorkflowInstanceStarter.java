@@ -21,8 +21,9 @@ import java.util.stream.Collectors;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.workflow.cmd.DeploymentResult;
 
 public class WorkflowInstanceStarter
 {
@@ -47,12 +48,12 @@ public class WorkflowInstanceStarter
 
         System.out.println(String.format("> Deploying workflow to topic '%s' and partition '%d'", topicName, partitionId));
 
-        final DeploymentResult deploymentResult = zeebeClient.workflowTopic(topicName, partitionId)
-            .deploy()
+        final DeploymentEvent deploymentResult = zeebeClient.workflows()
+            .deploy(topicName)
             .resourceStream(bpmnStream)
             .execute();
 
-        if (deploymentResult.isDeployed())
+        try
         {
             final String deployedWorkflows = deploymentResult.getDeployedWorkflows().stream()
                     .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion()))
@@ -62,18 +63,17 @@ public class WorkflowInstanceStarter
 
             System.out.println(String.format("> Create workflow instance for workflow: %s", bpmnProcessId));
 
-            zeebeClient.workflowTopic(topicName, partitionId)
-                .create()
+            zeebeClient.workflows()
+                .create(topicName)
                 .bpmnProcessId(bpmnProcessId)
                 .payload("{\"a\": \"b\"}")
                 .execute();
 
             System.out.println("> Created.");
-
         }
-        else
+        catch (ClientCommandRejectedException exception)
         {
-            System.out.println(String.format("> Fail to deploy: %s", deploymentResult.getErrorMessage()));
+            System.out.println(String.format("> Fail to deploy: %s", exception.getMessage()));
         }
 
         System.out.println("> Closing...");

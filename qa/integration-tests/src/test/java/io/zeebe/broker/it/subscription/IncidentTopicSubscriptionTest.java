@@ -15,8 +15,8 @@
  */
 package io.zeebe.broker.it.subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -25,19 +25,20 @@ import java.util.List;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.IncidentEvent;
-import io.zeebe.client.event.IncidentEventHandler;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
-import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.IncidentEvent;
+import io.zeebe.client.event.IncidentEventHandler;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.test.util.TestUtil;
 
 public class IncidentTopicSubscriptionTest
 {
@@ -68,7 +69,7 @@ public class IncidentTopicSubscriptionTest
                         .input("$.foo", "$.foo")
                         .done();
 
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(workflow)
             .execute();
     }
@@ -77,14 +78,14 @@ public class IncidentTopicSubscriptionTest
     public void shouldReceiveWorkflowIncidentEvents()
     {
         // given
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .incidentEventHandler(handler)
             .name("test")
@@ -94,7 +95,7 @@ public class IncidentTopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 2);
 
         final IncidentEvent event = handler.getEvent(1);
-        assertThat(event.getEventType()).isEqualTo("CREATED");
+        assertThat(event.getState()).isEqualTo("CREATED");
         assertThat(event.getErrorType()).isEqualTo("IO_MAPPING_ERROR");
         assertThat(event.getErrorMessage()).isEqualTo("No data found for query $.foo.");
         assertThat(event.getBpmnProcessId()).isEqualTo("process");
@@ -108,15 +109,13 @@ public class IncidentTopicSubscriptionTest
     public void shouldReceiveTaskIncidentEvents()
     {
         // given
-        final Long taskKey = clientRule.taskTopic().create()
-            .taskType("test")
-            .execute();
+        final TaskEvent task = clientRule.tasks().create(clientRule.getDefaultTopic(), "test").execute();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .lockTime(Duration.ofMinutes(5))
             .lockOwner("test")
             .taskType("test")
-            .handler(t ->
+            .handler((c, t) ->
             {
                 throw new RuntimeException("expected failure");
             })
@@ -125,7 +124,7 @@ public class IncidentTopicSubscriptionTest
         final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .incidentEventHandler(handler)
             .name("test")
@@ -135,28 +134,28 @@ public class IncidentTopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 2);
 
         final IncidentEvent event = handler.getEvent(1);
-        assertThat(event.getEventType()).isEqualTo("CREATED");
+        assertThat(event.getState()).isEqualTo("CREATED");
         assertThat(event.getErrorType()).isEqualTo("TASK_NO_RETRIES");
         assertThat(event.getErrorMessage()).isEqualTo("No more retries left.");
         assertThat(event.getBpmnProcessId()).isNull();
         assertThat(event.getWorkflowInstanceKey()).isNull();
         assertThat(event.getActivityId()).isNull();
         assertThat(event.getActivityInstanceKey()).isNull();
-        assertThat(event.getTaskKey()).isEqualTo(taskKey);
+        assertThat(event.getTaskKey()).isEqualTo(task.getMetadata().getKey());
     }
 
     @Test
     public void shouldInvokeDefaultHandler() throws IOException
     {
         // given
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .handler(handler)
             .name("sub-2")
@@ -168,19 +167,12 @@ public class IncidentTopicSubscriptionTest
 
     protected static class RecordingIncidentEventHandler implements IncidentEventHandler
     {
-        protected List<EventMetadata> metadata = new ArrayList<>();
         protected List<IncidentEvent> events = new ArrayList<>();
 
         @Override
-        public void handle(EventMetadata metadata, IncidentEvent event) throws Exception
+        public void handle(IncidentEvent event) throws Exception
         {
-            this.metadata.add(metadata);
             this.events.add(event);
-        }
-
-        public EventMetadata getMetadata(int index)
-        {
-            return metadata.get(index);
         }
 
         public IncidentEvent getEvent(int index)

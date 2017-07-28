@@ -15,10 +15,15 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.IncidentEvent;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class IncidentEventImpl implements IncidentEvent
+import io.zeebe.client.event.IncidentEvent;
+import io.zeebe.client.event.TopicEventType;
+
+public class IncidentEventImpl extends EventImpl implements IncidentEvent
 {
+
     private String eventType;
 
     private String errorType;
@@ -30,6 +35,12 @@ public class IncidentEventImpl implements IncidentEvent
     private Long activityInstanceKey;
 
     private Long taskKey;
+
+    @JsonCreator
+    public IncidentEventImpl(@JsonProperty("state") String state)
+    {
+        super(TopicEventType.INCIDENT, state);
+    }
 
     public String getEventType()
     {
@@ -115,7 +126,7 @@ public class IncidentEventImpl implements IncidentEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("IncidentEventImpl [eventType=");
+        builder.append("IncidentEvent [eventType=");
         builder.append(eventType);
         builder.append(", errorType=");
         builder.append(errorType);

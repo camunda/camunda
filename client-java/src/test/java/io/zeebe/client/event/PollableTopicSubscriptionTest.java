@@ -18,17 +18,17 @@ package io.zeebe.client.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.TestUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.transport.RemoteAddress;
 
 public class PollableTopicSubscriptionTest
@@ -57,7 +57,7 @@ public class PollableTopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newPollableSubscription()
+        clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -71,7 +71,7 @@ public class PollableTopicSubscriptionTest
 
 
         assertThat(subscribeRequest.getCommand())
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("startPosition", 0)
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
@@ -85,7 +85,7 @@ public class PollableTopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newPollableSubscription()
+        clientRule.getClient().topics().newPollableSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .forcedStart()
             .name(SUBSCRIPTION_NAME)
@@ -111,7 +111,7 @@ public class PollableTopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
-        final PollableTopicSubscription subscription = clientRule.topic().newPollableSubscription()
+        final PollableTopicSubscription subscription = clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -144,7 +144,7 @@ public class PollableTopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final PollableTopicSubscription subscription = clientRule.topic().newPollableSubscription()
+        final PollableTopicSubscription subscription = clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
             .open();

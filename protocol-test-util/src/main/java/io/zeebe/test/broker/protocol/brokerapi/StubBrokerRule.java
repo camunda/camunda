@@ -23,19 +23,25 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+
+import org.junit.rules.ExternalResource;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.TopicLeader;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -54,6 +60,8 @@ public class StubBrokerRule extends ExternalResource
     protected StubResponseChannelHandler channelHandler;
     protected MsgPackHelper msgPackHelper;
     private InetSocketAddress bindAddr;
+
+    protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
 
     public StubBrokerRule()
     {
@@ -81,10 +89,10 @@ public class StubBrokerRule extends ExternalResource
         channelHandler = new StubResponseChannelHandler(msgPackHelper);
         bindAddr = new InetSocketAddress(host, port);
 
-        stubTopologyRequest(
-            new Topology()
-                .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID))
-        );
+        currentTopology.set(new Topology()
+                .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID)));
+
+        stubTopologyRequest();
 
         bindTransport();
     }
@@ -170,6 +178,11 @@ public class StubBrokerRule extends ExternalResource
                 new ErrorResponseBuilder<>(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction));
     }
 
+    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(EventType eventType, String eventStatus)
+    {
+        return onExecuteCommandRequest(ecr -> ecr.eventType() == eventType && eventStatus.equals(ecr.getCommand().get("state")));
+    }
+
     public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest()
     {
         return onControlMessageRequest((r) -> true);
@@ -202,32 +215,42 @@ public class StubBrokerRule extends ExternalResource
         return new SubscribedEventBuilder(msgPackHelper, transport);
     }
 
-    public void stubTopologyRequest(final Topology topology)
+    protected void stubTopologyRequest()
     {
         onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .respondWith()
             .data()
-                .put("topicLeaders", topology.getTopicLeaders())
-                .put("brokers", topology.getBrokers())
+                .put("topicLeaders", r -> currentTopology.get().getTopicLeaders())
+                .put("brokers", r -> currentTopology.get().getBrokers())
                 .done()
             .register();
     }
 
+    public void addTopic(String topic, int partition)
+    {
+        final Topology newTopology = new Topology(currentTopology.get());
+        newTopology.addTopic(new TopicLeader(host, port, topic, partition));
+        currentTopology.set(newTopology);
+    }
+
+    public void setCurrentTopology(Topology currentTopology)
+    {
+        this.currentTopology.set(currentTopology);
+    }
 
     public void stubTopicSubscriptionApi(long initialSubscriberKey)
     {
         final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
         final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
-        onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT
-                && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
+        onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
             .respondWith()
             .key((r) -> subscriberKeyProvider.getAndIncrement())
             .topicName((r) -> r.topicName())
             .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
-                .put("eventType", "SUBSCRIBED")
+                .put("state", "SUBSCRIBED")
                 .done()
             .register();
 
@@ -238,15 +261,14 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT
-                && "ACKNOWLEDGE".equals(r.getCommand().get("eventType")))
+        onExecuteCommandRequest(EventType.SUBSCRIPTION_EVENT, "ACKNOWLEDGE")
             .respondWith()
             .key((r) -> subscriptionKeyProvider.getAndIncrement())
             .topicName((r) -> r.topicName())
             .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
-                .put("eventType", "ACKNOWLEDGED")
+                .put("state", "ACKNOWLEDGED")
                 .done()
             .register();
     }
@@ -298,7 +320,7 @@ public class StubBrokerRule extends ExternalResource
             .push(remote);
     }
 
-    public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String taskType)
+    public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String taskType)
     {
         newSubscribedEvent()
             .topicName(DEFAULT_TOPIC_NAME)
@@ -311,8 +333,10 @@ public class StubBrokerRule extends ExternalResource
             .event()
                 .put("type", taskType)
                 .put("lockTime", 1000L)
+                .put("lockOwner", lockOwner)
                 .put("retries", 3)
                 .put("payload", msgPackHelper.encodeAsMsgPack(new HashMap<>()))
+                .put("state", "LOCKED")
                 .done()
             .push(remote);
     }

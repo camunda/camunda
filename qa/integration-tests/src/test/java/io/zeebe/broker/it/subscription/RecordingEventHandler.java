@@ -32,17 +32,14 @@ import io.zeebe.client.event.TopicEventType;
 public class RecordingEventHandler implements TopicEventHandler
 {
 
-    protected List<RecordedEvent> events = new CopyOnWriteArrayList<>();
+    protected List<TopicEvent> events = new CopyOnWriteArrayList<>();
     protected ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Override
-    public void handle(EventMetadata metadata, TopicEvent event)
+    public void handle(TopicEvent event)
     {
-        final RecordedEvent recordedEvent = new RecordedEvent();
-        recordedEvent.metadata = metadata;
-        recordedEvent.event = event;
-        this.events.add(recordedEvent);
+        this.events.add(event);
     }
 
     public int numRecordedEvents()
@@ -52,7 +49,7 @@ public class RecordingEventHandler implements TopicEventHandler
 
     public int numRecordedEventsOfType(TopicEventType type)
     {
-        return (int) events.stream().filter((re) -> re.metadata.getEventType() == type).count();
+        return (int) events.stream().filter(e -> e.getMetadata().getType() == type).count();
     }
 
     public int numRecordedTaskEvents()
@@ -65,30 +62,25 @@ public class RecordingEventHandler implements TopicEventHandler
         return numRecordedEventsOfType(TopicEventType.RAFT);
     }
 
-    public int numRecordedNoopEvents()
-    {
-        return numRecordedEventsOfType(TopicEventType.NOOP);
-    }
-
-    public List<RecordedEvent> getRecordedEvents()
+    public List<TopicEvent> getRecordedEvents()
     {
         return events;
     }
 
     public void assertTaskEvent(int index, long taskKey, String eventType) throws IOException
     {
-        final List<RecordedEvent> taskEvents = events.stream()
-                .filter((re) -> re.metadata.getEventType() == TopicEventType.TASK)
+        final List<TopicEvent> taskEvents = events.stream()
+                .filter(e -> e.getMetadata().getType() == TopicEventType.TASK)
                 .collect(Collectors.toList());
 
-        final RecordedEvent taskEvent = taskEvents.get(index);
+        final TopicEvent taskEvent = taskEvents.get(index);
 
-        final EventMetadata eventMetadata = taskEvent.metadata;
-        assertThat(eventMetadata.getEventType()).isEqualTo(TopicEventType.TASK);
-        assertThat(eventMetadata.getEventKey()).isEqualTo(taskKey);
+        final EventMetadata eventMetadata = taskEvent.getMetadata();
+        assertThat(eventMetadata.getType()).isEqualTo(TopicEventType.TASK);
+        assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
 
-        final JsonNode event = objectMapper.readTree(taskEvent.event.getJson());
-        assertThat(event.get("eventType").asText()).isEqualTo(eventType);
+        final JsonNode event = objectMapper.readTree(taskEvent.getJson());
+        assertThat(event.get("state").asText()).isEqualTo(eventType);
     }
 
     public void reset()

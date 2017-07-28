@@ -227,9 +227,17 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     public static MetadataFilter eventFilter()
     {
-        // don't push subscription or subscriber events;
-        // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
-        return (m) -> m.getEventType() != EventType.SUBSCRIPTION_EVENT && m.getEventType() != EventType.SUBSCRIBER_EVENT;
+        return m ->
+        {
+            final EventType eventType = m.getEventType();
+            return
+                    // don't push subscription or subscriber events;
+                    // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
+                    eventType != EventType.SUBSCRIPTION_EVENT &&
+                    eventType != EventType.SUBSCRIBER_EVENT &&
+                    // don't push noop events as they are rather an implementation detail of raft
+                    eventType != EventType.NOOP_EVENT;
+        };
     }
 
     public DirectBuffer getName()

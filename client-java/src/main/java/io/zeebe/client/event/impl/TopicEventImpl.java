@@ -15,54 +15,34 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.EventMetadata;
 import io.zeebe.client.event.TopicEvent;
 import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.MsgPackField;
 
-public class TopicEventImpl implements TopicEvent, EventMetadata
+public class TopicEventImpl extends EventImpl implements TopicEvent
 {
 
-    protected final String topicName;
-    protected final int partitionId;
-    protected final long key;
-    protected final long position;
-    protected final TopicEventType eventType;
     protected final MsgPackField content;
 
-    public TopicEventImpl(final String topicName, final int partitionId, final long key, final long position, final TopicEventType eventType, final byte[] rawContent)
+    public TopicEventImpl(
+            final String topicName,
+            final int partitionId,
+            final long key,
+            final long position,
+            final TopicEventType eventType,
+            final byte[] rawContent,
+            final MsgPackConverter msgPackConverter)
     {
-        this.topicName = topicName;
-        this.partitionId = partitionId;
-        this.position = position;
-        this.key = key;
-        this.eventType = eventType;
-        this.content = new MsgPackField();
+        super(eventType, null);
+        this.setKey(key);
+        this.setEventPosition(position);
+        this.setTopicName(topicName);
+        this.setPartitionId(partitionId);
+        this.content = new MsgPackField(msgPackConverter);
         this.content.setMsgPack(rawContent);
     }
 
-    public String getTopicName()
-    {
-        return topicName;
-    }
-
-    @Override
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
-
-    @Override
-    public long getEventKey()
-    {
-        return key;
-    }
-
-    @Override
-    public long getEventPosition()
-    {
-        return position;
-    }
 
     @Override
     public String getJson()
@@ -76,16 +56,17 @@ public class TopicEventImpl implements TopicEvent, EventMetadata
     }
 
     @Override
-    public TopicEventType getEventType()
-    {
-        return eventType;
-    }
-
-    @Override
     public String toString()
     {
-        return "TopicEventImpl [topicName=" + topicName + ", partitionId=" + partitionId + ", key=" +
-                key + ", position=" + position + ", eventType=" + eventType + ", content=" + content.getAsJson() + "]";
+        return "TopicEvent[metadata=" + metadata + ", content=" + content.getAsJson() + "]";
+    }
+
+
+    @Override
+    public String getState()
+    {
+        // see https://github.com/camunda-zeebe/zeebe/issues/367 to avoid extracting this from msgpack payload
+        throw new RuntimeException("not implemented");
     }
 
 }

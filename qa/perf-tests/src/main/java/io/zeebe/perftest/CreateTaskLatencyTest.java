@@ -15,14 +15,13 @@
  */
 package io.zeebe.perftest;
 
-import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_ID;
 import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import io.zeebe.client.TaskTopicClient;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.perftest.helper.FixedRateLatencyTest;
 
@@ -43,13 +42,11 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(ZeebeClient client)
     {
-        final TaskTopicClient taskClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        final TasksClient taskClient = client.tasks();
 
         return () ->
         {
-            return taskClient.create()
-                .taskType(TASK_TYPE)
-                .executeAsync();
+            return taskClient.create(DEFAULT_TOPIC_NAME, TASK_TYPE).executeAsync();
         };
     }
 

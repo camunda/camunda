@@ -37,11 +37,13 @@ public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteComma
     protected Function<ExecuteCommandRequest, String> topicNameFunction = r -> r.topicName();
     protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
     protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
+    protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
 
     protected long key;
     protected String topicName;
     protected int partitionId;
     protected byte[] event;
+    protected long position;
 
     public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -54,6 +56,7 @@ public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteComma
         key = keyFunction.apply(request);
         topicName = topicNameFunction.apply(request);
         partitionId = partitionIdFunction.apply(request);
+        position = positionFunction.apply(request);
         final Map<String, Object> deserializedEvent = eventFunction.apply(request);
         event = msgPackHelper.encodeAsMsgPack(deserializedEvent);
     }
@@ -76,6 +79,12 @@ public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteComma
     public void setKeyFunction(Function<ExecuteCommandRequest, Long> keyFunction)
     {
         this.keyFunction = keyFunction;
+    }
+
+    public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction)
+    {
+        this.positionFunction = positionFunction;
+
     }
 
     @Override
@@ -108,8 +117,10 @@ public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteComma
             .partitionId(partitionId)
             .key(key)
             .topicName(topicName)
+            .position(position)
             .putEvent(event, 0, event.length);
 
     }
+
 
 }

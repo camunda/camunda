@@ -121,7 +121,8 @@ public class ClusterManager implements Actor
         if (context.getPeers().sizeVolatile() == 1)
         {
             final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
-            logStreamManager.forEachLogStream(logStream -> {
+            logStreamManager.forEachLogStream(logStream ->
+            {
                 createRaft(socketAddress, logStream, Collections.emptyList());
             });
         }
@@ -185,7 +186,8 @@ public class ClusterManager implements Actor
                 // the number of concurrent invitations.
                 final List<SocketAddress> members = new ArrayList<>();
                 members.add(raft.getSocketAddress());
-                raft.getMembers().forEach(raftMember -> {
+                raft.getMembers().forEach(raftMember ->
+                {
                     members.add(raftMember.getRemoteAddress().getAddress());
                 });
 

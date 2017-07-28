@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import io.zeebe.client.event.impl.EventTypeMapping;
 import io.zeebe.client.event.impl.TopicEventImpl;
 import io.zeebe.client.impl.Loggers;
+import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -43,14 +44,18 @@ public class SubscribedEventCollector implements Actor, FragmentHandler
     protected final SubscribedEventHandler taskSubscriptionHandler;
     protected final SubscribedEventHandler topicSubscriptionHandler;
 
+    protected final MsgPackConverter converter;
+
     public SubscribedEventCollector(
             Subscription receiveBufferSubscription,
             SubscribedEventHandler taskSubscriptionHandler,
-            SubscribedEventHandler topicSubscriptionHandler)
+            SubscribedEventHandler topicSubscriptionHandler,
+            MsgPackConverter converter)
     {
         this.receiveBufferSubscription = receiveBufferSubscription;
         this.taskSubscriptionHandler = taskSubscriptionHandler;
         this.topicSubscriptionHandler = topicSubscriptionHandler;
+        this.converter = converter;
     }
 
     @Override
@@ -99,7 +104,8 @@ public class SubscribedEventCollector implements Actor, FragmentHandler
                         key,
                         position,
                         EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
-                        eventBuffer);
+                        eventBuffer,
+                        converter);
 
                 messageHandled = eventHandler.onEvent(subscriberKey, event);
             }

@@ -17,25 +17,24 @@ package io.zeebe.client.event.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.WorkflowEvent;
 
-public class WorkflowEventImpl implements WorkflowEvent
+public class WorkflowEventImpl extends EventImpl implements WorkflowEvent
 {
-    private String eventType;
+
     private String bpmnProcessId;
     private int version;
     private byte[] bpmnXml;
     private long deploymentKey;
 
-    @Override
-    public String getEventType()
+    @JsonCreator
+    public WorkflowEventImpl(@JsonProperty("state") String state)
     {
-        return eventType;
-    }
-
-    public void setEventType(String eventType)
-    {
-        this.eventType = eventType;
+        super(TopicEventType.WORKFLOW, state);
     }
 
     @Override
@@ -86,8 +85,8 @@ public class WorkflowEventImpl implements WorkflowEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowEventImpl [eventType=");
-        builder.append(eventType);
+        builder.append("WorkflowEvent [state=");
+        builder.append(state);
         builder.append(", bpmnProcessId=");
         builder.append(bpmnProcessId);
         builder.append(", version=");

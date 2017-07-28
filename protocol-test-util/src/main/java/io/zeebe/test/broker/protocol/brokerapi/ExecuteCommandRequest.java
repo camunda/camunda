@@ -62,6 +62,11 @@ public class ExecuteCommandRequest implements BufferReader
         return bodyDecoder.partitionId();
     }
 
+    public long position()
+    {
+        return bodyDecoder.position();
+    }
+
     public EventType eventType()
     {
         return bodyDecoder.eventType();

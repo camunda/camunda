@@ -17,7 +17,7 @@ package io.zeebe.client.cmd;
 
 import java.util.concurrent.Future;
 
-import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.Partition;
 
 public interface ClientCommand<R>
 {
@@ -41,6 +41,6 @@ public interface ClientCommand<R>
      *
      * @return the topic related to this command, or null
      */
-    Topic getTopic();
+    Partition getTopic();
 
 }

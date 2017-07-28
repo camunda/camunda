@@ -15,13 +15,21 @@
  */
 package io.zeebe.taskqueue;
 
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.*;
-import io.zeebe.client.task.cmd.CreateTaskCmd;
+import io.zeebe.client.ClientProperties;
+import io.zeebe.client.TasksClient;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.task.cmd.CreateTaskCommand;
 
 public class NonBlockingTaskCreator
 {
@@ -50,7 +58,7 @@ public class NonBlockingTaskCreator
         {
             client.connect();
 
-            final TaskTopicClient asyncTaskService = client.taskTopic(topicName, partitionId);
+            final TasksClient asyncTaskService = client.tasks();
 
             final String payload = "{}";
 
@@ -58,17 +66,16 @@ public class NonBlockingTaskCreator
 
             long tasksCreated = 0;
 
-            final List<Future<Long>> inFlightRequests = new LinkedList<>();
+            final List<Future<TaskEvent>> inFlightRequests = new LinkedList<>();
 
             while (tasksCreated < numOfRequets)
             {
 
                 if (inFlightRequests.size() < maxConcurrentRequests)
                 {
-                    final CreateTaskCmd cmd = asyncTaskService
-                            .create()
-                            .taskType("greeting")
-                            .addHeader("some", "value")
+                    final CreateTaskCommand cmd = asyncTaskService
+                            .create(topicName, "greeting")
+                            .addCustomHeader("some", "value")
                             .payload(payload);
 
                     inFlightRequests.add(cmd.executeAsync());
@@ -86,7 +93,7 @@ public class NonBlockingTaskCreator
 
     }
 
-    private static void awaitAll(List<Future<Long>> inFlightRequests)
+    private static void awaitAll(List<Future<TaskEvent>> inFlightRequests)
     {
         while (!inFlightRequests.isEmpty())
         {
@@ -94,12 +101,12 @@ public class NonBlockingTaskCreator
         }
     }
 
-    private static void poll(List<Future<Long>> inFlightRequests)
+    private static void poll(List<Future<TaskEvent>> inFlightRequests)
     {
-        final Iterator<Future<Long>> iterator = inFlightRequests.iterator();
+        final Iterator<Future<TaskEvent>> iterator = inFlightRequests.iterator();
         while (iterator.hasNext())
         {
-            final Future<Long> future = iterator.next();
+            final Future<TaskEvent> future = iterator.next();
             if (future.isDone())
             {
                 try

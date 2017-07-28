@@ -20,26 +20,34 @@ import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PART
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
+import static org.hamcrest.CoreMatchers.containsString;
 
-import java.util.HashMap;
 import java.util.List;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.ClientCommandController;
-import io.zeebe.client.task.cmd.CreateTaskCmd;
-import io.zeebe.client.task.impl.CreateTaskCmdImpl;
-import io.zeebe.client.util.ClientRule;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.*;
-import org.agrona.MutableDirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.impl.EventImpl;
+import io.zeebe.client.impl.RequestManager;
+import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.cmd.CommandImpl;
+import io.zeebe.client.task.cmd.CreateTaskCommand;
+import io.zeebe.client.util.ClientRule;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
 public class ClientCommandManagerTest
 {
@@ -75,19 +83,21 @@ public class ClientCommandManagerTest
     public void testRefreshTopologyRequest()
     {
         // given
-        stubTaskResponse();
-        final CreateTaskCmd command = createTaskCmd("other-topic", 0);
+        // initial topology has been fetched
+        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot execute command. No broker for topic with name 'other-topic' and partition id '0' found.");
+        stubTaskResponse();
+
+        // extend topology
+        broker.addTopic("other-topic", 0);
 
         // when
-        command.execute();
+        final TaskEvent taskEvent = createTaskCmd("other-topic").execute();
 
-        // then
-        // +1 for initial topology lookup
-        assertTopologyRefreshRequests(ClientCommandController.DEFAULT_RETRIES + 1);
-        assertCreateTaskRequests(0);
+        // then the client has refreshed its topology
+        assertThat(taskEvent).isNotNull();
+
+        assertTopologyRefreshRequests(2);
     }
 
     @Test
@@ -95,7 +105,7 @@ public class ClientCommandManagerTest
     {
         // given
         stubRequestProcessingFailureResponse();
-        final CreateTaskCmd command = createTaskCmd();
+        final CreateTaskCommand command = createTaskCmd();
 
         exception.expect(RuntimeException.class);
         exception.expectMessage("Request exception (REQUEST_PROCESSING_FAILURE): test");
@@ -113,18 +123,15 @@ public class ClientCommandManagerTest
     {
         // given
         stubTaskResponse();
-        final CreateTaskCmd command = createFailingTaskCmd();
 
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot execute command. No broker for topic with name 'default-topic' and partition id '0' found.");
-//        exception.expectCause(allOf(instanceOf(RuntimeException.class), hasMessage(equalTo("test"))));
+        final FailingCommand command = new FailingCommand(((ZeebeClientImpl) client).getCommandManager());
+
+        // then
+        exception.expect(ClientException.class);
+        exception.expectMessage("Unexpected exception during response handling");
 
         // when
         command.execute();
-
-        // then
-        assertTopologyRefreshRequests(1);
-        assertCreateTaskRequests(1);
     }
 
     @Test
@@ -133,57 +140,45 @@ public class ClientCommandManagerTest
         // given
         stubTopicNotFoundResponse();
 
+        // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot execute command. No broker for topic with name 'default-topic' and partition id '0' found.");
+        exception.expectMessage(containsString("Cannot execute request (timeout)"));
 
         // when
         createTaskCmd().execute();
-
-        // then
-        // +1 for initial topology lookup
-        assertTopologyRefreshRequests(ClientCommandController.DEFAULT_RETRIES + 1);
-        assertCreateTaskRequests(ClientCommandController.DEFAULT_RETRIES);
     }
 
 
-    protected CreateTaskCmd createTaskCmd()
+    protected CreateTaskCommand createTaskCmd()
     {
-        return createTaskCmd(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return createTaskCmd(DEFAULT_TOPIC_NAME);
     }
 
-    protected CreateTaskCmd createTaskCmd(final String topicName, final int partitionId)
+    protected CreateTaskCommand createTaskCmd(final String topicName)
     {
-        return client.taskTopic(topicName, partitionId).create().taskType("test");
-    }
-
-    protected CreateTaskCmd createFailingTaskCmd()
-    {
-        final CreateTaskCmd spy = spy(createTaskCmd());
-        doThrow(new RuntimeException("test")).when(((CreateTaskCmdImpl) spy)).readResponse(any(MutableDirectBuffer.class), anyInt(), anyInt(), anyInt());
-        return spy;
+        return client.tasks().create(topicName, "test");
     }
 
     protected void stubTaskResponse()
     {
-        broker.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-            "CREATE".equals(ecr.getCommand().get("eventType")))
-              .respondWith()
-                  .topicName(DEFAULT_TOPIC_NAME)
-                  .partitionId(DEFAULT_PARTITION_ID)
-                  .key(123)
-                  .event()
-                  .allOf(ExecuteCommandRequest::getCommand)
-                      .put("eventType", "CREATED")
-                      .put("headers", new HashMap<>())
-                      .put("payload", new byte[0])
-                  .done()
-              .register();
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+            .respondWith()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .key(123)
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "CREATED")
+              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
+              .put("lockOwner", "")
+              .done()
+            .register();
     }
 
     protected void stubRequestProcessingFailureResponse()
     {
         broker.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-            "CREATE".equals(ecr.getCommand().get("eventType")))
+            "CREATE".equals(ecr.getCommand().get("state")))
               .respondWithError()
                 .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                 .errorData("test")
@@ -192,8 +187,7 @@ public class ClientCommandManagerTest
 
     protected void stubTopicNotFoundResponse()
     {
-        broker.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-            "CREATE".equals(ecr.getCommand().get("eventType")))
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
               .respondWithError()
                   .errorCode(ErrorCode.TOPIC_NOT_FOUND)
                   .errorData("")
@@ -208,7 +202,7 @@ public class ClientCommandManagerTest
         receivedControlMessageRequests.forEach(request ->
         {
             assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-            assertThat(request.getData()).isNull();
+            assertThat(request.getData()).isEmpty();
         });
     }
 
@@ -222,6 +216,49 @@ public class ClientCommandManagerTest
             assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
             assertThat(request.getCommand().get("eventType")).isEqualTo("CREATE");
         });
+    }
+
+    protected static class FailingCommand extends CommandImpl<EventImpl>
+    {
+        public FailingCommand(RequestManager client)
+        {
+            super(client);
+        }
+
+        @Override
+        public EventImpl getEvent()
+        {
+            return new FailingEvent("CREATE");
+        }
+
+        @Override
+        public String getExpectedStatus()
+        {
+            return "CREATED";
+        }
+    }
+
+    protected static class FailingEvent extends EventImpl
+    {
+
+        @JsonCreator
+        public FailingEvent(@JsonProperty("state") String state)
+        {
+            super(TopicEventType.TASK, state);
+            this.setTopicName(DEFAULT_TOPIC_NAME);
+            this.setPartitionId(DEFAULT_PARTITION_ID);
+        }
+
+        public String getFailingProp()
+        {
+            return "foo";
+        }
+
+        public void setFailingProp(String prop)
+        {
+            throw new RuntimeException("expected");
+        }
+
     }
 
 }

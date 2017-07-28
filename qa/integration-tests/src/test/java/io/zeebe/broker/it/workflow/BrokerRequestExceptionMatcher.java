@@ -15,12 +15,12 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import io.zeebe.client.cmd.BrokerRequestException;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
-public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestException>
+public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerErrorException>
 {
 
     protected ErrorCode expectedDetailCode;
@@ -35,12 +35,12 @@ public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestExce
     @Override
     public boolean matches(Object item)
     {
-        if (item == null || !(item instanceof BrokerRequestException))
+        if (item == null || !(item instanceof BrokerErrorException))
         {
             return false;
         }
 
-        final BrokerRequestException exception = (BrokerRequestException) item;
+        final BrokerErrorException exception = (BrokerErrorException) item;
 
         return expectedDetailCode == exception.getErrorCode();
     }
@@ -48,7 +48,7 @@ public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestExce
     @Override
     public void describeTo(Description description)
     {
-        description.appendText(BrokerRequestException.class.getSimpleName());
+        description.appendText(BrokerErrorException.class.getSimpleName());
         description.appendText(" with detail code " + expectedDetailCode);
 
     }

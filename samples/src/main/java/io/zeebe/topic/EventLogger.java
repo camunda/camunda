@@ -20,6 +20,7 @@ import java.util.Scanner;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.EventMetadata;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
@@ -45,18 +46,19 @@ public class EventLogger
 
         System.out.println(String.format("> Open event subscription from topic '%s' and partition '%d'", topicName, partitionid));
 
-        final TopicSubscription subscription = zeebeClient.topic(topicName, partitionid)
-            .newSubscription()
+        final TopicSubscription subscription = zeebeClient.topics()
+            .newSubscription(topicName)
             .startAtHeadOfTopic()
             .forcedStart()
             .name("logger")
-            .handler((meta, event) ->
+            .handler(event ->
             {
+                final EventMetadata metadata = event.getMetadata();
                 System.out.println(String.format(">>> [topic: %d, position: %d, key: %d, type: %s]\n%s\n===",
-                        meta.getPartitionId(),
-                        meta.getEventPosition(),
-                        meta.getEventKey(),
-                        meta.getEventType(),
+                        metadata.getPartitionId(),
+                        metadata.getPosition(),
+                        metadata.getKey(),
+                        metadata.getType(),
                         event.getJson()));
             })
             .open();

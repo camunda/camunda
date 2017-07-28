@@ -20,15 +20,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.util.ClientRule;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.util.ClientRule;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
 
 public class CreateWorkflowInstanceTest
@@ -57,7 +60,7 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("eventType", "WORKFLOW_INSTANCE_CREATED")
+                .put("state", "WORKFLOW_INSTANCE_CREATED")
                 .put("version", 1)
                 .put("workflowInstanceKey", 1)
                 .put("payload", msgPackConverter.convertToMsgPack("null"))
@@ -65,8 +68,8 @@ public class CreateWorkflowInstanceTest
                 .register();
 
         // when
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
-                .create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
+                .create(clientRule.getDefaultTopicName())
                 .bpmnProcessId("foo")
                 .execute();
 
@@ -84,7 +87,7 @@ public class CreateWorkflowInstanceTest
         final byte[] payload = getBytes("{ \"bar\" : 4 }");
 
         brokerRule.onWorkflowRequestRespondWith(1L)
-            .put("eventType", "WORKFLOW_INSTANCE_CREATED")
+            .put("state", "WORKFLOW_INSTANCE_CREATED")
             .put("version", 1)
             .put("workflowInstanceKey", 1)
             .put("payload", msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"))
@@ -92,8 +95,8 @@ public class CreateWorkflowInstanceTest
             .register();
 
         // when
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
-            .create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
+            .create(clientRule.getDefaultTopicName())
             .bpmnProcessId("foo")
             .payload(new ByteArrayInputStream(payload))
             .execute();
@@ -111,7 +114,7 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("eventType", "WORKFLOW_INSTANCE_REJECTED")
+                .put("state", "WORKFLOW_INSTANCE_REJECTED")
                 .put("bpmnProcessId", "foo")
                 .put("version", 1)
                 .done()
@@ -123,8 +126,8 @@ public class CreateWorkflowInstanceTest
         expectedException.expectMessage("Failed to create instance of workflow with BPMN process id 'foo' and version '1'.");
 
         // when
-        clientRule.workflowTopic()
-            .create()
+        clientRule.workflows()
+            .create(clientRule.getDefaultTopicName())
             .bpmnProcessId("foo")
             .execute();
     }
@@ -134,7 +137,7 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("eventType", "WORKFLOW_INSTANCE_REJECTED")
+                .put("state", "WORKFLOW_INSTANCE_REJECTED")
                 .put("workflowKey", 2L)
                 .done()
                 .register();
@@ -142,11 +145,11 @@ public class CreateWorkflowInstanceTest
 
         // expect exception
         expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Failed to create instance of workflow with workflow key '2'.");
+        expectedException.expectMessage("Failed to create instance of workflow with key '2'");
 
         // when
-        clientRule.workflowTopic()
-            .create()
+        clientRule.workflows()
+            .create(clientRule.getDefaultTopicName())
             .workflowKey(2L)
             .execute();
     }
@@ -156,15 +159,15 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("eventType", "WORKFLOW_INSTANCE_CREATED")
+                .put("state", "WORKFLOW_INSTANCE_CREATED")
                 .put("workflowInstanceKey", 1)
                 .put("payload", msgPackConverter.convertToMsgPack("null"))
                 .done()
                 .register();
 
         // when
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
-                .create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
+                .create(clientRule.getDefaultTopicName())
                 .bpmnProcessId("foo")
                 .version(2)
                 .execute();
@@ -181,48 +184,20 @@ public class CreateWorkflowInstanceTest
     {
         // given
         brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("eventType", "WORKFLOW_INSTANCE_CREATED")
+                .put("state", "WORKFLOW_INSTANCE_CREATED")
                 .put("workflowInstanceKey", 1)
                 .put("payload", msgPackConverter.convertToMsgPack("null"))
                 .done()
                 .register();
 
         // when
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
-                .create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
+                .create(clientRule.getDefaultTopicName())
                 .workflowKey(2L)
                 .execute();
 
         // then
         assertThat(workflowInstance).isNotNull();
         assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2L);
-    }
-
-    @Test
-    public void shouldNotCreateWorkflowInstanceForMissingBpmnProcessIdAndWorkflowKey()
-    {
-        // expect exception
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("Can not create a workflow instance. Need to provide either a workflow key or a BPMN process id with/without version.");
-
-        // when create command is executed without BPMN process id
-        clientRule.workflowTopic()
-                .create()
-                .execute();
-    }
-
-    @Test
-    public void shouldNotCreateWorkflowInstanceIfBpmnProcessIdAndWorkflowKeyAreSet()
-    {
-        // expect exception
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("Can not create a workflow instance. Need to provide either a workflow key or a BPMN process id with/without version.");
-
-        // when
-        clientRule.workflowTopic()
-                .create()
-                .bpmnProcessId("process")
-                .workflowKey(2L)
-                .execute();
     }
 }

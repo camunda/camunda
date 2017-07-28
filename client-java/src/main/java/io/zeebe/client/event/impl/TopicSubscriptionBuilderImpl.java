@@ -18,6 +18,7 @@ package io.zeebe.client.event.impl;
 import io.zeebe.client.event.*;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
+import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
 import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
@@ -28,18 +29,19 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     protected WorkflowEventHandler wfEventHandler;
     protected IncidentEventHandler incidentEventHandler;
     protected RaftEventHandler raftEventHandler;
-    protected NoopEventHandler noopEventHandler;
 
     protected final TopicSubscriptionImplBuilder builder;
     protected final MsgPackMapper msgPackMapper;
 
     public TopicSubscriptionBuilderImpl(
             TopicClientImpl client,
+            String topic,
+            int partition,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
             MsgPackMapper msgPackMapper,
             int prefetchCapacity)
     {
-        builder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
+        builder = new TopicSubscriptionImplBuilder(client, topic, partition, acquisition, prefetchCapacity);
         this.msgPackMapper = msgPackMapper;
     }
 
@@ -86,18 +88,11 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     }
 
     @Override
-    public TopicSubscriptionBuilderImpl noopEventHandler(final NoopEventHandler noopEventHandler)
-    {
-        this.noopEventHandler = noopEventHandler;
-        return this;
-    }
-
-    @Override
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("name", builder.getName());
         if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && wfInstanceEventHandler == null && incidentEventHandler == null
-                && raftEventHandler == null && noopEventHandler == null)
+                && raftEventHandler == null)
         {
             throw new RuntimeException("at least one handler must be set");
         }
@@ -111,41 +106,41 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 
     protected void dispatchEvent(TopicEventImpl event) throws Exception
     {
-        final TopicEventType eventType = event.getEventType();
+        final TopicEventType eventType = event.getMetadata().getType();
 
         if (TopicEventType.TASK == eventType && taskEventHandler != null)
         {
             final TaskEventImpl taskEvent = msgPackMapper.convert(event.getAsMsgPack(), TaskEventImpl.class);
-            taskEventHandler.handle(event, taskEvent);
+            taskEvent.updateMetadata(event.getMetadata());
+            taskEventHandler.handle(taskEvent);
         }
         else if (TopicEventType.WORKFLOW_INSTANCE == eventType && wfInstanceEventHandler != null)
         {
             final WorkflowInstanceEventImpl wfInstanceEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowInstanceEventImpl.class);
-            wfInstanceEventHandler.handle(event, wfInstanceEvent);
+            wfInstanceEvent.updateMetadata(event.getMetadata());
+            wfInstanceEventHandler.handle(wfInstanceEvent);
         }
         else if (TopicEventType.WORKFLOW == eventType && wfEventHandler != null)
         {
             final WorkflowEventImpl wfEvent = msgPackMapper.convert(event.getAsMsgPack(), WorkflowEventImpl.class);
-            wfEventHandler.handle(event, wfEvent);
+            wfEvent.updateMetadata(event.getMetadata());
+            wfEventHandler.handle(wfEvent);
         }
         else if (TopicEventType.INCIDENT == eventType && incidentEventHandler != null)
         {
-            final IncidentEvent incidentEvent = msgPackMapper.convert(event.getAsMsgPack(), IncidentEventImpl.class);
-            incidentEventHandler.handle(event, incidentEvent);
+            final IncidentEventImpl incidentEvent = msgPackMapper.convert(event.getAsMsgPack(), IncidentEventImpl.class);
+            incidentEvent.updateMetadata(event.getMetadata());
+            incidentEventHandler.handle(incidentEvent);
         }
         else if (TopicEventType.RAFT == eventType && raftEventHandler != null)
         {
-            final RaftEvent raftEvent = msgPackMapper.convert(event.getAsMsgPack(), RaftEventImpl.class);
-            raftEventHandler.handle(event, raftEvent);
-        }
-        else if (TopicEventType.NOOP == eventType && noopEventHandler != null)
-        {
-            final NoopEvent noopEvent = msgPackMapper.convert(event.getAsMsgPack(), NoopEventImpl.class);
-            noopEventHandler.handle(event, noopEvent);
+            final RaftEventImpl raftEvent = msgPackMapper.convert(event.getAsMsgPack(), RaftEventImpl.class);
+//            raftEvent.updateMetadata(event.getMetadata());
+            raftEventHandler.handle(raftEvent);
         }
         else if (defaultEventHandler != null)
         {
-            defaultEventHandler.handle(event, event);
+            defaultEventHandler.handle(event);
         }
     }
 

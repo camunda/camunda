@@ -15,28 +15,27 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.task.PollableTaskSubscription;
-import io.zeebe.client.task.Task;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.task.PollableTaskSubscription;
 
 public class CancelWorkflowInstanceTest
 {
@@ -63,7 +62,7 @@ public class CancelWorkflowInstanceTest
     @Before
     public void init()
     {
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
     }
@@ -72,40 +71,26 @@ public class CancelWorkflowInstanceTest
     public void shouldCancelWorkflowInstance()
     {
         // given
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         // when
-        clientRule.workflowTopic().cancel()
-            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
-            .execute();
+        clientRule.workflows().cancel(workflowInstance).execute();
 
         // then
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_CANCELED")));
     }
 
     @Test
-    public void shouldFailCancelNotExistingWorkflowInstance()
-    {
-        thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Failed to cancel workflow instance with key '3'.");
-
-        // when
-        clientRule.workflowTopic().cancel()
-            .workflowInstanceKey(3L)
-            .execute();
-    }
-
-    @Test
     public void shouldFailToCompleteTaskAfterCancel()
     {
         // given
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
-        final PollableTaskSubscription taskSubscription = clientRule.taskTopic().newPollableTaskSubscription()
+        final PollableTaskSubscription taskSubscription = clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopic())
             .taskType("test")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(1))
@@ -113,12 +98,10 @@ public class CancelWorkflowInstanceTest
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCKED")));
 
-        clientRule.workflowTopic().cancel()
-            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
-            .execute();
+        clientRule.workflows().cancel(workflowInstance).execute();
 
         // when
-        taskSubscription.poll(Task::complete);
+        taskSubscription.poll((c, t) -> c.completeTaskWithoutPayload());
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETE_REJECTED")));
@@ -131,24 +114,22 @@ public class CancelWorkflowInstanceTest
     public void shouldFailToLockTaskAfterCancel()
     {
         // given
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
-        clientRule.workflowTopic().cancel()
-            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
-            .execute();
+        clientRule.workflows().cancel(workflowInstance).execute();
 
-        final PollableTaskSubscription taskSubscription = clientRule.taskTopic().newPollableTaskSubscription()
+        final PollableTaskSubscription taskSubscription = clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopic())
                 .taskType("test")
                 .lockOwner("owner")
                 .lockTime(Duration.ofMinutes(1))
                 .open();
 
         // when
-        final int completedTasks = taskSubscription.poll(Task::complete);
+        final int completedTasks = taskSubscription.poll((c, t) -> c.completeTaskWithoutPayload());
 
         // then
         assertThat(completedTasks).isEqualTo(0);

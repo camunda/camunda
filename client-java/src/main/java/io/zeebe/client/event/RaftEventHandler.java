@@ -24,5 +24,5 @@ public interface RaftEventHandler
     /**
      * @param event the next event of the topic
      */
-    void handle(EventMetadata metadata, RaftEvent event) throws Exception;
+    void handle(RaftEvent event) throws Exception;
 }

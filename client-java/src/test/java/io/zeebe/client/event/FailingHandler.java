@@ -15,29 +15,29 @@
  */
 package io.zeebe.client.event;
 
-import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 public class FailingHandler extends RecordingEventHandler
 {
 
-    protected BiFunction<EventMetadata, TopicEvent, Boolean> failureCondition;
+    protected Predicate<TopicEvent> failureCondition;
 
-    public FailingHandler(BiFunction<EventMetadata, TopicEvent, Boolean> failureCondition)
+    public FailingHandler(Predicate<TopicEvent> failureCondition)
     {
         this.failureCondition = failureCondition;
     }
 
     public FailingHandler()
     {
-        this ((m, e) -> true);
+        this (e -> true);
     }
 
     @Override
-    public void handle(EventMetadata metadata, TopicEvent event)
+    public void handle(TopicEvent event)
     {
-        super.handle(metadata, event);
+        super.handle(event);
 
-        if (failureCondition.apply(metadata, event))
+        if (failureCondition.test(event))
         {
             throw new RuntimeException("Handler invocation fails");
         }

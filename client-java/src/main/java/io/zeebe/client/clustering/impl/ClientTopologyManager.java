@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.clustering.Topology;
-import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
@@ -94,7 +94,7 @@ public class ClientTopologyManager implements Actor
         return topology;
     }
 
-    public RemoteAddress getLeaderForTopic(final Topic topic)
+    public RemoteAddress getLeaderForTopic(final Partition topic)
     {
         if (topic != null)
         {

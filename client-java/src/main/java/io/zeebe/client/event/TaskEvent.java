@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * POJO representing an event of type {@link TopicEventType#TASK}.
  */
-public interface TaskEvent
+public interface TaskEvent extends Event
 {
 
     /**
@@ -30,14 +30,16 @@ public interface TaskEvent
     String getType();
 
     /**
-     * @return the name of the type in the task's event lifecycle
-     */
-    String getEventType();
-
-    /**
-     * @return headers associated with this task
+     * @return broker-defined headers associated with this task. For example, if this task is
+     *   created in the context of workflow instance, the header provide context information
+     *   on which activity is executed, etc.
      */
     Map<String, Object> getHeaders();
+
+    /**
+     * @return user-defined headers associated with this task
+     */
+    Map<String, Object> getCustomHeaders();
 
     /**
      * @return the lock owner

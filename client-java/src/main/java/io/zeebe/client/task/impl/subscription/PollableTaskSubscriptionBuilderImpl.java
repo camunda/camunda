@@ -17,7 +17,7 @@ package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
 
-import io.zeebe.client.impl.TaskTopicClientImpl;
+import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.PollableTaskSubscriptionBuilder;
@@ -31,17 +31,23 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected long lockTime = Duration.ofMinutes(1).toMillis();
     protected String lockOwner;
 
-    protected final TaskTopicClientImpl taskClient;
+    protected final String topic;
+    protected final int partition;
+    protected final TasksClientImpl taskClient;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
 
     public PollableTaskSubscriptionBuilderImpl(
-            TaskTopicClientImpl taskClient,
+            TasksClientImpl taskClient,
+            String topic,
+            int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
     {
+        this.topic = topic;
+        this.partition = partition;
         this.taskClient = taskClient;
         this.taskAcquisition = taskAcquisition;
         this.autoCompleteTasks = autoCompleteTasks;
@@ -92,6 +98,8 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
 
         final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
                 taskClient,
+                topic,
+                partition,
                 null,
                 taskType,
                 lockTime,

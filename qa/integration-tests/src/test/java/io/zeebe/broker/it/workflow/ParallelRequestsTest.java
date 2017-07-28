@@ -19,19 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.ParallelRequests;
-import io.zeebe.broker.it.util.ParallelRequests.SilentFuture;
-import io.zeebe.client.WorkflowTopicClient;
-import io.zeebe.client.workflow.cmd.DeploymentResult;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
-import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.it.util.ParallelRequests;
+import io.zeebe.broker.it.util.ParallelRequests.SilentFuture;
+import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.test.util.TestUtil;
 
 @Ignore
 public class ParallelRequestsTest
@@ -51,9 +52,9 @@ public class ParallelRequestsTest
     @Before
     public void deployModelInstance()
     {
-        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
+        final WorkflowsClient workflowService = clientRule.workflows();
 
-        workflowService.deploy()
+        workflowService.deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(MODEL)
             .execute();
     }
@@ -67,26 +68,26 @@ public class ParallelRequestsTest
         // given
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
-        final WorkflowTopicClient workflowsClient = clientRule.workflowTopic();
+        final WorkflowsClient workflowsClient = clientRule.workflows();
 
-        final SilentFuture<WorkflowInstance> instantiationFuture =
+        final SilentFuture<WorkflowInstanceEvent> instantiationFuture =
                 parallelRequests.submitRequest(
                     () ->
                     TestUtil.doRepeatedly(() ->
-                        clientRule.workflowTopic()
-                            .create()
+                        clientRule.workflows()
+                            .create(clientRule.getDefaultTopic())
                             .bpmnProcessId("foo")
                             .execute())
                         .until(
                             (wfInstance) -> wfInstance != null,
                             (exception) -> !exception.getMessage().contains("(1-3)")));
 
-        final SilentFuture<DeploymentResult> deploymentFuture =
+        final SilentFuture<DeploymentEvent> deploymentFuture =
                 parallelRequests.submitRequest(
                     () ->
                     {
                         Thread.sleep(10);
-                        return workflowsClient.deploy()
+                        return workflowsClient.deploy(clientRule.getDefaultTopic())
                             .bpmnModelInstance(MODEL)
                             .execute();
                     });

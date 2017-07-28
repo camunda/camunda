@@ -15,13 +15,12 @@
  */
 package io.zeebe.perftest;
 
-import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_ID;
 import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import io.zeebe.client.TaskTopicClient;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.perftest.helper.MaxRateThroughputTest;
 
@@ -39,14 +38,9 @@ public class CreateTaskThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(ZeebeClient client)
     {
-        final TaskTopicClient tasksClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        final TasksClient tasksClient = client.tasks();
 
-        return () ->
-        {
-            return tasksClient.create()
-                    .taskType(TASK_TYPE)
-                    .executeAsync();
-        };
+        return () -> tasksClient.create(DEFAULT_TOPIC_NAME, TASK_TYPE).executeAsync();
     }
 
 }

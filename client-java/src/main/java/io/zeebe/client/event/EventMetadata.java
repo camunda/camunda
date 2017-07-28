@@ -31,16 +31,16 @@ public interface EventMetadata
     /**
      * @return the unique position the event has in the topic. Events are ordered by position.
      */
-    long getEventPosition();
+    long getPosition();
 
     /**
      * @return the key of the event on this topic. Multiple events can have the same key if they
      *   reflect state of the same logical entity. Keys are unique for the combination of topic and partition.
      */
-    long getEventKey();
+    long getKey();
 
     /**
      * @return the type of the event
      */
-    TopicEventType getEventType();
+    TopicEventType getType();
 }

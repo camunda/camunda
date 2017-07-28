@@ -17,10 +17,13 @@ package io.zeebe.client.event.impl;
 
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.CheckedConsumer;
+import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriptionImplBuilder
 {
     protected final TopicClientImpl client;
+    protected final String topic;
+    protected final int partitionId;
     protected CheckedConsumer<TopicEventImpl> handler;
     protected long startPosition;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
@@ -30,10 +33,17 @@ public class TopicSubscriptionImplBuilder
 
     public TopicSubscriptionImplBuilder(
             TopicClientImpl client,
+            String topic,
+            int partitionId,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
             int prefetchCapacity)
     {
+        EnsureUtil.ensureNotNull("topic", topic);
+        EnsureUtil.ensureNotEmpty("topic", topic);
+
         this.client = client;
+        this.topic = topic;
+        this.partitionId = partitionId;
         this.acquisition = acquisition;
         this.prefetchCapacity = prefetchCapacity;
         startAtTailOfTopic();
@@ -87,6 +97,8 @@ public class TopicSubscriptionImplBuilder
     {
         final TopicSubscriptionImpl subscription = new TopicSubscriptionImpl(
                 client,
+                topic,
+                partitionId,
                 handler,
                 prefetchCapacity,
                 startPosition,

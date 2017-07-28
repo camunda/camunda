@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -51,7 +52,7 @@ public class TopicSubscriptionTest
 
     protected static final String SUBSCRIPTION_NAME = "foo";
 
-    protected static final TopicEventHandler DO_NOTHING = (m, e) ->
+    protected static final TopicEventHandler DO_NOTHING = e ->
     { };
 
     public ClientRule clientRule = new ClientRule();
@@ -78,7 +79,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -92,7 +93,7 @@ public class TopicSubscriptionTest
             .get();
 
         assertThat(subscribeRequest.getCommand())
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("startPosition", 0)
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
@@ -106,7 +107,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .forcedStart()
             .handler(DO_NOTHING)
@@ -130,7 +131,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtTailOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -145,7 +146,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .hasEntrySatisfying("startPosition", Conditions.isLowerThan(0))
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
@@ -158,7 +159,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtPosition(654L)
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -173,7 +174,7 @@ public class TopicSubscriptionTest
 
         assertThat(subscribeRequest.getCommand())
             .containsEntry("startPosition", 654)
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
             .doesNotContainEntry("forceStart", true);
@@ -186,7 +187,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newPollableSubscription()
+        clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -199,7 +200,7 @@ public class TopicSubscriptionTest
             .get();
 
         assertThat(subscribeRequest.getCommand())
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("startPosition", 0)
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
@@ -210,7 +211,7 @@ public class TopicSubscriptionTest
     public void shouldValidateEventHandlerForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = clientRule.topic().newSubscription()
+        final TopicSubscriptionBuilder builder = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME);
 
@@ -226,7 +227,7 @@ public class TopicSubscriptionTest
     public void shouldValidateNameForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = clientRule.topic().newSubscription()
+        final TopicSubscriptionBuilder builder = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
                 .startAtHeadOfTopic()
                 .handler(DO_NOTHING);
 
@@ -243,7 +244,7 @@ public class TopicSubscriptionTest
     public void shouldValidateNameForPollableSubscription()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = clientRule.topic().newPollableSubscription()
+        final PollableTopicSubscriptionBuilder builder = clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
                 .startAtHeadOfTopic();
 
         // then
@@ -261,7 +262,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
-        final TopicSubscription subscription = clientRule.topic().newSubscription()
+        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -281,7 +282,7 @@ public class TopicSubscriptionTest
         assertThat(handler.getRecordedEvents()).hasSize(3);
 
         final Set<Long> eventPositions = handler.getRecordedEvents().stream()
-            .map((re) -> re.getMetadata().getEventPosition())
+            .map((re) -> re.getMetadata().getPosition())
             .collect(Collectors.toSet());
 
         assertThat(eventPositions).containsExactly(1L);
@@ -293,8 +294,8 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final FailingHandler handler = new FailingHandler((m, e) -> m.getEventPosition() == 2L);
-        final TopicSubscription subscription = clientRule.topic().newSubscription()
+        final FailingHandler handler = new FailingHandler(e -> e.getMetadata().getPosition() == 2L);
+        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
                 .startAtHeadOfTopic()
                 .handler(handler)
                 .name(SUBSCRIPTION_NAME)
@@ -313,7 +314,7 @@ public class TopicSubscriptionTest
 
         final List<ExecuteCommandRequest> acknowledgements = commandRequests.stream()
                 .filter((c) -> c.eventType() == EventType.SUBSCRIPTION_EVENT)
-                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("eventType")))
+                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("state")))
                 .collect(Collectors.toList());
 
         assertThat(acknowledgements).isNotEmpty();
@@ -339,11 +340,11 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final AtomicInteger counter = new AtomicInteger(3);
-        final FailingHandler handler = new FailingHandler((m, e) ->
-                m.getEventPosition() == 1L &&
+        final FailingHandler handler = new FailingHandler(e ->
+                e.getMetadata().getPosition() == 1L &&
                 counter.decrementAndGet() > 0);
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -359,12 +360,12 @@ public class TopicSubscriptionTest
         TestUtil.waitUntil(() -> handler
                 .getRecordedEvents()
                 .stream()
-                .anyMatch(re -> re.getMetadata().getEventPosition() == 2L));
+                .anyMatch(re -> re.getMetadata().getPosition() == 2L));
 
         final List<Long> handledEventPositions = handler
             .getRecordedEvents()
             .stream()
-            .map((re) -> re.getMetadata().getEventPosition())
+            .map((re) -> re.getMetadata().getPosition())
             .collect(Collectors.toList());
 
         assertThat(handledEventPositions).containsExactly(1L, 1L, 1L, 2L);
@@ -377,7 +378,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -385,7 +386,7 @@ public class TopicSubscriptionTest
 
         // then
         final ExecuteCommandRequest addSubscriptionRequest = broker.getReceivedCommandRequests().stream()
-            .filter((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
+            .filter((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("state")))
             .findFirst()
             .get();
 
@@ -399,7 +400,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
         final ControllableHandler handler = new ControllableHandler();
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topic().newSubscription()
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -445,7 +446,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topic().newSubscription()
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -464,7 +465,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscription subscription = clientRule.topic().newSubscription()
+        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -472,10 +473,6 @@ public class TopicSubscriptionTest
 
         // when
         broker.closeTransport();
-
-        // * reopening the subscription takes a rather long time (up to 5 topology refreshes,
-        //   with default 500 milliseconds connect timeout)
-        Thread.sleep(5000L);
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
@@ -488,7 +485,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscription firstSubscription = clientRule.topic().newSubscription()
+        final TopicSubscription firstSubscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -502,7 +499,7 @@ public class TopicSubscriptionTest
         client.connect();
 
         // when
-        final TopicSubscription secondSubscription = clientRule.topic().newSubscription()
+        final TopicSubscription secondSubscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
                 .startAtHeadOfTopic()
                 .handler(DO_NOTHING)
                 .name(SUBSCRIPTION_NAME)
@@ -520,7 +517,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
@@ -537,13 +534,19 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.RAFT_EVENT);
 
         // then
-        waitUntil(() -> eventHandler.numTopicEvents == 2);
+        waitUntil(() -> eventHandler.numTopicEvents() == 2);
 
-        assertThat(eventHandler.numTopicEvents).isEqualTo(2);
-        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowInstanceEvents).isEqualTo(0);
-        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
+        final TopicEvent event1 = eventHandler.topicEvents.get(0);
+        final TopicEvent event2 = eventHandler.topicEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.RAFT);
+        assertMetadata(event2, 1L, 2L, TopicEventType.RAFT);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(2);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
     }
 
     @Test
@@ -554,7 +557,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
@@ -571,13 +574,19 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.TASK_EVENT);
 
         // then
-        waitUntil(() -> eventHandler.numTaskEvents >= 2);
+        waitUntil(() -> eventHandler.numTaskEvents() >= 2);
 
-        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
-        assertThat(eventHandler.numTaskEvents).isEqualTo(2);
-        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowInstanceEvents).isEqualTo(0);
-        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
+        final TaskEvent event1 = eventHandler.taskEvents.get(0);
+        final TaskEvent event2 = eventHandler.taskEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.TASK);
+        assertMetadata(event2, 1L, 2L, TopicEventType.TASK);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(2);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
     }
 
     @Test
@@ -588,7 +597,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
@@ -605,13 +614,19 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.WORKFLOW_EVENT);
 
         // then
-        waitUntil(() -> eventHandler.numWorkflowEvents >= 2);
+        waitUntil(() -> eventHandler.numWorkflowEvents() >= 2);
 
-        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
-        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowEvents).isEqualTo(2);
-        assertThat(eventHandler.numWorkflowInstanceEvents).isEqualTo(0);
-        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
+        final WorkflowEvent event1 = eventHandler.workflowEvents.get(0);
+        final WorkflowEvent event2 = eventHandler.workflowEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.WORKFLOW);
+        assertMetadata(event2, 1L, 2L, TopicEventType.WORKFLOW);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(2);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
     }
 
     @Test
@@ -622,7 +637,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
@@ -639,13 +654,19 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.WORKFLOW_INSTANCE_EVENT);
 
         // then
-        waitUntil(() -> eventHandler.numWorkflowInstanceEvents >= 2);
+        waitUntil(() -> eventHandler.numWorkflowInstanceEvents() >= 2);
 
-        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
-        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowInstanceEvents).isEqualTo(2);
-        assertThat(eventHandler.numIncidentEvents).isEqualTo(0);
+        final WorkflowInstanceEvent event1 = eventHandler.workflowInstanceEvents.get(0);
+        final WorkflowInstanceEvent event2 = eventHandler.workflowInstanceEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.WORKFLOW_INSTANCE);
+        assertMetadata(event2, 1L, 2L, TopicEventType.WORKFLOW_INSTANCE);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(2);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
     }
 
     @Test
@@ -656,7 +677,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
             .taskEventHandler(eventHandler)
@@ -673,13 +694,19 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.INCIDENT_EVENT);
 
         // then
-        waitUntil(() -> eventHandler.numIncidentEvents >= 2);
+        waitUntil(() -> eventHandler.numIncidentEvents() >= 2);
 
-        assertThat(eventHandler.numTopicEvents).isEqualTo(0);
-        assertThat(eventHandler.numTaskEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowEvents).isEqualTo(0);
-        assertThat(eventHandler.numWorkflowInstanceEvents).isEqualTo(0);
-        assertThat(eventHandler.numIncidentEvents).isEqualTo(2);
+        final IncidentEvent event1 = eventHandler.incidentEvents.get(0);
+        final IncidentEvent event2 = eventHandler.incidentEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.INCIDENT);
+        assertMetadata(event2, 1L, 2L, TopicEventType.INCIDENT);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(2);
     }
 
     @Test
@@ -690,7 +717,7 @@ public class TopicSubscriptionTest
 
         final RecordingTopicEventHandler defaultEventHandler = new RecordingTopicEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(defaultEventHandler)
             .name(SUBSCRIPTION_NAME)
@@ -704,9 +731,9 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 3L, EventType.INCIDENT_EVENT);
 
         // then
-        waitUntil(() -> defaultEventHandler.numTopicEvents == 3);
+        waitUntil(() -> defaultEventHandler.numTopicEvents() == 3);
 
-        assertThat(defaultEventHandler.numTopicEvents).isEqualTo(3);
+        assertThat(defaultEventHandler.numTopicEvents()).isEqualTo(3);
     }
 
     @Test
@@ -715,7 +742,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -732,7 +759,7 @@ public class TopicSubscriptionTest
             .get();
 
         assertThat(reopenRequest.getCommand())
-            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("state", "SUBSCRIBE")
             .containsEntry("startPosition", 0)
             .containsEntry("prefetchCapacity", 32)
             .containsEntry("name", SUBSCRIPTION_NAME)
@@ -746,7 +773,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
         final RecordingEventHandler recordingHandler = new RecordingEventHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
@@ -773,7 +800,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
         final ControllableHandler handler = new ControllableHandler();
 
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -801,50 +828,116 @@ public class TopicSubscriptionTest
         assertThat(handler.getNumHandledEvents()).isEqualTo(1);
     }
 
+    @Test
+    public void testValidateTopicNameNotNull()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic must not be null");
+
+        // when
+        client.topics().newSubscription(null);
+    }
+
+    @Test
+    public void testValidateTopicNameNotEmpty()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic must not be empty");
+
+        // when
+        client.topics().newSubscription("");
+    }
+
+    protected void assertMetadata(Event actualEvent, long expectedKey, long expectedPosition,
+            TopicEventType expectedType)
+    {
+
+        final EventMetadata metadata = actualEvent.getMetadata();
+        assertThat(metadata.getKey()).isEqualTo(expectedKey);
+        assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
+        assertThat(metadata.getType()).isEqualTo(expectedType);
+        assertThat(metadata.getTopicName()).isEqualTo(clientRule.getDefaultTopicName());
+        assertThat(metadata.getPartitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+    }
+
     protected Stream<ExecuteCommandRequest> receivedSubscribeCommands()
     {
         return broker.getReceivedCommandRequests()
                 .stream()
                 .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT
-                    && "SUBSCRIBE".equals(e.getCommand().get("eventType")));
+                    && "SUBSCRIBE".equals(e.getCommand().get("state")));
     }
 
-    private static class RecordingTopicEventHandler implements TopicEventHandler, TaskEventHandler, WorkflowInstanceEventHandler, IncidentEventHandler, WorkflowEventHandler
+    private static class RecordingTopicEventHandler implements
+        TopicEventHandler,
+        TaskEventHandler,
+        WorkflowInstanceEventHandler,
+        IncidentEventHandler,
+        WorkflowEventHandler
     {
-        public int numTopicEvents = 0;
-        public int numTaskEvents = 0;
-        public int numWorkflowEvents = 0;
-        public int numWorkflowInstanceEvents = 0;
-        public int numIncidentEvents = 0;
+        protected List<TopicEvent> topicEvents = new CopyOnWriteArrayList<>();
+        protected List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
+        protected List<WorkflowEvent> workflowEvents = new CopyOnWriteArrayList<>();
+        protected List<WorkflowInstanceEvent> workflowInstanceEvents = new CopyOnWriteArrayList<>();
+        protected List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
 
         @Override
-        public void handle(EventMetadata metadata, TopicEvent event) throws Exception
+        public void handle(TopicEvent event) throws Exception
         {
-            numTopicEvents += 1;
+            topicEvents.add(event);
         }
 
         @Override
-        public void handle(EventMetadata metadata, TaskEvent event) throws Exception
+        public void handle(TaskEvent event) throws Exception
         {
-            numTaskEvents += 1;
+            taskEvents.add(event);
         }
 
         @Override
-        public void handle(EventMetadata metadata, WorkflowInstanceEvent event) throws Exception
+        public void handle(WorkflowInstanceEvent event) throws Exception
         {
-            numWorkflowInstanceEvents += 1;
+            workflowInstanceEvents.add(event);
         }
 
         @Override
-        public void handle(EventMetadata metadata, IncidentEvent event) throws Exception
+        public void handle(IncidentEvent event) throws Exception
         {
-            numIncidentEvents += 1;
+            incidentEvents.add(event);
         }
 
         @Override
-        public void handle(EventMetadata metadata, WorkflowEvent event) throws Exception
+        public void handle(WorkflowEvent event) throws Exception
         {
-            numWorkflowEvents += 1;
+            workflowEvents.add(event);
+        }
+
+        public int numTopicEvents()
+        {
+            return topicEvents.size();
+        }
+        public int numTaskEvents()
+        {
+            return taskEvents.size();
+        }
+        public int numWorkflowInstanceEvents()
+        {
+            return workflowInstanceEvents.size();
+        }
+        public int numWorkflowEvents()
+        {
+            return workflowEvents.size();
+        }
+        public int numIncidentEvents()
+        {
+            return incidentEvents.size();
         }
     }
 }

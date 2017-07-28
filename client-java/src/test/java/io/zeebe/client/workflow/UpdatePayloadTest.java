@@ -15,22 +15,25 @@
  */
 package io.zeebe.client.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule.TEST_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule.TEST_TOPIC_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.WorkflowTopicClient;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.util.ClientRule;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.util.ClientRule;
+import io.zeebe.client.util.Events;
+import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
 
 public class UpdatePayloadTest
@@ -48,33 +51,35 @@ public class UpdatePayloadTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private WorkflowTopicClient workflowTopicClient;
+    private WorkflowsClient workflowTopicClient;
 
     @Before
     public void setUp()
     {
         this.workflowTopicClient = clientRule
                 .getClient()
-                .workflowTopic(TEST_TOPIC_NAME, TEST_PARTITION_ID);
+                .workflows();
     }
 
     @Test
     public void shouldUpdatePayload()
     {
         // given
+        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
+        event.setKey(2L);
+        event.setWorkflowInstanceKey(1L);
+
         brokerRule.onExecuteCommandRequest().respondWith()
             .topicName(TEST_TOPIC_NAME)
             .partitionId(TEST_PARTITION_ID)
             .key(r -> r.key())
             .event()
-                .put("eventType", "PAYLOAD_UPDATED")
+                .put("state", "PAYLOAD_UPDATED")
                 .done()
             .register();
 
         // when
-        workflowTopicClient.updatePayload()
-            .workflowInstanceKey(1L)
-            .activityInstanceKey(2L)
+        workflowTopicClient.updatePayload(event)
             .payload(PAYLOAD)
             .execute();
 
@@ -85,7 +90,7 @@ public class UpdatePayloadTest
         assertThat(request.eventType()).isEqualTo(EventType.WORKFLOW_INSTANCE_EVENT);
         assertThat(request.key()).isEqualTo(2L);
         assertThat(request.getCommand())
-            .containsEntry("eventType", "UPDATE_PAYLOAD")
+            .containsEntry("state", "UPDATE_PAYLOAD")
             .containsEntry("workflowInstanceKey", 1)
             .containsEntry("payload", ENCODED_PAYLOAD);
     }
@@ -94,68 +99,42 @@ public class UpdatePayloadTest
     public void shouldRejectUpdatePayload()
     {
         // given
+        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
+        event.setKey(2L);
+        event.setWorkflowInstanceKey(1L);
+
         brokerRule.onExecuteCommandRequest().respondWith()
             .topicName(TEST_TOPIC_NAME)
             .partitionId(TEST_PARTITION_ID)
             .key(r -> r.key())
             .event()
                 .allOf(r -> r.getCommand())
-                .put("eventType", "UPDATE_PAYLOAD_REJECTED")
+                .put("state", "UPDATE_PAYLOAD_REJECTED")
                 .done()
             .register();
 
         // then
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Failed to update payload of the workflow instance with key '1'");
+        thrown.expectMessage("Command for event with key 2 was rejected by broker (UPDATE_PAYLOAD_REJECTED)");
 
         // when
-        workflowTopicClient.updatePayload()
-            .workflowInstanceKey(1L)
-            .activityInstanceKey(2L)
+        workflowTopicClient.updatePayload(event)
             .payload(PAYLOAD)
             .execute();
     }
 
     @Test
-    public void shouldFailIfActivityInstanceKeyMissing()
+    public void shouldFailIfWorkflowEventIsNull()
     {
         // then
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("activity instance key must be greater than 0");
+        thrown.expectMessage("base event must not be null");
 
         // when
-        workflowTopicClient.updatePayload()
-            .workflowInstanceKey(1L)
+        workflowTopicClient.updatePayload(null)
             .payload(PAYLOAD)
             .execute();
     }
 
-    @Test
-    public void shouldFailIfWorkflowInstanceKeyMissing()
-    {
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("workflow instance key must be greater than 0");
-
-        // when
-        workflowTopicClient.updatePayload()
-            .activityInstanceKey(2L)
-            .payload(PAYLOAD)
-            .execute();
-    }
-
-    @Test
-    public void shouldFailIfPayloadMissing()
-    {
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("payload must not be null");
-
-        // when
-        workflowTopicClient.updatePayload()
-            .workflowInstanceKey(1L)
-            .activityInstanceKey(2L)
-            .execute();
-    }
 
 }

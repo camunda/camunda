@@ -24,16 +24,17 @@ import java.time.Duration;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.event.IncidentEvent;
-import io.zeebe.client.task.Task;
-import io.zeebe.client.task.TaskHandler;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.task.TaskController;
+import io.zeebe.client.task.TaskHandler;
 
 public class IncidentTest
 {
@@ -63,22 +64,21 @@ public class IncidentTest
     public void shouldCreateAndResolveInputMappingIncident()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
-        final IncidentEvent incident = eventRecorder.getSingleIncidentEvent(incidentEvent("CREATED")).getEvent();
+        final WorkflowInstanceEvent activityInstanceEvent =
+                eventRecorder.getSingleWorkflowInstanceEvent(w -> "ACTIVITY_READY".equals(w.getState()));
 
         // when
-        clientRule.workflowTopic().updatePayload()
-            .workflowInstanceKey(incident.getWorkflowInstanceKey())
-            .activityInstanceKey(incident.getActivityInstanceKey())
+        clientRule.workflows().updatePayload(activityInstanceEvent)
             .payload(PAYLOAD)
             .execute();
 
@@ -91,20 +91,18 @@ public class IncidentTest
     public void shouldDeleteIncidentWhenWorkflowInstanceIsCanceled()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
         // when
-        clientRule.workflowTopic().cancel()
-            .workflowInstanceKey(workflowInstance.getWorkflowInstanceKey())
-            .execute();
+        clientRule.workflows().cancel(workflowInstance).execute();
 
         // then
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
@@ -114,11 +112,11 @@ public class IncidentTest
     public void shouldCreateAndResolveTaskIncident()
     {
         // given a workflow instance with an open task
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .payload(PAYLOAD)
             .execute();
@@ -127,7 +125,7 @@ public class IncidentTest
         final ControllableTaskHandler taskHandler = new ControllableTaskHandler();
         taskHandler.failTask = true;
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("test")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
@@ -140,11 +138,9 @@ public class IncidentTest
         // when the task retries are increased
         taskHandler.failTask = false;
 
-        clientRule.taskTopic().updateRetries()
-            .taskKey(taskHandler.task.getKey())
-            .taskType(taskHandler.task.getType())
-            .headers(taskHandler.task.getHeaders())
-            .payload(taskHandler.task.getPayload())
+        final TaskEvent task = taskHandler.task;
+
+        clientRule.tasks().updateRetries(task)
             .retries(3)
             .execute();
 
@@ -155,10 +151,10 @@ public class IncidentTest
     private static final class ControllableTaskHandler implements TaskHandler
     {
         boolean failTask = false;
-        Task task;
+        TaskEvent task;
 
         @Override
-        public void handle(Task task)
+        public void handle(TaskController controller, TaskEvent task)
         {
             this.task = task;
 
@@ -168,7 +164,7 @@ public class IncidentTest
             }
             else
             {
-                task.complete();
+                controller.completeTaskWithoutPayload();
             }
         }
     }

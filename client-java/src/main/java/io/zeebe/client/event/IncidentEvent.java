@@ -18,13 +18,8 @@ package io.zeebe.client.event;
 /**
  * POJO representing an event of type {@link TopicEventType#INCIDENT}.
  */
-public interface IncidentEvent
+public interface IncidentEvent extends Event
 {
-    /**
-     * @return the name of the type in the incident's event lifecycle.
-     */
-    String getEventType();
-
     /**
      * @return the type of error this incident is caused by.
      */

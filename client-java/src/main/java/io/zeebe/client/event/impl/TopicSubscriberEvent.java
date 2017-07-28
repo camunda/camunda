@@ -15,18 +15,29 @@
  */
 package io.zeebe.client.event.impl;
 
-public class TopicSubscriberEvent
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
+import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
+import io.zeebe.transport.RemoteAddress;
+
+public class TopicSubscriberEvent extends EventImpl implements EventSubscriptionCreationResult, ReceiverAwareResponseResult
 {
 
-    protected SubscriberEventType eventType;
-    protected long startPosition;
+    protected long startPosition = -1L;
     protected String name;
-    protected int prefetchCapacity;
+    protected int prefetchCapacity = -1;
     protected boolean forceStart;
 
-    public TopicSubscriberEvent()
+    protected RemoteAddress remote;
+
+    @JsonCreator
+    public TopicSubscriberEvent(@JsonProperty("state") String state)
     {
-        reset();
+        super(TopicEventType.SUBSCRIBER, state);
     }
 
     public long getStartPosition()
@@ -59,16 +70,6 @@ public class TopicSubscriberEvent
         return prefetchCapacity;
     }
 
-    public void setEventType(SubscriberEventType event)
-    {
-        this.eventType = event;
-    }
-
-    public SubscriberEventType getEventType()
-    {
-        return eventType;
-    }
-
     public boolean isForceStart()
     {
         return forceStart;
@@ -79,12 +80,23 @@ public class TopicSubscriberEvent
         this.forceStart = forceStart;
     }
 
-    public void reset()
+    @Override
+    public void setReceiver(RemoteAddress receiver)
     {
-        this.startPosition = -1L;
-        this.prefetchCapacity = -1;
-        this.eventType = null;
-        this.name = null;
-        this.forceStart = false;
+        this.remote = receiver;
+    }
+
+    @Override
+    @JsonIgnore
+    public RemoteAddress getEventPublisher()
+    {
+        return remote;
+    }
+
+    @Override
+    @JsonIgnore
+    public long getSubscriberKey()
+    {
+        return metadata.getKey();
     }
 }

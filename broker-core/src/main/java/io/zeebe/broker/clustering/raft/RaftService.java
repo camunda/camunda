@@ -57,7 +57,8 @@ public class RaftService implements Service<Raft>
     {
 
         final CompletableFuture<Void> startFuture =
-            logStream.openAsync().thenAccept(v -> {
+            logStream.openAsync().thenAccept(v ->
+            {
                 final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
                 raft = new Raft(socketAddress, logStream, serverTransport, clientTransport);

@@ -15,54 +15,46 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.TopicClient;
+import io.zeebe.client.TopicsClient;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
-import io.zeebe.client.impl.Topic;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
 
-public class TopicClientImpl implements TopicClient
+public class TopicClientImpl implements TopicsClient
 {
     protected final ZeebeClientImpl client;
-    protected final Topic topic;
 
-    public TopicClientImpl(final ZeebeClientImpl client, final String topicName, final int partitionId)
+    public TopicClientImpl(final ZeebeClientImpl client)
     {
         this.client = client;
-        this.topic = new Topic(topicName, partitionId);
     }
 
     @Override
-    public TopicSubscriptionBuilder newSubscription()
+    public TopicSubscriptionBuilder newSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newTopicSubscription(this);
+        return client.getSubscriptionManager().newTopicSubscription(this, topicName);
     }
 
     @Override
-    public PollableTopicSubscriptionBuilder newPollableSubscription()
+    public PollableTopicSubscriptionBuilder newPollableSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newPollableTopicSubscription(this);
+        return client.getSubscriptionManager().newPollableTopicSubscription(this, topicName);
     }
 
-    public CreateTopicSubscriptionCmdImpl createTopicSubscription()
+    public CreateTopicSubscriptionCommandImpl createTopicSubscription(String topicName, int partitionId)
     {
-        return new CreateTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), topicName, partitionId);
     }
 
-    public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
+    public CloseTopicSubscriptionCommandImpl closeTopicSubscription(String topicName, int partitionId, long subscriberKey)
     {
-        return new CloseTopicSubscriptionCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
+        return new CloseTopicSubscriptionCommandImpl(client.getCommandManager(), topicName, partitionId, subscriberKey);
     }
 
-    public AcknowledgeSubscribedEventCmdImpl acknowledgeEvent()
+    public AcknowledgeSubscribedEventCommandImpl acknowledgeEvent(String topicName, int partitionId)
     {
-        return new AcknowledgeSubscribedEventCmdImpl(client.getCommandManager(), client.getObjectMapper(), client.getMsgPackConverter(), topic);
-    }
-
-    public Topic getTopic()
-    {
-        return topic;
+        return new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), topicName, partitionId);
     }
 
 }

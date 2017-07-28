@@ -21,27 +21,54 @@ import io.zeebe.protocol.clientapi.EventType;
 public class EventTypeMapping
 {
     protected static final TopicEventType[] MAPPING;
+    protected static final EventType[] REVERSE_MAPPING;
 
     static
     {
         MAPPING = new TopicEventType[EventType.values().length];
-        MAPPING[EventType.TASK_EVENT.value()] = TopicEventType.TASK;
-        MAPPING[EventType.WORKFLOW_EVENT.value()] = TopicEventType.WORKFLOW;
-        MAPPING[EventType.WORKFLOW_INSTANCE_EVENT.value()] = TopicEventType.WORKFLOW_INSTANCE;
-        MAPPING[EventType.INCIDENT_EVENT.value()] = TopicEventType.INCIDENT;
-        MAPPING[EventType.RAFT_EVENT.value()] = TopicEventType.RAFT;
-        MAPPING[EventType.NOOP_EVENT.value()] = TopicEventType.NOOP;
+        MAPPING[EventType.TASK_EVENT.ordinal()] = TopicEventType.TASK;
+        MAPPING[EventType.WORKFLOW_EVENT.ordinal()] = TopicEventType.WORKFLOW;
+        MAPPING[EventType.WORKFLOW_INSTANCE_EVENT.ordinal()] = TopicEventType.WORKFLOW_INSTANCE;
+        MAPPING[EventType.INCIDENT_EVENT.ordinal()] = TopicEventType.INCIDENT;
+        MAPPING[EventType.RAFT_EVENT.ordinal()] = TopicEventType.RAFT;
+        MAPPING[EventType.SUBSCRIBER_EVENT.ordinal()] = TopicEventType.SUBSCRIBER;
+        MAPPING[EventType.SUBSCRIPTION_EVENT.ordinal()] = TopicEventType.SUBSCRIPTION;
+        MAPPING[EventType.DEPLOYMENT_EVENT.ordinal()] = TopicEventType.DEPLOYMENT;
+
+        REVERSE_MAPPING = new EventType[MAPPING.length];
+
+        for (EventType type : EventType.values())
+        {
+            final TopicEventType mappedType = MAPPING[type.ordinal()];
+            if (mappedType != null)
+            {
+                final int targetIndex = mappedType.ordinal();
+                REVERSE_MAPPING[targetIndex] = type;
+            }
+        }
     }
 
     public static TopicEventType mapEventType(EventType protocolType)
     {
         if (protocolType.value() < MAPPING.length)
         {
-            return MAPPING[protocolType.value()];
+            return MAPPING[protocolType.ordinal()];
         }
         else if (protocolType != io.zeebe.protocol.clientapi.EventType.NULL_VAL)
         {
             return TopicEventType.UNKNOWN;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public static EventType mapEventType(TopicEventType apiType)
+    {
+        if (apiType.ordinal() < MAPPING.length)
+        {
+            return REVERSE_MAPPING[apiType.ordinal()];
         }
         else
         {

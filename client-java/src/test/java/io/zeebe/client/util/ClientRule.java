@@ -21,10 +21,10 @@ import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPI
 import java.util.Properties;
 import java.util.function.Supplier;
 
-import io.zeebe.client.TaskTopicClient;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.TopicClient;
-import io.zeebe.client.WorkflowTopicClient;
+import io.zeebe.client.TopicsClient;
+import io.zeebe.client.WorkflowsClient;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -63,19 +63,19 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
-    public TopicClient topic()
+    public TopicsClient topics()
     {
-        return client.topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.topics();
     }
 
-    public TaskTopicClient taskTopic()
+    public WorkflowsClient workflows()
     {
-        return client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.workflows();
     }
 
-    public WorkflowTopicClient workflowTopic()
+    public TasksClient tasks()
     {
-        return client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.tasks();
     }
 
     public String getDefaultTopicName()

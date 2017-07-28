@@ -23,19 +23,18 @@ import java.util.List;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.event.WorkflowInstanceEventHandler;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
-import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.WorkflowInstanceEventHandler;
+import io.zeebe.test.util.TestUtil;
 
 public class WorkflowInstanceTopicSubscriptionTest
 {
@@ -60,7 +59,7 @@ public class WorkflowInstanceTopicSubscriptionTest
                 .endEvent("b")
                 .done();
 
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(workflow)
             .execute();
     }
@@ -69,7 +68,7 @@ public class WorkflowInstanceTopicSubscriptionTest
     public void shouldReceiveWorkflowInstanceEvents()
     {
         // given
-        final WorkflowInstance workflowInstance = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .payload("{\"foo\":123}")
             .execute();
@@ -77,7 +76,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .workflowInstanceEventHandler(handler)
             .name("test")
@@ -87,7 +86,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
 
         final WorkflowInstanceEvent event = handler.getEvent(2);
-        assertThat(event.getEventType()).isEqualTo("START_EVENT_OCCURRED");
+        assertThat(event.getState()).isEqualTo("START_EVENT_OCCURRED");
         assertThat(event.getBpmnProcessId()).isEqualTo("process");
         assertThat(event.getVersion()).isEqualTo(1);
         assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
@@ -99,7 +98,7 @@ public class WorkflowInstanceTopicSubscriptionTest
     public void shouldInvokeDefaultHandler() throws IOException
     {
         // given
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .payload("{\"foo\":123}")
             .execute();
@@ -107,7 +106,7 @@ public class WorkflowInstanceTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .handler(handler)
             .name("sub-2")
@@ -119,19 +118,12 @@ public class WorkflowInstanceTopicSubscriptionTest
 
     protected static class RecordingWorkflowEventHandler implements WorkflowInstanceEventHandler
     {
-        protected List<EventMetadata> metadata = new ArrayList<>();
         protected List<WorkflowInstanceEvent> events = new ArrayList<>();
 
         @Override
-        public void handle(EventMetadata metadata, WorkflowInstanceEvent event) throws Exception
+        public void handle(WorkflowInstanceEvent event) throws Exception
         {
-            this.metadata.add(metadata);
             this.events.add(event);
-        }
-
-        public EventMetadata getMetadata(int index)
-        {
-            return metadata.get(index);
         }
 
         public WorkflowInstanceEvent getEvent(int index)

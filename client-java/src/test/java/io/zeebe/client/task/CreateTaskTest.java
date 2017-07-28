@@ -15,20 +15,33 @@
  */
 package io.zeebe.client.task;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.util.ClientRule;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.assertj.core.util.Maps;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.task.cmd.CreateTaskCommand;
+import io.zeebe.client.util.ClientRule;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.util.MsgPackUtil;
 
 public class CreateTaskTest
 {
@@ -39,7 +52,13 @@ public class CreateTaskTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     protected ZeebeClient client;
+
+    protected final MsgPackConverter converter = new MsgPackConverter();
+
 
     @Before
     public void setUp()
@@ -51,28 +70,176 @@ public class CreateTaskTest
     public void shouldCreateTask()
     {
         // given
-        brokerRule.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-                "CREATE".equals(ecr.getCommand().get("eventType")))
+        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+            .respondWith()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .key(123)
+            .position(456)
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "CREATED")
+              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
+              .put("lockOwner", "")
+              .done()
+            .register();
+
+        final String payload = "{\"foo\":\"bar\"}";
+
+        // when
+        final TaskEvent taskEvent = clientRule.tasks()
+            .create(clientRule.getDefaultTopicName(), "fooType")
+            .retries(3)
+            .addCustomHeader("beverage", "apple juice")
+            .payload(payload)
+            .execute();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
+        assertThat(request.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(request.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(request.position()).isEqualTo(ExecuteCommandRequestEncoder.positionNullValue());
+
+        assertThat(request.getCommand()).containsOnly(
+                entry("state", "CREATE"),
+                entry("retries", 3),
+                entry("type", "fooType"),
+                entry("headers", new HashMap<>()),
+                entry("customHeaders", Maps.newHashMap("beverage", "apple juice")),
+                entry("lockTime", Protocol.INSTANT_NULL_VALUE),
+                entry("payload", converter.convertToMsgPack(payload)));
+
+        assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
+        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.getMetadata().getPosition()).isEqualTo(456);
+
+        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+        assertThat(taskEvent.getHeaders()).isEmpty();
+        assertThat(taskEvent.getCustomHeaders()).containsOnly(entry("beverage", "apple juice"));
+        assertThat(taskEvent.getLockExpirationTime()).isNull();
+        assertThat(taskEvent.getLockOwner()).isEmpty();
+        assertThat(taskEvent.getRetries()).isEqualTo(3);
+        assertThat(taskEvent.getType()).isEqualTo("fooType");
+        assertThat(taskEvent.getPayload()).isEqualTo(payload);
+    }
+
+    @Test
+    public void shouldCreateTaskWithDefaultValues()
+    {
+        // given
+        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
             .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(DEFAULT_PARTITION_ID)
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())
-              .put("eventType", "CREATED")
+              .put("state", "CREATED")
               .put("headers", new HashMap<>())
-              .put("payload", new byte[0])
+              .put("payload", MsgPackUtil.encodeMsgPack(w -> w.packNil()).byteArray())
               .done()
             .register();
 
         // when
-        final Long taskKey = clientRule.taskTopic()
-            .create()
-            .taskType("foo")
-            .retries(3)
+        final TaskEvent taskEvent = clientRule.tasks()
+            .create(clientRule.getDefaultTopicName(), "fooType")
             .execute();
 
         // then
-        assertThat(taskKey).isEqualTo(123L);
+        assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
+        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+
+        assertThat(taskEvent.getRetries()).isEqualTo(CreateTaskCommand.DEFAULT_RETRIES);
+        assertThat(taskEvent.getHeaders()).isEmpty();
+        assertThat(taskEvent.getPayload()).isEqualTo("null");
     }
+
+    @Test
+    public void shouldSetPayloadAsStream()
+    {
+        // given
+        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+            .respondWith()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .key(123)
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "CREATED")
+              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
+              .put("lockOwner", "")
+              .done()
+            .register();
+
+        final String payload = "{\"foo\":\"bar\"}";
+
+        // when
+        clientRule.tasks()
+            .create(clientRule.getDefaultTopicName(), "fooType")
+            .payload(new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8)))
+            .execute();
+
+        // then
+        final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(request.getCommand()).contains(
+                entry("payload", converter.convertToMsgPack(payload)));
+    }
+
+    @Test
+    public void shouldValidateTopicNameNotNull()
+    {
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic must not be null");
+
+        // when
+        clientRule.tasks()
+            .create(null, "fooType")
+            .execute();
+    }
+
+    @Test
+    public void shouldValidateTypeNotNull()
+    {
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("type must not be null");
+
+        // when
+        clientRule.tasks()
+            .create("topic", null)
+            .execute();
+    }
+
+    @Test
+    public void testValidateTopicNameNotEmpty()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic must not be empty");
+
+        // when
+        client.tasks().create("", "foo").execute();
+    }
+
+    @Test
+    public void testValidateTopicNameNotNull()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic must not be null");
+
+        // when
+        client.tasks().create(null, "foo").execute();
+    }
+
 }

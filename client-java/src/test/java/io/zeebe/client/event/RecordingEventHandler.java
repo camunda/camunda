@@ -21,15 +21,12 @@ import java.util.List;
 public class RecordingEventHandler implements TopicEventHandler
 {
 
-    protected List<RecordedEvent> events = new ArrayList<>();
+    protected List<TopicEvent> events = new ArrayList<>();
 
     @Override
-    public void handle(EventMetadata metadata, TopicEvent event)
+    public void handle(TopicEvent event)
     {
-        final RecordedEvent recordedEvent = new RecordedEvent();
-        recordedEvent.metadata = metadata;
-        recordedEvent.event = event;
-        this.events.add(recordedEvent);
+        this.events.add(event);
     }
 
     public int numRecordedEvents()
@@ -37,7 +34,7 @@ public class RecordingEventHandler implements TopicEventHandler
         return events.size();
     }
 
-    public List<RecordedEvent> getRecordedEvents()
+    public List<TopicEvent> getRecordedEvents()
     {
         return events;
     }
@@ -45,20 +42,5 @@ public class RecordingEventHandler implements TopicEventHandler
     public void reset()
     {
         this.events.clear();
-    }
-
-    public static class RecordedEvent
-    {
-        protected EventMetadata metadata;
-        protected TopicEvent event;
-
-        public EventMetadata getMetadata()
-        {
-            return metadata;
-        }
-        public TopicEvent getEvent()
-        {
-            return event;
-        }
     }
 }

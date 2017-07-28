@@ -17,7 +17,7 @@ package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
 
-import io.zeebe.client.impl.TaskTopicClientImpl;
+import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscriptionBuilder;
@@ -28,23 +28,29 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public static final int DEFAULT_TASK_FETCH_SIZE = 32;
 
     protected String taskType;
-    protected long lockTime = Duration.ofMinutes(1).toMillis();
+    protected long lockTime = -1L;
     protected String lockOwner;
     protected TaskHandler taskHandler;
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
-    protected final TaskTopicClientImpl client;
+    protected final TasksClientImpl client;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
+    protected final String topic;
+    protected final int partition;
 
     public TaskSubscriptionBuilderImpl(
-            TaskTopicClientImpl client,
+            TasksClientImpl client,
+            String topic,
+            int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
     {
         this.client = client;
+        this.topic = topic;
+        this.partition = partition;
         this.taskAcquisition = taskAcquisition;
         this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = msgPackMapper;
@@ -102,6 +108,8 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 
         final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
                 client,
+                topic,
+                partition,
                 taskHandler,
                 taskType,
                 lockTime,

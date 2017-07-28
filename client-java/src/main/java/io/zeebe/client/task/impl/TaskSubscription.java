@@ -15,17 +15,46 @@
  */
 package io.zeebe.client.task.impl;
 
-public class TaskSubscription
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
+import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
+import io.zeebe.transport.RemoteAddress;
+
+public class TaskSubscription implements EventSubscriptionCreationResult, ReceiverAwareResponseResult
 {
+    private final String topicName;
+    private final int partitionId;
+
     private long subscriberKey;
 
-    private String topicName;
-    private int partitionId;
     private String taskType;
 
     private long lockDuration;
     private String lockOwner;
     private int credits;
+
+    protected RemoteAddress receiver;
+
+    @JsonCreator
+    public TaskSubscription(@JsonProperty("topicName") String topicName, @JsonProperty("partitionId") int partitionId)
+    {
+        this.topicName = topicName;
+        this.partitionId = partitionId;
+    }
+
+    public TaskSubscription(TaskSubscription other)
+    {
+        this.subscriberKey = other.subscriberKey;
+        this.topicName = other.topicName;
+        this.partitionId = other.partitionId;
+        this.taskType = other.taskType;
+        this.lockDuration = other.lockDuration;
+        this.lockOwner = other.lockOwner;
+        this.credits = other.credits;
+        this.receiver = other.receiver;
+    }
 
     public long getSubscriberKey()
     {
@@ -42,19 +71,9 @@ public class TaskSubscription
         return topicName;
     }
 
-    public void setTopicName(final String topicName)
-    {
-        this.topicName = topicName;
-    }
-
-    public long getPartitionId()
+    public int getPartitionId()
     {
         return partitionId;
-    }
-
-    public void setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
     }
 
     public String getTaskType()
@@ -95,6 +114,18 @@ public class TaskSubscription
     public void setLockOwner(final String lockOwner)
     {
         this.lockOwner = lockOwner;
+    }
+
+    @Override
+    public void setReceiver(RemoteAddress receiver)
+    {
+        this.receiver = receiver;
+    }
+
+    @Override
+    public RemoteAddress getEventPublisher()
+    {
+        return receiver;
     }
 
 }

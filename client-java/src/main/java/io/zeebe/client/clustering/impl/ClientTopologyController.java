@@ -24,15 +24,14 @@ import org.agrona.DirectBuffer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.client.cmd.BrokerRequestException;
-import io.zeebe.client.impl.cmd.ClientResponseHandler;
+import io.zeebe.client.cmd.BrokerErrorException;
+import io.zeebe.client.impl.ControlMessageRequestHandler;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
@@ -53,12 +52,11 @@ public class ClientTopologyController
     protected final AwaitTopologyState awaitTopologyState = new AwaitTopologyState();
     protected final InitState initState = new InitState();
 
-    protected final RequestTopologyCmdImpl requestTopologyCmd;
-
     private final ClientOutput output;
     protected final Consumer<TopologyResponse> successCallback;
     protected final Consumer<Exception> failureCallback;
-    protected final BufferWriter requestWriter;
+
+    protected final ControlMessageRequestHandler requestHandler;
 
     public ClientTopologyController(
             final ClientTransport clientTransport,
@@ -67,7 +65,8 @@ public class ClientTopologyController
             final Consumer<Exception> failureCallback)
     {
         output = clientTransport.getOutput();
-        this.requestTopologyCmd = new RequestTopologyCmdImpl(null, objectMapper);
+        this.requestHandler = new ControlMessageRequestHandler(objectMapper);
+        requestHandler.configure(new RequestTopologyCmdImpl(null));
 
         stateMachine = StateMachine.builder(Context::new)
             .initialState(initState)
@@ -78,7 +77,6 @@ public class ClientTopologyController
 
         this.successCallback = successCallback;
         this.failureCallback = failureCallback;
-        this.requestWriter = requestTopologyCmd.getRequestWriter();
     }
 
     public ClientTopologyController triggerRefresh(final RemoteAddress socketAddress)
@@ -111,7 +109,7 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final ClientRequest request = output.sendRequest(context.remoteAddress, requestWriter);
+            final ClientRequest request = output.sendRequest(context.remoteAddress, requestHandler);
             if (request != null)
             {
                 context.request = request;
@@ -161,30 +159,30 @@ public class ClientTopologyController
     {
         messageHeaderDecoder.wrap(encodedTopology, 0);
 
-        final int schemaId = messageHeaderDecoder.schemaId();
-        final int templateId = messageHeaderDecoder.templateId();
         final int blockLength = messageHeaderDecoder.blockLength();
         final int version = messageHeaderDecoder.version();
 
         final int responseMessageOffset = messageHeaderDecoder.encodedLength();
 
-        final ClientResponseHandler<TopologyResponse> responseHandler = requestTopologyCmd.getResponseHandler();
-
-        if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
+        if (requestHandler.handlesResponse(messageHeaderDecoder))
         {
             try
             {
-                return responseHandler.readResponse(encodedTopology, responseMessageOffset, blockLength, version);
+                return (TopologyResponse) requestHandler.getResult(encodedTopology, responseMessageOffset, blockLength, version);
             }
             catch (final Exception e)
             {
                 throw new RuntimeException("Unable to parse topic list from broker response", e);
             }
         }
-        else
+        else if (messageHeaderDecoder.schemaId() == ErrorResponseDecoder.SCHEMA_ID && messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID)
         {
             errorResponseDecoder.wrap(encodedTopology, 0, blockLength, version);
-            throw new BrokerRequestException(errorResponseDecoder.errorCode(), errorResponseDecoder.errorData());
+            throw new BrokerErrorException(errorResponseDecoder.errorCode(), errorResponseDecoder.errorData());
+        }
+        else
+        {
+            throw new RuntimeException(String.format("Unexpected response format. Schema %s and template %s.", messageHeaderDecoder.schemaId(), messageHeaderDecoder.templateId()));
         }
     }
 

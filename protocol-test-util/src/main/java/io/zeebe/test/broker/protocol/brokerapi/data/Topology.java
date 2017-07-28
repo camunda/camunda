@@ -26,6 +26,15 @@ public class Topology
 
     protected List<TopicLeader> topicLeaders = new ArrayList<>();
 
+    public Topology()
+    {
+    }
+
+    public Topology(Topology other)
+    {
+        this.topicLeaders = new ArrayList<>(other.topicLeaders);
+    }
+
     public Topology addTopic(final TopicLeader topicLeader)
     {
         topicLeaders.add(topicLeader);

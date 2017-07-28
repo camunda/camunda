@@ -15,12 +15,21 @@
  */
 package io.zeebe.client.event.impl;
 
-public class TopicSubscriptionEvent
-{
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.zeebe.client.event.TopicEventType;
+
+public class TopicSubscriptionEvent extends EventImpl
+{
     protected String name;
-    protected final SubscriptionEventType eventType = SubscriptionEventType.ACKNOWLEDGE;
-    protected long ackPosition;
+    protected long ackPosition = -1L;
+
+    @JsonCreator
+    public TopicSubscriptionEvent(@JsonProperty("state") String state)
+    {
+        super(TopicEventType.SUBSCRIPTION, state);
+    }
 
     public String getName()
     {
@@ -42,14 +51,4 @@ public class TopicSubscriptionEvent
         this.ackPosition = ackPosition;
     }
 
-    public SubscriptionEventType getEventType()
-    {
-        return eventType;
-    }
-
-    public void reset()
-    {
-        this.name = null;
-        this.ackPosition = -1L;
-    }
 }

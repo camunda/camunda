@@ -15,74 +15,33 @@
  */
 package io.zeebe.client.workflow.impl;
 
-import static io.zeebe.util.EnsureUtil.*;
+import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.impl.EventImpl;
+import io.zeebe.client.impl.RequestManager;
+import io.zeebe.client.impl.cmd.CommandImpl;
+import io.zeebe.util.EnsureUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.impl.ClientCommandManager;
-import io.zeebe.client.impl.Topic;
-import io.zeebe.client.impl.cmd.AbstractExecuteCmdImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.workflow.cmd.CancelWorkflowInstanceCmd;
-import io.zeebe.protocol.clientapi.EventType;
-
-public class CancelWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, Void> implements CancelWorkflowInstanceCmd
+public class CancelWorkflowInstanceCmdImpl extends CommandImpl<WorkflowInstanceEvent>
 {
-    private static final String ERROR_MESSAGE = "Failed to cancel workflow instance with key '%d'.";
+    private final WorkflowInstanceEventImpl workflowInstanceEvent;
 
-    private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-
-    private long workflowInstanceKey;
-
-    public CancelWorkflowInstanceCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, MsgPackConverter msgPackConverter, final Topic topic)
+    public CancelWorkflowInstanceCmdImpl(final RequestManager commandManager, WorkflowInstanceEvent baseEvent)
     {
-        super(commandManager, objectMapper, topic, WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
+        super(commandManager);
+        EnsureUtil.ensureNotNull("base event", baseEvent);
+        this.workflowInstanceEvent = new WorkflowInstanceEventImpl((WorkflowInstanceEventImpl) baseEvent,
+                WorkflowInstanceEventType.CANCEL_WORKFLOW_INSTANCE.name());
     }
 
     @Override
-    public CancelWorkflowInstanceCmd workflowInstanceKey(long key)
+    public EventImpl getEvent()
     {
-        this.workflowInstanceKey = key;
-        return this;
-    }
-
-    @Override
-    public void validate()
-    {
-        super.validate();
-
-        ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
-    }
-
-    @Override
-    protected Object writeCommand()
-    {
-        workflowInstanceEvent.setEventType(WorkflowInstanceEventType.CANCEL_WORKFLOW_INSTANCE);
-
         return workflowInstanceEvent;
     }
 
     @Override
-    protected long getKey()
+    public String getExpectedStatus()
     {
-        return workflowInstanceKey;
+        return WorkflowInstanceEventType.WORKFLOW_INSTANCE_CANCELED.name();
     }
-
-    @Override
-    protected void reset()
-    {
-        workflowInstanceKey = -1L;
-    }
-
-    @Override
-    protected Void getResponseValue(long key, WorkflowInstanceEvent event)
-    {
-        if (event.getEventType() == WorkflowInstanceEventType.CANCEL_WORKFLOW_INSTANCE_REJECTED)
-        {
-            throw new ClientCommandRejectedException(String.format(ERROR_MESSAGE, key));
-        }
-
-        return null;
-    }
-
 }

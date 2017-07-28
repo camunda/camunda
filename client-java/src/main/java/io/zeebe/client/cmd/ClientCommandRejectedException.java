@@ -18,9 +18,11 @@ package io.zeebe.client.cmd;
 /**
  * A client command was rejected by the broker.
  */
-public class ClientCommandRejectedException extends RuntimeException
+public class ClientCommandRejectedException extends ClientException
 {
     private static final long serialVersionUID = 1L;
+
+    // TODO: could expose the request and response event on the exception
 
     public ClientCommandRejectedException(String errorMessage)
     {

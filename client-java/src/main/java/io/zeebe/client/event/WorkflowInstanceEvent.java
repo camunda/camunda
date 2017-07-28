@@ -18,12 +18,8 @@ package io.zeebe.client.event;
 /**
  * POJO representing an event of type {@link TopicEventType#WORKFLOW_INSTANCE}.
  */
-public interface WorkflowInstanceEvent
+public interface WorkflowInstanceEvent extends Event
 {
-    /**
-     * @return the name of the type in the workflow instance's event lifecycle.
-     */
-    String getEventType();
 
     /**
      * @return the BPMN process id this workflow instance belongs to.

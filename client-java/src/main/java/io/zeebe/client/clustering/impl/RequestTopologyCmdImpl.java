@@ -15,64 +15,24 @@
  */
 package io.zeebe.client.clustering.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.clustering.RequestTopologyCmd;
-import io.zeebe.client.impl.ClientCommandManager;
-import io.zeebe.client.impl.cmd.AbstractControlMessageCmd;
+import java.util.HashMap;
+
+import io.zeebe.client.impl.RequestManager;
+import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.util.buffer.BufferWriter;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
 
-public class RequestTopologyCmdImpl extends AbstractControlMessageCmd<TopologyResponse, TopologyResponse> implements RequestTopologyCmd
+public class RequestTopologyCmdImpl extends ControlMessageRequest<TopologyResponse>
 {
-    public RequestTopologyCmdImpl(ClientCommandManager commandManager, final ObjectMapper objectMapper)
+    protected static final Object EMPTY_REQUEST = new HashMap<>();
+
+    public RequestTopologyCmdImpl(RequestManager commandManager)
     {
-        super(commandManager, objectMapper, null, TopologyResponse.class, ControlMessageType.REQUEST_TOPOLOGY);
+        super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, null, TopologyResponse.class);
     }
 
     @Override
-    protected Object writeCommand()
+    public Object getRequest()
     {
-        return null;
-    }
-
-    @Override
-    protected void reset()
-    {
-    }
-
-    @Override
-    protected TopologyResponse getResponseValue(final TopologyResponse topology)
-    {
-        return topology;
-    }
-
-    @Override
-    protected void validate()
-    {
-
-    }
-
-    public BufferWriter getRequestWriter()
-    {
-        final ExpandableArrayBuffer writeBuffer = new ExpandableArrayBuffer();
-
-        writeCommand(writeBuffer);
-
-        return new BufferWriter()
-        {
-            @Override
-            public void write(MutableDirectBuffer buffer, int offset)
-            {
-                buffer.putBytes(offset, writeBuffer, 0, writeBuffer.capacity());
-            }
-
-            @Override
-            public int getLength()
-            {
-                return writeBuffer.capacity();
-            }
-        };
+        return EMPTY_REQUEST;
     }
 }

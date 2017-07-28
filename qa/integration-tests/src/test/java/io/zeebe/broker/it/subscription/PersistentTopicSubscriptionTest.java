@@ -80,16 +80,15 @@ public class PersistentTopicSubscriptionTest
     public void shouldResumeSubscriptionOnRestart()
     {
         // given a first task
-        clientRule.taskTopic().create()
-                .addHeader("key", "value")
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo")
+                .addCustomHeader("key", "value")
                 .payload("{}")
-                .taskType("foo")
                 .execute();
 
         final String subscriptionName = "foo";
 
-        final TopicSubscription subscription = clientRule.topic()
-            .newSubscription()
+        final TopicSubscription subscription = clientRule.topics()
+            .newSubscription(clientRule.getDefaultTopic())
             .handler(recordingHandler)
             .name(subscriptionName)
             .startAtHeadOfTopic()
@@ -103,22 +102,21 @@ public class PersistentTopicSubscriptionTest
         final long lastEventPosition = recordingHandler.getRecordedEvents()
                 .get(recordingHandler.numRecordedEvents() - 1)
                 .getMetadata()
-                .getEventPosition();
+                .getPosition();
 
         recordingHandler.reset();
 
         // and a second not-yet-received task
-        clientRule.taskTopic().create()
-            .addHeader("key", "value")
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo")
+            .addCustomHeader("key", "value")
             .payload("{}")
-            .taskType("foo")
             .execute();
 
         // when
         restartBroker();
 
-        clientRule.topic()
-                .newSubscription()
+        clientRule.topics()
+                .newSubscription(clientRule.getDefaultTopic())
                 .handler(recordingHandler)
                 .name(subscriptionName)
                 .startAtHeadOfTopic()
@@ -130,7 +128,7 @@ public class PersistentTopicSubscriptionTest
         final long firstEventPositionAfterReopen = recordingHandler.getRecordedEvents()
                 .get(0)
                 .getMetadata()
-                .getEventPosition();
+                .getPosition();
 
         assertThat(firstEventPositionAfterReopen).isGreaterThan(lastEventPosition);
     }

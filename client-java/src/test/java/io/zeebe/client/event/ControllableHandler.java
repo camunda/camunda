@@ -26,7 +26,7 @@ public class ControllableHandler implements TopicEventHandler
     protected AtomicInteger numHandledEvents = new AtomicInteger(0);
 
     @Override
-    public void handle(EventMetadata metadata, TopicEvent event) throws Exception
+    public void handle(TopicEvent event) throws Exception
     {
         if (shouldWait)
         {

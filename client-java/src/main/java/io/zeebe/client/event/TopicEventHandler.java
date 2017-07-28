@@ -25,5 +25,5 @@ public interface TopicEventHandler
     /**
      * @param event the next event of the topic
      */
-    void handle(EventMetadata metadata, TopicEvent event) throws Exception;
+    void handle(TopicEvent event) throws Exception;
 }

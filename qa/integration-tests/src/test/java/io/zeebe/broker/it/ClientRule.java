@@ -15,19 +15,17 @@
  */
 package io.zeebe.broker.it;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
-
 import java.util.Properties;
 import java.util.function.Supplier;
 
 import org.junit.rules.ExternalResource;
 
-import io.zeebe.client.TaskTopicClient;
-import io.zeebe.client.TopicClient;
-import io.zeebe.client.WorkflowTopicClient;
+import io.zeebe.client.TasksClient;
+import io.zeebe.client.TopicsClient;
+import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.transport.ClientTransport;
 
 public class ClientRule extends ExternalResource
@@ -72,19 +70,29 @@ public class ClientRule extends ExternalResource
         transport.interruptAllChannels();
     }
 
-    public TopicClient topic()
+    public TopicsClient topics()
     {
-        return client.topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.topics();
     }
 
-    public TaskTopicClient taskTopic()
+    public TasksClient tasks()
     {
-        return client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.tasks();
     }
 
-    public WorkflowTopicClient workflowTopic()
+    public WorkflowsClient workflows()
     {
-        return client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return client.workflows();
+    }
+
+    public String getDefaultTopic()
+    {
+        return LogStream.DEFAULT_TOPIC_NAME;
+    }
+
+    public int getDefaultPartition()
+    {
+        return LogStream.DEFAULT_PARTITION_ID;
     }
 
 }

@@ -37,7 +37,9 @@ public class MsgPackConverter
     protected static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
     protected static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
 
-    protected final JsonFactory msgPackFactory = new MessagePackFactory();
+    protected final JsonFactory msgPackFactory = new MessagePackFactory()
+            .setReuseResourceInGenerator(false)
+            .setReuseResourceInParser(false);
     protected final JsonFactory jsonFactory = new MappingJsonFactory();
 
     public byte[] convertToMsgPack(String json)

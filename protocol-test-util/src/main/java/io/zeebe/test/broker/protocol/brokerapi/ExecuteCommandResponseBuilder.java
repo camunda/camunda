@@ -75,6 +75,16 @@ public class ExecuteCommandResponseBuilder
         return this;
     }
 
+    public ExecuteCommandResponseBuilder position(long position)
+    {
+        return position((r) -> position);
+    }
+
+    public ExecuteCommandResponseBuilder position(Function<ExecuteCommandRequest, Long> positionFunction)
+    {
+        commandResponseWriter.setPositionFunction(positionFunction);
+        return this;
+    }
 
     public ExecuteCommandResponseBuilder event(Map<String, Object> map)
     {

@@ -19,18 +19,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.zeebe.client.task.Task;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.task.TaskController;
 import io.zeebe.client.task.TaskHandler;
 
 public class RecordingTaskHandler implements TaskHandler
 {
-    protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());
+    protected List<TaskEvent> handledTasks = Collections.synchronizedList(new ArrayList<>());
     protected int nextTaskHandler = 0;
     protected final TaskHandler[] taskHandlers;
 
     public RecordingTaskHandler()
     {
-        this(task ->
+        this((controller, task) ->
         {
             // do nothing
         });
@@ -42,14 +43,14 @@ public class RecordingTaskHandler implements TaskHandler
     }
 
     @Override
-    public void handle(Task task)
+    public void handle(TaskController controller, TaskEvent task)
     {
         final TaskHandler handler = taskHandlers[nextTaskHandler];
         nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
 
         try
         {
-            handler.handle(task);
+            handler.handle(controller, task);
         }
         finally
         {
@@ -57,7 +58,7 @@ public class RecordingTaskHandler implements TaskHandler
         }
     }
 
-    public List<Task> getHandledTasks()
+    public List<TaskEvent> getHandledTasks()
     {
         return handledTasks;
     }

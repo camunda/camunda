@@ -15,64 +15,37 @@
  */
 package io.zeebe.client.task.impl;
 
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.client.impl.ClientCommandManager;
-import io.zeebe.client.impl.Topic;
-import io.zeebe.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
+import io.zeebe.client.impl.RequestManager;
+import io.zeebe.client.impl.Partition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
+public class IncreaseTaskSubscriptionCreditsCmdImpl extends ControlMessageRequest<Void>
 {
-    protected final TaskSubscription subscription = new TaskSubscription();
+    protected final TaskSubscription subscription;
 
-    private long subscriptionId = -1L;
-    private int credits = 0;
-
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCommandManager commandManager, final ObjectMapper objectMapper, final Topic topic)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final RequestManager commandManager, final Partition partition)
     {
-        super(commandManager, objectMapper, topic, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
+        super(commandManager, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS, partition, Void.class);
+        this.subscription = new TaskSubscription(partition.getTopicName(), partition.getPartitionId());
     }
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(final long subscriptionId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl subscriberKey(long subscriberKey)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscription.setSubscriberKey(subscriberKey);
         return this;
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl credits(final int credits)
     {
-        this.credits = credits;
+        this.subscription.setCredits(credits);
         return this;
     }
 
     @Override
-    public void validate()
+    public Object getRequest()
     {
-        ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
-        ensureGreaterThan("credits", credits, 0);
-        topic.validate();
-    }
-
-    @Override
-    public void reset()
-    {
-        subscriptionId = -1L;
-        credits = 0;
-    }
-
-    @Override
-    protected Object writeCommand()
-    {
-        subscription.setSubscriberKey(subscriptionId);
-        subscription.setTopicName(topic.getTopicName());
-        subscription.setPartitionId(topic.getPartitionId());
-        subscription.setCredits(credits);
-
         return subscription;
     }
+
 
 }

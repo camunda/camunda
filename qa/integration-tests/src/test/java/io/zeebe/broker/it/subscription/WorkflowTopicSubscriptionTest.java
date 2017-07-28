@@ -21,16 +21,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.event.*;
-import io.zeebe.client.workflow.cmd.DeploymentResult;
-import io.zeebe.test.util.TestUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.WorkflowEvent;
+import io.zeebe.client.event.WorkflowEventHandler;
+import io.zeebe.test.util.TestUtil;
 
 public class WorkflowTopicSubscriptionTest
 {
@@ -52,14 +55,14 @@ public class WorkflowTopicSubscriptionTest
     public void shouldReceiveWorkflowEvent()
     {
         // given
-        final DeploymentResult deploymentResult = clientRule.workflowTopic().deploy()
+        final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
 
         // when
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .workflowEventHandler(handler)
             .name("test")
@@ -69,10 +72,10 @@ public class WorkflowTopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
 
         final WorkflowEvent event = handler.getEvent(0);
-        assertThat(event.getEventType()).isEqualTo("CREATED");
+        assertThat(event.getState()).isEqualTo("CREATED");
         assertThat(event.getBpmnProcessId()).isEqualTo("process");
         assertThat(event.getVersion()).isEqualTo(1);
-        assertThat(event.getDeploymentKey()).isEqualTo(deploymentResult.getKey());
+        assertThat(event.getDeploymentKey()).isEqualTo(deploymentResult.getMetadata().getKey());
         assertThat(event.getBpmnXml()).isEqualTo(Bpmn.convertToString(WORKFLOW));
     }
 
@@ -80,14 +83,14 @@ public class WorkflowTopicSubscriptionTest
     public void shouldInvokeDefaultHandler() throws IOException
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
                 .bpmnModelInstance(WORKFLOW)
                 .execute();
 
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        clientRule.topic().newSubscription()
+        clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .startAtHeadOfTopic()
             .handler(handler)
             .name("sub-2")
@@ -99,19 +102,12 @@ public class WorkflowTopicSubscriptionTest
 
     protected static class RecordingWorkflowEventHandler implements WorkflowEventHandler
     {
-        protected List<EventMetadata> metadata = new ArrayList<>();
         protected List<WorkflowEvent> events = new ArrayList<>();
 
         @Override
-        public void handle(EventMetadata metadata, WorkflowEvent event) throws Exception
+        public void handle(WorkflowEvent event) throws Exception
         {
-            this.metadata.add(metadata);
             this.events.add(event);
-        }
-
-        public EventMetadata getMetadata(int index)
-        {
-            return metadata.get(index);
         }
 
         public WorkflowEvent getEvent(int index)

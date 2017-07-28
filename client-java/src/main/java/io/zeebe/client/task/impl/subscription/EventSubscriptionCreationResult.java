@@ -15,33 +15,11 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
-import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
 import io.zeebe.transport.RemoteAddress;
 
-public class EventSubscriptionCreationResult implements ReceiverAwareResponseResult
+public interface EventSubscriptionCreationResult
 {
-    protected final long subscriberKey;
-    protected RemoteAddress eventPublisher;
+    RemoteAddress getEventPublisher();
 
-    public EventSubscriptionCreationResult(final long subscriberKey)
-    {
-        this.subscriberKey = subscriberKey;
-    }
-
-    public RemoteAddress getEventPublisher()
-    {
-        return eventPublisher;
-    }
-
-    public long getSubscriberKey()
-    {
-        return subscriberKey;
-    }
-
-    @Override
-    public void setReceiver(RemoteAddress receiver)
-    {
-        this.eventPublisher = receiver;
-    }
-
+    long getSubscriberKey();
 }

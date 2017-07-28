@@ -47,21 +47,21 @@ public class WorkflowInstanceWorker
 
         System.out.println(String.format("> Open task subscription for topic '%s', partition '%d' and type '%s'", topicName, partitionId, taskType));
 
-        final TaskSubscription subscription = zeebeClient.taskTopic(topicName, partitionId)
-            .newTaskSubscription()
+        final TaskSubscription subscription = zeebeClient.tasks()
+            .newTaskSubscription(topicName)
             .taskType(taskType)
             .lockOwner(lockOwner)
             .lockTime(Duration.ofSeconds(10))
-            .handler(task ->
+            .handler((controller, task) ->
             {
                 System.out.println(String.format(">>> [type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
                         task.getType(),
-                        task.getKey(),
+                        task.getMetadata().getKey(),
                         task.getLockExpirationTime().toString(),
                         task.getHeaders(),
                         task.getPayload()));
 
-                task.complete();
+                controller.completeTaskWithoutPayload();
             })
             .open();
 

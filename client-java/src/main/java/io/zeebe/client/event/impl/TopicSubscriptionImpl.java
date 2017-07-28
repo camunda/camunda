@@ -46,6 +46,8 @@ public class TopicSubscriptionImpl
 
     public TopicSubscriptionImpl(
             TopicClientImpl client,
+            String topic,
+            int partitionId,
             CheckedConsumer<TopicEventImpl> handler,
             int prefetchCapacity,
             long startPosition,
@@ -53,7 +55,7 @@ public class TopicSubscriptionImpl
             String name,
             EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
-        super(prefetchCapacity, acquisition);
+        super(topic, partitionId, prefetchCapacity, acquisition);
         this.prefetchCapacity = prefetchCapacity;
         this.client = client;
         if (handler != null)
@@ -86,7 +88,7 @@ public class TopicSubscriptionImpl
     @Override
     public int poll(TopicEventHandler taskHandler)
     {
-        final CheckedConsumer<TopicEventImpl> consumer = (e) -> taskHandler.handle(e, e);
+        final CheckedConsumer<TopicEventImpl> consumer = (e) -> taskHandler.handle(e);
         return pollEvents(consumer
                 .andThen(this::recordProcessedEvent)
                 .andOnException(this::logExceptionAndPropagate));
@@ -140,7 +142,7 @@ public class TopicSubscriptionImpl
     @Override
     protected EventSubscriptionCreationResult requestNewSubscription()
     {
-        return client.createTopicSubscription()
+        return client.createTopicSubscription(topic, partitionId)
                 .startPosition(startPosition)
                 .prefetchCapacity(prefetchCapacity)
                 .name(name)
@@ -153,9 +155,7 @@ public class TopicSubscriptionImpl
     {
         acknowledgeLastProcessedEvent();
 
-        client.closeTopicSubscription()
-            .subscriberKey(subscriberKey)
-            .execute();
+        client.closeTopicSubscription(topic, partitionId, subscriberKey).execute();
     }
 
     @Override
@@ -173,7 +173,7 @@ public class TopicSubscriptionImpl
 
         if (positionToAck > lastAcknowledgedPosition)
         {
-            client.acknowledgeEvent()
+            client.acknowledgeEvent(topic, partitionId)
                 .subscriptionName(name)
                 .ackPosition(positionToAck)
                 .execute();
@@ -184,24 +184,12 @@ public class TopicSubscriptionImpl
 
     protected void recordProcessedEvent(TopicEventImpl event)
     {
-        this.lastProcessedEventPosition = event.getEventPosition();
+        this.lastProcessedEventPosition = event.getMetadata().getPosition();
     }
 
     protected void logEventHandlingError(Exception e, TopicEventImpl event, String resolution)
     {
         LOGGER.error("Topic subscription " + name + ": Unhandled exception during handling of event " + event + ". " + resolution, e);
-    }
-
-    @Override
-    public int getPartitionId()
-    {
-        return client.getTopic().getPartitionId();
-    }
-
-    @Override
-    public String getTopicName()
-    {
-        return client.getTopic().getTopicName();
     }
 
     @Override

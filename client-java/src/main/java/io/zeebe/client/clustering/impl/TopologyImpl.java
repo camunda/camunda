@@ -18,13 +18,13 @@ package io.zeebe.client.clustering.impl;
 import java.util.*;
 
 import io.zeebe.client.clustering.Topology;
-import io.zeebe.client.impl.Topic;
+import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.*;
 
 
 public class TopologyImpl implements Topology
 {
-    protected Map<Topic, RemoteAddress> topicLeaders;
+    protected Map<Partition, RemoteAddress> topicLeaders;
     protected List<RemoteAddress> brokers;
     protected final Random randomBroker = new Random();
 
@@ -40,7 +40,7 @@ public class TopologyImpl implements Topology
     }
 
     @Override
-    public RemoteAddress getLeaderForTopic(Topic topic)
+    public RemoteAddress getLeaderForTopic(Partition topic)
     {
         if (topic != null)
         {

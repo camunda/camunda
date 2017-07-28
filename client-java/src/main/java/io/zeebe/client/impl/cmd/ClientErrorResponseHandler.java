@@ -16,7 +16,7 @@
 package io.zeebe.client.impl.cmd;
 
 import org.agrona.DirectBuffer;
-import io.zeebe.client.cmd.BrokerRequestException;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 
@@ -31,7 +31,7 @@ public class ClientErrorResponseHandler
         final ErrorCode errorCode = errorResponseDecoder.errorCode();
         final String errorData = errorResponseDecoder.errorData();
 
-        return new BrokerRequestException(errorCode, errorData);
+        return new BrokerErrorException(errorCode, errorData);
     }
 
 }

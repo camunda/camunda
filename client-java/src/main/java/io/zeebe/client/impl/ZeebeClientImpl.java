@@ -17,26 +17,35 @@ package io.zeebe.client.impl;
 
 import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static io.zeebe.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.util.Properties;
 
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.*;
-import io.zeebe.client.clustering.RequestTopologyCmd;
+
+import io.zeebe.client.ClientProperties;
+import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
+import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.impl.TopicClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.transport.*;
-import io.zeebe.util.actor.*;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ClientTransportBuilder;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
@@ -54,7 +63,7 @@ public class ZeebeClientImpl implements ZeebeClient
     protected SubscriptionManager subscriptionManager;
 
     protected final ClientTopologyManager topologyManager;
-    protected final ClientCommandManager apiCommandManager;
+    protected final RequestManager apiCommandManager;
 
     protected ActorReference topologyManagerActorReference;
     protected ActorReference commandManagerActorReference;
@@ -103,11 +112,19 @@ public class ZeebeClientImpl implements ZeebeClient
 
         transport = transportBuilder.build();
 
-        objectMapper = new ObjectMapper(new MessagePackFactory());
+        msgPackConverter = new MsgPackConverter();
+
+        final MessagePackFactory messagePackFactory = new MessagePackFactory()
+                .setReuseResourceInGenerator(false)
+                .setReuseResourceInParser(false);
+        objectMapper = new ObjectMapper(messagePackFactory);
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        msgPackConverter = new MsgPackConverter();
+        final InjectableValues injectionContext = new InjectableValues.Std()
+                .addValue(MsgPackConverter.class, msgPackConverter);
+        objectMapper.setInjectableValues(injectionContext);
+
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
@@ -122,7 +139,7 @@ public class ZeebeClientImpl implements ZeebeClient
         transport.registerChannelListener(subscriptionManager);
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
-        apiCommandManager = new ClientCommandManager(transport, topologyManager, maxRequests);
+        apiCommandManager = new RequestManager(transport, topologyManager, new DefaultPartitionStrategy(), objectMapper, maxRequests);
     }
 
     @Override
@@ -197,36 +214,30 @@ public class ZeebeClientImpl implements ZeebeClient
     }
 
     @Override
-    public RequestTopologyCmd requestTopology()
+    public Request<TopologyResponse> requestTopology()
     {
-        return new RequestTopologyCmdImpl(apiCommandManager, objectMapper);
+        return new RequestTopologyCmdImpl(apiCommandManager);
     }
 
     @Override
-    public TaskTopicClientImpl taskTopic(final String topicName, final int partitionId)
+    public TasksClientImpl tasks()
     {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
-        return new TaskTopicClientImpl(this, topicName, partitionId);
+        return new TasksClientImpl(this);
     }
 
     @Override
-    public WorkflowTopicClient workflowTopic(final String topicName, final int partitionId)
+    public WorkflowsClient workflows()
     {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
-        return new WorkflowTopicClientImpl(this, topicName, partitionId);
+        return new WorkflowsClientImpl(this);
     }
 
     @Override
-    public TopicClientImpl topic(final String topicName, final int partitionId)
+    public TopicClientImpl topics()
     {
-        ensureNotNullOrEmpty("topic name", topicName);
-        ensureGreaterThanOrEqual("partition id", partitionId, 0);
-        return new TopicClientImpl(this, topicName, partitionId);
+        return new TopicClientImpl(this);
     }
 
-    public ClientCommandManager getCommandManager()
+    public RequestManager getCommandManager()
     {
         return apiCommandManager;
     }

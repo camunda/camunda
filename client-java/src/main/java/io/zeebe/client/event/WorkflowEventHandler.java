@@ -25,5 +25,5 @@ public interface WorkflowEventHandler
     /**
      * @param event the next event of the topic
      */
-    void handle(EventMetadata metadata, WorkflowEvent event) throws Exception;
+    void handle(WorkflowEvent event) throws Exception;
 }

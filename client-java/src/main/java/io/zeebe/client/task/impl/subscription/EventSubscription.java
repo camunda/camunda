@@ -82,6 +82,8 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected final EventAcquisition<T> acquisition;
 
     protected RemoteAddress eventSource;
+    protected final String topic;
+    protected final int partitionId;
 
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
     protected final AtomicInteger eventsProcessedSinceLastReplenishment = new AtomicInteger(0);
@@ -89,12 +91,13 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected CompletableFuture<T> openFuture;
     protected CompletableFuture<T> closeFuture;
 
-
-    public EventSubscription(int capacity, EventAcquisition<T> acquisition)
+    public EventSubscription(String topic, int partitionId, int capacity, EventAcquisition<T> acquisition)
     {
         this.pendingEvents = new ManyToManyConcurrentArrayQueue<>(capacity);
         this.capacity = capacity;
         this.acquisition = acquisition;
+        this.topic = topic;
+        this.partitionId = partitionId;
     }
 
     public int maintainState()
@@ -125,6 +128,9 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             }
             catch (Exception e)
             {
+                // TODO: this exception should probably be used as a cause for cancelling a pending
+                //   opening future
+                LOGGER.info("Could not open subscription; aborting", e);
                 context.take(TRANSITION_ABORT);
                 return 1;
             }
@@ -453,11 +459,19 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected void onUnhandledEventHandlingException(TopicEventImpl event, Exception e)
     {
-        throw new RuntimeException("Exception during handling of event " + event.getEventKey(), e);
+        throw new RuntimeException("Exception during handling of event " + event.getMetadata().getKey(), e);
     }
 
-    public abstract String getTopicName();
-    public abstract int getPartitionId();
+    public String getTopicName()
+    {
+        return topic;
+    }
+
+    public int getPartitionId()
+    {
+        return partitionId;
+    }
+
     protected abstract EventSubscriptionCreationResult requestNewSubscription();
     protected abstract void requestSubscriptionClose();
     public abstract boolean isManagedSubscription();

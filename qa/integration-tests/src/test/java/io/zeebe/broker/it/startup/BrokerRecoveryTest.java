@@ -15,7 +15,9 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.*;
+import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -30,23 +32,27 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.assertj.core.util.Files;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 import io.zeebe.client.ClientProperties;
-import io.zeebe.client.event.IncidentEvent;
-import io.zeebe.client.task.Task;
-import io.zeebe.client.workflow.cmd.DeploymentResult;
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.time.ClockUtil;
-import org.assertj.core.util.Files;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.*;
-import org.junit.rules.*;
 
 public class BrokerRecoveryTest
 {
@@ -120,14 +126,14 @@ public class BrokerRecoveryTest
     public void shouldCreateWorkflowInstanceAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
         // when
         restartBroker();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
@@ -139,11 +145,11 @@ public class BrokerRecoveryTest
     public void shouldContinueWorkflowInstanceAtTaskAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
@@ -152,11 +158,11 @@ public class BrokerRecoveryTest
         // when
         restartBroker();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler(Task::complete)
+            .handler((c, t) -> c.completeTaskWithoutPayload())
             .open();
 
         // then
@@ -168,16 +174,16 @@ public class BrokerRecoveryTest
     public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
@@ -189,8 +195,8 @@ public class BrokerRecoveryTest
         // when
         restartBroker();
 
-        final Task task = recordingTaskHandler.getHandledTasks().get(0);
-        task.complete();
+        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
+        clientRule.tasks().complete(task).execute();
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
@@ -201,19 +207,19 @@ public class BrokerRecoveryTest
     public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW_TWO_TASKS)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler(Task::complete)
+            .handler((c, t) -> c.completeTaskWithoutPayload())
             .open();
 
         waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("CREATED")).size() > 1);
@@ -221,11 +227,11 @@ public class BrokerRecoveryTest
         // when
         restartBroker();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("bar")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler(Task::complete)
+            .handler((c, t) -> c.completeTaskWithoutPayload())
             .open();
 
         // then
@@ -237,27 +243,28 @@ public class BrokerRecoveryTest
     public void shouldDeployNewWorkflowVersionAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
         // when
         restartBroker();
 
-        final DeploymentResult deploymentResult = clientRule.workflowTopic().deploy()
+        final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW)
             .execute();
 
         // then
-        assertThat(deploymentResult.isDeployed());
         assertThat(deploymentResult.getDeployedWorkflows().get(0).getVersion()).isEqualTo(2);
 
-        final WorkflowInstance workflowInstanceV1 = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstanceV1 = clientRule.workflows()
+            .create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .version(1)
             .execute();
 
-        final WorkflowInstance workflowInstanceV2 = clientRule.workflowTopic().create()
+        final WorkflowInstanceEvent workflowInstanceV2 = clientRule.workflows()
+            .create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .latestVersion()
             .execute();
@@ -271,20 +278,18 @@ public class BrokerRecoveryTest
     public void shouldLockAndCompleteStandaloneTaskAfterRestart()
     {
         // given
-        clientRule.taskTopic().create()
-                .taskType("foo")
-                .execute();
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         // when
         restartBroker();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler(Task::complete)
+            .handler((c, t) -> c.completeTaskWithoutPayload())
             .open();
 
         // then
@@ -295,12 +300,10 @@ public class BrokerRecoveryTest
     public void shouldCompleteStandaloneTaskAfterRestart()
     {
         // given
-        clientRule.taskTopic().create()
-            .taskType("foo")
-            .execute();
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
 
         final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
@@ -312,8 +315,8 @@ public class BrokerRecoveryTest
         // when
         restartBroker();
 
-        final Task task = recordingTaskHandler.getHandledTasks().get(0);
-        task.complete();
+        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
+        clientRule.tasks().complete(task).execute();
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
@@ -323,12 +326,10 @@ public class BrokerRecoveryTest
     public void shouldNotReceiveLockedTasksAfterRestart()
     {
         // given
-        clientRule.taskTopic().create()
-            .taskType("foo")
-            .execute();
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockTime(Duration.ofSeconds(5))
             .lockOwner("test")
@@ -342,7 +343,7 @@ public class BrokerRecoveryTest
 
         taskHandler.clear();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .lockOwner("test")
@@ -360,12 +361,10 @@ public class BrokerRecoveryTest
     public void shouldReceiveLockExpiredTasksAfterRestart()
     {
         // given
-        clientRule.taskTopic().create()
-            .taskType("foo")
-            .execute();
+        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
 
         final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockTime(Duration.ofSeconds(5))
             .lockOwner("test")
@@ -391,7 +390,7 @@ public class BrokerRecoveryTest
 
         recordingTaskHandler.clear();
 
-        clientRule.taskTopic().newTaskSubscription()
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .lockOwner("test")
@@ -401,8 +400,8 @@ public class BrokerRecoveryTest
         // then
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
-        final Task task = recordingTaskHandler.getHandledTasks().get(0);
-        task.complete();
+        final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
+        clientRule.tasks().complete(task).execute();
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETED")));
     }
@@ -411,24 +410,23 @@ public class BrokerRecoveryTest
     public void shouldResolveIncidentAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW_INCIDENT)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
-        final IncidentEvent incident = eventRecorder.getSingleIncidentEvent(incidentEvent("CREATED")).getEvent();
+        final WorkflowInstanceEvent activityInstance =
+                eventRecorder.getSingleWorkflowInstanceEvent(TopicEventRecorder.wfInstanceEvent("ACTIVITY_READY"));
 
         // when
         restartBroker();
 
-        clientRule.workflowTopic().updatePayload()
-            .workflowInstanceKey(incident.getWorkflowInstanceKey())
-            .activityInstanceKey(incident.getActivityInstanceKey())
+        clientRule.workflows().updatePayload(activityInstance)
             .payload("{\"foo\":\"bar\"}")
             .execute();
 
@@ -437,7 +435,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         assertThat(eventRecorder.getIncidentEvents(i -> true))
-            .extracting("event.eventType")
+            .extracting("state")
             .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVED");
     }
 
@@ -445,21 +443,20 @@ public class BrokerRecoveryTest
     public void shouldResolveFailedIncidentAfterRestart()
     {
         // given
-        clientRule.workflowTopic().deploy()
+        clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .bpmnModelInstance(WORKFLOW_INCIDENT)
             .execute();
 
-        clientRule.workflowTopic().create()
+        clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
             .execute();
 
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("CREATED")));
 
-        final IncidentEvent incident = eventRecorder.getSingleIncidentEvent(incidentEvent("CREATED")).getEvent();
+        final WorkflowInstanceEvent activityInstance =
+                eventRecorder.getSingleWorkflowInstanceEvent(TopicEventRecorder.wfInstanceEvent("ACTIVITY_READY"));
 
-        clientRule.workflowTopic().updatePayload()
-            .workflowInstanceKey(incident.getWorkflowInstanceKey())
-            .activityInstanceKey(incident.getActivityInstanceKey())
+        clientRule.workflows().updatePayload(activityInstance)
             .payload("{\"x\":\"y\"}")
             .execute();
 
@@ -468,9 +465,7 @@ public class BrokerRecoveryTest
         // when
         restartBroker();
 
-        clientRule.workflowTopic().updatePayload()
-            .workflowInstanceKey(incident.getWorkflowInstanceKey())
-            .activityInstanceKey(incident.getActivityInstanceKey())
+        clientRule.workflows().updatePayload(activityInstance)
             .payload("{\"foo\":\"bar\"}")
             .execute();
 
@@ -479,7 +474,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         assertThat(eventRecorder.getIncidentEvents(i -> true))
-            .extracting("event.eventType")
+            .extracting("state")
             .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVE_FAILED", "RESOLVE", "RESOLVED");
     }
 
