@@ -15,9 +15,9 @@ public class PageSizeCalculator {
   }
 
   public void determineOptimizeEngineReadDuration(Integer engineReadTimeout) {
-    // the optimal time is a tenth of the read timeout, so that when
+    // the optimal time is a fifth of the read timeout, so that when
     // the read timeout is decreased we automatically adapt the page size accordingly.
-    optimalEngineReadDurationInMs = engineReadTimeout.longValue() / 10L;
+    optimalEngineReadDurationInMs = engineReadTimeout.longValue() / 5L;
   }
 
   public void calculateNewPageSize(Long durationOfLastEngineReadInMs) {
@@ -33,6 +33,10 @@ public class PageSizeCalculator {
 
   public int getCalculatedPageSize() {
     return currentPageSize;
+  }
+
+  public Long getOptimalEngineReadDurationInMs() {
+    return optimalEngineReadDurationInMs;
   }
 
   private int ensureDoesNotExceedMaxPageSize(int newPageSize) {

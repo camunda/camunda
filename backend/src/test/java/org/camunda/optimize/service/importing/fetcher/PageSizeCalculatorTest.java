@@ -16,11 +16,11 @@ public class PageSizeCalculatorTest {
   public void newPageSizeRemainsConstantWhenHittingTheOptimizeDuration() {
     // given
     PageSizeCalculator pageSizeCalculator =
-      new PageSizeCalculator(10_000, MAX_PAGE_SIZE, MIN_PAGE_SIZE);
+      new PageSizeCalculator(15_000, MAX_PAGE_SIZE, MIN_PAGE_SIZE);
     int oldPageSize = pageSizeCalculator.getCalculatedPageSize();
 
     // when
-    pageSizeCalculator.calculateNewPageSize(1_000L);
+    pageSizeCalculator.calculateNewPageSize(pageSizeCalculator.getOptimalEngineReadDurationInMs());
 
     // then
     assertThat(pageSizeCalculator.getCalculatedPageSize(), is(oldPageSize));
@@ -30,13 +30,13 @@ public class PageSizeCalculatorTest {
   public void pageSizeDecreasesWhenDurationTookTooLong() {
     // given
     PageSizeCalculator pageSizeCalculator =
-      new PageSizeCalculator(10_000, MAX_PAGE_SIZE, MIN_PAGE_SIZE);
+      new PageSizeCalculator(15_000, MAX_PAGE_SIZE, MIN_PAGE_SIZE);
     // increase page size
-    pageSizeCalculator.calculateNewPageSize(500L);
+    pageSizeCalculator.calculateNewPageSize(0L);
     int oldPageSize = pageSizeCalculator.getCalculatedPageSize();
 
     // when
-    pageSizeCalculator.calculateNewPageSize(2_000L);
+    pageSizeCalculator.calculateNewPageSize(Long.MAX_VALUE);
 
     // then
     assertThat(pageSizeCalculator.getCalculatedPageSize(), lessThan(oldPageSize));
