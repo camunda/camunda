@@ -109,16 +109,16 @@ public class WorkflowInstanceEventImpl implements WorkflowInstanceEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowInstanceEventImpl [eventType=");
+        builder.append("WorkflowInstanceEvent [eventType=");
         builder.append(eventType);
+        builder.append(", workflowInstanceKey=");
+        builder.append(workflowInstanceKey);
+        builder.append(", workflowKey=");
+        builder.append(workflowKey);
         builder.append(", bpmnProcessId=");
         builder.append(bpmnProcessId);
         builder.append(", version=");
         builder.append(version);
-        builder.append(", workflowKey=");
-        builder.append(workflowKey);
-        builder.append(", workflowInstanceKey=");
-        builder.append(workflowInstanceKey);
         builder.append(", activityId=");
         builder.append(activityId);
         builder.append(", payload=");

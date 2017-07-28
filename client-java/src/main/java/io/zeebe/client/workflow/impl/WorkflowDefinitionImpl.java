@@ -45,4 +45,16 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
         this.version = version;
         return this;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("WorkflowDefinition [bpmnProcessId=");
+        builder.append(bpmnProcessId);
+        builder.append(", version=");
+        builder.append(version);
+        builder.append("]");
+        return builder.toString();
+    }
 }

@@ -16,9 +16,7 @@
 package io.zeebe.client.task.impl.subscription;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import io.zeebe.client.TaskTopicClient;
 import io.zeebe.client.task.Task;
@@ -175,5 +173,28 @@ public class TaskImpl implements Task
     {
         return new HashMap<>(headers);
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("Task [key=");
+        builder.append(key);
+        builder.append(", type=");
+        builder.append(type);
+        builder.append(", lockExpirationTime=");
+        builder.append(lockExpirationTime);
+        builder.append(", lockOwner=");
+        builder.append(lockOwner);
+        builder.append(", retries=");
+        builder.append(retries);
+        builder.append(", headers=");
+        builder.append(headers);
+        builder.append(", payload=");
+        builder.append(getPayload());
+        builder.append("]");
+        return builder.toString();
+    }
+
 
 }

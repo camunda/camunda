@@ -78,4 +78,29 @@ public class DeploymentResultImpl implements DeploymentResult
         this.deployedWorkflows = deployedWorkflows;
         return this;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("DeploymentResult [");
+
+        if (isDeployed)
+        {
+            builder.append("key=");
+            builder.append(key);
+            builder.append(", deployedWorkflows=");
+            builder.append(deployedWorkflows);
+        }
+        else
+        {
+            builder.append("errorMessage=");
+            builder.append(errorMessage);
+        }
+
+        builder.append("]");
+        return builder.toString();
+    }
+
+
 }

@@ -93,4 +93,22 @@ public class WorkflowInstanceImpl implements WorkflowInstance
         this.workflowKey = workflowKey;
     }
 
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("WorkflowInstance [workflowInstanceKey=");
+        builder.append(workflowInstanceKey);
+        builder.append(", workflowKey=");
+        builder.append(workflowKey);
+        builder.append(", bpmnProcessId=");
+        builder.append(bpmnProcessId);
+        builder.append(", version=");
+        builder.append(version);
+        builder.append(", payload=");
+        builder.append(getPayload());
+        builder.append("]");
+        return builder.toString();
+    }
+
 }

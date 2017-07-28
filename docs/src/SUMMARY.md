@@ -24,6 +24,7 @@
     * [Data Flow](bpmn-workflows/data-flow.md)
 * [Java Client](java-client/README.md)
     * [Setup](java-client/setup.md)
+    * [Get Started](java-client/get-started.md)
     * [Logging](java-client/logging.md)
     * [Apis](java-client/apis.md)
 * [Operations](operations/README.md)
