@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.importing.fetcher;
 
-import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -13,9 +12,9 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionFetcher {
+public class IdBasedProcessDefinitionFetcher {
 
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionFetcher.class);
+  private final Logger logger = LoggerFactory.getLogger(IdBasedProcessDefinitionFetcher.class);
 
   @Autowired
   private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
@@ -49,21 +48,7 @@ public class ProcessDefinitionFetcher {
     return list;
   }
 
-  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult) {
-    logger.info("Using page size [{}] for fetching process definitions.", pageSizeCalculator.getCalculatedPageSize());
-    long startRequestTime = System.currentTimeMillis();
-    List<ProcessDefinitionEngineDto> list =  engineEntityFetcher.fetchProcessDefinitions(
-      indexOfFirstResult,
-      pageSizeCalculator.getCalculatedPageSize()
-    );
-    long endRequestTime = System.currentTimeMillis();
-    long requestDuration = endRequestTime - startRequestTime;
-    pageSizeCalculator.calculateNewPageSize(requestDuration);
-    return list;
-  }
-
   public int fetchProcessDefinitionCount(List<String> processDefinitionIds) throws OptimizeException {
     return engineEntityFetcher.fetchProcessDefinitionCount(processDefinitionIds);
   }
-
 }

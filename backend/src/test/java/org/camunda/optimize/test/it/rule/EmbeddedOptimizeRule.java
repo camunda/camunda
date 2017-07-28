@@ -170,10 +170,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return indexes;
   }
 
-  public List<DefinitionBasedImportIndexHandler> getImportIndexHandler() {
+  public List<DefinitionBasedImportIndexHandler> getDefinitionBasedImportIndexHandler() {
     List<DefinitionBasedImportIndexHandler> indexes = new LinkedList<>();
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      indexes.add(importService.getImportIndexHandler());
+      if (importService.getImportIndexHandler() instanceof DefinitionBasedImportIndexHandler) {
+        indexes.add((DefinitionBasedImportIndexHandler)importService.getImportIndexHandler());
+      }
     }
     return indexes;
   }
@@ -221,11 +223,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   /**
-   * In case the engine got new process definitions, those are then added to the import list
+   * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
-  public void updateDefinitionsToImport() {
+  public void updateImportIndex() {
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.updateDefinitionsToImport();
+      importService.updateImportIndex();
     }
   }
 }

@@ -99,7 +99,7 @@ public class ImportIT  {
 
     // when
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.updateDefinitionsToImport();
+    embeddedOptimizeRule.updateImportIndex();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
@@ -410,7 +410,7 @@ public class ImportIT  {
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
-    List<DefinitionBasedImportIndexHandler> handler = embeddedOptimizeRule.getImportIndexHandler();
+    List<DefinitionBasedImportIndexHandler> handler = embeddedOptimizeRule.getDefinitionBasedImportIndexHandler();
 
     // then
     for (DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler : handler) {

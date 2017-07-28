@@ -180,7 +180,7 @@ public class ProcessDefinitionBaseImportIT {
     engineRule.deployAndStartProcess(simpleUserTaskProcess);
     ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
     String latestPd = latestProcessInstance.getDefinitionId();
-    embeddedOptimizeRule.updateDefinitionsToImport();
+    embeddedOptimizeRule.updateImportIndex();
 
     //when
     embeddedOptimizeRule.scheduleImport();
@@ -221,7 +221,7 @@ public class ProcessDefinitionBaseImportIT {
     latestPd = latestProcessInstance.getDefinitionId();
     ids.add(latestPd);
 
-    embeddedOptimizeRule.updateDefinitionsToImport();
+    embeddedOptimizeRule.updateImportIndex();
 
     //when
     embeddedOptimizeRule.scheduleImport();

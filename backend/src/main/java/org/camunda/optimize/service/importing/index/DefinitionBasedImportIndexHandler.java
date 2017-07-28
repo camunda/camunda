@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInfo
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.fetcher.ProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.fetcher.TotalityBasedProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private ProcessDefinitionFetcher processDefinitionFetcher;
+  private TotalityBasedProcessDefinitionFetcher processDefinitionFetcher;
   @Autowired
   private ImportJobExecutor importJobExecutor;
 
@@ -260,7 +260,8 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     moveToNextDefinitionToImport();
   }
 
-  public void updateDefinitionsToImportFromEngine() {
+  @Override
+  public void updateImportIndex() {
     addPossiblyNewDefinitionsFromEngineToImportList();
   }
 
@@ -273,7 +274,8 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
    * from every respective process definition. Thus, we are not importing
    * all the once again, but starting from the last point we stopped at.
    */
-  public void restartDefinitionBasedImportCycle() {
+  @Override
+  public void restartImportCycle() {
     if(!hasStillNewDefinitionsToImport()) {
       processDefinitionsToImport.addAll(alreadyImportedProcessDefinitions);
       addPossiblyNewDefinitionsFromEngineToImportList();

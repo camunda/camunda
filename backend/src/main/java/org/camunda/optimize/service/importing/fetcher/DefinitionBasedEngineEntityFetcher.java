@@ -159,5 +159,19 @@ public class DefinitionBasedEngineEntityFetcher extends EngineEntityFetcher {
     return totalCount;
   }
 
+  public Integer fetchProcessDefinitionCount() throws OptimizeException {
+    CountDto count;
+    try {
+      count = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getProcessDefinitionCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    } catch (RuntimeException e) {
+      throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
+    }
+    return count.getCount();
+}
+
 
 }

@@ -1,12 +1,18 @@
 package org.camunda.optimize.service.importing.provider;
 
+import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionIdBasedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlIdBasedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
+import org.camunda.optimize.service.util.ConfigurationReloadable;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -14,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class ImportServiceProvider {
+public class ImportServiceProvider implements ConfigurationReloadable {
 
   @Autowired
   private ProcessInstanceImportService processInstanceImportService;
@@ -31,14 +37,44 @@ public class ImportServiceProvider {
   @Autowired
   private ProcessDefinitionXmlImportService processDefinitionXmlImportService;
 
+  @Autowired
+  private ProcessDefinitionXmlIdBasedImportService processDefinitionXmlIdBasedImportService;
+
+  @Autowired
+  private ProcessDefinitionIdBasedImportService processDefinitionIdBasedImportService;
+
+  @Autowired
+  private ConfigurationService configurationService;
+
   private List<PaginatedImportService> services;
 
   @PostConstruct
   public void init() {
     services = new ArrayList<>();
-    services.add(processDefinitionImportService);
-    services.add(processDefinitionXmlImportService);
+    services.add(getProcessDefinitionImportService());
+    services.add(getProcessDefinitionXmlImportService());
     services.add(activityImportService);
+  }
+
+  private PaginatedImportService getProcessDefinitionImportService() {
+    if( configurationService.areProcessDefinitionsToImportDefined()) {
+      return processDefinitionIdBasedImportService;
+    } else {
+      return processDefinitionImportService;
+    }
+  }
+
+  private PaginatedImportService getProcessDefinitionXmlImportService() {
+    if( configurationService.areProcessDefinitionsToImportDefined()) {
+      return processDefinitionXmlIdBasedImportService;
+    } else {
+      return processDefinitionXmlImportService;
+    }
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    init();
   }
 
   public ProcessInstanceImportService getProcessInstanceImportService() {

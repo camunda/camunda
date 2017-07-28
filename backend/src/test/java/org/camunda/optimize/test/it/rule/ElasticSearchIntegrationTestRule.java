@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.elasticsearch.action.bulk.byscroll.BulkByScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
@@ -178,6 +177,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     boolean exists = esclient.admin().indices()
         .prepareExists(indexName)
         .execute().actionGet().isExists();
+    esclient.admin().indices().prepareFlush(getOptimizeIndex()).get();
 
     if (exists) {
       DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)

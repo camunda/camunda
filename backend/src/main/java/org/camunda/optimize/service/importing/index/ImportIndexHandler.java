@@ -35,8 +35,6 @@ public interface ImportIndexHandler {
    */
   int getRelativeImportIndex();
 
-  // for progress measurement
-
   /**
    * Independent of what the import strategy is, this method returns
    * the total number of entities that were already imported in the
@@ -51,4 +49,21 @@ public interface ImportIndexHandler {
    * entities that were missed during the first round.
    */
   void resetImportIndex();
+
+  /**
+   * In case the index had problems to be initialized on startup,
+   * it can be made sure that the initialization is done once again.
+   */
+  void makeSureIsInitialized();
+
+  /**
+   * Restart the import index without resetting the relative
+   * import indexes.
+   */
+  void restartImportCycle();
+
+  /**
+   * In case the engine got new entities, e.g., process definitions, those are then added to the import index
+   */
+  void updateImportIndex();
 }

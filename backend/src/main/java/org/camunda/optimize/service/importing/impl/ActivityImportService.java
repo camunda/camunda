@@ -2,11 +2,14 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.EventDto;
+import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.fetcher.ActivityInstanceFetcher;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +36,15 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Autowired
   private ActivityInstanceFetcher activityInstanceFetcher;
 
+  @Autowired
+  private DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler;
+
+  @Override
+  protected ImportIndexHandler initializeImportIndexHandler() {
+    definitionBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
+    return definitionBasedImportIndexHandler;
+  }
+
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
     return missingActivityFinder;
@@ -41,14 +53,15 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
     return activityInstanceFetcher.fetchHistoricActivityInstances(
-      importIndexHandler.getCurrentDefinitionBasedImportIndex(),
-      importIndexHandler.getCurrentProcessDefinitionId()
+      definitionBasedImportIndexHandler.getCurrentDefinitionBasedImportIndex(),
+      definitionBasedImportIndexHandler.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return activityInstanceFetcher.fetchHistoricActivityInstanceCount(importIndexHandler.getAllProcessDefinitions());
+    return activityInstanceFetcher
+      .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
   }
 
   @Override

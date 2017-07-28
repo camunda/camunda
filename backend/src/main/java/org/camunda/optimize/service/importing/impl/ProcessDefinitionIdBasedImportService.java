@@ -7,9 +7,8 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionFetcher;
-import org.camunda.optimize.service.importing.fetcher.TotalityBasedProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
-import org.camunda.optimize.service.importing.index.TotalityBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +18,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionImportService extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
+public class ProcessDefinitionIdBasedImportService extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
 
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionImportService.class);
+  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionIdBasedImportService.class);
 
   @Autowired
   private ProcessDefinitionWriter procDefWriter;
@@ -30,15 +29,15 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
   private MissingProcessDefinitionFinder processDefinitionFinder;
 
   @Autowired
-  private TotalityBasedProcessDefinitionFetcher processDefinitionFetcher;
+  private IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher;
 
   @Autowired
-  private TotalityBasedImportIndexHandler totalityBasedImportIndexHandler;
+  private DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler;
 
   @Override
   protected ImportIndexHandler initializeImportIndexHandler() {
-    totalityBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
-    return totalityBasedImportIndexHandler;
+    definitionBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
+    return definitionBasedImportIndexHandler;
   }
 
   @Override
@@ -48,14 +47,16 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
 
   @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint() throws OptimizeException {
-    return processDefinitionFetcher.fetchProcessDefinitions(
-      importIndexHandler.getAbsoluteImportIndex()
+    return idBasedProcessDefinitionFetcher.fetchProcessDefinitions(
+      definitionBasedImportIndexHandler.getCurrentDefinitionBasedImportIndex(),
+      definitionBasedImportIndexHandler.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
-    return processDefinitionFetcher.fetchProcessDefinitionCount();
+    return idBasedProcessDefinitionFetcher
+      .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
   }
 
   @Override

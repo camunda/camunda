@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.importing.fetcher;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -13,12 +12,12 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionXmlFetcher {
+public class TotalityBasedProcessDefinitionXmlFetcher {
 
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlFetcher.class);
+  private final Logger logger = LoggerFactory.getLogger(TotalityBasedProcessDefinitionXmlFetcher.class);
 
   @Autowired
-  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
+  private TotalityBasedEngineEntityFetcher engineEntityFetcher;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -34,15 +33,13 @@ public class ProcessDefinitionXmlFetcher {
     );
   }
 
-  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult,
-                                                                                String processDefinitionId) {
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult) {
     logger.info("Using page size of [{}] for fetching process definition xmls.",
       pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<ProcessDefinitionXmlEngineDto> list =  engineEntityFetcher.fetchProcessDefinitionXmls(
       indexOfFirstResult,
-      pageSizeCalculator.getCalculatedPageSize(),
-      processDefinitionId
+      pageSizeCalculator.getCalculatedPageSize()
     );
     long endRequestTime = System.currentTimeMillis();
     long requestDuration = endRequestTime - startRequestTime;
@@ -50,8 +47,8 @@ public class ProcessDefinitionXmlFetcher {
     return list;
   }
 
-  public int fetchProcessDefinitionCount(List<String> processDefinitionIds) throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionCount(processDefinitionIds);
+  public int fetchProcessDefinitionCount() throws OptimizeException {
+    return engineEntityFetcher.fetchProcessDefinitionCount();
   }
 
 }
