@@ -19,9 +19,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -132,25 +136,48 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   }
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
-    ArrayList<VersionedDefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
     int currentStart = 0;
     List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
 
+    HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
+
       for (ProcessDefinitionEngineDto dto : currentPage) {
         VersionedDefinitionImportInformation definitionImportInformation =
           new VersionedDefinitionImportInformation();
         definitionImportInformation.setDefinitionBasedImportIndex(0);
         definitionImportInformation.setProcessDefinitionId(dto.getId());
         definitionImportInformation.setVersion(dto.getVersion());
-        processDefinitionsToImport.add(definitionImportInformation);
+
+        if (!versionSortedProcesses.containsKey(dto.getKey())) {
+          versionSortedProcesses.put(
+              dto.getKey(),
+              new TreeSet<>((o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()))
+          );
+        }
+        versionSortedProcesses.get(dto.getKey()).add(definitionImportInformation);
       }
       currentStart = currentStart + currentPage.size();
       currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
     }
-    processDefinitionsToImport.sort((o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()));
-    List<DefinitionImportInformation> result = new ArrayList<>();
-    result.addAll(processDefinitionsToImport);
+    List<DefinitionImportInformation> result = buildSortedOrder(versionSortedProcesses);
+    return result;
+  }
+
+  private List<DefinitionImportInformation> buildSortedOrder(HashMap<String, TreeSet<VersionedDefinitionImportInformation>> processDefinitionsToImport) {
+    ArrayList<DefinitionImportInformation> result = new ArrayList<>();
+    while (!processDefinitionsToImport.isEmpty()) {
+      Iterator<Map.Entry<String, TreeSet<VersionedDefinitionImportInformation>>> iterator =
+          processDefinitionsToImport.entrySet().iterator();
+      while (iterator.hasNext()) {
+        Map.Entry<String,TreeSet<VersionedDefinitionImportInformation>> entry = iterator.next();
+        if (!entry.getValue().isEmpty()) {
+          result.add(entry.getValue().pollFirst());
+        } else {
+          iterator.remove();
+        }
+      }
+    }
     return result;
   }
 

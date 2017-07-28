@@ -26,6 +26,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -200,6 +202,54 @@ public class ProcessDefinitionBaseImportIT {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
       assertThat(searchHitFields.getSource().get("processDefinitionId"), is(latestPd));
+    }
+  }
+
+  @Test
+  public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
+    //given
+    ArrayList ids = new ArrayList();
+
+    BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
+    engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    String latestPd = latestProcessInstance.getDefinitionId();
+    ids.add(latestPd);
+
+    simpleUserTaskProcess = createSimpleUserTaskProcess();
+    latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    latestPd = latestProcessInstance.getDefinitionId();
+    ids.add(latestPd);
+
+    embeddedOptimizeRule.updateDefinitionsToImport();
+
+    //when
+    embeddedOptimizeRule.scheduleImport();
+    //first full round
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+
+    //second full round
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+
+    //third full round
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+
+    //then
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      assertThat(idsResp.getHits().totalHits, is(Long.valueOf(ids.size())));
+      assertThat(searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
     }
   }
 
