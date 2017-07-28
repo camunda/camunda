@@ -19,6 +19,7 @@
     <version.service>0.1.0-SNAPSHOT</version.service>
     <version.dispatcher>0.1.0-SNAPSHOT</version.dispatcher>
     <version.transport>0.1.0-SNAPSHOT</version.transport>
+    <version.raft>0.1.0-SNAPSHOT</version.raft>
   </properties>
 
   <dependencyManagement>
@@ -77,6 +78,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zb-service-container</artifactId>
         <version>${version.service}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-raft</artifactId>
+        <version>${version.raft}</version>
       </dependency>
 
       <dependency>

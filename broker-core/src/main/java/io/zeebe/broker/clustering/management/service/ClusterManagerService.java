@@ -20,13 +20,8 @@ package io.zeebe.broker.clustering.management.service;
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
-import io.zeebe.broker.clustering.raft.Raft;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.raft.Raft;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 

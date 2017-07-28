@@ -15,14 +15,10 @@
  */
 package io.zeebe.client.event;
 
-public enum TopicEventType
+/**
+ * POJO representing an event of type {@link TopicEventType#NOOP}.
+ */
+public interface NoopEvent
 {
-    TASK,
-    WORKFLOW_INSTANCE,
-    WORKFLOW,
-    INCIDENT,
 
-    RAFT,
-    NOOP,
-    UNKNOWN
 }

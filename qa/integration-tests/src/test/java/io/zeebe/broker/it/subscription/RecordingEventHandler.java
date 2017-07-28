@@ -65,6 +65,11 @@ public class RecordingEventHandler implements TopicEventHandler
         return numRecordedEventsOfType(TopicEventType.RAFT);
     }
 
+    public int numRecordedNoopEvents()
+    {
+        return numRecordedEventsOfType(TopicEventType.NOOP);
+    }
+
     public List<RecordedEvent> getRecordedEvents()
     {
         return events;

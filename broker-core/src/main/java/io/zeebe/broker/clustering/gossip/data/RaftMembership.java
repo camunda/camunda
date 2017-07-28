@@ -22,12 +22,11 @@ import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.RaftMembershipsDe
 import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
 import static io.zeebe.util.StringUtil.fromBytes;
 
+import io.zeebe.clustering.gossip.RaftMembershipState;
+import io.zeebe.raft.Raft;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.broker.clustering.raft.Raft;
-import io.zeebe.clustering.gossip.RaftMembershipState;
 
 
 public class RaftMembership
@@ -54,7 +53,7 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.stream().getPartitionId();
+            return reference.getLogStream().getPartitionId();
         }
         else
         {
@@ -78,7 +77,7 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.term();
+            return reference.getLogStream().getTerm();
         }
         else
         {
@@ -102,7 +101,17 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.state();
+            switch (reference.getState())
+            {
+                case FOLLOWER:
+                    return RaftMembershipState.FOLLOWER;
+                case CANDIDATE:
+                    return RaftMembershipState.CANDIDATE;
+                case LEADER:
+                    return RaftMembershipState.LEADER;
+                default:
+                    return RaftMembershipState.SBE_UNKNOWN;
+            }
         }
         else
         {
@@ -126,7 +135,7 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.stream().getTopicName();
+            return reference.getLogStream().getTopicName();
         }
         else
         {
@@ -168,7 +177,7 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.stream().getTopicName().capacity();
+            return reference.getLogStream().getTopicName().capacity();
         }
         else
         {

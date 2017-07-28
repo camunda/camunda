@@ -32,7 +32,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.broker.clustering.raft.Member;
 import io.zeebe.clustering.management.InvitationRequestDecoder;
 import io.zeebe.clustering.management.InvitationRequestDecoder.MembersDecoder;
 import io.zeebe.clustering.management.InvitationRequestEncoder;
@@ -54,7 +53,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
     protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId = partitionIdNullValue();
     protected int term = termNullValue();
-    protected List<Member> members = new CopyOnWriteArrayList<>();
+    protected List<SocketAddress> members = new CopyOnWriteArrayList<>();
 
     public int partitionId()
     {
@@ -89,12 +88,12 @@ public class InvitationRequest implements BufferWriter, BufferReader
         return this;
     }
 
-    public List<Member> members()
+    public List<SocketAddress> members()
     {
         return members;
     }
 
-    public InvitationRequest members(final List<Member> members)
+    public InvitationRequest members(final List<SocketAddress> members)
     {
         this.members.clear();
         this.members.addAll(members);
@@ -112,9 +111,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         for (int i = 0; i < size; i++)
         {
-            final Member member = members.get(i);
-            final SocketAddress endpoint = member.endpoint();
-            length += endpoint.hostLength();
+            length += members.get(i).hostLength();
         }
 
         length += topicNameHeaderLength();
@@ -147,12 +144,11 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         for (int i = 0; i < size; i++)
         {
-            final Member member = members.get(i);
-            final SocketAddress endpoint = member.endpoint();
+            final SocketAddress member = members.get(i);
 
             encoder.next()
-                .port(endpoint.port())
-                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
+                .port(member.port())
+                .putHost(member.getHostBuffer(), 0, member.hostLength());
         }
 
         bodyEncoder.putTopicName(topicName, 0, topicName.capacity());
@@ -179,13 +175,13 @@ public class InvitationRequest implements BufferWriter, BufferReader
         {
             final MembersDecoder decoder = iterator.next();
 
-            final Member member = new Member();
-            member.endpoint().port(decoder.port());
+            final SocketAddress member = new SocketAddress();
+            member.port(decoder.port());
 
-            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
+            final MutableDirectBuffer hostBuffer = member.getHostBuffer();
             final int hostLength = decoder.hostLength();
-            member.endpoint().hostLength(hostLength);
-            decoder.getHost(endpointBuffer, 0, hostLength);
+            member.hostLength(hostLength);
+            decoder.getHost(hostBuffer, 0, hostLength);
 
             members.add(member);
         }

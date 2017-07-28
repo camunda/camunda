@@ -72,6 +72,12 @@ public class LogStreamsManager
         return null;
     }
 
+    /**
+     * Creates a new log stream but does not open it. The caller has to call {@link LogStream#openAsync()} or
+     * {@link LogStream#open()} before using it.
+     *
+     * @return the newly created log stream
+     */
     public LogStream createLogStream(final DirectBuffer topicName, final int partitionId)
     {
         ensureNotNullOrEmpty("topic name", topicName);
@@ -107,25 +113,6 @@ public class LogStreamsManager
             .build();
 
         addLogStream(logStream);
-
-        logStream.open();
-
-        return logStream;
-    }
-
-    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId, final String logDirectory)
-    {
-        final LogStream logStream = LogStreams.createFsLogStream(topicName, partitionId)
-                .deleteOnClose(false)
-                .logDirectory(logDirectory)
-                .actorScheduler(actorScheduler)
-                .logSegmentSize(logStreamsCfg.defaultLogSegmentSize * 1024 * 1024)
-                .logStreamControllerDisabled(true)
-                .build();
-
-        addLogStream(logStream);
-
-        logStream.open();
 
         return logStream;
     }

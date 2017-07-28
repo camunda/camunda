@@ -24,8 +24,7 @@ import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerSelector;
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
-import io.zeebe.broker.clustering.raft.Raft;
-import io.zeebe.broker.clustering.raft.RaftContext;
+import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class ClusterServiceNames
@@ -41,11 +40,6 @@ public class ClusterServiceNames
 
     public static final ServiceName<ClusterManager> CLUSTER_MANAGER_SERVICE = ServiceName.newServiceName("cluster.manager", ClusterManager.class);
     public static final ServiceName<ClusterManagerContext> CLUSTER_MANAGER_CONTEXT_SERVICE = ServiceName.newServiceName("cluster.manager.context", ClusterManagerContext.class);
-
-    public static ServiceName<RaftContext> raftContextServiceName(final String name)
-    {
-        return ServiceName.newServiceName(String.format("cluster.raft.%s.context", name), RaftContext.class);
-    }
 
     public static ServiceName<Raft> raftServiceName(final String name)
     {

@@ -133,7 +133,7 @@ public class TopicSubscriptionThrottlingTest
         // then
         final int expectedNumberOfEvents =
                 nrOfTasks * 2 + // CREATE and CREATED
-                2; // two raft events
+                1; // two raft events
 
         TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() == expectedNumberOfEvents);
     }

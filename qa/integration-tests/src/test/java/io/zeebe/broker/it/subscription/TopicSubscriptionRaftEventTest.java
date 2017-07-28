@@ -21,19 +21,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler.RecordedEvent;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TopicSubscriptionRaftEventTest
 {
@@ -64,32 +64,36 @@ public class TopicSubscriptionRaftEventTest
     }
 
     /**
-     * There should always be two raft events on each log by default:
+     * There should always be one raft events on each log by default:
      * One that marks that this broker is the leader for this log.
-     * The second that the leader uses to claim that it is indeed the leader.
      */
     @Test
-    public void shouldReceiveRaftEvents()
+    public void shouldReceiveNoopEvents()
     {
         // given
-        clientRule.topic().newSubscription()
-            .startAtHeadOfTopic()
-            .handler(recordingHandler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
+        final TopicSubscription subscription =
+            clientRule.topic()
+                      .newSubscription()
+                      .startAtHeadOfTopic()
+                      .handler(recordingHandler)
+                      .name(SUBSCRIPTION_NAME)
+                      .open();
 
         // when
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedRaftEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedNoopEvents() == 1, 100);
 
         // then
-        final List<RecordedEvent> raftEvents = recordingHandler.getRecordedEvents()
+        final List<RecordedEvent> noopEvents = recordingHandler.getRecordedEvents()
                 .stream()
-                .filter((re) -> re.getMetadata().getEventType() == TopicEventType.RAFT)
+                .filter((re) -> re.getMetadata().getEventType() == TopicEventType.NOOP)
                 .collect(Collectors.toList());
 
-        assertThat(isJsonObject(raftEvents.get(0).getEvent().getJson())).isTrue();
-        assertThat(isJsonObject(raftEvents.get(1).getEvent().getJson())).isTrue();
+        assertThat(isJsonObject(noopEvents.get(0).getEvent().getJson())).isTrue();
+
+        subscription.close();
     }
+
+    // TODO(menski): write a test which creates raft events, requires multiple brokers
 
     protected boolean isJsonObject(String json)
     {

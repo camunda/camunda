@@ -15,14 +15,14 @@
  */
 package io.zeebe.client.event;
 
-public enum TopicEventType
+/**
+ * Handles noop events.
+ */
+@FunctionalInterface
+public interface NoopEventHandler
 {
-    TASK,
-    WORKFLOW_INSTANCE,
-    WORKFLOW,
-    INCIDENT,
-
-    RAFT,
-    NOOP,
-    UNKNOWN
+    /**
+     * @param event the next event of the topic
+     */
+    void handle(EventMetadata metadata, NoopEvent event) throws Exception;
 }

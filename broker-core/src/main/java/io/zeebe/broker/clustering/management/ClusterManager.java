@@ -17,9 +17,7 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import static io.zeebe.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
 import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
-import static io.zeebe.broker.clustering.ClusterServiceNames.raftContextServiceName;
 import static io.zeebe.broker.clustering.ClusterServiceNames.raftServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
@@ -33,32 +31,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import io.zeebe.broker.Loggers;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
 import io.zeebe.broker.clustering.management.message.InvitationResponse;
-import io.zeebe.broker.clustering.raft.Member;
-import io.zeebe.broker.clustering.raft.MetaStore;
-import io.zeebe.broker.clustering.raft.Raft;
-import io.zeebe.broker.clustering.raft.RaftContext;
-import io.zeebe.broker.clustering.raft.service.RaftContextService;
-import io.zeebe.broker.clustering.raft.service.RaftService;
+import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestResponseController;
-import io.zeebe.transport.ServerInputSubscription;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.*;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
@@ -69,6 +57,7 @@ public class ClusterManager implements Actor
     private final ServiceContainer serviceContainer;
 
     private final List<Raft> rafts;
+    private final List<StartLogStreamServiceController> startLogStreamServiceControllers;
 
     private final ManyToOneConcurrentArrayQueue<Runnable> managementCmdQueue;
     private final Consumer<Runnable> commandConsumer;
@@ -92,6 +81,7 @@ public class ClusterManager implements Actor
         this.serviceContainer = serviceContainer;
         this.config = config;
         this.rafts = new CopyOnWriteArrayList<>();
+        this.startLogStreamServiceControllers = new CopyOnWriteArrayList<>();
         this.managementCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
         this.commandConsumer = (r) -> r.run();
         this.activeRequestControllers = new CopyOnWriteArrayList<>();
@@ -128,32 +118,12 @@ public class ClusterManager implements Actor
             }
         }
 
-        final File[] metaFiles = dir.listFiles();
-
-        if (metaFiles != null && metaFiles.length > 0)
+        if (context.getPeers().sizeVolatile() == 1)
         {
-            for (int i = 0; i < metaFiles.length; i++)
-            {
-                final File file = metaFiles[i];
-                final MetaStore meta = new MetaStore(file.getAbsolutePath());
-
-                final int partitionId = meta.loadPartitionId();
-                final DirectBuffer topicName = meta.loadTopicName();
-
-                LogStream logStream = logStreamManager.getLogStream(topicName, partitionId);
-
-                if (logStream == null)
-                {
-                    final String directory = meta.loadLogDirectory();
-                    logStream = logStreamManager.createLogStream(topicName, partitionId, directory);
-                }
-
-                createRaft(logStream, meta, Collections.emptyList(), false);
-            }
-        }
-        else if (context.getPeers().sizeVolatile() == 1)
-        {
-            logStreamManager.forEachLogStream(logStream -> createRaft(logStream, Collections.emptyList(), true));
+            final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+            logStreamManager.forEachLogStream(logStream -> {
+                createRaft(socketAddress, logStream, Collections.emptyList());
+            });
         }
     }
 
@@ -192,6 +162,11 @@ public class ClusterManager implements Actor
             }
         }
 
+        for (int j = 0; j < startLogStreamServiceControllers.size(); j++)
+        {
+            workcount += startLogStreamServiceControllers.get(j).doWork();
+        }
+
         return workcount;
     }
 
@@ -205,21 +180,25 @@ public class ClusterManager implements Actor
             for (int i = 0; i < rafts.size(); i++)
             {
                 final Raft raft = rafts.get(i);
-                if (raft.needsMembers())
-                {
-                    // TODO: if this should be garbage free, we have to limit
-                    // the number of concurrent invitations.
-                    final LogStream logStream = raft.stream();
-                    final InvitationRequest invitationRequest = new InvitationRequest()
-                        .topicName(logStream.getTopicName())
-                        .partitionId(logStream.getPartitionId())
-                        .term(raft.term())
-                        .members(raft.configuration().members());
+                // TODO(menski): implement replication factor
+                // TODO: if this should be garbage free, we have to limit
+                // the number of concurrent invitations.
+                final List<SocketAddress> members = new ArrayList<>();
+                members.add(raft.getSocketAddress());
+                raft.getMembers().forEach(raftMember -> {
+                    members.add(raftMember.getRemoteAddress().getAddress());
+                });
 
-                    final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
-                    requestController.open(copy.managementEndpoint(), invitationRequest, null);
-                    activeRequestControllers.add(requestController);
-                }
+                final LogStream logStream = raft.getLogStream();
+                final InvitationRequest invitationRequest = new InvitationRequest()
+                    .topicName(logStream.getTopicName())
+                    .partitionId(logStream.getPartitionId())
+                    .term(logStream.getTerm())
+                    .members(members);
+
+                final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
+                requestController.open(copy.managementEndpoint(), invitationRequest, null);
+                activeRequestControllers.add(requestController);
             }
 
         });
@@ -231,12 +210,13 @@ public class ClusterManager implements Actor
         {
             context.getLocalPeer().addRaft(raft);
             rafts.add(raft);
+            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raft, serviceContainer));
         });
     }
 
     public void removeRaft(final Raft raft)
     {
-        final LogStream logStream = raft.stream();
+        final LogStream logStream = raft.getLogStream();
         final DirectBuffer topicName = logStream.getTopicName();
         final int partitionId = logStream.getPartitionId();
 
@@ -245,7 +225,7 @@ public class ClusterManager implements Actor
             for (int i = 0; i < rafts.size(); i++)
             {
                 final Raft r = rafts.get(i);
-                final LogStream stream = r.stream();
+                final LogStream stream = r.getLogStream();
                 if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
                 {
                     context.getLocalPeer().removeRaft(raft);
@@ -253,41 +233,32 @@ public class ClusterManager implements Actor
                     break;
                 }
             }
+
+            for (int i = 0; i < startLogStreamServiceControllers.size(); i++)
+            {
+                final Raft r = startLogStreamServiceControllers.get(i).getRaft();
+                final LogStream stream = r.getLogStream();
+                if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
+                {
+                    startLogStreamServiceControllers.remove(i);
+                    break;
+                }
+            }
         });
     }
 
-    public void createRaft(LogStream logStream, List<Member> members, boolean bootstrap)
+    public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members)
     {
-        final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
-        final String path = logStorage.getConfig().getPath();
+        final RaftService raftService = new RaftService(socketAddress, logStream, members);
 
-        final MetaStore meta = new MetaStore(String.format("%s%s.meta", config.directory, logStream.getLogName()));
-        meta.storeTopicNameAndPartitionIdAndDirectory(logStream.getTopicName(), logStream.getPartitionId(), path);
+        final ServiceName<Raft> raftServiceName = raftServiceName(logStream.getLogName());
 
-        createRaft(logStream, meta, members, bootstrap);
-    }
-
-    public void createRaft(LogStream logStream, MetaStore meta, List<Member> members, boolean bootstrap)
-    {
-        final String logName = logStream.getLogName();
-
-        // TODO: provide raft configuration
-        final RaftContextService raftContextService = new RaftContextService(serviceContainer);
-        final ServiceName<RaftContext> raftContextServiceName = raftContextServiceName(logName);
-        serviceContainer.createService(raftContextServiceName, raftContextService)
-            .dependency(PEER_LOCAL_SERVICE, raftContextService.getLocalPeerInjector())
-            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME), raftContextService.getClientTransportInjector())
-            .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME), raftContextService.getReplicationApiTransportInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, raftContextService.getActorSchedulerInjector())
-            .install();
-
-        final RaftService raftService = new RaftService(logStream, meta, new CopyOnWriteArrayList<>(members), bootstrap);
-        final ServiceName<Raft> raftServiceName = raftServiceName(logName);
         serviceContainer.createService(raftServiceName, raftService)
-            .group(RAFT_SERVICE_GROUP)
-            .dependency(ACTOR_SCHEDULER_SERVICE, raftService.getActorSchedulerInjector())
-            .dependency(raftContextServiceName, raftService.getRaftContextInjector())
-            .install();
+                        .group(RAFT_SERVICE_GROUP)
+                        .dependency(ACTOR_SCHEDULER_SERVICE, raftService.getActorSchedulerInjector())
+                        .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME), raftService.getServerTransportInjector())
+                        .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME), raftService.getClientTransportInjector())
+                        .install();
     }
 
     public boolean onInvitationRequest(
@@ -307,7 +278,8 @@ public class ClusterManager implements Actor
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
         final LogStream logStream = logStreamManager.createLogStream(topicName, partitionId);
 
-        createRaft(logStream, new ArrayList<>(invitationRequest.members()), false);
+        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+        createRaft(socketAddress, logStream, new ArrayList<>(invitationRequest.members()));
 
         invitationResponse.reset();
         response.reset()

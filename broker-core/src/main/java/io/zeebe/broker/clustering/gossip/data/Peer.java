@@ -20,16 +20,9 @@ package io.zeebe.broker.clustering.gossip.data;
 import static io.zeebe.broker.clustering.gossip.data.RaftMembershipList.MAX_RAFT_MEMBERS;
 import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.BLOCK_LENGTH;
 import static io.zeebe.clustering.gossip.PeerDescriptorDecoder.SCHEMA_VERSION;
-import static io.zeebe.clustering.gossip.PeerState.ALIVE;
-import static io.zeebe.clustering.gossip.PeerState.DEAD;
-import static io.zeebe.clustering.gossip.PeerState.NULL_VAL;
-import static io.zeebe.clustering.gossip.PeerState.SUSPECT;
+import static io.zeebe.clustering.gossip.PeerState.*;
 import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-
-import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.clustering.gossip.EndpointType;
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder.EndpointsDecoder;
@@ -38,9 +31,12 @@ import io.zeebe.clustering.gossip.PeerDescriptorEncoder;
 import io.zeebe.clustering.gossip.PeerDescriptorEncoder.EndpointsEncoder;
 import io.zeebe.clustering.gossip.PeerDescriptorEncoder.RaftMembershipsEncoder;
 import io.zeebe.clustering.gossip.PeerState;
+import io.zeebe.raft.Raft;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
 {

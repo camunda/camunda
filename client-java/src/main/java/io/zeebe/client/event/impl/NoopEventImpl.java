@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.event;
+package io.zeebe.client.event.impl;
 
-public enum TopicEventType
+import io.zeebe.client.event.NoopEvent;
+
+public class NoopEventImpl implements NoopEvent
 {
-    TASK,
-    WORKFLOW_INSTANCE,
-    WORKFLOW,
-    INCIDENT,
 
-    RAFT,
-    NOOP,
-    UNKNOWN
+    @Override
+    public String toString()
+    {
+        return "NoopEvent{ }";
+    }
+
 }

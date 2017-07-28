@@ -22,8 +22,8 @@ import static io.zeebe.util.buffer.BufferUtil.*;
 
 import java.util.Arrays;
 
+import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
-import io.zeebe.broker.clustering.raft.Member;
 import org.junit.Test;
 
 
@@ -40,8 +40,8 @@ public class ManagementMessageTest
             .partitionId(111)
             .term(222)
             .members(Arrays.asList(
-                new Member(),
-                new Member()
+                new SocketAddress("localhost", 8001),
+                new SocketAddress("localhost", 8002)
             ));
 
         assertEqualFieldsAfterWriteAndRead(invitationRequest,

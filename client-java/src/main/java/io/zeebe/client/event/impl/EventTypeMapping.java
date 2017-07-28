@@ -30,6 +30,7 @@ public class EventTypeMapping
         MAPPING[EventType.WORKFLOW_INSTANCE_EVENT.value()] = TopicEventType.WORKFLOW_INSTANCE;
         MAPPING[EventType.INCIDENT_EVENT.value()] = TopicEventType.INCIDENT;
         MAPPING[EventType.RAFT_EVENT.value()] = TopicEventType.RAFT;
+        MAPPING[EventType.NOOP_EVENT.value()] = TopicEventType.NOOP;
     }
 
     public static TopicEventType mapEventType(EventType protocolType)

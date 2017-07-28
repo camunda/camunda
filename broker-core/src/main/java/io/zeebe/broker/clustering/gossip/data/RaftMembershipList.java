@@ -21,12 +21,11 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.agrona.DirectBuffer;
-
-import io.zeebe.broker.clustering.raft.Raft;
 import io.zeebe.clustering.gossip.GossipDecoder;
 import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.raft.Raft;
+import org.agrona.DirectBuffer;
 
 
 public class RaftMembershipList implements Iterable<RaftMembership>
@@ -161,7 +160,7 @@ public class RaftMembershipList implements Iterable<RaftMembership>
 
     public RaftMembershipList remove(final Raft raft)
     {
-        final LogStream stream = raft.stream();
+        final LogStream stream = raft.getLogStream();
         final DirectBuffer topicName = stream.getTopicName();
         final int partitionId = stream.getPartitionId();
 

@@ -99,6 +99,8 @@ public class TopicSubscriptionAcknowledgementTest
     public void shouldResumeAfterAcknowledgedPosition()
     {
         // given
+        createTask();
+
         final List<SubscribedEvent> events = apiRule
                 .subscribedEvents()
                 .limit(2L)
@@ -179,16 +181,7 @@ public class TopicSubscriptionAcknowledgementTest
     public void shouldPersistStartPosition()
     {
         // given
-        apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
-            .eventTypeTask()
-            .command()
-                .put("eventType", "CREATE")
-                .put("type", "foo")
-                .put("retries", 1)
-                .done()
-            .sendAndAwait();
+        createTask();
 
         final List<Long> taskEventPositions = apiRule.subscribedEvents()
             .filter((e) -> e.eventType() == EventType.TASK_EVENT)
@@ -210,6 +203,20 @@ public class TopicSubscriptionAcknowledgementTest
             .collect(Collectors.toList());
 
         assertThat(taskEventPositionsAfterReopen).containsExactlyElementsOf(taskEventPositions);
+    }
+
+    private ExecuteCommandResponse createTask()
+    {
+        return apiRule.createCmdRequest()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .eventTypeTask()
+            .command()
+                .put("eventType", "CREATE")
+                .put("type", "foo")
+                .put("retries", 1)
+                .done()
+            .sendAndAwait();
     }
 
 }
