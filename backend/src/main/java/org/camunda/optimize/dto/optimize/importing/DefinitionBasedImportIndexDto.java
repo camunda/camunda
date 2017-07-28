@@ -8,7 +8,7 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
 
   protected int currentDefinitionBasedImportIndex;
   protected int totalEntitiesImported;
-  protected String currentProcessDefinition;
+  protected String currentProcessDefinitionId;
   protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
 
   public int getCurrentDefinitionBasedImportIndex() {
@@ -19,12 +19,19 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
     this.currentDefinitionBasedImportIndex = currentDefinitionBasedImportIndex;
   }
 
-  public String getCurrentProcessDefinition() {
-    return currentProcessDefinition;
+  public String getCurrentProcessDefinitionId() {
+    return currentProcessDefinitionId;
   }
 
-  public void setCurrentProcessDefinition(String currentProcessDefinition) {
-    this.currentProcessDefinition = currentProcessDefinition;
+  public void setCurrentProcessDefinitionId(String currentProcessDefinitionId) {
+    this.currentProcessDefinitionId = currentProcessDefinitionId;
+  }
+
+  public DefinitionImportInformation createCurrentProcessDefinition() {
+    DefinitionImportInformation currentDefinition = new DefinitionImportInformation();
+    currentDefinition.setProcessDefinitionId(currentProcessDefinitionId);
+    currentDefinition.setDefinitionBasedImportIndex(currentDefinitionBasedImportIndex);
+    return currentDefinition;
   }
 
   public List<DefinitionImportInformation> getAlreadyImportedProcessDefinitions() {

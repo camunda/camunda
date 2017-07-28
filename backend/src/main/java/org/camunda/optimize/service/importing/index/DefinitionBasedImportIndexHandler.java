@@ -19,8 +19,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +46,6 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private int totalEntitiesImported;
   private int currentDefinitionBasedImportIndex;
-  private int maxImportSize;
   private String elasticsearchType;
   private boolean initialized = false;
 
@@ -59,9 +56,13 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
     if (dto.getTotalEntitiesImported() > 0) {
-      currentProcessDefinitionId = dto.getCurrentProcessDefinition();
       alreadyImportedProcessDefinitions = new HashSet<>(dto.getAlreadyImportedProcessDefinitions());
-      processDefinitionsToImport.removeAll(alreadyImportedProcessDefinitions);
+      DefinitionImportInformation currentDefinition = new DefinitionImportInformation();
+      currentDefinition.setProcessDefinitionId(currentProcessDefinitionId);
+      processDefinitionsToImport.add(currentDefinition);
+      processDefinitionsToImport.removeAll(dto.getAlreadyImportedProcessDefinitions());
+      processDefinitionsToImport.remove(dto.createCurrentProcessDefinition());
+      currentProcessDefinitionId = dto.getCurrentProcessDefinitionId();
       currentDefinitionBasedImportIndex = dto.getCurrentDefinitionBasedImportIndex();
       totalEntitiesImported = dto.getTotalEntitiesImported();
     }
@@ -79,7 +80,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private DefinitionImportInformation removeFirstItemFromProcessDefinitionsToImport() {
     DefinitionImportInformation result;
-    if (!processDefinitionsToImport.isEmpty()) {
+    if (hasStillNewDefinitionsToImport()) {
       result = processDefinitionsToImport.remove(0);
     } else {
       result = new DefinitionImportInformation();
@@ -87,6 +88,10 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
       result.setDefinitionBasedImportIndex(currentDefinitionBasedImportIndex);
     }
     return result;
+  }
+
+  public boolean hasStillNewDefinitionsToImport() {
+    return !processDefinitionsToImport.isEmpty();
   }
 
   public void makeSureIsInitialized() {
@@ -143,7 +148,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
       currentStart = currentStart + currentPage.size();
       currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
     }
-    Collections.sort(processDefinitionsToImport, (o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()));
+    processDefinitionsToImport.sort((o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()));
     List<DefinitionImportInformation> result = new ArrayList<>();
     result.addAll(processDefinitionsToImport);
     return result;
@@ -151,7 +156,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   @Override
   public boolean adjustIndexWhenNoResultsFound(boolean engineHasNewData) {
-    if (!processDefinitionsToImport.isEmpty() && !engineHasNewData) {
+    if (hasStillNewDefinitionsToImport() && !engineHasNewData) {
       DefinitionImportInformation importDefinitionInformation =
         new DefinitionImportInformation();
       importDefinitionInformation.setDefinitionBasedImportIndex(currentDefinitionBasedImportIndex);
@@ -184,7 +189,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     DefinitionBasedImportIndexDto dto = new DefinitionBasedImportIndexDto();
     dto.setTotalEntitiesImported(totalEntitiesImported);
     dto.setCurrentDefinitionBasedImportIndex(currentDefinitionBasedImportIndex);
-    dto.setCurrentProcessDefinition(currentProcessDefinitionId);
+    dto.setCurrentProcessDefinitionId(currentProcessDefinitionId);
     dto.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
     DefinitionBasedImportIndexJob indexImportJob =
         new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
@@ -242,7 +247,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
    * all the once again, but starting from the last point we stopped at.
    */
   public void restartDefinitionBasedImportCycle() {
-    if(processDefinitionsToImport.isEmpty()) {
+    if(!hasStillNewDefinitionsToImport()) {
       processDefinitionsToImport.addAll(alreadyImportedProcessDefinitions);
       addPossiblyNewDefinitionsFromEngineToImportList();
       alreadyImportedProcessDefinitions = new HashSet<>();

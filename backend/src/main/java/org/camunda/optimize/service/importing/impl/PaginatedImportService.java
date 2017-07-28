@@ -105,4 +105,8 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   public void restartImportCycle() {
     importIndexHandler.restartDefinitionBasedImportCycle();
   }
+
+  public DefinitionBasedImportIndexHandler getImportIndexHandler() {
+    return importIndexHandler;
+  }
 }

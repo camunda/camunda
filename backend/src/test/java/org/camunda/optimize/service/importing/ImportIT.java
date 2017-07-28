@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -394,6 +395,26 @@ public class ImportIT  {
     // then
     for (Integer index : indexes) {
       assertThat(index, greaterThan(0));
+    }
+  }
+
+  @Test
+  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws OptimizeException {
+    // given
+    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    List<DefinitionBasedImportIndexHandler> handler = embeddedOptimizeRule.getImportIndexHandler();
+
+    // then
+    for (DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler : handler) {
+      assertThat(definitionBasedImportIndexHandler.hasStillNewDefinitionsToImport(), is(false));
     }
   }
 

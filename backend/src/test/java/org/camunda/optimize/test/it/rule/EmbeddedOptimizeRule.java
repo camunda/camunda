@@ -7,6 +7,7 @@ import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
@@ -165,6 +166,14 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     List<Integer> indexes = new LinkedList<>();
     for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
       indexes.add(importService.getImportStartIndex());
+    }
+    return indexes;
+  }
+
+  public List<DefinitionBasedImportIndexHandler> getImportIndexHandler() {
+    List<DefinitionBasedImportIndexHandler> indexes = new LinkedList<>();
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
+      indexes.add(importService.getImportIndexHandler());
     }
     return indexes;
   }
