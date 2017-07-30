@@ -53,6 +53,11 @@ public class AdvanceCommitController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);
@@ -112,6 +117,8 @@ public class AdvanceCommitController
         {
             super(stateMachine);
             this.raft = raft;
+
+            reset();
         }
 
         public Raft getRaft()

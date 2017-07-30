@@ -71,6 +71,11 @@ public class VoteController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);
@@ -265,7 +270,12 @@ public class VoteController
         @Override
         public void reset()
         {
+            for (final ClientRequest clientRequest : clientRequests)
+            {
+                clientRequest.close();
+            }
             clientRequests.clear();
+
             voteRequest.reset();
             voteResponse.reset();
             granted = 1; // always vote for self

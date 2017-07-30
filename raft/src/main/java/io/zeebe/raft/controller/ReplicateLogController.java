@@ -57,6 +57,11 @@ public class ReplicateLogController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);
@@ -167,6 +172,14 @@ public class ReplicateLogController
         {
             super(stateMachine);
             this.raft = raft;
+
+            reset();
+        }
+
+        @Override
+        public void reset()
+        {
+            appendRequest.reset();
         }
 
         public Raft getRaft()

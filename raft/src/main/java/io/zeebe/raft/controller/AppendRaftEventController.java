@@ -73,6 +73,11 @@ public class AppendRaftEventController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final SocketAddress socketAddress)
     {
         // this has to happen immediately so multiple join request are not accepted
@@ -204,6 +209,8 @@ public class AppendRaftEventController
         {
             super(stateMachine);
             this.raft = raft;
+
+            reset();
         }
 
         @Override

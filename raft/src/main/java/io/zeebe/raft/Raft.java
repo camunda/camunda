@@ -239,6 +239,21 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         return workCount;
     }
 
+    /**
+     * Resets all controllers and closes open requests
+     */
+    public void close()
+    {
+        joinController.reset();
+        appendRaftEventController.reset();
+
+        openLogStreamController.reset();
+        replicateLogController.reset();
+        pollController.reset();
+        voteController.reset();
+        advanceCommitController.reset();
+    }
+
     // message handler
 
     @Override

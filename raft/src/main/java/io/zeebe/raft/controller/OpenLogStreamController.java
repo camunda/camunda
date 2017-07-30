@@ -90,6 +90,11 @@ public class OpenLogStreamController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);

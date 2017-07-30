@@ -71,6 +71,11 @@ public class PollController
         return stateMachineAgent.doWork();
     }
 
+    public void reset()
+    {
+        stateMachineAgent.reset();
+    }
+
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);
@@ -269,7 +274,12 @@ public class PollController
         @Override
         public void reset()
         {
+            for (final ClientRequest clientRequest : clientRequests)
+            {
+                clientRequest.close();
+            }
             clientRequests.clear();
+
             pollRequest.reset();
             pollResponse.reset();
             granted = 1; // always vote for self
