@@ -67,6 +67,7 @@ public abstract class AbstractRaftState
 
     public void pollRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final PollRequest pollRequest)
     {
+        raft.resetElectionTimeout();
         raft.mayStepDown(pollRequest);
 
         final boolean granted = raft.isTermCurrent(pollRequest) &&
@@ -84,6 +85,7 @@ public abstract class AbstractRaftState
 
     public void voteRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final VoteRequest voteRequest)
     {
+        raft.resetElectionTimeout();
         raft.mayStepDown(voteRequest);
 
         final boolean granted = raft.isTermCurrent(voteRequest) &&
