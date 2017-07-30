@@ -101,6 +101,7 @@ public class AppendRaftEventController
         @Override
         public int doWork(final Context context) throws Exception
         {
+            context.registerFailureListener();
             final long position = context.tryWriteRaftEvent();
 
             if (position >= 0)
@@ -112,6 +113,7 @@ public class AppendRaftEventController
             {
                 context.getRaft().getLogger().debug("Failed to append raft event");
                 context.take(TRANSITION_FAILED);
+                context.reset();
             }
 
             return 1;
@@ -212,7 +214,7 @@ public class AppendRaftEventController
             position = -1;
             failedPosition = -1;
 
-            raft.getLogStream().removeFailureListener(this);
+            unregisterFailureListener();
         }
 
         public Raft getRaft()
