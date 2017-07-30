@@ -54,7 +54,6 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     // environment
     private final SocketAddress socketAddress;
     private final ClientTransport clientTransport;
-    private final ServerInputSubscription serverSubscription;
     private final Logger logger;
     private final Random random = new Random();
 
@@ -71,6 +70,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     private Long flushTimeout;
 
     // controller
+    private final SubscriptionController subscriptionController;
     private final JoinController joinController;
     private final AppendRaftEventController appendRaftEventController;
 
@@ -101,10 +101,10 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.clientTransport = clientTransport;
-        serverSubscription = serverTransport.openSubscription(getSubscriptionName(), this, this).join();
         logger = Loggers.getRaftLogger(socketAddress, logStream);
         appender = new BufferedLogStorageAppender(this);
 
+        subscriptionController = new SubscriptionController(this, serverTransport);
         joinController = new JoinController(this);
         appendRaftEventController = new AppendRaftEventController(this);
 
@@ -197,7 +197,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         int workCount = 0;
 
         // poll for new messages
-        workCount += serverSubscription.poll();
+        workCount += subscriptionController.doWork();
 
         // check if election timeout occurred
         if (isElectionTimeout())
