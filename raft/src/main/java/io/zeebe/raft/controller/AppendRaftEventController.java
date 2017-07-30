@@ -41,14 +41,17 @@ public class AppendRaftEventController
 
     public AppendRaftEventController(final Raft raft)
     {
+        final State<Context> registerFailureListener = new RegisterFailureListenerState();
         final State<Context> appendRaftEvent = new AppendRaftEventState();
         final State<Context> awaitAppendRaftEvent = new AwaitAppendRaftEventState();
         final State<Context> awaitCommitRaftEvent = new AwaitCommitRaftEventState();
 
         stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
             .initialState(committed)
-            .from(committed).take(TRANSITION_OPEN).to(appendRaftEvent)
+            .from(committed).take(TRANSITION_OPEN).to(registerFailureListener)
             .from(committed).take(TRANSITION_CLOSE).to(committed)
+
+            .from(registerFailureListener).take(TRANSITION_DEFAULT).to(appendRaftEvent)
 
             .from(appendRaftEvent).take(TRANSITION_DEFAULT).to(awaitAppendRaftEvent)
             .from(appendRaftEvent).take(TRANSITION_FAILED).to(appendRaftEvent)
@@ -100,13 +103,37 @@ public class AppendRaftEventController
         return stateMachineAgent.getCurrentState() == committed;
     }
 
+    static class RegisterFailureListenerState implements State<Context>
+    {
+
+        @Override
+        public int doWork(final Context context) throws Exception
+        {
+            // make sure we were unregistered before
+            context.unregisterFailureListener();
+
+            context.registerFailureListener();
+
+            context.take(TRANSITION_DEFAULT);
+
+            return 1;
+        }
+
+        @Override
+        public boolean isInterruptable()
+        {
+            return false;
+        }
+
+    }
+
+
     static class AppendRaftEventState implements State<Context>
     {
 
         @Override
         public int doWork(final Context context) throws Exception
         {
-            context.registerFailureListener();
             final long position = context.tryWriteRaftEvent();
 
             if (position >= 0)
@@ -118,7 +145,6 @@ public class AppendRaftEventController
             {
                 context.getRaft().getLogger().debug("Failed to append raft event");
                 context.take(TRANSITION_FAILED);
-                context.reset();
             }
 
             return 1;
@@ -152,7 +178,7 @@ public class AppendRaftEventController
             {
                 workCount++;
                 context.take(TRANSITION_FAILED);
-                context.reset();
+                context.resetPosition();
             }
 
             return workCount;
@@ -178,8 +204,8 @@ public class AppendRaftEventController
                 // send response
                 context.acceptJoinRequest();
 
+                context.unregisterFailureListener();
                 context.take(TRANSITION_DEFAULT);
-                context.reset();
             }
 
             return workCount;
@@ -218,9 +244,7 @@ public class AppendRaftEventController
         {
             raftEvent.reset();
 
-            position = -1;
-            failedPosition = -1;
-
+            resetPosition();
             unregisterFailureListener();
         }
 
@@ -264,8 +288,9 @@ public class AppendRaftEventController
             raft.getLogStream().removeFailureListener(this);
         }
 
-        public void resetFailedPosition()
+        public void resetPosition()
         {
+            position = -1;
             failedPosition = -1;
         }
 
@@ -310,11 +335,10 @@ public class AppendRaftEventController
 
             raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
         }
-
         public long getPosition()
         {
             return position;
         }
-    }
 
+    }
 }
