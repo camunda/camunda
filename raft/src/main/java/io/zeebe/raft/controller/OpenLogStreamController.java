@@ -37,6 +37,7 @@ public class OpenLogStreamController
 
     private final WaitState<Context> committed = context -> { };
 
+    private final StateMachine<Context> stateMachine;
     private final StateMachineAgent<Context> stateMachineAgent;
 
     public OpenLogStreamController(final Raft raft)
@@ -50,7 +51,7 @@ public class OpenLogStreamController
         final State<Context> awaitCloseLogController = new AwaitCloseLogControllerState();
         final WaitState<Context> closed = context -> { };
 
-        final StateMachine<Context> stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
+        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
             .initialState(closed)
 
             .from(closed).take(TRANSITION_OPEN).to(openLogController)
@@ -97,6 +98,11 @@ public class OpenLogStreamController
     public void close()
     {
         stateMachineAgent.addCommand(CLOSE_COMMAND);
+    }
+
+    public long getInitialEventPosition()
+    {
+        return stateMachine.getContext().getPosition();
     }
 
     public boolean isCommitted()
@@ -217,7 +223,7 @@ public class OpenLogStreamController
             else if (context.isAppendFailed())
             {
                 workCount++;
-                context.resetFailedPosition();
+                context.resetPosition();
                 context.take(TRANSITION_FAILED);
             }
 
@@ -327,6 +333,8 @@ public class OpenLogStreamController
         {
             super(stateMachine);
             this.raft = raft;
+
+            reset();
         }
 
         @Override
@@ -338,7 +346,7 @@ public class OpenLogStreamController
             position = -1;
             failedPosition = -1;
 
-            raft.getLogStream().removeFailureListener(this);
+            unregisterFailureListener();
         }
 
         public Raft getRaft()
@@ -386,8 +394,14 @@ public class OpenLogStreamController
             raft.getLogStream().registerFailureListener(this);
         }
 
-        public void resetFailedPosition()
+        public void unregisterFailureListener()
         {
+            raft.getLogStream().removeFailureListener(this);
+        }
+
+        public void resetPosition()
+        {
+            position = -1;
             failedPosition = -1;
         }
 

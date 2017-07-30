@@ -88,10 +88,11 @@ public class AdvanceCommitController
             Arrays.sort(positions);
 
             final long commitPosition = positions[memberSize + 1 - raft.requiredQuorum()];
+            final long initialEventPosition = raft.getInitialEventPosition();
 
             final LogStream logStream = raft.getLogStream();
 
-            if (commitPosition >= 0 && logStream.getCommitPosition() < commitPosition)
+            if (initialEventPosition >= 0 && commitPosition >= initialEventPosition && logStream.getCommitPosition() < commitPosition)
             {
                 raft.getLogger().debug("Committing position {} as {}", commitPosition, raft.getState());
                 logStream.setCommitPosition(commitPosition);

@@ -502,6 +502,14 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     }
 
     /**
+     * @return the position of the initial event of the term, -1 if the event is not written to the log yet
+     */
+    public long getInitialEventPosition()
+    {
+        return openLogStreamController.getInitialEventPosition();
+    }
+
+    /**
      * @return true if the initial event of this node for the current term was committed to the log stream, false otherwise
      */
     public boolean isInitialEventCommitted()
