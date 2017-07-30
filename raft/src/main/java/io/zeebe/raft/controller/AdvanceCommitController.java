@@ -99,7 +99,6 @@ public class AdvanceCommitController
 
             if (initialEventPosition >= 0 && commitPosition >= initialEventPosition && logStream.getCommitPosition() < commitPosition)
             {
-                raft.getLogger().debug("Committing position {} as {}", commitPosition, raft.getState());
                 logStream.setCommitPosition(commitPosition);
             }
 

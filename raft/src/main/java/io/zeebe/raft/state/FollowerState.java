@@ -44,12 +44,6 @@ public class FollowerState extends AbstractRaftState
         final int previousEventTerm = appendRequest.getPreviousEventTerm();
         final LoggedEventImpl event = appendRequest.getEvent();
 
-        if (event != null)
-        {
-            event.readMetadata(metadata);
-            raft.getLogger().debug("Received event {}/{} with prev {}/{} from {}", event.getPosition(), metadata.getRaftTermId(), previousEventPosition, previousEventTerm, appendRequest.getSocketAddress());
-        }
-
         if (raft.isTermCurrent(appendRequest))
         {
             if (appender.isLastEvent(previousEventPosition, previousEventTerm))

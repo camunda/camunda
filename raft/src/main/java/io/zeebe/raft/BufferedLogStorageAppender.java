@@ -297,7 +297,6 @@ public class BufferedLogStorageAppender
 
         if (nextCommitPosition >= 0 && nextCommitPosition > currentCommitPosition)
         {
-            logger.debug("Committing position {} as {}", nextCommitPosition, raft.getState());
             logStream.setCommitPosition(nextCommitPosition);
         }
 

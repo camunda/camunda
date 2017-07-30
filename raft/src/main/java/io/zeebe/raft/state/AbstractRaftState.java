@@ -23,15 +23,12 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.*;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import org.slf4j.Logger;
 
 public abstract class AbstractRaftState
 {
     protected final Raft raft;
     protected final BufferedLogStorageAppender appender;
     protected final LogStream logStream;
-
-    protected final Logger logger;
 
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
@@ -46,7 +43,6 @@ public abstract class AbstractRaftState
     {
         this.raft = raft;
         this.logStream = raft.getLogStream();
-        this.logger = raft.getLogger();
         this.appender = appender;
 
         reader = new BufferedLogStreamReader(logStream, true);

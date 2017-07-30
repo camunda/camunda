@@ -16,7 +16,6 @@
 package io.zeebe.raft.controller;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendRequest;
@@ -146,10 +145,6 @@ public class ReplicateLogController
 
                     if (event != null && sent)
                     {
-                        final BrokerEventMetadata metadata = new BrokerEventMetadata();
-                        event.readMetadata(metadata);
-                        raft.getLogger().debug("Send event {}/{} with prev {}/{} to {}", event.getPosition(), metadata.getRaftTermId(), member.getPreviousPosition(), member.getPreviousTerm(), member.getRemoteAddress().getAddress());
-
                         member.setPreviousEvent(event);
                     }
                 }
