@@ -63,7 +63,7 @@ public class RaftTwoNodesTest
     }
 
     @Test
-    public void shouldNotElectNewLeader()
+    public void shouldNotElectNewLeader() throws InterruptedException
     {
         // given
         final RaftRule oldLeader = cluster.awaitLeader();
@@ -71,7 +71,7 @@ public class RaftTwoNodesTest
 
         // when
         cluster.removeRaft(oldLeader);
-        cluster.wait(20);
+        Thread.sleep(Raft.ELECTION_INTERVAL_MS * 4);
 
         // then
         final RaftRule follower = cluster.getRafts().get(0);

@@ -44,6 +44,7 @@ import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
@@ -74,6 +75,8 @@ public class RaftRule extends ExternalResource
     protected Raft raft;
     protected BufferedLogStreamReader uncommittedReader;
     protected BufferedLogStreamReader committedReader;
+
+    protected ActorReference actorReference;
 
     public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
@@ -141,11 +144,15 @@ public class RaftRule extends ExternalResource
 
         uncommittedReader = new BufferedLogStreamReader(logStream, true);
         committedReader = new BufferedLogStreamReader(logStream, false);
+
+        schedule();
     }
 
     @Override
     protected void after()
     {
+        unschedule();
+
         logStream.close();
 
         serverTransport.close();
@@ -154,6 +161,23 @@ public class RaftRule extends ExternalResource
 
         clientTransport.close();
         clientSendBuffer.close();
+    }
+
+    public void schedule()
+    {
+        if (actorReference == null)
+        {
+            actorReference = actorSchedulerRule.getActorScheduler().schedule(raft);
+        }
+    }
+
+    public void unschedule()
+    {
+        if (actorReference != null)
+        {
+            actorReference.close();
+            actorReference = null;
+        }
     }
 
     public SocketAddress getSocketAddress()

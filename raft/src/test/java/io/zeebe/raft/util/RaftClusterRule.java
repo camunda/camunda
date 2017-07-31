@@ -16,11 +16,9 @@
 package io.zeebe.raft.util;
 
 import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -30,13 +28,14 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.test.util.TestUtil;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RaftClusterRule implements TestRule, Callable<Integer>
+public class RaftClusterRule implements TestRule
 {
 
     public static final int DEFAULT_RETRIES = 30;
@@ -72,17 +71,6 @@ public class RaftClusterRule implements TestRule, Callable<Integer>
         return base;
     }
 
-    @Override
-    public Integer call() throws Exception
-    {
-        return doWork();
-    }
-
-    public int doWork()
-    {
-        return rafts.stream().mapToInt(RaftRule::doWork).sum();
-    }
-
     public List<RaftRule> getRafts()
     {
         return rafts;
@@ -92,6 +80,7 @@ public class RaftClusterRule implements TestRule, Callable<Integer>
     {
         raft.clearSubscription();
 
+        raft.schedule();
         this.rafts.add(raft);
 
         return this;
@@ -109,6 +98,7 @@ public class RaftClusterRule implements TestRule, Callable<Integer>
 
     public RaftClusterRule removeRaft(final RaftRule raft)
     {
+        raft.unschedule();
         this.rafts.remove(raft);
 
         return this;
@@ -200,22 +190,6 @@ public class RaftClusterRule implements TestRule, Callable<Integer>
             "Failed to wait for a node to become leader in the cluster");
     }
 
-    public void wait(final int iterations)
-    {
-        for (int i = 0; i < iterations; i++)
-        {
-            doWork();
-            try
-            {
-                Thread.sleep(100);
-            }
-            catch (final Exception e)
-            {
-                // ignore
-            }
-        }
-    }
-
     public void printLogEntries(final boolean readUncommitted)
     {
         rafts.forEach(r -> printLogEntries(r, readUncommitted));
@@ -262,8 +236,7 @@ public class RaftClusterRule implements TestRule, Callable<Integer>
     {
         try
         {
-            doRepeatedly(this)
-                .until(c -> supplier.getAsBoolean(), retires, message, args);
+            TestUtil.waitUntil(supplier, retires, message, args);
         }
         catch (final Throwable e)
         {
