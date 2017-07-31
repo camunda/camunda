@@ -60,9 +60,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-dispatcher</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-dispatcher.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-dispatcher.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-dispatcher</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-dispatcher.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-dispatcher.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

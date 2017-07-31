@@ -17,7 +17,7 @@ job(jobName)
         {
             remote
             {
-                github 'camunda-tngp/zb-dispatcher', 'ssh'
+                github 'camunda-zeebe/zb-dispatcher', 'ssh'
                 credentials 'camunda-jenkins-github-ssh'
             }
             branch gitBranch
