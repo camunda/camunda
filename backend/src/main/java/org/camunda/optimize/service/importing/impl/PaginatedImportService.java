@@ -58,7 +58,9 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     if (!newEngineEntities.isEmpty()) {
       List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
       importToElasticSearch(newOptimizeEntities);
-    } else {
+    }
+
+    if (!engineHasStillNewData) {
       engineHasStillNewData = importIndexHandler.adjustIndexWhenNoResultsFound(engineHasStillNewData);
     }
 
