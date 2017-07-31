@@ -682,6 +682,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final ExecutableServiceTask serviceTask = getCurrentActivity();
             final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
 
+            taskEvent.reset();
+
             taskEvent
                 .setEventType(TaskEventType.CREATE)
                 .setType(taskMetadata.getTaskType())

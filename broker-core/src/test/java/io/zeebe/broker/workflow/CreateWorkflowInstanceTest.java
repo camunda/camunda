@@ -21,17 +21,19 @@ import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.*;
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
@@ -378,6 +380,50 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstanceEvents.get(1).event())
             .containsEntry("bpmnProcessId", "baaaar")
             .containsEntry("workflowInstanceKey", workflowInstanceKeyBaaaar);
+    }
+
+    @Test
+    public void shouldCreateMultipleWorkflowInstancesForDifferentVersions()
+    {
+        // given
+        final Map<String, String> headers = new HashMap<>();
+        headers.put("foo", "bar");
+
+        final BpmnModelInstance workflow = wrap(Bpmn.createExecutableProcess("process")
+             .startEvent("start")
+             .serviceTask("task")
+             .endEvent("end")
+             .done())
+                 .taskDefinition("task", "test", 3)
+                 .taskHeaders("task", headers);
+
+        testClient.deploy(workflow);
+
+        final long workflowInstance1 = testClient.createWorkflowInstance("process");
+
+        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        // when
+        testClient.deploy(workflow);
+
+        final long workflowInstance2 = testClient.createWorkflowInstance("process");
+
+
+        // then
+        final List<SubscribedEvent> workflowInstanceEvents = testClient.receiveEvents(workflowInstanceEvents("ACTIVITY_ACTIVATED"))
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertThat(workflowInstanceEvents.get(0).event())
+            .containsEntry("workflowInstanceKey", workflowInstance1)
+            .containsEntry("version", 1);
+
+        assertThat(workflowInstanceEvents.get(1).event())
+            .containsEntry("workflowInstanceKey", workflowInstance2)
+            .containsEntry("version", 2);
+
+        final long createdTasks = testClient.receiveEvents(taskEvents("CREATED")).limit(2).count();
+        assertThat(createdTasks).isEqualTo(2);
     }
 
 }
