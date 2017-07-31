@@ -413,7 +413,7 @@ public class MappingMergeParameterizedTest
                 createMapping("$.value", "$.obj.newFoo"),
                 // expected result
                 "{'obj':{'test':'value','newFoo':1},'int':1}" },
-            // 37. Test camunda-tngp/camunda-tngp#297
+            // 37. Test camunda-zeebe/zeebe#297
 //                                            {
 //                                                    // source
 //                                                    "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -550,7 +550,7 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{}" }
-            // 48. Test camunda-tngp/msgpack-json-path#10
+            // 48. Test camunda-zeebe/msgpack-json-path#10
 //            ,{
 //                // source
 //                "{'foo':'bar'}",

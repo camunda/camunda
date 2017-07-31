@@ -92,9 +92,9 @@
 
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-msgpack-json-path</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-msgpack-json-path.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-msgpack-json-path</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-msgpack-json-path.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-msgpack-json-path.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 </project>
