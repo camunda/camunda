@@ -64,9 +64,9 @@
 
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-util</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-util.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-util.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-util</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-util.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-util.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
