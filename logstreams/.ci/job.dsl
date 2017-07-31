@@ -34,7 +34,7 @@ mavenJob(jobName) {
   scm {
     git {
       remote {
-        github 'camunda-tngp/' + repository, 'ssh'
+        github 'camunda-zeebe/' + repository, 'ssh'
         credentials 'camunda-jenkins-github-ssh'
       }
       branch gitBranch

@@ -195,9 +195,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-logstreams</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-logstreams.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-logstreams.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-logstreams</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-logstreams.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-logstreams.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
