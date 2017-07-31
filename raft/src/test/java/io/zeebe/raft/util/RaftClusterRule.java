@@ -40,7 +40,7 @@ public class RaftClusterRule implements TestRule
 
     public static final int DEFAULT_RETRIES = 30;
     public static final int COMMITTED_RETRIES = 200;
-    public static final int ALL_COMMITTED_RETRIES = 500;
+    public static final int ALL_COMMITTED_RETRIES = 300;
 
     public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.raft.test");
 
