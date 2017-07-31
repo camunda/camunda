@@ -92,6 +92,7 @@ public class SubscriptionController
                 try
                 {
                     context.setSubscription(future.get());
+                    context.getRaft().getLogger().debug("Successfully opened server subscription");
                     context.take(TRANSITION_DEFAULT);
                 }
                 catch (final Throwable t)
