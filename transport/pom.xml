@@ -109,9 +109,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-transport</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-transport.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-transport.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-transport</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-transport.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-transport.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
