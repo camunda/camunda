@@ -217,16 +217,20 @@ public class OpenLogStreamController
         {
             int workCount = 0;
 
+            final Raft raft = context.getRaft();
+            final Logger logger = raft.getLogger();
+
             if (context.isAppended())
             {
-                final Raft raft = context.getRaft();
-                raft.getLogger().debug("Initial event for term {} was appended on position {}", raft.getLogStream().getTerm(), context.getPosition());
+                logger.debug("Initial event for term {} was appended in position {}", raft.getLogStream().getTerm(), context.getPosition());
 
                 workCount++;
                 context.take(TRANSITION_DEFAULT);
             }
             else if (context.isAppendFailed())
             {
+                logger.debug("Failed to append initial event in position {}", context.getPosition());
+
                 workCount++;
                 context.resetPosition();
                 context.take(TRANSITION_FAILED);
@@ -391,7 +395,7 @@ public class OpenLogStreamController
 
         public boolean isAppendFailed()
         {
-            return position >= 0 && position >= failedPosition;
+            return position >= 0 && failedPosition >= 0 && position >= failedPosition;
         }
 
         public void registerFailureListener()

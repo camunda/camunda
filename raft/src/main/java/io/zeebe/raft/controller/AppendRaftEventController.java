@@ -23,6 +23,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.state.*;
+import org.slf4j.Logger;
 
 public class AppendRaftEventController
 {
@@ -166,16 +167,20 @@ public class AppendRaftEventController
         {
             int workCount = 0;
 
+            final Raft raft = context.getRaft();
+            final Logger logger = raft.getLogger();
+
             if (context.isAppended())
             {
-                final Raft raft = context.getRaft();
-                raft.getLogger().debug("Raft event for term {} was appended on position {}", raft.getLogStream().getTerm(), context.getPosition());
+                logger.debug("Raft event for term {} was appended in position {}", raft.getLogStream().getTerm(), context.getPosition());
 
                 workCount++;
                 context.take(TRANSITION_DEFAULT);
             }
             else if (context.isAppendFailed())
             {
+                logger.debug("Failed to append initial event in position {}", context.getPosition());
+
                 workCount++;
                 context.take(TRANSITION_FAILED);
                 context.resetPosition();
@@ -275,7 +280,7 @@ public class AppendRaftEventController
 
         public boolean isAppendFailed()
         {
-            return position >= 0 && position >= failedPosition;
+            return position >= 0 && failedPosition >= 0 && position >= failedPosition;
         }
 
         public void registerFailureListener()
