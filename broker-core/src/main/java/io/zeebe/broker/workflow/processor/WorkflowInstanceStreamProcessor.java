@@ -604,7 +604,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityReadyEventProcessor implements EventProcessor
     {
-        private DirectBuffer sourcePayload;
+        private final DirectBuffer sourcePayload = new UnsafeBuffer(0, 0);
 
         @Override
         public void processEvent()
@@ -637,7 +637,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
         {
-            sourcePayload = workflowInstanceEvent.getPayload();
+            sourcePayload.wrap(workflowInstanceEvent.getPayload());
             // only if we have no default mapping we have to use the mapping processor
             if (mappings.length > 0)
             {

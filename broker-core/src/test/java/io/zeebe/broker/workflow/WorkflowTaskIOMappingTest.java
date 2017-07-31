@@ -591,7 +591,7 @@ public class WorkflowTaskIOMappingTest
         result = (byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(
-                "{'testAttr':'test', 'result':123}"));
+                "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}"));
     }
 
     private byte[] bpmnXml(final ZeebeExtensions.ZeebeModelInstance modelInstance)
