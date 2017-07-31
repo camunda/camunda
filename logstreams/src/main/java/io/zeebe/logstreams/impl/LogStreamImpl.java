@@ -329,7 +329,7 @@ public final class LogStreamImpl implements LogStream
     @Override
     public void truncate(long position)
     {
-        if (logStreamController != null)
+        if (logStreamController != null && !logStreamController.isClosed())
         {
             throw new IllegalStateException(EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
         }

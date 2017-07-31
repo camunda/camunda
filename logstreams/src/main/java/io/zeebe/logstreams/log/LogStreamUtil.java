@@ -119,7 +119,7 @@ public class LogStreamUtil
             boolean hasNext = next();
             while (hasNext)
             {
-                final long currentPosition = getPosition(buffer, 0);
+                final long currentPosition = getPosition(buffer, -HEADER_LENGTH);
                 if (currentPosition < position)
                 {
                     hasNext = next();

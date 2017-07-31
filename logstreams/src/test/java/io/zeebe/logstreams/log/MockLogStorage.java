@@ -268,33 +268,35 @@ public class MockLogStorage
             final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
+            // the message is written to the beginning of the buffer, so we cannot use
+            // messageOffset(offset) for the fields, as the data frame header is overwritten
             int offset = byteBuffer.position();
-            final int messageOffset = messageOffset(offset);
-            if (messageOffset < byteBuffer.limit())
-            {
-                setPosition(buffer, messageOffset, position);
-                setProducerId(buffer, messageOffset, producerId);
-                setSourceEventLogStreamPartitionId(buffer, messageOffset, sourceEventLogStreamPartitionId);
-                setSourceEventPosition(buffer, messageOffset, sourceEventPosition);
-                setKey(buffer, messageOffset, key);
-                setSourceEventLogStreamTopicNameLength(buffer, messageOffset, topicNameLength);
-                setMetadataLength(buffer, messageOffset, metadataLength);
 
-                if (sourceEventLogStreamTopicNameOffset(messageOffset) < byteBuffer.limit())
+            if (offset < byteBuffer.limit())
+            {
+                setPosition(buffer, offset, position);
+                setProducerId(buffer, offset, producerId);
+                setSourceEventLogStreamPartitionId(buffer, offset, sourceEventLogStreamPartitionId);
+                setSourceEventPosition(buffer, offset, sourceEventPosition);
+                setKey(buffer, offset, key);
+                setSourceEventLogStreamTopicNameLength(buffer, offset, topicNameLength);
+                setMetadataLength(buffer, offset, metadataLength);
+
+                if (sourceEventLogStreamTopicNameOffset(offset) < byteBuffer.limit())
                 {
                     if (sourceEventLogStreamTopicName != null)
                     {
-                        buffer.putBytes(sourceEventLogStreamTopicNameOffset(messageOffset), sourceEventLogStreamTopicName);
+                        buffer.putBytes(sourceEventLogStreamTopicNameOffset(offset), sourceEventLogStreamTopicName);
                     }
 
                     if (metadata != null)
                     {
-                        buffer.putBytes(metadataOffset(messageOffset, topicNameLength), metadata);
+                        buffer.putBytes(metadataOffset(offset, topicNameLength), metadata);
                     }
 
                     if (value != null)
                     {
-                        final int valueOffset = valueOffset(messageOffset, topicNameLength, metadataLength);
+                        final int valueOffset = valueOffset(offset, topicNameLength, metadataLength);
                         final byte[] valueToWrite = Arrays.copyOf(value, Math.min(value.length, byteBuffer.limit() - valueOffset));
                         buffer.putBytes(valueOffset, valueToWrite);
                     }
