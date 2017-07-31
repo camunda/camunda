@@ -186,9 +186,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-raft</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-raft.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-raft.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-raft</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-raft.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-raft.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
