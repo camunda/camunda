@@ -42,9 +42,9 @@
   </profiles>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-build-tools</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-build-tools.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-build-tools.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-build-tools</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-build-tools.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-build-tools.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
