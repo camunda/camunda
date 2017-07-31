@@ -94,9 +94,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-service-container</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-service-container.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-service-container.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-service-container</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-service-container.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-service-container.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
