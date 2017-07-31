@@ -328,9 +328,9 @@
   </build>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zb-parent</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zb-parent.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zb-parent.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zb-parent</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zb-parent.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-parent.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
