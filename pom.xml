@@ -52,9 +52,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-tngp/zeebe</url>
-    <connection>scm:git:git@github.com:camunda-tngp/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-tngp/zeebe.git</developerConnection>
+    <url>https://github.com/camunda-zeebe/zeebe</url>
+    <connection>scm:git:git@github.com:camunda-zeebe/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-zeebe/zeebe.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

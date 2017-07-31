@@ -45,10 +45,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Ignore("Unreliable cause of multiple problems: " +
-    "https://github.com/camunda-tngp/zeebe/issues/292 " +
-    "https://github.com/camunda-tngp/zeebe/issues/313 " +
-    "https://github.com/camunda-tngp/zeebe/issues/314 " +
-    "https://github.com/camunda-tngp/zeebe/issues/315")
+    "https://github.com/camunda-zeebe/zeebe/issues/292 " +
+    "https://github.com/camunda-zeebe/zeebe/issues/313 " +
+    "https://github.com/camunda-zeebe/zeebe/issues/314 " +
+    "https://github.com/camunda-zeebe/zeebe/issues/315")
 public class BrokerLeaderChangeTest
 {
     // TODO: remove logging after test becomes stable

@@ -71,7 +71,7 @@ JOBS.each
             {
                 remote
                 {
-                    github 'camunda-tngp/zeebe', 'ssh'
+                    github 'camunda-zeebe/zeebe', 'ssh'
                     credentials 'camunda-jenkins-github-ssh'
                 }
                 branch gitBranch
