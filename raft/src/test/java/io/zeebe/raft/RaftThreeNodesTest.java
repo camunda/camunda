@@ -94,6 +94,7 @@ public class RaftThreeNodesTest
         // given
         final RaftRule oldLeader = cluster.awaitLeader();
         cluster.awaitLogControllerOpen(oldLeader);
+        cluster.awaitRaftEventCommittedOnAll(oldLeader.getTerm());
 
         long position = oldLeader.writeEvents("foo", "bar");
         cluster.awaitEventCommittedOnAll(position, oldLeader.getTerm(), "bar");
