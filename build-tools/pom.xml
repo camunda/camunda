@@ -23,24 +23,6 @@
     <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>sonatype-oss-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <configuration>
-              <!-- skip gpg signing as the release is not pushed to maven central -->
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
   <scm>
     <url>https://github.com/camunda-zeebe/zb-build-tools</url>
     <connection>scm:git:git@github.com:camunda-zeebe/zb-build-tools.git</connection>
