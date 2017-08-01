@@ -60,7 +60,7 @@ public class TaskInstanceMap
         this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public ZbMapSnapshotSupport getSnapshotSupport()
+    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
     {
         return snapshotSupport;
     }

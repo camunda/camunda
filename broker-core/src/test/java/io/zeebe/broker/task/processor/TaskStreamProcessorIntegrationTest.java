@@ -31,7 +31,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
@@ -43,6 +42,7 @@ import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.FluentMock;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.time.ClockUtil;
@@ -93,7 +93,6 @@ public class TaskStreamProcessorIntegrationTest
     private LogStreamWriter logStreamWriter;
 
     private final BrokerEventMetadata defaultBrokerEventMetadata = new BrokerEventMetadata();
-//    private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
 
     private final TaskEvent followUpTaskEvent = new TaskEvent();
     private BufferedLogStreamReader logStreamReader;
@@ -204,15 +203,7 @@ public class TaskStreamProcessorIntegrationTest
     public void shouldLockTask() throws InterruptedException, ExecutionException
     {
         // given
-        final TaskSubscription subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(wrapString("owner"))
-                .setCredits(10);
-
-        lockTaskStreamProcessor.addSubscription(subscription);
+        lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
@@ -256,15 +247,7 @@ public class TaskStreamProcessorIntegrationTest
     public void shouldCompleteTask() throws Exception
     {
         // given
-        final TaskSubscription subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(wrapString("owner"))
-                .setCredits(10);
-
-        lockTaskStreamProcessor.addSubscription(subscription);
+        lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
@@ -318,15 +301,7 @@ public class TaskStreamProcessorIntegrationTest
     public void shouldFailTask() throws InterruptedException, ExecutionException
     {
         // given
-        final TaskSubscription subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(wrapString("owner"))
-                .setCredits(10);
-
-        lockTaskStreamProcessor.addSubscription(subscription);
+        lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
@@ -385,15 +360,7 @@ public class TaskStreamProcessorIntegrationTest
 
         ClockUtil.setCurrentTime(now);
 
-        final TaskSubscription subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(lockDuration.toMillis())
-                .setLockOwner(wrapString("owner"))
-                .setCredits(10);
-
-        lockTaskStreamProcessor.addSubscription(subscription);
+        lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
@@ -452,15 +419,7 @@ public class TaskStreamProcessorIntegrationTest
     public void shouldUpdateTaskRetries() throws InterruptedException, ExecutionException
     {
         // given
-        final TaskSubscription subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(wrapString("owner"))
-                .setCredits(10);
-
-        lockTaskStreamProcessor.addSubscription(subscription);
+        lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
@@ -563,4 +522,14 @@ public class TaskStreamProcessorIntegrationTest
 
         return loggedEvent;
     }
+
+    private TaskSubscription createTaskSubscription()
+    {
+        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner"), 11);
+        subscription.setSubscriberKey(1L);
+        subscription.setCredits(10);
+
+        return subscription;
+    }
+
 }

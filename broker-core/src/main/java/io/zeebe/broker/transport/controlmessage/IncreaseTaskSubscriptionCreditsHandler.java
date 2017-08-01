@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -34,7 +34,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 {
     protected static final CompletableFuture<Void> COMPLETED_FUTURE = CompletableFuture.completedFuture(null);
 
-    protected final TaskSubscription subscription = new TaskSubscription();
+    protected final TaskSubscriptionRequest subscription = new TaskSubscriptionRequest();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected final TaskSubscriptionManager manager;

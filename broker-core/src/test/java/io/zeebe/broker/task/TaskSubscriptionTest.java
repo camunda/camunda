@@ -17,17 +17,17 @@
  */
 package io.zeebe.broker.task;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.test.broker.protocol.clientapi.*;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,20 +60,9 @@ public class TaskSubscriptionTest
             .send();
 
         // when
-        final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
-                .eventTypeTask()
-                .command()
-                    .put("eventType", "CREATE")
-                    .put("type", "foo")
-                    .put("retries", 3)
-                .done()
-                .sendAndAwait();
+        final long taskKey = createTask("foo");
 
         // then
-        final long taskKey = createTaskResponse.key();
-
         final SubscribedEvent taskEvent = apiRule.topic().receiveSingleEvent(taskEvents("LOCKED"));
         assertThat(taskEvent.key()).isEqualTo(taskKey);
         assertThat(taskEvent.event())
@@ -81,6 +70,8 @@ public class TaskSubscriptionTest
             .containsEntry("retries", 3)
             .containsEntry("lockOwner", "bar");
     }
+
+
 
     @Test
     public void shouldCloseSubscriptionOnTransportChannelClose() throws InterruptedException
@@ -96,18 +87,7 @@ public class TaskSubscriptionTest
         // then the subscription has been closed, so we can create a new task and lock it for a new subscription
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
-        final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(0)
-                .eventTypeTask()
-                .command()
-                .put("eventType", "CREATE")
-                .put("type", "foo")
-                .put("retries", 1)
-                .done()
-                .sendAndAwait();
-
-        final long taskKey = createTaskResponse.key();
+        final long taskKey = createTask("foo");
 
         final ControlMessageResponse subscriptionResponse = apiRule
             .openTaskSubscription("foo")
@@ -160,6 +140,74 @@ public class TaskSubscriptionTest
         // then
         assertThat(error.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
         assertThat(error.getErrorData()).isEqualTo("Cannot increase task subscription credits. Credits must be positive.");
+    }
+
+    @Test
+    public void shouldAddTaskSubscriptionsForDifferentTypes()
+    {
+        // given
+        apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .data()
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("taskType", "foo")
+                .put("lockDuration", 1000L)
+                .put("lockOwner", "owner1")
+                .put("credits", 5)
+                .done()
+            .send();
+
+        apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .data()
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("taskType", "bar")
+                .put("lockDuration", 1000L)
+                .put("lockOwner", "owner2")
+                .put("credits", 5)
+                .done()
+            .send();
+
+        // when
+        createTask("foo");
+        createTask("bar");
+
+        // then
+        final List<SubscribedEvent> taskEvents = apiRule.topic().receiveEvents(taskEvents("LOCKED"))
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertThat(taskEvents).hasSize(2);
+
+        assertThat(taskEvents.get(0).event())
+            .containsEntry("type", "foo")
+            .containsEntry("lockOwner", "owner1");
+
+        assertThat(taskEvents.get(1).event())
+            .containsEntry("type", "bar")
+            .containsEntry("lockOwner", "owner2");
+    }
+
+    private long createTask(String type)
+    {
+        final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(DEFAULT_PARTITION_ID)
+                .eventTypeTask()
+                .command()
+                    .put("eventType", "CREATE")
+                    .put("type", type)
+                    .put("retries", 3)
+                .done()
+                .sendAndAwait();
+
+
+
+        return createTaskResponse.key();
     }
 
 }

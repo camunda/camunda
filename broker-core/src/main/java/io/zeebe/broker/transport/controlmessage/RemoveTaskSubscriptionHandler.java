@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -31,7 +31,7 @@ import io.zeebe.transport.ServerOutput;
 
 public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
 {
-    protected final TaskSubscription subscription = new TaskSubscription();
+    protected final TaskSubscriptionRequest subscription = new TaskSubscriptionRequest();
 
     protected final TaskSubscriptionManager manager;
 

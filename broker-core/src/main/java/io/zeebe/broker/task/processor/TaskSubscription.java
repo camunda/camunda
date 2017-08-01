@@ -17,108 +17,66 @@
  */
 package io.zeebe.broker.task.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
 import org.agrona.DirectBuffer;
 
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.StringProperty;
-
-public class TaskSubscription extends UnpackedObject
+public class TaskSubscription
 {
     public static final int LOCK_OWNER_MAX_LENGTH = 64;
 
-    protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
+    private final DirectBuffer topicName;
+    private final int partitionId;
 
-    protected StringProperty topicNameProp = new StringProperty("topicName");
-    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
-    protected StringProperty taskTypeProp = new StringProperty("taskType", "");
+    private final DirectBuffer lockTaskType;
 
-    protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
-    protected StringProperty lockOwnerProp = new StringProperty("lockOwner", "default");
+    private final long lockDuration;
+    private final DirectBuffer lockOwner;
 
-    protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
+    private final int streamId;
 
-    // transient field
-    protected int streamId = -1;
+    private long subscriberKey;
 
-    public TaskSubscription()
+    private int credits;
+
+    public TaskSubscription(DirectBuffer topicName, int partitionId, DirectBuffer lockTaskType, long lockDuration, DirectBuffer lockOwner, int streamId)
     {
-        this.declareProperty(subscriberKeyProp)
-            .declareProperty(topicNameProp)
-            .declareProperty(partitionIdProp)
-            .declareProperty(taskTypeProp)
-            .declareProperty(lockDurationProp)
-            .declareProperty(lockOwnerProp)
-            .declareProperty(creditsProp);
-    }
-
-    public TaskSubscription setSubscriberKey(long subscriberKey)
-    {
-        this.subscriberKeyProp.setValue(subscriberKey);
-        return this;
-    }
-
-    public TaskSubscription setStreamId(int streamId)
-    {
-        this.streamId =  streamId;
-        return this;
-    }
-
-    public TaskSubscription setTopicName(final DirectBuffer topicName)
-    {
-        this.topicNameProp.setValue(topicName);
-        return this;
-    }
-
-    public TaskSubscription setPartitionId(final int partitionId)
-    {
-        this.partitionIdProp.setValue(partitionId);
-        return this;
-    }
-
-    public TaskSubscription setTaskType(DirectBuffer taskType)
-    {
-        this.taskTypeProp.setValue(taskType);
-        return this;
-    }
-
-    public TaskSubscription setLockDuration(long lockDuration)
-    {
-        this.lockDurationProp.setValue(lockDuration);
-        return this;
-    }
-
-    public TaskSubscription setCredits(int credits)
-    {
-        this.creditsProp.setValue(credits);
-        return this;
-    }
-
-    public TaskSubscription setLockOwner(DirectBuffer lockOwner)
-    {
-        this.lockOwnerProp.setValue(lockOwner);
-        return this;
-    }
-
-    public long getSubscriberKey()
-    {
-        return subscriberKeyProp.getValue();
-    }
-
-    public DirectBuffer getLockTaskType()
-    {
-        return taskTypeProp.getValue();
-    }
-
-    public long getLockDuration()
-    {
-        return lockDurationProp.getValue();
+        this.topicName = cloneBuffer(topicName);
+        this.partitionId = partitionId;
+        this.lockTaskType = cloneBuffer(lockTaskType);
+        this.lockDuration = lockDuration;
+        this.lockOwner = cloneBuffer(lockOwner);
+        this.streamId = streamId;
     }
 
     public int getCredits()
     {
-        return creditsProp.getValue();
+        return credits;
+    }
+
+    public void setCredits(int credits)
+    {
+        this.credits = credits;
+    }
+
+    public long getSubscriberKey()
+    {
+        return subscriberKey;
+    }
+
+    public DirectBuffer getLockTaskType()
+    {
+        return lockTaskType;
+    }
+
+    public long getLockDuration()
+    {
+        return lockDuration;
+    }
+
+    public DirectBuffer getLockOwner()
+    {
+        return lockOwner;
     }
 
     public int getStreamId()
@@ -126,19 +84,19 @@ public class TaskSubscription extends UnpackedObject
         return streamId;
     }
 
+    public void setSubscriberKey(long subscriberKey)
+    {
+        this.subscriberKey = subscriberKey;
+    }
+
     public DirectBuffer getTopicName()
     {
-        return topicNameProp.getValue();
+        return topicName;
     }
 
     public int getPartitionId()
     {
-        return partitionIdProp.getValue();
-    }
-
-    public DirectBuffer getLockOwner()
-    {
-        return lockOwnerProp.getValue();
+        return partitionId;
     }
 
 }

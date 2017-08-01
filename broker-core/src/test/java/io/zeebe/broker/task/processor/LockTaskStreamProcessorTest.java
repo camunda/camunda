@@ -17,25 +17,20 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.protocol.clientapi.EventType.*;
-import static io.zeebe.util.StringUtil.*;
-import static io.zeebe.util.buffer.BufferUtil.*;
-import static org.mockito.Mockito.*;
+import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
+import static io.zeebe.util.StringUtil.getBytes;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
-import io.zeebe.protocol.Protocol;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskEventType;
@@ -45,11 +40,12 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.time.ClockUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -93,21 +89,13 @@ public class LockTaskStreamProcessorTest
 
         streamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
 
-        subscription = new TaskSubscription()
-                .setSubscriberKey(1L)
-                .setStreamId(11)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(5).toMillis())
-                .setLockOwner(wrapString("owner-1"))
-                .setCredits(3);
+        subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner-1"), 11);
+        subscription.setSubscriberKey(1L);
+        subscription.setCredits(3);
 
-        anotherSubscription = new TaskSubscription()
-                .setSubscriberKey(2L)
-                .setStreamId(12)
-                .setTaskType(TASK_TYPE_BUFFER)
-                .setLockDuration(Duration.ofMinutes(10).toMillis())
-                .setLockOwner(wrapString("owner-2"))
-                .setCredits(2);
+        anotherSubscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(10).toMillis(), wrapString("owner-2"), 12);
+        anotherSubscription.setSubscriberKey(2L);
+        anotherSubscription.setCredits(2);
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
@@ -445,18 +433,19 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfZeroCredits()
     {
-        final TaskSubscription subscription = anotherSubscription.setCredits(0);
+        anotherSubscription.setCredits(0);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("subscription credits must be greater than 0");
 
-        streamProcessor.addSubscription(subscription);
+        streamProcessor.addSubscription(anotherSubscription);
     }
 
     @Test
     public void shouldFailToAddSubscriptionIfEmptyLockOwner()
     {
-        final TaskSubscription subscription = anotherSubscription.setLockOwner(wrapString(""));
+        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString(""),
+                11);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("length of lock owner must be greater than 0");
@@ -468,7 +457,8 @@ public class LockTaskStreamProcessorTest
     public void shouldFailToAddSubscriptionIfLockOwnerTooLong()
     {
         final String lockOwner = IntStream.range(0, TaskSubscription.LOCK_OWNER_MAX_LENGTH + 1).mapToObj(i -> "a").collect(Collectors.joining());
-        final TaskSubscription subscription = anotherSubscription.setLockOwner(wrapString(lockOwner));
+        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
+                wrapString(lockOwner), 11);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("length of lock owner must be less than or equal to 64");
@@ -479,7 +469,9 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfWrongType()
     {
-        final TaskSubscription subscription = anotherSubscription.setTaskType(ANOTHER_TASK_TYPE_BUFFER);
+        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, ANOTHER_TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
+                wrapString("owner-1"), 11);
+        subscription.setCredits(5);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Subscription task type is not equal to 'test-task'.");
@@ -490,7 +482,7 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfZeroLockDuration()
     {
-        final TaskSubscription subscription = anotherSubscription.setLockDuration(0);
+        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, 0, wrapString("owner-1"), 11);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("lock duration must be greater than 0");

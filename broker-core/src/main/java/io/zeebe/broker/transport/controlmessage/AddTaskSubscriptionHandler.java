@@ -19,19 +19,19 @@ package io.zeebe.broker.transport.controlmessage;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import org.agrona.DirectBuffer;
 
 public class AddTaskSubscriptionHandler implements ControlMessageHandler
 {
-    protected final TaskSubscription subscription = new TaskSubscription();
+    protected final TaskSubscriptionRequest request = new TaskSubscriptionRequest();
 
     protected final TaskSubscriptionManager manager;
 
@@ -54,23 +54,26 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     @Override
     public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
-        subscription.reset();
-
-        subscription.wrap(buffer);
+        request.reset();
+        request.wrap(buffer);
 
         final long requestId = eventMetada.getRequestId();
         final int requestStreamId = eventMetada.getRequestStreamId();
 
-        subscription.setStreamId(requestStreamId);
+        final TaskSubscription taskSubscription = new TaskSubscription(request.getTopicName(), request.getPartitionId(), request.getLockTaskType(),
+                request.getLockDuration(), request.getLockOwner(), requestStreamId);
+        taskSubscription.setCredits(request.getCredits());
 
-        final CompletableFuture<Void> future = manager.addSubscription(subscription);
+        final CompletableFuture<Void> future = manager.addSubscription(taskSubscription);
 
         return future.handle((v, failure) ->
         {
             if (failure == null)
             {
+                request.setSubscriberKey(taskSubscription.getSubscriberKey());
+
                 final boolean success = responseWriter
-                    .dataWriter(subscription)
+                    .dataWriter(request)
                     .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
                 // TODO: proper back pressure
             }
