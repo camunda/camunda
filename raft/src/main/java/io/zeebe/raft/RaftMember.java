@@ -63,6 +63,11 @@ public class RaftMember
         return matchPosition;
     }
 
+    public void setMatchPosition(long matchPosition)
+    {
+        this.matchPosition = matchPosition;
+    }
+
     public long getPreviousPosition()
     {
         return previousPosition;
@@ -73,14 +78,19 @@ public class RaftMember
         return previousTerm;
     }
 
+    public long getHeartbeat()
+    {
+        return heartbeat;
+    }
+
     public void setHeartbeat(final long heartbeat)
     {
         this.heartbeat = heartbeat;
     }
 
-    public long getHeartbeat()
+    public void failure()
     {
-        return heartbeat;
+        failures = true;
     }
 
     public void resetFailures()
@@ -93,137 +103,52 @@ public class RaftMember
         return failures;
     }
 
-    public void resetPreviousEvent()
+    public void setBufferedEvent(final LoggedEventImpl bufferedEvent)
     {
-        final LoggedEventImpl event = seekToLastEvent();
-
-        if (event != null)
-        {
-            event.readMetadata(metadata);
-
-            previousPosition = event.getPosition();
-            previousTerm = metadata.getRaftTermId();
-        }
-        else
-        {
-            previousPosition = previousEventPositionNullValue();
-            previousTerm = previousEventTermNullValue();
-        }
-
+        this.bufferedEvent = bufferedEvent;
     }
 
-    private LoggedEventImpl seekToLastEvent()
+    public LoggedEventImpl discardBufferedEvent()
     {
+        final LoggedEventImpl event = bufferedEvent;
         bufferedEvent = null;
-        reader.seekToLastEvent();
-        return getNextEvent();
-    }
-
-    public LoggedEventImpl getNextEvent()
-    {
-        if (bufferedEvent == null && reader.hasNext())
-        {
-            bufferedEvent = (LoggedEventImpl) reader.next();
-        }
-
-        return bufferedEvent;
-    }
-
-    public void setMatchPosition(final long matchPosition)
-    {
-        this.matchPosition = matchPosition;
-    }
-
-    public void failure()
-    {
-        failures = true;
+        return event;
     }
 
     public void reset(final long nextHeartbeat)
     {
         setHeartbeat(nextHeartbeat);
         resetFailures();
-        resetPreviousEvent();
+        setPreviousEventToEndOfLog();
     }
 
-    public void resetToPreviousPosition(final long eventPosition)
+    public LoggedEventImpl getNextEvent()
     {
-        bufferedEvent = null;
-
-        final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
-        long blockPosition = blockIndex.lookupBlockPosition(eventPosition);
-
-        if (blockPosition == eventPosition)
+        if (bufferedEvent != null)
         {
-            blockPosition = blockIndex.lookupBlockPosition(eventPosition - 1);
+            return discardBufferedEvent();
         }
-
-        if (blockPosition > 0)
+        else if (reader.hasNext())
         {
-            reader.seek(blockPosition);
+            return (LoggedEventImpl) reader.next();
         }
         else
         {
-            reader.seekToFirstEvent();
+            return null;
         }
+    }
 
-        long previousPosition = blockPosition;
-
-        while (reader.hasNext())
+    public void resetToPosition(final long eventPosition)
+    {
+        if (eventPosition >= 0)
         {
-            final LoggedEvent next = reader.next();
-            if (next.getPosition() < eventPosition)
-            {
-                next.readMetadata(metadata);
-                previousPosition = next.getPosition();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        if (previousPosition >= 0)
-        {
-            reader.seek(previousPosition);
-            final LoggedEvent previousEvent = getNextEvent();
-
+            final LoggedEvent previousEvent = getEventAtPosition(eventPosition);
             if (previousEvent != null)
             {
                 setPreviousEvent(previousEvent);
             }
             else
             {
-                logger.error("Unable to find event for previous position {}", previousPosition);
-            }
-        }
-        else
-        {
-            reader.seekToFirstEvent();
-            setPreviousEvent(null);
-        }
-    }
-
-
-    public void resetToPosition(final long eventPosition)
-    {
-        bufferedEvent = null;
-
-        if (eventPosition >= 0)
-        {
-            if (reader.seek(eventPosition) && reader.hasNext())
-            {
-                final LoggedEvent event = reader.next();
-
-                if (event != null)
-                {
-                    setPreviousEvent(event);
-                }
-            }
-            else
-            {
-                setPreviousEvent(null);
-
                 final LogBlockIndex logBlockIndex = logStream.getLogBlockIndex();
                 final long blockPosition = logBlockIndex.lookupBlockPosition(eventPosition);
 
@@ -236,37 +161,87 @@ public class RaftMember
                     reader.seekToFirstEvent();
                 }
 
+                long previousPosition = -1;
+
                 while (reader.hasNext())
                 {
                     final LoggedEvent next = reader.next();
 
                     if (next.getPosition() < eventPosition)
                     {
-                        setPreviousEvent(next);
+                        previousPosition = next.getPosition();
                     }
                     else
                     {
                         break;
                     }
                 }
+
+                if (previousPosition >= 0)
+                {
+                    setPreviousEvent(previousPosition);
+                }
+                else
+                {
+                    setPreviousEventToStartOfLog();
+                }
             }
         }
         else
         {
-            reader.seekToFirstEvent();
-            setPreviousEvent(null);
+            setPreviousEventToStartOfLog();
         }
     }
 
-    public void setPreviousEvent(final LoggedEvent event)
+    private LoggedEvent getEventAtPosition(final long position)
     {
-        bufferedEvent = null;
-
-        if (event != null)
+        if (reader.seek(position) && reader.hasNext())
         {
-            event.readMetadata(metadata);
+            return reader.next();
+        }
+        else
+        {
+            return null;
+        }
+    }
 
-            previousPosition = event.getPosition();
+    public void setPreviousEventToEndOfLog()
+    {
+        discardBufferedEvent();
+
+        reader.seekToLastEvent();
+
+        final LoggedEventImpl lastEvent = getNextEvent();
+        setPreviousEvent(lastEvent);
+    }
+
+    public void setPreviousEventToStartOfLog()
+    {
+        discardBufferedEvent();
+
+        reader.seekToFirstEvent();
+
+        setPreviousEvent(null);
+    }
+
+    public void setPreviousEvent(final long previousPosition)
+    {
+        discardBufferedEvent();
+
+        final LoggedEvent previousEvent = getEventAtPosition(previousPosition);
+
+        setPreviousEvent(previousEvent);
+    }
+
+    public void setPreviousEvent(final LoggedEvent previousEvent)
+    {
+        discardBufferedEvent();
+
+        if (previousEvent != null)
+        {
+            previousEvent.readMetadata(metadata);
+
+            previousPosition = previousEvent.getPosition();
             previousTerm = metadata.getRaftTermId();
         }
         else

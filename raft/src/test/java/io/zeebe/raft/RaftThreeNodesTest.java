@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.raft.util.ActorSchedulerRule;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -118,7 +117,6 @@ public class RaftThreeNodesTest
     }
 
     @Test
-    @Ignore("TODO(menski): truncation does not work")
     public void shouldTruncateLog()
     {
         // given a log with two events committed
@@ -155,6 +153,7 @@ public class RaftThreeNodesTest
         cluster.registerRaft(raft1);
 
         // then the new events are also committed on the returning nodes discarding there uncommitted events
+        cluster.awaitInitialEventCommittedOnAll(newLeader.getTerm());
         cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "boy");
         cluster.awaitEventsCommittedOnAll("foo", "bar", "oh", "boy");
     }

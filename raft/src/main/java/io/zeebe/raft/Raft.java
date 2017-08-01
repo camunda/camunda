@@ -19,6 +19,7 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.util.*;
 
+import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.raft.controller.*;
@@ -513,7 +514,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public boolean isLogStreamControllerOpen()
     {
-        return logStream.getLogStreamController() != null;
+        final LogStreamController logStreamController = logStream.getLogStreamController();
+        return logStreamController != null && !logStreamController.isClosed();
     }
 
     /**

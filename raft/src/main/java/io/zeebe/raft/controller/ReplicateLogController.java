@@ -143,9 +143,16 @@ public class ReplicateLogController
 
                     final boolean sent = raft.sendMessage(member.getRemoteAddress(), appendRequest);
 
-                    if (event != null && sent)
+                    if (event != null)
                     {
-                        member.setPreviousEvent(event);
+                        if (sent)
+                        {
+                            member.setPreviousEvent(event);
+                        }
+                        else
+                        {
+                            member.setBufferedEvent(event);
+                        }
                     }
                 }
 

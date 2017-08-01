@@ -209,8 +209,46 @@ public class BufferedLogStorageAppender
 
             if (writtenEvent.getPosition() == previousEventPosition && metadata.getRaftTermId() == previousEventTerm)
             {
-                truncateLogAfter(writtenEvent);
-                appendEvent(appendRequest, event);
+                if (event != null)
+                {
+                    if (reader.hasNext())
+                    {
+                        final LoggedEvent nextEvent = reader.next();
+                        nextEvent.readMetadata(metadata);
+
+                        final long nextEventPosition = nextEvent.getPosition();
+                        final int nextEventTerm = metadata.getRaftTermId();
+
+                        event.readMetadata(metadata);
+
+                        final long eventPosition = event.getPosition();
+                        final int eventTerm = metadata.getRaftTermId();
+
+                        if (nextEventPosition == eventPosition && nextEventTerm == eventTerm)
+                        {
+                            // not truncating the log as the event is already appended
+                            acceptAppendRequest(appendRequest, nextEventPosition);
+                        }
+                        else
+                        {
+                            // truncate log and append event
+                            logStream.truncate(nextEventPosition);
+
+                            // reset positions
+                            lastWrittenPosition = previousEventPosition;
+                            lastWrittenTerm = previousEventTerm;
+
+                            lastBufferedPosition = lastWrittenPosition;
+                            lastBufferedTerm = lastWrittenTerm;
+
+                            appendEvent(appendRequest, event);
+                        }
+                    }
+                }
+                else
+                {
+                    acceptAppendRequest(appendRequest, writtenEvent.getPosition());
+                }
             }
             else
             {
@@ -221,23 +259,6 @@ public class BufferedLogStorageAppender
         {
             rejectAppendRequest(appendRequest, lastWrittenPosition);
         }
-    }
-
-    private void truncateLogAfter(final LoggedEvent event)
-    {
-        if (reader.hasNext())
-        {
-            final LoggedEvent nextEvent = reader.next();
-            logStream.truncate(nextEvent.getPosition());
-        }
-
-        event.readMetadata(metadata);
-
-        lastWrittenPosition = event.getPosition();
-        lastWrittenTerm = metadata.getRaftTermId();
-
-        lastBufferedPosition = lastWrittenPosition;
-        lastBufferedTerm = lastWrittenTerm;
     }
 
     private void allocateMemory(final int capacity)
