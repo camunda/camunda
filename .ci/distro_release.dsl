@@ -98,6 +98,13 @@ mavenJob(jobName) {
         }
     }
 
+    credentialsBinding {
+      // maven central signing credentials
+      string('GPG_PASSPHRASE', 'password_maven_central_gpg_signing_key')
+      file('MVN_CENTRAL_GPG_KEY_SEC', 'maven_central_gpg_signing_key')
+      file('MVN_CENTRAL_GPG_KEY_PUB', 'maven_central_gpg_signing_key_pub')
+    }
+
     release {
       doNotKeepLog false
       overrideBuildParameters true
