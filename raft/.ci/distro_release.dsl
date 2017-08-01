@@ -6,7 +6,28 @@ def pom = 'pom.xml'
 def mvnGoals = 'clean license:check verify'
 
 def mavenVersion = 'maven-3.3-latest'
-def mavenSettings = 'camunda-maven-settings'
+def mavenSettingsId = 'camunda-maven-settings'
+
+def mavenGpgKeys = '''\
+ #!/bin/bash
+
+ if [ -e "${MVN_CENTRAL_GPG_KEY_SEC}" ]
+ then
+   gpg -q --allow-secret-key-import --import ${MVN_CENTRAL_GPG_KEY_SEC} || echo 'Private GPG Sign Key is already imported!.'
+   rm ${MVN_CENTRAL_GPG_KEY_SEC}
+ else
+   echo 'Private GPG Key not found.'
+ fi
+
+ if [ -e "${MVN_CENTRAL_GPG_KEY_PUB}" ]
+ then
+   gpg -q --import ${MVN_CENTRAL_GPG_KEY_PUB} || echo 'Public GPG Sign Key is already imported!.'
+   rm ${MVN_CENTRAL_GPG_KEY_PUB}
+ else
+   echo 'Public GPG Key not found.'
+ fi
+ '''
+
 
 // script to set access rights on ssh keys
 // and configure git user name and email
@@ -52,7 +73,7 @@ mavenJob(jobName) {
   rootPOM pom
   goals mvnGoals
   localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
-  providedSettings mavenSettings
+  providedSettings mavenSettingsId
   mavenInstallation mavenVersion
 
   wrappers {
@@ -67,10 +88,20 @@ mavenJob(jobName) {
         custom('Jenkins CI GitHub SSH Public Key') {
             targetLocation '/home/camunda/.ssh/id_rsa.pub'
         }
+        mavenSettings(mavenSettingsId) {
+          variable('NEXUS_SETTINGS')
+        }
         // jenkins github private ssh key needed to push to github
         custom('Jenkins CI GitHub SSH Private Key') {
             targetLocation '/home/camunda/.ssh/id_rsa'
         }
+    }
+
+    credentialsBinding {
+      // maven central signing credentials
+      string('GPG_PASSPHRASE', 'password_maven_central_gpg_signing_key')
+      file('MVN_CENTRAL_GPG_KEY_SEC', 'maven_central_gpg_signing_key')
+      file('MVN_CENTRAL_GPG_KEY_PUB', 'maven_central_gpg_signing_key_pub')
     }
 
     release {
@@ -80,6 +111,8 @@ mavenJob(jobName) {
       parameters {
         stringParam('RELEASE_VERSION', '0.1.0', 'Version to release')
         stringParam('DEVELOPMENT_VERSION', '0.2.0-SNAPSHOT', 'Next development version')
+        booleanParam('SKIP_DEPLOY_TO_MAVEN_CENTRAL', false, 'If <strong>TRUE</strong>, skip the deployment to maven central. Should be used when testing the release.')
+        booleanParam('SKIP_DEPLOY_TO_CAMUNDA_NEXUS', false, 'If <strong>TRUE</strong>, skip the deployment to camunda nexus. Should be used when testing the release.')
       }
 
       preBuildSteps {
@@ -89,8 +122,9 @@ mavenJob(jobName) {
         // execute maven release
         maven {
           mavenInstallation mavenVersion
-          providedSettings mavenSettings
-          goals 'release:prepare release:perform -B'
+          providedSettings mavenSettingsId
+          goals 'release:prepare release:perform -Dgpg.passphrase="${GPG_PASSPHRASE}" \'-Darguments=--settings=${NEXUS_SETTINGS} -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}\' -B'
+
           properties releaseProperties
           localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
         }
@@ -101,8 +135,8 @@ mavenJob(jobName) {
 
   publishers {
     deployArtifacts {
-      repositoryId 'camunda-nexus'
-      repositoryUrl 'https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots'
+      repositoryId 'central'
+      repositoryUrl 'https://oss.sonatype.org/content/repositories/snapshots'
       uniqueVersion true
       evenIfUnstable false
     }
