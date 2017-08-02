@@ -18,6 +18,7 @@ package io.zeebe.broker.it;
 import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_LOG_NAME;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -81,7 +82,14 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public void startBroker()
     {
-        broker = new Broker(configSupplier.get());
+        try (InputStream configStream = configSupplier.get())
+        {
+            broker = new Broker(configStream);
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException("Unable to read configuration", e);
+        }
 
         final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 

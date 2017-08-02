@@ -21,6 +21,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.*;
@@ -164,10 +165,16 @@ public class BrokerLeaderChangeTest
     protected void startBroker(final SocketAddress socketAddress, final String configFilePath)
     {
         LOG.info("starting broker {} with config {}", socketAddress, configFilePath);
-        final InputStream config = BrokerLeaderChangeTest.class.getClassLoader().getResourceAsStream(configFilePath);
-        assertThat(config).isNotNull();
 
-        brokers.put(socketAddress, new Broker(config));
+        try (final InputStream config = BrokerLeaderChangeTest.class.getClassLoader().getResourceAsStream(configFilePath))
+        {
+            assertThat(config).isNotNull();
+            brokers.put(socketAddress, new Broker(config));
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException("Unable to read configuration", e);
+        }
     }
 
     static class RaftMemberObserver
