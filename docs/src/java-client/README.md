@@ -1,6 +1,6 @@
 # Zeebe Java Client
 
-* [Setup](setup.md)
-* [Get Started](get-started.md)
-* [Logging](logging.md)
-* [Apis](apis.md)
+* [Setup](java-client/setup.html)
+* [Get Started](java-client/get-started.html)
+* [Logging](java-client/logging.html)
+* [Apis](java-client/apis.html)

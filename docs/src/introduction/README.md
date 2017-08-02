@@ -1,6 +1,6 @@
 # Introduction to Zeebe
 
-* [Why Zeebe?](why-zeebe.md)
-* [Install](install.md)
-* [First Contact](first-contact.md)
-* [Use Cases](use-cases.md)
+* [Why Zeebe?](introduction/why-zeebe.html)
+* [Install](introduction/install.html)
+* [First Contact](introduction/first-contact.html)
+* [Use Cases](introduction/use-cases.html)

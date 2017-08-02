@@ -17,7 +17,7 @@ You will be guided through the following steps:
 ## Prerequisites
 
 * Java 8
-* [Zeebe distribution](../introduction/install.md)
+* [Zeebe distribution](../introduction/install.html)
 * [Camunda Modeler](https://docs.camunda.org/manual/installation/camunda-modeler/)
 * [Apache Maven](https://maven.apache.org/)
 
@@ -295,7 +295,7 @@ Each of these events represents one step in the workflow instance life cycle.
 
 Now, we want to do some work within your workflow.
 First, we add a few service tasks to the BPMN diagram and set the required attributes.
-Then, we extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.    
+Then, we extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
 
 Open the BPMN diagram in the Camunda Modeler.
 Insert a few service tasks between the start and the end event.
@@ -316,7 +316,7 @@ Optionally, you can define parameters of the task by adding a `zeebe:taskHeaders
 ```xml
 <bpmn:serviceTask id="reserve-order-items" name="Reserve Order Items">
   <bpmn:extensionElements>
-    <zeebe:taskDefinition type="reserveOrderItems" />        
+    <zeebe:taskDefinition type="reserveOrderItems" />
   	<zeebe:taskHeaders>
       <zeebe:header key="reservationTime" value="PT15M" />
     </zeebe:taskHeaders>
@@ -428,7 +428,7 @@ Open the BPMN diagram and add to following input-output-mapping to the first tas
 ```xml
 <bpmn:serviceTask id="reserve-order-items" name="Reserve Order Items">
   <bpmn:extensionElements>
-    <zeebe:taskDefinition type="reserveOrderItems" />        
+    <zeebe:taskDefinition type="reserveOrderItems" />
   	<zeebe:taskHeaders>
       <zeebe:header key="reservationTime" value="PT15M" />
     </zeebe:taskHeaders>
@@ -453,7 +453,7 @@ package io.zeebe;
 import io.zeebe.client.task.TaskSubscription;
 
 public class Application
-{  
+{
     public static void main(String[] args)
     {
         // after the workflow is deployed
@@ -465,7 +465,7 @@ public class Application
             .payload(data)
             .execute();
 
-        // ...    
+        // ...
 
         final TaskSubscription taskSubscription = client.taskTopic(TOPIC, PARTITION_ID)
             .newTaskSubscription()
@@ -539,6 +539,6 @@ When we have a look at the topic subscription's output then we can see how the p
 Hurray! You finished this tutorial and learned the basic usage of the Java client.
 
 Next steps:
-* learn more about the [concepts behind Zeebe](/basics/README.md)
-* learn more about [BPMN workflows](/bpmn-workflows/README.md)
-* take a deeper look into the [Java client](java-client/README.md)  
+* learn more about the [concepts behind Zeebe](/basics/README.html)
+* learn more about [BPMN workflows](/bpmn-workflows/README.html)
+* take a deeper look into the [Java client](java-client/README.html)
