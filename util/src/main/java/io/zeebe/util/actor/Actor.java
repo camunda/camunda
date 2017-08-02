@@ -29,6 +29,7 @@ package io.zeebe.util.actor;
  */
 public interface Actor
 {
+    int PRIORITY_OFF = 0;
     int PRIORITY_LOW = 1;
     int PRIORITY_MIDDLE = 50;
     int PRIORITY_HIGH = 100;
@@ -55,14 +56,14 @@ public interface Actor
      * The priority influences how often the actor is invoked by the scheduler.
      *
      * <p>
-     * Default priority is {@value #PRIORITY_MIDDLE}.
+     * Default priority is {@value #PRIORITY_LOW}.
      *
      * @param now
      *            the current time in nano seconds
      */
     default int getPriority(long now)
     {
-        return PRIORITY_MIDDLE;
+        return PRIORITY_LOW;
     }
 
     /**
