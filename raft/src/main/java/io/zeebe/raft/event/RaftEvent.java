@@ -15,16 +15,13 @@
  */
 package io.zeebe.raft.event;
 
-import java.util.List;
-
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ArrayValueIterator;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
-import io.zeebe.transport.SocketAddress;
 
 public class RaftEvent
 {
@@ -42,21 +39,21 @@ public class RaftEvent
         return this;
     }
 
-    public long tryWrite(final LogStream logStream, final SocketAddress socketAddress, final List<RaftMember> members)
+    public long tryWrite(final Raft raft)
     {
 
-        logStreamWriter.wrap(logStream);
+        logStreamWriter.wrap(raft.getLogStream());
 
-        metadata.reset().eventType(EventType.RAFT_EVENT).raftTermId(logStream.getTerm());
+        metadata.reset().eventType(EventType.RAFT_EVENT).raftTermId(raft.getTerm());
 
         configuration.reset();
 
         final ArrayValueIterator<RaftConfigurationMember> configurationMembers = configuration.members();
 
         // add self also to configuration
-        configurationMembers.add().setSocketAddress(socketAddress);
+        configurationMembers.add().setSocketAddress(raft.getSocketAddress());
 
-        for (final RaftMember member : members)
+        for (final RaftMember member : raft.getMembers())
         {
             configurationMembers.add().setSocketAddress(member.getRemoteAddress().getAddress());
         }

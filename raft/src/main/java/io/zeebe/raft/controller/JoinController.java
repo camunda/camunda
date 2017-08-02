@@ -173,7 +173,7 @@ public class JoinController
                     if (!raft.mayStepDown(joinResponse) && raft.isTermCurrent(joinResponse))
                     {
                         // update members to maybe discover leader
-                        joinResponse.getMembers().forEach(raft::addMember);
+                        raft.addMembers(joinResponse.getMembers());
 
                         if (joinResponse.isSucceeded())
                         {

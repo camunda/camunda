@@ -222,7 +222,7 @@ public class OpenLogStreamController
 
             if (context.isAppended())
             {
-                logger.debug("Initial event for term {} was appended in position {}", raft.getLogStream().getTerm(), context.getPosition());
+                logger.debug("Initial event for term {} was appended in position {}", raft.getTerm(), context.getPosition());
 
                 workCount++;
                 context.take(TRANSITION_DEFAULT);
@@ -252,7 +252,7 @@ public class OpenLogStreamController
             if (context.isCommitted())
             {
                 final Raft raft = context.getRaft();
-                raft.getLogger().debug("Initial event for term {} was committed on position {}", raft.getLogStream().getTerm(), context.getPosition());
+                raft.getLogger().debug("Initial event for term {} was committed on position {}", raft.getTerm(), context.getPosition());
 
                 workCount++;
                 context.take(TRANSITION_DEFAULT);
@@ -375,7 +375,7 @@ public class OpenLogStreamController
 
         public long tryWriteInitialEvent()
         {
-            return initialEvent.tryWrite(raft.getLogStream());
+            return initialEvent.tryWrite(raft);
         }
 
         public void setPosition(final long position)

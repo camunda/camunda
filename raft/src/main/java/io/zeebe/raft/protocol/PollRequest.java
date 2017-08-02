@@ -139,7 +139,7 @@ public class PollRequest extends AbstractRaftMessage implements HasSocketAddress
 
         writeTopicName = logStream.getTopicName();
         partitionId = logStream.getPartitionId();
-        term = logStream.getTerm();
+        term = raft.getTerm();
 
         writeSocketAddress = raft.getSocketAddress();
 

@@ -134,7 +134,7 @@ public abstract class AbstractRaftState
     {
         pollResponse
             .reset()
-            .setTerm(logStream.getTerm())
+            .setTerm(raft.getTerm())
             .setGranted(true);
 
         raft.sendResponse(serverOutput, remoteAddress, requestId, pollResponse);
@@ -144,7 +144,7 @@ public abstract class AbstractRaftState
     {
         pollResponse
             .reset()
-            .setTerm(logStream.getTerm())
+            .setTerm(raft.getTerm())
             .setGranted(false);
 
         raft.sendResponse(serverOutput, remoteAddress, requestId, pollResponse);
@@ -154,7 +154,7 @@ public abstract class AbstractRaftState
     {
         voteResponse
             .reset()
-            .setTerm(logStream.getTerm())
+            .setTerm(raft.getTerm())
             .setGranted(true);
 
         raft.sendResponse(serverOutput, remoteAddress, requestId, voteResponse);
@@ -164,7 +164,7 @@ public abstract class AbstractRaftState
     {
         voteResponse
             .reset()
-            .setTerm(logStream.getTerm())
+            .setTerm(raft.getTerm())
             .setGranted(false);
 
         raft.sendResponse(serverOutput, remoteAddress, requestId, voteResponse);

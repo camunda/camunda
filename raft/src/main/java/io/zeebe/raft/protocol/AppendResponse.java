@@ -139,7 +139,7 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
 
         writeTopicName = logStream.getTopicName();
         partitionId = logStream.getPartitionId();
-        term = logStream.getTerm();
+        term = raft.getTerm();
 
         writeSocketAddress = raft.getSocketAddress();
 

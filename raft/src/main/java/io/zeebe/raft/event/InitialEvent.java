@@ -17,11 +17,11 @@ package io.zeebe.raft.event;
 
 import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
 
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.raft.Raft;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -39,14 +39,14 @@ public class InitialEvent
         return this;
     }
 
-    public long tryWrite(final LogStream logStream)
+    public long tryWrite(final Raft raft)
     {
-        logStreamWriter.wrap(logStream);
+        logStreamWriter.wrap(raft.getLogStream());
 
         metadata
             .reset()
             .eventType(NOOP_EVENT)
-            .raftTermId(logStream.getTerm());
+            .raftTermId(raft.getTerm());
 
         return logStreamWriter
             .positionAsKey()

@@ -113,7 +113,7 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
         final LogStream logStream = raft.getLogStream();
 
         partitionId = logStream.getPartitionId();
-        term = logStream.getTerm();
+        term = raft.getTerm();
         writeTopicName = logStream.getTopicName();
 
         writeSocketAddress = raft.getSocketAddress();

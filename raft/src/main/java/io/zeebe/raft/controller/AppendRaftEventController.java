@@ -172,7 +172,7 @@ public class AppendRaftEventController
 
             if (context.isAppended())
             {
-                logger.debug("Raft event for term {} was appended in position {}", raft.getLogStream().getTerm(), context.getPosition());
+                logger.debug("Raft event for term {} was appended in position {}", raft.getTerm(), context.getPosition());
 
                 workCount++;
                 context.take(TRANSITION_DEFAULT);
@@ -204,7 +204,7 @@ public class AppendRaftEventController
                 workCount++;
 
                 final Raft raft = context.getRaft();
-                raft.getLogger().debug("Raft event for term {} was committed on position {}", raft.getLogStream().getTerm(), context.getPosition());
+                raft.getLogger().debug("Raft event for term {} was committed on position {}", raft.getTerm(), context.getPosition());
 
                 // send response
                 context.acceptJoinRequest();
@@ -260,7 +260,7 @@ public class AppendRaftEventController
 
         public long tryWriteRaftEvent()
         {
-            return raftEvent.tryWrite(raft.getLogStream(), raft.getSocketAddress(), raft.getMembers());
+            return raftEvent.tryWrite(raft);
         }
 
         public void setPosition(final long position)

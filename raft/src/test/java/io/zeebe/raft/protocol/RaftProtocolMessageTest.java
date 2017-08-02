@@ -239,7 +239,7 @@ public class RaftProtocolMessageTest
 
     protected void assertTerm(final HasTerm hasTerm)
     {
-        assertThat(hasTerm.getTerm()).isEqualTo(logStream.getTerm());
+        assertThat(hasTerm.getTerm()).isEqualTo(raft.getTerm());
     }
 
     protected void assertSocketAddress(final HasSocketAddress hasSocketAddress)

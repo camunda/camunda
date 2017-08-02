@@ -170,7 +170,7 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
         final LogStream logStream = raft.getLogStream();
 
         partitionId = logStream.getPartitionId();
-        term = logStream.getTerm();
+        term = raft.getTerm();
         commitPosition = logStream.getCommitPosition();
         writeTopicName = logStream.getTopicName();
 

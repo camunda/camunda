@@ -76,6 +76,8 @@ public class RaftRule extends ExternalResource
     protected BufferedLogStreamReader uncommittedReader;
     protected BufferedLogStreamReader committedReader;
 
+    private InMemoryRaftPersistentStorage persistentStorage;
+
     protected ActorReference actorReference;
 
     public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
@@ -138,9 +140,11 @@ public class RaftRule extends ExternalResource
 
         logStream.open();
 
-        raft = new Raft(socketAddress, logStream, serverTransport, clientTransport);
+        persistentStorage = new InMemoryRaftPersistentStorage();
 
-        members.forEach(member -> raft.addMember(member.getSocketAddress()));
+        raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+
+        raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
         uncommittedReader = new BufferedLogStreamReader(logStream, true);
         committedReader = new BufferedLogStreamReader(logStream, false);
@@ -192,7 +196,7 @@ public class RaftRule extends ExternalResource
 
     public int getTerm()
     {
-        return logStream.getTerm();
+        return raft.getTerm();
     }
 
     public Raft getRaft()
@@ -203,6 +207,11 @@ public class RaftRule extends ExternalResource
     public RaftState getState()
     {
         return raft.getState();
+    }
+
+    public InMemoryRaftPersistentStorage getPersistentStorage()
+    {
+        return persistentStorage;
     }
 
     public void clearSubscription()

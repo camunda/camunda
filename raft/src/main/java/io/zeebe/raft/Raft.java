@@ -60,7 +60,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     // persistent state
     private final LogStream logStream;
-    private SocketAddress votedFor = new SocketAddress();
+    private final RaftPersistentStorage persistentStorage;
 
     // volatile state
     private final BufferedLogStorageAppender appender;
@@ -96,12 +96,12 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     private final AppendRequest appendRequest = new AppendRequest();
     private final AppendResponse appendResponse = new AppendResponse();
 
-
-    public Raft(final SocketAddress socketAddress, final LogStream logStream, final BufferingServerTransport serverTransport, final ClientTransport clientTransport)
+    public Raft(final SocketAddress socketAddress, final LogStream logStream, final BufferingServerTransport serverTransport, final ClientTransport clientTransport, final RaftPersistentStorage persistentStorage)
     {
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.clientTransport = clientTransport;
+        this.persistentStorage = persistentStorage;
         logger = Loggers.getRaftLogger(socketAddress, logStream);
         appender = new BufferedLogStorageAppender(this);
 
@@ -149,7 +149,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         resetElectionTimeout();
         resetFlushTimeout();
 
-        logger.debug("Transitioned to follower in term {}", logStream.getTerm());
+        logger.debug("Transitioned to follower in term {}", getTerm());
     }
 
     public void becomeCandidate()
@@ -168,10 +168,10 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         resetElectionTimeout();
         disableFlushTimeout();
 
-        setTerm(logStream.getTerm() + 1);
+        setTerm(getTerm() + 1);
         setVotedFor(socketAddress);
 
-        logger.debug("Transitioned to candidate in term {}", logStream.getTerm());
+        logger.debug("Transitioned to candidate in term {}", getTerm());
     }
 
     public void becomeLeader()
@@ -188,7 +188,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         disableElectionTimeout();
         disableFlushTimeout();
 
-        logger.debug("Transitioned to leader in term {}", logStream.getTerm());
+        logger.debug("Transitioned to leader in term {}", getTerm());
     }
 
     // actor
@@ -320,16 +320,26 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     }
 
     /**
-     * Update the term of the log stream, resetting the state of the raft for the new term.
+     * @return the current term of this raft node
+     */
+    public int getTerm()
+    {
+        return persistentStorage.getTerm();
+    }
+
+    /**
+     * Update the term of this raft node, resetting the state of the raft for the new term.
      */
     public void setTerm(final int term)
     {
-        final int currentTerm = logStream.getTerm();
+        final int currentTerm = getTerm();
 
         if (currentTerm < term)
         {
-            logStream.setTerm(term);
-            votedFor.reset();
+            persistentStorage
+                .setTerm(term)
+                .setVotedFor(null)
+                .save();
         }
         else if (currentTerm > term)
         {
@@ -347,7 +357,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     public boolean mayStepDown(final HasTerm hasTerm)
     {
         final int messageTerm = hasTerm.getTerm();
-        final int currentTerm = logStream.getTerm();
+        final int currentTerm = getTerm();
 
         if (currentTerm < messageTerm)
         {
@@ -368,7 +378,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public boolean isTermCurrent(final HasTerm message)
     {
-        return message.getTerm() >= logStream.getTerm();
+        return message.getTerm() >= getTerm();
     }
 
     /**
@@ -376,14 +386,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public SocketAddress getVotedFor()
     {
-        if (votedFor.hostLength() > 0)
-        {
-            return votedFor;
-        }
-        else
-        {
-            return null;
-        }
+        return persistentStorage.getVotedFor();
     }
 
     /**
@@ -398,9 +401,9 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     /**
      * Set the raft which was granted a vote in the current term.
      */
-    public void setVotedFor(final SocketAddress socketAddress)
+    public void setVotedFor(final SocketAddress votedFor)
     {
-        this.votedFor.wrap(socketAddress);
+        persistentStorage.setVotedFor(votedFor).save();
     }
 
     /**
@@ -444,16 +447,20 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     {
         this.members.clear();
         this.memberLookup.clear();
+        persistentStorage.clearMembers();
 
         while (members.hasNext())
         {
             addMember(members.next().getSocketAddress());
         }
+
+        persistentStorage.save();
     }
+
 
     /**
      * <p>
-     * Add a raft node to the list of members known by this node if its not already
+     * Add a list of raft nodes to the list of members known by this node if its not already
      * part of the members list.
      * </p>
      *
@@ -461,11 +468,18 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      * <b>Note:</b> It does not allow to add a raft node to its own list of members. This would distort the
      * quorum determination.
      * </p>
-     *
-     * @return the new or already existing {@link RaftMember} representation for the node, or null if
-     *          it is the raft node itself
      */
-    public RaftMember addMember(final SocketAddress socketAddress)
+    public void addMembers(final List<SocketAddress> members)
+    {
+        for (int i = 0; i < members.size(); i++)
+        {
+            addMember(members.get(i));
+        }
+
+        persistentStorage.save();
+    }
+
+    private RaftMember addMember(final SocketAddress socketAddress)
     {
         ensureNotNull("Raft node socket address", socketAddress);
 
@@ -486,6 +500,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
             members.add(member);
             memberLookup.put(address, member);
+
+            persistentStorage.addMember(socketAddress);
         }
 
         return member;
@@ -498,6 +514,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     {
         logger.debug("New member {} joining the cluster", socketAddress);
         addMember(socketAddress);
+        persistentStorage.save();
         appendRaftEventController.open(serverOutput, remoteAddress, requestId, socketAddress);
     }
 
@@ -696,5 +713,4 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     {
         return "raft-" + logStream.getLogName() + "-" + socketAddress.host() + ":" + socketAddress.port();
     }
-
 }

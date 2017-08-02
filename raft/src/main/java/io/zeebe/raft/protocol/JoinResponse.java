@@ -106,7 +106,7 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
 
     public JoinResponse setRaft(final Raft raft)
     {
-        term = raft.getLogStream().getTerm();
+        term = raft.getTerm();
         writeMembers.add(raft.getSocketAddress());
         for (int i = 0; i < raft.getMemberSize(); i++)
         {
