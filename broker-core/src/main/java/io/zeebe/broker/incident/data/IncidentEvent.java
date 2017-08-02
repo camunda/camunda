@@ -31,7 +31,7 @@ public class IncidentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    private final EnumProperty<IncidentEventType> eventTypeProp = new EnumProperty<>("eventType", IncidentEventType.class);
+    private final EnumProperty<IncidentState> stateProp = new EnumProperty<>("state", IncidentState.class);
 
     private final EnumProperty<ErrorType> errorTypeProp = new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
@@ -48,7 +48,7 @@ public class IncidentEvent extends UnpackedObject
 
     public IncidentEvent()
     {
-        this.declareProperty(eventTypeProp)
+        this.declareProperty(stateProp)
             .declareProperty(errorTypeProp)
             .declareProperty(errorMessageProp)
             .declareProperty(failureEventPosition)
@@ -60,14 +60,14 @@ public class IncidentEvent extends UnpackedObject
             .declareProperty(payloadProp);
     }
 
-    public IncidentEventType getEventType()
+    public IncidentState getState()
     {
-        return eventTypeProp.getValue();
+        return stateProp.getValue();
     }
 
-    public IncidentEvent setEventType(IncidentEventType eventType)
+    public IncidentEvent setState(IncidentState eventType)
     {
-        this.eventTypeProp.setValue(eventType);
+        this.stateProp.setValue(eventType);
         return this;
     }
 

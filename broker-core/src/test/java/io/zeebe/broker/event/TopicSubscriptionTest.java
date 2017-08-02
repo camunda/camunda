@@ -123,7 +123,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -142,7 +142,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -169,7 +169,7 @@ public class TopicSubscriptionTest
         assertThat(taskEvent.position()).isEqualTo(taskKey);
         assertThat(taskEvent.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(taskEvent.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
-        assertThat(taskEvent.event()).contains(entry("eventType", "CREATE"));
+        assertThat(taskEvent.event()).contains(entry("state", "CREATE"));
 
         taskEvent = taskEvents.get(1);
         assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
@@ -177,7 +177,7 @@ public class TopicSubscriptionTest
         assertThat(taskEvent.position()).isGreaterThan(taskKey);
         assertThat(taskEvent.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(taskEvent.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
-        assertThat(taskEvent.event()).contains(entry("eventType", "CREATED"));
+        assertThat(taskEvent.event()).contains(entry("state", "CREATED"));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -207,7 +207,7 @@ public class TopicSubscriptionTest
             .map((e) -> e.position())
             .findFirst();
 
-        assertThat(startPosition).isEqualTo(event.get());
+        assertThat(startPosition).isLessThan(event.get());
     }
 
     @Test
@@ -364,7 +364,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -383,7 +383,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", "foo")
-                .put("eventType", "ACKNOWLEDGE")
+                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", taskEvents.get(1))
                 .done()
             .sendAndAwait();
@@ -407,7 +407,7 @@ public class TopicSubscriptionTest
             .command()
                 .put("startPosition", taskEvents.get(0))
                 .put("name", "foo")
-                .put("eventType", "SUBSCRIBE")
+                .put("state", "SUBSCRIBE")
                 .put("forceStart", true)
                 .done()
             .sendAndAwait();
@@ -437,7 +437,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -542,7 +542,7 @@ public class TopicSubscriptionTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -555,7 +555,7 @@ public class TopicSubscriptionTest
 
         // then
         final RawMessage subscriptionResponse = apiRule.commandResponses()
-            .filter((m) -> "SUBSCRIBED".equals(asCommandResponse(m).getEvent().get("eventType")))
+            .filter((m) -> "SUBSCRIBED".equals(asCommandResponse(m).getEvent().get("state")))
             .findFirst()
             .get();
 

@@ -30,7 +30,7 @@ public class TaskEvent extends UnpackedObject
     protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
     protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-    private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
+    private final EnumProperty<TaskState> stateProp = new EnumProperty<>("state", TaskState.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
     private final StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
@@ -41,7 +41,7 @@ public class TaskEvent extends UnpackedObject
 
     public TaskEvent()
     {
-        this.declareProperty(eventTypeProp)
+        this.declareProperty(stateProp)
             .declareProperty(lockTimeProp)
             .declareProperty(lockOwnerProp)
             .declareProperty(retriesProp)
@@ -51,14 +51,14 @@ public class TaskEvent extends UnpackedObject
             .declareProperty(payloadProp);
     }
 
-    public TaskEventType getEventType()
+    public TaskState getState()
     {
-        return eventTypeProp.getValue();
+        return stateProp.getValue();
     }
 
-    public TaskEvent setEventType(TaskEventType type)
+    public TaskEvent setState(TaskState type)
     {
-        eventTypeProp.setValue(type);
+        stateProp.setValue(type);
         return this;
     }
 

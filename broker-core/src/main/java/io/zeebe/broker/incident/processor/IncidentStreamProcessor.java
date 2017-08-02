@@ -19,7 +19,7 @@ package io.zeebe.broker.incident.processor;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentEventType;
+import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -161,7 +161,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         incidentEvent.reset();
         event.readValue(incidentEvent);
 
-        switch (incidentEvent.getEventType())
+        switch (incidentEvent.getState())
         {
             case CREATE:
                 return createIncidentProcessor;
@@ -185,7 +185,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         workflowInstanceEvent.reset();
         event.readValue(workflowInstanceEvent);
 
-        switch (workflowInstanceEvent.getEventType())
+        switch (workflowInstanceEvent.getState())
         {
             case PAYLOAD_UPDATED:
                 return payloadUpdatedProcessor;
@@ -207,7 +207,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         taskEvent.reset();
         event.readValue(taskEvent);
 
-        switch (taskEvent.getEventType())
+        switch (taskEvent.getState())
         {
             case FAILED:
                 return taskFailedProcessor;
@@ -261,11 +261,11 @@ public class IncidentStreamProcessor implements StreamProcessor
 
             if (isCreated)
             {
-                incidentEvent.setEventType(IncidentEventType.CREATED);
+                incidentEvent.setState(IncidentState.CREATED);
             }
             else
             {
-                incidentEvent.setEventType(IncidentEventType.CREATE_REJECTED);
+                incidentEvent.setState(IncidentState.CREATE_REJECTED);
             }
         }
 
@@ -315,7 +315,7 @@ public class IncidentStreamProcessor implements StreamProcessor
             {
                 incidentEvent.reset();
                 incidentEvent
-                    .setEventType(IncidentEventType.RESOLVE)
+                    .setState(IncidentState.RESOLVE)
                     .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
                     .setActivityInstanceKey(eventKey)
                     .setPayload(workflowInstanceEvent.getPayload());
@@ -357,7 +357,7 @@ public class IncidentStreamProcessor implements StreamProcessor
             }
             else
             {
-                incidentEvent.setEventType(IncidentEventType.RESOLVE_REJECTED);
+                incidentEvent.setState(IncidentState.RESOLVE_REJECTED);
             }
         }
 
@@ -445,12 +445,12 @@ public class IncidentStreamProcessor implements StreamProcessor
                 incidentEvent.reset();
                 incidentCreateEvent.readValue(incidentEvent);
 
-                incidentEvent.setEventType(IncidentEventType.DELETED);
+                incidentEvent.setState(IncidentState.DELETED);
                 isDeleted = true;
             }
             else
             {
-                incidentEvent.setEventType(IncidentEventType.DELETE_REJECTED);
+                incidentEvent.setState(IncidentState.DELETE_REJECTED);
             }
         }
 
@@ -494,7 +494,7 @@ public class IncidentStreamProcessor implements StreamProcessor
                     incidentEvent.reset();
                     incidentCreateEvent.readValue(incidentEvent);
 
-                    incidentEvent.setEventType(IncidentEventType.RESOLVED);
+                    incidentEvent.setState(IncidentState.RESOLVED);
 
                     isResolved = true;
                 }
@@ -538,7 +538,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 if (incidentMap.getState() == STATE_CREATED || incidentMap.getState() == STATE_RESOLVING)
                 {
-                    incidentEvent.setEventType(IncidentEventType.DELETE);
+                    incidentEvent.setState(IncidentState.DELETE);
 
                     isTerminated = true;
                 }
@@ -581,7 +581,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 incidentEvent.reset();
                 incidentEvent
-                    .setEventType(IncidentEventType.CREATE)
+                    .setState(IncidentState.CREATE)
                     .setErrorType(ErrorType.TASK_NO_RETRIES)
                     .setErrorMessage("No more retries left.")
                     .setFailureEventPosition(eventPosition)
@@ -627,7 +627,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 if (incidentMap.getState() == STATE_CREATED)
                 {
-                    incidentEvent.setEventType(IncidentEventType.DELETE);
+                    incidentEvent.setState(IncidentState.DELETE);
 
                     isResolved = true;
                 }

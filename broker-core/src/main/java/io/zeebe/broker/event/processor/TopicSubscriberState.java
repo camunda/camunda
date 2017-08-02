@@ -15,34 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.task.data;
+package io.zeebe.broker.event.processor;
 
-public enum TaskEventType
+public enum TopicSubscriberState
 {
-    CREATE,
-    CREATED,
 
-    LOCK,
-    LOCKED,
-    LOCK_REJECTED,
-
-    COMPLETE,
-    COMPLETED,
-    COMPLETE_REJECTED,
-
-    EXPIRE_LOCK,
-    LOCK_EXPIRED,
-    LOCK_EXPIRATION_REJECTED,
-
-    FAIL,
-    FAILED,
-    FAIL_REJECTED,
-
-    UPDATE_RETRIES,
-    RETRIES_UPDATED,
-    UPDATE_RETRIES_REJECTED,
-
-    CANCEL,
-    CANCELED,
-    CANCEL_REJECTED;
+    SUBSCRIBE,
+    SUBSCRIBED;
 }

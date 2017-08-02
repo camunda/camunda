@@ -29,7 +29,7 @@ import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.task.map.TaskInstanceMap;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
@@ -137,7 +137,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
         EventProcessor eventProcessor = null;
 
-        switch (taskEvent.getEventType())
+        switch (taskEvent.getState())
         {
             case CREATE:
                 eventProcessor = createTaskProcessor;
@@ -206,7 +206,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            taskEvent.setEventType(TaskEventType.CREATED);
+            taskEvent.setState(TaskState.CREATED);
         }
 
         @Override
@@ -250,13 +250,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED)
             {
-                taskEvent.setEventType(TaskEventType.LOCKED);
+                taskEvent.setState(TaskState.LOCKED);
                 isLocked = true;
             }
 
             if (!isLocked)
             {
-                taskEvent.setEventType(TaskEventType.LOCK_REJECTED);
+                taskEvent.setState(TaskState.LOCK_REJECTED);
             }
         }
 
@@ -321,7 +321,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             taskIndex.wrapTaskInstanceKey(eventKey);
             final short state = taskIndex.getState();
 
-            TaskEventType taskEventType = TaskEventType.COMPLETE_REJECTED;
+            TaskState taskEventType = TaskState.COMPLETE_REJECTED;
 
             final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
             if (isCompletable)
@@ -331,13 +331,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 {
                     if (BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
                     {
-                        taskEventType = TaskEventType.COMPLETED;
+                        taskEventType = TaskState.COMPLETED;
                         isCompleted = true;
                     }
                 }
             }
 
-            taskEvent.setEventType(taskEventType);
+            taskEvent.setState(taskEventType);
         }
 
         @Override
@@ -374,13 +374,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             taskIndex.wrapTaskInstanceKey(eventKey);
             if (taskIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
             {
-                taskEvent.setEventType(TaskEventType.FAILED);
+                taskEvent.setState(TaskState.FAILED);
                 isFailed = true;
             }
 
             if (!isFailed)
             {
-                taskEvent.setEventType(TaskEventType.FAIL_REJECTED);
+                taskEvent.setState(TaskState.FAIL_REJECTED);
             }
         }
 
@@ -420,13 +420,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             taskIndex.wrapTaskInstanceKey(eventKey);
             if (taskIndex.getState() == STATE_LOCKED)
             {
-                taskEvent.setEventType(TaskEventType.LOCK_EXPIRED);
+                taskEvent.setState(TaskState.LOCK_EXPIRED);
                 isExpired = true;
             }
 
             if (!isExpired)
             {
-                taskEvent.setEventType(TaskEventType.LOCK_EXPIRATION_REJECTED);
+                taskEvent.setState(TaskState.LOCK_EXPIRATION_REJECTED);
             }
         }
 
@@ -457,11 +457,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (state == STATE_FAILED && taskEvent.getRetries() > 0)
             {
-                taskEvent.setEventType(TaskEventType.RETRIES_UPDATED);
+                taskEvent.setState(TaskState.RETRIES_UPDATED);
             }
             else
             {
-                taskEvent.setEventType(TaskEventType.UPDATE_RETRIES_REJECTED);
+                taskEvent.setState(TaskState.UPDATE_RETRIES_REJECTED);
             }
         }
 
@@ -491,12 +491,12 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (state > 0)
             {
-                taskEvent.setEventType(TaskEventType.CANCELED);
+                taskEvent.setState(TaskState.CANCELED);
                 isCanceled = true;
             }
             else
             {
-                taskEvent.setEventType(TaskEventType.CANCEL_REJECTED);
+                taskEvent.setState(TaskState.CANCEL_REJECTED);
             }
         }
 

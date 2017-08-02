@@ -31,7 +31,7 @@ import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class ControlMessageResponseWriterTest
 {
-    private static final byte[] DATA = getBytes("eventType");
+    private static final byte[] DATA = getBytes("state");
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlMessageResponseDecoder responseDecoder = new ControlMessageResponseDecoder();

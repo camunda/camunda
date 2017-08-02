@@ -15,24 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.data;
+package io.zeebe.broker.task.data;
 
-public enum WorkflowDeploymentEventType
+public enum TaskState
 {
-    CREATE_DEPLOYMENT(0),
-    DEPLOYMENT_CREATED(1),
-    DEPLOYMENT_REJECTED(2);
+    CREATE,
+    CREATED,
 
-    // don't change the ids because the stream processor use them for the map
-    private final int id;
+    LOCK,
+    LOCKED,
+    LOCK_REJECTED,
 
-    WorkflowDeploymentEventType(int id)
-    {
-        this.id = id;
-    }
+    COMPLETE,
+    COMPLETED,
+    COMPLETE_REJECTED,
 
-    public int id()
-    {
-        return id;
-    }
+    EXPIRE_LOCK,
+    LOCK_EXPIRED,
+    LOCK_EXPIRATION_REJECTED,
+
+    FAIL,
+    FAILED,
+    FAIL_REJECTED,
+
+    UPDATE_RETRIES,
+    RETRIES_UPDATED,
+    UPDATE_RETRIES_REJECTED,
+
+    CANCEL,
+    CANCELED,
+    CANCEL_REJECTED;
 }

@@ -27,10 +27,10 @@ import java.util.List;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEventType;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.broker.workflow.data.WorkflowEventType;
+import io.zeebe.broker.workflow.data.WorkflowState;
 import io.zeebe.broker.workflow.graph.WorkflowValidationResultFormatter;
 import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
@@ -53,7 +53,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
-    protected final WorkflowDeploymentEvent deploymentEvent = new WorkflowDeploymentEvent();
+    protected final DeploymentEvent deploymentEvent = new DeploymentEvent();
     protected final WorkflowEvent workflowEvent = new WorkflowEvent();
 
     protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
@@ -128,7 +128,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
         EventProcessor eventProcessor = null;
 
-        switch (deploymentEvent.getEventType())
+        switch (deploymentEvent.getState())
         {
             case CREATE_DEPLOYMENT:
                 eventProcessor = this;
@@ -157,7 +157,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
             if (!validationResults.hasErrors())
             {
-                deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
+                deploymentEvent.setState(DeploymentState.DEPLOYMENT_CREATED);
 
                 collectDeployedWorkflows(bpmnModelInstance);
             }
@@ -176,7 +176,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
         if (deployedWorkflows.isEmpty())
         {
-            deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
+            deploymentEvent.setState(DeploymentState.DEPLOYMENT_REJECTED);
         }
     }
 
@@ -257,7 +257,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
             workflowEvent.reset();
             workflowEvent
-                .setEventType(WorkflowEventType.CREATED)
+                .setState(WorkflowState.CREATED)
                 .setBpmnProcessId(deployedWorkflow.getBpmnProcessId())
                 .setVersion(deployedWorkflow.getVersion())
                 .setBpmnXml(deploymentEvent.getBpmnXml())

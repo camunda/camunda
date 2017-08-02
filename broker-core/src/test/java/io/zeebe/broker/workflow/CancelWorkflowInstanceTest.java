@@ -81,7 +81,7 @@ public class CancelWorkflowInstanceTest
         final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "WORKFLOW_INSTANCE_CANCELED");
+        assertThat(response.getEvent()).containsEntry("state", "WORKFLOW_INSTANCE_CANCELED");
 
         final SubscribedEvent workflowInstanceCanceledEvent = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_CANCELED"));
 
@@ -122,7 +122,7 @@ public class CancelWorkflowInstanceTest
         final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "WORKFLOW_INSTANCE_CANCELED");
+        assertThat(response.getEvent()).containsEntry("state", "WORKFLOW_INSTANCE_CANCELED");
 
         final SubscribedEvent activityTerminatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_TERMINATED"));
 
@@ -147,7 +147,7 @@ public class CancelWorkflowInstanceTest
         final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "WORKFLOW_INSTANCE_CANCELED");
+        assertThat(response.getEvent()).containsEntry("state", "WORKFLOW_INSTANCE_CANCELED");
 
         final SubscribedEvent taskCanceledEvent = testClient.receiveSingleEvent(taskEvents("CANCELED"));
 
@@ -169,7 +169,7 @@ public class CancelWorkflowInstanceTest
         final ExecuteCommandResponse response = cancelWorkflowInstance(-1L);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "CANCEL_WORKFLOW_INSTANCE_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "CANCEL_WORKFLOW_INSTANCE_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("CANCEL_WORKFLOW_INSTANCE_REJECTED"));
     }
@@ -191,7 +191,7 @@ public class CancelWorkflowInstanceTest
         final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "CANCEL_WORKFLOW_INSTANCE_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "CANCEL_WORKFLOW_INSTANCE_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("CANCEL_WORKFLOW_INSTANCE_REJECTED"));
     }
@@ -204,7 +204,7 @@ public class CancelWorkflowInstanceTest
             .eventTypeWorkflow()
             .key(workflowInstanceKey)
             .command()
-                .put("eventType", "CANCEL_WORKFLOW_INSTANCE")
+                .put("state", "CANCEL_WORKFLOW_INSTANCE")
             .done()
             .sendAndAwait();
     }

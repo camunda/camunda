@@ -37,7 +37,7 @@ public class CommandResponseWriterTest
     private static final DirectBuffer TOPIC_NAME_BUFFER = wrapString(TOPIC_NAME);
     private static final int PARTITION_ID = 1;
     private static final long KEY = 2L;
-    private static final byte[] EVENT = getBytes("eventType");
+    private static final byte[] EVENT = getBytes("state");
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();

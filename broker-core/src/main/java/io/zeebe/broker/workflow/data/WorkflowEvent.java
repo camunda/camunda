@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 
 public class WorkflowEvent extends UnpackedObject
 {
-    private final EnumProperty<WorkflowEventType> eventTypeProp = new EnumProperty<>("eventType", WorkflowEventType.class);
+    private final EnumProperty<WorkflowState> stateProp = new EnumProperty<>("state", WorkflowState.class);
 
     private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
     private final IntegerProperty versionProp = new IntegerProperty("version");
@@ -33,21 +33,21 @@ public class WorkflowEvent extends UnpackedObject
 
     public WorkflowEvent()
     {
-        this.declareProperty(eventTypeProp)
+        this.declareProperty(stateProp)
             .declareProperty(bpmnProcessIdProp)
             .declareProperty(versionProp)
             .declareProperty(bpmnXmlProp)
             .declareProperty(deploymentKeyProp);
     }
 
-    public WorkflowEventType getEventType()
+    public WorkflowState getState()
     {
-        return eventTypeProp.getValue();
+        return stateProp.getValue();
     }
 
-    public WorkflowEvent setEventType(WorkflowEventType eventType)
+    public WorkflowEvent setState(WorkflowState eventType)
     {
-        this.eventTypeProp.setValue(eventType);
+        this.stateProp.setValue(eventType);
         return this;
     }
 

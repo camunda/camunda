@@ -231,7 +231,7 @@ public class SubscribeProcessor implements EventProcessor
 
             subscriberEvent
                 .setStartPosition(processor.getStartPosition())
-                .setEventType(TopicSubscriberEventType.SUBSCRIBED);
+                .setState(TopicSubscriberState.SUBSCRIBED);
 
             return writer
                 .metadataWriter(metadata)

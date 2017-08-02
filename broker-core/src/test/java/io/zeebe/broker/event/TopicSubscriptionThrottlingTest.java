@@ -50,7 +50,7 @@ public class TopicSubscriptionThrottlingTest
             .command()
                 .put("startPosition", 0)
                 .put("name", "foo")
-                .put("eventType", "SUBSCRIBE")
+                .put("state", "SUBSCRIBE")
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
@@ -100,7 +100,7 @@ public class TopicSubscriptionThrottlingTest
             .eventTypeSubscription()
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("eventType", "ACKNOWLEDGE")
+                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", eventPositions.get(1))
                 .done()
             .sendAndAwait();
@@ -147,7 +147,7 @@ public class TopicSubscriptionThrottlingTest
                 .partitionId(0)
                 .eventTypeTask()
                 .command()
-                    .put("eventType", "CREATE")
+                    .put("state", "CREATE")
                     .put("type", "theTaskType")
                     .done()
                 .sendAndAwait();

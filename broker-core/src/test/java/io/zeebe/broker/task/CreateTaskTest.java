@@ -48,7 +48,7 @@ public class CreateTaskTest
             .partitionId(0)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -60,7 +60,7 @@ public class CreateTaskTest
         assertThat(resp.partitionId()).isEqualTo(0);
 
         final Map<String, Object> event = resp.getEvent();
-        assertThat(event).containsEntry("eventType", "CREATED");
+        assertThat(event).containsEntry("state", "CREATED");
         assertThat(event).containsEntry("type", "theTaskType");
     }
 }

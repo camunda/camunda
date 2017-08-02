@@ -15,20 +15,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.incident.data;
+package io.zeebe.broker.workflow.data;
 
-public enum IncidentEventType
+public enum DeploymentState
 {
-    CREATE,
-    CREATED,
-    CREATE_REJECTED,
+    CREATE_DEPLOYMENT(0),
+    DEPLOYMENT_CREATED(1),
+    DEPLOYMENT_REJECTED(2);
 
-    RESOLVE,
-    RESOLVED,
-    RESOLVE_REJECTED,
-    RESOLVE_FAILED,
+    // don't change the ids because the stream processor use them for the map
+    private final int id;
 
-    DELETE,
-    DELETED,
-    DELETE_REJECTED;
+    DeploymentState(int id)
+    {
+        this.id = id;
+    }
+
+    public int id()
+    {
+        return id;
+    }
 }

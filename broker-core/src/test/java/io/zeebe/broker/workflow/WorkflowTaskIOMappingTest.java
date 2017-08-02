@@ -97,13 +97,13 @@ public class WorkflowTaskIOMappingTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-                .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+                .put(PROP_STATE, "CREATE_DEPLOYMENT")
                 .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
         // then
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains(Integer.toString(PROHIBITED_JSON_PATH_EXPRESSION))
             .contains(ERROR_MSG_PROHIBITED_EXPRESSION);
@@ -132,13 +132,13 @@ public class WorkflowTaskIOMappingTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-            .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+            .put(PROP_STATE, "CREATE_DEPLOYMENT")
             .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
         // then
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains(Integer.toString(REDUNDANT_MAPPING))
             .contains(ERROR_MSG_REDUNDANT_MAPPING);
@@ -321,12 +321,12 @@ public class WorkflowTaskIOMappingTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-            .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+            .put(PROP_STATE, "CREATE_DEPLOYMENT")
             .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
     }
 
     @Test
@@ -544,13 +544,13 @@ public class WorkflowTaskIOMappingTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-            .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+            .put(PROP_STATE, "CREATE_DEPLOYMENT")
             .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
 
         // then
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains(Integer.toString(REDUNDANT_MAPPING))
             .contains(ERROR_MSG_REDUNDANT_MAPPING);

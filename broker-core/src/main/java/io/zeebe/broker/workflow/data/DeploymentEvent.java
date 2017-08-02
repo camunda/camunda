@@ -27,11 +27,11 @@ import io.zeebe.msgpack.value.ArrayValueIterator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowDeploymentEvent extends UnpackedObject
+public class DeploymentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    private final EnumProperty<WorkflowDeploymentEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowDeploymentEventType.class);
+    private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_EVENT_TYPE, DeploymentState.class);
     private final BinaryProperty bpmnXmlProp = new BinaryProperty("bpmnXml");
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
@@ -42,22 +42,22 @@ public class WorkflowDeploymentEvent extends UnpackedObject
 
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
-    public WorkflowDeploymentEvent()
+    public DeploymentEvent()
     {
-        this.declareProperty(eventTypeProp)
+        this.declareProperty(stateProp)
             .declareProperty(bpmnXmlProp)
             .declareProperty(deployedWorkflowsProp)
             .declareProperty(errorMessageProp);
     }
 
-    public WorkflowDeploymentEventType getEventType()
+    public DeploymentState getState()
     {
-        return eventTypeProp.getValue();
+        return stateProp.getValue();
     }
 
-    public WorkflowDeploymentEvent setEventType(WorkflowDeploymentEventType event)
+    public DeploymentEvent setState(DeploymentState event)
     {
-        this.eventTypeProp.setValue(event);
+        this.stateProp.setValue(event);
         return this;
     }
 
@@ -66,12 +66,12 @@ public class WorkflowDeploymentEvent extends UnpackedObject
         return bpmnXmlProp.getValue();
     }
 
-    public WorkflowDeploymentEvent setBpmnXml(DirectBuffer bpmnXml)
+    public DeploymentEvent setBpmnXml(DirectBuffer bpmnXml)
     {
         return setBpmnXml(bpmnXml, 0, bpmnXml.capacity());
     }
 
-    public WorkflowDeploymentEvent setBpmnXml(DirectBuffer bpmnXml, int offset, int length)
+    public DeploymentEvent setBpmnXml(DirectBuffer bpmnXml, int offset, int length)
     {
         this.bpmnXmlProp.setValue(bpmnXml, offset, length);
         return this;
@@ -87,13 +87,13 @@ public class WorkflowDeploymentEvent extends UnpackedObject
         return errorMessageProp.getValue();
     }
 
-    public WorkflowDeploymentEvent setErrorMessage(String errorMessage)
+    public DeploymentEvent setErrorMessage(String errorMessage)
     {
         this.errorMessageProp.setValue(errorMessage);
         return this;
     }
 
-    public WorkflowDeploymentEvent setErrorMessage(DirectBuffer errorMessage, int offset, int length)
+    public DeploymentEvent setErrorMessage(DirectBuffer errorMessage, int offset, int length)
     {
         this.errorMessageProp.setValue(errorMessage, offset, length);
         return this;

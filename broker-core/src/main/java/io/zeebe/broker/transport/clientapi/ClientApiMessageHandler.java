@@ -20,28 +20,40 @@ package io.zeebe.broker.transport.clientapi;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
-import io.zeebe.broker.event.processor.TopicSubscriberEvent;
-import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.broker.event.processor.TopicSubscriberEvent;
+import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerRequestHandler;
 
 
 public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler
@@ -75,7 +87,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
     private void initEventTypeMap()
     {
-        eventsByType.put(EventType.DEPLOYMENT_EVENT, new WorkflowDeploymentEvent());
+        eventsByType.put(EventType.DEPLOYMENT_EVENT, new DeploymentEvent());
         eventsByType.put(EventType.TASK_EVENT, new TaskEvent());
         eventsByType.put(EventType.WORKFLOW_INSTANCE_EVENT, new WorkflowInstanceEvent());
         eventsByType.put(EventType.SUBSCRIBER_EVENT, new TopicSubscriberEvent());

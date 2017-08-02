@@ -32,7 +32,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEventType;
+import io.zeebe.broker.workflow.data.WorkflowInstanceState;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -731,7 +731,7 @@ public class IncidentTest
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
-                .put("eventType", "FAIL")
+                .put("state", "FAIL")
                 .put("retries", 0)
                 .put("type", "test")
                 .put("lockOwner", taskEvent.event().get("lockOwner"))
@@ -739,7 +739,7 @@ public class IncidentTest
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent()).containsEntry("eventType", "FAILED");
+        assertThat(response.getEvent()).containsEntry("state", "FAILED");
     }
 
     private void createStandaloneTask()
@@ -749,13 +749,13 @@ public class IncidentTest
             .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "test")
                 .put("retries", 3)
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent()).containsEntry("eventType", "CREATED");
+        assertThat(response.getEvent()).containsEntry("state", "CREATED");
     }
 
     private void updateTaskRetries()
@@ -768,7 +768,7 @@ public class IncidentTest
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
-                .put("eventType", "UPDATE_RETRIES")
+                .put("state", "UPDATE_RETRIES")
                 .put("retries", 1)
                 .put("type", "test")
                 .put("lockOwner", taskEvent.event().get("lockOwner"))
@@ -776,7 +776,7 @@ public class IncidentTest
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
+        assertThat(response.getEvent()).containsEntry("state", "RETRIES_UPDATED");
     }
 
     private void updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload)
@@ -787,13 +787,13 @@ public class IncidentTest
             .eventType(EventType.WORKFLOW_INSTANCE_EVENT)
             .key(activityInstanceKey)
             .command()
-                .put("eventType", WorkflowInstanceEventType.UPDATE_PAYLOAD)
+                .put("state", WorkflowInstanceState.UPDATE_PAYLOAD)
                 .put("workflowInstanceKey", workflowInstanceKey)
                 .put("payload", payload)
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent()).containsEntry("eventType", WorkflowInstanceEventType.PAYLOAD_UPDATED.name());
+        assertThat(response.getEvent()).containsEntry("state", WorkflowInstanceState.PAYLOAD_UPDATED.name());
     }
 
 
@@ -810,11 +810,11 @@ public class IncidentTest
             .key(workflowInstanceKey)
             .eventTypeWorkflow()
             .command()
-                .put("eventType", "CANCEL_WORKFLOW_INSTANCE")
+                .put("state", "CANCEL_WORKFLOW_INSTANCE")
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent()).containsEntry("eventType", "WORKFLOW_INSTANCE_CANCELED");
+        assertThat(response.getEvent()).containsEntry("state", "WORKFLOW_INSTANCE_CANCELED");
     }
 
 }

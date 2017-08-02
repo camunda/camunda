@@ -33,7 +33,7 @@ import java.util.stream.*;
 
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.broker.test.WrittenEvent;
 import io.zeebe.logstreams.log.LogStream;
@@ -118,14 +118,14 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         // then
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
 
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getState()).isEqualTo(TaskState.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
         assertThat(taskEvent.getLockOwner()).isEqualTo(wrapString("owner-1"));
 
@@ -145,14 +145,14 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK_EXPIRED)
+                .setState(TaskState.LOCK_EXPIRED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         // then
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
 
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getState()).isEqualTo(TaskState.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
@@ -170,7 +170,7 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAILED)
+                .setState(TaskState.FAILED)
                 .setRetries(2)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
@@ -178,7 +178,7 @@ public class LockTaskStreamProcessorTest
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
 
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getState()).isEqualTo(TaskState.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
@@ -196,7 +196,7 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.RETRIES_UPDATED)
+                .setState(TaskState.RETRIES_UPDATED)
                 .setRetries(3)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
@@ -204,7 +204,7 @@ public class LockTaskStreamProcessorTest
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
 
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getState()).isEqualTo(TaskState.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
         assertThat(taskEvent.getRetries()).isEqualTo(3);
 
@@ -223,7 +223,7 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAILED)
+                .setState(TaskState.FAILED)
                 .setRetries(0)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
@@ -239,7 +239,7 @@ public class LockTaskStreamProcessorTest
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(ANOTHER_TASK_TYPE_BUFFER, 0, ANOTHER_TASK_TYPE_BUFFER.capacity()));
 
         // then
@@ -260,11 +260,11 @@ public class LockTaskStreamProcessorTest
         Stream.of(1, 2, 3, 4).forEach(key ->
         {
             mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
             final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
-            assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+            assertThat(lastWrittenEvent.getValue().getState()).isEqualTo(TaskState.LOCK);
 
             final long subscriptionId = lastWrittenEvent.getMetadata().getSubscriberKey();
             if (subscriptionId == subscription.getSubscriberKey())
@@ -292,15 +292,15 @@ public class LockTaskStreamProcessorTest
         Stream.of(1, 2, 3).forEach(key ->
         {
             mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
-            assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+            assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK);
         });
 
         // when process one more event then it should not be locked
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         assertThat(mockController.getWrittenEvents()).hasSize(3);
@@ -315,7 +315,7 @@ public class LockTaskStreamProcessorTest
         Stream.of(1, 2).forEach(key ->
         {
             mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
         });
 
@@ -325,7 +325,7 @@ public class LockTaskStreamProcessorTest
         Stream.of(3, 4, 5).forEach(key ->
         {
             mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
         });
 
@@ -334,7 +334,7 @@ public class LockTaskStreamProcessorTest
 
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
         assertThat(lastWrittenEvent.getKey()).isEqualTo(4L);
-        assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(lastWrittenEvent.getValue().getState()).isEqualTo(TaskState.LOCK);
     }
 
     @Test
@@ -349,7 +349,7 @@ public class LockTaskStreamProcessorTest
 
         // then an event is locked by the other subscription
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         assertThat(mockController.getWrittenEvents()).hasSize(1);
@@ -361,7 +361,7 @@ public class LockTaskStreamProcessorTest
         future = streamProcessor.removeSubscription(anotherSubscription.getSubscriberKey());
 
         mockController.processEvent(3L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         assertThat(mockController.getWrittenEvents()).hasSize(1);
@@ -381,7 +381,7 @@ public class LockTaskStreamProcessorTest
         Stream.of(1, 2, 3).forEach(key ->
         {
             mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
         });
 
@@ -392,12 +392,12 @@ public class LockTaskStreamProcessorTest
 
         // then
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
         assertThat(lastWrittenEvent.getKey()).isEqualTo(4L);
-        assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(lastWrittenEvent.getValue().getState()).isEqualTo(TaskState.LOCK);
 
         assertThat(streamProcessor.isSuspended()).isFalse();
     }
@@ -413,10 +413,10 @@ public class LockTaskStreamProcessorTest
 
         // then
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK);
 
         assertThat(streamProcessor.isSuspended()).isFalse();
     }
@@ -500,7 +500,7 @@ public class LockTaskStreamProcessorTest
         {
             // when
             mockController.processEvent(2L, event -> event
-                    .setEventType(TaskEventType.CREATED)
+                    .setState(TaskState.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
         }
         // then
@@ -514,7 +514,7 @@ public class LockTaskStreamProcessorTest
     public void shouldAcceptEventForReprocessingWithSubscribedType()
     {
         final LoggedEvent loggedEvent = mockController.buildLoggedEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(TASK_TYPE_BUFFER));
 
         final EventFilter eventFilter = LockTaskStreamProcessor.reprocessingEventFilter(TASK_TYPE_BUFFER);
@@ -526,7 +526,7 @@ public class LockTaskStreamProcessorTest
     public void shouldRejectEventForReprocessingWithDifferentType()
     {
         final LoggedEvent loggedEvent = mockController.buildLoggedEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
+                .setState(TaskState.CREATED)
                 .setType(ANOTHER_TASK_TYPE_BUFFER));
 
         final EventFilter eventFilter = LockTaskStreamProcessor.reprocessingEventFilter(TASK_TYPE_BUFFER);

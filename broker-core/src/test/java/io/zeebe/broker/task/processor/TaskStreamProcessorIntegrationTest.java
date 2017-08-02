@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.LogStreams;
@@ -172,7 +172,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         // given
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
 
@@ -185,7 +185,7 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(position);
 
         // then
-        assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        assertThatEventIsFollowedBy(position, TaskState.CREATED);
 
         assertThatBuffer(followUpTaskEvent.getType()).hasBytes(TASK_TYPE_BUFFER.byteArray());
 
@@ -206,7 +206,7 @@ public class TaskStreamProcessorIntegrationTest
         lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
@@ -220,13 +220,13 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(position);
 
         // then
-        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskState.CREATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(0);
@@ -250,7 +250,7 @@ public class TaskStreamProcessorIntegrationTest
         lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
@@ -262,20 +262,20 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
         logStream.setCommitPosition(position);
 
-        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskState.CREATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         // when
         final byte[] modifiedPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}"));
 
         taskEvent
-            .setEventType(TaskEventType.COMPLETE)
+            .setState(TaskState.COMPLETE)
             .setLockOwner(wrapString("owner"))
             .setPayload(new UnsafeBuffer(modifiedPayload));
 
@@ -287,7 +287,7 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(position);
 
         // then
-        event = assertThatEventIsFollowedBy(position, TaskEventType.COMPLETED);
+        event = assertThatEventIsFollowedBy(position, TaskState.COMPLETED);
         logStream.setCommitPosition(event.getPosition());
 
         assertThatBuffer(followUpTaskEvent.getPayload())
@@ -304,7 +304,7 @@ public class TaskStreamProcessorIntegrationTest
         lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setRetries(3)
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
@@ -316,18 +316,18 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
         logStream.setCommitPosition(position);
 
-        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskState.CREATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         // when
         taskEvent
-            .setEventType(TaskEventType.FAIL)
+            .setState(TaskState.FAIL)
             .setLockOwner(wrapString("owner"))
             .setRetries(2);
 
@@ -339,13 +339,13 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(position);
 
         // then
-        event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+        event = assertThatEventIsFollowedBy(position, TaskState.FAILED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
@@ -363,7 +363,7 @@ public class TaskStreamProcessorIntegrationTest
         lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
@@ -375,13 +375,13 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
         logStream.setCommitPosition(position);
 
-        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskState.CREATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         taskScheduler.waitUntilDone();
@@ -392,16 +392,16 @@ public class TaskStreamProcessorIntegrationTest
         taskExpireLockStreamProcessor.checkLockExpirationAsync();
 
         // then
-        event = assertThatEventIsFollowedBy(event, TaskEventType.EXPIRE_LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.EXPIRE_LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK_EXPIRED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK_EXPIRED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(now.plus(lockDuration).toEpochMilli());
@@ -422,7 +422,7 @@ public class TaskStreamProcessorIntegrationTest
         lockTaskStreamProcessor.addSubscription(createTaskSubscription());
 
         final TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
+            .setState(TaskState.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setRetries(1)
             .setPayload(new UnsafeBuffer(MSGPACK_PAYLOAD));
@@ -434,17 +434,17 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
         logStream.setCommitPosition(position);
 
-        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskState.CREATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         taskEvent
-            .setEventType(TaskEventType.FAIL)
+            .setState(TaskState.FAIL)
             .setLockOwner(wrapString("owner"))
             .setRetries(0);
 
@@ -455,12 +455,12 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
         logStream.setCommitPosition(position);
 
-        event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+        event = assertThatEventIsFollowedBy(position, TaskState.FAILED);
         logStream.setCommitPosition(event.getPosition());
 
         // when
         taskEvent
-            .setEventType(TaskEventType.UPDATE_RETRIES)
+            .setState(TaskState.UPDATE_RETRIES)
             .setRetries(2);
 
         position = logStreamWriter
@@ -471,13 +471,13 @@ public class TaskStreamProcessorIntegrationTest
         logStream.setCommitPosition(position);
 
         // then
-        event = assertThatEventIsFollowedBy(position, TaskEventType.RETRIES_UPDATED);
+        event = assertThatEventIsFollowedBy(position, TaskState.RETRIES_UPDATED);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCK);
         logStream.setCommitPosition(event.getPosition());
 
-        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(event, TaskState.LOCKED);
         logStream.setCommitPosition(event.getPosition());
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
@@ -485,19 +485,19 @@ public class TaskStreamProcessorIntegrationTest
         assertThat(followUpTaskEvent.getRetries()).isEqualTo(2);
     }
 
-    private LoggedEvent assertThatEventIsFollowedBy(LoggedEvent event, TaskEventType eventType)
+    private LoggedEvent assertThatEventIsFollowedBy(LoggedEvent event, TaskState eventType)
     {
         return assertThatEventIsFollowedBy(event.getPosition(), eventType);
     }
 
-    private LoggedEvent assertThatEventIsFollowedBy(long position, TaskEventType eventType)
+    private LoggedEvent assertThatEventIsFollowedBy(long position, TaskState eventType)
     {
         final LoggedEvent event = getResultEventOf(position);
 
         followUpTaskEvent.reset();
         event.readValue(followUpTaskEvent);
 
-        assertThat(followUpTaskEvent.getEventType()).isEqualTo(eventType);
+        assertThat(followUpTaskEvent.getState()).isEqualTo(eventType);
 
         return event;
     }

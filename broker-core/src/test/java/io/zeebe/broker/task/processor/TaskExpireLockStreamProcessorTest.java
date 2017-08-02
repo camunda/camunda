@@ -32,7 +32,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.broker.test.WrittenEvent;
 import io.zeebe.logstreams.log.LogStream;
@@ -122,7 +122,7 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         final LoggedEvent lockedEvent = mockController.buildLoggedEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCKED));
+                .setState(TaskState.LOCKED));
 
         mockController.processEvent(lockedEvent);
 
@@ -139,7 +139,7 @@ public class TaskExpireLockStreamProcessorTest
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
 
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.EXPIRE_LOCK);
+        assertThat(taskEvent.getState()).isEqualTo(TaskState.EXPIRE_LOCK);
         assertThatBuffer(taskEvent.getType()).hasBytes(TASK_TYPE_BUFFER);
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
@@ -159,7 +159,7 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         final LoggedEvent lockedEvent = mockController.buildLoggedEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCKED));
+                .setState(TaskState.LOCKED));
 
         mockController.processEvent(lockedEvent);
 
@@ -185,7 +185,7 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(BEFORE_LOCK_TIME);
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.LOCKED));
+            event.setState(TaskState.LOCKED));
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -203,10 +203,10 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.LOCKED));
+            event.setState(TaskState.LOCKED));
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.COMPLETED));
+            event.setState(TaskState.COMPLETED));
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -224,10 +224,10 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.LOCKED));
+            event.setState(TaskState.LOCKED));
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.FAILED));
+            event.setState(TaskState.FAILED));
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -245,10 +245,10 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.LOCKED));
+            event.setState(TaskState.LOCKED));
 
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.LOCK_EXPIRED));
+            event.setState(TaskState.LOCK_EXPIRED));
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -266,7 +266,7 @@ public class TaskExpireLockStreamProcessorTest
         ClockUtil.setCurrentTime(AFTER_LOCK_TIME);
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCKED));
+                .setState(TaskState.LOCKED));
 
         when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(false);
         when(mockTargetLogStreamReader.hasNext()).thenReturn(false);

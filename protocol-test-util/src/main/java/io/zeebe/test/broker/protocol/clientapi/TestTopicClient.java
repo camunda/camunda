@@ -32,7 +32,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 public class TestTopicClient
 {
 
-    public static final String PROP_EVENT = "eventType";
+    public static final String PROP_STATE = "state";
 
     // workflow related properties
 
@@ -63,12 +63,12 @@ public class TestTopicClient
                 .partitionId(partitionId)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance).getBytes(UTF_8))
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_CREATED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_CREATED");
 
         return response.key();
     }
@@ -80,7 +80,7 @@ public class TestTopicClient
                       .partitionId(partitionId)
                       .eventTypeWorkflow()
                       .command()
-                      .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                      .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
                       .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                       .done()
                       .sendAndAwait();
@@ -93,12 +93,12 @@ public class TestTopicClient
                 .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
         assertThat(response.position()).isGreaterThanOrEqualTo(0L);
 
         return response.key();
@@ -116,13 +116,13 @@ public class TestTopicClient
                 .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
-                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                     .put(PROP_WORKFLOW_PAYLOAD, payload)
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
 
         return response.key();
     }
@@ -164,7 +164,7 @@ public class TestTopicClient
                                                                            .key(taskEvent.key())
                                                                            .eventTypeTask()
                                                                            .command()
-                                                                           .put(PROP_EVENT, "COMPLETE")
+                                                                           .put(PROP_STATE, "COMPLETE")
                                                                            .put("type", taskType)
                                                                            .put("lockOwner", taskEvent.event().get("lockOwner"))
                                                                            .put("headers", taskEvent.event().get("headers"));
@@ -176,7 +176,7 @@ public class TestTopicClient
 
         final ExecuteCommandResponse response = mapBuilder.done().sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("COMPLETED");
     }
 
     /**
@@ -211,9 +211,9 @@ public class TestTopicClient
         }
     }
 
-    public static Predicate<SubscribedEvent> eventType(String eventType)
+    public static Predicate<SubscribedEvent> state(String eventType)
     {
-        return e -> e.event().get(PROP_EVENT).equals(eventType);
+        return e -> e.event().get(PROP_STATE).equals(eventType);
     }
 
     public static Predicate<SubscribedEvent> workflowInstanceKey(long workflowInstanceKey)
@@ -228,7 +228,7 @@ public class TestTopicClient
 
     public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType)
     {
-        return workflowInstanceEvents().and(eventType(eventType));
+        return workflowInstanceEvents().and(state(eventType));
     }
 
     public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType, long workflowInstanceKey)
@@ -243,7 +243,7 @@ public class TestTopicClient
 
     public static Predicate<SubscribedEvent> taskEvents(String eventType)
     {
-        return taskEvents().and(eventType(eventType));
+        return taskEvents().and(state(eventType));
     }
 
     public static Predicate<SubscribedEvent> taskType(String taskType)
@@ -258,12 +258,12 @@ public class TestTopicClient
 
     public static Predicate<SubscribedEvent> incidentEvents(String eventType)
     {
-        return incidentEvents().and(eventType(eventType));
+        return incidentEvents().and(state(eventType));
     }
 
     public static Predicate<SubscribedEvent> workflowEvents(String eventType)
     {
-        return workflowEvents().and(eventType(eventType));
+        return workflowEvents().and(state(eventType));
     }
 
     public static Predicate<SubscribedEvent> workflowEvents()

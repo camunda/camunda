@@ -153,12 +153,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriberEvent.reset();
         subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (subscriberEvent.getEventType() == TopicSubscriberEventType.SUBSCRIBE)
+        if (subscriberEvent.getState() == TopicSubscriberState.SUBSCRIBE)
         {
             subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
             return subscribeProcessor;
         }
-        else if (subscriberEvent.getEventType() == TopicSubscriberEventType.SUBSCRIBED)
+        else if (subscriberEvent.getState() == TopicSubscriberState.SUBSCRIBED)
         {
             return subscribedProcessor;
         }
@@ -173,7 +173,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriptionEvent.reset();
         subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (subscriptionEvent.getEventType() == TopicSubscriptionEventType.ACKNOWLEDGE)
+        if (subscriptionEvent.getState() == TopicSubscriptionState.ACKNOWLEDGE)
         {
             return ackProcessor;
         }
@@ -313,7 +313,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            subscriptionEvent.setEventType(TopicSubscriptionEventType.ACKNOWLEDGED);
+            subscriptionEvent.setState(TopicSubscriptionState.ACKNOWLEDGED);
         }
 
         @Override
@@ -396,7 +396,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
             subscriptionEvent.reset();
-            subscriptionEvent.setEventType(TopicSubscriptionEventType.ACKNOWLEDGE)
+            subscriptionEvent.setState(TopicSubscriptionState.ACKNOWLEDGE)
                 .setName(openedSubscriptionName, 0, openedSubscriptionName.capacity())
                 .setAckPosition(subscriberEvent.getStartPosition() - 1);
 

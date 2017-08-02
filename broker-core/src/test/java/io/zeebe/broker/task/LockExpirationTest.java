@@ -83,7 +83,7 @@ public class LockExpirationTest
         assertThat(lockEvents).hasSize(2);
 
         assertThat(lockEvents).extracting(e -> e.key()).contains(taskKey1, taskKey2);
-        assertThat(lockEvents).extracting(e -> e.event().get("eventType")).contains("LOCKED", "LOCKED");
+        assertThat(lockEvents).extracting(e -> e.event().get("state")).containsExactly("LOCKED", "LOCKED");
 
 
     }
@@ -95,7 +95,7 @@ public class LockExpirationTest
             .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", type)
                 .put("retries", 3)
                 .done()

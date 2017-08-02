@@ -90,13 +90,13 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         if (!failureEventMetadata.hasIncidentKey())
         {
-            incidentEvent.setEventType(IncidentEventType.CREATE);
+            incidentEvent.setState(IncidentState.CREATE);
 
             logStreamWriter.positionAsKey();
         }
         else
         {
-            incidentEvent.setEventType(IncidentEventType.RESOLVE_FAILED);
+            incidentEvent.setState(IncidentState.RESOLVE_FAILED);
 
             logStreamWriter.key(failureEventMetadata.getIncidentKey());
         }

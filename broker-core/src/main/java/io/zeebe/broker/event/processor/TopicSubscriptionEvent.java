@@ -27,13 +27,13 @@ import io.zeebe.msgpack.property.StringProperty;
 public class TopicSubscriptionEvent extends UnpackedObject
 {
     protected StringProperty nameProp = new StringProperty("name");
-    protected EnumProperty<TopicSubscriptionEventType> eventProp = new EnumProperty<>("eventType", TopicSubscriptionEventType.class);
+    protected EnumProperty<TopicSubscriptionState> stateProp = new EnumProperty<>("state", TopicSubscriptionState.class);
     protected LongProperty ackPositionProp = new LongProperty("ackPosition");
 
     public TopicSubscriptionEvent()
     {
         declareProperty(nameProp)
-            .declareProperty(eventProp)
+            .declareProperty(stateProp)
             .declareProperty(ackPositionProp);
     }
 
@@ -59,14 +59,14 @@ public class TopicSubscriptionEvent extends UnpackedObject
         return this;
     }
 
-    public TopicSubscriptionEventType getEventType()
+    public TopicSubscriptionState getState()
     {
-        return eventProp.getValue();
+        return stateProp.getValue();
     }
 
-    public TopicSubscriptionEvent setEventType(TopicSubscriptionEventType event)
+    public TopicSubscriptionEvent setState(TopicSubscriptionState event)
     {
-        this.eventProp.setValue(event);
+        this.stateProp.setValue(event);
         return this;
     }
 

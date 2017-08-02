@@ -29,27 +29,39 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
-import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskState;
+import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 
 public class ClientApiMessageHandlerTest
 {
@@ -64,7 +76,7 @@ public class ClientApiMessageHandlerTest
     static
     {
         final TaskEvent taskEvent = new TaskEvent()
-                .setEventType(TaskEventType.CREATE)
+                .setState(TaskState.CREATE)
                 .setType(wrapString("test"));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[taskEvent.getEncodedLength()]);

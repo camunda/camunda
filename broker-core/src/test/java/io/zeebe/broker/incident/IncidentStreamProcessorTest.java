@@ -26,13 +26,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentEventType;
+import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEventType;
+import io.zeebe.broker.workflow.data.WorkflowInstanceState;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorController;
@@ -103,13 +103,13 @@ public class IncidentStreamProcessorTest
         // when
         // a failed task has no retries left (=> create incident)
         writeTaskEvent(2L, task -> task
-                       .setEventType(TaskEventType.FAILED)
+                       .setState(TaskState.FAILED)
                        .setType(wrapString("test"))
                        .setRetries(0));
 
         // and the retries are updated (=> delete incident)
         writeTaskEvent(2L, task -> task
-                       .setEventType(TaskEventType.RETRIES_UPDATED)
+                       .setState(TaskState.RETRIES_UPDATED)
                        .setType(wrapString("test"))
                        .setRetries(1));
 
@@ -118,9 +118,9 @@ public class IncidentStreamProcessorTest
         // then don't create an incident
         assertThat(getIncidentEvents())
             .hasSize(2)
-            .extracting("eventType")
-            .containsExactly(IncidentEventType.CREATE,
-                             IncidentEventType.CREATE_REJECTED);
+            .extracting("state")
+            .containsExactly(IncidentState.CREATE,
+                             IncidentState.CREATE_REJECTED);
     }
 
     @Test
@@ -129,11 +129,11 @@ public class IncidentStreamProcessorTest
         // given
         // an incident for a failed workflow instance
         final long failureEventPosition = writeWorkflowInstanceEvent(2L, wf -> wf
-                .setEventType(WorkflowInstanceEventType.ACTIVITY_READY)
+                .setState(WorkflowInstanceState.ACTIVITY_READY)
                 .setWorkflowInstanceKey(1L));
 
         writeIncidentEvent(3L, incident -> incident
-               .setEventType(IncidentEventType.CREATE)
+               .setState(IncidentState.CREATE)
                .setWorkflowInstanceKey(1L)
                .setActivityInstanceKey(2L)
                .setFailureEventPosition(failureEventPosition));
@@ -143,12 +143,12 @@ public class IncidentStreamProcessorTest
         // when
         // the payload of the workflow instance is updated (=> resolve incident)
         writeWorkflowInstanceEvent(2L, wf -> wf
-                .setEventType(WorkflowInstanceEventType.PAYLOAD_UPDATED)
+                .setState(WorkflowInstanceState.PAYLOAD_UPDATED)
                 .setWorkflowInstanceKey(1L));
 
         // and the workflow instance / activity is terminated (=> delete incident)
         writeWorkflowInstanceEvent(2L, wf -> wf
-                                   .setEventType(WorkflowInstanceEventType.ACTIVITY_TERMINATED)
+                                   .setState(WorkflowInstanceState.ACTIVITY_TERMINATED)
                                    .setWorkflowInstanceKey(1L));
 
         agentRunnerService.waitUntilDone();
@@ -156,13 +156,13 @@ public class IncidentStreamProcessorTest
         // then don't resolve the incident
         assertThat(getIncidentEvents())
                 .hasSize(6)
-                .extracting("eventType")
-                .containsExactly(IncidentEventType.CREATE,
-                                 IncidentEventType.CREATED,
-                                 IncidentEventType.RESOLVE,
-                                 IncidentEventType.DELETE,
-                                 IncidentEventType.RESOLVE_REJECTED,
-                                 IncidentEventType.DELETED);
+                .extracting("state")
+                .containsExactly(IncidentState.CREATE,
+                                 IncidentState.CREATED,
+                                 IncidentState.RESOLVE,
+                                 IncidentState.DELETE,
+                                 IncidentState.RESOLVE_REJECTED,
+                                 IncidentState.DELETED);
     }
 
     private List<IncidentEvent> getIncidentEvents()

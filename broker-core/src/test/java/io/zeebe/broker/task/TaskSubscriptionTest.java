@@ -200,7 +200,7 @@ public class TaskSubscriptionTest
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeTask()
                 .command()
-                    .put("eventType", "CREATE")
+                    .put("state", "CREATE")
                     .put("type", type)
                     .put("retries", 3)
                 .done()

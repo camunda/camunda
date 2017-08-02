@@ -85,14 +85,14 @@ public class TopicSubscriptionAcknowledgementTest
             .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("eventType", "ACKNOWLEDGE")
+                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", 0)
                 .done()
             .sendAndAwait();
 
         // then
         assertThat(response.getEvent()).containsEntry("name", SUBSCRIPTION_NAME);
-        assertThat(response.getEvent()).containsEntry("eventType", "ACKNOWLEDGED");
+        assertThat(response.getEvent()).containsEntry("state", "ACKNOWLEDGED");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class TopicSubscriptionAcknowledgementTest
             .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("eventType", "ACKNOWLEDGE")
+                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", events.get(0).position())
                 .done()
             .sendAndAwait();
@@ -143,7 +143,7 @@ public class TopicSubscriptionAcknowledgementTest
             .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("eventType", "ACKNOWLEDGE")
+                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", Long.MAX_VALUE)
                 .done()
             .sendAndAwait();
@@ -161,7 +161,7 @@ public class TopicSubscriptionAcknowledgementTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -212,7 +212,7 @@ public class TopicSubscriptionAcknowledgementTest
             .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
-                .put("eventType", "CREATE")
+                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()

@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
@@ -74,7 +74,7 @@ public class TaskInstanceStreamProcessorTest
     @Rule
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
         TaskEvent.class,
-        (t) -> t.setType(TASK_TYPE).setEventType(TaskEventType.CREATED),
+        (t) -> t.setType(TASK_TYPE).setState(TaskState.CREATED),
         TASK_EVENT,
         0);
 
@@ -110,10 +110,10 @@ public class TaskInstanceStreamProcessorTest
     {
         // when
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CREATED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CREATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
 
         verify(mockResponseWriter).key(2L);
@@ -125,12 +125,12 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")),
             metadata -> metadata
@@ -138,7 +138,7 @@ public class TaskInstanceStreamProcessorTest
                 .subscriberKey(5L));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -154,11 +154,11 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")),
             metadata -> metadata
@@ -166,13 +166,13 @@ public class TaskInstanceStreamProcessorTest
                 .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")),
             metadata -> metadata
@@ -180,7 +180,7 @@ public class TaskInstanceStreamProcessorTest
                 .subscriberKey(7L));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -196,11 +196,11 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")),
             metadata -> metadata
@@ -208,13 +208,13 @@ public class TaskInstanceStreamProcessorTest
                 .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK)
+                .setState(TaskState.EXPIRE_LOCK)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")),
             metadata -> metadata
@@ -222,7 +222,7 @@ public class TaskInstanceStreamProcessorTest
                 .subscriberKey(7L));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -238,20 +238,20 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -263,24 +263,24 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATE));
+                .setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK)
+                .setState(TaskState.EXPIRE_LOCK)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -292,20 +292,20 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAILED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAILED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -317,10 +317,10 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATE));
+                .setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
@@ -328,10 +328,10 @@ public class TaskInstanceStreamProcessorTest
         ClockUtil.setCurrentTime(lockTime);
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -343,25 +343,25 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATE)
+                .setState(TaskState.CREATE)
                 .setRetries(1));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner"))
                 .setRetries(0));
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setState(TaskState.UPDATE_RETRIES)
                 .setRetries(2));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.RETRIES_UPDATED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.RETRIES_UPDATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -373,12 +373,12 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATE)
+                .setState(TaskState.CREATE)
                 .setRetries(1));
 
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner-1")),
             metadata -> metadata
@@ -387,14 +387,14 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L,
             event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner-2")),
             metadata -> metadata
                 .subscriberKey(2L));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
 
         verify(mockTaskSubscriptionManager, times(1)).increaseSubscriptionCreditsAsync(new CreditsRequest(2L, 1));
     }
@@ -404,14 +404,14 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CANCEL));
+                .setState(TaskState.CANCEL));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
@@ -421,19 +421,19 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CANCEL));
+                .setState(TaskState.CANCEL));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
@@ -443,23 +443,23 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CANCEL));
+                .setState(TaskState.CANCEL));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCELED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
@@ -469,15 +469,15 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
         verify(mockSubscribedEventWriter, never()).tryWriteMessage(anyInt());
@@ -488,19 +488,19 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
         verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(anyInt());
@@ -511,11 +511,11 @@ public class TaskInstanceStreamProcessorTest
     {
         // when
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -527,10 +527,10 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-            .setEventType(TaskEventType.LOCK)
+            .setState(TaskState.LOCK)
             .setLockTime(lockTime)
             .setLockOwner(wrapString("owner")));
 
@@ -538,12 +538,12 @@ public class TaskInstanceStreamProcessorTest
         final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
         final DirectBuffer buffer = new UnsafeBuffer(bytes);
         mockController.processEvent(2L, event -> event
-            .setEventType(TaskEventType.COMPLETE)
+            .setState(TaskState.COMPLETE)
             .setLockOwner(wrapString("owner"))
             .setPayload(buffer));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -555,24 +555,24 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -584,15 +584,15 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -604,20 +604,20 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner-1")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner-2")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -629,11 +629,11 @@ public class TaskInstanceStreamProcessorTest
     {
         // when
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -645,24 +645,24 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -674,15 +674,15 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -694,24 +694,24 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -723,20 +723,20 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner-1")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner-2")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -748,10 +748,10 @@ public class TaskInstanceStreamProcessorTest
     {
         // when
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -763,22 +763,22 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -790,15 +790,15 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK)
+                .setState(TaskState.EXPIRE_LOCK)
                 .setLockOwner(wrapString("owner")));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -810,23 +810,23 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -838,23 +838,23 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.EXPIRE_LOCK));
+                .setState(TaskState.EXPIRE_LOCK));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -866,11 +866,11 @@ public class TaskInstanceStreamProcessorTest
     {
         // when
         mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setState(TaskState.UPDATE_RETRIES)
                 .setRetries(3));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -882,23 +882,23 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.UPDATE_RETRIES));
+                .setState(TaskState.UPDATE_RETRIES));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -910,19 +910,19 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.UPDATE_RETRIES));
+                .setState(TaskState.UPDATE_RETRIES));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -934,26 +934,26 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATE)
+                .setState(TaskState.CREATE)
                 .setRetries(1));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.FAIL)
+                .setState(TaskState.FAIL)
                 .setLockOwner(wrapString("owner"))
                 .setRetries(0));
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setState(TaskState.UPDATE_RETRIES)
                 .setLockOwner(wrapString("owner-2"))
                 .setRetries(0));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
@@ -965,23 +965,23 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setState(TaskState.CREATE));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.LOCK)
+                .setState(TaskState.LOCK)
                 .setLockTime(lockTime)
                 .setLockOwner(wrapString("owner")));
 
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.COMPLETE)
+                .setState(TaskState.COMPLETE)
                 .setLockOwner(wrapString("owner")));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CANCEL));
+                .setState(TaskState.CANCEL));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CANCEL_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCEL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }

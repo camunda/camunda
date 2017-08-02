@@ -15,11 +15,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.event.processor;
+package io.zeebe.broker.incident.data;
 
-public enum TopicSubscriptionEventType
+public enum IncidentState
 {
+    CREATE,
+    CREATED,
+    CREATE_REJECTED,
 
-    ACKNOWLEDGE,
-    ACKNOWLEDGED;
+    RESOLVE,
+    RESOLVED,
+    RESOLVE_REJECTED,
+    RESOLVE_FAILED,
+
+    DELETE,
+    DELETED,
+    DELETE_REJECTED;
 }

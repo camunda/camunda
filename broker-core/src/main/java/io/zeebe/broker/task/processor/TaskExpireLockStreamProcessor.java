@@ -29,7 +29,7 @@ import org.agrona.DirectBuffer;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
@@ -112,7 +112,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
         EventProcessor eventProcessor = null;
 
-        switch (taskEvent.getEventType())
+        switch (taskEvent.getState())
         {
             case LOCKED:
                 eventProcessor = lockedEventProcessor;
@@ -241,7 +241,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             taskEvent.reset();
             lockedEvent.readValue(taskEvent);
 
-            taskEvent.setEventType(TaskEventType.EXPIRE_LOCK);
+            taskEvent.setState(TaskState.EXPIRE_LOCK);
 
             targetEventMetadata
                 .reset()

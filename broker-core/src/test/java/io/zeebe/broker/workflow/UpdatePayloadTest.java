@@ -80,7 +80,7 @@ public class UpdatePayloadTest
                                                               MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "PAYLOAD_UPDATED");
+        assertThat(response.getEvent()).containsEntry("state", "PAYLOAD_UPDATED");
 
         final SubscribedEvent updatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
 
@@ -134,7 +134,7 @@ public class UpdatePayloadTest
                                                               MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
     }
@@ -155,7 +155,7 @@ public class UpdatePayloadTest
         final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSGPACK_PAYLOAD);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
     }
@@ -167,7 +167,7 @@ public class UpdatePayloadTest
         final ExecuteCommandResponse response = updatePayload(-1L, -1L, MSGPACK_PAYLOAD);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
     }
@@ -193,7 +193,7 @@ public class UpdatePayloadTest
         final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSGPACK_PAYLOAD);
 
         // then
-        assertThat(response.getEvent()).containsEntry("eventType", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
 
         testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
     }
@@ -206,7 +206,7 @@ public class UpdatePayloadTest
             .eventTypeWorkflow()
             .key(activityInstanceKey)
             .command()
-                .put("eventType", "UPDATE_PAYLOAD")
+                .put("state", "UPDATE_PAYLOAD")
                 .put("workflowInstanceKey", workflowInstanceKey)
                 .put("payload", payload)
             .done()
