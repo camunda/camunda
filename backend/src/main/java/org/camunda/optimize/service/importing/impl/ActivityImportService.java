@@ -11,6 +11,7 @@ import org.camunda.optimize.service.importing.fetcher.ActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,10 +52,10 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   }
 
   @Override
-  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
+  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) {
     return activityInstanceFetcher.fetchHistoricActivityInstances(
-      definitionBasedImportIndexHandler.getCurrentDefinitionBasedImportIndex(),
-      definitionBasedImportIndexHandler.getCurrentProcessDefinitionId()
+      job.getCurrentDefinitionBasedImportIndex(),
+      job.getCurrentProcessDefinitionId()
     );
   }
 
@@ -115,5 +116,10 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   private boolean currentHpiContainsOnlyNullElement() {
     return idsForPostProcessing.size() == 1 && idsForPostProcessing.contains(null);
+  }
+
+  @Override
+  public boolean isProcessDefinitionBased() {
+    return true;
   }
 }

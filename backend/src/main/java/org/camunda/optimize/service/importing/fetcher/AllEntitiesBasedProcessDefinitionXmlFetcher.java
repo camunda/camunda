@@ -12,12 +12,12 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class TotalityBasedProcessDefinitionXmlFetcher {
+public class AllEntitiesBasedProcessDefinitionXmlFetcher {
 
-  private final Logger logger = LoggerFactory.getLogger(TotalityBasedProcessDefinitionXmlFetcher.class);
+  private final Logger logger = LoggerFactory.getLogger(AllEntitiesBasedProcessDefinitionXmlFetcher.class);
 
   @Autowired
-  private TotalityBasedEngineEntityFetcher engineEntityFetcher;
+  private AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
 
   @Autowired
   private ConfigurationService configurationService;

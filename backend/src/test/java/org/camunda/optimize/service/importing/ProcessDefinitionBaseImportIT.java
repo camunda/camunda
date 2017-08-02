@@ -185,16 +185,7 @@ public class ProcessDefinitionBaseImportIT {
     //when
     embeddedOptimizeRule.scheduleImport();
     //first full round
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-
-    //second full round
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+    fullImportRound();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -203,6 +194,7 @@ public class ProcessDefinitionBaseImportIT {
     for (SearchHit searchHitFields : idsResp.getHits()) {
       assertThat(searchHitFields.getSource().get("processDefinitionId"), is(latestPd));
     }
+
   }
 
   @Test
@@ -212,6 +204,7 @@ public class ProcessDefinitionBaseImportIT {
 
     BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
     engineRule.deployAndStartProcess(simpleUserTaskProcess);
+
     ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
     String latestPd = latestProcessInstance.getDefinitionId();
     ids.add(latestPd);
@@ -226,22 +219,13 @@ public class ProcessDefinitionBaseImportIT {
     //when
     embeddedOptimizeRule.scheduleImport();
     //first full round
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+    fullImportRound();
 
     //second full round
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+    fullImportRound();
 
     //third full round
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+    fullImportRound();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -251,6 +235,13 @@ public class ProcessDefinitionBaseImportIT {
       assertThat(idsResp.getHits().totalHits, is(Long.valueOf(ids.size())));
       assertThat(searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
     }
+  }
+
+  private void fullImportRound() throws OptimizeException {
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, String expectedProcessDefinitionId) throws IOException {
@@ -318,7 +309,7 @@ public class ProcessDefinitionBaseImportIT {
   private BpmnModelInstance createSimpleUserTaskProcess() {
     return Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
         .startEvent()
-        .userTask()
+          .userTask()
         .endEvent()
       .done();
   }
@@ -356,16 +347,13 @@ public class ProcessDefinitionBaseImportIT {
   @Test
   public void importProgressReporterIntermediateImportState() throws OptimizeException, IOException {
     // given
+    embeddedOptimizeRule.resetImportStartIndexes();
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.scheduleImport();
 
     // when
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+    fullImportRound();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));

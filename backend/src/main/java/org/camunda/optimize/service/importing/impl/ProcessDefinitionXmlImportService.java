@@ -6,11 +6,11 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
-import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.fetcher.TotalityBasedProcessDefinitionXmlFetcher;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
-import org.camunda.optimize.service.importing.index.TotalityBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +29,15 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   private MissingProcessDefinitionXmlFinder xmlFinder;
 
   @Autowired
-  private TotalityBasedProcessDefinitionXmlFetcher processDefinitionXmlFetcher;
+  private AllEntitiesBasedProcessDefinitionXmlFetcher processDefinitionXmlFetcher;
 
   @Autowired
-  private TotalityBasedImportIndexHandler totalityBasedImportIndexHandler;
+  private AllEntitiesBasedImportIndexHandler allEntitiesBasedImportIndexHandler;
 
   @Override
   protected ImportIndexHandler initializeImportIndexHandler() {
-    totalityBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
-    return totalityBasedImportIndexHandler;
+    allEntitiesBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
+    return allEntitiesBasedImportIndexHandler;
   }
 
   @Override
@@ -46,9 +46,9 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   }
 
   @Override
-  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint() throws OptimizeException {
+  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return processDefinitionXmlFetcher.fetchProcessDefinitionXmls(
-      importIndexHandler.getAbsoluteImportIndex()
+      job.getAbsoluteImportIndex()
     );
   }
 

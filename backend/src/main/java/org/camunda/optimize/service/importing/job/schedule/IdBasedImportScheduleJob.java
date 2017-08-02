@@ -22,7 +22,7 @@ public class IdBasedImportScheduleJob extends ImportScheduleJob<IdBasedImportSer
 
   public ImportResult execute() throws OptimizeException {
     importService.setIdsForImport(getIdsToFetch());
-    ImportResult result = importService.executeImport();
+    ImportResult result = importService.executeImport(this);
     importService.setIdsForImport(null);
     return result;
   }

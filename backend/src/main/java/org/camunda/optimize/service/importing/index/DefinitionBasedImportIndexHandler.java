@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInfo
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.fetcher.TotalityBasedProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private TotalityBasedProcessDefinitionFetcher processDefinitionFetcher;
+  private AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher;
   @Autowired
   private ImportJobExecutor importJobExecutor;
 
@@ -53,11 +53,11 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   private String elasticsearchType;
   private boolean initialized = false;
 
+
   @Override
   public void initializeImportIndex(String elasticsearchType) {
     this.elasticsearchType = elasticsearchType;
     loadImportDefaults();
-
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
     if (dto.getTotalEntitiesImported() > 0) {
       alreadyImportedProcessDefinitions = new HashSet<>(dto.getAlreadyImportedProcessDefinitions());

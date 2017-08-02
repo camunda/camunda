@@ -13,12 +13,49 @@ import java.time.LocalDateTime;
  */
 public class PageBasedImportScheduleJob extends ImportScheduleJob<PaginatedImportService> {
 
+  private int absoluteImportIndex;
+  private int relativeImportIndex;
+  private Integer currentDefinitionBasedImportIndex;
+  private String currentProcessDefinitionId;
+
+  public PageBasedImportScheduleJob(
+      int absoluteImportIndex,
+      int relativeImportIndex,
+      Integer currentDefinitionBasedImportIndex,
+      String currentProcessDefinitionId
+  ) {
+    this.absoluteImportIndex = absoluteImportIndex;
+    this.relativeImportIndex = relativeImportIndex;
+    this.currentDefinitionBasedImportIndex = currentDefinitionBasedImportIndex;
+    this.currentProcessDefinitionId = currentProcessDefinitionId;
+  }
+
+  public PageBasedImportScheduleJob(int absoluteImportIndex, int relativeImportIndex) {
+    this(absoluteImportIndex,relativeImportIndex,null,null);
+  }
+
   public ImportResult execute() throws OptimizeException {
     if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
       throw new BackoffException();
     } else {
-      ImportResult executionResult = importService.executeImport();
+      ImportResult executionResult = importService.executeImport(this);
       return executionResult;
     }
+  }
+
+  public int getAbsoluteImportIndex() {
+    return absoluteImportIndex;
+  }
+
+  public int getCurrentDefinitionBasedImportIndex() {
+    return currentDefinitionBasedImportIndex;
+  }
+
+  public String getCurrentProcessDefinitionId() {
+    return currentProcessDefinitionId;
+  }
+
+  public int getRelativeImportIndex() {
+    return relativeImportIndex;
   }
 }

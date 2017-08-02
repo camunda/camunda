@@ -8,6 +8,7 @@ import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -50,7 +51,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     //given
     ImportResult result = new ImportResult();
     result.setEngineHasStillNewData(true);
-    when(services.get(0).executeImport()).thenReturn(result);
+    when(services.get(0).executeImport(Mockito.any())).thenReturn(result);
     importScheduler.scheduleNewImportRound();
 
     //when
@@ -68,11 +69,11 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
     ImportResult zeroResult = new ImportResult();
     zeroResult.setEngineHasStillNewData(false);
-    when(services.get(0).executeImport()).thenReturn(zeroResult);
+    when(services.get(0).executeImport(Mockito.any())).thenReturn(zeroResult);
 
     ImportResult singleResult = new ImportResult();
     singleResult.setEngineHasStillNewData(true);
-    when(services.get(1).executeImport()).thenReturn(singleResult);
+    when(services.get(1).executeImport(Mockito.any())).thenReturn(singleResult);
 
     importScheduler.scheduleNewImportRound();
 
@@ -164,7 +165,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     ImportResult result = new ImportResult();
     result.setEngineHasStillNewData(true);
     for (PaginatedImportService m : services) {
-      when(m.executeImport()).thenReturn(result);
+      when(m.executeImport(Mockito.any())).thenReturn(result);
     }
 
     //when
@@ -182,7 +183,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
   @Test
   public void testBackoffNotExceedingMax() throws Exception {
-    ImportScheduleJob toExecute = new PageBasedImportScheduleJob();
+    ImportScheduleJob toExecute = new PageBasedImportScheduleJob(0,0, 0, "test");
     toExecute.setImportService(services.get(0));
 
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(1L));

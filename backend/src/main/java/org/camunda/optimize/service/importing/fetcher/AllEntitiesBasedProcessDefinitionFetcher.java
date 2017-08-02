@@ -12,9 +12,9 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class TotalityBasedProcessDefinitionFetcher {
+public class AllEntitiesBasedProcessDefinitionFetcher {
 
-  private final Logger logger = LoggerFactory.getLogger(TotalityBasedProcessDefinitionFetcher.class);
+  private final Logger logger = LoggerFactory.getLogger(AllEntitiesBasedProcessDefinitionFetcher.class);
 
   @Autowired
   private DefinitionBasedEngineEntityFetcher engineEntityFetcher;

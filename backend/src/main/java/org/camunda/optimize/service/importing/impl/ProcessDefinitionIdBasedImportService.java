@@ -10,6 +10,7 @@ import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionFe
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionIdBasedImportService extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
+public class ProcessDefinitionIdBasedImportService
+    extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionIdBasedImportService.class);
 
@@ -46,17 +48,17 @@ public class ProcessDefinitionIdBasedImportService extends PaginatedImportServic
   }
 
   @Override
-  protected List<ProcessDefinitionEngineDto> queryEngineRestPoint() throws OptimizeException {
+  protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionFetcher.fetchProcessDefinitions(
-      definitionBasedImportIndexHandler.getCurrentDefinitionBasedImportIndex(),
-      definitionBasedImportIndexHandler.getCurrentProcessDefinitionId()
+        job.getCurrentDefinitionBasedImportIndex(),
+        job.getCurrentProcessDefinitionId()
     );
   }
 
   @Override
   public int getEngineEntityCount() throws OptimizeException {
     return idBasedProcessDefinitionFetcher
-      .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
+        .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
   }
 
   @Override
@@ -87,5 +89,10 @@ public class ProcessDefinitionIdBasedImportService extends PaginatedImportServic
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessDefinitionType();
+  }
+
+  @Override
+  public boolean isProcessDefinitionBased() {
+    return true;
   }
 }

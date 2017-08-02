@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class TotalityBasedImportIndexHandler implements ImportIndexHandler {
+public class AllEntitiesBasedImportIndexHandler implements ImportIndexHandler {
 
-  private Logger logger = LoggerFactory.getLogger(TotalityBasedImportIndexHandler.class);
+  private Logger logger = LoggerFactory.getLogger(AllEntitiesBasedImportIndexHandler.class);
 
   @Autowired
   private ImportIndexWriter importIndexWriter;

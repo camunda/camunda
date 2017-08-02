@@ -56,6 +56,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
     services = mockImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getImportService(Mockito.any())).thenReturn(services.get(0));
   }
 
   @After
@@ -84,7 +85,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
     // then
     for (ImportService service : services) {
-      verify(service, times(1)).executeImport();
+      verify(service, times(1)).executeImport(Mockito.any());
     }
   }
 
@@ -95,7 +96,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     Set<String> piIds = new HashSet<>();
     piIds.add(TEST_ID);
     result.setIdsToFetch(piIds);
-    when(services.get(0).executeImport()).thenReturn(result);
+    when(services.get(0).executeImport(Mockito.any())).thenReturn(result);
     importScheduler.scheduleNewImportRound();
 
     //when
@@ -124,7 +125,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getPagedServices().get(0),times(1)).resetImportStartIndex();
+    Mockito.verify(importServiceProvider.getPagedServices().iterator().next(),times(1)).resetImportStartIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks
@@ -142,7 +143,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getPagedServices().get(0),times(1)).resetImportStartIndex();
+    Mockito.verify(importServiceProvider.getPagedServices().iterator().next(),times(1)).resetImportStartIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks

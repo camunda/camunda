@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.util.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ import java.util.Set;
 
 @Component
 public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto>
-  extends AbstractImportService <ENG, OPT> implements ConfigurationReloadable {
+  extends AbstractImportService <ENG, OPT, PageBasedImportScheduleJob> implements ConfigurationReloadable {
 
   protected ImportIndexHandler importIndexHandler;
 
@@ -39,14 +40,14 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   }
 
   @Override
-  public ImportResult executeImport() throws OptimizeException {
+  public ImportResult executeImport(PageBasedImportScheduleJob job) throws OptimizeException {
     ImportResult result = new ImportResult();
     int searchedSize;
-    importIndexHandler.makeSureIsInitialized();
-    logger.debug("Importing page from type [{}] with index starting from [{}].",
-        getElasticsearchType(), importIndexHandler.getRelativeImportIndex());
 
-    List<ENG> pageOfEngineEntities = queryEngineRestPoint();
+    logger.debug("Importing page from type [{}] with index starting from [{}].",
+        getElasticsearchType(), job.getRelativeImportIndex());
+
+    List<ENG> pageOfEngineEntities = queryEngineRestPoint(job);
     searchedSize = pageOfEngineEntities.size();
     boolean engineHasStillNewData = searchedSize > 0;
 
@@ -86,7 +87,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
    * @return All entries from the engine that we want to
    * import to optimize, i.e. elasticsearch
    */
-  protected abstract List<ENG> queryEngineRestPoint() throws OptimizeException;
+  protected abstract List<ENG> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException;
 
   /**
    * @return Return the total number of entities that are to be expected to
@@ -109,5 +110,9 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
   public ImportIndexHandler getImportIndexHandler() {
     return importIndexHandler;
+  }
+
+  public boolean isProcessDefinitionBased() {
+    return false;
   }
 }

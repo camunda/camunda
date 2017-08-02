@@ -168,12 +168,13 @@ public class ImportScheduler extends Thread {
    */
   private void rescheduleBasedOnPages(boolean engineHasStillNewData, PageBasedImportScheduleJob toExecute) {
     if (engineHasStillNewData) {
+      String elasticsearchType = toExecute.getImportService().getElasticsearchType();
       logger.debug(
           "Processed a page during data import run of [{}], scheduling one more run",
-          toExecute.getImportService().getElasticsearchType()
+          elasticsearchType
       );
-      importScheduleJobs.add(toExecute);
       backoffService.resetBackoff(toExecute);
+      importScheduleJobs.add(scheduleJobFactory.createPagedJob(elasticsearchType));
     }
   }
 
@@ -230,5 +231,9 @@ public class ImportScheduler extends Thread {
 
   public void setSkipBackoffToCheckForNewDataInEngine(boolean skipBackoffToCheckForNewDataInEngine) {
     this.skipBackoffToCheckForNewDataInEngine = skipBackoffToCheckForNewDataInEngine;
+  }
+
+  public void clearQueue() {
+    this.importScheduleJobs.clear();
   }
 }

@@ -21,7 +21,7 @@ public abstract class ImportScheduleJob<S extends ImportService> {
     if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
       throw new BackoffException();
     } else {
-      result =  importService.executeImport();
+      result =  importService.executeImport(this);
     }
     return result;
   }

@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
+import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,8 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-public abstract class AbstractImportService<ENG extends EngineDto, OPT extends OptimizeDto> implements ImportService {
+public abstract class AbstractImportService
+    <ENG extends EngineDto, OPT extends OptimizeDto, JOB extends ImportScheduleJob> implements ImportService <JOB> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 

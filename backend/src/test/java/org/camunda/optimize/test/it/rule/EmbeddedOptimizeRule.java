@@ -132,6 +132,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   protected void finished(Description description) {
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
     reloadConfiguration();
+    getImportScheduler().clearQueue();
   }
 
   public void reloadConfiguration() {

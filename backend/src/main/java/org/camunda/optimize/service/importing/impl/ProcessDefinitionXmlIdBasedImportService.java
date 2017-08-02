@@ -10,6 +10,7 @@ import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionXm
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +46,10 @@ public class ProcessDefinitionXmlIdBasedImportService extends PaginatedImportSer
   }
 
   @Override
-  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint() throws OptimizeException {
+  protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher.fetchProcessDefinitionXmls(
-      definitionBasedImportIndexHandler.getCurrentDefinitionBasedImportIndex(),
-      definitionBasedImportIndexHandler.getCurrentProcessDefinitionId()
+      job.getCurrentDefinitionBasedImportIndex(),
+      job.getCurrentProcessDefinitionId()
     );
   }
 
@@ -84,5 +85,10 @@ public class ProcessDefinitionXmlIdBasedImportService extends PaginatedImportSer
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessDefinitionXmlType();
+  }
+
+  @Override
+  public boolean isProcessDefinitionBased() {
+    return true;
   }
 }

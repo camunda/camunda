@@ -1,13 +1,14 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 
 /**
  * Every class that should import data from the
  * engine needs to implement this interface and
  * add themselves to the {@link ImportScheduler}.
  */
-public interface ImportService {
+public interface ImportService <JOB extends ImportScheduleJob> {
 
   /**
    * examine engine data, perform diff to figure out which data has to be incrementally
@@ -16,7 +17,7 @@ public interface ImportService {
    * @return number of pages with new data that has been processed and additional ids based on
    * which further fetching can be done
    */
-  ImportResult executeImport() throws OptimizeException;
+  ImportResult executeImport(JOB executionContext) throws OptimizeException;
 
   /**
    * This is used for doc id when persisting the import index.
