@@ -84,6 +84,10 @@ mavenJob(jobName)
             extensions
             {
                 localBranch gitBranch
+                pathRestriction {
+                    includedRegions ''
+                    excludedRegions 'docs/.*\n\\.ci/.*'
+                }
             }
         }
     }
