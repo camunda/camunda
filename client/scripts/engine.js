@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const utils = require('./utils');
 let {c7port} = require('./config');
 
-const communityUrl = 'https://camunda.org/release/camunda-bpm/tomcat/7.7/camunda-bpm-tomcat-7.7.0-alpha1.tar.gz';
+const communityUrl = 'https://camunda.org/release/camunda-bpm/tomcat/7.8/camunda-bpm-tomcat-7.8.0-alpha2.tar.gz';
 const tmpDir = path.resolve(__dirname, '..', 'tmp');
 // it can be configured, but it would pain in ass, so it is better
 // to just remove it than configure it to be inside tmpDir

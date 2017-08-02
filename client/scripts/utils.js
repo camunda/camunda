@@ -22,6 +22,8 @@ exports.runInSequence = runInSequence;
 exports.changeFile = changeFile;
 
 function runWithColor(command, name, color, options = {}) {
+  console.log(chalk.yellow(command), options);
+
   const process = exec(command, options);
 
   process.stdout.on('data', function(data) {
