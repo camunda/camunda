@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -38,6 +39,7 @@ public class RaftService implements Service<Raft>
     private final SocketAddress socketAddress;
     private final LogStream logStream;
     private final List<SocketAddress> members;
+    private final RaftPersistentStorage persistentStorage;
     private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
@@ -45,11 +47,12 @@ public class RaftService implements Service<Raft>
     private Raft raft;
     private ActorReference actorReference;
 
-    public RaftService(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members)
+    public RaftService(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage)
     {
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.members = members;
+        this.persistentStorage = persistentStorage;
     }
 
     @Override
@@ -61,9 +64,9 @@ public class RaftService implements Service<Raft>
             {
                 final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
-                raft = new Raft(socketAddress, logStream, serverTransport, clientTransport);
+                raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
 
-                members.forEach(raft::addMember);
+                raft.addMembers(members);
 
                 final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
                 actorReference = actorScheduler.schedule(raft);

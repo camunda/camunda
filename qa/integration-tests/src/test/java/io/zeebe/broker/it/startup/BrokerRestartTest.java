@@ -15,10 +15,10 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,14 +31,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
+import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
@@ -48,9 +41,19 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.time.ClockUtil;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class BrokerRestartTest
 {
@@ -458,6 +461,31 @@ public class BrokerRestartTest
         // then
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVED")));
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
+    }
+
+    @Test
+    public void shouldLoadRaftConfiguration()
+    {
+        // given
+        final int testTerm = 8;
+
+        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(DEFAULT_TOPIC_NAME + "." + DEFAULT_PARTITION_ID);
+
+        Raft raft = brokerRule.getService(serviceName).get();
+        waitUntil(raft::isInitialEventCommitted);
+
+        raft.setTerm(testTerm);
+
+        // when
+        restartBroker();
+
+        raft = brokerRule.getService(serviceName).get();
+        waitUntil(raft::isInitialEventCommitted);
+
+        // then
+        assertThat(raft.getState()).isEqualTo(RaftState.LEADER);
+        assertThat(raft.getTerm()).isEqualTo(testTerm + 1);
+        assertThat(raft.getMembers()).isEmpty();
     }
 
     protected void restartBroker()

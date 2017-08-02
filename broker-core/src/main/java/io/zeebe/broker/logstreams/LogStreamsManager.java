@@ -117,6 +117,22 @@ public class LogStreamsManager
         return logStream;
     }
 
+    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId, final String logDirectory)
+    {
+        final LogStream logStream =
+            LogStreams.createFsLogStream(topicName, partitionId)
+                      .deleteOnClose(false)
+                      .logDirectory(logDirectory)
+                      .actorScheduler(actorScheduler)
+                      .logSegmentSize(logStreamsCfg.defaultLogSegmentSize * 1024 * 1024)
+                      .logStreamControllerDisabled(true)
+                      .build();
+
+        addLogStream(logStream);
+
+        return logStream;
+    }
+
     private void addLogStream(final LogStream logStream)
     {
         logStreams

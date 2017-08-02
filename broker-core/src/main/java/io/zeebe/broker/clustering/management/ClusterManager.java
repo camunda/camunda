@@ -36,11 +36,14 @@ import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
 import io.zeebe.broker.clustering.management.message.InvitationResponse;
+import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
@@ -64,18 +67,16 @@ public class ClusterManager implements Actor
 
     private final List<RequestResponseController> activeRequestControllers;
 
-    private final ClusterManagerFragmentHandler fragmentHandler;
-
     private final InvitationRequest invitationRequest;
     private final InvitationResponse invitationResponse;
 
     private ClusterManagementConfig config;
 
-//    private final MessageWriter messageWriter;
+    //    private final MessageWriter messageWriter;
     protected final ServerResponse response = new ServerResponse();
     protected final ServerInputSubscription inputSubscription;
 
-    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, ClusterManagementConfig config)
+    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final ClusterManagementConfig config)
     {
         this.context = context;
         this.serviceContainer = serviceContainer;
@@ -83,48 +84,68 @@ public class ClusterManager implements Actor
         this.rafts = new CopyOnWriteArrayList<>();
         this.startLogStreamServiceControllers = new CopyOnWriteArrayList<>();
         this.managementCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
-        this.commandConsumer = (r) -> r.run();
+        this.commandConsumer = Runnable::run;
         this.activeRequestControllers = new CopyOnWriteArrayList<>();
         this.invitationRequest = new InvitationRequest();
 
-        this.fragmentHandler = new ClusterManagerFragmentHandler(this);
         this.invitationResponse = new InvitationResponse();
 
+        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this);
         inputSubscription = context.getServerTransport()
-                .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
-                .join();
+                                   .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
+                                   .join();
 
-        context.getPeers().registerListener((p) -> addPeer(p));
+        context.getPeers().registerListener(this::addPeer);
     }
 
     public void open()
     {
-        final String metaDirectory = config.directory;
-
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
 
-        final File dir = new File(metaDirectory);
+        final File storageDirectory = new File(config.directory);
 
-        if (!dir.exists())
+        if (!storageDirectory.exists())
         {
             try
             {
-                dir.getParentFile().mkdirs();
-                Files.createDirectory(dir.toPath());
+                storageDirectory.getParentFile().mkdirs();
+                Files.createDirectory(storageDirectory.toPath());
             }
-            catch (IOException e)
+            catch (final IOException e)
             {
-                LOG.error("Unable to create directory {}: {}", dir, e);
+                LOG.error("Unable to create directory {}", storageDirectory, e);
             }
         }
 
-        if (context.getPeers().sizeVolatile() == 1)
+        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+        final File[] storageFiles = storageDirectory.listFiles();
+
+        if (storageFiles != null && storageFiles.length > 0)
         {
-            final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
-            logStreamManager.forEachLogStream(logStream ->
+            for (int i = 0; i < storageFiles.length; i++)
             {
-                createRaft(socketAddress, logStream, Collections.emptyList());
-            });
+                final File storageFile = storageFiles[i];
+                final RaftPersistentFileStorage storage = new RaftPersistentFileStorage(storageFile.getAbsolutePath());
+
+                final DirectBuffer topicName = storage.getTopicName();
+                final int partitionId = storage.getPartitionId();
+
+                LogStream logStream = logStreamManager.getLogStream(topicName, partitionId);
+
+                if (logStream == null)
+                {
+                    final String directory = storage.getLogDirectory();
+                    logStream = logStreamManager.createLogStream(topicName, partitionId, directory);
+                }
+
+                storage.setLogStream(logStream);
+
+                createRaft(socketAddress, logStream, storage.getMembers(), storage);
+            }
+        }
+        else if (context.getPeers().sizeVolatile() == 1)
+        {
+            logStreamManager.forEachLogStream(logStream -> createRaft(socketAddress, logStream, Collections.emptyList()));
         }
     }
 
@@ -186,16 +207,13 @@ public class ClusterManager implements Actor
                 // the number of concurrent invitations.
                 final List<SocketAddress> members = new ArrayList<>();
                 members.add(raft.getSocketAddress());
-                raft.getMembers().forEach(raftMember ->
-                {
-                    members.add(raftMember.getRemoteAddress().getAddress());
-                });
+                raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
 
                 final LogStream logStream = raft.getLogStream();
                 final InvitationRequest invitationRequest = new InvitationRequest()
                     .topicName(logStream.getTopicName())
                     .partitionId(logStream.getPartitionId())
-                    .term(logStream.getTerm())
+                    .term(raft.getTerm())
                     .members(members);
 
                 final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
@@ -251,7 +269,21 @@ public class ClusterManager implements Actor
 
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members)
     {
-        final RaftService raftService = new RaftService(socketAddress, logStream, members);
+        final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
+        final String path = logStorage.getConfig().getPath();
+
+        final RaftPersistentFileStorage storage = new RaftPersistentFileStorage(String.format("%s%s.meta", config.directory, logStream.getLogName()));
+        storage
+            .setLogStream(logStream)
+            .setLogDirectory(path)
+            .save();
+
+        createRaft(socketAddress, logStream, members, storage);
+    }
+
+    public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage)
+    {
+        final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage);
 
         final ServiceName<Raft> raftServiceName = raftServiceName(logStream.getLogName());
 
@@ -264,12 +296,12 @@ public class ClusterManager implements Actor
     }
 
     public boolean onInvitationRequest(
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final ServerOutput output,
-            final RemoteAddress requestAddress,
-            final long requestId)
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final ServerOutput output,
+        final RemoteAddress requestAddress,
+        final long requestId)
     {
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
@@ -285,9 +317,9 @@ public class ClusterManager implements Actor
 
         invitationResponse.reset();
         response.reset()
-            .remoteAddress(requestAddress)
-            .requestId(requestId)
-            .writer(invitationResponse);
+                .remoteAddress(requestAddress)
+                .requestId(requestId)
+                .writer(invitationResponse);
 
         return output.sendResponse(response);
     }

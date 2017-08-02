@@ -77,7 +77,7 @@ public class RaftMembership
     {
         if (reference != null)
         {
-            return reference.getLogStream().getTerm();
+            return reference.getTerm();
         }
         else
         {
