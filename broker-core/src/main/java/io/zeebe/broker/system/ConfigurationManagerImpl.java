@@ -18,6 +18,7 @@
 package io.zeebe.broker.system;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +73,14 @@ public class ConfigurationManagerImpl implements ConfigurationManager
     public void initDefault()
     {
         LOG.info("No configuration provided, using default configuration.");
-        toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("zeebe.default.cfg.toml"));
+        try (InputStream resourceAsStream = ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("zeebe.default.cfg.toml"))
+        {
+            toml = new Toml().read(resourceAsStream);
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException("Failed to read configuration", e);
+        }
     }
 
     private void initGlobalConfiguration()
