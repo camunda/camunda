@@ -16,6 +16,7 @@
 package io.zeebe.transport.impl.actor;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.TransportChannel;
@@ -25,6 +26,7 @@ import io.zeebe.transport.impl.selector.ConnectTransportPoller;
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
+    protected final AtomicBoolean clientClosing = new AtomicBoolean(false);
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
@@ -68,4 +70,22 @@ public class ClientConductor extends Conductor
         });
     }
 
+    @Override
+    public CompletableFuture<Void> onClose()
+    {
+        if (clientClosing.compareAndSet(false, true))
+        {
+            final CompletableFuture<Object> closePoller =
+                deferred.runAsync(future ->
+                {
+                    connectTransportPoller.close();
+                    future.complete(null);
+                });
+            return CompletableFuture.allOf(closePoller, super.onClose());
+        }
+        else
+        {
+            return super.onClose();
+        }
+    }
 }
