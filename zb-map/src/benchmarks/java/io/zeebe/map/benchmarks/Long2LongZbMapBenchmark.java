@@ -18,6 +18,7 @@ package io.zeebe.map.benchmarks;
 import java.util.HashMap;
 
 import io.zeebe.map.Long2LongZbMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.mapdb.HTreeMap;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -74,9 +75,9 @@ public class Long2LongZbMapBenchmark
 
     @Benchmark
     @Threads(1)
-    public long randomKeysMapDb(Long2LongMapDbSupplier mapDbSupplier, RandomKeysSupplier randomKeysSupplier)
+    public long randomKeysFastUtilMap(Long2LongFastUtilMapSupplier fastUtilMapSupplier, RandomKeysSupplier randomKeysSupplier)
     {
-        final HTreeMap<Long, Long> map = mapDbSupplier.map;
+        final Long2LongMap map = fastUtilMapSupplier.map;
         final long[] keys = randomKeysSupplier.keys;
 
         for (int i = 0; i < keys.length; i++)
@@ -96,9 +97,9 @@ public class Long2LongZbMapBenchmark
 
     @Benchmark
     @Threads(1)
-    public long linearKeysMapDb(Long2LongMapDbSupplier mapDbSupplier, LinearKeysSupplier keysSupplier)
+    public long linearKeysFastUtilMap(Long2LongFastUtilMapSupplier fastUtilMapSupplier, LinearKeysSupplier keysSupplier)
     {
-        final HTreeMap<Long, Long> map = mapDbSupplier.map;
+        final Long2LongMap map = fastUtilMapSupplier.map;
         final long[] keys = keysSupplier.keys;
 
         for (int i = 0; i < keys.length; i++)

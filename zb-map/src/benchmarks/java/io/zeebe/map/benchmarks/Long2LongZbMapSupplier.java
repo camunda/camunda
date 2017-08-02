@@ -18,7 +18,6 @@ package io.zeebe.map.benchmarks;
 import java.io.IOException;
 
 import io.zeebe.map.Long2LongZbMap;
-import org.agrona.BitUtil;
 import org.openjdk.jmh.annotations.*;
 
 

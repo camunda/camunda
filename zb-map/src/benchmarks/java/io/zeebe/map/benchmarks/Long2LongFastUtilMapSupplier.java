@@ -15,12 +15,8 @@
  */
 package io.zeebe.map.benchmarks;
 
-import java.util.HashMap;
-
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -28,20 +24,16 @@ import org.openjdk.jmh.annotations.State;
 /**
  *
  */
-
 @State(Scope.Benchmark)
-public class Long2LongMapDbSupplier
+public class Long2LongFastUtilMapSupplier
 {
-    HTreeMap<Long, Long> map;
+
+    Long2LongMap map;
 
     @Setup
-    public void createHTreeMap()
+    public void createHashmap()
     {
-        final DB db = DBMaker.memoryDirectDB()
-                             .allocateStartSize(10 * 1024 * 1024)  // 10GB
-                             .allocateIncrement(512 * 1024)
-                             .make();
-        map = db.hashMap("map", Serializer.LONG, Serializer.LONG).createOrOpen();
+         map = new Long2LongOpenHashMap();
     }
 
 }
