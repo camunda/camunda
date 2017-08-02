@@ -153,7 +153,7 @@ public class ComposedZbMapSnapshot implements SnapshotSupport
         {
             if (byteCount >= limit)
             {
-                return 0;
+                return -1;
             }
             if (byteCount + len >= limit)
             {
