@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.importing.provider;
 
-import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionIdBasedImportService;
@@ -16,10 +15,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component

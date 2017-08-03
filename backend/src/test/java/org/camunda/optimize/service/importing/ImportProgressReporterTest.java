@@ -2,7 +2,10 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,7 +15,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +33,9 @@ public class ImportProgressReporterTest {
 
   @Mock
   private ImportServiceProvider importServiceProvider;
+
+  @Mock
+  private IndexHandlerProvider indexHandlerProvider;
 
   @InjectMocks
   private ImportProgressReporter reporter = new ImportProgressReporter();
@@ -74,8 +82,16 @@ public class ImportProgressReporterTest {
   }
 
   private void initializeMocks() throws OptimizeException {
-    Mockito.when(activityImportService.getEngineEntityCount()).thenReturn(totalEngineEntityCount);
+    DefinitionBasedImportIndexHandler indexHandler = Mockito.mock(DefinitionBasedImportIndexHandler.class);
+        Mockito.when(indexHandlerProvider.getIndexHandler(
+        activityImportService.getElasticsearchType(),
+        activityImportService.getIndexHandlerType()
+    )).thenReturn(indexHandler);
+    Collection<ImportIndexHandler> list = new ArrayList<>();
+    list.add(indexHandler);
+    Mockito.when(indexHandlerProvider.getAllHandlers()).thenReturn(list);
+    Mockito.when(activityImportService.getEngineEntityCount(indexHandler)).thenReturn(totalEngineEntityCount);
     Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
-    Mockito.when(activityImportService.getImportStartIndex()).thenReturn(optimizeImportCount);
+    Mockito.when(indexHandler.getAbsoluteImportIndex()).thenReturn(optimizeImportCount);
   }
 }

@@ -19,7 +19,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionXmlImportService extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto> {
+public class ProcessDefinitionXmlImportService extends
+    PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, AllEntitiesBasedImportIndexHandler> {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportService.class);
 
   @Autowired
@@ -30,15 +31,6 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
 
   @Autowired
   private AllEntitiesBasedProcessDefinitionXmlFetcher processDefinitionXmlFetcher;
-
-  @Autowired
-  private AllEntitiesBasedImportIndexHandler allEntitiesBasedImportIndexHandler;
-
-  @Override
-  protected ImportIndexHandler initializeImportIndexHandler() {
-    allEntitiesBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
-    return allEntitiesBasedImportIndexHandler;
-  }
 
   @Override
   protected MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> getMissingEntitiesFinder() {
@@ -53,7 +45,7 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   }
 
   @Override
-  public int getEngineEntityCount() throws OptimizeException {
+  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler) throws OptimizeException {
     return processDefinitionXmlFetcher
       .fetchProcessDefinitionCount();
   }

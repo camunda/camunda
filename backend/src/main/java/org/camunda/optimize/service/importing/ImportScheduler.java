@@ -2,11 +2,13 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.IdleImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,9 @@ public class ImportScheduler extends Thread {
   protected ImportServiceProvider importServiceProvider;
 
   @Autowired
+  protected IndexHandlerProvider indexHandlerProvider;
+
+  @Autowired
   protected BackoffService backoffService;
 
   private boolean enabled = true;
@@ -64,8 +69,8 @@ public class ImportScheduler extends Thread {
     LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
     if (LocalDateTime.now().isAfter(resetDueDate)) {
       logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
-      for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
-        importService.resetImportStartIndex();
+      for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+        importIndexHandler.resetImportIndex();
       }
       lastReset = LocalDateTime.now();
     }
@@ -90,8 +95,8 @@ public class ImportScheduler extends Thread {
 
   private void backoffIfPossibleAndScheduleNewRound() {
     if(skipBackoffToCheckForNewDataInEngine) {
-      for (PaginatedImportService paginatedImportService : importServiceProvider.getPagedServices()) {
-        paginatedImportService.restartImportCycle();
+      for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+        importIndexHandler.restartImportCycle();
       }
       skipBackoffToCheckForNewDataInEngine = false;
     } else {
@@ -120,7 +125,7 @@ public class ImportScheduler extends Thread {
     try {
 
       ImportResult importResult = toExecute.execute();
-      engineHasStillNewData = importResult.getEngineHasStillNewData();
+      engineHasStillNewData = handleIndexes(importResult, toExecute);
       if (engineHasStillNewData) {
         postProcess(toExecute, importResult);
       } else if (!engineHasStillNewData && toExecute.isPageBased()) {
@@ -142,6 +147,24 @@ public class ImportScheduler extends Thread {
         logger.debug("error while executing import job", e);
       }
     }
+  }
+
+  public boolean handleIndexes(ImportResult importResult, ImportScheduleJob toExecute) {
+    boolean engineHasStillNewData = importResult.getEngineHasStillNewData();
+    if (toExecute.isPageBased()) {
+      ImportIndexHandler importIndexHandler = indexHandlerProvider.getIndexHandler(
+          importResult.getElasticSearchType(), importResult.getIndexHandlerType()
+      );
+
+      if (!engineHasStillNewData) {
+        engineHasStillNewData = importIndexHandler.adjustIndexWhenNoResultsFound(engineHasStillNewData);
+      }
+
+      importIndexHandler.moveImportIndex(importResult.getSearchedSize());
+      importIndexHandler.persistImportIndexToElasticsearch();
+    }
+
+    return engineHasStillNewData;
   }
 
   /**

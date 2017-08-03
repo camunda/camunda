@@ -237,7 +237,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     return currentProcessDefinitionId;
   }
 
-  public int getCurrentDefinitionBasedImportIndex() {
+  public Integer getCurrentDefinitionBasedImportIndex() {
     return currentDefinitionBasedImportIndex;
   }
 

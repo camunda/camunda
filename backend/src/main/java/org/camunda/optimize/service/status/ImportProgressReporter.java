@@ -1,8 +1,10 @@
 package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,9 @@ public class ImportProgressReporter {
 
   @Autowired
   private ImportServiceProvider importServiceProvider;
+
+  @Autowired
+  private IndexHandlerProvider indexHandlerProvider;
 
   public boolean allEntitiesAreImported() {
     try {
@@ -39,8 +44,8 @@ public class ImportProgressReporter {
 
   private double getAlreadyImportedCount() {
     double alreadyImportedCount = 0;
-    for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
-      alreadyImportedCount += importService.getImportStartIndex();
+    for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+      alreadyImportedCount += importIndexHandler.getAbsoluteImportIndex();
     }
     return alreadyImportedCount;
   }
@@ -48,7 +53,12 @@ public class ImportProgressReporter {
   private double getTotalEngineCount() throws OptimizeException {
     double engineCount = 0;
     for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
-      engineCount += importService.getEngineEntityCount();
+      ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(
+          importService.getElasticsearchType(),
+          importService.getIndexHandlerType()
+      );
+
+      engineCount += importService.getEngineEntityCount(indexHandler);
     }
     return engineCount;
   }

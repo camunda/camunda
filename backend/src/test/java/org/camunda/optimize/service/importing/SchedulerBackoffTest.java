@@ -5,6 +5,7 @@ import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,9 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   private ImportServiceProvider importServiceProvider;
 
   @Autowired
+  private IndexHandlerProvider indexHandlerProvider;
+
+  @Autowired
   private ImportScheduler importScheduler;
 
   @Autowired
@@ -43,6 +47,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     importScheduler.importScheduleJobs.clear();
 
     services = mockImportServices();
+    mockIndexHandlers(services, indexHandlerProvider);
     when(importServiceProvider.getPagedServices()).thenReturn(services);
   }
 
@@ -67,13 +72,21 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     List<PaginatedImportService> services = mockImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
 
+    PaginatedImportService zeroPaginatedImportService = services.get(0);
     ImportResult zeroResult = new ImportResult();
     zeroResult.setEngineHasStillNewData(false);
-    when(services.get(0).executeImport(Mockito.any())).thenReturn(zeroResult);
+    zeroResult.setElasticSearchType(zeroPaginatedImportService.getElasticsearchType());
+    zeroResult.setIndexHandlerType(zeroPaginatedImportService.getIndexHandlerType());
 
+    when(zeroPaginatedImportService.executeImport(Mockito.any())).thenReturn(zeroResult);
+
+    PaginatedImportService singlePaginatedImportService = services.get(1);
     ImportResult singleResult = new ImportResult();
     singleResult.setEngineHasStillNewData(true);
-    when(services.get(1).executeImport(Mockito.any())).thenReturn(singleResult);
+    singleResult.setElasticSearchType(singlePaginatedImportService.getElasticsearchType());
+    singleResult.setIndexHandlerType(singlePaginatedImportService.getIndexHandlerType());
+
+    when(singlePaginatedImportService.executeImport(Mockito.any())).thenReturn(singleResult);
 
     importScheduler.scheduleNewImportRound();
 
@@ -81,8 +94,8 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     importScheduler.executeNextJob();
     importScheduler.executeNextJob();
 
-    assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(1L));
-    assertThat(backoffService.getBackoffCounter(services.get(1).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
+    assertThat(backoffService.getBackoffCounter(zeroPaginatedImportService.getElasticsearchType()), is(1L));
+    assertThat(backoffService.getBackoffCounter(singlePaginatedImportService.getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
   }
 
   @Test
@@ -162,10 +175,14 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
     //return one page from first import service
 
-    ImportResult result = new ImportResult();
-    result.setEngineHasStillNewData(true);
-    for (PaginatedImportService m : services) {
-      when(m.executeImport(Mockito.any())).thenReturn(result);
+
+    for (PaginatedImportService importService : services) {
+      ImportResult result = new ImportResult();
+      result.setEngineHasStillNewData(true);
+      result.setElasticSearchType(importService.getElasticsearchType());
+      result.setIndexHandlerType(importService.getIndexHandlerType());
+
+      when(importService.executeImport(Mockito.any())).thenReturn(result);
     }
 
     //when

@@ -20,7 +20,7 @@ import java.util.List;
 
 @Component
 public class ProcessDefinitionIdBasedImportService
-    extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
+    extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, DefinitionBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionIdBasedImportService.class);
 
@@ -33,14 +33,6 @@ public class ProcessDefinitionIdBasedImportService
   @Autowired
   private IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher;
 
-  @Autowired
-  private DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler;
-
-  @Override
-  protected ImportIndexHandler initializeImportIndexHandler() {
-    definitionBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
-    return definitionBasedImportIndexHandler;
-  }
 
   @Override
   protected MissingEntitiesFinder<ProcessDefinitionEngineDto> getMissingEntitiesFinder() {
@@ -56,7 +48,7 @@ public class ProcessDefinitionIdBasedImportService
   }
 
   @Override
-  public int getEngineEntityCount() throws OptimizeException {
+  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler) throws OptimizeException {
     return idBasedProcessDefinitionFetcher
         .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
   }

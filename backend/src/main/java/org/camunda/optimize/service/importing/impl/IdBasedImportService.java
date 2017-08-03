@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcher;
+import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcherImpl;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,7 +18,7 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
     extends AbstractImportService<ENG, OPT, IdBasedImportScheduleJob> {
 
   @Autowired
-  protected EngineEntityFetcher engineEntityFetcher;
+  protected EngineEntityFetcherImpl engineEntityFetcher;
 
   protected Set<String> idsForImport;
 
@@ -50,6 +50,7 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
       }
       engineHasStillNewData = !pageOfEngineEntities.isEmpty();
 
+      result.setElasticSearchType(this.getElasticsearchType());
       result.setEngineHasStillNewData(engineHasStillNewData);
       result.setIdsToFetch(getIdsForPostProcessing());
     }

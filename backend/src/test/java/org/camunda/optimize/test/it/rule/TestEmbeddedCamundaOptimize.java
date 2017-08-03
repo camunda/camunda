@@ -3,7 +3,6 @@ package org.camunda.optimize.test.it.rule;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
-import org.camunda.optimize.service.es.SchemaInitializingClient;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;

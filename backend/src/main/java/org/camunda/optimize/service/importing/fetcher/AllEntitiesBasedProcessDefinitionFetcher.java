@@ -12,12 +12,14 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class AllEntitiesBasedProcessDefinitionFetcher {
+public class AllEntitiesBasedProcessDefinitionFetcher  {
 
   private final Logger logger = LoggerFactory.getLogger(AllEntitiesBasedProcessDefinitionFetcher.class);
 
   @Autowired
-  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
+  private DefinitionBasedEngineEntityFetcher definitionBasedEngineEntityFetcher;
+  @Autowired
+  private EngineEntityFetcherImpl engineEntityFetcher;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -47,7 +49,7 @@ public class AllEntitiesBasedProcessDefinitionFetcher {
   }
 
   public int fetchProcessDefinitionCount() throws OptimizeException {
-    return engineEntityFetcher.fetchProcessDefinitionCount();
+    return definitionBasedEngineEntityFetcher.fetchProcessDefinitionCount();
   }
 
 }

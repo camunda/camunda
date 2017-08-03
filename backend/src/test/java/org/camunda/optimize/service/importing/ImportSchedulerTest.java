@@ -2,9 +2,12 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.After;
@@ -18,6 +21,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +44,9 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
   private ImportServiceProvider importServiceProvider;
 
   @Autowired
+  private IndexHandlerProvider indexHandlerProvider;
+
+  @Autowired
   private ImportScheduler importScheduler;
 
   @Autowired
@@ -55,13 +62,19 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.importScheduleJobs.clear();
 
     services = mockImportServices();
+
+    mockIndexHandlers(services, indexHandlerProvider);
+
     when(importServiceProvider.getPagedServices()).thenReturn(services);
     when(importServiceProvider.getImportService(Mockito.any())).thenReturn(services.get(0));
   }
 
+
+
   @After
   public void tearDown() {
     Mockito.reset(importServiceProvider);
+    Mockito.reset(indexHandlerProvider);
   }
 
   @Test
@@ -91,12 +104,11 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
   @Test
   public void testProcessInstanceImportScheduledBasedOnActivities () throws Exception {
-    ImportResult result = new ImportResult();
-    result.setEngineHasStillNewData(true);
-    Set<String> piIds = new HashSet<>();
-    piIds.add(TEST_ID);
-    result.setIdsToFetch(piIds);
-    when(services.get(0).executeImport(Mockito.any())).thenReturn(result);
+    PaginatedImportService paginatedImportService = services.get(0);
+
+    ImportResult result = getConstructResult(paginatedImportService);
+
+    when(paginatedImportService.executeImport(Mockito.any())).thenReturn(result);
     importScheduler.scheduleNewImportRound();
 
     //when
@@ -109,6 +121,18 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     assertThat(piJob, is(instanceOf(IdBasedImportScheduleJob.class)));
     assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch(), is(notNullValue()));
     assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch().toArray()[0], is(TEST_ID));
+  }
+
+  private ImportResult getConstructResult(PaginatedImportService paginatedImportService) {
+    ImportResult result = new ImportResult();
+    result.setEngineHasStillNewData(true);
+    result.setSearchedSize(1);
+    Set<String> piIds = new HashSet<>();
+    piIds.add(TEST_ID);
+    result.setIdsToFetch(piIds);
+    result.setElasticSearchType(paginatedImportService.getElasticsearchType());
+    result.setIndexHandlerType(paginatedImportService.getIndexHandlerType());
+    return result;
   }
 
   @Test
@@ -125,7 +149,13 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getPagedServices().iterator().next(),times(1)).resetImportStartIndex();
+    Mockito.verify(
+        indexHandlerProvider.getIndexHandler(
+            services.get(0).getElasticsearchType(),
+            services.get(0).getIndexHandlerType()
+        ),
+        times(1)
+    ).resetImportIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks
@@ -143,7 +173,14 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getPagedServices().iterator().next(),times(1)).resetImportStartIndex();
+    Mockito.verify(
+        indexHandlerProvider.getIndexHandler(
+            services.get(0).getElasticsearchType(),
+            services.get(0).getIndexHandlerType()
+        ),
+        times(1)
+    ).resetImportIndex();
+
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks

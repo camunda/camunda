@@ -8,9 +8,11 @@ import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -44,9 +46,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getJobExecutor().startExecutingImportJobs();
 
     while (scheduler.hasStillJobsToExecute()) {
-      ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
-      ImportResult result = nextToExecute.execute();
-      scheduler.postProcess(nextToExecute, result);
+      executeIfJobsArePresent(scheduler);
     }
 
     getJobExecutor().stopExecutingImportJobs();
@@ -61,13 +61,18 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getJobExecutor().startExecutingImportJobs();
     ImportScheduler scheduler = getImportScheduler();
 
+    executeIfJobsArePresent(scheduler);
+
+    getJobExecutor().stopExecutingImportJobs();
+  }
+
+  private void executeIfJobsArePresent(ImportScheduler scheduler) throws OptimizeException {
     if (scheduler.hasStillJobsToExecute()) {
       ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
       ImportResult result = nextToExecute.execute();
+      result.setEngineHasStillNewData(scheduler.handleIndexes(result, nextToExecute));
       scheduler.postProcess(nextToExecute, result);
     }
-
-    getJobExecutor().stopExecutingImportJobs();
   }
 
   public ImportScheduler scheduleImport() {
@@ -133,6 +138,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
     reloadConfiguration();
     getImportScheduler().clearQueue();
+    getIndexProvider().unregisterHandlers();
   }
 
   public void reloadConfiguration() {
@@ -169,32 +175,32 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public List<Integer> getImportIndexes() {
     List<Integer> indexes = new LinkedList<>();
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      indexes.add(importService.getImportStartIndex());
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      indexes.add(importIndexHandler.getAbsoluteImportIndex());
     }
     return indexes;
   }
 
   public List<DefinitionBasedImportIndexHandler> getDefinitionBasedImportIndexHandler() {
     List<DefinitionBasedImportIndexHandler> indexes = new LinkedList<>();
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      if (importService.getImportIndexHandler() instanceof DefinitionBasedImportIndexHandler) {
-        indexes.add((DefinitionBasedImportIndexHandler)importService.getImportIndexHandler());
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      if (importIndexHandler instanceof DefinitionBasedImportIndexHandler) {
+        indexes.add((DefinitionBasedImportIndexHandler) importIndexHandler);
       }
     }
     return indexes;
   }
 
   public void restartImportCycle() {
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.restartImportCycle();
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      importIndexHandler.restartImportCycle();
     }
   }
 
   public void resetImportStartIndexes() {
     getJobExecutor().startExecutingImportJobs();
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.resetImportStartIndex();
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      importIndexHandler.resetImportIndex();
     }
     getJobExecutor().stopExecutingImportJobs();
   }
@@ -231,8 +237,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
   public void updateImportIndex() {
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      importService.updateImportIndex();
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      importIndexHandler.updateImportIndex();
     }
+  }
+
+  private IndexHandlerProvider getIndexProvider() {
+    return getApplicationContext().getBean(IndexHandlerProvider.class);
   }
 }

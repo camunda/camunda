@@ -4,6 +4,7 @@ import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,20 +26,24 @@ public class ScheduleJobFactory {
   @Autowired
   protected ConfigurationService configurationService;
 
+  @Autowired
+  protected IndexHandlerProvider indexHandlerProvider;
+
   public Collection<? extends ImportScheduleJob> createPagedJobs() {
     List<ImportScheduleJob> result = new ArrayList<>();
     for (PaginatedImportService service : importServiceProvider.getPagedServices()) {
-      service.getImportIndexHandler().makeSureIsInitialized();
+      ImportIndexHandler importIndexHandler =
+          indexHandlerProvider.getIndexHandler(service.getElasticsearchType(), service.getIndexHandlerType());
 
-      PageBasedImportScheduleJob job = constructJob(service);
+      importIndexHandler.makeSureIsInitialized();
+
+      PageBasedImportScheduleJob job = constructJob(service, importIndexHandler);
       result.add(job);
     }
     return result;
   }
 
-  private PageBasedImportScheduleJob constructJob(PaginatedImportService service) {
-    ImportIndexHandler importIndexHandler = service.getImportIndexHandler();
-
+  private PageBasedImportScheduleJob constructJob(PaginatedImportService service, ImportIndexHandler importIndexHandler) {
     PageBasedImportScheduleJob job;
     if(service.isProcessDefinitionBased()) {
       DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler = (DefinitionBasedImportIndexHandler) importIndexHandler;
@@ -115,6 +120,8 @@ public class ScheduleJobFactory {
   }
 
   public ImportScheduleJob createPagedJob(String elasticsearchType) {
-    return constructJob(importServiceProvider.getImportService(elasticsearchType));
+    PaginatedImportService importService = importServiceProvider.getImportService(elasticsearchType);
+    ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(elasticsearchType, importService.getIndexHandlerType());
+    return constructJob(importService, indexHandler);
   }
 }

@@ -12,6 +12,7 @@ import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHa
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
+import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,8 @@ import java.util.Set;
  * @author Askar Akhmerov
  */
 @Component
-public class ActivityImportService extends PaginatedImportService<HistoricActivityInstanceEngineDto, EventDto> {
+public class ActivityImportService
+    extends PaginatedImportService<HistoricActivityInstanceEngineDto, EventDto, DefinitionBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(ActivityImportService.class);
 
@@ -36,15 +38,6 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Autowired
   private ActivityInstanceFetcher activityInstanceFetcher;
-
-  @Autowired
-  private DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler;
-
-  @Override
-  protected ImportIndexHandler initializeImportIndexHandler() {
-    definitionBasedImportIndexHandler.initializeImportIndex(getElasticsearchType());
-    return definitionBasedImportIndexHandler;
-  }
 
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
@@ -60,7 +53,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   }
 
   @Override
-  public int getEngineEntityCount() throws OptimizeException {
+  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler) throws OptimizeException {
     return activityInstanceFetcher
       .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
   }
