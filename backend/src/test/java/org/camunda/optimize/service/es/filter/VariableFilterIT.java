@@ -653,7 +653,6 @@ public class VariableFilterIT {
     assertResults(testDefinition, 2, 2L);
   }
 
-  //
   @Test
   public void dateGreaterThanVariableFilter() throws Exception {
     // given
@@ -661,7 +660,9 @@ public class VariableFilterIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDate());
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDateMinusSeconds(2));
+    Date nowMinusTwoSeconds = nowDateMinusSeconds(2);
+    String nowMinusTwoSecondsAsString = sdf.format(nowMinusTwoSeconds);
+    variables.put("var", nowMinusTwoSeconds);
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDatePlusSeconds(10));
     engineRule.startProcessInstance(processDefinitionId, variables);
@@ -669,7 +670,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, nowDateMinusSecondsAsString(2));
+    VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, nowMinusTwoSecondsAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
