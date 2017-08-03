@@ -377,6 +377,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .topicName(logStreamTopicName)
                     .partitionId(logStreamPartitionId)
                     .eventWriter(subscriberEvent)
+                    .position(currentEvent.getPosition())
                     .key(currentEvent.getKey())
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
 

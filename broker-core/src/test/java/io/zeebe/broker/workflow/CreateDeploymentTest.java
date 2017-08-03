@@ -49,7 +49,7 @@ public class CreateDeploymentTest
     @Test
     public void shouldCreateDeployment()
     {
-        // givencharset
+        // given charset
         final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
             .endEvent()
@@ -68,6 +68,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_CREATED");

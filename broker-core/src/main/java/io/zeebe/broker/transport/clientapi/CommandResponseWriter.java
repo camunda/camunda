@@ -17,16 +17,10 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.topicNameHeaderLength;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
 
 import java.util.Objects;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -34,6 +28,9 @@ import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandResponseWriter implements BufferWriter
 {
@@ -42,6 +39,7 @@ public class CommandResponseWriter implements BufferWriter
 
     protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId = partitionIdNullValue();
+    protected long position = positionNullValue();
     protected long key = keyNullValue();
 
     protected BufferWriter eventWriter;
@@ -62,6 +60,12 @@ public class CommandResponseWriter implements BufferWriter
     public CommandResponseWriter partitionId(final int partitionId)
     {
         this.partitionId = partitionId;
+        return this;
+    }
+
+    public CommandResponseWriter position(final long position)
+    {
+        this.position = position;
         return this;
     }
 
@@ -114,6 +118,7 @@ public class CommandResponseWriter implements BufferWriter
             .wrap(buffer, offset)
             .putTopicName(topicName, 0, topicName.capacity())
             .partitionId(partitionId)
+            .position(position)
             .key(key);
 
         offset = responseEncoder.limit();

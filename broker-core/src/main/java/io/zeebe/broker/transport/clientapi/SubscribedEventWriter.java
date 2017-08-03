@@ -17,18 +17,9 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.subscriberKeyNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.topicNameHeaderLength;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.*;
 
 import java.util.Objects;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -39,6 +30,9 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class SubscribedEventWriter implements BufferWriter
 {

@@ -222,6 +222,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         return responseWriter
                 .topicName(logStreamTopicName)
                 .partitionId(logStreamPartitionId)
+                .position(eventPosition)
                 .key(eventKey)
                 .eventWriter(deploymentEvent)
                 .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());

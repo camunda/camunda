@@ -50,6 +50,11 @@ public class ExecuteCommandResponse implements BufferReader
         return event;
     }
 
+    public long position()
+    {
+        return responseDecoder.position();
+    }
+
     public long key()
     {
         return responseDecoder.key();

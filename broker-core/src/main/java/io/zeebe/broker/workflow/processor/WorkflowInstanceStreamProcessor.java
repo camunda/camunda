@@ -371,6 +371,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         return responseWriter
                 .topicName(logStreamTopicName)
                 .partitionId(logStreamPartitionId)
+                .position(eventPosition)
                 .key(eventKey)
                 .eventWriter(workflowInstanceEvent)
                 .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());

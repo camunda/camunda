@@ -73,6 +73,19 @@ public class TestTopicClient
         return response.key();
     }
 
+    public ExecuteCommandResponse createWorkflowInstanceWithResponse(String bpmnProcessId)
+    {
+        return apiRule.createCmdRequest()
+                      .topicName(topicName)
+                      .partitionId(partitionId)
+                      .eventTypeWorkflow()
+                      .command()
+                      .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                      .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+                      .done()
+                      .sendAndAwait();
+    }
+
     public long createWorkflowInstance(String bpmnProcessId)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
@@ -86,6 +99,7 @@ public class TestTopicClient
                 .sendAndAwait();
 
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        assertThat(response.position()).isGreaterThanOrEqualTo(0L);
 
         return response.key();
     }

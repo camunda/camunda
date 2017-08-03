@@ -78,6 +78,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected LogStream targetStream;
 
     protected long eventKey = 0;
+    protected long eventPosition = 0;
 
     public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, TaskSubscriptionManager taskSubscriptionManager)
     {
@@ -127,6 +128,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         taskIndex.reset();
 
         eventKey = event.getKey();
+        eventPosition = event.getPosition();
 
         event.readMetadata(sourceEventMetadata);
 
@@ -177,6 +179,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         return responseWriter
             .topicName(logStreamTopicName)
             .partitionId(logStreamPartitionId)
+            .position(eventPosition)
             .key(eventKey)
             .eventWriter(taskEvent)
             .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
@@ -267,6 +270,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 success = subscribedEventWriter
                         .topicName(logStreamTopicName)
                         .partitionId(logStreamPartitionId)
+                        .position(eventPosition)
                         .key(eventKey)
                         .subscriberKey(sourceEventMetadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)

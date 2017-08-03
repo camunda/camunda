@@ -60,11 +60,12 @@ public class TaskSubscriptionTest
             .send();
 
         // when
-        final long taskKey = createTask("foo");
+        final ExecuteCommandResponse response = createTask("foo");
 
         // then
         final SubscribedEvent taskEvent = apiRule.topic().receiveSingleEvent(taskEvents("LOCKED"));
-        assertThat(taskEvent.key()).isEqualTo(taskKey);
+        assertThat(taskEvent.key()).isEqualTo(response.key());
+        assertThat(taskEvent.position()).isGreaterThan(response.position());
         assertThat(taskEvent.event())
             .containsEntry("type", "foo")
             .containsEntry("retries", 3)
@@ -87,7 +88,7 @@ public class TaskSubscriptionTest
         // then the subscription has been closed, so we can create a new task and lock it for a new subscription
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
-        final long taskKey = createTask("foo");
+        final ExecuteCommandResponse response = createTask("foo");
 
         final ControlMessageResponse subscriptionResponse = apiRule
             .openTaskSubscription("foo")
@@ -96,7 +97,7 @@ public class TaskSubscriptionTest
 
         final Optional<SubscribedEvent> taskEvent = apiRule.subscribedEvents()
             .filter((s) -> s.subscriptionType() == SubscriptionType.TASK_SUBSCRIPTION
-                && s.key() == taskKey)
+                && s.key() == response.key())
             .findFirst();
 
         assertThat(taskEvent).isPresent();
@@ -192,9 +193,9 @@ public class TaskSubscriptionTest
             .containsEntry("lockOwner", "owner2");
     }
 
-    private long createTask(String type)
+    private ExecuteCommandResponse createTask(String type)
     {
-        final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
+        return apiRule.createCmdRequest()
                 .topicName(DEFAULT_TOPIC_NAME)
                 .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeTask()
@@ -204,10 +205,6 @@ public class TaskSubscriptionTest
                     .put("retries", 3)
                 .done()
                 .sendAndAwait();
-
-
-
-        return createTaskResponse.key();
     }
 
 }

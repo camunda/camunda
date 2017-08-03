@@ -84,6 +84,7 @@ public class UpdatePayloadTest
 
         final SubscribedEvent updatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
 
+        assertThat(updatedEvent.position()).isGreaterThan(response.position());
         assertThat(updatedEvent.key()).isEqualTo(activityInstanceEvent.key());
         assertThat(updatedEvent.event()).containsEntry("workflowInstanceKey", workflowInstanceKey);
 

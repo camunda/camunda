@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -73,12 +74,14 @@ public class WorkflowInstanceFunctionalTest
                 .done());
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+        final ExecuteCommandResponse response = testClient.createWorkflowInstanceWithResponse("process");
 
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("START_EVENT_OCCURRED"));
 
+        final long workflowInstanceKey = response.key();
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.position()).isGreaterThan(response.position());
         assertThat(event.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)

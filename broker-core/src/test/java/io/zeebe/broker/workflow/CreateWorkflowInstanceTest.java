@@ -70,6 +70,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
