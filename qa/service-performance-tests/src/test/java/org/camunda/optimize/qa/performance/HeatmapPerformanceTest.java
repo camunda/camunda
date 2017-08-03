@@ -30,6 +30,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());
+    filter.setExecutedFlowNodeIds(new ArrayList<>());
     testBuilder = this.testBuilder
         .step(new HeatMapDataGenerationStep());
   }
@@ -99,6 +100,24 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   }
 
   @Test
+  public void getFrequencyHeatmapWithExecutedFlowNodeFilter() {
+    // given
+    filter.getExecutedFlowNodeIds().add("startEvent");
+
+    test = testBuilder
+      .step(new GetFrequencyGetHeatMapStep(filter))
+      .done();
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetFrequencyGetHeatMapStep.class);
+
+    // then
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
+  }
+
+  @Test
   public void getDurationHeatmapWithoutFilter() {
     //given
     test = testBuilder
@@ -148,6 +167,24 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     variableFilterDto.setOperator("=");
     variableFilterDto.setValues(Collections.singletonList("aStringValue"));
     filter.getVariables().add(variableFilterDto);
+
+    test = testBuilder
+      .step(new GetDurationGetHeatMapStep(filter))
+      .done();
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetDurationGetHeatMapStep.class);
+
+    // then
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
+  }
+
+  @Test
+  public void getDurationHeatmapWithExecutedFlowNodeFilter() {
+    // given
+    filter.getExecutedFlowNodeIds().add("startEvent");
 
     test = testBuilder
       .step(new GetDurationGetHeatMapStep(filter))

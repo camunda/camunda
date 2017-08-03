@@ -22,7 +22,7 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
   @Override
   protected BpmnModelInstance createBpmnModel() {
     return Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
+      .startEvent(startEventActivityId)
       .endEvent()
       .done();
   }

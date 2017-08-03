@@ -31,6 +31,8 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
   public void setUp() throws JsonProcessingException {
     super.setUp();
     filter.setDates(new ArrayList<>());
+    filter.setVariables(new ArrayList<>());
+    filter.setExecutedFlowNodeIds(new ArrayList<>());
     test = this.testBuilder
         .step(new BranchAnalysisDataGenerationStep())
         .step(new GetBranchAnalysisStep(filter))
@@ -68,7 +70,10 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
       testResult.getResult(GetBranchAnalysisStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
+    assertThat(
+      stepResult.getDurationInMs(),
+      is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR))
+    );
   }
 
   @Test
@@ -87,7 +92,27 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
       testResult.getResult(GetBranchAnalysisStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
+    assertThat(
+      stepResult.getDurationInMs(),
+      is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR))
+    );
+  }
+
+  @Test
+  public void getBranchAnalysisWithExecutedFlowNodeFilter() {
+    // given
+    filter.getExecutedFlowNodeIds().add("startEvent");
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetBranchAnalysisStep.class);
+
+    // then
+    assertThat(
+      stepResult.getDurationInMs(),
+      is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR))
+    );
   }
 
 }

@@ -8,8 +8,9 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.service.es.mapping.DateFilterHelper;
-import org.camunda.optimize.service.es.mapping.VariableFilterHelper;
+import org.camunda.optimize.service.es.filter.DateFilter;
+import org.camunda.optimize.service.es.filter.QueryFilterAdder;
+import org.camunda.optimize.service.es.filter.VariableFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -52,10 +53,7 @@ public class BranchAnalysisReader {
   private ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  private DateFilterHelper dateFilterHelper;
-
-  @Autowired
-  private VariableFilterHelper variableFilterHelper;
+  private QueryFilterAdder queryFilterAdder;
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
@@ -136,10 +134,7 @@ public class BranchAnalysisReader {
   }
 
   private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
-    if (request.getFilter() != null) {
-      query = dateFilterHelper.addFilters(query, request.getFilter());
-      query = variableFilterHelper.addFilters(query, request.getFilter());
-    }
+    queryFilterAdder.addFilterToQuery(query, request.getFilter());
 
     SearchResponse sr = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
@@ -149,7 +144,7 @@ public class BranchAnalysisReader {
         .setSize(0)
         .get();
 
-    return sr.getHits().totalHits();
+    return sr.getHits().getTotalHits();
   }
 
   private List<FlowNode> fetchGatewayOutcomes(String processDefinitionId, String gatewayActivityId) {

@@ -125,6 +125,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
+  public void initializeSchema() {
+    camundaOptimize.initializeSchema();
+  }
+
   protected void finished(Description description) {
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
     reloadConfiguration();

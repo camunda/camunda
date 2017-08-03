@@ -11,6 +11,7 @@ import java.util.List;
 public class FilterMapDto {
   protected List<DateFilterDto> dates = new ArrayList<>();
   protected List<VariableFilterDto> variables = new ArrayList<>();
+  protected List<String> executedFlowNodeIds = new ArrayList<>();
 
   public List<DateFilterDto> getDates() {
     return dates;
@@ -26,5 +27,13 @@ public class FilterMapDto {
 
   public void setVariables(List<VariableFilterDto> variables) {
     this.variables = variables;
+  }
+
+  public List<String> getExecutedFlowNodeIds() {
+    return executedFlowNodeIds;
+  }
+
+  public void setExecutedFlowNodeIds(List<String> executedFlowNodeIds) {
+    this.executedFlowNodeIds = executedFlowNodeIds;
   }
 }

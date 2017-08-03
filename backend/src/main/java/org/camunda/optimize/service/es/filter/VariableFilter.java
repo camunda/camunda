@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.mapping;
+package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
@@ -23,22 +23,21 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
-public class VariableFilterHelper {
+public class VariableFilter implements QueryFilter {
 
-  private Logger logger = LoggerFactory.getLogger(VariableFilterHelper.class);
+  private Logger logger = LoggerFactory.getLogger(VariableFilter.class);
 
-  public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    return this.addVariableFilters(query, filter.getVariables());
+  public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
+    this.addVariableFilters(query, filter.getVariables());
   }
 
-  private BoolQueryBuilder addVariableFilters(BoolQueryBuilder query, List<VariableFilterDto> variables) {
+  private void addVariableFilters(BoolQueryBuilder query, List<VariableFilterDto> variables) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDto variable : variables) {
         filters.add(createFilterQueryBuilder(variable));
       }
     }
-    return query;
   }
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDto dto) {

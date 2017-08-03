@@ -34,6 +34,8 @@ public abstract class DataGenerationStep extends PerfTestStep {
   private Integer numberOfThreads;
   protected SimpleDateFormat sdf;
 
+  protected String startEventActivityId = "startEvent";
+
   @Override
   public PerfTestStepResult execute(PerfTestContext context) {
     this.context = context;

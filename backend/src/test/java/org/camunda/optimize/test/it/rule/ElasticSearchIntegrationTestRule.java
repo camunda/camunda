@@ -167,6 +167,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
+  public void deleteOptimizeIndex() {
+    esclient
+      .admin()
+      .indices()
+      .prepareDelete(getOptimizeIndex())
+      .get();
+  }
+
   public void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();

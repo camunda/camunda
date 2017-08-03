@@ -121,6 +121,25 @@ public class EngineIntegrationRule extends TestWatcher {
   public void finishAllUserTasks() {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     HttpGet get = new HttpGet(getTaskListUri());
+    executeFinishAllUserTasks(client, get);
+  }
+
+  public void finishAllUserTasks(String processInstanceId) {
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpGet get = new HttpGet(getTaskListUri());
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+        .addParameter("processInstanceId", processInstanceId)
+        .build();
+    } catch (URISyntaxException e) {
+      logger.error("Could not build uri!", e);
+    }
+    get.setURI(uri);
+    executeFinishAllUserTasks(client, get);
+  }
+
+  private void executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
     try {
       CloseableHttpResponse response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
@@ -136,6 +155,8 @@ public class EngineIntegrationRule extends TestWatcher {
       closeClient(client);
     }
   }
+
+
 
   private String getTaskListUri() {
     return getEngineUrl() + "/task";

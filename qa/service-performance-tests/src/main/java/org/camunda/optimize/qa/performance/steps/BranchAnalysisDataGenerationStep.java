@@ -41,7 +41,7 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
   @Override
   protected BpmnModelInstance createBpmnModel() {
     return Bpmn.createProcess()
-      .startEvent()
+      .startEvent(startEventActivityId)
       .serviceTask()
       .exclusiveGateway(GATEWAY_ACTIVITY)
         .userTask()

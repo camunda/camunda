@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.mapping;
+package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
@@ -23,7 +23,8 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 @Component
-public class DateFilterHelper {
+public class DateFilter implements QueryFilter {
+
   @Autowired
   private ConfigurationService configurationService;
 
@@ -34,11 +35,11 @@ public class DateFilterHelper {
     formatter = new SimpleDateFormat(configurationService.getDateFormat());
   }
 
-  public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    return this.addDateFilters(query, filter.getDates());
+  public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
+    this.addDateFilters(query, filter.getDates());
   }
 
-  public BoolQueryBuilder addDateFilters(BoolQueryBuilder query, List<DateFilterDto> dates) {
+  private void addDateFilters(BoolQueryBuilder query, List<DateFilterDto> dates) {
     if (dates != null) {
       List<QueryBuilder> filters = query.filter();
       for (DateFilterDto dateDto : dates) {
@@ -47,7 +48,6 @@ public class DateFilterHelper {
         filters.add(queryDate);
       }
     }
-    return query;
   }
 
   private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateFilterDto dto) {
