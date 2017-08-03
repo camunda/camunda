@@ -185,7 +185,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     boolean exists = esclient.admin().indices()
         .prepareExists(indexName)
         .execute().actionGet().isExists();
-    esclient.admin().indices().prepareFlush(getOptimizeIndex()).get();
+    refreshOptimizeIndexInElasticsearch();
 
     if (exists) {
       DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
@@ -194,6 +194,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
           .source(indexName)
           .execute()
           .actionGet();
+
     }
   }
 
