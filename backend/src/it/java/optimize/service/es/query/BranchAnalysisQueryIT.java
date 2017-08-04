@@ -492,6 +492,42 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
+  @Test
+  public void executedFlowNodeFilterWorksInBranchAnalysis() throws IOException, OptimizeException {
+    //given
+    String processDefinitionId = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(processDefinitionId);
+    dto.setGateway(SPLITTING_GATEWAY_ID);
+    dto.setEnd(END_EVENT_ID);
+    FilterMapDto mapDto = new FilterMapDto();
+    mapDto.getExecutedFlowNodeIds().add(TASK_ID_2);
+    dto.setFilter(mapDto);
+
+    //when
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(0L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
+    assertThat(task1.getActivityId(), is(TASK_ID_1));
+    assertThat(task1.getActivitiesReached(), is(0L));
+    assertThat(task1.getActivityCount(), is(0L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
+    assertThat(task2.getActivityId(), is(TASK_ID_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
   private FilterMapDto createVariableFilter() {
     VariableFilterDto filter = new VariableFilterDto();
     filter.setName("goToTask1");
