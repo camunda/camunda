@@ -3,7 +3,7 @@ def repository = 'zb-build-tools'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'verify'
+def mvnGoals = 'deploy'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
