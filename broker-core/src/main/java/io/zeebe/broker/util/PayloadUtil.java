@@ -15,29 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.util.msgpack;
+package io.zeebe.broker.util;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.LongProperty;
+import org.agrona.DirectBuffer;
 
-public class MinimalPOJO extends UnpackedObject
+import io.zeebe.msgpack.spec.MsgPackCodes;
+import io.zeebe.msgpack.spec.MsgPackFormat;
+import io.zeebe.msgpack.spec.MsgPackType;
+
+/**
+ *
+ */
+public final class PayloadUtil
 {
-
-    private final LongProperty longProp = new LongProperty("longProp");
-
-    public MinimalPOJO()
+    public static boolean isValidPayload(DirectBuffer payload)
     {
-        this.declareProperty(longProp);
+        boolean isValid = payload.capacity() > 0;
+        if (isValid)
+        {
+            final byte b = payload.getByte(0);
+            final MsgPackFormat format = MsgPackFormat.valueOf(b);
+            isValid = format.getType() == MsgPackType.MAP;
+        }
+        return isValid;
     }
 
-    public long getLongProp()
+    public static boolean isNilPayload(DirectBuffer taskPayload)
     {
-        return longProp.getValue();
-    }
-
-    public void setLongProp(final long value)
-    {
-        this.longProp.setValue(value);
+        return taskPayload.capacity() == 1 && taskPayload.getByte(0) == MsgPackCodes.NIL;
     }
 
 }

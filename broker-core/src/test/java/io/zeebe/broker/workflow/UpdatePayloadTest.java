@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 import org.camunda.bpm.model.bpmn.Bpmn;

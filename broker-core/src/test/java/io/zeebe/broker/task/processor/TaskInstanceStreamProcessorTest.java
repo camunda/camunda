@@ -17,17 +17,14 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -40,7 +37,6 @@ import io.zeebe.broker.task.data.TaskEventType;
 import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.broker.util.msgpack.MsgPackUtil;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.Protocol;
@@ -49,16 +45,13 @@ import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TaskInstanceStreamProcessorTest
 {
-    public static final DirectBuffer TASK_TYPE = MsgPackUtil.utf8("foo");
+    public static final DirectBuffer TASK_TYPE = wrapString("foo");
     private static final int TERM = 3;
 
     private TaskInstanceStreamProcessor streamProcessor;

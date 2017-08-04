@@ -24,6 +24,7 @@
       <validValue name="INVALID_CLIENT_VERSION">3</validValue>
       <validValue name="REQUEST_TIMEOUT">4</validValue>
       <validValue name="REQUEST_PROCESSING_FAILURE">5</validValue>
+      <validValue name="INVALID_MESSAGE">6</validValue>
     </enum>
 
     <enum name="EventType" encodingType="uint8" description="The type of an event">

@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.broker.util.payload.PayloadUtil.isNilPayload;
-import static io.zeebe.broker.util.payload.PayloadUtil.isValidPayload;
+import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
+import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 
 import io.zeebe.protocol.Protocol;

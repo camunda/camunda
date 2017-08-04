@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
 import static io.zeebe.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUNDANT_MAPPING;
 import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
 import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;

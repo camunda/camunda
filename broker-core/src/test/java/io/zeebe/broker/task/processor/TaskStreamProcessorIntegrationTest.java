@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;

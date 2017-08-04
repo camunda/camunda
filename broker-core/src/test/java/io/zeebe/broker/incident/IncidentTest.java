@@ -18,10 +18,8 @@
 package io.zeebe.broker.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.*;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.util.msgpack.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;

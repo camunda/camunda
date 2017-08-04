@@ -20,23 +20,23 @@ package io.zeebe.broker.transport.clientapi;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
+import io.zeebe.broker.event.processor.TopicSubscriberEvent;
+import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
+import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import io.zeebe.broker.workflow.data.WorkflowDeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -64,12 +64,25 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     protected final Dispatcher controlMessageDispatcher;
     protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
 
+    protected final EnumMap<EventType, UnpackedObject> eventsByType = new EnumMap<>(EventType.class);
+
     public ClientApiMessageHandler(final Dispatcher controlMessageDispatcher)
     {
         this.controlMessageDispatcher = controlMessageDispatcher;
+
+        initEventTypeMap();
     }
 
-    protected boolean handleExecuteCommandRequest(
+    private void initEventTypeMap()
+    {
+        eventsByType.put(EventType.DEPLOYMENT_EVENT, new WorkflowDeploymentEvent());
+        eventsByType.put(EventType.TASK_EVENT, new TaskEvent());
+        eventsByType.put(EventType.WORKFLOW_INSTANCE_EVENT, new WorkflowInstanceEvent());
+        eventsByType.put(EventType.SUBSCRIBER_EVENT, new TopicSubscriberEvent());
+        eventsByType.put(EventType.SUBSCRIPTION_EVENT, new TopicSubscriptionEvent());
+    }
+
+    private boolean handleExecuteCommandRequest(
             final ServerOutput output,
             final RemoteAddress requestAddress,
             final long requestId,
@@ -78,8 +91,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             final int messageOffset,
             final int messageLength)
     {
-        boolean isHandled = false;
-
         executeCommandRequestDecoder.wrap(buffer, messageOffset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
         final int topicNameOffset = executeCommandRequestDecoder.limit() + topicNameHeaderLength();
@@ -90,44 +101,85 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         final int partitionId = executeCommandRequestDecoder.partitionId();
         final long key = executeCommandRequestDecoder.key();
 
+        final LogStream logStream = getLogStream(topicName, partitionId);
+
+        if (logStream == null)
+        {
+            return errorResponseWriter
+                .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+                .errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", bufferAsString(topicName), partitionId)
+                .failedRequest(buffer, messageOffset, messageLength)
+                .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+        }
+
         final EventType eventType = executeCommandRequestDecoder.eventType();
-        eventMetadata.eventType(eventType);
+        final UnpackedObject event = eventsByType.get(eventType);
+
+        if (event == null)
+        {
+            return errorResponseWriter
+                    .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
+                    .errorMessage("Cannot execute command. Invalid event type '%s'.", eventType.name())
+                    .failedRequest(buffer, messageOffset, messageLength)
+                    .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+        }
 
         final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
         final int eventLength = executeCommandRequestDecoder.commandLength();
 
-        final LogStream logStream = getLogStream(topicName, partitionId);
+        event.reset();
 
-        if (logStream != null)
+        try
         {
-            eventMetadata.raftTermId(logStream.getTerm());
-            logStreamWriter.wrap(logStream);
+            // verify that the event / command is valid
+            event.wrap(buffer, eventOffset, eventLength);
+        }
+        catch (Throwable t)
+        {
+            return errorResponseWriter
+                    .errorCode(ErrorCode.INVALID_MESSAGE)
+                    .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
+                    .failedRequest(buffer, messageOffset, messageLength)
+                    .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+        }
 
-            if (key != ExecuteCommandRequestDecoder.keyNullValue())
-            {
-                logStreamWriter.key(key);
-            }
-            else
-            {
-                logStreamWriter.positionAsKey();
-            }
+        eventMetadata.eventType(eventType);
+        eventMetadata.raftTermId(logStream.getTerm());
 
-            final long eventPosition = logStreamWriter
+        logStreamWriter.wrap(logStream);
+
+        if (key != ExecuteCommandRequestDecoder.keyNullValue())
+        {
+            logStreamWriter.key(key);
+        }
+        else
+        {
+            logStreamWriter.positionAsKey();
+        }
+
+        final long eventPosition = logStreamWriter
                 .metadataWriter(eventMetadata)
                 .value(buffer, eventOffset, eventLength)
                 .tryWrite();
 
-            isHandled = eventPosition >= 0;
-        }
-        else
+        return eventPosition >= 0;
+    }
+
+    private String concatErrorMessages(Throwable t)
+    {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(t.getMessage());
+
+        while (t.getCause() != null)
         {
-            isHandled = errorResponseWriter
-                    .errorCode(ErrorCode.TOPIC_NOT_FOUND)
-                    .errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", bufferAsString(topicName), partitionId)
-                    .failedRequest(buffer, messageOffset, messageLength)
-                    .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+            t = t.getCause();
+
+            sb.append("; ");
+            sb.append(t.getMessage());
         }
-        return isHandled;
+
+        return sb.toString();
     }
 
     private LogStream getLogStream(final DirectBuffer topicName, final int partitionId)
@@ -142,7 +194,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         return null;
     }
 
-    protected boolean handleControlMessageRequest(
+    private boolean handleControlMessageRequest(
             final BrokerEventMetadata eventMetadata,
             final DirectBuffer buffer,
             final int messageOffset,
@@ -274,7 +326,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         return true;
     }
 
-    protected void drainCommandQueue()
+    private void drainCommandQueue()
     {
         cmdQueue.drain(cmdConsumer);
     }
