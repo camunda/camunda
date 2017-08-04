@@ -85,4 +85,20 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
      *         or not initialized
      */
     long getPosition();
+
+    /**
+     * Returns true if the log stream reader was closed.
+     *
+     * @return true if closed, false otherwise
+     */
+    boolean isClosed();
+
+    /**
+     * Reopen and initialize the reader and seek to the first event.
+     * Can be used after {@link #close()} was called.
+     *
+     * @param logStream
+     *            the stream which provides the log
+     */
+    void reOpen(LogStream logStream);
 }

@@ -251,14 +251,26 @@ public class StreamProcessorController implements Actor
         {
             final LogStream targetStream = streamProcessorContext.getTargetStream();
 
-            targetLogStreamReader.wrap(targetStream);
+            initReader(targetLogStreamReader, targetStream);
+            initReader(sourceLogStreamReader, streamProcessorContext.getSourceStream());
             logStreamWriter.wrap(targetStream);
-            sourceLogStreamReader.wrap(streamProcessorContext.getSourceStream());
 
             targetStream.removeFailureListener(targetLogStreamFailureListener);
             targetStream.registerFailureListener(targetLogStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
+        }
+
+        private void initReader(LogStreamReader logStreamReader, LogStream targetStream)
+        {
+            if (logStreamReader.isClosed())
+            {
+                logStreamReader.reOpen(targetStream);
+            }
+            else
+            {
+                logStreamReader.wrap(targetStream);
+            }
         }
 
         @Override
@@ -648,6 +660,9 @@ public class StreamProcessorController implements Actor
         public void work(Context context)
         {
             streamProcessor.onClose();
+
+            streamProcessorContext.getTargetLogStreamReader().close();
+            streamProcessorContext.getSourceLogStreamReader().close();
 
             streamProcessorContext.getTargetStream().removeFailureListener(targetLogStreamFailureListener);
 

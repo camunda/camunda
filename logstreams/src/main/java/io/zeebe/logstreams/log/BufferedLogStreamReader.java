@@ -61,6 +61,8 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
     protected int available;
     protected long nextReadAddr;
 
+    private final int initialBufferCapacity;
+
     protected IteratorState iteratorState = IteratorState.UNINITIALIZED;
 
     public BufferedLogStreamReader()
@@ -80,10 +82,17 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
 
     public BufferedLogStreamReader(int initialBufferCapacity, boolean readUncommittedEntries)
     {
+        this.initialBufferCapacity = initialBufferCapacity;
+        init();
+
+        this.readUncommittedEntries = readUncommittedEntries;
+    }
+
+    private void init()
+    {
         this.allocatedBuffer = bufferAllocator.allocate(initialBufferCapacity);
         this.ioBuffer = allocatedBuffer.getRawBuffer();
         this.buffer.wrap(ioBuffer);
-        this.readUncommittedEntries = readUncommittedEntries;
     }
 
     public BufferedLogStreamReader(int initialBufferCapacity, LogStream logStream)
@@ -475,6 +484,21 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
         }
 
         return position;
+    }
+
+    public boolean isClosed()
+    {
+        return allocatedBuffer.isClosed();
+    }
+
+    public void reOpen(LogStream logStream)
+    {
+        if (!allocatedBuffer.isClosed())
+        {
+            allocatedBuffer.close();
+        }
+        init();
+        wrap(logStream);
     }
 
     @Override

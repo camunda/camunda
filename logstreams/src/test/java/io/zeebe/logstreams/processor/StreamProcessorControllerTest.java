@@ -219,6 +219,59 @@ public class StreamProcessorControllerTest
     }
 
     @Test
+    public void shouldCloseReader()
+    {
+        open();
+
+        assertThat(controller.isClosed()).isFalse();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closingSnapshotting
+        controller.doWork();
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+        assertThat(controller.targetLogStreamReader.isClosed());
+        assertThat(controller.sourceLogStreamReader.isClosed());
+    }
+
+    @Test
+    public void shouldReopenReader()
+    {
+        open();
+
+        assertThat(controller.isClosed()).isFalse();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closing Snapshotting
+        controller.doWork();
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+        assertThat(mockSourceLogStreamReader.isClosed()).isTrue();
+        verify(mockTargetLogStreamReader).close();
+
+        when(mockTargetLogStreamReader.isClosed()).thenReturn(true);
+
+        // when
+        open();
+
+        // then
+        assertThat(mockSourceLogStreamReader.isClosed()).isFalse();
+        verify(mockTargetLogStreamReader).reOpen(mockTargetLogStream);
+    }
+
+    @Test
     public void shouldCloseWhilePollEvents()
     {
         open();

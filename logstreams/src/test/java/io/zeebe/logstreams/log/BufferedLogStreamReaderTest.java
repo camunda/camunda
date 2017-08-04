@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.buffer.DirectBufferReader;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -839,6 +840,32 @@ public class BufferedLogStreamReaderTest
 
         assertThat(event).isNotNull();
         assertThat(event.getPosition()).isEqualTo(10L);
+    }
+
+    @Test
+    public void shouldClose()
+    {
+        // when
+        reader.close();
+
+        // then
+        assertThat(reader.allocatedBuffer.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldReopen()
+    {
+        // given
+        final AllocatedBuffer allocatedBuffer = reader.allocatedBuffer;
+        reader.close();
+
+        // reopen
+        reader.reOpen(mockLogStream);
+
+        // then
+        assertThat(reader.allocatedBuffer.isClosed()).isFalse();
+        assertThat(reader.allocatedBuffer).isNotEqualTo(allocatedBuffer);
+        assertThat(reader.allocatedBuffer.capacity()).isEqualTo(allocatedBuffer.capacity());
     }
 
     private void fillBuffer(MutableDirectBuffer buffer, int startIdex, int endIdx)
