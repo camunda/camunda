@@ -126,6 +126,7 @@ public class ImportScheduler extends Thread {
 
       ImportResult importResult = toExecute.execute();
       engineHasStillNewData = handleIndexes(importResult, toExecute);
+      importResult.setEngineHasStillNewData(engineHasStillNewData);
       if (engineHasStillNewData) {
         postProcess(toExecute, importResult);
       } else if (!engineHasStillNewData && toExecute.isPageBased()) {
