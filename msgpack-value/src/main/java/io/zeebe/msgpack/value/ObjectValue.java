@@ -98,7 +98,7 @@ public class ObjectValue extends BaseValue
 
             final BaseProperty<? extends BaseValue> prop = properties.get(i);
 
-            if (prop.isWriteable())
+            if (prop.hasValue())
             {
                 prop.writeJSON(builder);
             }
@@ -118,7 +118,7 @@ public class ObjectValue extends BaseValue
 
             for (int k = 0; k < declaredProperties.size(); ++k)
             {
-                final BaseProperty<? extends BaseValue> declaredProperty = declaredProperties.get(k);
+                final BaseProperty<?> declaredProperty = declaredProperties.get(k);
                 final StringValue declaredKey = declaredProperty.getKey();
 
                 if (declaredKey.equals(decodedKey))
@@ -133,7 +133,24 @@ public class ObjectValue extends BaseValue
                 prop = newUndeclaredProperty(decodedKey);
             }
 
-            prop.read(reader);
+            try
+            {
+                prop.read(reader);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(String.format("Could not read property '%s'.", prop.getKey()), e);
+            }
+        }
+
+        // verify that all required properties are set
+        for (int p = 0; p < declaredProperties.size(); p++)
+        {
+            final BaseProperty<?> prop = declaredProperties.get(p);
+            if (!prop.hasValue())
+            {
+                throw new RuntimeException(String.format("Property '%s' has no valid value", prop.getKey()));
+            }
         }
     }
 

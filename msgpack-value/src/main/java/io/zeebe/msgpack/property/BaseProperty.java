@@ -63,7 +63,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
         this.value.reset();
     }
 
-    public boolean isWriteable()
+    public boolean hasValue()
     {
         return isSet || defaultValue != null;
     }
@@ -110,7 +110,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
 
         if (valueToWrite == null)
         {
-            throw new RuntimeException("Cannot write property; neither value, nor default value specified");
+            throw new RuntimeException(String.format("Cannot write property '%s'; neither value, nor default value specified", key));
         }
 
         key.write(writer);
@@ -121,7 +121,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
     {
         key.writeJSON(sb);
         sb.append(":");
-        if (isWriteable())
+        if (hasValue())
         {
             resolveValue().writeJSON(sb);
         }
