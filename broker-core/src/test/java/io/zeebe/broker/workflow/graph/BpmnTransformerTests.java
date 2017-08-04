@@ -17,22 +17,25 @@
  */
 package io.zeebe.broker.workflow.graph;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.workflow.graph.model.*;
 import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -141,10 +144,22 @@ public class BpmnTransformerTests
         assertThat(serviceTask.getTaskMetadata()).isNotNull();
         assertThatBuffer(serviceTask.getTaskMetadata().getTaskType()).hasBytes(getBytes("test"));
         assertThat(serviceTask.getTaskMetadata().getRetries()).isEqualTo(4);
-        assertThat(serviceTask.getTaskMetadata().getHeaders())
-            .hasSize(2)
-            .extracting(h -> tuple(h.getKey(), h.getValue()))
-            .contains(tuple("a", "b"), tuple("c", "d"));
+
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[256]);
+        final MsgPackWriter msgPackWriter = new MsgPackWriter();
+        msgPackWriter.wrap(buffer, 0);
+        msgPackWriter.writeMapHeader(2);
+        msgPackWriter.writeString(BufferUtil.wrapString("a"));
+        msgPackWriter.writeString(BufferUtil.wrapString("b"));
+        msgPackWriter.writeString(BufferUtil.wrapString("c"));
+        msgPackWriter.writeString(BufferUtil.wrapString("d"));
+        buffer.wrap(buffer.byteArray(), 0, msgPackWriter.getOffset());
+
+        final DirectBuffer headers = serviceTask.getTaskMetadata()
+                                                .getHeaders();
+        assertThat(headers.capacity()).isEqualTo(msgPackWriter.getOffset());
+
+        assertThatBuffer(headers).hasBytes(buffer);
     }
 
     @Test

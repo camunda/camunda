@@ -24,14 +24,14 @@ public class TaskMetadata
     private DirectBuffer taskType;
     private int retries;
 
-    private TaskHeader[] headers;
+    private DirectBuffer headers;
 
-    public TaskHeader[] getHeaders()
+    public DirectBuffer getHeaders()
     {
         return headers;
     }
 
-    public void setHeaders(TaskHeader[] headers)
+    public void setHeaders(DirectBuffer headers)
     {
         this.headers = headers;
     }
@@ -55,37 +55,4 @@ public class TaskMetadata
     {
         this.retries = retries;
     }
-
-    public static class TaskHeader
-    {
-        private String key;
-        private String value;
-
-        public TaskHeader(String key, String value)
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String getKey()
-        {
-            return key;
-        }
-
-        public void setkey(String name)
-        {
-            this.key = name;
-        }
-
-        public String getValue()
-        {
-            return value;
-        }
-
-        public void setValue(String value)
-        {
-            this.value = value;
-        }
-    }
-
 }

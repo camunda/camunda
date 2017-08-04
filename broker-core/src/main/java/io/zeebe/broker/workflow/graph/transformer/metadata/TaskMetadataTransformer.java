@@ -17,31 +17,25 @@
  */
 package io.zeebe.broker.workflow.graph.transformer.metadata;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_DEFINITION_ELEMENT;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_HEADERS_ELEMENT;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_HEADER_ELEMENT;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_HEADER_KEY_ATTRIBUTE;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_HEADER_VALUE_ATTRIBUTE;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_RETRIES_ATTRIBUTE;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.TASK_TYPE_ATTRIBUTE;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZEEBE_NAMESPACE;
+import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.*;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.util.List;
 
+import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
+import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
-import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
-import io.zeebe.util.buffer.BufferUtil;
-
 public class TaskMetadataTransformer
 {
     private static final int DEFAULT_TASK_RETRIES = 3;
-
-    private static final TaskHeader[] EMPTY_TASK_HEADERS = new TaskHeader[0];
+    public static final int INITIAL_SIZE_KEY_VALUE_PAIR = 256;
+    private static final UnsafeBuffer EMPTY_HEADERS = new UnsafeBuffer(0, 0);
+    private static final int STRING_HEADER = 1 + 4; // 1 byte for the string type length, maximum 4 bytes if the length is an int
 
     public static TaskMetadata transform(ExtensionElements extensionElements)
     {
@@ -56,7 +50,7 @@ public class TaskMetadataTransformer
         final int retries = getTaskRetries(taskDefinition);
         metadata.setRetries(retries);
 
-        final TaskHeader[] taskHeaders = getTaskHeaders(extensionElements);
+        final UnsafeBuffer taskHeaders = getTaskHeaders(extensionElements);
         metadata.setHeaders(taskHeaders);
 
         return metadata;
@@ -96,27 +90,44 @@ public class TaskMetadataTransformer
         return retries;
     }
 
-    private static TaskHeader[] getTaskHeaders(ExtensionElements extensionElements)
+    private static UnsafeBuffer getTaskHeaders(ExtensionElements extensionElements)
     {
-        TaskHeader[] taskHeaders = EMPTY_TASK_HEADERS;
+        UnsafeBuffer buffer = EMPTY_HEADERS;
 
         final ModelElementInstance taskHeadersElement = extensionElements.getUniqueChildElementByNameNs(ZEEBE_NAMESPACE, TASK_HEADERS_ELEMENT);
         if (taskHeadersElement != null)
         {
             final List<DomElement> headerElements = taskHeadersElement.getDomElement().getChildElementsByNameNs(ZEEBE_NAMESPACE, TASK_HEADER_ELEMENT);
 
-            taskHeaders = new TaskHeader[headerElements.size()];
+            final MsgPackWriter msgPackWriter = new MsgPackWriter();
+            buffer = new UnsafeBuffer(new byte[INITIAL_SIZE_KEY_VALUE_PAIR * headerElements.size()]);
+            msgPackWriter.wrap(buffer, 0);
+            msgPackWriter.writeMapHeader(headerElements.size());
 
             for (int i = 0; i < headerElements.size(); i++)
             {
                 final DomElement header = headerElements.get(i);
 
                 final String key = header.getAttribute(TASK_HEADER_KEY_ATTRIBUTE);
-                final String value = header.getAttribute(TASK_HEADER_VALUE_ATTRIBUTE);
+                ensureBufferSize(buffer, msgPackWriter.getOffset(), STRING_HEADER + key.length());
+                msgPackWriter.writeString(BufferUtil.wrapString(key));
 
-                taskHeaders[i] = new TaskHeader(key, value);
+                final String value = header.getAttribute(TASK_HEADER_VALUE_ATTRIBUTE);
+                ensureBufferSize(buffer, msgPackWriter.getOffset(), STRING_HEADER + value.length());
+                msgPackWriter.writeString(BufferUtil.wrapString(value));
             }
+            buffer.wrap(buffer.byteArray(), 0, msgPackWriter.getOffset());
         }
-        return taskHeaders;
+        return buffer;
+    }
+
+    private static void ensureBufferSize(UnsafeBuffer buffer, int usedBytes, int nextLength)
+    {
+        if (usedBytes + nextLength >= buffer.capacity())
+        {
+            final byte newBuffer[] = new byte[buffer.capacity() * 2];
+            System.arraycopy(buffer.byteArray(), 0, newBuffer, 0, buffer.capacity());
+            buffer.wrap(newBuffer);
+        }
     }
 }

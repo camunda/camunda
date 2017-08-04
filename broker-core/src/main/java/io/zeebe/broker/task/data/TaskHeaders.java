@@ -20,9 +20,9 @@ package io.zeebe.broker.task.data;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,12 +39,6 @@ public class TaskHeaders extends UnpackedObject
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
-    private final ArrayProperty<TaskHeader> customHeadersProp = new ArrayProperty<>(
-            "customHeaders",
-            new ArrayValue<>(),
-            new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
-            new TaskHeader());
-
     public TaskHeaders()
     {
         this.declareProperty(bpmnProcessIdProp)
@@ -52,8 +46,7 @@ public class TaskHeaders extends UnpackedObject
             .declareProperty(workflowKeyProp)
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
-            .declareProperty(activityInstanceKeyProp)
-            .declareProperty(customHeadersProp);
+            .declareProperty(activityInstanceKeyProp);
     }
 
     public long getWorkflowInstanceKey()
@@ -125,11 +118,6 @@ public class TaskHeaders extends UnpackedObject
     {
         this.workflowKeyProp.setValue(workflowKey);
         return this;
-    }
-
-    public ArrayValueIterator<TaskHeader> customHeaders()
-    {
-        return customHeadersProp;
     }
 
 }

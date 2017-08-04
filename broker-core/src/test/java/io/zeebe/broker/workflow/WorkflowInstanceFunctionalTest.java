@@ -17,29 +17,24 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
 import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -290,15 +285,12 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry("workflowDefinitionVersion", 1)
             .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
-            .containsKey("activityInstanceKey")
-            .containsKey("customHeaders");
+            .containsKey("activityInstanceKey");
 
-        @SuppressWarnings("unchecked")
-        final List<Map<String, String>> customHeaders = (List<Map<String, String>>) headers.get("customHeaders");
+        final Map<String, Object> customHeaders = (Map<String, Object>) event.event().get("customHeaders");
         assertThat(customHeaders)
-            .hasSize(2)
-            .extracting(m -> tuple(m.get("key"), m.get("value")))
-            .contains(tuple("a", "b"), tuple("c", "d"));
+            .containsEntry("a", "b")
+            .containsEntry("c", "d");
     }
 
     @Test

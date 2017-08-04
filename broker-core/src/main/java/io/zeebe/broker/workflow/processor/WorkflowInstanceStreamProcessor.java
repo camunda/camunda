@@ -26,19 +26,29 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.task.data.*;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskEventType;
+import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEventType;
 import io.zeebe.broker.workflow.graph.model.*;
 import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
-import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
-import io.zeebe.broker.workflow.map.*;
+import io.zeebe.broker.workflow.map.ActivityInstanceMap;
+import io.zeebe.broker.workflow.map.PayloadCache;
+import io.zeebe.broker.workflow.map.WorkflowDeploymentCache;
+import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.msgpack.mapping.*;
+import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.msgpack.mapping.MappingProcessor;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -704,14 +714,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setActivityId(serviceTask.getId())
                 .setActivityInstanceKey(eventKey);
 
-            final TaskHeader[] customHeaders = taskMetadata.getHeaders();
-            for (int i = 0; i < customHeaders.length; i++)
+            final DirectBuffer customHeaders = taskMetadata.getHeaders();
+            if (customHeaders.capacity() > 0)
             {
-                final TaskHeader customHeader = customHeaders[i];
-
-                taskHeaders.customHeaders().add()
-                    .setKey(customHeader.getKey())
-                    .setValue(customHeader.getValue());
+                taskEvent.setCustomHeaders(customHeaders);
             }
         }
 

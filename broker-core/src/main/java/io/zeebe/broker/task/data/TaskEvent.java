@@ -18,21 +18,17 @@
 package io.zeebe.broker.task.data;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.msgpack.property.BinaryProperty;
-import io.zeebe.msgpack.property.EnumProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
 
 public class TaskEvent extends UnpackedObject
 {
     protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
+    protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
@@ -40,6 +36,7 @@ public class TaskEvent extends UnpackedObject
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final ObjectProperty<TaskHeaders> headersProp = new ObjectProperty<>("headers", new TaskHeaders());
+    private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
     private final BinaryProperty payloadProp = new BinaryProperty("payload", NO_PAYLOAD);
 
     public TaskEvent()
@@ -50,6 +47,7 @@ public class TaskEvent extends UnpackedObject
             .declareProperty(retriesProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
+            .declareProperty(customHeadersProp)
             .declareProperty(payloadProp);
     }
 
@@ -140,5 +138,19 @@ public class TaskEvent extends UnpackedObject
         return headersProp.getValue();
     }
 
+    public void setCustomHeaders(DirectBuffer buffer, int offset, int length)
+    {
+        customHeadersProp.setValue(buffer, offset, length);
+    }
+
+    public void setCustomHeaders(DirectBuffer buffer)
+    {
+        customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    }
+
+    public DirectBuffer getCustomHeaders()
+    {
+        return customHeadersProp.getValue();
+    }
 }
 
