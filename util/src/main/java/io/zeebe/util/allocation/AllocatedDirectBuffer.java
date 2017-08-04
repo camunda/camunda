@@ -29,7 +29,7 @@ public class AllocatedDirectBuffer extends AllocatedBuffer
     }
 
     @Override
-    public void close()
+    public void doClose()
     {
         AllocationUtil.freeDirectBuffer(rawBuffer);
 

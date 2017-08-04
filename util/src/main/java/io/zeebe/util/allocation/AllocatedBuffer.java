@@ -16,17 +16,23 @@
 package io.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.Loggers;
+import org.slf4j.Logger;
 
 public abstract class AllocatedBuffer implements CloseableSilently
 {
+    private static final Logger LOG = Loggers.ALLOCATION_LOGGER;
 
     protected final ByteBuffer rawBuffer;
+    private final AtomicBoolean closed;
 
     public AllocatedBuffer(ByteBuffer buffer)
     {
         this.rawBuffer = buffer;
+        this.closed = new AtomicBoolean(false);
     }
 
     public ByteBuffer getRawBuffer()
@@ -39,4 +45,35 @@ public abstract class AllocatedBuffer implements CloseableSilently
         return rawBuffer.capacity();
     }
 
+    public boolean isClosed()
+    {
+        return closed.get();
+    }
+
+    @Override
+    public void close()
+    {
+        if (closed.compareAndSet(false, true))
+        {
+            doClose();
+        }
+        else
+        {
+            LOG.debug("AllocatedBuffer was already closed.");
+        }
+    }
+
+    public abstract void doClose();
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        if (!isClosed())
+        {
+            LOG.warn("Allocated {} bytes{}, which are not released.",
+                     getRawBuffer().capacity(),
+                     rawBuffer.isDirect() ? " direct" : "");
+            close();
+        }
+    }
 }

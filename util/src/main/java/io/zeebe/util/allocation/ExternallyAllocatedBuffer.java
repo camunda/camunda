@@ -26,9 +26,12 @@ public class ExternallyAllocatedBuffer extends AllocatedBuffer
     }
 
     @Override
-    public void close()
+    public void doClose()
     {
         // nothing to do; buffer allocated externally
     }
 
+    @Override
+    protected void finalize() throws Throwable
+    { }
 }

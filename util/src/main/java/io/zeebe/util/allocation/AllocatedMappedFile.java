@@ -35,7 +35,7 @@ public class AllocatedMappedFile extends AllocatedBuffer
     }
 
     @Override
-    public void close()
+    public void doClose()
     {
         try
         {
