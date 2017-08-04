@@ -25,9 +25,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -41,8 +43,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class BranchAnalysisReader {
 
   private final Logger logger = LoggerFactory.getLogger(BranchAnalysisReader.class);
-
-  private static final String GATEWAY_ACTIVITY_TYPE = "exclusiveGateway";
 
   @Autowired
   private Client esclient;
@@ -60,10 +60,14 @@ public class BranchAnalysisReader {
     logger.debug("Performing branch analysis on process definition: {}", request.getProcessDefinitionId());
     
     BranchAnalysisDto result = new BranchAnalysisDto();
-    List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());
+    BpmnModelInstance bpmnModelInstance = getBpmnModelInstance(request.getProcessDefinitionId());
+    List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
+    Set<String> activityIdsWithMultipleIncomingSequenceFlows =
+      extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
 
     for (FlowNode activity : gatewayOutcomes) {
-      Set<String> activitiesToExcludeFromBranchAnalysis = extractActivitiesToExclude(gatewayOutcomes, activity.getId());
+      Set<String> activitiesToExcludeFromBranchAnalysis =
+        extractActivitiesToExclude(gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd());
       BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(activity, request, activitiesToExcludeFromBranchAnalysis);
       result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
     }
@@ -74,15 +78,19 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private Set<String> extractActivitiesToExclude(List<FlowNode> gatewayOutcomes, String currentActivityId) {
+  private Set<String> extractActivitiesToExclude(List<FlowNode> gatewayOutcomes,
+                                                 Set<String> activityIdsWithMultipleIncomingSequenceFlows,
+                                                 String currentActivityId,
+                                                 String endEventActivityId) {
     Set<String> activitiesToExcludeFromBranchAnalysis = new HashSet<>();
     for (FlowNode gatewayOutgoingNode : gatewayOutcomes) {
-      String activityType = gatewayOutgoingNode.getElementType().getTypeName();
-      if (!activityType.equals(GATEWAY_ACTIVITY_TYPE)) {
+      String activityId = gatewayOutgoingNode.getId();
+      if (!activityIdsWithMultipleIncomingSequenceFlows.contains(activityId)) {
         activitiesToExcludeFromBranchAnalysis.add(gatewayOutgoingNode.getId());
       }
     }
     activitiesToExcludeFromBranchAnalysis.remove(currentActivityId);
+    activitiesToExcludeFromBranchAnalysis.remove(endEventActivityId);
     return activitiesToExcludeFromBranchAnalysis;
   }
 
@@ -147,14 +155,32 @@ public class BranchAnalysisReader {
     return sr.getHits().getTotalHits();
   }
 
-  private List<FlowNode> fetchGatewayOutcomes(String processDefinitionId, String gatewayActivityId) {
+  private List<FlowNode> fetchGatewayOutcomes(BpmnModelInstance bpmnModelInstance, String gatewayActivityId) {
     List<FlowNode> result = new ArrayList<>();
-    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
-    BpmnModelInstance bpmnModelInstance = Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
     FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayActivityId);
     for (SequenceFlow sequence : flowNode.getOutgoing()) {
       result.add(sequence.getTarget());
     }
     return result;
+  }
+
+  private BpmnModelInstance getBpmnModelInstance(String processDefinitionId) {
+    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+    return Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+  }
+
+  private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(BpmnModelInstance bpmnModelInstance) {
+    Collection<SequenceFlow> sequenceFlowCollection = bpmnModelInstance.getModelElementsByType(SequenceFlow.class);
+    Set<String> activitiesWithOneIncomingSequenceFlow = new HashSet<>();
+    Set<String> activityIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
+    for (SequenceFlow sequenceFlow : sequenceFlowCollection) {
+      String targetActivityId = sequenceFlow.getTarget().getId();
+      if(activitiesWithOneIncomingSequenceFlow.contains(targetActivityId) ){
+        activityIdsWithMultipleIncomingSequenceFlows.add(targetActivityId);
+      } else {
+        activitiesWithOneIncomingSequenceFlow.add(targetActivityId);
+      }
+    }
+    return activityIdsWithMultipleIncomingSequenceFlows;
   }
 }

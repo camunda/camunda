@@ -510,7 +510,7 @@ public class BranchAnalysisQueryIT {
     .startEvent("startEvent")
     .exclusiveGateway("splittingGateway")
       .condition("Take long way", "${!takeShortcut}")
-      .serviceTask("userTask")
+      .serviceTask("serviceTask")
         .camundaExpression("${true}")
       .exclusiveGateway("mergeExclusiveGateway")
       .endEvent("endEvent")
@@ -541,13 +541,114 @@ public class BranchAnalysisQueryIT {
     assertThat(result.getTotal(), is(2L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("userTask");
-    assertThat(task1.getActivityId(), is("userTask"));
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
+    assertThat(task1.getActivityId(), is("serviceTask"));
     assertThat(task1.getActivitiesReached(), is(1L));
     assertThat(task1.getActivityCount(), is(1L));
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("mergeExclusiveGateway");
     assertThat(task2.getActivityId(), is("mergeExclusiveGateway"));
+    assertThat(task2.getActivitiesReached(), is(1L));
+    assertThat(task2.getActivityCount(), is(1L));
+  }
+
+  @Test
+  public void shortcutInMergingFlowNodeDoesNotDistortBranchAnalysis() throws IOException, OptimizeException {
+    // given
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+    .startEvent("startEvent")
+    .exclusiveGateway("splittingGateway")
+      .condition("Take long way", "${!takeShortcut}")
+      .serviceTask("serviceTask")
+        .camundaExpression("${true}")
+      .serviceTask("mergingServiceTask")
+        .camundaExpression("${true}")
+      .endEvent("endEvent")
+    .moveToLastGateway()
+      .condition("Take shortcut", "${takeShortcut}")
+      .connectTo("mergingServiceTask")
+    .done();
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("takeShortcut", true);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    variables.put("takeShortcut", false);
+    engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(instanceEngineDto.getDefinitionId());
+    dto.setGateway("splittingGateway");
+    dto.setEnd("endEvent");
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is("endEvent"));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
+    assertThat(task1.getActivityId(), is("serviceTask"));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("mergingServiceTask");
+    assertThat(task2.getActivityId(), is("mergingServiceTask"));
+    assertThat(task2.getActivitiesReached(), is(1L));
+    assertThat(task2.getActivityCount(), is(1L));
+  }
+
+  @Test
+  public void endEventDirectlyAfterGateway() throws IOException, OptimizeException {
+    // given
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+    .startEvent("startEvent")
+    .exclusiveGateway("mergeExclusiveGateway")
+      .serviceTask()
+        .camundaExpression("${true}")
+      .exclusiveGateway("splittingGateway")
+        .condition("Take another round", "${!anotherRound}")
+      .endEvent("endEvent")
+    .moveToLastGateway()
+      .condition("End process", "${anotherRound}")
+      .serviceTask("serviceTask")
+        .camundaExpression("${true}")
+        .camundaInputParameter("anotherRound", "${anotherRound}")
+        .camundaOutputParameter("anotherRound", "${!anotherRound}")
+      .connectTo("mergeExclusiveGateway")
+    .done();
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("anotherRound", true);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    variables.put("anotherRound", false);
+    engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(instanceEngineDto.getDefinitionId());
+    dto.setGateway("splittingGateway");
+    dto.setEnd("endEvent");
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is("endEvent"));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
+    assertThat(task1.getActivityId(), is("serviceTask"));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("endEvent");
+    assertThat(task2.getActivityId(), is("endEvent"));
     assertThat(task2.getActivitiesReached(), is(1L));
     assertThat(task2.getActivityCount(), is(1L));
   }
