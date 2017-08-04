@@ -32,6 +32,14 @@ public class EnsureUtil
         }
     }
 
+    public static void ensureNotEmpty(String property, String value)
+    {
+        if (value.isEmpty())
+        {
+            throw new RuntimeException(property + " must not be empty");
+        }
+    }
+
     public static void ensureGreaterThan(String property, long testValue, long comparisonValue)
     {
         if (testValue <= comparisonValue)
