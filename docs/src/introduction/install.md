@@ -56,6 +56,44 @@ TODO:
 * Volumes
 * Config
 
+### Mac and Windows users (using docker-machine)
+
+Create a VM with 2GB RAM using Docker Machine:
+
+```
+docker-machine create --driver virtualbox --virtualbox-memory 2000 zeebe
+```
+
+Verify that the Docker Machine is running correctly:
+
+```
+$ docker-machine ls
+NAME        ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+zeebe     *        virtualbox   Running   tcp://192.168.99.100:2376           v17.03.1-ce
+```
+
+Configure your terminal:
+
+```
+eval $(docker-machine env zeebe)
+```
+
+Then run Zeebe:
+
+```
+docker run --rm -p 51015:51015 -p 51016:51016 -p 51017:51017 camunda/zeebe:latest
+```
+
+To get ip of Zeebe:
+```
+$ docker-machine ip zeebe
+192.168.99.100
+```
+
+Verify you can connect to Zeebe:
+```
+$ telnet 192.168.99.100 51015
+```
 ## Linux Distribution Packages
 
 Coming Soon!
