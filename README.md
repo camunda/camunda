@@ -1,32 +1,34 @@
-# Zeebe.io
+# Zeebe.io - Microservice Orchestration Engine
 
-Zeebe (or "zb") is a modern, distributed Workflow System that scales orchestration of workers, functions & microservices using visual workflows. With Zeebe, you can reliably processes all your transactions as they happen. [Learn More](/docs/src/introduction/why-zeebe.md)
+Zeebe scales orchestration of workers and microservices using visual workflows. Zeebe is horizontally scalable and fault tolerant so that you can reliably process all your transactions as they happen.
 
 **Features**
 
-* High Throughput
+* Visual Workflows
+* Audit Logs and History
 * Horizontal Scalability
 * Durability & Fault Tolerance
-* Predictable Response Times
 * Fully Message-Driven
 * Easy to operate
 * Language agnostic
 
+[Learn more](https://docs.zeebe.io/basics/README.html)
+
 ## DISCLAIMER
 
-This project is work in progress and currently NOT meant for production use!
+Zeebe is currently a tech preview and not meant for production use - See [Roadmap](https://github.com/camunda-zeebe/zeebe/blob/master/ROADMAP.md).
 
 ## Documentation
 
-* [Introduction](/docs/src/introduction/README.md)
-* [Basics](/docs/src/basics/README.md)
-* [Configuration](/docs/src/operations/the-zbcfgtoml-file.md)
-* [Java Client](/docs/src/java-client/README.md)
-* [BPMN Workflows](/docs/src/bpmn-workflows/README.md)
+* [Introduction](https://docs.zeebe.io/introduction/README.html)
+* [Basics](https://docs.zeebe.io/basics/README.html)
+* [Configuration](https://docs.zeebe.io/operations/the-zeebecfgtoml-file.html)
+* [Java Client](https://docs.zeebe.io/java-client/README.html)
+* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/README.html)
 
 ## Getting Help
 
-TODO: Forum Link
+[Forum](https://forum.zeebe.io/)
 
 ## Contributing
 
