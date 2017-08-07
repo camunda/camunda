@@ -17,16 +17,16 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</nexus.release.repository>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
   <scm>
-    <url>https://github.com/camunda-zeebe/zb-build-tools</url>
-    <connection>scm:git:git@github.com:camunda-zeebe/zb-build-tools.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-build-tools.git</developerConnection>
+    <url>https://github.com/zeebe-io/zb-build-tools</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-build-tools.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-build-tools.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
