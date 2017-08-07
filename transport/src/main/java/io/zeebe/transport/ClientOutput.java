@@ -20,10 +20,18 @@ import io.zeebe.util.buffer.BufferWriter;
 public interface ClientOutput
 {
 
+    /**
+     * <p>Sends a message according to the single message protocol.
+     *
+     * <p>Returns false if the message cannot be currently written due to exhausted capacity.
+     * Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+     */
     boolean sendMessage(TransportMessage transportMessage);
 
     /**
-     * Returns null if request cannot be currently written due to exhausted capacity.
+     * <p>Sends a request according to the request response protocol to a given remote
+     *
+     * <p>Returns null if request cannot be currently written due to exhausted capacity.
      * Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
      */
     ClientRequest sendRequest(RemoteAddress addr, BufferWriter writer);

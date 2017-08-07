@@ -62,14 +62,13 @@ public class ServerTransportTest
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions("sender")
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientReceiveBuffer);
@@ -84,7 +83,7 @@ public class ServerTransportTest
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions("sender")
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(serverSendBuffer);

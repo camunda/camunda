@@ -72,7 +72,7 @@ public class ClientConnectTimeoutTest
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(16 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientSendBuffer);

@@ -17,8 +17,6 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.ByteBuffer;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -38,7 +36,7 @@ public class SingleMessageTest
 
     protected final TransportMessage clientMessage = new TransportMessage();
     protected final TransportMessage serverMessage = new TransportMessage();
-    protected UnsafeBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+    protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024]);
 
     private ActorScheduler actorScheduler;
 
@@ -59,14 +57,14 @@ public class SingleMessageTest
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
                 .bufferSize(32 * 1024 * 1024)
-                .subscriptions("sender")
+                .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
                 .actorScheduler(actorScheduler)
                 .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(serverSendBuffer);

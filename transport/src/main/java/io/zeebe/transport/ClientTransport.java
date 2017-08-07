@@ -47,11 +47,19 @@ public class ClientTransport implements AutoCloseable
         this.receiveBuffer = transportContext.getReceiveBuffer();
     }
 
+    /**
+     * @return interface to stage outbound data
+     */
     public ClientOutput getOutput()
     {
         return output;
     }
 
+    /**
+     * Resolve a socket address as a remote to which data can be sent. The return value identifies
+     * the remote and remains stable throughout the lifetime of this {@link ClientTransport} object, i.e.
+     * can be cached.
+     */
     public RemoteAddress registerRemoteAddress(SocketAddress addr)
     {
         return remoteAddressList.register(addr);
@@ -67,6 +75,11 @@ public class ClientTransport implements AutoCloseable
         return remoteAddressList.getByStreamId(streamId);
     }
 
+    /**
+     * Creates a subscription on the receive buffer for single messages.
+     *
+     * @throws RuntimeException if this client was not created with a receive buffer for single-messages
+     */
     public CompletableFuture<ClientInputMessageSubscription> openSubscription(String subscriptionName, ClientMessageHandler messageHandler)
     {
         if (receiveBuffer == null)
@@ -78,6 +91,9 @@ public class ClientTransport implements AutoCloseable
                 .thenApply(s -> new ClientInputMessageSubscriptionImpl(s, messageHandler, output, remoteAddressList));
     }
 
+    /**
+     * Registers a listener with callbacks for whenever a connection to a remote gets established or closed.
+     */
     public void registerChannelListener(TransportListener channelListener)
     {
         transportActorContext.registerListener(channelListener);
@@ -155,7 +171,7 @@ public class ClientTransport implements AutoCloseable
         @Override
         public int poll()
         {
-            return subscription.poll(messageHandler, Integer.MAX_VALUE);
+            return subscription.peekAndConsume(messageHandler, Integer.MAX_VALUE);
         }
 
     }

@@ -50,7 +50,7 @@ public class ControllableClientTransportTest
     {
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(scheduler)
             .build();
 

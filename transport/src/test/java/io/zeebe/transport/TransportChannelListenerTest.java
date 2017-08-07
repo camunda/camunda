@@ -48,17 +48,18 @@ public class TransportChannelListenerTest
     public void setUp()
     {
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
+        closeables.manage(actorScheduler);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(serverSendBuffer);

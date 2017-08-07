@@ -17,7 +17,6 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -39,7 +38,7 @@ public class RequestResponseTest
 
     protected ServerResponse response = new ServerResponse();
     protected Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
-    protected UnsafeBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+    protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024]);
     protected DirectBufferWriter bufferWriter = new DirectBufferWriter();
 
     private ActorScheduler actorScheduler;
@@ -62,14 +61,14 @@ public class RequestResponseTest
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(serverSendBuffer);

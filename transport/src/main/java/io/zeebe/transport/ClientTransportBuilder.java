@@ -36,6 +36,9 @@ import io.zeebe.util.actor.ActorScheduler;
 
 public class ClientTransportBuilder
 {
+
+    public static final String SEND_BUFFER_SUBSCRIPTION_NAME = ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME;
+
     /**
      * In the same order of magnitude of what apache and nginx use.
      */
@@ -59,6 +62,10 @@ public class ClientTransportBuilder
         return this;
     }
 
+    /**
+     * Optional. If set, all incoming messages (single-message protocol) are put onto the provided buffer.
+     * {@link ClientTransport#openSubscription(String, ClientMessageHandler)} can be used to consume from this buffer.
+     */
     public ClientTransportBuilder messageReceiveBuffer(Dispatcher receiveBuffer)
     {
         this.receiveBuffer = receiveBuffer;
@@ -75,6 +82,9 @@ public class ClientTransportBuilder
         return this;
     }
 
+    /**
+     * Send buffer must have an open subscription named {@link ClientTransportBuilder#SEND_BUFFER_SUBSCRIPTION_NAME}.
+     */
     public ClientTransportBuilder sendBuffer(Dispatcher sendBuffer)
     {
         this.sendBuffer = sendBuffer;
@@ -87,18 +97,28 @@ public class ClientTransportBuilder
         return this;
     }
 
+    /**
+     * Maximum number of concurrent requests.
+     */
     public ClientTransportBuilder requestPoolSize(int requestPoolSize)
     {
         this.requestPoolSize = requestPoolSize;
         return this;
     }
 
+    /**
+     * The period in which a dummy message is sent to keep the underlying TCP connection open.
+     */
     public ClientTransportBuilder keepAlivePeriod(long keepAlivePeriod)
     {
         this.keepAlivePeriod = keepAlivePeriod;
         return this;
     }
 
+    /**
+     * The maximum wait time until a request is discarded if not connection can be established to
+     * the remote.
+     */
     public ClientTransportBuilder channelConnectTimeout(long channelConnectTimeout)
     {
         this.channelConnectTimeout = channelConnectTimeout;
@@ -143,7 +163,7 @@ public class ClientTransportBuilder
         context.setClientRequestPool(clientRequestPool);
         context.setRemoteAddressList(addressList);
         context.setReceiveHandler(receiveHandler);
-        context.setSenderSubscription(sendBuffer.getSubscriptionByName("sender"));
+        context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
         context.setChannelConnectTimeout(channelConnectTimeout);

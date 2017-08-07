@@ -34,6 +34,9 @@ import io.zeebe.util.actor.ActorScheduler;
 
 public class ServerTransportBuilder
 {
+
+    public static final String SEND_BUFFER_SUBSCRIPTION_NAME = "sender";
+
     private int messageMaxLength = 1024 * 512;
 
     private Dispatcher sendBuffer;
@@ -126,7 +129,7 @@ public class ServerTransportBuilder
         context.setRemoteAddressList(remoteAddressList);
         context.setReceiveHandler(receiveHandler);
         context.setServerSocketBinding(serverSocketBinding);
-        context.setSenderSubscription(sendBuffer.getSubscriptionByName("sender"));
+        context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
 
         return context;
     }

@@ -15,10 +15,12 @@
  */
 package io.zeebe.transport;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
@@ -49,10 +51,12 @@ public class ClientTransportTest
     public static final SocketAddress SERVER_ADDRESS2 = new SocketAddress("localhost", 51116);
 
     public static final int REQUEST_POOL_SIZE = 4;
-    public static final int SEND_BUFFER_SIZE = 16 * 1024;
+    public static final int BUFFER_SIZE = 16 * 1024;
 
     @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    protected Dispatcher clientReceiveBuffer;
 
     protected ClientTransport clientTransport;
     protected ControllableServerTransport serverTransport;
@@ -64,16 +68,23 @@ public class ClientTransportTest
         closeables.manage(actorScheduler);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions("sender")
+            .bufferSize(BUFFER_SIZE)
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(actorScheduler)
             .build();
         closeables.manage(clientSendBuffer);
+
+        clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
+            .bufferSize(BUFFER_SIZE)
+            .actorScheduler(actorScheduler)
+            .build();
+        closeables.manage(clientReceiveBuffer);
 
         clientTransport = Transports.newClientTransport()
                 .sendBuffer(clientSendBuffer)
                 .requestPoolSize(REQUEST_POOL_SIZE)
                 .scheduler(actorScheduler)
+                .messageReceiveBuffer(clientReceiveBuffer)
                 .build();
         closeables.manage(clientTransport);
 
@@ -293,6 +304,33 @@ public class ClientTransportTest
 
         // then
         assertThat(request).isNotNull();
+    }
+
+    @Test
+    public void shouldBeAbleToPostponeReceivedMessage()
+    {
+        // given
+        final AtomicInteger numInvocations = new AtomicInteger(0);
+        final AtomicBoolean consumeMessage = new AtomicBoolean(false);
+
+        final ClientInputMessageSubscription subscription = clientTransport.openSubscription("foo", new ClientMessageHandler()
+            {
+                @Override
+                public boolean onMessage(ClientOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
+                        int length)
+                {
+                    numInvocations.incrementAndGet();
+                    return consumeMessage.getAndSet(true);
+                }
+            })
+            .join();
+
+        // when simulating a received message
+        doRepeatedly(() -> clientReceiveBuffer.offer(BUF1)).until(p -> p >= 0);
+
+        // then handler has been invoked twice, once when the message was postponed, and once when it was consumed
+        doRepeatedly(() -> subscription.poll()).until(i -> i != 0);
+        assertThat(numInvocations.get()).isEqualTo(2);
     }
 
 

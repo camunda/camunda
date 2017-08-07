@@ -37,11 +37,17 @@ public class ServerTransport implements AutoCloseable
         this.serverSocketBinding = transportContext.getServerSocketBinding();
     }
 
+    /**
+     * @return interface to stage outbound data
+     */
     public ServerOutput getOutput()
     {
         return output;
     }
 
+    /**
+     * Registers a listener with callbacks for whenever a connection to a remote gets established or closed.
+     */
     public CompletableFuture<Void> registerChannelListener(TransportListener channelListener)
     {
         return transportActorContext.registerListener(channelListener);
