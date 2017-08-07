@@ -20,6 +20,7 @@ import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PART
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import java.util.List;
@@ -107,11 +108,10 @@ public class ClientCommandManagerTest
         stubRequestProcessingFailureResponse();
         final CreateTaskCommand command = createTaskCmd();
 
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Request exception (REQUEST_PROCESSING_FAILURE): test");
-
         // when
-        command.execute();
+        assertThatThrownBy(command::execute)
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
 
         // then
         assertTopologyRefreshRequests(1);
@@ -214,7 +214,7 @@ public class ClientCommandManagerTest
         receivedCommandRequests.forEach(request ->
         {
             assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
-            assertThat(request.getCommand().get("eventType")).isEqualTo("CREATE");
+            assertThat(request.getCommand().get("state")).isEqualTo("CREATE");
         });
     }
 

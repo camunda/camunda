@@ -109,14 +109,17 @@ public class ClientTopologyController
         @Override
         public int doWork(final Context context) throws Exception
         {
+            int workCount = 0;
+
             final ClientRequest request = output.sendRequest(context.remoteAddress, requestHandler);
             if (request != null)
             {
+                workCount++;
                 context.request = request;
                 context.take(TRANSITION_DEFAULT);
             }
 
-            return 1;
+            return workCount;
         }
     }
 
@@ -132,6 +135,8 @@ public class ClientTopologyController
 
             if (request.isDone())
             {
+                workCount++;
+
                 try
                 {
                     final DirectBuffer response = request.get();
@@ -147,8 +152,6 @@ public class ClientTopologyController
                     context.take(TRANSITION_DEFAULT);
                     request.close();
                 }
-
-                workCount = 1;
             }
 
             return workCount;
