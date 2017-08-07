@@ -86,7 +86,7 @@
     <repository>
       <id>zeebe</id>
       <name>zeebe repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</url>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -98,7 +98,7 @@
     <repository>
       <id>zeebe-snapshots</id>
       <name>zeebe snapshot repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</url>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -109,9 +109,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-zeebe/zb-transport</url>
-    <connection>scm:git:git@github.com:camunda-zeebe/zb-transport.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-transport.git</developerConnection>
+    <url>https://github.com/zeebe-io/zb-transport</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-transport.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-transport.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
