@@ -33,3 +33,11 @@ Zeebe is currently a tech preview and not meant for production use - See [Roadma
 ## Contributing
 
 Read the [Contributions Guide](/CONTRIBUTING.md)
+
+## License
+
+Most Zeebe source files are made available under the [Apache License, Version
+2.0](/APACHE-2.0) except for the [broker-core](/broker-core) component. The
+[broker-core](/broker-core) source files are made available under the terms of
+the [GNU Affero General Public License (GNU AGPLv3)](/GNU-AGPL-3.0). See
+individual source files for details.
