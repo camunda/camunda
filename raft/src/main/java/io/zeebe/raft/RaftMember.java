@@ -53,6 +53,11 @@ public class RaftMember
         this.logger = logger;
     }
 
+    public void close()
+    {
+        reader.close();
+    }
+
     public RemoteAddress getRemoteAddress()
     {
         return remoteAddress;

@@ -30,7 +30,7 @@ import io.zeebe.raft.event.RaftConfiguration;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.allocation.DirectBufferAllocator;
+import io.zeebe.util.allocation.BufferAllocators;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -40,7 +40,6 @@ public class BufferedLogStorageAppender
 
     public static final int INITIAL_CAPACITY = 32 * 1024;
 
-    private final DirectBufferAllocator allocator = new DirectBufferAllocator();
     private final BrokerEventMetadata metadata = new BrokerEventMetadata();
     private final RaftConfiguration configuration = new RaftConfiguration();
     private final AppendResponse appendResponse = new AppendResponse();
@@ -51,7 +50,8 @@ public class BufferedLogStorageAppender
     private final BufferedLogStreamReader reader;
 
     // event buffer and offset
-    private final MutableDirectBuffer buffer;
+    private AllocatedBuffer allocatedBuffer;
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
     private int offset;
 
     // last event written to log storage
@@ -69,9 +69,10 @@ public class BufferedLogStorageAppender
         this.logStream = raft.getLogStream();
         this.reader = new BufferedLogStreamReader(logStream, true);
 
-        final AllocatedBuffer allocatedBuffer = allocator.allocate(INITIAL_CAPACITY);
-        buffer = new UnsafeBuffer(allocatedBuffer.getRawBuffer());
-        offset = 0;
+        lastWrittenPosition = previousEventPositionNullValue();
+        lastWrittenTerm = previousEventTermNullValue();
+
+        allocateMemory(INITIAL_CAPACITY);
     }
 
     public void reset()
@@ -95,6 +96,12 @@ public class BufferedLogStorageAppender
         discardBufferedEvents();
     }
 
+    public void close()
+    {
+        reader.close();
+        allocatedBuffer.close();
+    }
+
     public boolean isLastEvent(final long position, final int term)
     {
         return (lastBufferedPosition == position && lastBufferedTerm == term) || (lastWrittenPosition == position && lastWrittenTerm == term);
@@ -103,32 +110,6 @@ public class BufferedLogStorageAppender
     public boolean isAfterOrEqualsLastEvent(final long position, final int term)
     {
         return term > lastBufferedTerm || (term == lastBufferedTerm && position >= lastBufferedPosition);
-    }
-
-    public long getPreviousPosition(final long position, final int term)
-    {
-        final long commitPosition = logStream.getCommitPosition();
-
-        if (position == lastBufferedPosition)
-        {
-            return lastBufferedPosition;
-        }
-        else if (position == lastWrittenPosition)
-        {
-            return lastWrittenPosition;
-        }
-        else if (position > lastWrittenPosition)
-        {
-            return lastWrittenPosition;
-        }
-        else if (position > commitPosition)
-        {
-            return position;
-        }
-        else
-        {
-            return commitPosition;
-        }
     }
 
     public void appendEvent(final AppendRequest appendRequest, final LoggedEventImpl event)
@@ -263,9 +244,18 @@ public class BufferedLogStorageAppender
 
     private void allocateMemory(final int capacity)
     {
-        discardBufferedEvents();
-        final AllocatedBuffer allocatedBuffer = allocator.allocate(capacity);
+        if (allocatedBuffer != null)
+        {
+            allocatedBuffer.close();
+        }
+
+        allocatedBuffer = BufferAllocators.allocateDirect(capacity);
+
         buffer.wrap(allocatedBuffer.getRawBuffer());
+        offset = 0;
+
+        lastBufferedPosition = lastWrittenPosition;
+        lastBufferedTerm = lastWrittenTerm;
     }
 
     private int remainingCapacity()

@@ -253,6 +253,14 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         pollController.reset();
         voteController.reset();
         advanceCommitController.reset();
+
+        leaderState.close();
+        followerState.close();
+        candidateState.close();
+
+        appender.close();
+
+        getMembers().forEach(RaftMember::close);
     }
 
     // message handler

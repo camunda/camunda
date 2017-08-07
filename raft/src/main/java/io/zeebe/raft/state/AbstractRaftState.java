@@ -55,6 +55,11 @@ public abstract class AbstractRaftState
         appender.reset();
     }
 
+    public void close()
+    {
+        reader.close();
+    }
+
     public void joinRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final JoinRequest joinRequest)
     {
         raft.mayStepDown(joinRequest);

@@ -44,6 +44,7 @@ public class VoteController
     private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
     private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
 
+    private final StateMachine<Context> stateMachine;
     private final StateMachineAgent<Context> stateMachineAgent;
 
     public VoteController(final Raft raft)
@@ -53,7 +54,7 @@ public class VoteController
         final State<Context> closing = new ClosingState();
         final WaitState<Context> closed = context -> { };
 
-        final StateMachine<Context> stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
+        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
             .initialState(closed)
             .from(closed).take(TRANSITION_OPEN).to(opening)
             .from(closed).take(TRANSITION_CLOSE).to(closed)
@@ -74,6 +75,7 @@ public class VoteController
     public void reset()
     {
         stateMachineAgent.reset();
+        stateMachine.getContext().close();
     }
 
     public void open()
@@ -279,6 +281,12 @@ public class VoteController
             voteRequest.reset();
             voteResponse.reset();
             granted = 1; // always vote for self
+        }
+
+        public void close()
+        {
+            reset();
+            reader.close();
         }
 
         public List<ClientRequest> getClientRequests()
