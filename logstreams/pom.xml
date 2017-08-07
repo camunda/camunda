@@ -172,7 +172,7 @@
     <repository>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</url>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -184,7 +184,7 @@
     <repository>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</url>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -195,9 +195,9 @@
   </repositories>
 
   <scm>
-    <url>https://github.com/camunda-zeebe/zb-logstreams</url>
-    <connection>scm:git:git@github.com:camunda-zeebe/zb-logstreams.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-logstreams.git</developerConnection>
+    <url>https://github.com/zeebe-io/zb-logstreams</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-logstreams.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-logstreams.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
