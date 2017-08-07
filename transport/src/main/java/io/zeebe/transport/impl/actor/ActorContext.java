@@ -65,7 +65,8 @@ public abstract class ActorContext
 
     public CompletableFuture<Void> onClose()
     {
-        return conductor.onClose();
+        return  conductor.onClose()
+                         .whenComplete((v, t) -> receiver.closeSelectors());
     }
 
     public CompletableFuture<Void> closeAllOpenChannels()

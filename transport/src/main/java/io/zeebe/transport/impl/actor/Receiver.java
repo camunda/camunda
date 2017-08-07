@@ -47,6 +47,7 @@ public class Receiver implements Actor
 
     public void closeSelectors()
     {
+        transportPoller.clearChannels();
         transportPoller.close();
     }
 

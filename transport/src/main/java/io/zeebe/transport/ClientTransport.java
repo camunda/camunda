@@ -106,14 +106,15 @@ public class ClientTransport implements AutoCloseable
 
     public CompletableFuture<Void> closeAsync()
     {
-        return transportActorContext.onClose()
-            .whenComplete((v, t) ->
-            {
-                requestPool.close();
+        return transportActorContext
+                .onClose()
+                .whenComplete((v, t) ->
+                {
+                    requestPool.close();
 
-                Arrays.asList(transportContext.getActorReferences())
-                    .forEach(r -> r.close());
-            });
+                    Arrays.asList(transportContext.getActorReferences())
+                         .forEach(r -> r.close());
+                });
     }
 
     @Override

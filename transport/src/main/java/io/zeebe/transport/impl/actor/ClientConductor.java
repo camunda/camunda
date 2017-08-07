@@ -16,22 +16,23 @@
 package io.zeebe.transport.impl.actor;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.ConnectTransportPoller;
+import org.agrona.nio.TransportPoller;
 
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
-    protected final AtomicBoolean clientClosing = new AtomicBoolean(false);
+    private final TransportPoller[] closableTransportPoller;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
         this.connectTransportPoller = new ConnectTransportPoller(context.getChannelConnectTimeout());
+        closableTransportPoller = new TransportPoller[]{connectTransportPoller};
     }
 
     @Override
@@ -71,21 +72,8 @@ public class ClientConductor extends Conductor
     }
 
     @Override
-    public CompletableFuture<Void> onClose()
+    protected TransportPoller[] getClosableTransportPoller()
     {
-        if (clientClosing.compareAndSet(false, true))
-        {
-            final CompletableFuture<Object> closePoller =
-                deferred.runAsync(future ->
-                {
-                    connectTransportPoller.close();
-                    future.complete(null);
-                });
-            return CompletableFuture.allOf(closePoller, super.onClose());
-        }
-        else
-        {
-            return super.onClose();
-        }
+        return closableTransportPoller;
     }
 }

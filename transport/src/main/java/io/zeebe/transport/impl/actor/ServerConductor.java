@@ -24,16 +24,19 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.AcceptTransportPoller;
+import org.agrona.nio.TransportPoller;
 
 public class ServerConductor extends Conductor
 {
     private final AcceptTransportPoller acceptTransportPoller;
+    private final TransportPoller[] closableTransportPoller;
 
     public ServerConductor(ServerActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
         acceptTransportPoller = new AcceptTransportPoller(actorContext);
         acceptTransportPoller.addServerSocketBinding(context.getServerSocketBinding());
+        closableTransportPoller = new TransportPoller[]{acceptTransportPoller};
     }
 
     @Override
@@ -46,8 +49,7 @@ public class ServerConductor extends Conductor
         return workCount;
     }
 
-
-    public void onServerChannelOpenend(SocketChannel serverChannel)
+    public void onServerChannelOpened(SocketChannel serverChannel)
     {
         deferred.runAsync(() ->
         {
@@ -90,4 +92,9 @@ public class ServerConductor extends Conductor
         });
     }
 
+    @Override
+    protected TransportPoller[] getClosableTransportPoller()
+    {
+        return closableTransportPoller;
+    }
 }

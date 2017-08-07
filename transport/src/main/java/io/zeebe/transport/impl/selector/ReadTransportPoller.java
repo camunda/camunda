@@ -95,4 +95,8 @@ public class ReadTransportPoller extends TransportPoller
         channels.remove(channel);
     }
 
+    public void clearChannels()
+    {
+        channels.clear();
+    }
 }

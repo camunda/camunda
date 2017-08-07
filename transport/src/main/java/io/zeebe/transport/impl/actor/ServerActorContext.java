@@ -23,7 +23,7 @@ public class ServerActorContext extends ActorContext
 
     public void onServerChannelOpened(SocketChannel serverChannel)
     {
-        serverConductor.onServerChannelOpenend(serverChannel);
+        serverConductor.onServerChannelOpened(serverChannel);
     }
 
     @Override

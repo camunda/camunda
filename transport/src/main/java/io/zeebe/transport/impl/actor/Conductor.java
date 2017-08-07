@@ -29,8 +29,9 @@ import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.agrona.nio.TransportPoller;
 
-public class Conductor implements Actor, ChannelLifecycleListener
+public abstract class Conductor implements Actor, ChannelLifecycleListener
 {
     protected final DeferredCommandContext deferred = new DeferredCommandContext();
     protected final RemoteAddressList remoteAddressList;
@@ -160,12 +161,29 @@ public class Conductor implements Actor, ChannelLifecycleListener
     {
         if (closing.compareAndSet(false, true))
         {
-            return closeCurrentChannels();
+            return CompletableFuture.allOf(closeClosableTransportPoller(), closeCurrentChannels());
         }
         else
         {
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    protected abstract TransportPoller[] getClosableTransportPoller();
+
+    protected CompletableFuture<Void> closeClosableTransportPoller()
+    {
+        return deferred.runAsync((f) ->
+        {
+            final TransportPoller[] toClosableResources = getClosableTransportPoller();
+
+            for (TransportPoller closeable : toClosableResources)
+            {
+                closeable.close();
+            }
+
+            f.complete(null);
+        });
     }
 
     public CompletableFuture<Void> closeCurrentChannels()
