@@ -144,6 +144,28 @@
           </execution>
         </executions>
       </plugin>
+      
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <!-- Define system properties in one place, see https://github.com/camunda-zeebe/zeebe/issues/377 -->
+          <systemProperties>
+            <systemProperty>
+              <key>sbe.output.dir</key>
+              <value>${project.build.directory}/generated-sources/sbe</value>
+            </systemProperty>
+            <systemProperty>
+              <key>sbe.java.generate.interfaces</key>
+              <value>true</value>
+            </systemProperty>
+            <systemProperty>
+              <key>sbe.decode.unknown.enum.values</key>
+              <value>true</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
