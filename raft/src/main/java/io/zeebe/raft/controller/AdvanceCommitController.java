@@ -87,7 +87,7 @@ public class AdvanceCommitController
 
             // TODO(menski): this is wrong as the current appender position is the next position which is written
             // this means in a single node cluster the log already committed an event which will be written in the future
-            // see https://github.com/camunda-zeebe/zb-logstreams/issues/68
+            // see https://github.com/zeebe-io/zb-logstreams/issues/68
             positions[memberSize] = raft.getLogStream().getCurrentAppenderPosition();
 
             Arrays.sort(positions);
