@@ -20,8 +20,8 @@
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-zeebe/</nexus.release.repository>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
@@ -328,9 +328,9 @@
   </build>
 
   <scm>
-    <url>https://github.com/camunda-zeebe/zb-parent</url>
-    <connection>scm:git:git@github.com:camunda-zeebe/zb-parent.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-zeebe/zb-parent.git</developerConnection>
+    <url>https://github.com/zeebe-io/zb-parent</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-parent.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-parent.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
