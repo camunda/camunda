@@ -17,11 +17,7 @@ package io.zeebe.client.workflow.impl;
 
 import java.io.InputStream;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.event.impl.EventImpl;
@@ -59,6 +55,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.payload = new MsgPackField(baseEvent.payload);
     }
 
+    @Override
     public String getBpmnProcessId()
     {
         return bpmnProcessId;
@@ -69,6 +66,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.bpmnProcessId = bpmnProcessId;
     }
 
+    @Override
     public int getVersion()
     {
         return version;
@@ -79,6 +77,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.version = version;
     }
 
+    @Override
     public long getWorkflowInstanceKey()
     {
         return workflowInstanceKey;
@@ -89,6 +88,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.workflowInstanceKey = workflowInstanceKey;
     }
 
+    @Override
     public String getActivityId()
     {
         return activityId;
@@ -99,6 +99,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.activityId = activityId;
     }
 
+    @Override
     @JsonIgnore
     public String getPayload()
     {
@@ -127,6 +128,7 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
         this.payload.setJson(json);
     }
 
+    @Override
     public long getWorkflowKey()
     {
         return workflowKey;
@@ -141,18 +143,20 @@ public class WorkflowInstanceEventImpl extends EventImpl implements WorkflowInst
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("WorkflowInstanceEvent [bpmnProcessId=");
+        builder.append("WorkflowInstanceEvent [state=");
+        builder.append(state);
+        builder.append(", workflowInstanceKey=");
+        builder.append(workflowInstanceKey);
+        builder.append(", workflowKey=");
+        builder.append(workflowKey);
+        builder.append(", bpmnProcessId=");
         builder.append(bpmnProcessId);
         builder.append(", version=");
         builder.append(version);
-        builder.append(", workflowKey=");
-        builder.append(workflowKey);
-        builder.append(", workflowInstanceKey=");
-        builder.append(workflowInstanceKey);
         builder.append(", activityId=");
         builder.append(activityId);
         builder.append(", payload=");
-        builder.append(payload);
+        builder.append(payload.getAsJson());
         builder.append("]");
         return builder.toString();
     }

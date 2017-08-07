@@ -20,11 +20,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.fasterxml.jackson.annotation.*;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.impl.data.MsgPackConverter;
@@ -160,6 +156,7 @@ public class TaskEventImpl extends EventImpl implements TaskEvent
         this.payload.setJson(jsonStream);
     }
 
+    @Override
     public Integer getRetries()
     {
         return retries;
@@ -186,6 +183,8 @@ public class TaskEventImpl extends EventImpl implements TaskEvent
         builder.append(lockTime);
         builder.append(", headers=");
         builder.append(headers);
+        builder.append(", customHeaders=");
+        builder.append(customHeaders);
         builder.append(", payload=");
         builder.append(payload.getAsJson());
         builder.append("]");

@@ -17,14 +17,11 @@ package io.zeebe.client.event.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.zeebe.client.event.IncidentEvent;
 import io.zeebe.client.event.TopicEventType;
 
 public class IncidentEventImpl extends EventImpl implements IncidentEvent
 {
-
-    private String eventType;
 
     private String errorType;
     private String errorMessage;
@@ -42,16 +39,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         super(TopicEventType.INCIDENT, state);
     }
 
-    public String getEventType()
-    {
-        return eventType;
-    }
-
-    public void setEventType(String eventType)
-    {
-        this.eventType = eventType;
-    }
-
+    @Override
     public String getErrorType()
     {
         return errorType;
@@ -62,6 +50,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.errorType = errorType;
     }
 
+    @Override
     public String getErrorMessage()
     {
         return errorMessage;
@@ -72,6 +61,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.errorMessage = errorMessage;
     }
 
+    @Override
     public String getBpmnProcessId()
     {
         return bpmnProcessId != null && !bpmnProcessId.isEmpty() ? bpmnProcessId : null;
@@ -82,6 +72,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.bpmnProcessId = bpmnProcessId;
     }
 
+    @Override
     public String getActivityId()
     {
         return activityId != null && !activityId.isEmpty() ? activityId : null;
@@ -92,6 +83,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.activityId = activityId;
     }
 
+    @Override
     public Long getActivityInstanceKey()
     {
         return activityInstanceKey > 0 ? activityInstanceKey : null;
@@ -102,6 +94,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.activityInstanceKey = activityInstanceKey;
     }
 
+    @Override
     public Long getTaskKey()
     {
         return taskKey > 0 ? taskKey : null;
@@ -112,6 +105,7 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
         this.taskKey = taskKey;
     }
 
+    @Override
     public Long getWorkflowInstanceKey()
     {
         return workflowInstanceKey > 0 ? workflowInstanceKey : null;
@@ -126,8 +120,8 @@ public class IncidentEventImpl extends EventImpl implements IncidentEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("IncidentEvent [eventType=");
-        builder.append(eventType);
+        builder.append("IncidentEvent [state=");
+        builder.append(state);
         builder.append(", errorType=");
         builder.append(errorType);
         builder.append(", errorMessage=");
