@@ -20,6 +20,8 @@ public class ConfigurationService {
   private String defaultUser;
   @Value("${camunda.optimize.auth.default.password}")
   private String defaultPassword;
+  @Value(("${camunda.optimize.auth.default.user.creation.enabled}"))
+  private boolean defaultUserCreationEnabled;
   @Value("${camunda.optimize.engine.auth.enabled}")
   private boolean engineAuthenticationEnabled;
 
@@ -698,4 +700,11 @@ public class ConfigurationService {
     this.engineImportActivityInstanceMinPageSize = engineImportActivityInstanceMinPageSize;
   }
 
+  public boolean isDefaultUserCreationEnabled() {
+    return defaultUserCreationEnabled;
+  }
+
+  public void setDefaultUserCreationEnabled(boolean defaultUserCreationEnabled) {
+    this.defaultUserCreationEnabled = defaultUserCreationEnabled;
+  }
 }

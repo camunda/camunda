@@ -1,6 +1,8 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -10,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -31,6 +34,26 @@ public class AuthenticationRestServiceIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
+  @Test
+  public void disableDefaultUserCreation() {
+    // given
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService.setDefaultUserCreationEnabled(false);
+    elasticSearchRule.cleanAndVerify();
+    embeddedOptimizeRule.reloadConfiguration();
+
+    // when
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername(configurationService.getDefaultUser());
+    entity.setPassword(configurationService.getDefaultPassword());
+
+    Response response = embeddedOptimizeRule.target("authentication")
+      .request()
+      .post(Entity.json(entity));
+
+    // then
+    assertThat(response.getStatus(), is(401));
+  }
 
   @Test
   public void authenticateUserUsingES() throws Exception {
