@@ -887,6 +887,57 @@ public class BucketBufferArrayIOTest
         newBucketBufferArray.close();
     }
 
+
+    @Test
+    public void shouldReadWriteBucketArrayFromStream() throws IOException
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long newBucketAddress = bucketBufferArray.allocateNewBucket(3, 3);
+
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final byte[] writeBuffer = new byte[16];
+        bucketBufferArray.writeToStream(outputStream, writeBuffer);
+
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+        final BucketBufferArray newBucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
+        newBucketBufferArray.readFromStream(inputStream, writeBuffer);
+
+        // when again written
+        outputStream = new ByteArrayOutputStream();
+        newBucketBufferArray.writeToStream(outputStream, writeBuffer);
+
+        assertThat((long) outputStream.size())
+            .isEqualTo(newBucketBufferArray.size())
+            .isEqualTo(bucketBufferArray.size());
+
+        // then
+        final byte writtenBytes[] = outputStream.toByteArray();
+
+        // bucket buffer main header
+        assertThat(writtenBytes[MAIN_BUFFER_COUNT_OFFSET]).isEqualTo((byte) 1);
+        assertThat(writtenBytes[MAIN_BUCKET_COUNT_OFFSET]).isEqualTo((byte) 1);
+        assertThat(writtenBytes[MAIN_BLOCK_COUNT_OFFSET]).isEqualTo((byte) 1);
+
+        // first bucket buffer
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_BUCKET_COUNT_OFFSET]).isEqualTo((byte) 1);
+
+        // first bucket
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_HEADER_LENGTH]).isEqualTo((byte) 1);
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_HEADER_LENGTH + BUCKET_ID_OFFSET]).isEqualTo((byte) 3);
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_HEADER_LENGTH + BUCKET_DEPTH_OFFSET]).isEqualTo((byte) 3);
+
+        // first block
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_HEADER_LENGTH + BUCKET_DATA_OFFSET]).isEqualTo((byte) 10);
+        assertThat(writtenBytes[MAIN_BUCKET_BUFFER_HEADER_LEN + BUCKET_BUFFER_HEADER_LENGTH + BUCKET_DATA_OFFSET + SIZE_OF_LONG]).isEqualTo((byte) 0xFF);
+    }
+
     private BucketBufferArray createfilledBucketBufferArray(LongKeyHandler keyHandler,
                                                             LongValueHandler valueHandler,
                                                             int blockCountPerBucket,

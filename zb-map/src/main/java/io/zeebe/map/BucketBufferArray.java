@@ -524,16 +524,17 @@ public class BucketBufferArray implements AutoCloseable
         readInto(inputStream, buffer, bucketBufferHeaderAddress, MAIN_BUCKET_BUFFER_HEADER_LEN);
 
         final int readBucketBufferCount = getBucketBufferCount();
-        setBucketBufferCount(0);
+        setBucketBufferCount(1);
         countOfUsedBytes = 0;
+        int readBytes = 0;
         for (int i = 0; i < readBucketBufferCount; i++)
         {
-            final int readBytes = readInto(inputStream, buffer, realAddresses[i], getMaxBucketBufferLength());
-            countOfUsedBytes += readBytes;
             if (readBytes == getMaxBucketBufferLength())
             {
-                allocateNewBucketBuffer(i + 1);
+                allocateNewBucketBuffer(i);
             }
+            readBytes = readInto(inputStream, buffer, realAddresses[i], getMaxBucketBufferLength());
+            countOfUsedBytes += readBytes;
         }
     }
 
