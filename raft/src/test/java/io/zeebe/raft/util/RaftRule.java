@@ -157,6 +157,8 @@ public class RaftRule extends ExternalResource
     {
         unschedule();
 
+        raft.close();
+
         logStream.close();
 
         serverTransport.close();
