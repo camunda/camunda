@@ -26,19 +26,19 @@ import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.PollableTaskSubscriptionBuilder;
 import io.zeebe.client.task.TaskSubscriptionBuilder;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.ClientInputMessageSubscription;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
+import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 
-public class SubscriptionManager implements TransportListener
+public class SubscriptionManager implements TransportListener, Actor
 {
-
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final EventAcquisition<TopicSubscriptionImpl> topicSubscriptionAcquisition;
-    protected final SubscribedEventCollector taskCollector;
+    protected final ClientInputMessageSubscription messageSubscription;
     protected final MsgPackMapper msgPackMapper;
 
     protected final ActorScheduler executorActorScheduler;
@@ -62,19 +62,22 @@ public class SubscriptionManager implements TransportListener
             ZeebeClientImpl client,
             int numExecutionThreads,
             boolean autoCompleteTasks,
-            int topicSubscriptionPrefetchCapacity,
-            Subscription receiveBufferSubscription)
+            int topicSubscriptionPrefetchCapacity)
     {
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
+
         this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
         this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions);
-        this.taskCollector = new SubscribedEventCollector(
-                receiveBufferSubscription,
+
+        final SubscribedEventCollector taskCollector = new SubscribedEventCollector(
                 taskAcquisition,
                 topicSubscriptionAcquisition,
                 client.getMsgPackConverter());
+        this.messageSubscription = client.getTransport()
+                .openSubscription("event-acquisition", taskCollector)
+                .join();
 
         this.numExecutionThreads = numExecutionThreads;
         this.autoCompleteTasks = autoCompleteTasks;
@@ -110,7 +113,7 @@ public class SubscriptionManager implements TransportListener
         {
             acquisitionActorRefs = new ActorReference[3];
 
-            acquisitionActorRefs[0] = acquisitionActorScheduler.schedule(taskCollector);
+            acquisitionActorRefs[0] = acquisitionActorScheduler.schedule(this);
             acquisitionActorRefs[1] = acquisitionActorScheduler.schedule(taskAcquisition);
             acquisitionActorRefs[2] = acquisitionActorScheduler.schedule(topicSubscriptionAcquisition);
         }
@@ -191,5 +194,11 @@ public class SubscriptionManager implements TransportListener
     {
         taskSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
         topicSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
+    }
+
+    @Override
+    public int doWork() throws Exception
+    {
+        return messageSubscription.poll();
     }
 }

@@ -61,7 +61,7 @@ public class ClientApiRule extends ExternalResource
 
         sendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(scheduler)
             .build();
 

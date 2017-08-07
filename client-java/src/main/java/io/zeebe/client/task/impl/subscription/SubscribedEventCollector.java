@@ -24,22 +24,19 @@ import io.zeebe.client.event.impl.EventTypeMapping;
 import io.zeebe.client.event.impl.TopicEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.transport.ClientMessageHandler;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.RemoteAddress;
 
-public class SubscribedEventCollector implements Actor, FragmentHandler
+public class SubscribedEventCollector implements ClientMessageHandler
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
-    protected static final String NAME = "event-collector";
 
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final SubscribedEventDecoder subscribedEventDecoder = new SubscribedEventDecoder();
-
-    protected final Subscription receiveBufferSubscription;
 
     protected final SubscribedEventHandler taskSubscriptionHandler;
     protected final SubscribedEventHandler topicSubscriptionHandler;
@@ -47,32 +44,34 @@ public class SubscribedEventCollector implements Actor, FragmentHandler
     protected final MsgPackConverter converter;
 
     public SubscribedEventCollector(
-            Subscription receiveBufferSubscription,
             SubscribedEventHandler taskSubscriptionHandler,
             SubscribedEventHandler topicSubscriptionHandler,
             MsgPackConverter converter)
     {
-        this.receiveBufferSubscription = receiveBufferSubscription;
         this.taskSubscriptionHandler = taskSubscriptionHandler;
         this.topicSubscriptionHandler = topicSubscriptionHandler;
         this.converter = converter;
     }
 
-    @Override
-    public int doWork()
+    protected SubscribedEventHandler getHandlerForEvent(SubscriptionType subscriptionType)
     {
-        return receiveBufferSubscription.peekAndConsume(this, Integer.MAX_VALUE);
+        if (subscriptionType == SubscriptionType.TASK_SUBSCRIPTION)
+        {
+            return taskSubscriptionHandler;
+        }
+        else if (subscriptionType == SubscriptionType.TOPIC_SUBSCRIPTION)
+        {
+            return topicSubscriptionHandler;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
-    public String name()
-    {
-        return NAME;
-    }
-
-
-    @Override
-    public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+    public boolean onMessage(ClientOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
+            int length)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -122,23 +121,8 @@ public class SubscribedEventCollector implements Actor, FragmentHandler
         }
 
 
-        return messageHandled ? FragmentHandler.CONSUME_FRAGMENT_RESULT : FragmentHandler.POSTPONE_FRAGMENT_RESULT;
-    }
+        return messageHandled;
 
-    protected SubscribedEventHandler getHandlerForEvent(SubscriptionType subscriptionType)
-    {
-        if (subscriptionType == SubscriptionType.TASK_SUBSCRIPTION)
-        {
-            return taskSubscriptionHandler;
-        }
-        else if (subscriptionType == SubscriptionType.TOPIC_SUBSCRIPTION)
-        {
-            return topicSubscriptionHandler;
-        }
-        else
-        {
-            return null;
-        }
     }
 
 }

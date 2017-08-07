@@ -48,6 +48,7 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.transport.SocketAddress;
 
 public class TransportComponent implements Component
@@ -219,7 +220,7 @@ public class TransportComponent implements Component
     protected ServiceName<Dispatcher> createSendBuffer(ServiceContainer serviceContainer, String transportName, int bufferSize)
     {
         final ServiceName<Dispatcher> serviceName = TransportServiceNames.sendBufferName(transportName);
-        createDispatcher(serviceContainer, serviceName, bufferSize, "sender");
+        createDispatcher(serviceContainer, serviceName, bufferSize, ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME);
 
         return serviceName;
     }

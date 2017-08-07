@@ -93,7 +93,7 @@ public class ZeebeClientImpl implements ZeebeClient
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(transportActorScheduler)
             .bufferSize(1024 * 1024 * sendBufferSize)
-            .subscriptions("sender")
+            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
 //                .countersManager(countersManager) // TODO: counters manager
             .build();
 
@@ -130,12 +130,12 @@ public class ZeebeClientImpl implements ZeebeClient
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
 
         final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
+
         subscriptionManager = new SubscriptionManager(
                 this,
                 numExecutionThreads,
                 autoCompleteTasks,
-                prefetchCapacity,
-                dataFrameReceiveBuffer.openSubscription("task-acquisition"));
+                prefetchCapacity);
         transport.registerChannelListener(subscriptionManager);
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);

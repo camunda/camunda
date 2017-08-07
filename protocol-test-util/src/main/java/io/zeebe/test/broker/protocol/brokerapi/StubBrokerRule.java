@@ -39,6 +39,7 @@ import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
@@ -82,7 +83,7 @@ public class StubBrokerRule extends ExternalResource
 
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(actorScheduler)
-            .subscriptions("sender")
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .bufferSize(1024 * 1024)
             .build();
 
