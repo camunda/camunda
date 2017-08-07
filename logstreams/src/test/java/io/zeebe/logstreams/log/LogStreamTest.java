@@ -69,9 +69,6 @@ public class LogStreamTest
     public LogStream logStream;
 
     @Mock
-    LogStreamImpl.LogStreamBuilder mockLogStreamBuilder;
-
-    @Mock
     private ActorScheduler mockActorScheduler;
     @Mock
     private ActorReference mockControllerRef;

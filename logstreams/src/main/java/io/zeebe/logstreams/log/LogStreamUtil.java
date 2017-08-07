@@ -15,15 +15,17 @@
  */
 package io.zeebe.logstreams.log;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.LogStorage;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getFragmentLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
 
 import java.nio.ByteBuffer;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.spi.LogStorage;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Represents a class which contains some utilities for the log stream.
@@ -32,6 +34,8 @@ public class LogStreamUtil
 {
     public static final int INVALID_ADDRESS = -1;
     public static final int MAX_READ_EVENT_SIZE = 1024 * 32;
+
+    public static final int HEADER_LENGTH = DataFrameDescriptor.HEADER_LENGTH + LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 
     public static long getAddressForPosition(LogStream stream, long position)
     {
@@ -42,6 +46,7 @@ public class LogStreamUtil
 
     private static final class LogEntryAddressSupplier
     {
+
         private static final class InstanceHolder
         {
             static final LogEntryAddressSupplier INSTANCE = new LogEntryAddressSupplier();
@@ -119,7 +124,7 @@ public class LogStreamUtil
             boolean hasNext = next();
             while (hasNext)
             {
-                final long currentPosition = getPosition(buffer, -HEADER_LENGTH);
+                final long currentPosition = getPosition(buffer, 0);
                 if (currentPosition < position)
                 {
                     hasNext = next();
@@ -151,25 +156,28 @@ public class LogStreamUtil
 
         protected boolean readHeader()
         {
-            return read(HEADER_LENGTH);
+            return readIntoBuffer(ioBuffer, 0, HEADER_LENGTH);
         }
 
         protected boolean readMessage(final int fragmentLength)
         {
+            final int capacity = buffer.capacity() - HEADER_LENGTH;
+
             int remainingBytes = fragmentLength;
+
             while (remainingBytes > 0)
             {
-                final int limit = Math.min(remainingBytes, buffer.capacity());
-                read(limit);
+                final int limit = Math.min(remainingBytes, capacity);
+                readIntoBuffer(ioBuffer, HEADER_LENGTH, limit);
                 remainingBytes -= limit;
             }
             return true;
         }
 
-        protected boolean read(final int limit)
+        protected boolean readIntoBuffer(final ByteBuffer ioBuffer, final int offset, final int limit)
         {
-            ioBuffer.position(0);
-            ioBuffer.limit(limit);
+            ioBuffer.position(offset);
+            ioBuffer.limit(offset + limit);
 
             final long opResult = logStorage.read(ioBuffer, nextReadAddress);
 
@@ -181,5 +189,7 @@ public class LogStreamUtil
 
             return false;
         }
+
+
     }
 }

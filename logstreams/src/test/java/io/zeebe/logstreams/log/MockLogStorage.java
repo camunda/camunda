@@ -15,14 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.spi.LogStorage;
-import org.mockito.invocation.InvocationOnMock;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Random;
-
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
@@ -31,6 +23,14 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Random;
+
+import io.zeebe.logstreams.spi.LogStorage;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.mockito.invocation.InvocationOnMock;
 
 public class MockLogStorage
 {
@@ -230,7 +230,7 @@ public class MockLogStorage
                 position <= maxPosition)
             {
                 final long limit = byteBuffer.limit();
-                if (limit == HEADER_LENGTH)
+                if (limit == LogStreamUtil.HEADER_LENGTH)
                 {
                     readHeader(invocation);
                 }
@@ -257,8 +257,17 @@ public class MockLogStorage
             final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
-            final int offset = byteBuffer.position();
+            int offset = byteBuffer.position();
             buffer.putInt(lengthOffset(offset), messageLength);
+
+            offset = messageOffset(offset);
+            setPosition(buffer, offset, position);
+            setProducerId(buffer, offset, producerId);
+            setSourceEventLogStreamPartitionId(buffer, offset, sourceEventLogStreamPartitionId);
+            setSourceEventPosition(buffer, offset, sourceEventPosition);
+            setKey(buffer, offset, key);
+            setSourceEventLogStreamTopicNameLength(buffer, offset, topicNameLength);
+            setMetadataLength(buffer, offset, metadataLength);
 
             byteBuffer.position(byteBuffer.limit());
         }
@@ -274,14 +283,6 @@ public class MockLogStorage
 
             if (offset < byteBuffer.limit())
             {
-                setPosition(buffer, offset, position);
-                setProducerId(buffer, offset, producerId);
-                setSourceEventLogStreamPartitionId(buffer, offset, sourceEventLogStreamPartitionId);
-                setSourceEventPosition(buffer, offset, sourceEventPosition);
-                setKey(buffer, offset, key);
-                setSourceEventLogStreamTopicNameLength(buffer, offset, topicNameLength);
-                setMetadataLength(buffer, offset, metadataLength);
-
                 if (sourceEventLogStreamTopicNameOffset(offset) < byteBuffer.limit())
                 {
                     if (sourceEventLogStreamTopicName != null)
