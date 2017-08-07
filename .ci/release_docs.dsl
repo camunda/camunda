@@ -12,7 +12,7 @@ freeStyleJob(jobName)
         {
             remote
             {
-                github 'camunda-zeebe/' + repository, 'ssh'
+                github 'zeebe-io/' + repository, 'ssh'
                 credentials 'camunda-jenkins-github-ssh'
             }
             branch gitBranch

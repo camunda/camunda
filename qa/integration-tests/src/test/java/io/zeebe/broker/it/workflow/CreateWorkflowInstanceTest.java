@@ -187,7 +187,7 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    @Ignore("https://github.com/camunda-zeebe/zeebe/issues/369")
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/369")
     public void shouldThrowExceptionForIllegalVersion()
     {
         final WorkflowsClient workflowService = clientRule.workflows();

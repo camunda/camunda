@@ -60,10 +60,10 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 
 @Ignore("Unreliable cause of multiple problems: " +
-    "https://github.com/camunda-zeebe/zeebe/issues/292 " +
-    "https://github.com/camunda-zeebe/zeebe/issues/313 " +
-    "https://github.com/camunda-zeebe/zeebe/issues/314 " +
-    "https://github.com/camunda-zeebe/zeebe/issues/315")
+    "https://github.com/zeebe-io/zeebe/issues/292 " +
+    "https://github.com/zeebe-io/zeebe/issues/313 " +
+    "https://github.com/zeebe-io/zeebe/issues/314 " +
+    "https://github.com/zeebe-io/zeebe/issues/315")
 public class BrokerLeaderChangeTest
 {
     // TODO: remove logging after test becomes stable

@@ -12,7 +12,7 @@ You will be guided through the following steps:
 * [Work on a task](#work-on-a-task)
 * [Work with data](#work-with-data)
 
-> You can find the complete source code including the BPMN diagrams on [GitHub](https://github.com/camunda-zeebe/zeebe-get-started-java-client).
+> You can find the complete source code including the BPMN diagrams on [GitHub](https://github.com/zeebe-io/zeebe-get-started-java-client).
 
 ## Prerequisites
 

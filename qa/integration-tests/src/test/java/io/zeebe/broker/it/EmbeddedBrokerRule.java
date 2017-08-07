@@ -98,7 +98,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         try
         {
             // Hack: block until default task queue log has been installed
-            // How to make it better: https://github.com/camunda-zeebe/zeebe/issues/196
+            // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
                 .dependency(TopicSubscriptionServiceNames.subscriptionManagementServiceName(DEFAULT_LOG_NAME))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))

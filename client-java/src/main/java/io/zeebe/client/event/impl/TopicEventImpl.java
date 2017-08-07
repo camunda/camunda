@@ -65,7 +65,7 @@ public class TopicEventImpl extends EventImpl implements TopicEvent
     @Override
     public String getState()
     {
-        // see https://github.com/camunda-zeebe/zeebe/issues/367 to avoid extracting this from msgpack payload
+        // see https://github.com/zeebe-io/zeebe/issues/367 to avoid extracting this from msgpack payload
         throw new RuntimeException("not implemented");
     }
 
