@@ -41,6 +41,7 @@ public class PeerSelectorService implements Service<PeerSelector>
     @Override
     public void stop(ServiceStopContext stopContext)
     {
+        peerSelector.close();
     }
 
     @Override

@@ -60,6 +60,7 @@ public class GossipService implements Service<Gossip>
     public void stop(ServiceStopContext stopContext)
     {
         actorRef.close();
+        gossip.close();
     }
 
     @Override

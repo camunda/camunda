@@ -190,6 +190,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         activityInstanceMap.close();
         workflowDeploymentCache.close();
         payloadCache.close();
+        logStreamReader.close();
     }
 
     public static MetadataFilter eventFilter()

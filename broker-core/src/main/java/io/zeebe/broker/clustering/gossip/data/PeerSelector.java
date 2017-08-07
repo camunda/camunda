@@ -22,4 +22,7 @@ public interface PeerSelector
     boolean next(Peer dst, Peer[] exclusions);
 
     int next(int max, Peer[] dst, Peer[] exclusions);
+
+    void close();
+
 }

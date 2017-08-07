@@ -67,6 +67,7 @@ public class PeerListService implements Service<PeerList>
     @Override
     public void stop(ServiceStopContext stopContext)
     {
+        peers.close();
     }
 
     @Override

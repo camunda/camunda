@@ -45,10 +45,12 @@ public class SimplePeerSelector implements PeerSelector
         this.shuffled.addAll(peers);
         this.iterator = shuffled.iterator();
 
-        peers.registerListener((p) ->
-        {
-            shuffled.append(p);
-        });
+        peers.registerListener(shuffled::append);
+    }
+
+    public void close()
+    {
+        shuffled.close();
     }
 
     public boolean next(final Peer dst, final Peer[] exclusions)

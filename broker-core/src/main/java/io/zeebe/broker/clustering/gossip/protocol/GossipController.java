@@ -141,6 +141,9 @@ public class GossipController
         }
 
         suspicion.close();
+
+        peers.close();
+        diff.close();
     }
 
     public int doWork()
