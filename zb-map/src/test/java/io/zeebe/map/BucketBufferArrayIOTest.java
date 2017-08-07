@@ -230,7 +230,6 @@ public class BucketBufferArrayIOTest
                 assertThat(buffer.getInt(indexBase + BUCKET_ID_OFFSET)).isEqualTo(bucketBufferIndex + bucketIndex);
                 assertThat(buffer.getInt(indexBase + BUCKET_DEPTH_OFFSET)).isEqualTo(bucketBufferIndex + bucketIndex + 1);
                 assertThat(buffer.getLong(indexBase + BUCKET_OVERFLOW_POINTER_OFFSET)).isEqualTo(0);
-                assertThat(buffer.getInt(indexBase + BUCKET_LENGTH_OFFSET)).isEqualTo(BUCKET_HEADER_LENGTH + blockCountPerBucket * blockSize);
 
                 keyHandler.theKey = 10;
                 valueHandler.theValue = 0xFF;
@@ -331,7 +330,6 @@ public class BucketBufferArrayIOTest
                 assertThat(buffer.getInt(indexBase + BUCKET_ID_OFFSET)).isEqualTo(bucketBufferIndex + bucketIndex);
                 assertThat(buffer.getInt(indexBase + BUCKET_DEPTH_OFFSET)).isEqualTo(bucketBufferIndex + bucketIndex + 1);
                 assertThat(buffer.getLong(indexBase + BUCKET_OVERFLOW_POINTER_OFFSET)).isEqualTo(0);
-                assertThat(buffer.getInt(indexBase + BUCKET_LENGTH_OFFSET)).isEqualTo(BUCKET_HEADER_LENGTH + blockCountPerBucket * blockSize);
 
                 keyHandler.theKey = 10;
                 valueHandler.theValue = 0xFF;

@@ -235,17 +235,7 @@ public class BucketBufferArray implements AutoCloseable
 
     public int getBucketLength(long bucketAddress)
     {
-        return UNSAFE.getInt(getRealAddress(bucketAddress) + BUCKET_LENGTH_OFFSET);
-    }
-
-    private void setBucketLength(int bucketBufferId, int bucketOffset, int newbucketLength)
-    {
-        UNSAFE.putInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_LENGTH_OFFSET, newbucketLength);
-    }
-
-    private void setBucketLength(long bucketAddress, int newbucketLength)
-    {
-        UNSAFE.putInt(getRealAddress(bucketAddress) + BUCKET_LENGTH_OFFSET, newbucketLength);
+        return getBucketFillCount(bucketAddress) * (maxKeyLength + maxValueLength) + BUCKET_HEADER_LENGTH;
     }
 
     public long getBucketOverflowPointer(long bucketAddress)
@@ -331,7 +321,7 @@ public class BucketBufferArray implements AutoCloseable
             keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
             valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
 
-            setBucketFillStatus(bucketAddress, bucketFillCount + 1, newBucketLength);
+            setBucketFillCount(bucketAddress, bucketFillCount + 1);
             setBlockCount(getBlockCount() + 1);
         }
         else
@@ -359,9 +349,7 @@ public class BucketBufferArray implements AutoCloseable
 
         moveRemainingMemory(bucketAddress, nextBlockOffset, -blockLength);
 
-        setBucketFillStatus(bucketAddress,
-                               getBucketFillCount(bucketAddress) - 1,
-                               getBucketLength(bucketAddress) - blockLength);
+        setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) - 1);
     }
 
     private void setBucketId(int bucketBufferId, int bucketOffset, int newBlockId)
@@ -431,7 +419,7 @@ public class BucketBufferArray implements AutoCloseable
 
         setBucketId(bucketBufferId, bucketOffset, newBucketId);
         setBucketDepth(bucketBufferId, bucketOffset, newBucketDepth);
-        setBucketFillStatus(bucketBufferId, bucketOffset, 0, BUCKET_HEADER_LENGTH);
+        setBucketFillCount(bucketBufferId, bucketOffset, 0);
 
         setBucketCount(bucketBufferId, bucketCountInBucketBuffer + 1);
         setBucketCount(getBucketCount() + 1);
@@ -460,25 +448,13 @@ public class BucketBufferArray implements AutoCloseable
 
             // copy to new block
             UNSAFE.copyMemory(srcBlockAddress, destBlockAddress, blockLength);
-            setBucketFillStatus(newBucketAddress, destBucketFillCount + 1, newBucketLength);
+            setBucketFillCount(newBucketAddress, destBucketFillCount + 1);
 
             // remove from this block (compacts this block)
             removeBlockFromBucket(bucketAddress, blockOffset);
 
             // TODO remove overflow buckets
         }
-    }
-
-    private void setBucketFillStatus(long bucketAddress, int newBucketFillCount, int newBucketLength)
-    {
-        setBucketFillCount(bucketAddress, newBucketFillCount);
-        setBucketLength(bucketAddress, newBucketLength);
-    }
-
-    private void setBucketFillStatus(int bucketBufferId, int bucketOffset, int newBucketFillCount, int newBucketLength)
-    {
-        setBucketFillCount(bucketBufferId, bucketOffset, newBucketFillCount);
-        setBucketLength(bucketBufferId, bucketOffset, newBucketLength);
     }
 
     // BUCKET BUFFER IO ///////////////////////////

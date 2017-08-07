@@ -68,8 +68,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                       BUCKET FILL COUNT                     |
  *  +-------------------------------------------------------------+
- *  |                       BUCKET LENGTH                         |
- *  +-------------------------------------------------------------+
  *  |                       BUCKET ID                             |
  *  +-------------------------------------------------------------+
  *  |                       BUCKET DEPTH                          |
@@ -112,7 +110,6 @@ public class BucketBufferArrayDescriptor
     public static final int BUCKET_BUFFER_HEADER_LENGTH;
 
     public static final int BUCKET_FILL_COUNT_OFFSET;
-    public static final int BUCKET_LENGTH_OFFSET;
     public static final int BUCKET_ID_OFFSET;
     public static final int BUCKET_DEPTH_OFFSET;
     public static final int BUCKET_OVERFLOW_POINTER_OFFSET;
@@ -148,9 +145,6 @@ public class BucketBufferArrayDescriptor
         offset = 0;
 
         BUCKET_FILL_COUNT_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        BUCKET_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         BUCKET_ID_OFFSET = offset;

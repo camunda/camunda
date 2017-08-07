@@ -16,10 +16,6 @@
 package io.zeebe.map.benchmarks;
 
 import net.openhft.chronicle.map.ChronicleMap;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
