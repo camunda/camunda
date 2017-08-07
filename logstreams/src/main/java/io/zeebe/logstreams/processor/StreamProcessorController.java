@@ -467,7 +467,7 @@ public class StreamProcessorController implements Actor
         }
         catch (Exception e)
         {
-            LOG.error("Stream processor '%s' failed. Can not write snapshot.", name(), e);
+            LOG.error("Stream processor '{}' failed. Can not write snapshot.", name(), e);
 
             if (snapshotWriter != null)
             {
