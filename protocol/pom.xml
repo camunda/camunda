@@ -1,0 +1,169 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Protocol</name>
+  <artifactId>zb-protocol</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zb-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
+    <relativePath />
+  </parent>
+
+  <properties>
+    <protocol.version>1</protocol.version>
+
+    <!-- SUB PROJECTS -->
+    <version.util>0.1.0-SNAPSHOT</version.util>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-util</artifactId>
+      <version>${version.util}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-resources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>resources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/sbe</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executableDependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe</artifactId>
+          </executableDependency>
+          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
+          <arguments>
+            <argument>${project.build.outputDirectory}/protocol.xml</argument>
+          </arguments>
+          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
+          <systemProperties>
+            <systemProperty>
+              <key>sbe.output.dir</key>
+              <value>${project.build.directory}/generated-sources/sbe</value>
+            </systemProperty>
+            <systemProperty>
+              <key>sbe.java.generate.interfaces</key>
+              <value>true</value>
+            </systemProperty>
+            <systemProperty>
+              <key>sbe.decode.unknown.enum.values</key>
+              <value>true</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe-all</artifactId>
+            <version>${version.sbe}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <scm>
+    <url>https://github.com/zeebe-io/zb-protocol</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-protocol.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-protocol.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+</project>
