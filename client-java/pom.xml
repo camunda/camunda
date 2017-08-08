@@ -16,7 +16,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-protocol</artifactId>
+      <artifactId>zb-protocol</artifactId>
     </dependency>
 
     <dependency>

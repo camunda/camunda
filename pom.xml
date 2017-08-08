@@ -20,7 +20,6 @@
     <module>qa</module>
     <module>client-java</module>
     <module>protocol-test-util</module>
-    <module>protocol</module>
     <module>samples</module>
     <module>dist</module>
   </modules>
