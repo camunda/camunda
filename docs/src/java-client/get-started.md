@@ -72,15 +72,10 @@ public class Application
 }
 ```
 
-Run the program using your IDE or the Maven command:
-
-```
-mvn clean package
-
-java -cp target/zeebe-t-started-java-client-0.1.0-SNAPSHOT-jar-with-dependencies.jar io.zeebe.Application
-```
-
-<!-- TODO provide an easy way to run the program -->
+Run the program.
+If you use an IDE, you can just execute the main class.
+Otherwise, you must build an executable JAR file with Maven and execute it.
+(See the GitHub repository how to do this.)
 
 You should see the output:
 
@@ -98,9 +93,7 @@ Later, we will extend the workflow with more functionality.
 Open the Camunda Modeler and create a new BPMN diagram.
 Add a start event and an end event to the diagram and connect the events.
 
-![model-workflow-step-1](/java-client/model-workflow-1.png)
-
-<!-- TODO adjust the size of the image -->
+![model-workflow-step-1](/java-client/order-process-simple.png)
 
 Set the id (i.e., the BPMN process id) and mark the diagram as executable.
 Save the diagram in the project's source folder.
@@ -115,34 +108,23 @@ Add the following deploy command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.workflow.cmd.DeploymentResult;
+import io.zeebe.client.event.DeploymentEvent;
 
 public class Application
 {
     private static final String TOPIC = "default-topic";
-    private static final int PARTITION_ID = 0;
 
     public static void main(String[] args)
     {
         // after the client is connected
 
-        final DeploymentResult result = client.workflowTopic(TOPIC, PARTITION_ID)
-            .deploy()
+        final DeploymentEvent deployment = client.workflows()
+            .deploy(TOPIC)
             .resourceFromClasspath("order-process.bpmn")
             .execute();
 
-        if (result.isDeployed())
-        {
-            final int version = result.getDeployedWorkflows().get(0).getVersion();
-
-            System.out.println("Workflow deployed. Version: " + version);
-        }
-        else
-        {
-            final String errorMessage = result.getErrorMessage();
-
-            System.out.println("Failed to deploy workflow: " + errorMessage);
-        }
+        final int version = deployment.getDeployedWorkflows().get(0).getVersion();
+        System.out.println("Workflow deployed. Version: " + version);
 
         // ...
     }
@@ -166,7 +148,7 @@ Add the following create command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.workflow.cmd.WorkflowInstance;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 
 public class Application
 {
@@ -174,8 +156,8 @@ public class Application
     {
         // after the workflow is deployed
 
-        final WorkflowInstance wfInstance = client.workflowTopic(TOPIC, PARTITION_ID)
-            .create()
+        final WorkflowInstanceEvent wfInstance = client.workflows()
+            .create(TOPIC)
             .bpmnProcessId("order-process")
             .latestVersion()
             .execute();
@@ -192,7 +174,7 @@ public class Application
 Run the program and verify that the workflow instance is created. You should see the output:
 
 ```
-Workflow instance created. Key: 4294986992
+Workflow instance created. Key: 4294986840
 ```
 
 ## Open a topic subscription
@@ -218,11 +200,11 @@ public class Application
     {
         // after the workflow instance is created
 
-        final TopicSubscription topicSubscription = client.topic(TOPIC, PARTITION_ID)
-            .newSubscription()
+        final TopicSubscription topicSubscription = client.topics()
+            .newSubscription(TOPIC)
             .name("app-monitoring")
             .startAtHeadOfTopic()
-            .workflowInstanceEventHandler((metadata, event ) ->
+            .workflowInstanceEventHandler(event ->
             {
                 System.out.println("> " + event);
             })
@@ -240,7 +222,7 @@ public class Application
 Run the program. You should see the output:
 
 ```
-> WorkflowInstanceEvent [eventType=CREATE_WORKFLOW_INSTANCE,
+> WorkflowInstanceEvent [state=CREATE_WORKFLOW_INSTANCE,
     workflowInstanceKey=-1,
     workflowKey=-1,
     bpmnProcessId=order-process,
@@ -248,40 +230,40 @@ Run the program. You should see the output:
     activityId=null,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=WORKFLOW_INSTANCE_CREATED,
-    workflowInstanceKey=4294974384,
+> WorkflowInstanceEvent [state=WORKFLOW_INSTANCE_CREATED,
+    workflowInstanceKey=4294986840,
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
     activityId=,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=START_EVENT_OCCURRED,
-    workflowInstanceKey=4294974384,
+> WorkflowInstanceEvent [state=START_EVENT_OCCURRED,
+    workflowInstanceKey=4294986840,
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
     activityId=new-order-received,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=SEQUENCE_FLOW_TAKEN,
-    workflowInstanceKey=4294974384,
+> WorkflowInstanceEvent [state=SEQUENCE_FLOW_TAKEN,
+    workflowInstanceKey=4294986840,
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
     activityId=SequenceFlow_05suiqb,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=END_EVENT_OCCURRED,
-    workflowInstanceKey=4294974384,
+> WorkflowInstanceEvent [state=END_EVENT_OCCURRED,
+    workflowInstanceKey=4294986840,
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
     activityId=order-shipped,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=WORKFLOW_INSTANCE_COMPLETED,
-    workflowInstanceKey=4294974384,
+> WorkflowInstanceEvent [state=WORKFLOW_INSTANCE_COMPLETED,
+    workflowInstanceKey=4294986840,
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
@@ -300,7 +282,7 @@ Then, we extend your main class and open a task subscription to process tasks wh
 Open the BPMN diagram in the Camunda Modeler.
 Insert a few service tasks between the start and the end event.
 
-![model-workflow-step-2](/java-client/model-workflow-2.png)
+![model-workflow-step-2](/java-client/order-process.png)
 
 Switch to the XML view and add the Zeebe namespace to the root `definitions` element:
 
@@ -341,21 +323,21 @@ public class Application
     {
         // after the workflow instance is created
 
-        final TaskSubscription taskSubscription = client.taskTopic(TOPIC, PARTITION_ID)
-            .newTaskSubscription()
+        final TaskSubscription taskSubscription = client.tasks()
+            .newTaskSubscription(TOPIC)
             .taskType("reserveOrderItems")
             .lockOwner("stocker")
             .lockTime(Duration.ofMinutes(5))
-            .handler(task ->
+            .handler((controller, task) ->
             {
-                final Map<String, Object> headers = task.getHeaders();
+                final Map<String, Object> headers = task.getCustomHeaders();
                 final String reservationTime = (String) headers.get("reservationTime");
 
                 System.out.println("Reserved order items for " + reservationTime);
 
                 // ...
 
-                task.complete();
+                controller.completeTaskWithoutPayload();
             })
             .open();
 
@@ -377,7 +359,7 @@ Reserved order items for PT15M
 When you have a look at the topic subscription's output then you can see that the workflow instance moved from the first service task to the next one:
 
 ```
-> WorkflowInstanceEvent [eventType=ACTIVITY_COMPLETED,
+> WorkflowInstanceEvent [state=ACTIVITY_COMPLETED,
     workflowInstanceKey=4294986352,
     workflowKey=4294980048,
     bpmnProcessId=order-process,
@@ -385,7 +367,7 @@ When you have a look at the topic subscription's output then you can see that th
     activityId=reserve-order-items,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=SEQUENCE_FLOW_TAKEN,
+> WorkflowInstanceEvent [state=SEQUENCE_FLOW_TAKEN,
     workflowInstanceKey=4294986352,
     workflowKey=4294980048,
     bpmnProcessId=order-process,
@@ -393,7 +375,7 @@ When you have a look at the topic subscription's output then you can see that th
     activityId=SequenceFlow_17kmq07,
     payload=null]
 
-> WorkflowInstanceEvent [eventType=ACTIVITY_READY,
+> WorkflowInstanceEvent [state=ACTIVITY_READY,
     workflowInstanceKey=4294986352,
     workflowKey=4294980048,
     bpmnProcessId=order-process,
@@ -450,16 +432,14 @@ Also, modify the task subscription to read the task's payload and complete the t
 ```java
 package io.zeebe;
 
-import io.zeebe.client.task.TaskSubscription;
-
 public class Application
 {
     public static void main(String[] args)
     {
         // after the workflow is deployed
 
-        final WorkflowInstance wfInstance = client.workflowTopic(TOPIC, PARTITION_ID)
-            .create()
+        final WorkflowInstanceEvent wfInstance = client.workflows()
+            .create(TOPIC)
             .bpmnProcessId("order-process")
             .latestVersion()
             .payload(data)
@@ -467,14 +447,14 @@ public class Application
 
         // ...
 
-        final TaskSubscription taskSubscription = client.taskTopic(TOPIC, PARTITION_ID)
-            .newTaskSubscription()
+        final TaskSubscription taskSubscription = client.tasks()
+            .newTaskSubscription(TOPIC)
             .taskType("reserveOrderItems")
             .lockOwner("stocker")
             .lockTime(Duration.ofMinutes(5))
-            .handler(task ->
+            .handler((controller, task) ->
             {
-                final Map<String, Object> headers = task.getHeaders();
+                final Map<String, Object> headers = task.getCustomHeaders();
                 final String reservationTime = (String) headers.get("reservationTime");
 
                 final String orderItems = task.getPayload();
@@ -483,7 +463,7 @@ public class Application
 
                 // ...
 
-                task.complete("{ \"orderStatus\": \"RESERVED\" }");
+                controller.completeTask("{ \"orderStatus\": \"RESERVED\" }");
             })
             .open();
 
@@ -501,7 +481,7 @@ Reserved {"orderItems":[435,182,376]} for PT15M
 When we have a look at the topic subscription's output then we can see how the payload is mapped between the activities:
 
 ```
-> WorkflowInstanceEvent [eventType=ACTIVITY_READY,
+> WorkflowInstanceEvent [state=ACTIVITY_READY,
     workflowInstanceKey=4294986992,
     workflowKey=4294980472,
     bpmnProcessId=order-process,
@@ -509,7 +489,7 @@ When we have a look at the topic subscription's output then we can see how the p
     activityId=reserve-order-items,
     payload={"orderId":31243,"orderStatus":"NEW","orderItems":[435,182,376]}]
 
-> WorkflowInstanceEvent [eventType=ACTIVITY_ACTIVATED,
+> WorkflowInstanceEvent [state=ACTIVITY_ACTIVATED,
     workflowInstanceKey=4294986992,
     workflowKey=4294980472,
     bpmnProcessId=order-process,
@@ -517,7 +497,7 @@ When we have a look at the topic subscription's output then we can see how the p
     activityId=reserve-order-items,
     payload={"orderItems":[435,182,376]}]
 
-> WorkflowInstanceEvent [eventType=ACTIVITY_COMPLETING,
+> WorkflowInstanceEvent [state=ACTIVITY_COMPLETING,
     workflowInstanceKey=4294986992,
     workflowKey=4294980472,
     bpmnProcessId=order-process,
@@ -525,7 +505,7 @@ When we have a look at the topic subscription's output then we can see how the p
     activityId=reserve-order-items,
     payload={"orderStatus":"RESERVED"}]
 
-> WorkflowInstanceEvent [eventType=ACTIVITY_COMPLETED,
+> WorkflowInstanceEvent [state=ACTIVITY_COMPLETED,
     workflowInstanceKey=4294986992,
     workflowKey=4294980472,
     bpmnProcessId=order-process,
