@@ -55,7 +55,11 @@ docker build -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=./dist/tar
 
 echo "Authenticating with DockerHub and pushing image."
 docker login --username ${DOCKER_HUB_USERNAME} --pasword ${DOCKER_HUB_PASSWORD}
+
 docker push camunda/zeebe:${RELEASE_VERSION}
+
+docker tag camunda/zeebe:${RELEASE_VERSION} camunda/zeebe:latest
+docker push camunda/zeebe:latest
 '''
 
 // properties used by the release build
