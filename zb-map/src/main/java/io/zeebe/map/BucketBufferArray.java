@@ -27,14 +27,14 @@ import java.io.OutputStream;
 import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
-@SuppressWarnings("restriction")
 public class BucketBufferArray implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
     public static final int OVERFLOW_BUCKET_ID = -1;
-    public static final long INVALID_ADDRESS = 0;
+    private static final long INVALID_ADDRESS = 0;
 
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
+    private static final String FAIL_MSG_TO_READ_BUCKET_BUFFER = "Failed to read bucket buffer array, managed to read %d bytes.";
 
     private final int maxBucketLength;
     private final int maxBucketBlockCount;
@@ -223,9 +223,9 @@ public class BucketBufferArray implements AutoCloseable
         return UNSAFE.getInt(getRealAddress(bucketAddress) + BUCKET_FILL_COUNT_OFFSET);
     }
 
-    private void setBucketFillCount(int bucketBufferId, int bucketOffset, int blockFillCount)
+    private void initBucketFillCount(int bucketBufferId, int bucketOffset)
     {
-        UNSAFE.putInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_FILL_COUNT_OFFSET, blockFillCount);
+        UNSAFE.putInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_FILL_COUNT_OFFSET, 0);
     }
 
     private void setBucketFillCount(long bucketAddress, int blockFillCount)
@@ -243,9 +243,9 @@ public class BucketBufferArray implements AutoCloseable
         return UNSAFE.getLong(getRealAddress(bucketAddress) + BUCKET_OVERFLOW_POINTER_OFFSET);
     }
 
-    private void setBucketOverflowPointer(int bucketBufferId, int bucketOffset, long overflowPointer)
+    private void clearBucketOverflowPointer(int bucketBufferId, int bucketOffset)
     {
-        UNSAFE.putLong(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_OVERFLOW_POINTER_OFFSET, overflowPointer);
+        UNSAFE.putLong(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_OVERFLOW_POINTER_OFFSET, 0L);
     }
 
     private void setBucketOverflowPointer(long bucketAddress, long overflowPointer)
@@ -314,7 +314,6 @@ public class BucketBufferArray implements AutoCloseable
         {
             final int blockOffset = getBucketLength(bucketAddress);
             final int blockLength = BucketBufferArrayDescriptor.getBlockLength(maxKeyLength, maxValueLength);
-            final int newBucketLength = blockOffset + blockLength;
 
             final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
 
@@ -419,7 +418,7 @@ public class BucketBufferArray implements AutoCloseable
 
         setBucketId(bucketBufferId, bucketOffset, newBucketId);
         setBucketDepth(bucketBufferId, bucketOffset, newBucketDepth);
-        setBucketFillCount(bucketBufferId, bucketOffset, 0);
+        initBucketFillCount(bucketBufferId, bucketOffset);
 
         setBucketCount(bucketBufferId, bucketCountInBucketBuffer + 1);
         setBucketCount(getBucketCount() + 1);
@@ -444,7 +443,6 @@ public class BucketBufferArray implements AutoCloseable
             final long destBlockAddress = getRealAddress(newBucketAddress) + destBucketLength;
 
             final int blockLength = getBlockLength();
-            final int newBucketLength = destBucketLength + blockLength;
 
             // copy to new block
             UNSAFE.copyMemory(srcBlockAddress, destBlockAddress, blockLength);
@@ -489,7 +487,7 @@ public class BucketBufferArray implements AutoCloseable
         write(outputStream, writeBuffer, realAddresses[bucketBufferCount - 1], (int) remainingBytes);
     }
 
-    private int readInto(InputStream inputStream, byte[] readBuffer, long destinationAddress, int maxReadLength)
+    private int readInto(InputStream inputStream, byte[] readBuffer, long destinationAddress, int maxReadLength) throws IOException
     {
         int remainingBytes = maxReadLength;
         int readLength = Math.min(readBuffer.length, remainingBytes);
@@ -497,22 +495,15 @@ public class BucketBufferArray implements AutoCloseable
 
         while (remainingBytes > 0 && bytesRead >= 0)
         {
-            try
-            {
-                bytesRead = inputStream.read(readBuffer, 0, readLength);
+            bytesRead = inputStream.read(readBuffer, 0, readLength);
 
-                if (bytesRead > 0)
-                {
-                    final int offset = maxReadLength - remainingBytes;
-                    UNSAFE.copyMemory(readBuffer, ARRAY_BASE_OFFSET, null, destinationAddress + offset, bytesRead);
-
-                    remainingBytes -= bytesRead;
-                    readLength = Math.min(readBuffer.length, remainingBytes);
-                }
-            }
-            catch (IOException ioe)
+            if (bytesRead > 0)
             {
-                bytesRead = 0;
+                final int offset = maxReadLength - remainingBytes;
+                UNSAFE.copyMemory(readBuffer, ARRAY_BASE_OFFSET, null, destinationAddress + offset, bytesRead);
+
+                remainingBytes -= bytesRead;
+                readLength = Math.min(readBuffer.length, remainingBytes);
             }
         }
         return maxReadLength - remainingBytes;
@@ -521,20 +512,30 @@ public class BucketBufferArray implements AutoCloseable
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
         clear();
-        readInto(inputStream, buffer, bucketBufferHeaderAddress, MAIN_BUCKET_BUFFER_HEADER_LEN);
-
-        final int readBucketBufferCount = getBucketBufferCount();
-        setBucketBufferCount(1);
         countOfUsedBytes = 0;
-        int readBytes = 0;
-        for (int i = 0; i < readBucketBufferCount; i++)
+
+        try
         {
-            if (readBytes == getMaxBucketBufferLength())
+            readInto(inputStream, buffer, bucketBufferHeaderAddress, MAIN_BUCKET_BUFFER_HEADER_LEN);
+
+            final int readBucketBufferCount = getBucketBufferCount();
+            setBucketBufferCount(1);
+            int readBytes = 0;
+            for (int i = 0; i < readBucketBufferCount; i++)
             {
-                allocateNewBucketBuffer(i);
+                if (readBytes == getMaxBucketBufferLength())
+                {
+                    allocateNewBucketBuffer(i);
+                }
+                readBytes = readInto(inputStream, buffer, realAddresses[i], getMaxBucketBufferLength());
+                countOfUsedBytes += readBytes;
             }
-            readBytes = readInto(inputStream, buffer, realAddresses[i], getMaxBucketBufferLength());
-            countOfUsedBytes += readBytes;
+        }
+        catch (IOException ioe)
+        {
+            final String errorMessage = String.format(FAIL_MSG_TO_READ_BUCKET_BUFFER, countOfUsedBytes);
+            clear();
+            throw new IOException(errorMessage, ioe);
         }
     }
 
@@ -574,7 +575,7 @@ public class BucketBufferArray implements AutoCloseable
         final int startOffset = BUCKET_BUFFER_HEADER_LENGTH;
         for (int i = 0; i < ALLOCATION_FACTOR; i++)
         {
-            setBucketOverflowPointer(bucketBufferId, startOffset + i * maxBucketLength, 0);
+            clearBucketOverflowPointer(bucketBufferId, startOffset + i * maxBucketLength);
         }
     }
 
@@ -602,7 +603,7 @@ public class BucketBufferArray implements AutoCloseable
         return builder.toString();
     }
 
-    public String toString(long bucketAddress)
+    private String toString(long bucketAddress)
     {
         final StringBuilder builder = new StringBuilder();
         int bucketFillCount = getBucketFillCount(bucketAddress);

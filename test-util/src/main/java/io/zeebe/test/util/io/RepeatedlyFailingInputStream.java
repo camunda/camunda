@@ -60,4 +60,10 @@ public class RepeatedlyFailingInputStream extends InputStream
         }
     }
 
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException
+    {
+        readCount = 0;
+        return super.read(b, off, len);
+    }
 }
