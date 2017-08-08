@@ -118,6 +118,7 @@ mavenJob(jobName) {
       preBuildSteps {
         // setup git configuration to push to github
         shell setupGitConfig
+        shell mavenGpgKeys
 
         // execute maven release
         maven {
