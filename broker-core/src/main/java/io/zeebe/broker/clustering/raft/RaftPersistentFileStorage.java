@@ -95,6 +95,8 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     @Override
     public RaftPersistentFileStorage setVotedFor(final SocketAddress votedFor)
     {
+        configuration.setVotedFor(votedFor);
+
         if (votedFor != null)
         {
             this.votedFor.wrap(votedFor);

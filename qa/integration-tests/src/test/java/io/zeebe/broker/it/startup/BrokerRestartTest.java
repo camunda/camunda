@@ -46,6 +46,7 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.junit.After;
@@ -486,6 +487,7 @@ public class BrokerRestartTest
         assertThat(raft.getState()).isEqualTo(RaftState.LEADER);
         assertThat(raft.getTerm()).isEqualTo(testTerm + 1);
         assertThat(raft.getMembers()).isEmpty();
+        assertThat(raft.getVotedFor()).isEqualTo(new SocketAddress("localhost", 51017));
     }
 
     protected void restartBroker()
