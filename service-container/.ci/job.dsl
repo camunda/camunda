@@ -3,7 +3,7 @@ def repository = 'zb-service-container'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'clean license:check verify'
+def mvnGoals = 'clean license:check source:jar deploy -B'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
@@ -54,7 +54,7 @@ mavenJob(jobName) {
   scm {
     git {
       remote {
-        github 'camunda-zeebe/' + repository, 'ssh'
+        github 'zeebe-io/' + repository, 'ssh'
         credentials 'camunda-jenkins-github-ssh'
       }
       branch gitBranch
