@@ -277,6 +277,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   @Override
   public void restartImportCycle() {
     if(!hasStillNewDefinitionsToImport()) {
+      logger.debug("Restarting import cycle for type [{}]", elasticsearchType);
       processDefinitionsToImport.addAll(alreadyImportedProcessDefinitions);
       addPossiblyNewDefinitionsFromEngineToImportList();
       alreadyImportedProcessDefinitions = new HashSet<>();
