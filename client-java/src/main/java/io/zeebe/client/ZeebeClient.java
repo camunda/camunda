@@ -38,7 +38,10 @@ public interface ZeebeClient extends AutoCloseable
      */
     TopicsClient topics();
 
-    // TODO: this exposes an impl class as its result
+    /**
+     * Fetches the current cluster topology, i.e. which brokers are available at which endpoint
+     * and which broker is the leader of which topic.
+     */
     Request<TopologyResponse> requestTopology();
 
     /**

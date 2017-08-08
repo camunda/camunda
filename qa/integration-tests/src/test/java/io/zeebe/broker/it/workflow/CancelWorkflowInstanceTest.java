@@ -101,7 +101,7 @@ public class CancelWorkflowInstanceTest
         clientRule.workflows().cancel(workflowInstance).execute();
 
         // when
-        taskSubscription.poll((c, t) -> c.completeTaskWithoutPayload());
+        taskSubscription.poll((c, t) -> c.complete(t).withoutPayload().execute());
 
         // then
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("COMPLETE_REJECTED")));
@@ -129,7 +129,7 @@ public class CancelWorkflowInstanceTest
                 .open();
 
         // when
-        final int completedTasks = taskSubscription.poll((c, t) -> c.completeTaskWithoutPayload());
+        final int completedTasks = taskSubscription.poll((c, t) -> c.complete(t).withoutPayload().execute());
 
         // then
         assertThat(completedTasks).isEqualTo(0);

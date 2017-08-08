@@ -63,7 +63,7 @@ public class CompleteTaskCommandImpl extends CommandImpl<TaskEvent> implements C
     }
 
     @Override
-    public CompleteTaskCommand clearPayload()
+    public CompleteTaskCommand withoutPayload()
     {
         taskEvent.setPayload((byte[]) null);
         return this;

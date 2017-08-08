@@ -22,8 +22,6 @@ public class ClientCommandRejectedException extends ClientException
 {
     private static final long serialVersionUID = 1L;
 
-    // TODO: could expose the request and response event on the exception
-
     public ClientCommandRejectedException(String errorMessage)
     {
         super(errorMessage);

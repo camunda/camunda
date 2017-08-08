@@ -135,7 +135,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         else if (TopicEventType.RAFT == eventType && raftEventHandler != null)
         {
             final RaftEventImpl raftEvent = msgPackMapper.convert(event.getAsMsgPack(), RaftEventImpl.class);
-//            raftEvent.updateMetadata(event.getMetadata());
+            raftEvent.updateMetadata(event.getMetadata());
             raftEventHandler.handle(raftEvent);
         }
         else if (defaultEventHandler != null)

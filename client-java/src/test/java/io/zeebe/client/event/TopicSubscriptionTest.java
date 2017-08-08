@@ -520,10 +520,6 @@ public class TopicSubscriptionTest
         clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(eventHandler)
-            .taskEventHandler(eventHandler)
-            .workflowEventHandler(eventHandler)
-            .workflowInstanceEventHandler(eventHandler)
-            .incidentEventHandler(eventHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
@@ -555,17 +551,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
-
-        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtHeadOfTopic()
-            .handler(eventHandler)
-            .taskEventHandler(eventHandler)
-            .workflowEventHandler(eventHandler)
-            .workflowInstanceEventHandler(eventHandler)
-            .incidentEventHandler(eventHandler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
+        final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
 
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
@@ -595,17 +581,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
-
-        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtHeadOfTopic()
-            .handler(eventHandler)
-            .taskEventHandler(eventHandler)
-            .workflowEventHandler(eventHandler)
-            .workflowInstanceEventHandler(eventHandler)
-            .incidentEventHandler(eventHandler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
+        final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
 
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
@@ -635,17 +611,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
-
-        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtHeadOfTopic()
-            .handler(eventHandler)
-            .taskEventHandler(eventHandler)
-            .workflowEventHandler(eventHandler)
-            .workflowInstanceEventHandler(eventHandler)
-            .incidentEventHandler(eventHandler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
+        final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
 
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
@@ -675,17 +641,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
-
-        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtHeadOfTopic()
-            .handler(eventHandler)
-            .taskEventHandler(eventHandler)
-            .workflowEventHandler(eventHandler)
-            .workflowInstanceEventHandler(eventHandler)
-            .incidentEventHandler(eventHandler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
+        final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
 
         final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
@@ -707,6 +663,56 @@ public class TopicSubscriptionTest
         assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
         assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
         assertThat(eventHandler.numIncidentEvents()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldInvokeRaftEventHandlerForRaftEvent()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final RecordingTopicEventHandler eventHandler = subscribeToAllEvents();
+
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+
+        // when pushing two events
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 1L, EventType.RAFT_EVENT);
+        broker.pushTopicEvent(clientAddress, 123L, 1L, 2L, EventType.RAFT_EVENT);
+
+        // then
+        waitUntil(() -> eventHandler.numRaftEvents() >= 2);
+
+        final RaftEvent event1 = eventHandler.raftEvents.get(0);
+        final RaftEvent event2 = eventHandler.raftEvents.get(1);
+
+        assertMetadata(event1, 1L, 1L, TopicEventType.RAFT);
+        assertMetadata(event2, 1L, 2L, TopicEventType.RAFT);
+
+        assertThat(eventHandler.numTopicEvents()).isEqualTo(0);
+        assertThat(eventHandler.numTaskEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowEvents()).isEqualTo(0);
+        assertThat(eventHandler.numWorkflowInstanceEvents()).isEqualTo(0);
+        assertThat(eventHandler.numIncidentEvents()).isEqualTo(0);
+        assertThat(eventHandler.numRaftEvents()).isEqualTo(2);
+    }
+
+    protected RecordingTopicEventHandler subscribeToAllEvents()
+    {
+
+        final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
+
+        clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
+            .startAtHeadOfTopic()
+            .handler(eventHandler)
+            .taskEventHandler(eventHandler)
+            .workflowEventHandler(eventHandler)
+            .workflowInstanceEventHandler(eventHandler)
+            .incidentEventHandler(eventHandler)
+            .raftEventHandler(eventHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        return eventHandler;
     }
 
     @Test
@@ -881,13 +887,15 @@ public class TopicSubscriptionTest
         TaskEventHandler,
         WorkflowInstanceEventHandler,
         IncidentEventHandler,
-        WorkflowEventHandler
+        WorkflowEventHandler,
+        RaftEventHandler
     {
         protected List<TopicEvent> topicEvents = new CopyOnWriteArrayList<>();
         protected List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
         protected List<WorkflowEvent> workflowEvents = new CopyOnWriteArrayList<>();
         protected List<WorkflowInstanceEvent> workflowInstanceEvents = new CopyOnWriteArrayList<>();
         protected List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
+        protected List<RaftEvent> raftEvents = new CopyOnWriteArrayList<>();
 
         @Override
         public void handle(TopicEvent event) throws Exception
@@ -919,6 +927,12 @@ public class TopicSubscriptionTest
             workflowEvents.add(event);
         }
 
+        @Override
+        public void handle(RaftEvent event) throws Exception
+        {
+            raftEvents.add(event);
+        }
+
         public int numTopicEvents()
         {
             return topicEvents.size();
@@ -939,5 +953,10 @@ public class TopicSubscriptionTest
         {
             return incidentEvents.size();
         }
+        public int numRaftEvents()
+        {
+            return raftEvents.size();
+        }
+
     }
 }

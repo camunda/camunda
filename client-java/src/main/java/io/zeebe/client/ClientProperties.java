@@ -51,13 +51,6 @@ public class ClientProperties
     public static final String CLIENT_TASK_EXECUTION_THREADS = "zeebe.client.tasks.execution.threads";
 
     /**
-     * True or false. Determines whether the task execution runtime automatically completes
-     * tasks that have not been completed/unlocked/... by their {@link TaskHandler}.
-     * Default value is <code>true</code>.
-     */
-    public static final String CLIENT_TASK_EXECUTION_AUTOCOMPLETE = "zeebe.client.tasks.execution.autocomplete";
-
-    /**
      * Determines the maximum amount of topic events are prefetched and buffered at a time
      * before they are handled to the event handler. Default value is 32.
      */
@@ -79,7 +72,6 @@ public class ClientProperties
         properties.putIfAbsent(CLIENT_SENDBUFFER_SIZE, "16");
         properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "2");
-        properties.putIfAbsent(CLIENT_TASK_EXECUTION_AUTOCOMPLETE, "true");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
     }
 }

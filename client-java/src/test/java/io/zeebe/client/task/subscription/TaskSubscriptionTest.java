@@ -45,13 +45,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.ClientProperties;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.PollableTaskSubscription;
-import io.zeebe.client.task.TaskController;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.client.task.impl.subscription.TaskSubscriptionImpl;
@@ -488,7 +488,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldAutocompleteTask()
+    public void shouldNotAutocompleteTask() throws InterruptedException
     {
         // given
         broker.stubTaskSubscriptionApi(123L);
@@ -508,19 +508,11 @@ public class TaskSubscriptionTest
         broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
         // then
-        final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
-                .filter(r -> r.eventType() == EventType.TASK_EVENT)
-                .findFirst())
-            .until(r -> r.isPresent())
-            .get();
+        Thread.sleep(1000L);
 
-        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
-        assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
-        assertThat(taskRequest.key()).isEqualTo(4L);
-        assertThat(taskRequest.getCommand())
-            .containsEntry("state", "COMPLETE")
-            .containsEntry("type", "bar")
-            .containsEntry("lockOwner", "foo");
+        assertThat(broker.getReceivedCommandRequests().stream()
+                .filter(r -> r.eventType() == EventType.TASK_EVENT)
+                .count()).isEqualTo(0);
     }
 
     @Test
@@ -531,7 +523,7 @@ public class TaskSubscriptionTest
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
-                .handler((c, t) -> c.completeTask("{\"a\": 1}"))
+                .handler((c, t) -> c.complete(t).payload("{\"a\": 1}").execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
                 .taskType("bar")
@@ -567,7 +559,7 @@ public class TaskSubscriptionTest
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
-                .handler((c, t) -> c.completeTask("{\"a\": 1}"))
+                .handler((c, t) -> c.complete(t).payload("{\"a\": 1}").execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
                 .taskType("bar")
@@ -603,7 +595,7 @@ public class TaskSubscriptionTest
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
-                .handler((c, t) -> c.completeTaskWithoutPayload())
+                .handler((c, t) -> c.complete(t).withoutPayload().execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
                 .taskType("bar")
@@ -682,7 +674,7 @@ public class TaskSubscriptionTest
         broker.stubTaskSubscriptionApi(123L);
 
         final TaskSubscription subscription = clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .lockOwner("owner")
             .lockTime(1000L)
             .taskFetchSize(5)
@@ -917,7 +909,7 @@ public class TaskSubscriptionTest
         protected boolean shouldWait = true;
 
         @Override
-        public void handle(TaskController controller, TaskEvent task)
+        public void handle(TasksClient client, TaskEvent task)
         {
             try
             {

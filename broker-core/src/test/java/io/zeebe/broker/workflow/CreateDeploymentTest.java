@@ -61,7 +61,7 @@ public class CreateDeploymentTest
                 .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -71,7 +71,7 @@ public class CreateDeploymentTest
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
-        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +90,7 @@ public class CreateDeploymentTest
             .partitionId(0)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-                .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                .put(PROP_STATE, "CREATE_DEPLOYMENT")
                 .put("bpmnXml", bpmnXml(modelInstance))
             .done()
             .sendAndAwait();
@@ -107,7 +107,7 @@ public class CreateDeploymentTest
                 .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -134,19 +134,19 @@ public class CreateDeploymentTest
                 .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
 
         // then
         final long deploymentKey = resp.key();
-        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
 
         final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents());
         assertThat(workflowEvent.key()).isGreaterThanOrEqualTo(0L).isNotEqualTo(deploymentKey);
         assertThat(workflowEvent.event())
-            .containsEntry(PROP_EVENT_TYPE, "CREATED")
+            .containsEntry(PROP_STATE, "CREATED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry("deploymentKey", deploymentKey)
@@ -167,7 +167,7 @@ public class CreateDeploymentTest
                 .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", bpmnXml(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -176,7 +176,7 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
-        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("The process must contain at least one none start event.");
     }
 
@@ -189,7 +189,7 @@ public class CreateDeploymentTest
                 .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", "not a workflow".getBytes(UTF_8))
                 .done()
                 .sendAndAwait();
@@ -198,7 +198,7 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
-        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("Failed to deploy BPMN model");
     }
 

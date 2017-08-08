@@ -52,16 +52,12 @@ public class SubscriptionManager implements TransportListener, Actor
     protected final EventSubscriptions<TaskSubscriptionImpl> taskSubscriptions;
     protected final EventSubscriptions<TopicSubscriptionImpl> topicSubscriptions;
 
-    // task-subscription-specific config
-    protected final boolean autoCompleteTasks;
-
     // topic-subscription specific config
     protected final int topicSubscriptionPrefetchCapacity;
 
     public SubscriptionManager(
             ZeebeClientImpl client,
             int numExecutionThreads,
-            boolean autoCompleteTasks,
             int topicSubscriptionPrefetchCapacity)
     {
         this.taskSubscriptions = new EventSubscriptions<>();
@@ -80,7 +76,6 @@ public class SubscriptionManager implements TransportListener, Actor
                 .join();
 
         this.numExecutionThreads = numExecutionThreads;
-        this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = new MsgPackMapper(client.getObjectMapper());
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
@@ -162,13 +157,13 @@ public class SubscriptionManager implements TransportListener, Actor
     public TaskSubscriptionBuilder newTaskSubscription(TasksClientImpl client, String topic)
     {
         final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new TaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, autoCompleteTasks, msgPackMapper);
+        return new TaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, msgPackMapper);
     }
 
     public PollableTaskSubscriptionBuilder newPollableTaskSubscription(TasksClientImpl client, String topic)
     {
         final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new PollableTaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, autoCompleteTasks, msgPackMapper);
+        return new PollableTaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, msgPackMapper);
     }
 
     public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client, String topic)

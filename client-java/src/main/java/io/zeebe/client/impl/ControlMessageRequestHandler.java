@@ -32,6 +32,7 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.transport.RemoteAddress;
 
+@SuppressWarnings("rawtypes")
 public class ControlMessageRequestHandler implements RequestResponseHandler
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -73,7 +74,8 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
         encoder.messageType(message.getType());
 
         offset = encoder.limit();
-        final int serializedMessageOffset = offset + ControlMessageRequestEncoder.dataHeaderLength();
+        final int messageHeaderOffset = offset;
+        final int serializedMessageOffset = messageHeaderOffset + ControlMessageRequestEncoder.dataHeaderLength();
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedMessage, serializedMessageOffset);
         try
@@ -85,7 +87,9 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
             throw new RuntimeException("Failed to serialize message", e);
         }
 
-        serializedMessage.putShort(offset, (short)out.position(), java.nio.ByteOrder.LITTLE_ENDIAN);
+        // can only write the header after we have written the message, as we don't know the length beforehand
+        final short commandLength = (short)out.position();
+        serializedMessage.putShort(messageHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
 
         serializedMessageLength = serializedMessageOffset + out.position();
     }

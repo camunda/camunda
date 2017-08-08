@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
@@ -37,7 +36,6 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
@@ -88,14 +86,7 @@ public class BrokerRestartTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(tempFolder.getRoot().getAbsolutePath()));
 
-    public ClientRule clientRule = new ClientRule(() ->
-    {
-        final Properties properties = new Properties();
-
-        properties.put(ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE, false);
-
-        return properties;
-    });
+    public ClientRule clientRule = new ClientRule();
 
     public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
@@ -165,7 +156,7 @@ public class BrokerRestartTest
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
         // then
@@ -222,7 +213,7 @@ public class BrokerRestartTest
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
         waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("CREATED")).size() > 1);
@@ -234,7 +225,7 @@ public class BrokerRestartTest
             .taskType("bar")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
         // then
@@ -290,7 +281,7 @@ public class BrokerRestartTest
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofSeconds(5))
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
         // then

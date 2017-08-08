@@ -17,11 +17,20 @@ package io.zeebe.client.event.impl;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.zeebe.client.event.RaftEvent;
+import io.zeebe.client.event.TopicEventType;
 import io.zeebe.transport.SocketAddress;
 
-public class RaftEventImpl implements RaftEvent
+public class RaftEventImpl extends EventImpl implements RaftEvent
 {
+
+    @JsonCreator
+    public RaftEventImpl()
+    {
+        super(TopicEventType.RAFT, null); // raft events have currently no state
+    }
 
     protected List<SocketAddress> members;
 

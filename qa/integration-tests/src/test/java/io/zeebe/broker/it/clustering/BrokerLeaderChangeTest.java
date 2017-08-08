@@ -311,7 +311,7 @@ public class BrokerLeaderChangeTest
                 {
                     if (t.getMetadata().getKey() == eventKey)
                     {
-                        c.completeTaskWithoutPayload();
+                        c.complete(t).withoutPayload().execute();
                     }
                 })
                 .open()

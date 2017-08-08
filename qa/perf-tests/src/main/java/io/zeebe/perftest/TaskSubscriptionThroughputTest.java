@@ -114,6 +114,7 @@ public class TaskSubscriptionThroughputTest
             .handler((c, t) ->
             {
                 reporter.increment();
+                c.complete(t).withoutPayload().execute();
             })
             .open();
 

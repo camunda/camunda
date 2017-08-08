@@ -20,6 +20,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.TopicEventType;
@@ -50,6 +52,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         this.bpmnXml = bpmnXml;
     }
 
+    @JsonTypeInfo(use = Id.NAME, defaultImpl = WorkflowDefinitionImpl.class)
     public List<WorkflowDefinition> getDeployedWorkflows()
     {
         return deployedWorkflows;

@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.data;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
@@ -31,7 +31,7 @@ public class DeploymentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_EVENT_TYPE, DeploymentState.class);
+    private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_STATE, DeploymentState.class);
     private final BinaryProperty bpmnXmlProp = new BinaryProperty("bpmnXml");
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(

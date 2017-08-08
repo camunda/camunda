@@ -148,7 +148,7 @@ public class CompleteTaskTest
         // when
         clientRule.tasks()
             .complete(baseEvent)
-            .clearPayload()
+            .withoutPayload()
             .execute();
 
         // then

@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.task;
 
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
 
 /**
@@ -28,6 +29,6 @@ public interface TaskHandler
      * <p>Handles a task. Implements the work to be done
      * whenever a task of a certain type is executed.
      */
-    void handle(TaskController controller, TaskEvent task);
+    void handle(TasksClient client, TaskEvent task);
 
 }

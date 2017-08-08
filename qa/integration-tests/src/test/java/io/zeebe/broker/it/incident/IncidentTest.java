@@ -31,9 +31,9 @@ import org.junit.rules.RuleChain;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.task.TaskController;
 import io.zeebe.client.task.TaskHandler;
 
 public class IncidentTest
@@ -154,7 +154,7 @@ public class IncidentTest
         TaskEvent task;
 
         @Override
-        public void handle(TaskController controller, TaskEvent task)
+        public void handle(TasksClient client, TaskEvent task)
         {
             this.task = task;
 
@@ -164,7 +164,7 @@ public class IncidentTest
             }
             else
             {
-                controller.completeTaskWithoutPayload();
+                client.complete(task).withoutPayload().execute();
             }
         }
     }

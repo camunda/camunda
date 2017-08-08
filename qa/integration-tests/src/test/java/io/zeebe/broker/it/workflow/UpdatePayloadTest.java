@@ -99,7 +99,7 @@ public class UpdatePayloadTest
             .taskType("task-1")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.completeTask("{\"result\": \"ok\"}"))
+            .handler((c, t) -> c.complete(t).payload("{\"result\": \"ok\"}").execute())
             .open();
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskType("task-2")));
@@ -120,7 +120,7 @@ public class UpdatePayloadTest
             .taskType("task-1")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.completeTask("{\"result\": \"done\"}"))
+            .handler((c, t) -> c.complete(t).payload("{\"result\": \"done\"}").execute())
             .open();
 
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));

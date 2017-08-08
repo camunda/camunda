@@ -15,12 +15,6 @@
  */
 package io.zeebe.client.event;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-
-import io.zeebe.client.workflow.impl.WorkflowDefinitionImpl;
-
-@JsonTypeInfo(use = Id.NAME, defaultImpl = WorkflowDefinitionImpl.class)
 public interface WorkflowDefinition
 {
     String getBpmnProcessId();

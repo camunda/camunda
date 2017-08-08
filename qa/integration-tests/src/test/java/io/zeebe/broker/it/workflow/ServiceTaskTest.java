@@ -163,7 +163,7 @@ public class ServiceTaskTest
             .taskType("foo")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.completeTaskWithoutPayload())
+            .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
         // then
@@ -226,7 +226,7 @@ public class ServiceTaskTest
             .taskType("foo")
             .lockOwner("owner")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.completeTask("{\"foo\":2}"))
+            .handler((c, t) ->  c.complete(t).payload("{\"foo\":2}").execute())
             .open();
 
         // then
@@ -262,7 +262,7 @@ public class ServiceTaskTest
             .handler((c, t) ->
             {
                 final String modifiedPayload = t.getPayload().replaceAll("1", "2");
-                c.completeTask(modifiedPayload);
+                c.complete(t).payload(modifiedPayload).execute();
             })
             .open();
 
@@ -300,7 +300,7 @@ public class ServiceTaskTest
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) -> c.completeTask("{\"foo\":2}"))
+            .handler((c, t) ->  c.complete(t).payload("{\"foo\":2}").execute())
             .open();
 
         // then

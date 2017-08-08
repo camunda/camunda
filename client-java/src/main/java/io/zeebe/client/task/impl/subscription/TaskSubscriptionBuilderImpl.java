@@ -35,7 +35,6 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 
     protected final TasksClientImpl client;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
-    protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
     protected final String topic;
     protected final int partition;
@@ -45,14 +44,12 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
             String topic,
             int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
-            boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
     {
         this.client = client;
         this.topic = topic;
         this.partition = partition;
         this.taskAcquisition = taskAcquisition;
-        this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = msgPackMapper;
     }
 
@@ -116,7 +113,6 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
                 lockOwner,
                 taskFetchSize,
                 msgPackMapper,
-                autoCompleteTasks,
                 taskAcquisition);
 
         taskAcquisition.registerSubscriptionAsync(subscription);

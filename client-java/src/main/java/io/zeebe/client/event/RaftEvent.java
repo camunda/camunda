@@ -22,7 +22,7 @@ import io.zeebe.transport.SocketAddress;
 /**
  * POJO representing an event of type {@link TopicEventType#RAFT}.
  */
-public interface RaftEvent
+public interface RaftEvent extends Event
 {
 
     /**

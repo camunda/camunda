@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -37,7 +36,6 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.task.PollableTaskSubscription;
@@ -49,14 +47,7 @@ public class TaskSubscriptionTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    public ClientRule clientRule = new ClientRule(() ->
-    {
-        final Properties properties = new Properties();
-
-        properties.put(ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE, false);
-
-        return properties;
-    });
+    public ClientRule clientRule = new ClientRule();
 
     public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 
@@ -158,7 +149,7 @@ public class TaskSubscriptionTest
             .execute();
 
         // when
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.completeTask("{\"a\":3}"));
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.complete(t).payload("{\"a\":3}").execute());
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .handler(taskHandler)
@@ -221,7 +212,7 @@ public class TaskSubscriptionTest
             clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
         }
 
-        final RecordingTaskHandler handler = new RecordingTaskHandler((c, t) -> c.completeTaskWithoutPayload());
+        final RecordingTaskHandler handler = new RecordingTaskHandler((c, t) -> c.complete(t).withoutPayload().execute());
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .handler(handler)
@@ -251,7 +242,7 @@ public class TaskSubscriptionTest
             {
                 throw new RuntimeException("expected failure");
             },
-            (c, t) -> c.completeTaskWithoutPayload()
+            (c, t) -> c.complete(t).withoutPayload().execute()
             );
 
         // when
@@ -315,7 +306,7 @@ public class TaskSubscriptionTest
             {
                 throw new RuntimeException("expected failure");
             },
-            (c, t) -> c.completeTaskWithoutPayload());
+            (c, t) -> c.complete(t).withoutPayload().execute());
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .handler(taskHandler)
@@ -406,7 +397,7 @@ public class TaskSubscriptionTest
     public void shouldGiveTaskToSingleSubscription()
     {
         // given
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.completeTaskWithoutPayload());
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.complete(t).withoutPayload().execute());
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
@@ -450,7 +441,7 @@ public class TaskSubscriptionTest
                 .execute();
 
         // when
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.completeTaskWithoutPayload());
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler((c, t) -> c.complete(t).withoutPayload().execute());
 
         doRepeatedly(() -> subscription.poll(taskHandler))
             .until((workCount) -> workCount == 1);

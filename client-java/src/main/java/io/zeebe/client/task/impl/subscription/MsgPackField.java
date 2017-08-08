@@ -21,7 +21,6 @@ import io.zeebe.client.impl.data.MsgPackConverter;
 
 public class MsgPackField
 {
-    // TODO: could do lazy initialization, i.e. only convert when required
     protected final MsgPackConverter msgPackConverter;
 
     protected String json;

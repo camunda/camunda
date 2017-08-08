@@ -34,8 +34,14 @@ public interface CompleteTaskCommand extends Request<TaskEvent>
     CompleteTaskCommand payload(String payload);
 
     /**
-     * Clear the task's payload. This means no payload is merged from task into the workflow instance, i.e.
+     * <p>Complete the task without submitting payload.
+     *
+     * <p>If this task is executed in the context of
+     * workflow, this means no payload is merged from the task into the workflow instance, so
      * the workflow instance payload remains unchanged.
+     *
+     * <p>If this is a standalone task, this method may or may not be used to
+     * alter the payload as it appears on the log. No follow-up processing depends on the payload.
      */
-    CompleteTaskCommand clearPayload();
+    CompleteTaskCommand withoutPayload();
 }

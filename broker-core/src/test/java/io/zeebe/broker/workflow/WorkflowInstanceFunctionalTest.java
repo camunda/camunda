@@ -349,7 +349,7 @@ public class WorkflowInstanceFunctionalTest
                 .limit(11)
                 .collect(Collectors.toList());
 
-        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_EVENT_TYPE)).containsExactly(
+        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_STATE)).containsExactly(
 
                 "CREATE_WORKFLOW_INSTANCE",
                 "WORKFLOW_INSTANCE_CREATED",

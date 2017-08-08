@@ -38,7 +38,6 @@ public class TaskSubscriptionImpl
     protected final long lockTime;
     protected final String lockOwner;
 
-    protected boolean autoComplete;
     protected MsgPackMapper msgPackMapper;
 
     public TaskSubscriptionImpl(
@@ -51,7 +50,6 @@ public class TaskSubscriptionImpl
             String lockOwner,
             int capacity,
             MsgPackMapper msgPackMapper,
-            boolean autoComplete,
             EventAcquisition<TaskSubscriptionImpl> acqusition)
     {
         super(topic, partition, capacity, acqusition);
@@ -60,7 +58,6 @@ public class TaskSubscriptionImpl
         this.taskType = taskType;
         this.lockTime = lockTime;
         this.lockOwner = lockOwner;
-        this.autoComplete = autoComplete;
         this.msgPackMapper = msgPackMapper;
     }
 
@@ -94,16 +91,9 @@ public class TaskSubscriptionImpl
             final TaskEventImpl taskEvent = msgPackMapper.convert(e.getAsMsgPack(), TaskEventImpl.class);
             taskEvent.updateMetadata(e.getMetadata());
 
-            final TaskControllerImpl controller = new TaskControllerImpl(taskClient, taskEvent);
-
             try
             {
-                taskHandler.handle(controller, taskEvent);
-
-                if (autoComplete && !controller.isTaskCompleted())
-                {
-                    controller.completeTaskWithoutPayload();
-                }
+                taskHandler.handle(taskClient, taskEvent);
             }
             catch (Exception handlingException)
             {
@@ -111,7 +101,9 @@ public class TaskSubscriptionImpl
                         ". Reporting failure to broker.", handlingException);
                 try
                 {
-                    controller.fail(handlingException);
+                    taskClient.fail(taskEvent)
+                        .retries(taskEvent.getRetries() - 1)
+                        .execute();
                 }
                 catch (Exception failureException)
                 {

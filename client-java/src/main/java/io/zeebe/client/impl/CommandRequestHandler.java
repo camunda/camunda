@@ -61,6 +61,7 @@ public class CommandRequestHandler implements RequestResponseHandler
         this.objectMapper = objectMapper;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void configure(CommandImpl command)
     {
         this.event = command.getEvent();
@@ -100,7 +101,8 @@ public class CommandRequestHandler implements RequestResponseHandler
             .position(metadata.getPosition());
 
         offset = encoder.limit();
-        final int serializedCommandOffset = offset + commandHeaderLength();
+        final int commandHeaderOffset = offset;
+        final int serializedCommandOffset = commandHeaderOffset + commandHeaderLength();
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedCommand, serializedCommandOffset);
         try
@@ -112,7 +114,9 @@ public class CommandRequestHandler implements RequestResponseHandler
             throw new RuntimeException("Failed to serialize command", e);
         }
 
-        serializedCommand.putShort(offset, (short)out.position(), java.nio.ByteOrder.LITTLE_ENDIAN);
+        // can only write the header after we have written the command, as we don't know the length beforehand
+        final short commandLength = (short) out.position();
+        serializedCommand.putShort(commandHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
 
         serializedCommandLength = serializedCommandOffset + out.position();
     }

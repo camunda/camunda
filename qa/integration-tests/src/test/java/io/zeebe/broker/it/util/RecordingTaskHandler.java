@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.task.TaskController;
 import io.zeebe.client.task.TaskHandler;
 
 public class RecordingTaskHandler implements TaskHandler
@@ -43,14 +43,14 @@ public class RecordingTaskHandler implements TaskHandler
     }
 
     @Override
-    public void handle(TaskController controller, TaskEvent task)
+    public void handle(TasksClient client, TaskEvent task)
     {
         final TaskHandler handler = taskHandlers[nextTaskHandler];
         nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
 
         try
         {
-            handler.handle(controller, task);
+            handler.handle(client, task);
         }
         finally
         {

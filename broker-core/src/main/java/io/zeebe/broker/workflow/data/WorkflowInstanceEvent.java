@@ -27,7 +27,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
 {
     public static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
 
-    public static final String PROP_EVENT_TYPE = "state";
+    public static final String PROP_STATE = "state";
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
     public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
@@ -35,7 +35,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
     public static final String PROP_WORKFLOW_KEY = "workflowKey";
     public static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
-    private final EnumProperty<WorkflowInstanceState> stateProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowInstanceState.class);
+    private final EnumProperty<WorkflowInstanceState> stateProp = new EnumProperty<>(PROP_STATE, WorkflowInstanceState.class);
 
     private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
     private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);

@@ -35,7 +35,6 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected final int partition;
     protected final TasksClientImpl taskClient;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
-    protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
 
     public PollableTaskSubscriptionBuilderImpl(
@@ -43,14 +42,12 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
             String topic,
             int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
-            boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
     {
         this.topic = topic;
         this.partition = partition;
         this.taskClient = taskClient;
         this.taskAcquisition = taskAcquisition;
-        this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = msgPackMapper;
     }
 
@@ -106,7 +103,6 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
                 lockOwner,
                 taskFetchSize,
                 msgPackMapper,
-                autoCompleteTasks,
                 taskAcquisition);
 
         taskAcquisition.registerSubscriptionAsync(subscription);

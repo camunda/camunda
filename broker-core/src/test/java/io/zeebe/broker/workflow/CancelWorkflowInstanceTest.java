@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
@@ -97,7 +97,7 @@ public class CancelWorkflowInstanceTest
                 .limit(9)
                 .collect(Collectors.toList());
 
-        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_EVENT_TYPE)).containsExactly(
+        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_STATE)).containsExactly(
                 "CREATE_WORKFLOW_INSTANCE",
                 "WORKFLOW_INSTANCE_CREATED",
                 "START_EVENT_OCCURRED",
