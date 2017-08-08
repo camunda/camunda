@@ -27,7 +27,7 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
     <!-- zb-build-tools -->
-    <version.build-tools>0.1.0-alpha3</version.build-tools>
+    <version.build-tools>0.1.0</version.build-tools>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.6</version.agrona>
