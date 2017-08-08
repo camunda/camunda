@@ -22,6 +22,10 @@ public class ConfigurationService {
   private String defaultPassword;
   @Value(("${camunda.optimize.auth.default.user.creation.enabled}"))
   private boolean defaultUserCreationEnabled;
+  @Value("${camunda.optimize.engine.auth.user}")
+  private String defaultEngineAuthenticationUser;
+  @Value("${camunda.optimize.engine.auth.password}")
+  private String defaultEngineAuthenticationPassword;
   @Value("${camunda.optimize.engine.auth.enabled}")
   private boolean engineAuthenticationEnabled;
 
@@ -245,11 +249,11 @@ public class ConfigurationService {
   }
 
   public String getDefaultUser() {
-    return defaultUser;
+    return defaultUser.trim();
   }
 
   public String getDefaultPassword() {
-    return defaultPassword;
+    return defaultPassword.trim();
   }
 
   public String getDateFormat() {
@@ -706,5 +710,27 @@ public class ConfigurationService {
 
   public void setDefaultUserCreationEnabled(boolean defaultUserCreationEnabled) {
     this.defaultUserCreationEnabled = defaultUserCreationEnabled;
+  }
+
+  public String getDefaultEngineAuthenticationUser() {
+    if(defaultEngineAuthenticationUser == null || defaultEngineAuthenticationUser.isEmpty()) {
+      return defaultUser.trim();
+    }
+    return defaultEngineAuthenticationUser.trim();
+  }
+
+  public void setDefaultEngineAuthenticationUser(String defaultEngineAuthenticationUser) {
+    this.defaultEngineAuthenticationUser = defaultEngineAuthenticationUser;
+  }
+
+  public String getDefaultEngineAuthenticationPassword() {
+    if(defaultEngineAuthenticationPassword == null || defaultEngineAuthenticationPassword.isEmpty()) {
+      return defaultPassword.trim();
+    }
+    return defaultEngineAuthenticationPassword.trim();
+  }
+
+  public void setDefaultEngineAuthenticationPassword(String defaultEngineAuthenticationPassword) {
+    this.defaultEngineAuthenticationPassword = defaultEngineAuthenticationPassword;
   }
 }
