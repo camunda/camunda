@@ -4,7 +4,7 @@
   <name>Zeebe Build Tools</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zb-build-tools</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -27,7 +27,7 @@
     <url>https://github.com/zeebe-io/zb-build-tools</url>
     <connection>scm:git:git@github.com:zeebe-io/zb-build-tools.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zb-build-tools.git</developerConnection>
-    <tag>0.1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
