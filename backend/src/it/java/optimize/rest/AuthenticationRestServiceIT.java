@@ -39,7 +39,6 @@ public class AuthenticationRestServiceIT {
     // given
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
     configurationService.setDefaultUserCreationEnabled(false);
-    elasticSearchRule.cleanAndVerify();
     embeddedOptimizeRule.reloadConfiguration();
 
     // when
