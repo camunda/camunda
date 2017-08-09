@@ -14,7 +14,12 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 
 import static org.camunda.optimize.service.es.schema.type.LicenseType.LICENSE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -29,6 +34,28 @@ public class LicenseManager {
 
   private final String licenseDocumentId = "license";
   private LicenseKey licenseKey = new OptimizeLicenseKey();
+  private String licenseFromFile;
+
+  @PostConstruct
+  public void init() {
+    // nothing to do here
+    try {
+      licenseFromFile = readFileToString("OptimizeLicense.txt");
+    } catch (Exception ignore) {
+      // do nothing
+    }
+  }
+
+  private String readFileToString(String filePath) throws IOException, URISyntaxException {
+    InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filePath);
+    ByteArrayOutputStream result = new ByteArrayOutputStream();
+    byte[] buffer = new byte[1024];
+    int length;
+    while ((length = inputStream.read(buffer)) != -1) {
+      result.write(buffer, 0, length);
+    }
+    return result.toString(StandardCharsets.UTF_8.name());
+  }
 
   public void storeLicense(String licenseAsString) throws OptimizeException {
     XContentBuilder builder;
@@ -55,6 +82,13 @@ public class LicenseManager {
     if (!licenseWasStored) {
       throw new OptimizeException("Could not store license in Elasticsearch. Please check the connection!");
     }
+  }
+
+  public String retrieveLicense() throws InvalidLicenseException {
+    if (licenseFromFile != null) {
+      return licenseFromFile;
+    }
+    return retrieveStoredOptimizeLicense();
   }
 
   public String retrieveStoredOptimizeLicense() throws InvalidLicenseException {
@@ -102,6 +136,11 @@ public class LicenseManager {
       dto.setValidUntil(licenseKey.getValidUntil());
     }
     return dto;
+  }
+
+  public LicenseInformationDto validateLicenseStoredInOptimize() throws InvalidLicenseException {
+    String license = retrieveLicense();
+    return validateOptimizeLicense(license);
   }
 
 }

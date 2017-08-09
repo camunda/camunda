@@ -43,10 +43,9 @@ public class LicenseCheckingRestService {
   @Path("/validate")
   @Consumes(MediaType.WILDCARD)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response validateLicenseStoredOptimizeLicense() {
+  public Response validateLicenseStoredInOptimize() {
     try {
-      String license = licenseManager.retrieveStoredOptimizeLicense();
-      LicenseInformationDto licenseInformationDto = licenseManager.validateOptimizeLicense(license);
+      LicenseInformationDto licenseInformationDto = licenseManager.validateLicenseStoredInOptimize();
       return buildOkResponse(licenseInformationDto);
     } catch (InvalidLicenseException e) {
       return buildServerErrorResponse(e);
