@@ -171,12 +171,10 @@ mavenJob(jobName)
                     properties releaseProperties
                     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
                 }
-            }
 
-            postBuildSteps
-            {
                 shell dockerHubUpload
             }
+
         }
 
     }
