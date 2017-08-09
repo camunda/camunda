@@ -2,8 +2,6 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
@@ -21,7 +19,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -141,7 +138,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     List<PaginatedImportService> services = mockImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
 
-    LocalDateTime expectedReset = LocalDateTime.now().plus(Double.valueOf(configurationService.getImportResetInterval()).longValue(), ChronoUnit.HOURS);
+    LocalDateTime expectedReset = LocalDateTime.now().plus(Double.valueOf(configurationService.getImportResetIntervalValue()).longValue(), ChronoUnit.HOURS);
     long toSleep = LocalDateTime.now().until(expectedReset, ChronoUnit.MILLIS);
     
     //when

@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.IdleImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
@@ -65,14 +64,20 @@ public class ImportScheduler extends Thread {
   }
 
   protected void checkAndResetImportIndexing() {
-    long castToLong = Double.valueOf(configurationService.getImportResetInterval()).longValue();
-    LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
-    if (LocalDateTime.now().isAfter(resetDueDate)) {
-      logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
-      for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
-        importIndexHandler.resetImportIndex();
+    if (!hasStillJobsToExecute() || allJobsAreBackingOff()) {
+      ChronoUnit unit = ChronoUnit.valueOf(
+          configurationService.getImportResetIntervalUnit().toUpperCase()
+      );
+      LocalDateTime resetDueDate = lastReset.plus(configurationService.getImportResetIntervalValue(), unit);
+      if (LocalDateTime.now().isAfter(resetDueDate)) { logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
+        for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+          importIndexHandler.resetImportIndex();
+        }
+        lastReset = LocalDateTime.now();
+        backoffService.resetBackoffCounters();
+        this.clearQueue();
+        this.scheduleNewImportRound();
       }
-      lastReset = LocalDateTime.now();
     }
   }
 

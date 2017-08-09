@@ -148,8 +148,10 @@ public class ConfigurationService {
   private String tokenFilter;
   @Value("${camunda.optimize.es.import.handler.interval.ms}")
   private long importHandlerWait;
-  @Value("${camunda.optimize.es.import.handler.pages.reset.interval.hours}")
-  private double importResetInterval;
+  @Value("${camunda.optimize.es.import.handler.pages.reset.interval.value}")
+  private long importResetIntervalValue;
+  @Value("${camunda.optimize.es.import.handler.pages.reset.interval.unit}")
+  private String importResetIntervalUnit;
   @Value("${camunda.optimize.es.import.handler.max.backoff}")
   private long maximumBackoff;
   @Value("${camunda.optimize.es.settings.index.refresh_interval}")
@@ -289,8 +291,8 @@ public class ConfigurationService {
     return historicProcessInstanceEndpoint;
   }
 
-  public double getImportResetInterval() {
-    return importResetInterval;
+  public long getImportResetIntervalValue() {
+    return importResetIntervalValue;
   }
 
   public int getElasticsearchScrollTimeout() {
@@ -575,8 +577,8 @@ public class ConfigurationService {
     this.importHandlerWait = importHandlerWait;
   }
 
-  public void setImportResetInterval(double importResetInterval) {
-    this.importResetInterval = importResetInterval;
+  public void setImportResetIntervalValue(long importResetIntervalValue) {
+    this.importResetIntervalValue = importResetIntervalValue;
   }
 
   public void setMaximumBackoff(long maximumBackoff) {
@@ -756,5 +758,13 @@ public class ConfigurationService {
 
   public void setGetGroupsEndpoint(String getGroupsEndpoint) {
     this.getGroupsEndpoint = getGroupsEndpoint;
+  }
+
+  public String getImportResetIntervalUnit() {
+    return importResetIntervalUnit;
+  }
+
+  public void setImportResetIntervalUnit(String importResetIntervalUnit) {
+    this.importResetIntervalUnit = importResetIntervalUnit;
   }
 }
