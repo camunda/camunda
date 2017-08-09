@@ -45,7 +45,6 @@ public class MappingExtractParameterizedTest
     public static Iterable<Object[]> parameters() throws Exception
     {
         return Arrays.asList(new Object[][] {
-            // 1. Test
             {
                 // source
                 "{}",
@@ -53,7 +52,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{}" },
-            // 2. Test
             {
                 // source
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -61,7 +59,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
-            // 3. Test
             {
                 // source
                 "{'foo':'bar','int':1}",
@@ -69,7 +66,13 @@ public class MappingExtractParameterizedTest
                 createMapping("$.foo", "$.newFoo"),
                 // expected result
                 "{'newFoo':'bar'}" },
-            // 4. Test
+            {
+                // source
+                "{'foo':'bar','int':1}",
+                // mapping
+                createMapping("$[foo]", "$[newFoo]"),
+                // expected result
+                "{'newFoo':'bar'}" },
             {
                 // source
                 "{'foo':'bar','int':1}",
@@ -77,7 +80,13 @@ public class MappingExtractParameterizedTest
                 createMapping("$.foo", "$.newFoo.newDepth.string"),
                 // expected result
                 "{'newFoo':{'newDepth':{'string':'bar'}}}" },
-            // 5. Test
+            {
+                // source
+                "{'foo':'bar','int':1}",
+                // mapping
+                createMapping("$[foo]", "$[newFoo][newDepth][string]"),
+                // expected result
+                "{'newFoo':{'newDepth':{'string':'bar'}}}" },
             {
                 // source
                 "{'obj':{'attr':'text'},'int':1}",
@@ -85,7 +94,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.obj", "$.newObj"),
                 // expected result
                 "{'newObj':{'attr':'text'}}" },
-            // 6. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':1}",
@@ -93,7 +101,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array", "$.newArray"),
                 // expected result
                 "{'newArray':[1, 2, 3]}" },
-            // 7. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':1}",
@@ -101,7 +108,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array[0]", "$.firstIdxValue"),
                 // expected result
                 "{'firstIdxValue':1}" },
-            // 8. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':1}",
@@ -109,7 +115,13 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array[1]", "$.array[0]"),
                 // expected result
                 "{'array':[2]}" },
-            // 9. Test
+            {
+                // source
+                "{'array':[1, 2, 3],'int':1}",
+                // mapping
+                createMapping("$[array][1]", "$[array][0]"),
+                // expected result
+                "{'array':[2]}" },
             {
                 // source
                 "{'array':[1, 2, 3],'int':1}",
@@ -119,7 +131,6 @@ public class MappingExtractParameterizedTest
                                 .mapping("$.array[0]", "$.array[2]").build(),
                 // expected result
                 "{'array':[3, 2, 1]}" },
-            // 10. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':1}",
@@ -127,7 +138,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array[1]", "$.array[0].test"),
                 // expected result
                 "{'array':[{'test':2}]}" },
-            // 11. Test
             {
                 // source
                 "{'array':[{'test':'value'}, 2, 3],'int':1}",
@@ -135,7 +145,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array[0].test", "$.testValue"),
                 // expected result
                 "{'testValue':'value'}" },
-            // 12. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3]}",
@@ -144,7 +153,6 @@ public class MappingExtractParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newFoo':'bar', 'newObj':{'test':'value'}}" },
-            // 13. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3]}",
@@ -153,7 +161,6 @@ public class MappingExtractParameterizedTest
                                 .mapping("$.obj", "$.newDepth.newObj").build(),
                 // expected result
                 "{'newDepth':{'newFoo':'bar', 'newObj':{'test':'value'}}}" },
-            // 14. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3]}",
@@ -162,7 +169,7 @@ public class MappingExtractParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newObj':{'test':'value'}}" },
-            // 15. Test zeebe-io/zeebe#297
+            // zeebe-io/zeebe#297
 //            {
 //                // source
 //                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -173,7 +180,6 @@ public class MappingExtractParameterizedTest
 //                "{'foo':{'foo':'bar','int':{'test':'ok'},'obj':{'test':'ok'},'array':[1,2,3]}}"
 //
 //            },
-            // 16.Test
             {
                 // source
                 "{'array':[[1,2],3,4], 'int':1}",
@@ -181,7 +187,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.array[0]", "$.newArray"),
                 // expected result
                 "{'newArray':[1,2]}" },
-            // 17.Test
             {
                 // source
                 "{'a':{'bb':{'value':'x'}}, 'ab':{'b':{'value':'y'}}}}",
@@ -189,7 +194,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.ab.b", "$.value"),
                 // expected result
                 "{'value':{'value':'y'}}" },
-            // 18.Test
             {
                 // source
                 new String(Files.readAllBytes(Paths.get(MappingExtractParameterizedTest.class.getResource("largeJsonDocument.json")
@@ -198,7 +202,6 @@ public class MappingExtractParameterizedTest
                 createMapping("$.fourth.friends[2].name", "$.name"),
                 // expected result
                 "{'name':'Preston Travis'}" },
-            // 19.Test
             {
                 // source
                 "{'arr':[{'obj':{'value':'x', 'otherArr':[{'test':'hallo'}, {'obj':{'arr':[0, 1]}}]}}, {'otherValue':1}], 'ab':{'b':{'value':'y'}}}",
@@ -206,12 +209,18 @@ public class MappingExtractParameterizedTest
                 createMapping("$.arr[0].obj.otherArr[1].obj.arr", "$.objArr"),
                 // expected result
                 "{'objArr':[0, 1]}}" },
-            // 20.Test
             {
                 // source
                 "{'objArr':[0, 1]}}",
                 // mapping
                 createMapping("$.objArr", "$.arr[0].obj.otherArr[0].obj.arr"),
+                // expected result
+                "{'arr':[{'obj':{'otherArr':[{'obj':{'arr':[0, 1]}}]}}]}" },
+            {
+                // source
+                "{'objArr':[0, 1]}}",
+                // mapping
+                createMapping("$.objArr", "$[arr][0][obj][otherArr][0][obj][arr]"),
                 // expected result
                 "{'arr':[{'obj':{'otherArr':[{'obj':{'arr':[0, 1]}}]}}]}" }});
     }

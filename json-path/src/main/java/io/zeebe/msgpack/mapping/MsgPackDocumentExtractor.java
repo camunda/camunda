@@ -18,8 +18,12 @@ package io.zeebe.msgpack.mapping;
 import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
 
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.msgpack.jsonpath.JsonPathToken;
+import io.zeebe.msgpack.jsonpath.JsonPathTokenVisitor;
+import io.zeebe.msgpack.jsonpath.JsonPathTokenizer;
 import io.zeebe.msgpack.query.MsgPackQueryExecutor;
 import io.zeebe.msgpack.query.MsgPackTraverser;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 /**
@@ -109,6 +113,8 @@ public final class MsgPackDocumentExtractor
 
     private final MsgPackTraverser traverser = new MsgPackTraverser();
     private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
+    private final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+    private final TargetPathVisitor targetPathVisitor = new TargetPathVisitor();
 
     /**
      * Wraps a existing message pack document tree and a message pack document, on which the extracting
@@ -135,25 +141,9 @@ public final class MsgPackDocumentExtractor
     {
         for (Mapping mapping : mappings)
         {
-            final String targetPath[] = mapping.getTargetQueryString()
-                                               .split(MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR_REGEX);
-            String nodeId, parentId = "";
-            int index = 0;
-            for (String nodeName : targetPath)
-            {
-                nodeId = createParentRelation(parentId, nodeName);
-
-                final boolean isLeaf = index + 1 >= targetPath.length;
-                if (isLeaf)
-                {
-                    executeLeafMapping(mapping.getSource());
-                    documentTreeReference.addLeafNode(nodeId,
-                                                      queryExecutor.currentResultPosition(),
-                                                      queryExecutor.currentResultLength());
-                }
-                parentId = nodeId;
-                index++;
-            }
+            targetPathVisitor.reset(mapping);
+            final String targetQueryString = mapping.getTargetQueryString();
+            tokenizer.tokenize(BufferUtil.wrapString(targetQueryString), 0, targetQueryString.length(), targetPathVisitor);
         }
         return documentTreeReference;
     }
@@ -240,6 +230,38 @@ public final class MsgPackDocumentExtractor
             throw new IllegalStateException(EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE);
         }
         traverser.reset();
+    }
+
+    private final class TargetPathVisitor implements JsonPathTokenVisitor
+    {
+        private String nodeId;
+        private String parentId;
+        private Mapping mapping;
+
+        void reset(Mapping mapping)
+        {
+            nodeId = "";
+            parentId = "";
+            this.mapping = mapping;
+        }
+
+        @Override
+        public void visit(JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength)
+        {
+            if (type == JsonPathToken.LITERAL || type == JsonPathToken.ROOT_OBJECT)
+            {
+                final String nodeName = valueBuffer.getStringWithoutLengthUtf8(valueOffset, valueLength);
+                nodeId = createParentRelation(parentId, nodeName);
+                parentId = nodeId;
+            }
+            else if (type == JsonPathToken.END_INPUT)
+            {
+                executeLeafMapping(mapping.getSource());
+                documentTreeReference.addLeafNode(nodeId,
+                                                  queryExecutor.currentResultPosition(),
+                                                  queryExecutor.currentResultLength());
+            }
+        }
     }
 
     public void clear()
