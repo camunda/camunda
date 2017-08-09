@@ -205,7 +205,7 @@ public class BucketBufferArrayIOTest
         final int blockCountPerBucket = 16;
         final int blockSize = 16;
         final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         // when
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -305,7 +305,7 @@ public class BucketBufferArrayIOTest
         // initial realAddresses length is 32
         final int bucketBuffers = 32;
         // all bucket buffers will be filled
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         // when
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -636,7 +636,7 @@ public class BucketBufferArrayIOTest
         final int blockCountPerBucket = 16;
         final int blockSize = 16;
         final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final byte[] writeBuffer = new byte[4096];
@@ -703,7 +703,7 @@ public class BucketBufferArrayIOTest
         final int blockCountPerBucket = 16;
         final int blockSize = 16;
         final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final byte[] writeBuffer = new byte[4096];
@@ -768,7 +768,7 @@ public class BucketBufferArrayIOTest
         final int blockCountPerBucket = 16;
         final int blockSize = 16;
         final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final byte[] writeBuffer = new byte[4096];
@@ -837,7 +837,7 @@ public class BucketBufferArrayIOTest
         final int blockCountPerBucket = 16;
         final int blockSize = 16;
         final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
+        final BucketBufferArray bucketBufferArray = createFilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final byte[] writeBuffer = new byte[4096];
@@ -900,27 +900,13 @@ public class BucketBufferArrayIOTest
     public void shouldThrowExceptionOnReadIOException() throws IOException
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-        final int blockCountPerBucket = 16;
-        final int blockSize = 16;
-        final int bucketBuffers = (int) Math.ceil(Math.ceil((double) DATA_COUNT / (double) ALLOCATION_FACTOR) / (double) blockCountPerBucket);
-        final BucketBufferArray bucketBufferArray = createfilledBucketBufferArray(keyHandler, valueHandler, blockCountPerBucket, bucketBuffers);
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final byte[] writeBuffer = new byte[4096];
-        bucketBufferArray.writeToStream(outputStream, writeBuffer);
-
-        final byte[] writtenBytes = outputStream.toByteArray();
-        assertThat(writtenBytes.length).isEqualTo((int) bucketBufferArray.size());
-
-        // when
         final AlwaysFailingInputStream inputStream = new AlwaysFailingInputStream();
         final BucketBufferArray newBucketBufferArray = new BucketBufferArray(16, 8, 8);
         final byte[] readBuffer = new byte[4096];
 
         try
         {
+            // when
             newBucketBufferArray.readFromStream(inputStream, readBuffer);
             fail();
         }
@@ -936,7 +922,6 @@ public class BucketBufferArrayIOTest
         assertThat(newBucketBufferArray.getBlockCount()).isEqualTo(0);
 
         // finally
-        bucketBufferArray.close();
         newBucketBufferArray.close();
     }
 
@@ -993,7 +978,7 @@ public class BucketBufferArrayIOTest
         assertThat(buffer.getLong((int) getBlockValueOffset(blockOffset, SIZE_OF_LONG))).isEqualTo(0xFFL);
     }
 
-    private BucketBufferArray createfilledBucketBufferArray(LongKeyHandler keyHandler,
+    private BucketBufferArray createFilledBucketBufferArray(LongKeyHandler keyHandler,
                                                             LongValueHandler valueHandler,
                                                             int blockCountPerBucket,
                                                             int bucketBuffers)

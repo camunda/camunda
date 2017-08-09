@@ -18,10 +18,6 @@ package io.zeebe.test.util.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Throws an {@link IOException} on every {@code failureFrequency} call to {@link #read}.
- * Otherwise reads the next byte from the {@code underlyingInputStream}.
- */
 public class AlwaysFailingInputStream extends InputStream
 {
     @Override
