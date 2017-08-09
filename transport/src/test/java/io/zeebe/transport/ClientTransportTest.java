@@ -22,8 +22,10 @@ import static org.assertj.core.api.Assertions.fail;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +38,10 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.util.ControllableServerTransport;
+import io.zeebe.transport.util.RecordingMessageHandler;
+import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
@@ -59,12 +64,12 @@ public class ClientTransportTest
     protected Dispatcher clientReceiveBuffer;
 
     protected ClientTransport clientTransport;
-    protected ControllableServerTransport serverTransport;
+    protected ActorScheduler actorScheduler;
 
     @Before
     public void setUp()
     {
-        final ActorScheduler actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
         closeables.manage(actorScheduler);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
@@ -87,9 +92,6 @@ public class ClientTransportTest
                 .messageReceiveBuffer(clientReceiveBuffer)
                 .build();
         closeables.manage(clientTransport);
-
-        serverTransport = new ControllableServerTransport();
-        closeables.manage(serverTransport);
     }
 
     @After
@@ -98,10 +100,37 @@ public class ClientTransportTest
         ClockUtil.reset();
     }
 
+    protected ControllableServerTransport buildControllableServerTransport()
+    {
+        final ControllableServerTransport serverTransport = new ControllableServerTransport();
+        closeables.manage(serverTransport);
+        return serverTransport;
+    }
+
+    protected ServerTransport buildServerTransport(Function<ServerTransportBuilder, ServerTransport> builderConsumer)
+    {
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(BUFFER_SIZE)
+            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
+            .actorScheduler(actorScheduler)
+            .build();
+        closeables.manage(serverSendBuffer);
+
+        final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .scheduler(actorScheduler);
+
+        final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
+        closeables.manage(serverTransport);
+
+        return serverTransport;
+    }
+
     @Test
     public void shouldUseSameChannelForConsecutiveRequestsToSameRemote()
     {
         // given
+        final ControllableServerTransport serverTransport = buildControllableServerTransport();
         serverTransport.listenOn(SERVER_ADDRESS1);
 
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
@@ -124,6 +153,7 @@ public class ClientTransportTest
     public void shouldUseDifferentChannelsForDifferentRemotes()
     {
         // given
+        final ControllableServerTransport serverTransport = buildControllableServerTransport();
         serverTransport.listenOn(SERVER_ADDRESS1);
         serverTransport.listenOn(SERVER_ADDRESS2);
         final ClientOutput output = clientTransport.getOutput();
@@ -152,6 +182,7 @@ public class ClientTransportTest
     public void shouldOpenNewChannelOnceChannelIsClosed()
     {
         // given
+        final ControllableServerTransport serverTransport = buildControllableServerTransport();
         serverTransport.listenOn(SERVER_ADDRESS1);
 
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
@@ -180,6 +211,7 @@ public class ClientTransportTest
     public void shouldCloseChannelsWhenTransportCloses()
     {
         // given
+        final ControllableServerTransport serverTransport = buildControllableServerTransport();
         serverTransport.listenOn(SERVER_ADDRESS1);
 
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
@@ -251,6 +283,8 @@ public class ClientTransportTest
     public void shouldReuseRequestOnceClosed()
     {
         // given
+        final ControllableServerTransport serverTransport = buildControllableServerTransport();
+
         final ClientOutput clientOutput = clientTransport.getOutput();
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
@@ -332,6 +366,83 @@ public class ClientTransportTest
         doRepeatedly(() -> subscription.poll()).until(i -> i != 0);
         assertThat(numInvocations.get()).isEqualTo(2);
     }
+
+    @Test
+    public void shouldPostponeMessagesOnReceiveBufferBackpressure() throws InterruptedException
+    {
+        // given
+        final int maximumMessageLength = clientReceiveBuffer.getMaxFrameLength()
+                - TransportHeaderDescriptor.HEADER_LENGTH
+                - 1; // https://github.com/zeebe-io/zb-dispatcher/issues/21
+
+        final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
+
+        final int messagesToExhaustReceiveBuffer = (BUFFER_SIZE / largeBuf.capacity()) + 1;
+        final SendMessagesHandler handler = new SendMessagesHandler(messagesToExhaustReceiveBuffer, largeBuf);
+
+        buildServerTransport(
+            b ->
+                b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(handler, null));
+
+        final RecordingMessageHandler clientHandler = new RecordingMessageHandler();
+        final ClientInputMessageSubscription clientSubscription = clientTransport.openSubscription("foo", clientHandler).join();
+
+        // triggering the server pushing a the messages
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        clientTransport.getOutput().sendMessage(new TransportMessage().remoteAddress(remote).buffer(BUF1));
+
+        TransportTestUtil.waitUntilExhausted(clientReceiveBuffer);
+        Thread.sleep(200L); // give transport a bit of time to try to push more messages on top
+
+        // when
+        final AtomicInteger receivedMessages = new AtomicInteger(0);
+        doRepeatedly(() ->
+        {
+            final int polledMessages = clientSubscription.poll();
+            return receivedMessages.addAndGet(polledMessages);
+        }).until(m -> m == messagesToExhaustReceiveBuffer);
+
+        // then
+        assertThat(receivedMessages.get()).isEqualTo(messagesToExhaustReceiveBuffer);
+    }
+
+    protected class SendMessagesHandler implements ServerMessageHandler
+    {
+        final int numMessagesToSend;
+        int messagesSent;
+        final TransportMessage message;
+
+        public SendMessagesHandler(int numMessagesToSend, DirectBuffer messageToSend)
+        {
+            this.numMessagesToSend = numMessagesToSend;
+            this.messagesSent = 0;
+            this.message = new TransportMessage().buffer(messageToSend);
+        }
+
+        @Override
+        public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
+                int length)
+        {
+            message.remoteAddress(remoteAddress);
+            for (int i = messagesSent; i < numMessagesToSend; i++)
+            {
+                if (output.sendMessage(message))
+                {
+                    System.out.println("sent message " + i);
+                    messagesSent++;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+    }
+
 
 
 }

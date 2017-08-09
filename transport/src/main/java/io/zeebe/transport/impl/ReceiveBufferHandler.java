@@ -49,13 +49,9 @@ public class ReceiveBufferHandler implements FragmentHandler
             }
 
             final long offerPosition = receiveBuffer.offer(buffer, offset, length, streamId);
-            if (offerPosition == -2)
+            if (offerPosition < 0)
             {
                 return POSTPONE_FRAGMENT_RESULT;
-            }
-            else if (offerPosition == -1)
-            {
-                return FAILED_FRAGMENT_RESULT;
             }
             else
             {

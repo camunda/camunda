@@ -53,6 +53,7 @@ public class RecordingMessageHandler implements ServerMessageHandler, ClientMess
             int offset,
             int length)
     {
+        System.out.println("Received message of length " + length);
         recordMessage(remoteAddress, buffer, offset, length);
 
         return true;

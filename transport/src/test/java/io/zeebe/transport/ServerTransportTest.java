@@ -48,8 +48,6 @@ public class ServerTransportTest
     protected ClientTransport clientTransport;
     protected ServerTransport serverTransport;
 
-    private ActorScheduler actorScheduler;
-
     protected RecordingMessageHandler serverHandler = new RecordingMessageHandler();
     protected RecordingMessageHandler clientHandler = new RecordingMessageHandler();
 
@@ -58,7 +56,8 @@ public class ServerTransportTest
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
+        final ActorScheduler actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
+        closeables.manage(actorScheduler);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
