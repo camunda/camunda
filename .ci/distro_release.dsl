@@ -183,13 +183,6 @@ mavenJob(jobName)
 
     publishers
     {
-        archiveArtifacts
-        {
-            allowEmpty true
-            defaultExcludes false
-            onlyIfSuccessful false
-            pattern '**/hs_err_*.log'
-        }
 
         deployArtifacts
         {
