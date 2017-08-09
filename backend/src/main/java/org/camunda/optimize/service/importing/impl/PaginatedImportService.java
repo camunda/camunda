@@ -19,9 +19,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
   protected Set<String> idsForPostProcessing;
 
-  public Class<IH> getIndexHandlerType() {
-    return (Class<IH>) ((ParameterizedType)this.getClass().getGenericSuperclass()).getActualTypeArguments()[2];
-  }
+  public abstract Class<IH> getIndexHandlerType();
 
   @Override
   protected List<OPT> processNewEngineEntries(List<ENG> entries) {

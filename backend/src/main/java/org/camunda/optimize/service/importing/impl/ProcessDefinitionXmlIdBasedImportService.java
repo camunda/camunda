@@ -39,6 +39,11 @@ public class ProcessDefinitionXmlIdBasedImportService
   }
 
   @Override
+  public Class<DefinitionBasedImportIndexHandler> getIndexHandlerType() {
+    return DefinitionBasedImportIndexHandler.class;
+  }
+
+  @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher.fetchProcessDefinitionXmls(
       job.getCurrentDefinitionBasedImportIndex(),

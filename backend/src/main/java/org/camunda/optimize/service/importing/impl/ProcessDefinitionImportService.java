@@ -39,6 +39,11 @@ public class ProcessDefinitionImportService
   }
 
   @Override
+  public Class<AllEntitiesBasedImportIndexHandler> getIndexHandlerType() {
+    return AllEntitiesBasedImportIndexHandler.class;
+  }
+
+  @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return processDefinitionFetcher.fetchProcessDefinitions(
       job.getAbsoluteImportIndex()

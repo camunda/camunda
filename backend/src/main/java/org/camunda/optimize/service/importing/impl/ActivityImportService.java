@@ -45,6 +45,11 @@ public class ActivityImportService
   }
 
   @Override
+  public Class<DefinitionBasedImportIndexHandler> getIndexHandlerType() {
+    return DefinitionBasedImportIndexHandler.class;
+  }
+
+  @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) {
     return activityInstanceFetcher.fetchHistoricActivityInstances(
       job.getCurrentDefinitionBasedImportIndex(),
