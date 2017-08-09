@@ -41,7 +41,7 @@ TODO.
 You can run Zeebe with Docker:
 
 ```bash
-docker run camunda/zeebe:0.1.0
+docker run -p 51015:51015 camunda/zeebe:0.1.0
 ```
 
 TODO:
