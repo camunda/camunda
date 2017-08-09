@@ -429,7 +429,6 @@ public class ClientTransportTest
             {
                 if (output.sendMessage(message))
                 {
-                    System.out.println("sent message " + i);
                     messagesSent++;
                 }
                 else
