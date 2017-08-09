@@ -1,3 +1,4 @@
+import {$window} from 'view-utils';
 import {get, post} from 'http';
 import {addNotification} from 'notifications';
 import {formatDate} from 'utils';
@@ -35,6 +36,11 @@ export function checkLicenseAndNotifyIfExpiresSoon() {
           text: `${daysDiff} day${daysDiff > 1 ? 's': ''} left.
           License expires ${formatDate(validUntilDate)}.`
         });
+      }
+    })
+    .catch(function() {
+      if (process.env.NODE_ENV === 'production') {
+        $window.location.pathname = '/license.html';
       }
     });
 }

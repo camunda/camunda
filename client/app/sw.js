@@ -88,16 +88,32 @@ function isRequestCachable(request) {
 function handleAssetsRequests(event) {
   const {request} = event;
 
+  const updateResponse = fetchAndUpdate(request, ASSETS_CACHE);
+
+  event.waitUntil(updateResponse);
+
   return event.respondWith(
     caches
       .match(request)
-      .then(response =>  response || fetchAndUpdate(request, ASSETS_CACHE))
+      .then(response =>  {
+        return response || updateResponse;
+      })
   );
 }
 
 function fetchAndUpdate(request, cacheName) {
   return fetch(request)
     .then(response => {
+      if (response.type === 'opaqueredirect') {
+        // delete old cached resource and don't cache redirect response
+        return caches
+          .open(cacheName)
+          .then(cache => {
+            return cache.delete(request);
+          })
+          .then(() => response);
+      }
+
       const responseClone = response.clone();
 
       return caches.open(cacheName)

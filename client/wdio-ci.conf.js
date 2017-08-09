@@ -152,8 +152,25 @@ exports.config = {
     //
     // Gets executed before test execution begins. At this point you can access all global
     // variables, such as `browser`. It is the perfect place to define custom commands.
-    // before: function (capabilities, specs) {
-    // },
+    before: function (capabilities, specs) {
+      const license = `--------------- BEGIN OPTIMIZE FAKE KEY ---------------
+      redactedredactedredactedredactedredactedredactedredactedre
+      redactedredactedredactedredactedredactedredactedredactedre
+      redactedredactedredactedredactedredactedredactedredactedre
+      redactedredactedredactedredactedredactedredactedredactedre
+      redactedredactedredactedredactedredactedredactedredactedre
+      redactedredactedredactedredactedredactedredactedredacte
+      schrottis inn;unlimited
+      ---------------  END OPTIMIZE LICENSE KEY  ---------------`;
+
+      browser.url('/license.html');
+      browser.waitForEnabled('textarea.form-control');
+
+      browser.setValue('textarea.form-control', license);
+      browser.click('button[type="submit"]');
+
+      browser.waitForEnabled('.alert-success');
+    },
     //
     // Hook that gets executed before the suite starts
     // beforeSuite: function (suite) {

@@ -2,7 +2,11 @@
 echo "Starting E2E tests"
 sh ./start-selenium.sh &
 
-mvn -s settings.xml -Pproduction -DskipTests -Padd-license-key clean package
+if [ ! -f ./settings.xml ]; then
+  mvn -Pproduction,e2e,add-license-key,docs -DskipTests clean package
+else
+  mvn -s settings.xml -Pproduction,e2e,add-license-key,docs -DskipTests clean package
+fi
 
 RETRIES=6
 SLEEP_TIME=10

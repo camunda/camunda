@@ -11,6 +11,9 @@ describe('license checkLicenseAndNotifyIsExpiresSoon', () => {
   let get;
   let addNotification;
   let response;
+  let $window;
+  let locationPathnameSet;
+  let NODE_ENV;
 
   setupPromiseMocking();
 
@@ -25,11 +28,30 @@ describe('license checkLicenseAndNotifyIsExpiresSoon', () => {
 
     addNotification = sinon.spy();
     __set__('addNotification', addNotification);
+
+    $window = {
+      location: {}
+    };
+
+    NODE_ENV = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    locationPathnameSet = sinon.spy();
+
+    Object.defineProperty($window.location, 'pathname', {
+      get: () => 'href',
+      set: locationPathnameSet
+    });
+
+    __set__('$window', $window);
   });
 
   afterEach(() => {
     __ResetDependency__('get');
     __ResetDependency__('addNotification');
+    __ResetDependency__('$window');
+
+    process.env.NODE_ENV = NODE_ENV;
   });
 
   it('should not add notification if license expires later than 10 days from now', done => {
@@ -53,6 +75,22 @@ describe('license checkLicenseAndNotifyIsExpiresSoon', () => {
       .then(() => {
         expect(
           addNotification.called
+        ).to.eql(true);
+
+        done();
+      });
+
+    Promise.runAll();
+  });
+
+  it('should redirect if license expired yesterday', done => {
+    get = sinon.stub().returns(Promise.reject('whatever'));
+    __set__('get', get);
+
+    checkLicenseAndNotifyIfExpiresSoon()
+      .then(() => {
+        expect(
+          locationPathnameSet.called
         ).to.eql(true);
 
         done();
