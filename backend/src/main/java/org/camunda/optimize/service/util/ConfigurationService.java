@@ -28,6 +28,8 @@ public class ConfigurationService {
   private String defaultEngineAuthenticationPassword;
   @Value("${camunda.optimize.engine.auth.enabled}")
   private boolean engineAuthenticationEnabled;
+  @Value("${camunda.optimize.engine.auth.access.group.id}")
+  private String optimizeAccessGroupId;
 
   // optimize
   @Value("${camunda.optimize.serialization.date.format}")
@@ -130,6 +132,8 @@ public class ConfigurationService {
   private String historicProcessInstanceCountEndpoint;
   @Value("${camunda.optimize.engine.user.validation.endpoint}")
   private String userValidationEndpoint;
+  @Value("${camunda.optimize.engine.get.groups.endpoint}")
+  private String getGroupsEndpoint;
   @Value("${camunda.optimize.engine.name}")
   private String engineName;
   @Value("${camunda.optimize.engine.enabled}")
@@ -732,5 +736,25 @@ public class ConfigurationService {
 
   public void setDefaultEngineAuthenticationPassword(String defaultEngineAuthenticationPassword) {
     this.defaultEngineAuthenticationPassword = defaultEngineAuthenticationPassword;
+  }
+
+  public String getOptimizeAccessGroupId() {
+    return optimizeAccessGroupId.trim();
+  }
+
+  public void setOptimizeAccessGroupId(String optimizeAccessGroupId) {
+    this.optimizeAccessGroupId = optimizeAccessGroupId;
+  }
+
+  public boolean isAuthorizationCheckNecessary() {
+    return !optimizeAccessGroupId.trim().isEmpty();
+  }
+
+  public String getGetGroupsEndpoint() {
+    return getGroupsEndpoint;
+  }
+
+  public void setGetGroupsEndpoint(String getGroupsEndpoint) {
+    this.getGroupsEndpoint = getGroupsEndpoint;
   }
 }

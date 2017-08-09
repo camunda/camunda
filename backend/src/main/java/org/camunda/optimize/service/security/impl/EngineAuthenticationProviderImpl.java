@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.security.impl;
 
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
+import org.camunda.optimize.dto.engine.GroupInfoDto;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -13,6 +14,8 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import static org.camunda.optimize.service.util.EngineConstantsUtil.USER_ID;
 
 /**
  * @author Askar Akhmerov
@@ -28,6 +31,43 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider 
   private ConfigurationService configurationService;
 
   public boolean authenticate(CredentialsDto credentialsDto) {
+    boolean isAuthenticated = performAuthenticationCheck(credentialsDto);
+    boolean isAuthorized = true;
+    if(configurationService.isAuthorizationCheckNecessary()) {
+      isAuthorized = performAuthorizationCheck(credentialsDto);
+    }
+    return isAuthenticated && isAuthorized;
+  }
+
+  private boolean performAuthorizationCheck(CredentialsDto credentialsDto) {
+    boolean isAuthorized = false;
+    try {
+      Response response = client
+          .target(configurationService.getEngineRestApiEndpoint())
+          .queryParam(USER_ID, credentialsDto.getUsername())
+          .path(configurationService.getGetGroupsEndpoint())
+          .request(MediaType.APPLICATION_JSON)
+          .get();
+
+      if (response.getStatus() == 200) {
+        GroupInfoDto responseEntity = response.readEntity(GroupInfoDto.class);
+        isAuthorized = responseEntity.containsGroup(configurationService.getOptimizeAccessGroupId());
+      }
+
+    } catch (Exception e) {
+      logger.warn("Connection to engine cannot be established", e.getMessage());
+      if (logger.isDebugEnabled()) {
+        logger.debug("Engine endpoint: ["
+            + configurationService.getEngineRestApiEndpoint()
+            + "] with path ["
+            + configurationService.getGetGroupsEndpoint()
+            + "]", e);
+      }
+    }
+    return isAuthorized;
+  }
+
+  private boolean performAuthenticationCheck(CredentialsDto credentialsDto) {
     boolean authenticated = false;
     try {
       Response response = client

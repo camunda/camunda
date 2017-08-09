@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -19,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -27,7 +29,6 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AuthenticationRestServiceEngineIT {
-  private static final String USERNAME_PASSWORD = "demo";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -40,37 +41,55 @@ public class AuthenticationRestServiceEngineIT {
   @Test
   public void authenticateUser() throws Exception {
     //given
-    UserDto userDto = constructDemoUserDto();
+    engineRule.addUser("demo", "demo");
 
-    Response res = engineRule.target()
-        .path("/user/create")
-        .request(MediaType.APPLICATION_JSON)
-        .post(Entity.json(userDto));
-    assertThat(res.getStatus(),is(204));
-
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername(USERNAME_PASSWORD);
-    entity.setPassword(USERNAME_PASSWORD);
 
     //when
-    Response response = embeddedOptimizeRule.target("authentication")
-        .request()
-        .post(Entity.json(entity));
+    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
 
     //then
     assertThat(response.getStatus(),is(200));
   }
 
-  private UserDto constructDemoUserDto() {
-    UserProfileDto profile = new UserProfileDto();
-    profile.setEmail("demo@camunda.org");
-    profile.setId(USERNAME_PASSWORD);
-    UserCredentialsDto credentials = new UserCredentialsDto();
-    credentials.setPassword(USERNAME_PASSWORD);
-    UserDto userDto = new UserDto();
-    userDto.setProfile(profile);
-    userDto.setCredentials(credentials);
-    return userDto;
+  @Test
+  public void everyUserCanBeAuthenticatedFromEngineIfNoAccessGroupWasSpecified() {
+    // given
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService.setOptimizeAccessGroupId("");
+    engineRule.addUser("demo", "demo");
+
+    // when
+    Response response = embeddedOptimizeRule.authenticateDemoRequest();
+
+    //then
+    assertThat(response.getStatus(),is(200));
+    String responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity,is(notNullValue()));
+  }
+
+  @Test
+  public void onlyUsersAddedToAccessGroupCanBeAuthenticatedFromEngine() {
+    // given
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService.setOptimizeAccessGroupId("optimizeGroup");
+    engineRule.createGroup("optimizeGroup", "Optimize Access Group", "Foo type");
+    engineRule.addUser("demo", "demo");
+    engineRule.addUserToGroup("demo", "optimizeGroup");
+    engineRule.addUser("kermit", "frog");
+
+    // when
+    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
+
+    // then
+    assertThat(response.getStatus(),is(200));
+    String responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity,is(notNullValue()));
+
+    // when
+    response = embeddedOptimizeRule.authenticateUserRequest("kermit", "frog");
+
+    // then
+    assertThat(response.getStatus(),is(401));
   }
 
 }

@@ -26,4 +26,6 @@ public class EngineConstantsUtil {
   public static final String SORT_ORDER_TYPE_ASCENDING = "asc";
   public static final String SORT_ORDER_TYPE_DESCENDING = "desc";
 
+  public static final String USER_ID = "userId";
+
 }

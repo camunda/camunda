@@ -21,8 +21,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
+import org.camunda.optimize.rest.engine.dto.UserDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -33,9 +37,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -442,6 +448,52 @@ public class EngineIntegrationRule extends TestWatcher {
       response.close();
     }
     client.close();
+  }
+
+  public void addUser(String username, String password) {
+    UserDto userDto = constructDemoUserDto(username, password);
+
+    Response res = target()
+        .path("/user/create")
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.json(userDto));
+    assertThat(res.getStatus(),is(204));
+  }
+
+  private UserDto constructDemoUserDto(String username, String password) {
+    UserProfileDto profile = new UserProfileDto();
+    profile.setEmail("foo@camunda.org");
+    profile.setId(username);
+    UserCredentialsDto credentials = new UserCredentialsDto();
+    credentials.setPassword(password);
+    UserDto userDto = new UserDto();
+    userDto.setProfile(profile);
+    userDto.setCredentials(credentials);
+    return userDto;
+  }
+
+  public void createGroup(String id, String name, String type) {
+    GroupDto groupDto = new GroupDto();
+    groupDto.setId(id);
+    groupDto.setName(name);
+    groupDto.setType(type);
+
+    Response res = target()
+        .path("/group/create")
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.json(groupDto));
+
+    assertThat(res.getStatus(),is(204));
+  }
+
+  public void addUserToGroup(String userId, String groupId) {
+    String path = "/group/" + groupId + "/members/" + userId;
+    Response res = target()
+        .path(path)
+        .request(MediaType.APPLICATION_JSON)
+        .put(Entity.json(""));
+
+    assertThat(res.getStatus(),is(204));
   }
 
   public final WebTarget target() {
