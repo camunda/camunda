@@ -8,9 +8,7 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.service.es.filter.DateFilter;
-import org.camunda.optimize.service.es.filter.QueryFilterAdder;
-import org.camunda.optimize.service.es.filter.VariableFilter;
+import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -29,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -53,7 +50,7 @@ public class BranchAnalysisReader {
   private ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  private QueryFilterAdder queryFilterAdder;
+  private QueryFilterEnhancer queryFilterEnhancer;
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
@@ -142,7 +139,7 @@ public class BranchAnalysisReader {
   }
 
   private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
-    queryFilterAdder.addFilterToQuery(query, request.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
     SearchResponse sr = esclient
         .prepareSearch(configurationService.getOptimizeIndex())

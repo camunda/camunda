@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class QueryFilterAdder {
+public class QueryFilterEnhancer {
 
   @Autowired
   private DateFilter dateFilter;

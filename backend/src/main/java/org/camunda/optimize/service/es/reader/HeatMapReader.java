@@ -3,9 +3,7 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.service.es.filter.DateFilter;
-import org.camunda.optimize.service.es.filter.QueryFilterAdder;
-import org.camunda.optimize.service.es.filter.VariableFilter;
+import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -31,7 +29,7 @@ public abstract class HeatMapReader {
   private ConfigurationService configurationService;
 
   @Autowired
-  private QueryFilterAdder queryFilterAdder;
+  private QueryFilterEnhancer queryFilterEnhancer;
 
   public HeatMapResponseDto getHeatMap(String processDefinitionId) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
@@ -54,7 +52,7 @@ public abstract class HeatMapReader {
 
     BoolQueryBuilder query = setupBaseQuery(dto.getProcessDefinitionId());
 
-    queryFilterAdder.addFilterToQuery(query, dto.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, dto.getFilter());
 
     srb = srb.setQuery(query);
     processAggregations(result, srb);
