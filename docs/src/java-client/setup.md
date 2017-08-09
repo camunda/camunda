@@ -25,9 +25,9 @@ In Java code, instantiate the client as follows:
 
 ```java
 Properties clientProperties = new Properties();
-clientProperties.put(ZeebeClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
+clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:51015");
 
 ZeebeClient client = ZeebeClient.create(clientProperties);
 ```
 
-See the class `io.zeebe.ZeebeClientProperties` for a description of all client configuration properties.
+See the class `io.zeebe.ClientProperties` for a description of all client configuration properties.
