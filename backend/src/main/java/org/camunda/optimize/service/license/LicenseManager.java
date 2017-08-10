@@ -14,7 +14,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +35,7 @@ public class LicenseManager {
   private LicenseKey licenseKey = new OptimizeLicenseKey();
   private String licenseFromFile;
 
-  @PostConstruct
-  public void init() {
+  public LicenseManager() {
     // nothing to do here
     try {
       licenseFromFile = readFileToString("OptimizeLicense.txt");
