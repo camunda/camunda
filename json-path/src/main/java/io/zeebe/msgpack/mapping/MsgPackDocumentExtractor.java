@@ -175,10 +175,14 @@ public final class MsgPackDocumentExtractor
         }
         else
         {
-            final boolean isArrayNode = isIndex(nodeName);
-            if (isArrayNode)
+            final boolean isIndex = isIndex(nodeName);
+
+            if (isIndex)
             {
-                documentTreeReference.addArrayNode(parentId);
+                if (!documentTreeReference.isMapNode(parentId))
+                {
+                    documentTreeReference.addArrayNode(parentId);
+                }
             }
             else
             {
@@ -195,7 +199,7 @@ public final class MsgPackDocumentExtractor
         final int len = nodeName.length();
         for (int i = 0; i < len; i++)
         {
-            final char currentChar = nodeName.charAt(0);
+            final char currentChar = nodeName.charAt(i);
             if (currentChar < '0' || currentChar > '9')
             {
                 return false;

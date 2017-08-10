@@ -118,7 +118,6 @@ public class MsgPackTree
         nodeChildsMap.get(parentId).add(childName);
     }
 
-
     public boolean isLeaf(String nodeId)
     {
         return leafMap.containsKey(nodeId);

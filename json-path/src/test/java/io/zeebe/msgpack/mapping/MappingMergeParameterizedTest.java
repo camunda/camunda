@@ -44,7 +44,6 @@ public class MappingMergeParameterizedTest
     public static Iterable<Object[]> parameters() throws Exception
     {
         return Arrays.asList(new Object[][] {
-            // 1. Test
             {
                 // source
                 "{}",
@@ -54,7 +53,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{}" },
-            // 2. Test
             {
                 // source
                 "{}",
@@ -64,7 +62,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{}" },
-            // 3. Test
             {
                 // source
                 "{'foo':'bar','int':1}",
@@ -74,7 +71,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1}" },
-            // 4. Test
             {
                 // source
                 "{'foo':'bar','int':1}",
@@ -84,7 +80,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1}" },
-            // 5. Test
             {
                 // source
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -94,7 +89,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
-            // 6. Test
             {
                 // source
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
@@ -104,7 +98,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$"),
                 // expected result
                 "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}" },
-            // 7. Test
             {
                 // source
                 "{'foo':'bar','int':2}",
@@ -114,7 +107,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$.newFoo"),
                 // expected result
                 "{'newFoo':'bar','int':1}" },
-            // 8. Test
             {
                 // source
                 "{'foo':'bar','int':2}",
@@ -124,7 +116,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$.newFoo"),
                 // expected result
                 "{'newFoo':'bar','int':1}" },
-            // 9. Test
             {
                 // source
                 "{'foo':'bar','int':2}",
@@ -134,7 +125,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$.newFoo.newDepth.string"),
                 // expected result
                 "{'newFoo':{'newDepth':{'string':'bar'}}, 'int':1}" },
-            // 10. Test
             {
                 // source
                 "{'foo':'bar','int':2}",
@@ -144,7 +134,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$.newFoo.newDepth.string"),
                 // expected result
                 "{'newFoo':{'newDepth':{'string':'bar'}}, 'int':1}" },
-            // 11. Test
             {
                 // source
                 "{'obj':{'attr':'text'},'int':2}",
@@ -154,7 +143,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.obj", "$.newObj"),
                 // expected result
                 "{'newObj':{'attr':'text'},'int':1}" },
-            // 12. Test
             {
                 // source
                 "{'obj':{'attr':'text'},'int':2}",
@@ -164,7 +152,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.obj", "$.newObj"),
                 // expected result
                 "{'newObj':{'attr':'text'},'int':1}" },
-            // 13. Test
             {
                 // source
                 "{'obj':{'attr':'text'},'int':2}",
@@ -174,7 +161,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.obj", "$.newObj"),
                 // expected result
                 "{'newObj':{'attr':'text'},'int':1}" },
-            // 14. Test
             {
                 // source
                 "{'obj':{'attr':'text'},'int':2}",
@@ -184,7 +170,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.obj", "$.newObj"),
                 // expected result
                 "{'newObj':{'attr':'text'},'int':1}" },
-            // 15. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -194,7 +179,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array", "$.newArray"),
                 // expected result
                 "{'newArray':[1, 2, 3], 'int':1}" },
-            // 16. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -204,7 +188,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array", "$.newArray"),
                 // expected result
                 "{'newArray':[1, 2, 3], 'int':1}" },
-            // 17. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -214,7 +197,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array", "$.newArray"),
                 // expected result
                 "{'newArray':[1, 2, 3], 'int':1}" },
-            // 18. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -224,7 +206,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array", "$.newArray"),
                 // expected result
                 "{'newArray':[1, 2, 3], 'int':1}" },
-            // 19. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -234,7 +215,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[0]", "$.firstIdxValue"),
                 // expected result
                 "{'firstIdxValue':1, 'int':1}" },
-            // 20. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -244,7 +224,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[1]", "$.array[0]"),
                 // expected result
                 "{'array':[2],'int':1}" },
-            // 21. Test
             {
                 // source
                 "{'array':[1, 2, 3], 'int':2}",
@@ -254,7 +233,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[1]", "$.array[0]"),
                 // expected result
                 "{'array':[2, 2, 3],'int':1}" },
-            // 22. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -266,7 +244,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.array[0]", "$.array[2]").build(),
                 // expected result
                 "{'array':[3, 2, 1], 'int':1}" },
-            // 23. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -276,7 +253,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[1]", "$.array[0].test"),
                 // expected result
                 "{'array':[{'test':2}],'int':1}" },
-            // 24. Test
             {
                 // source
                 "{'array':[1, 2, 3],'int':2}",
@@ -286,7 +262,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[1]", "$.array[0].test"),
                 // expected result
                 "{'array':[{'test':2},3,8],'int':1}" },
-            // 25. Test
             {
                 // source
                 "{'array':[{'test':'value'}, 2, 3],'int':2}",
@@ -296,7 +271,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.array[0].test", "$.testValue"),
                 // expected result
                 "{'testValue':'value','int':1}" },
-            // 26. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -307,7 +281,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newFoo':'bar', 'newObj':{'test':'value'},'int':1}" },
-            // 27. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -318,7 +291,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newFoo':'bar', 'newObj':{'test':'value'},'int':1}" },
-            // 28. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -329,7 +301,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newDepth.newObj").build(),
                 // expected result
                 "{'newDepth':{'newFoo':'bar', 'newObj':{'test':'value'}},'int':1}" },
-            // 29. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -340,7 +311,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newDepth.newObj").build(),
                 // expected result
                 "{'newDepth':{'newFoo':'bar', 'newObj':{'test':'value'}},'newFoo':'baz','int':1}" },
-            // 30. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -351,7 +321,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newDepth.newObj").build(),
                 // expected result
                 "{'newDepth':{'newFoo':'bar', 'newObj':{'test':'value'}},'int':1}" },
-            // 31. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -362,7 +331,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newDepth.newObj").build(),
                 // expected result
                 "{'newDepth':{'newFow':'baz', 'newFoo':'bar', 'newObj':{'test':'value'}},'int':1}" },
-            // 32. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -373,7 +341,6 @@ public class MappingMergeParameterizedTest
                                 .mapping("$.obj", "$.newObj").build(),
                 // expected result
                 "{'newObj':{'test':'value'},'int':1}" },
-            // 33. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -383,7 +350,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.obj", "$"),
                 // expected result
                 "{'test':'value'}" },
-            // 34. Test
             {
                 // source
                 "{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2}",
@@ -393,7 +359,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$", "$.newObj"),
                 // expected result
                 "{'newObj':{'obj':{'test':'value'},'foo':'bar','array':[{'test':'value'}, 2, 3],'int':2},'int':1}" },
-            // 35. Test
             {
                 // source
                 "{'value':1,'int':2}",
@@ -403,7 +368,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.value", "$.obj.test"),
                 // expected result
                 "{'obj':{'test':1},'anotherObj':{'test':'anotherValue'},'int':1}" },
-            // 36. Test
             {
                 // source
                 "{'value':1,'int':2}",
@@ -540,7 +504,6 @@ public class MappingMergeParameterizedTest
                 createMapping("$.arr[0].obj.otherArr[0]", "$.arr[0].obj.otherArr[1].obj"),
                 // expected result
                 "{'array':[[1,2],3,4],'arr':[{'obj':{'otherArr':[{'obj':{'test':'hallo'}}]}}], 'int':2}"},
-            // 47. Test
             {
                 // source
                 "{}",
@@ -549,17 +512,70 @@ public class MappingMergeParameterizedTest
                 // mapping
                 createMapping("$", "$"),
                 // expected result
-                "{}" }
-            // 48. Test zeebe-io/msgpack-json-path#10
-//            ,{
-//                // source
-//                "{'foo':'bar'}",
-//                // target
-//                "{'obj':{'0':{'test':1}}}",
-//                // mapping
-//                createMapping("$.foo", "$.obj.0"),
-//                // expected result
-//                "{'obj':{'0':{'foo':'bar'}}}" }
+                "{}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$.obj.0"),
+                // expected result
+                "{'obj':{'0':'bar'}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$[obj][0]"),
+                // expected result
+                "{'obj':{'0':'bar'}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'arr':[0, 1, 2], 'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$.arr.0s"),
+                // expected result
+                "{'arr':{'0':0, '1':1, '2':2, '0s':'bar'}, 'obj':{'0':{'test':1}}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'arr':[0, 1, 2], 'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$[arr][0s]"),
+                // expected result
+                "{'arr':{'0':0, '1':1, '2':2, '0s':'bar'}, 'obj':{'0':{'test':1}}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'arr':[0, 1, 2], 'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$.arr.0"),
+                // expected result
+                "{'arr':['bar', 1, 2], 'obj':{'0':{'test':1}}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$.obj.1"),
+                // expected result
+                "{'obj':{'0':{'test':1},'1':'bar'}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$[obj][1]"),
+                // expected result
+                "{'obj':{'0':{'test':1},'1':'bar'}}" },
         });
     }
 
