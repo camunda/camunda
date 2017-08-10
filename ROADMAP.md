@@ -10,7 +10,6 @@ The following high-level roadmap is meant to give you an idea of our plans for Z
 a certain level of maturity.
 
 **Milestone 1**
-(Planned for End of September 2017)
 
 * Achieve Scalability through partitioning
     * Define topics with multiple partitions 
@@ -20,7 +19,6 @@ a certain level of maturity.
 * BPMN Exclusive Gateway and Conditions
 
 **Milestone 2**
-(Plannd for End of December 2017
 
 * Achieve production-readiness:
     * Checksums in data fragments to detect data corruption
