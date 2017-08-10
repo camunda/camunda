@@ -33,6 +33,12 @@
       <artifactId>zb-msgpack-core</artifactId>
       <version>${version.msgpack}</version>
     </dependency>
+    
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-json-path</artifactId>
+      <version>${version.msgpack}</version>
+    </dependency>
         
     <dependency>
       <groupId>org.agrona</groupId>

@@ -246,9 +246,9 @@ public final class BpmnConstants {
 
   /** Zeebe extensions */
 
-  public static final String IO_MAPPING_ELEMENT = "ioMapping";
-  public static final String INPUT_MAPPING_ELEMENT = "input";
-  public static final String OUTPUT_MAPPING_ELEMENT = "output";
+  public static final String ZEEBE_ELEMENT_MAPPING = "ioMapping";
+  public static final String ZEEBE_ELEMENT_MAPPING_INPUT = "input";
+  public static final String ZEEBE_ELEMENT_MAPPING_OUTPUT = "output";
 
   public static final String ZEEBE_ELEMENT_TASK_DEFINITION = "taskDefinition";
 
@@ -374,8 +374,8 @@ public final class BpmnConstants {
 
   /** Zeebe extensions */
 
-  public static final String MAPPING_ATTRIBUTE_SOURCE = "source";
-  public static final String MAPPING_ATTRIBUTE_TARGET = "target";
+  public static final String ZEEBE_ATTRIBUTE_MAPPING_SOURCE = "source";
+  public static final String ZEEBE_ATTRIBUTE_MAPPING_TARGET = "target";
 
 
   public static final String ZEEBE_ATTRIBUTE_TASK_TYPE = "type";

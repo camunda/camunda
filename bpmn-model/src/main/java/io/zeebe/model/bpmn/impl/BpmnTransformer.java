@@ -1,5 +1,6 @@
 package io.zeebe.model.bpmn.impl;
 
+import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -8,10 +9,12 @@ import java.util.*;
 
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskHeaderImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
+import io.zeebe.model.bpmn.impl.metadata.*;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,7 +53,7 @@ public class BpmnTransformer
 
         linkSequenceFlows(process, flowElementsById);
 
-        transformTaskHeaders(process.getServiceTasks());
+        transformServiceTasks(process.getServiceTasks());
     }
 
     private Map<DirectBuffer, FlowElementImpl> getFlowElementsById(final ProcessImpl process)
@@ -101,7 +104,7 @@ public class BpmnTransformer
         }
     }
 
-    private void transformTaskHeaders(List<ServiceTaskImpl> serviceTasks)
+    private void transformServiceTasks(List<ServiceTaskImpl> serviceTasks)
     {
         for (int s = 0; s < serviceTasks.size(); s++)
         {
@@ -111,6 +114,12 @@ public class BpmnTransformer
             if (taskHeaders != null)
             {
                 transformTaskHeaders(taskHeaders);
+            }
+
+            final InputOutputMappingImpl inputOutputMapping = serviceTaskImpl.getInputOutputMapping();
+            if (inputOutputMapping != null)
+            {
+                transformInputOutputMappings(inputOutputMapping);
             }
         }
     }
@@ -142,6 +151,48 @@ public class BpmnTransformer
         }
 
         taskHeaders.setEncodedMsgpack(buffer);
+    }
+
+    private void transformInputOutputMappings(InputOutputMappingImpl inputOutputMapping)
+    {
+        final Mapping[] inputMappings = createMappings(inputOutputMapping.getInputs());
+        inputOutputMapping.setInputMappings(inputMappings);
+
+        final Mapping[] outputMappings = createMappings(inputOutputMapping.getOutputs());
+        inputOutputMapping.setOutputMappings(outputMappings);
+    }
+
+    private Mapping[] createMappings(final List<MappingImpl> mappings)
+    {
+        final Mapping[] map = new Mapping[mappings.size()];
+
+        if (mappings.size() == 1 && !isRootMapping(mappings.get(0)))
+        {
+            map[0] = createMapping(mappings.get(0));
+        }
+        else if (mappings.size() > 1)
+        {
+            for (int i = 0; i < mappings.size(); i++)
+            {
+                map[i] = createMapping(mappings.get(i));
+            }
+        }
+
+        return map;
+    }
+
+    private boolean isRootMapping(MappingImpl mapping)
+    {
+        return mapping.getSource().equals(JSON_ROOT_PATH) && mapping.getTarget().equals(JSON_ROOT_PATH);
+    }
+
+    private Mapping createMapping(MappingImpl mapping)
+    {
+        //TODO make JSON path compiler re-usable!
+        final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
+        final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
+
+        return new Mapping(query, mapping.getTarget());
     }
 
 }

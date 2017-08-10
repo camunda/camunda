@@ -53,6 +53,17 @@ public class BpmnIntegrationTest
             .hasSize(2)
             .containsEntry("foo", "f")
             .containsEntry("bar", "b");
+
+        final InputOutputMapping inputOutputMapping = task.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
     }
 
     @Test

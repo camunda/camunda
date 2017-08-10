@@ -7,4 +7,6 @@ public interface ServiceTask extends FlowNode
 
     TaskHeaders getTaskHeaders();
 
+    InputOutputMapping getInputOutputMapping();
+
 }

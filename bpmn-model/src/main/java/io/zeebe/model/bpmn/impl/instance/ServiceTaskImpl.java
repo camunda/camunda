@@ -20,6 +20,7 @@ package io.zeebe.model.bpmn.impl.instance;
 import javax.xml.bind.annotation.XmlElement;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
@@ -49,6 +50,12 @@ public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask
     public TaskHeadersImpl getTaskHeaders()
     {
         return extensionElements != null ? extensionElements.getTaskHeaders() : null;
+    }
+
+    @Override
+    public InputOutputMappingImpl getInputOutputMapping()
+    {
+        return extensionElements != null ? extensionElements.getInputOutputMapping() : null;
     }
 
 }
