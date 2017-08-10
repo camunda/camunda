@@ -81,10 +81,13 @@ on which the value of the matching source should be written to. In the following
 
 #### JSON Path expression
 
-The root node of a JSON document is defined as `$`.
+JSON Path expressions always refer to a JSON structure in the same way as XPath expression are used in combination with an XML document.
+Since a JSON structure is usually anonymous and doesn't necessarily have a "root member object"
+JSON Path assumes the abstract name `$` assigned to the outer level object. [1](http://goessner.net/articles/JsonPath/)
+
 The payload will be on root level always a JSON Object.
-Properties of a JSON Object are accessed via the dot operator. For example
-`$.prop` will match in the following JSON document and return the value `123`.
+JSON Path expressions can use the dot or bracket notation.
+For example `$.prop` or `$[prop]` will match in the following JSON document and return the value `123`.
 
 ```json
 {
@@ -97,9 +100,10 @@ Properties of a JSON Object are accessed via the dot operator. For example
 }
 ```
 
-To match the `innerProp` we have to use the following expression `$.object.innerProp`.
+To match the `innerProp` we have to use one of the following expression `$.object.innerProp` or `$[object][innerProp]`.
 
-Values in JSON Arrays can be accessed via square brackets and the corresponding index. Say we have the following expression `$.array[2]`.
+Values in JSON Arrays can be accessed via square brackets and the corresponding index. Say we have the following expression `$.array[2]`
+or `$[array][2]`.
 This will match and return the value `5`, if we have for example the following JSON document.
 
 ```json
@@ -107,7 +111,9 @@ This will match and return the value `5`, if we have for example the following J
  "array" : [4, 3, 5]
 }
 ```
-**Limitation**: Currently only the json path expressions with dots as property accessor are supported. Something like $['object']['value'] will not work.
+
+**Note:**
+In the following examples we will prefer the dot notation, since it is more readable.
 
 #### Input Mapping Example
 
@@ -293,34 +299,6 @@ The source could be the task payload and the target the workflow instance payloa
 </table>
 
 The result column contains the target document, which results after executing the output mapping
-
-<!--
-<style>
-
- table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-right: 0px;
-  margin-left: auto;
- }
- table, td {
-   border: solid black 1px;
- }
-
-table td {
-  padding: 0px 0px;
-  border: 1px solid black;
-}
-table thead td {
-  font-weight: 700;
-}
-
- tr {
- border-bottom: 1px solid black;
- padding: 0px;
- }
-</style>
--->
 
 <table>
 
