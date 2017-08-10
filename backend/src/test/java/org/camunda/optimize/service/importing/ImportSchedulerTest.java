@@ -138,8 +138,9 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     List<PaginatedImportService> services = mockImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
 
-    LocalDateTime expectedReset = LocalDateTime.now().plus(Double.valueOf(configurationService.getImportResetIntervalValue()).longValue(), ChronoUnit.HOURS);
-    long toSleep = LocalDateTime.now().until(expectedReset, ChronoUnit.MILLIS);
+    ChronoUnit unit = ChronoUnit.valueOf(configurationService.getImportResetIntervalUnit().toUpperCase());
+    LocalDateTime expectedReset = LocalDateTime.now().plus(configurationService.getImportResetIntervalValue(), unit);
+    long toSleep = LocalDateTime.now().until(expectedReset, unit);
     
     //when
     Thread.currentThread().sleep(Math.max(toSleep,1000L));
