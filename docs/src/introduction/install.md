@@ -50,18 +50,54 @@ You can run Zeebe with Docker:
 docker run -p 51015:51015 camunda/zeebe:0.1.0
 ```
 
-TODO:
+### Exposed Ports
 
-* Ports
-* Volumes
-* Config
+- `51015`: Client API
+- `51016`: Management API for broker to broker communcation
+- `51017`: Replication API for broker to broker replication
 
-### Mac and Windows users (using docker-machine)
+### Volumes
 
-Create a VM with 2GB RAM using Docker Machine:
+The default data volume is under `/usr/local/zeebe/bin/data` it contains
+all data which should be persisted.
+
+### Configuration
+
+The Zeebe configuration is located under
+`/usr/local/zeebe/conf/zeebe.cfg.toml`. The logging configuration is located
+under `/usr/local/zeebe/conf/log4j2.xml`.
+
+### Mac and Windows users
+
+**Note**: On systems which use a VM to run Docker containers like Mac and
+Windows the VM needs at least 4GB of memory otherwise Zeebe fails to start
+with an error similar to:
 
 ```
-docker-machine create --driver virtualbox --virtualbox-memory 2000 zeebe
+Exception in thread "actor-runner-service-container" java.lang.OutOfMemoryError: Direct buffer memory
+        at java.nio.Bits.reserveMemory(Bits.java:694)
+        at java.nio.DirectByteBuffer.<init>(DirectByteBuffer.java:123)
+        at java.nio.ByteBuffer.allocateDirect(ByteBuffer.java:311)
+        at io.zeebe.util.allocation.DirectBufferAllocator.allocate(DirectBufferAllocator.java:28)
+        at io.zeebe.util.allocation.BufferAllocators.allocateDirect(BufferAllocators.java:26)
+        at io.zeebe.dispatcher.DispatcherBuilder.initAllocatedBuffer(DispatcherBuilder.java:266)
+        at io.zeebe.dispatcher.DispatcherBuilder.build(DispatcherBuilder.java:198)
+        at io.zeebe.broker.services.DispatcherService.start(DispatcherService.java:61)
+        at io.zeebe.servicecontainer.impl.ServiceController$InvokeStartState.doWork(ServiceController.java:269)
+        at io.zeebe.servicecontainer.impl.ServiceController.doWork(ServiceController.java:138)
+        at io.zeebe.servicecontainer.impl.ServiceContainerImpl.doWork(ServiceContainerImpl.java:110)
+        at io.zeebe.util.actor.ActorRunner.tryRunActor(ActorRunner.java:165)
+        at io.zeebe.util.actor.ActorRunner.runActor(ActorRunner.java:145)
+        at io.zeebe.util.actor.ActorRunner.doWork(ActorRunner.java:114)
+        at io.zeebe.util.actor.ActorRunner.run(ActorRunner.java:71)
+        at java.lang.Thread.run(Thread.java:748)
+```
+
+If you use a Docker setup with `docker-machine` and your `default` VM does
+not have 4GB of memory you can create a new one with the following command.
+
+```
+docker-machine create --driver virtualbox --virtualbox-memory 4000 zeebe
 ```
 
 Verify that the Docker Machine is running correctly:
@@ -94,6 +130,7 @@ Verify you can connect to Zeebe:
 ```
 $ telnet 192.168.99.100 51015
 ```
+
 ## Linux Distribution Packages
 
 Coming Soon!
