@@ -65,9 +65,15 @@ public class ImportScheduler extends Thread {
 
   protected void checkAndResetImportIndexing() {
     if (!hasStillJobsToExecute() || allJobsAreBackingOff()) {
-      ChronoUnit unit = ChronoUnit.valueOf(
-          configurationService.getImportResetIntervalUnit().toUpperCase()
-      );
+      ChronoUnit unit = ChronoUnit.MINUTES;
+
+      try {
+        unit = ChronoUnit.valueOf(
+            configurationService.getImportResetIntervalUnit().toUpperCase()
+        );
+      } catch (Exception e) {
+        //nothing to do - fall back to default value
+      }
       LocalDateTime resetDueDate = lastReset.plus(configurationService.getImportResetIntervalValue(), unit);
       if (LocalDateTime.now().isAfter(resetDueDate)) { logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
         for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
