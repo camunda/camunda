@@ -2,7 +2,6 @@
 
 * [Introduction](introduction/README.md)
     * [Why Zeebe?](introduction/why-zeebe.md)
-    * [Use Cases](introduction/use-cases.md)
     * [Install](introduction/install.md)
     * [First Contact](introduction/first-contact.md)
 * [Basics](basics/README.md)
