@@ -17,6 +17,7 @@
 
   <properties>
     <version.util>0.1.0</version.util>
+    <version.msgpack>0.1.0</version.msgpack>
   </properties>
 
   <dependencies>
@@ -25,6 +26,12 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
       <version>${version.util}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-core</artifactId>
+      <version>${version.msgpack}</version>
     </dependency>
         
     <dependency>

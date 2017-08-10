@@ -41,6 +41,18 @@ public class BpmnIntegrationTest
         assertThat(targetElement.getIncomingSequenceFlows()).hasSize(1);
         assertThat(targetElement.getIncomingSequenceFlows().get(0).getSourceNode()).isEqualTo(initialStartEvent);
 
+        final ServiceTask task = (ServiceTask) workflow.findFlowElementById(wrapString("task"));
+        final TaskDefinition taskDefinition = task.getTaskDefinition();
+        assertThat(taskDefinition).isNotNull();
+        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("task"));
+        assertThat(taskDefinition.getRetries()).isEqualTo(3);
+
+        final TaskHeaders taskHeaders = task.getTaskHeaders();
+        assertThat(taskHeaders).isNotNull();
+        assertThat(taskHeaders.asMap())
+            .hasSize(2)
+            .containsEntry("foo", "f")
+            .containsEntry("bar", "b");
     }
 
     @Test

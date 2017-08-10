@@ -11,7 +11,15 @@
     </bpmn:endEvent>
     <bpmn:serviceTask id="task" name="task">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="task" />
+        <zeebe:taskDefinition type="task" retries="3" />
+      	<zeebe:taskHeaders>
+          <zeebe:header key="foo" value="f" />
+          <zeebe:header key="bar" value="b" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="$.a" target="$.b" />
+          <zeebe:output source="$.c" target="$.d" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_01hx9mv</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1t7jge2</bpmn:outgoing>

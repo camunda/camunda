@@ -38,7 +38,7 @@ public final class BpmnConstants {
   public static final String XPATH_NS = "http://www.w3.org/1999/XPath";
 
   /** Zeebe namespace */
-  public static final String ZEEBE_NS = "http://zeebe.io/schema/1.0/bpmn";
+  public static final String ZEEBE_NS = "http://camunda.org/schema/zeebe/1.0";
 
   // elements ////////////////////////////////////////
 
@@ -250,10 +250,10 @@ public final class BpmnConstants {
   public static final String INPUT_MAPPING_ELEMENT = "input";
   public static final String OUTPUT_MAPPING_ELEMENT = "output";
 
-  public static final String TASK_DEFINITION_ELEMENT = "taskDefinition";
+  public static final String ZEEBE_ELEMENT_TASK_DEFINITION = "taskDefinition";
 
-  public static final String TASK_HEADERS_ELEMENT = "taskHeaders";
-  public static final String TASK_HEADER_ELEMENT = "header";
+  public static final String ZEEBE_ELEMENT_TASK_HEADERS = "taskHeaders";
+  public static final String ZEEBE_ELEMENT_TASK_HEADER = "header";
 
   // attributes //////////////////////////////////////
 
@@ -378,9 +378,9 @@ public final class BpmnConstants {
   public static final String MAPPING_ATTRIBUTE_TARGET = "target";
 
 
-  public static final String TASK_TYPE_ATTRIBUTE = "type";
-  public static final String TASK_RETRIES_ATTRIBUTE = "retries";
-  public static final String TASK_HEADER_KEY_ATTRIBUTE = "key";
-  public static final String TASK_HEADER_VALUE_ATTRIBUTE = "value";
+  public static final String ZEEBE_ATTRIBUTE_TASK_TYPE = "type";
+  public static final String ZEEBE_ATTRIBUTES_TASK_RETRIES = "retries";
+  public static final String ZEEBE_ATTRIBUTE_TASK_HEADER_KEY = "key";
+  public static final String ZEEBE_ATTRIBUTE_TASK_HEADER_VALUE = "value";
 
 }
