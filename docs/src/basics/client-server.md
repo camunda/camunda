@@ -2,7 +2,7 @@
 
 Zeebe uses a client / server architecture. There are two main components: the broker and the client.
 
-\[TODO: image\]
+![client-server](/basics/client-server.png)
 
 ## The Broker
 

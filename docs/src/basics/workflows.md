@@ -20,6 +20,8 @@ Physically data flow is a Json document which gets created when a workflow is in
 
 ## Data Conditions
 
+> Coming soon
+
 Some workflows do not aways execute the same steps but need to pick and choose different steps based on data and conditions:
 
 \[TODO: Image\]
@@ -29,6 +31,8 @@ The diamond shape with the "X" in the middle is a special kind of step marking t
 Conditions use Json path to select properties and values from the current payload document.
 
 ## Fork / Join Concurrency
+
+> Coming soon
 
 In many cases, it is also useful to perform multiple steps in parallel. This can be achieved with Fork / Join concurrency.
 
@@ -44,20 +48,18 @@ Zeebe uses BPMN 2.0 for representing workflows. BPMN is an industry standard whi
 
 Zeebe provides a Modeler for BPMN. The modeler is a standalone desktop application based on the [https://bpmn.io](https://bpmn.io "bpmn.io") open source project.
 
-The modeler can be downloaded by clicking here.
+The modeler can be downloaded from [camunda.org](https://camunda.org/bpmn/tool/).
 
 ## Deploying a Workflow
 
 For Zeebe to know your workflow you must first "deploy" it. Workflows can be deployed using the corresponding APIs in the clients or using the command line tool:
 
 ```bash
-$ Zeebe deploy hello-workflow.bpmn
+$ zbctl deploy hello-workflow.bpmn
 ```
 
 ## Starting Workflow Instances
 
-Once a workflow is deployed, it can be started. Again, this is possible using the corresponding APIs in the clients or using the command line tool:
+Once a workflow is deployed, it can be started. Again, this is possible using the corresponding APIs in the clients or using the command line tool
 
-```bash
-$ Zeebe start --bpmn-process-id=hello --payload='{ "greeting": "hello" }'
-```
+TODO: example
