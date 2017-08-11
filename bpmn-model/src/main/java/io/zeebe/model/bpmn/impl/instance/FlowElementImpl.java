@@ -20,8 +20,7 @@ package io.zeebe.model.bpmn.impl.instance;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.*;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowElement;
@@ -32,8 +31,10 @@ public class FlowElementImpl implements FlowElement
     private DirectBuffer id;
     private DirectBuffer name;
 
-    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID)
+    private ExtensionElementsImpl extensionElements;
+
     @XmlID
+    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID, required = true)
     public void setId(String id)
     {
         this.id = wrapString(id);
@@ -53,6 +54,17 @@ public class FlowElementImpl implements FlowElement
     public String getName()
     {
         return name != null ? bufferAsString(name) : null;
+    }
+
+    @XmlElement(name = BpmnConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS, namespace = BpmnConstants.BPMN20_NS)
+    public void setExtensionElements(ExtensionElementsImpl extensionElements)
+    {
+        this.extensionElements = extensionElements;
+    }
+
+    public ExtensionElementsImpl getExtensionElements()
+    {
+        return extensionElements;
     }
 
     @Override

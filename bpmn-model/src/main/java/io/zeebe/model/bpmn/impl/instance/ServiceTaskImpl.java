@@ -17,9 +17,6 @@
  */
 package io.zeebe.model.bpmn.impl.instance;
 
-import javax.xml.bind.annotation.XmlElement;
-
-import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
 import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
 import io.zeebe.model.bpmn.instance.ServiceTask;
@@ -27,35 +24,23 @@ import io.zeebe.model.bpmn.instance.TaskDefinition;
 
 public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask
 {
-    private ExtensionElementsImpl extensionElements;
-
-    @XmlElement(name = BpmnConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS, namespace = BpmnConstants.BPMN20_NS)
-    public void setExtensionElements(ExtensionElementsImpl extensionElements)
-    {
-        this.extensionElements = extensionElements;
-    }
-
-    public ExtensionElementsImpl getExtensionElements()
-    {
-        return extensionElements;
-    }
 
     @Override
     public TaskDefinition getTaskDefinition()
     {
-        return extensionElements != null ? extensionElements.getTaskDefinition() : null;
+        return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
     }
 
     @Override
     public TaskHeadersImpl getTaskHeaders()
     {
-        return extensionElements != null ? extensionElements.getTaskHeaders() : null;
+        return getExtensionElements() != null ? getExtensionElements().getTaskHeaders() : null;
     }
 
     @Override
     public InputOutputMappingImpl getInputOutputMapping()
     {
-        return extensionElements != null ? extensionElements.getInputOutputMapping() : null;
+        return getExtensionElements() != null ? getExtensionElements().getInputOutputMapping() : null;
     }
 
 }
