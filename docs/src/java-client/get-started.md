@@ -29,7 +29,7 @@ First, we need a Maven project.
 Create a new project using your IDE or run the Maven command:
 
 ```
-mvn archetype:generate -DgroupId=io.zeebe -DartifactId=zeebe-get-started-java-client
+mvn archetype:generate -DgroupId=io.zeebe -DartifactId=zeebe-get-started-java-client -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 ```
 
 Then, add the Zeebe client library as dependency to the project's `pom.xml`:

@@ -14,7 +14,7 @@ A task has the following properties:
 
 ## Task Subscriptions
 
-To start executing tasks, workers must open task _subscriptions._ Task subscriptions allow the workers to get notified as new tasks are created on the broker side. Upon receiving a notification, a worker performs the task and sends back a_ complete_ or _fail_ message \(depending on whether it could successfully complete the task or not\).
+To start executing tasks, workers must open task _subscriptions._ Task subscriptions allow the workers to get notified as new tasks are created on the broker side. Upon receiving a notification, a worker performs the task and sends back a _complete_ or _fail_ message \(depending on whether it could successfully complete the task or not\).
 
 \[TODO: image\]
 

@@ -47,7 +47,7 @@ with or without payload. Theses cases are summarized in the following table.
 </tr>
 
 <tr>
-  <td>Yes</td><td>Yes</td><td>No</td><td>Initial Payload has additional data which was added via output mapping</td>
+  <td>Yes</td><td>Yes</td><td>No</td><td>Incident!</td>
 </tr>
 
 <tr>
