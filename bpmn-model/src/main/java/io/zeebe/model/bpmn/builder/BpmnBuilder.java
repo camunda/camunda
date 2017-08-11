@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.builder;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import io.zeebe.model.bpmn.impl.BpmnTransformer;
 import io.zeebe.model.bpmn.impl.instance.*;
@@ -45,6 +46,21 @@ public class BpmnBuilder
     private String generateId(String prefix)
     {
         return prefix + "-" + nextId.getAndIncrement();
+    }
+
+    private void connectToSequenceFlow(final FlowNodeImpl targetNode)
+    {
+        if (sequenceFlow == null)
+        {
+            sequenceFlow();
+
+        }
+
+        sequenceFlow.setTargetRef(targetNode.getId());
+        targetNode.getIncoming().add(sequenceFlow);
+
+        sequenceFlow = null;
+        sourceNode = targetNode;
     }
 
     public BpmnBuilder startEvent()
@@ -94,24 +110,11 @@ public class BpmnBuilder
         final EndEventImpl endEvent = new EndEventImpl();
         endEvent.setId(id);
 
-        connectToLastSequenceFlow(endEvent);
+        connectToSequenceFlow(endEvent);
 
         process.getEndEvents().add(endEvent);
 
-        sourceNode = null;
-
         return this;
-    }
-
-    private void connectToLastSequenceFlow(final FlowNodeImpl targetNode)
-    {
-        if (sequenceFlow == null)
-        {
-            sequenceFlow();
-        }
-
-        sequenceFlow.setTargetRef(targetNode.getId());
-        targetNode.getIncoming().add(sequenceFlow);
     }
 
     public BpmnServiceTaskBuilder serviceTask()
@@ -124,13 +127,18 @@ public class BpmnBuilder
         final ServiceTaskImpl serviceTask = new ServiceTaskImpl();
         serviceTask.setId(id);
 
-        connectToLastSequenceFlow(serviceTask);
+        connectToSequenceFlow(serviceTask);
 
         process.getServiceTasks().add(serviceTask);
 
-        sourceNode = serviceTask;
-
         return new BpmnServiceTaskBuilder(this, serviceTask);
+    }
+
+    public BpmnBuilder serviceTask(String id, Consumer<BpmnServiceTaskBuilder> builder)
+    {
+        final BpmnServiceTaskBuilder serviceTaskBuilder = serviceTask(id);
+        builder.accept(serviceTaskBuilder);
+        return serviceTaskBuilder.done();
     }
 
     public WorkflowDefinition done()

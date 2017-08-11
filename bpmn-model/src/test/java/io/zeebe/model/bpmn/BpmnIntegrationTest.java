@@ -146,6 +146,87 @@ public class BpmnIntegrationTest
     }
 
     @Test
+    public void shouldBuildMinimalWorkflow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task")
+                .taskType("task")
+                .done()
+            .endEvent("end")
+            .done();
+
+        assertThat(workflowDefinition).isNotNull();
+        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+
+        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        assertThat(workflow).isNotNull();
+        assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
+
+        assertThat(workflow.getFlowElementMap()).isNotEmpty();
+
+        final StartEvent initialStartEvent = workflow.getInitialStartEvent();
+        assertThat(initialStartEvent).isNotNull();
+        assertThat(initialStartEvent.getIdAsBuffer()).isEqualTo(wrapString("start"));
+        assertThat(initialStartEvent.getOutgoingSequenceFlows()).isNotEmpty();
+
+        final FlowNode targetElement = initialStartEvent.getOutgoingSequenceFlows().get(0).getTargetNode();
+        assertThat(targetElement).isNotNull();
+        assertThat(targetElement.getIdAsBuffer()).isEqualTo(wrapString("task"));
+    }
+
+    @Test
+    public void shouldBuildWorkflowClosureStyle()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task", s -> s.taskType("task"))
+            .endEvent("end")
+            .done();
+
+        assertThat(workflowDefinition).isNotNull();
+        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+
+        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        assertThat(workflow).isNotNull();
+        assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
+
+        assertThat(workflow.getFlowElementMap()).isNotEmpty();
+
+        final StartEvent initialStartEvent = workflow.getInitialStartEvent();
+        assertThat(initialStartEvent).isNotNull();
+        assertThat(initialStartEvent.getIdAsBuffer()).isEqualTo(wrapString("start"));
+        assertThat(initialStartEvent.getOutgoingSequenceFlows()).isNotEmpty();
+
+        final FlowNode targetElement = initialStartEvent.getOutgoingSequenceFlows().get(0).getTargetNode();
+        assertThat(targetElement).isNotNull();
+        assertThat(targetElement.getIdAsBuffer()).isEqualTo(wrapString("task"));
+
+        System.out.println(Bpmn.convertToString(workflowDefinition));
+    }
+
+    @Test
+    public void shouldBuildMoreWorkflow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task1", s -> s.taskType("a"))
+            .serviceTask("task2", s -> s.taskType("b"))
+            .serviceTask("task3", s -> s.taskType("c"))
+            .endEvent("end")
+            .done();
+
+        assertThat(workflowDefinition).isNotNull();
+        assertThat(workflowDefinition.getWorkflows()).hasSize(1);
+
+        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        assertThat(workflow).isNotNull();
+        assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
+
+        System.out.println(Bpmn.convertToString(workflowDefinition));
+    }
+
+    @Test
     public void shouldReadWorkflowFromBuilder()
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
