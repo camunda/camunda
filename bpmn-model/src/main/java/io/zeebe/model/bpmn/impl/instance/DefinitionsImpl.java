@@ -2,8 +2,7 @@ package io.zeebe.model.bpmn.impl.instance;
 
 import java.util.*;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.Workflow;
@@ -13,6 +12,8 @@ import org.agrona.DirectBuffer;
 @XmlRootElement(name = BpmnConstants.BPMN_ELEMENT_DEFINITIONS, namespace = BpmnConstants.BPMN20_NS)
 public class DefinitionsImpl implements WorkflowDefinition
 {
+    private String targetNamespace = "http://zeebe.io/model/bpmn";
+
     private List<ProcessImpl> processes = new ArrayList<>();
 
     private Map<DirectBuffer, Workflow> workflowsById = new HashMap<>();
@@ -26,6 +27,17 @@ public class DefinitionsImpl implements WorkflowDefinition
     public List<ProcessImpl> getProcesses()
     {
         return processes;
+    }
+
+    public String getTargetNamespace()
+    {
+        return targetNamespace;
+    }
+
+    @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_TARGET_NAMESPACE, required = true)
+    public void setTargetNamespace(String targetNamespace)
+    {
+        this.targetNamespace = targetNamespace;
     }
 
     @Override

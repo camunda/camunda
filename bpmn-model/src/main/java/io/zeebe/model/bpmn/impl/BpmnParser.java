@@ -1,10 +1,18 @@
 package io.zeebe.model.bpmn.impl;
 
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
+
 import java.io.*;
+import java.net.URL;
 
+import javax.xml.XMLConstants;
 import javax.xml.bind.*;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 
+import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import org.xml.sax.SAXException;
 
 public class BpmnParser
 {
@@ -15,15 +23,22 @@ public class BpmnParser
     {
         try
         {
-            JAXBContext jaxbContext = JAXBContext.newInstance(DefinitionsImpl.class);
+            final JAXBContext jaxbContext = JAXBContext.newInstance(DefinitionsImpl.class);
+
+            final SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            final URL bpmnSchema = getClass().getResource("/" + BpmnConstants.BPMN_20_SCHEMA_LOCATION);
+            ensureNotNull("BPMN schema", bpmnSchema);
+            final Schema schema = schemaFactory.newSchema(bpmnSchema);
 
             unmarshaller = jaxbContext.createUnmarshaller();
-            marshaller = jaxbContext.createMarshaller();
+            unmarshaller.setSchema(schema);
 
+            marshaller = jaxbContext.createMarshaller();
+            marshaller.setSchema(schema);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
         }
-        catch (JAXBException e)
+        catch (JAXBException | SAXException e)
         {
             throw new RuntimeException(e);
         }
