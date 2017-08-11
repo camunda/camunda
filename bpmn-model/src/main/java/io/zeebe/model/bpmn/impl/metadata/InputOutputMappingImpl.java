@@ -3,6 +3,7 @@ package io.zeebe.model.bpmn.impl.metadata;
 import java.util.*;
 
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.InputOutputMapping;
@@ -38,6 +39,7 @@ public class InputOutputMappingImpl implements InputOutputMapping
         return outputs;
     }
 
+    @XmlTransient
     public void setInputMappings(Mapping[] inputMappings)
     {
         this.inputMappings = inputMappings;
@@ -49,6 +51,7 @@ public class InputOutputMappingImpl implements InputOutputMapping
         return inputMappings;
     }
 
+    @XmlTransient
     public void setOutputMappings(Mapping[] outputMappings)
     {
         this.ouputMappings = outputMappings;

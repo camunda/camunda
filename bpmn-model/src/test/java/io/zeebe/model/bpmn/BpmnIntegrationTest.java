@@ -71,9 +71,16 @@ public class BpmnIntegrationTest
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
-            .sequenceFlow("sf1")
+            .sequenceFlow()
             .serviceTask("task")
-            .sequenceFlow("sf2")
+                .taskType("foo")
+                .taskRetries(3)
+                .taskHeader("foo", "f")
+                .taskHeader("bar", "b")
+                .input("$.a", "$.b")
+                .output("$.c", "$.d")
+                .done()
+            .sequenceFlow()
             .endEvent("end")
             .done();
 
@@ -97,6 +104,99 @@ public class BpmnIntegrationTest
 
         assertThat(targetElement.getIncomingSequenceFlows()).hasSize(1);
         assertThat(targetElement.getIncomingSequenceFlows().get(0).getSourceNode()).isEqualTo(initialStartEvent);
+
+        final ServiceTask task = (ServiceTask) workflow.findFlowElementById(wrapString("task"));
+        final TaskDefinition taskDefinition = task.getTaskDefinition();
+        assertThat(taskDefinition).isNotNull();
+        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+        assertThat(taskDefinition.getRetries()).isEqualTo(3);
+
+        final TaskHeaders taskHeaders = task.getTaskHeaders();
+        assertThat(taskHeaders).isNotNull();
+        assertThat(taskHeaders.asMap())
+            .hasSize(2)
+            .containsEntry("foo", "f")
+            .containsEntry("bar", "b");
+
+        final InputOutputMapping inputOutputMapping = task.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldReadWorkflowFromBuilder()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .sequenceFlow()
+            .serviceTask("task")
+                .taskType("foo")
+                .taskRetries(3)
+                .taskHeader("foo", "f")
+                .taskHeader("bar", "b")
+                .input("$.a", "$.b")
+                .output("$.c", "$.d")
+                .done()
+            .sequenceFlow()
+            .endEvent("end")
+            .done();
+
+        final String workflowAsString = Bpmn.convertToString(workflowDefinition);
+        System.out.println(workflowAsString);
+
+        final WorkflowDefinition deserializedWorkflowDefinition = Bpmn.readFromString(workflowAsString);
+
+        assertThat(deserializedWorkflowDefinition).isNotNull();
+        assertThat(deserializedWorkflowDefinition.getWorkflows()).hasSize(1);
+
+        final Workflow workflow = deserializedWorkflowDefinition.getWorklow(wrapString("process"));
+        assertThat(workflow).isNotNull();
+        assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
+
+        assertThat(workflow.getFlowElementMap()).isNotEmpty();
+
+        final StartEvent initialStartEvent = workflow.getInitialStartEvent();
+        assertThat(initialStartEvent).isNotNull();
+        assertThat(initialStartEvent.getIdAsBuffer()).isEqualTo(wrapString("start"));
+        assertThat(initialStartEvent.getOutgoingSequenceFlows()).isNotEmpty();
+
+        final FlowNode targetElement = initialStartEvent.getOutgoingSequenceFlows().get(0).getTargetNode();
+        assertThat(targetElement).isNotNull();
+        assertThat(targetElement.getIdAsBuffer()).isEqualTo(wrapString("task"));
+
+        assertThat(targetElement.getIncomingSequenceFlows()).hasSize(1);
+        assertThat(targetElement.getIncomingSequenceFlows().get(0).getSourceNode()).isEqualTo(initialStartEvent);
+
+        final ServiceTask task = (ServiceTask) workflow.findFlowElementById(wrapString("task"));
+        final TaskDefinition taskDefinition = task.getTaskDefinition();
+        assertThat(taskDefinition).isNotNull();
+        assertThat(taskDefinition.getTypeAsBuffer()).isEqualTo(wrapString("foo"));
+        assertThat(taskDefinition.getRetries()).isEqualTo(3);
+
+        final TaskHeaders taskHeaders = task.getTaskHeaders();
+        assertThat(taskHeaders).isNotNull();
+        assertThat(taskHeaders.asMap())
+            .hasSize(2)
+            .containsEntry("foo", "f")
+            .containsEntry("bar", "b");
+
+        final InputOutputMapping inputOutputMapping = task.getInputOutputMapping();
+        assertThat(inputOutputMapping).isNotNull();
+
+        assertThat(inputOutputMapping.getInputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.a", "$.b");
+
+        assertThat(inputOutputMapping.getOutputMappingsAsMap())
+            .hasSize(1)
+            .containsEntry("$.c", "$.d");
     }
 
 }

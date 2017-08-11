@@ -1,6 +1,6 @@
 package io.zeebe.model.bpmn;
 
-import java.io.File;
+import java.io.*;
 
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.impl.BpmnParser;
@@ -26,6 +26,20 @@ public class Bpmn
         final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
 
         return workflowDefinition;
+    }
+
+    public static WorkflowDefinition readFromStream(InputStream stream)
+    {
+        final DefinitionsImpl definitions = parser.readFromStream(stream);
+        // TODO validate workflow
+        final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
+
+        return workflowDefinition;
+    }
+
+    public static WorkflowDefinition readFromString(String workflow)
+    {
+        return readFromStream(new ByteArrayInputStream(workflow.getBytes()));
     }
 
     public static String convertToString(WorkflowDefinition definition)
