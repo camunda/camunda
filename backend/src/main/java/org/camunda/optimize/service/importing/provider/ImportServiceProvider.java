@@ -8,8 +8,8 @@ import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlIdBasedIm
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
-import org.camunda.optimize.service.util.ConfigurationReloadable;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;

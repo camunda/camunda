@@ -14,7 +14,15 @@
   <context:component-scan base-package="org.camunda.optimize.rest"/>
   <context:component-scan base-package="org.camunda.optimize.plugin"/>
 
-  <context:property-placeholder location="classpath:service.properties,classpath:unit/service-unit.properties" />
+  <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">
+    <constructor-arg>
+      <list>
+        <value>service-config.json</value>
+        <value>unit/unit-config.json</value>
+      </list>
+    </constructor-arg>
+  </bean>
+
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
   <bean id="engineClient" class="org.camunda.optimize.test.unit.factory.MockEngineClientFactory"/>

@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.beans.factory.annotation.Autowired;

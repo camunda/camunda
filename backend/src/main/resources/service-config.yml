@@ -1,0 +1,127 @@
+#YAML
+auth:
+    defaultAuthentication:
+        password: admin
+        user: admin
+        creationEnabled: true
+        lifeMin: 15
+    token:
+        secret: obfuscate
+container:
+    host: localhost
+    ports:
+        http: 8090
+        https: 8091
+    keystore:
+        location: keystore.jks
+        password: optimize
+engine:
+    auth:
+        accessGroup: ''
+        enabled: false
+        password: ''
+        user: ''
+    name: /engine/default
+    rest: http://localhost:8080/engine-rest
+    connection:
+        timeout: 10000
+    enabled: true
+    groups:
+        resource: /identity/groups
+    hai:
+        count: /history/activity-instance/count
+        resource: /history/activity-instance
+    history:
+        procinst:
+            count: /history/process-instance/count
+            resource: /history/process-instance
+        variable:
+            count: /history/variable-instance/count
+            resource: /history/variable-instance
+    import:
+        activityInstance:
+            pageSize:
+                max: 10000
+                min: 50
+        executorThreadCount: 2
+        jobqueueMaxSize: 100
+        pageMaxSize: 1000
+        process-definition:
+            pageSize:
+                max: 1000
+                min: 10
+        process-definition-list: ''
+        process-definition-xml:
+            pageSize:
+                max: 4
+                min: 1
+        process-instance:
+            pageSize:
+                max: 1000
+        variable:
+            pageSize:
+                max: 1000
+        writer:
+            numberOfRetries: 5
+    procdef:
+        count: /process-definition/count
+        resource: /process-definition
+        xml: /xml
+    read:
+        timeout: 15000
+    user:
+        validation:
+            resource: /identity/verify
+es:
+    analyzer:
+        name: case_sensitive
+        tokenfilter: standard
+        tokenizer: whitespace
+    connection:
+        timeout: 10000
+    event:
+        type: event
+    heatmap:
+        duration:
+            targetValueType: duration-target-value
+    host: localhost
+    port: 9300
+    import:
+        handler:
+            backoff:
+                interval: 1000
+                ms: 6000
+                max: 5
+            pages:
+                resetInterval:
+                    unit: Minutes
+                    value: 30
+        indexType: import-index
+    index: optimize
+    licenseType: license
+    procdef:
+        indexType: process-definition-import-index
+        type: process-definition
+        xmlType: process-definition-xml
+    processInstance:
+        idTrackingType: process-instance-id-tracking
+        type: process-instance
+    sampler:
+        interval: 5000
+    scrollTimeout: 60000
+    settings:
+        index:
+            number_of_replicas: 0
+            number_of_shards: 1
+            refresh_interval: 2s
+    users:
+        type: users
+    variable:
+        type: variable
+plugin:
+    variableImport:
+            basePackages: ''
+serialization:
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss
+variable:
+    maxValueListSize: 15

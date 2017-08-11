@@ -1,0 +1,17 @@
+{
+  "container": {
+    "host": "0.0.0.0",
+    "ports": {
+      "http": 8090
+    }
+  },
+  "engine": {
+    "name": "/engine/default",
+    "rest": "http://localhost:8080/engine-rest"
+  },
+  "es": {
+    "host": "localhost",
+    "index": "optimize",
+    "port": 9300
+  }
+}

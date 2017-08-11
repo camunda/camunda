@@ -1,0 +1,12 @@
+{
+  "engine": {
+    "rest": "http://localhost:48080/engine-rest",
+    "import": {
+      "process-definition-xml": {
+        "pageSize": {
+          "max": 30
+        }
+      }
+    }
+  }
+}

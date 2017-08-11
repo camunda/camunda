@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.importing.job.ImportJob;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

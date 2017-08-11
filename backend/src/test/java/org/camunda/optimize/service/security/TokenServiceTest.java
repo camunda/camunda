@@ -2,7 +2,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;

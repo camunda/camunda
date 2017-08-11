@@ -5,7 +5,7 @@ import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHa
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

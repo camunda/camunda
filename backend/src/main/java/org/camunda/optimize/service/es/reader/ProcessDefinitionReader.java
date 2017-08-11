@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;

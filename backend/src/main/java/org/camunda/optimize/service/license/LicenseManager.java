@@ -5,7 +5,7 @@ import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;

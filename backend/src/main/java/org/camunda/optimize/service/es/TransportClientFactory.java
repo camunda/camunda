@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es;
 
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -36,7 +36,7 @@ public class TransportClientFactory implements FactoryBean <Client> {
           new PreBuiltTransportClient(
             Settings.builder()
               .put("client.transport.ping_timeout", configurationService.getElasticsearchConnectionTimeout(), TimeUnit.MILLISECONDS)
-              .put("client.transport.nodes_sampler_interval", configurationService.getElasticsearchConnectionSamplerInterval(), TimeUnit.MILLISECONDS)
+              .put("client.transport.nodes_sampler_interval", configurationService.getSamplerInterval(), TimeUnit.MILLISECONDS)
               .build())
             .addTransportAddress(new InetSocketTransportAddress(
                 InetAddress.getByName(configurationService.getElasticSearchHost()),

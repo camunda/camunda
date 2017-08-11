@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.camunda.optimize.service.es.schema.type.VariableType;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.slf4j.Logger;

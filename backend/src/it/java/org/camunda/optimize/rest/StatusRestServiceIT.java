@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;

@@ -1,0 +1,7 @@
+{
+  "auth": {
+    "token": {
+      "secret": "test-obfuscate"
+    }
+  }
+}

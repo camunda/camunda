@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;

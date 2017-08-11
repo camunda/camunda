@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.writer;
 
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;

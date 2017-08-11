@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +19,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_BY;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER_TYPE_DESCENDING;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_DESCENDING;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_ID;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

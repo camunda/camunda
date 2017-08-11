@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;

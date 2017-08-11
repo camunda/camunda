@@ -2,7 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;

@@ -1,0 +1,22 @@
+{
+  "es": {
+    "import": {
+      "handler": {
+        "backoff": {
+          "interval": 50,
+          "value": 10,
+          "max": 3
+        },
+        "pages": {
+          "resetInterval": {
+            "unit": "Millis",
+            "value": 100
+          }
+        }
+      }
+    },
+    "sampler": {
+      "interval": 100
+    }
+  }
+}

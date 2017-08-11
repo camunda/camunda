@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.it.factory;
 
 import org.camunda.optimize.service.security.TokenService;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;

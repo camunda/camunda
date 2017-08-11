@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;

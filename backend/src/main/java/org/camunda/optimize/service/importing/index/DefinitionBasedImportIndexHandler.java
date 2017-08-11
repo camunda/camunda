@@ -9,7 +9,7 @@ import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

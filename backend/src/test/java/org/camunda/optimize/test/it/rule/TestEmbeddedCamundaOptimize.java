@@ -7,8 +7,8 @@ import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.util.ConfigurationReloadable;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.BeanUtils;
@@ -32,7 +32,7 @@ import java.util.Properties;
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private final static String contextLocation = "classpath:embeddedOptimizeContext.xml";
-  private final static String propertiesLocation = "it/it-test.properties";
+  private final static String propertiesLocation = "integration-rules.properties";
 
   private static String authenticationToken;
   private Properties properties;

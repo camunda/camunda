@@ -7,7 +7,7 @@ import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

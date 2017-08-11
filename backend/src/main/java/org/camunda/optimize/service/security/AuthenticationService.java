@@ -2,7 +2,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

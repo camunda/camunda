@@ -4,10 +4,10 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -72,14 +72,18 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
     defineLogbackLoggingConfiguration();
-    Properties properties = getProperties();
+    ConfigurationService configurationService = constructConfigurationService();
 
-    Server jettyServer = initServer(properties);
+    Server jettyServer = initServer(configurationService);
 
     ServletContextHandler context = jerseyCamundaOptimize.getServletContextHandler();
 
     jettyServer.setHandler(context);
     return jettyServer;
+  }
+
+  private ConfigurationService constructConfigurationService() {
+    return new ConfigurationService();
   }
 
   private void defineLogbackLoggingConfiguration() {
@@ -122,22 +126,22 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
 
-  private Server initServer(Properties properties) {
-    String host = properties.getProperty("camunda.optimize.container.host");
-    String keystorePass = properties.getProperty("camunda.optimize.container.keystore.password");
-    String keystoreLocation = properties.getProperty("camunda.optimize.container.keystore.location");
+  private Server initServer(ConfigurationService configurationService) {
+    String host = configurationService.getContainerHost();
+    String keystorePass = configurationService.getContainerKeystorePassword();
+    String keystoreLocation = configurationService.getContainerKeystoreLocation();
     Server server = new Server();
 
-    ServerConnector connector = initHttpConnector(properties, host, server);
+    ServerConnector connector = initHttpConnector(configurationService, host, server);
 
-    ServerConnector sslConnector = initHttpsConnector(properties, host, keystorePass, keystoreLocation, server);
+    ServerConnector sslConnector = initHttpsConnector(configurationService, host, keystorePass, keystoreLocation, server);
 
     server.setConnectors(new Connector[] { connector, sslConnector });
 
     return server;
   }
 
-  private ServerConnector initHttpsConnector(Properties properties, String host, String keystorePass, String keystoreLocation, Server server) {
+  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host, String keystorePass, String keystoreLocation, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer());
@@ -149,14 +153,14 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     ServerConnector sslConnector = new ServerConnector(server,
         new SslConnectionFactory(sslContextFactory, PROTOCOL),
         new HttpConnectionFactory(https));
-    sslConnector.setPort(Integer.parseInt(properties.getProperty("camunda.optimize.container.https.port")));
+    sslConnector.setPort(configurationService.getContainerHttpsPort());
     sslConnector.setHost(host);
     return sslConnector;
   }
 
-  private ServerConnector initHttpConnector(Properties properties, String host, Server server) {
+  private ServerConnector initHttpConnector(ConfigurationService configurationService, String host, Server server) {
     ServerConnector connector = new ServerConnector(server);
-    connector.setPort(Integer.parseInt(properties.getProperty("camunda.optimize.container.http.port")));
+    connector.setPort(configurationService.getContainerHttpPort());
     connector.setHost(host);
     return connector;
   }

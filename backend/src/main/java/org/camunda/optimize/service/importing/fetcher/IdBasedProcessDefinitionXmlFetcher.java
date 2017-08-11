@@ -2,7 +2,7 @@ package org.camunda.optimize.service.importing.fetcher;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

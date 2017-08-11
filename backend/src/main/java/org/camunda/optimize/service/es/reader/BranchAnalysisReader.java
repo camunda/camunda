@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;

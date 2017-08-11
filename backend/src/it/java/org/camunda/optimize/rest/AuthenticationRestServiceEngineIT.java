@@ -1,10 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
-import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
-import org.camunda.optimize.rest.engine.dto.UserDto;
-import org.camunda.optimize.rest.engine.dto.UserProfileDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -15,8 +11,6 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;

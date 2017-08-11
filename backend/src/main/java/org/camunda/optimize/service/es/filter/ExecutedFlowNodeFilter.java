@@ -41,11 +41,9 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
 
   private BoolQueryBuilder createBoolFilterForAllActivityIds(String activityId) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-//    for (String activityId : activityIds) {
-      boolQueryBuilder.must(
-        termQuery(nestedActivityIdFieldLabel(), activityId)
-      );
-//    }
+    boolQueryBuilder.must(
+      termQuery(nestedActivityIdFieldLabel(), activityId)
+    );
     return boolQueryBuilder;
   }
 

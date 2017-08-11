@@ -5,7 +5,7 @@ import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.spring.OptimizeAwareDependencyInjectionListener;

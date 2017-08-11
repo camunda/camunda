@@ -41,7 +41,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
-    properties = PropertyUtil.loadProperties("it/it-test.properties");
+    properties = PropertyUtil.loadProperties("integration-rules.properties");
   }
 
   private void init() {

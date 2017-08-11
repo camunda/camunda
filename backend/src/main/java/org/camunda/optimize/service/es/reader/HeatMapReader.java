@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;

@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;

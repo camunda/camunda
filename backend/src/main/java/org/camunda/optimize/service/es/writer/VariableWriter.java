@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.variable.value.LongVariableDto;
 import org.camunda.optimize.dto.optimize.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.variable.value.VariableInstanceDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;

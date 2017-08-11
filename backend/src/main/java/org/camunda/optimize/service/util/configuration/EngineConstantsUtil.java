@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.util;
+package org.camunda.optimize.service.util.configuration;
 
 public class EngineConstantsUtil {
 

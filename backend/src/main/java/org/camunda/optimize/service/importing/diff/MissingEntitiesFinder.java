@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing.diff;
 
 import org.camunda.optimize.dto.engine.EngineDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
