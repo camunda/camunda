@@ -100,7 +100,7 @@
     <field name="partitionId" id="0" type="uint16"/>
     <field name="term" id="1" type="uint16"/>
     <field name="succeeded" id="2" type="BooleanType"/>
-    <field name="previousEventPosition" id="2" type="uint64"/>
+    <field name="previousEventPosition" id="3" type="uint64"/>
     <field name="port" id="4" type="uint16"/>
     <data name="topicName" id="5" type="varDataEncoding"/>
     <data name="host" id="6" type="varDataEncoding"/>
