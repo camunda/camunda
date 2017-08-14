@@ -19,7 +19,7 @@
     <version.logstreams>0.1.0</version.logstreams>
     <version.msgpack>0.1.0</version.msgpack>
     <version.protocol>0.1.0</version.protocol>
-    <version.transport>0.1.0</version.transport>
+    <version.transport>0.1.1</version.transport>
     <version.util>0.1.0</version.util>
   </properties>
 
