@@ -114,7 +114,7 @@ public class ClientCommandManagerTest
             .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
 
         // then
-        assertTopologyRefreshRequests(1);
+        assertAtLeastTopologyRefreshRequests(1);
         assertCreateTaskRequests(1);
     }
 
@@ -198,6 +198,18 @@ public class ClientCommandManagerTest
     {
         final List<ControlMessageRequest> receivedControlMessageRequests = broker.getReceivedControlMessageRequests();
         assertThat(receivedControlMessageRequests).hasSize(count);
+
+        receivedControlMessageRequests.forEach(request ->
+        {
+            assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
+            assertThat(request.getData()).isEmpty();
+        });
+    }
+
+    protected void assertAtLeastTopologyRefreshRequests(final int count)
+    {
+        final List<ControlMessageRequest> receivedControlMessageRequests = broker.getReceivedControlMessageRequests();
+        assertThat(receivedControlMessageRequests.size()).isGreaterThanOrEqualTo(count);
 
         receivedControlMessageRequests.forEach(request ->
         {
