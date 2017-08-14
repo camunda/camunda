@@ -229,7 +229,9 @@ public class MockLogStorage
             if (maxPosition == INVALID_ADDRESS ||
                 position <= maxPosition)
             {
+                final long position = byteBuffer.position();
                 final long limit = byteBuffer.limit();
+
                 if (limit == LogStreamUtil.HEADER_LENGTH)
                 {
                     readHeader(invocation);
@@ -242,7 +244,9 @@ public class MockLogStorage
                     }
                     readRest(invocation);
                 }
-                result = address + byteBuffer.limit();
+
+                final long readBytes = limit - position;
+                result = address + readBytes;
             }
             else
             {
