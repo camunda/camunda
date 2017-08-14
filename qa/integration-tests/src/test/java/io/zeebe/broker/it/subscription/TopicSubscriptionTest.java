@@ -70,7 +70,7 @@ public class TopicSubscriptionTest
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(20);
+    public Timeout timeout = Timeout.seconds(30);
 
     protected ZeebeClient client;
     protected RecordingEventHandler recordingHandler;

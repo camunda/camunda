@@ -22,11 +22,9 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
@@ -35,6 +33,7 @@ import io.zeebe.broker.task.CreditsRequestBuffer;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
+import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -58,17 +57,16 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected DeferredCommandContext cmdQueue;
     protected CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(TaskSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
-    protected final Long2ObjectHashMap<TaskSubscription> subscriptionsById = new Long2ObjectHashMap<>();
-    protected Iterator<TaskSubscription> subscriptionIterator;
+    protected final TaskSubscriptions subscriptions = new TaskSubscriptions(8);
+    protected final SubscriptionIterator taskDistributionIterator;
+    protected final SubscriptionIterator managementIterator;
 
-    protected final DirectBuffer subscriptedTaskType;
+    protected final DirectBuffer subscribedTaskType;
 
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
     protected LogStream targetStream;
-
-    protected int availableSubscriptionCredits = 0;
 
     protected final TaskEvent taskEvent = new TaskEvent();
     protected long eventKey = 0;
@@ -81,8 +79,9 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public LockTaskStreamProcessor(DirectBuffer taskType)
     {
-        this.subscriptedTaskType = taskType;
-        this.subscriptionIterator = subscriptionsById.values().iterator();
+        this.subscribedTaskType = taskType;
+        this.taskDistributionIterator = subscriptions.iterator();
+        this.managementIterator = subscriptions.iterator();
     }
 
     @Override
@@ -102,7 +101,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public DirectBuffer getSubscriptedTaskType()
     {
-        return subscriptedTaskType;
+        return subscribedTaskType;
     }
 
     public DirectBuffer getLogStreamTopicName()
@@ -137,17 +136,15 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         ensureGreaterThan("lock duration", subscription.getLockDuration(), 0);
         ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
 
-        if (!BufferUtil.equals(subscription.getLockTaskType(), subscriptedTaskType))
+        if (!BufferUtil.equals(subscription.getLockTaskType(), subscribedTaskType))
         {
-            final String errorMessage = String.format("Subscription task type is not equal to '%s'.", BufferUtil.bufferAsString(subscriptedTaskType));
+            final String errorMessage = String.format("Subscription task type is not equal to '%s'.", BufferUtil.bufferAsString(subscribedTaskType));
             throw new RuntimeException(errorMessage);
         }
 
         return cmdQueue.runAsync(future ->
         {
-            subscriptionsById.put(subscription.getSubscriberKey(), subscription);
-
-            availableSubscriptionCredits += subscription.getCredits();
+            subscriptions.addSubscription(subscription);
 
             isSuspended = false;
 
@@ -155,51 +152,35 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         });
     }
 
-    public CompletableFuture<Boolean> removeSubscription(long subscriptionId)
+    public CompletableFuture<Boolean> removeSubscription(long subscriberKey)
     {
         return cmdQueue.runAsync(future ->
         {
-            final TaskSubscription subscription = subscriptionsById.remove(subscriptionId);
-            final boolean hasSubscriptions = onRemove(subscription);
+            subscriptions.removeSubscription(subscriberKey);
+            isSuspended = subscriptions.isEmpty();
 
-            future.complete(hasSubscriptions);
+            future.complete(!isSuspended);
         });
-    }
-
-    protected boolean onRemove(TaskSubscription subscription)
-    {
-        if (subscription != null)
-        {
-            availableSubscriptionCredits -= subscription.getCredits();
-        }
-
-        final boolean hasSubscriptions = subscriptionsById.size() > 0;
-        if (!hasSubscriptions)
-        {
-            isSuspended = true;
-        }
-
-        return hasSubscriptions;
     }
 
     public CompletableFuture<Boolean> onClientChannelCloseAsync(int channelId)
     {
         return cmdQueue.runAsync(future ->
         {
-            final Iterator<TaskSubscription> subscriptionIt = subscriptionsById.values().iterator();
+            managementIterator.reset();
 
-            boolean hasSubscriptions = true;
-            while (subscriptionIt.hasNext())
+            while (managementIterator.hasNext())
             {
-                final TaskSubscription subscription = subscriptionIt.next();
+                final TaskSubscription subscription = managementIterator.next();
                 if (subscription.getStreamId() == channelId)
                 {
-                    subscriptionIt.remove();
-                    hasSubscriptions = onRemove(subscription);
+                    managementIterator.remove();
                 }
             }
 
-            future.complete(hasSubscriptions);
+            isSuspended = subscriptions.isEmpty();
+
+            future.complete(!isSuspended);
         });
     }
 
@@ -212,35 +193,29 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         final long subscriberKey = request.getSubscriberKey();
         final int credits = request.getCredits();
-        final TaskSubscription subscription = subscriptionsById.get(subscriberKey);
 
-        if (subscription != null)
-        {
-            availableSubscriptionCredits += credits;
-            subscription.setCredits(subscription.getCredits() + credits);
-
-            isSuspended = false;
-        }
+        subscriptions.addCredits(subscriberKey, credits);
+        isSuspended = false;
     }
 
     protected TaskSubscription getNextAvailableSubscription()
     {
         TaskSubscription nextSubscription = null;
 
-        if (availableSubscriptionCredits > 0)
+        if (subscriptions.getTotalCredits() > 0)
         {
-            final int subscriptionSize = subscriptionsById.size();
+
+            final int subscriptionSize = subscriptions.size();
             int seenSubscriptions = 0;
 
             while (seenSubscriptions < subscriptionSize && nextSubscription == null)
             {
-                if (!subscriptionIterator.hasNext())
+                if (!taskDistributionIterator.hasNext())
                 {
-                    // assuming that it just reset the existing iterator internally
-                    subscriptionIterator = subscriptionsById.values().iterator();
+                    taskDistributionIterator.reset();
                 }
 
-                final TaskSubscription subscription = subscriptionIterator.next();
+                final TaskSubscription subscription = taskDistributionIterator.next();
                 if (subscription.getCredits() > 0)
                 {
                     nextSubscription = subscription;
@@ -280,7 +255,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
         EventProcessor eventProcessor = null;
 
-        if (BufferUtil.equals(taskEvent.getType(), subscriptedTaskType))
+        if (BufferUtil.equals(taskEvent.getType(), subscribedTaskType))
         {
             switch (taskEvent.getState())
             {
@@ -349,12 +324,9 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         if (hasLockedTask)
         {
-            final int credits = lockSubscription.getCredits();
-            lockSubscription.setCredits(credits - 1);
+            subscriptions.addCredits(lockSubscription.getSubscriberKey(), -1);
 
-            availableSubscriptionCredits -= 1;
-
-            if (availableSubscriptionCredits <= 0)
+            if (subscriptions.getTotalCredits() <= 0)
             {
                 isSuspended = true;
             }

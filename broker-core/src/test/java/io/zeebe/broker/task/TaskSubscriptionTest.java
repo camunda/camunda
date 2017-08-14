@@ -20,18 +20,30 @@ package io.zeebe.broker.task;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.net.StandardSocketOptions;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.broker.protocol.clientapi.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.transport.SocketAddress;
 
 
 public class TaskSubscriptionTest
@@ -102,6 +114,49 @@ public class TaskSubscriptionTest
 
         assertThat(taskEvent).isPresent();
         assertThat(taskEvent.get().subscriberKey()).isEqualTo(secondSubscriberKey);
+    }
+
+    @Test
+    public void shouldContinueRoundRobinTaskDistributionAfterClientChannelClose()
+    {
+        // given
+        apiRule
+            .openTaskSubscription("foo")
+            .await();
+
+        apiRule
+            .openTaskSubscription("foo")
+            .await();
+
+        createTask("foo");
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+
+        openAndCloseConnectionTo(apiRule.getBrokerAddress());
+
+        // when
+        createTask("foo");
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
+
+        // then
+        final List<SubscribedEvent> events = apiRule.subscribedEvents().limit(2).collect(Collectors.toList());
+        assertThat(events.get(0).subscriberKey()).isNotEqualTo(events.get(1).subscriberKey());
+
+    }
+
+    protected void openAndCloseConnectionTo(SocketAddress remote)
+    {
+        try
+        {
+            final SocketChannel media = SocketChannel.open();
+            media.setOption(StandardSocketOptions.TCP_NODELAY, true);
+            media.configureBlocking(true);
+            media.connect(remote.toInetSocketAddress());
+            media.close();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

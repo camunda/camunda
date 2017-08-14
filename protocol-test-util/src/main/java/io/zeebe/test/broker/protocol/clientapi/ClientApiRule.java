@@ -218,6 +218,11 @@ public class ClientApiRule extends ExternalResource
         transport.interruptAllChannels();
     }
 
+    public SocketAddress getBrokerAddress()
+    {
+        return brokerAddress;
+    }
+
     protected SubscribedEvent asSubscribedEvent(RawMessage message)
     {
         final SubscribedEvent event = new SubscribedEvent(message);
