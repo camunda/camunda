@@ -678,6 +678,37 @@ public class LogStreamTest
     }
 
     @Test
+    public void shouldTruncateLogStorageWithClosedLogStreamController()
+    {
+        // given open log stream
+        logStream.openAsync();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
+        logBlockIndexController.doWork();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
+        logStreamController.doWork();
+
+        // close log stream controller
+        logStream.closeLogStreamController();
+        logStreamController.doWork();
+
+        // mock log storage for truncation
+        mockLogStorage.add(newLogEntry().partlyRead());
+
+        // when
+        logStream.truncate(TRUNCATE_POSITION);
+
+        // then
+        verify(mockLogStorage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
+        assertThat(logStream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
+
+        // when
+        logStream.getLogBlockIndexController().doWork();
+
+        // then
+        assertThat(logStream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+    }
+
+    @Test
     public void shouldTruncateLogStorageWithCommittedPosition()
     {
         final MockLogStorage storage = new MockLogStorage();
