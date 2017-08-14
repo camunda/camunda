@@ -172,7 +172,7 @@ mavenJob(jobName)
                     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
                 }
 
-                shell dockerHubUpload
+                //shell dockerHubUpload
             }
 
         }
