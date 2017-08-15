@@ -52,7 +52,7 @@ public class WorkflowInstanceWorker
             .taskType(taskType)
             .lockOwner(lockOwner)
             .lockTime(Duration.ofSeconds(10))
-            .handler((controller, task) ->
+            .handler((client, task) ->
             {
                 System.out.println(String.format(">>> [type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
                         task.getType(),
@@ -61,7 +61,7 @@ public class WorkflowInstanceWorker
                         task.getHeaders(),
                         task.getPayload()));
 
-                controller.completeTaskWithoutPayload();
+                client.complete(task).withoutPayload().execute();
             })
             .open();
 
