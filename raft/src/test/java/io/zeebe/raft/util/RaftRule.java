@@ -223,26 +223,9 @@ public class RaftRule extends ExternalResource
         subscription.poll(NOOP_FRAGMENT_HANDLER, Integer.MAX_VALUE);
     }
 
-    public int doWork()
-    {
-        try
-        {
-            return raft.doWork();
-        }
-        catch (final Exception e)
-        {
-            throw new RuntimeException("Failed to execute raft", e);
-        }
-    }
-
     public boolean isLeader()
     {
         return getState() == LEADER;
-    }
-
-    public long writeEvent(final String message)
-    {
-        return writeEvent(getTerm(), message);
     }
 
     public long writeEvent(final int term, final String message)

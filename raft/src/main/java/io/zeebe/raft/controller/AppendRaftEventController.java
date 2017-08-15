@@ -21,7 +21,6 @@ import io.zeebe.raft.event.RaftEvent;
 import io.zeebe.raft.protocol.JoinResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.state.*;
 import org.slf4j.Logger;
 
@@ -82,7 +81,7 @@ public class AppendRaftEventController
         stateMachineAgent.reset();
     }
 
-    public void open(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final SocketAddress socketAddress)
+    public void open(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
         // this has to happen immediately so multiple join request are not accepted
         final Context context = stateMachine.getContext();
@@ -91,7 +90,6 @@ public class AppendRaftEventController
         context.setServerOutput(serverOutput);
         context.setRemoteAddress(remoteAddress);
         context.setRequestId(requestId);
-        context.setSocketAddress(socketAddress);
     }
 
     public void close()
@@ -234,7 +232,6 @@ public class AppendRaftEventController
         private ServerOutput serverOutput;
         private RemoteAddress remoteAddress;
         private long requestId;
-        private SocketAddress socketAddress;
 
         Context(final StateMachine<Context> stateMachine, final Raft raft)
         {
@@ -324,11 +321,6 @@ public class AppendRaftEventController
         public void setRequestId(final long requestId)
         {
             this.requestId = requestId;
-        }
-
-        public void setSocketAddress(final SocketAddress socketAddress)
-        {
-            this.socketAddress = socketAddress;
         }
 
         public void acceptJoinRequest()

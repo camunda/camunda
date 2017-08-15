@@ -37,11 +37,6 @@ public class RaftConfigurationMember extends UnpackedObject
         return hostProp.getValue();
     }
 
-    public RaftConfigurationMember setHost(final DirectBuffer buffer)
-    {
-        return setHost(buffer, 0, buffer.capacity());
-    }
-
     public RaftConfigurationMember setHost(final DirectBuffer buffer, final int offset, final int length)
     {
         hostProp.setValue(buffer, offset, length);

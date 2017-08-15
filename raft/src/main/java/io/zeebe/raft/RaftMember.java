@@ -25,7 +25,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.RemoteAddress;
-import org.slf4j.Logger;
 
 public class RaftMember
 {
@@ -34,7 +33,6 @@ public class RaftMember
     private final RemoteAddress remoteAddress;
     private final LogStream logStream;
     private final BufferedLogStreamReader reader;
-    private final Logger logger;
 
     private long heartbeat;
     private boolean failures;
@@ -45,12 +43,11 @@ public class RaftMember
     private long previousPosition;
     private int previousTerm;
 
-    public RaftMember(final RemoteAddress remoteAddress, final LogStream logStream, final Logger logger)
+    public RaftMember(final RemoteAddress remoteAddress, final LogStream logStream)
     {
         this.remoteAddress = remoteAddress;
         this.logStream = logStream;
         this.reader = new BufferedLogStreamReader(logStream, true);
-        this.logger = logger;
     }
 
     public void close()

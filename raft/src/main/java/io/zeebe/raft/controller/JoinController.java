@@ -36,7 +36,6 @@ public class JoinController
     private static final int TRANSITION_SINGLE_NODE = 4;
 
     private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
-    private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
 
     private final StateMachineAgent<Context> stateMachineAgent;
 
@@ -86,11 +85,6 @@ public class JoinController
     public void open()
     {
         stateMachineAgent.addCommand(OPEN_COMMAND);
-    }
-
-    public void close()
-    {
-        stateMachineAgent.addCommand(CLOSE_COMMAND);
     }
 
     public boolean isJoined()

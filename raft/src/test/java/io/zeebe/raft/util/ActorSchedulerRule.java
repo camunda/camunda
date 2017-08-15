@@ -39,7 +39,7 @@ public class ActorSchedulerRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("raft", 1);
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("raft", threadCount);
     }
 
     public ActorScheduler getActorScheduler()

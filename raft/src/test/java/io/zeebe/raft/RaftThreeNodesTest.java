@@ -128,8 +128,7 @@ public class RaftThreeNodesTest
         cluster.awaitRaftEventCommittedOnAll(raft1.getTerm());
 
         // when a quorum leaves the cluster
-        cluster.removeRaft(raft2);
-        cluster.removeRaft(raft3);
+        cluster.removeRafts(raft2, raft3);
 
         // and more events are written
         position = raft1.writeEvents("hello", "world");
@@ -139,8 +138,7 @@ public class RaftThreeNodesTest
         cluster.removeRaft(raft1);
 
         // and quorum returns
-        cluster.registerRaft(raft2);
-        cluster.registerRaft(raft3);
+        cluster.registerRafts(raft2, raft3);
 
         // and a new leader writes more events
         final RaftRule newLeader = cluster.awaitLeader();

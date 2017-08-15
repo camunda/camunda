@@ -142,35 +142,16 @@ public class RaftClusterRule implements TestRule
             "Failed to wait for events {} to be commit on all rafts", Arrays.asList(messages));
     }
 
-    public void awaitEventAppended(final RaftRule raftToWait, final long position, final int term, final String message)
-    {
-        awaitCondition(() -> raftToWait.eventAppended(position, term, message), COMMITTED_RETRIES,
-            "Failed to wait for appended of event %d/%d with message on raft %s", position, term, message, raftToWait);
-    }
-
     public void awaitEventAppendedOnAll(final long position, final int term, final String message)
     {
         awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventAppended(position, term, message)), ALL_COMMITTED_RETRIES,
             "Failed to wait for commit of event %d/%d with message on all rafts", position, term, message);
     }
 
-    public void awaitInitialEventCommitted(final RaftRule raftToWait, final int term)
-    {
-        awaitCondition(() -> raftToWait.eventCommitted(term, NOOP_EVENT), COMMITTED_RETRIES,
-            "Failed to wait for initial event of term %d to be committed on %s log stream", term, raftToWait);
-
-    }
-
     public void awaitInitialEventCommittedOnAll(final int term)
     {
         awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventCommitted(term, NOOP_EVENT)), ALL_COMMITTED_RETRIES,
             "Failed to wait for initial event of term %d to be committed on all log streams", term);
-    }
-
-    public void awaitRaftEventCommitted(final RaftRule raftToWait, final int term, final RaftRule... members)
-    {
-        awaitCondition(() -> raftToWait.raftEventCommitted(term, members), COMMITTED_RETRIES,
-            "Failed to wait for raft event of term %d with members %s to be committed on %s log stream", term, Arrays.asList(members), raftToWait);
     }
 
     public void awaitRaftEventCommittedOnAll(final int term)
@@ -243,11 +224,6 @@ public class RaftClusterRule implements TestRule
             printLogEntries(true);
             throw e;
         }
-    }
-
-    protected <T> T awaitCondition(final Supplier<Optional<T>> supplier, final String message, final Object... args)
-    {
-        return awaitCondition(supplier, DEFAULT_RETRIES, message, args);
     }
 
     protected <T> T awaitCondition(final Supplier<Optional<T>> supplier, final int retires, final String message, final Object... args)

@@ -258,6 +258,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         followerState.close();
         candidateState.close();
 
+        subscriptionController.reset();
+
         appender.close();
 
         getMembers().forEach(RaftMember::close);
@@ -473,8 +475,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      * </p>
      *
      * <p>
-     * <b>Note:</b> It does not allow to add a raft node to its own list of members. This would distort the
-     * quorum determination.
+     * <b>Note:</b> If this node is part of the members list provided it will be ignored and not added to
+     * the known members. This would distort the quorum determination.
      * </p>
      */
     public void addMembers(final List<SocketAddress> members)
@@ -503,7 +505,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
             final SocketAddress address = new SocketAddress(socketAddress);
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(address);
 
-            member = new RaftMember(remoteAddress, logStream, logger);
+            member = new RaftMember(remoteAddress, logStream);
             member.reset(nextHeartbeat());
 
             members.add(member);
@@ -523,7 +525,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         logger.debug("New member {} joining the cluster", socketAddress);
         addMember(socketAddress);
         persistentStorage.save();
-        appendRaftEventController.open(serverOutput, remoteAddress, requestId, socketAddress);
+        appendRaftEventController.open(serverOutput, remoteAddress, requestId);
     }
 
     /**

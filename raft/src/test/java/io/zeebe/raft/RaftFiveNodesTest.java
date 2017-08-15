@@ -130,22 +130,17 @@ public class RaftFiveNodesTest
         cluster.awaitRaftEventCommittedOnAll(raft1.getTerm());
 
         // when a quorum leaves the cluster
-        cluster.removeRaft(raft3);
-        cluster.removeRaft(raft4);
-        cluster.removeRaft(raft5);
+        cluster.removeRafts(raft3, raft4, raft5);
 
         // and more events are written
         position = raft1.writeEvents("hello", "world");
         cluster.awaitEventAppendedOnAll(position, raft1.getTerm(), "world");
 
         // and leader and remaining leaves cluster
-        cluster.removeRaft(raft1);
-        cluster.removeRaft(raft2);
+        cluster.removeRafts(raft1, raft2);
 
         // and quorum returns
-        cluster.registerRaft(raft3);
-        cluster.registerRaft(raft4);
-        cluster.registerRaft(raft5);
+        cluster.registerRafts(raft3, raft4, raft5);
 
         // and a new leader writes more events
         final RaftRule newLeader = cluster.awaitLeader();

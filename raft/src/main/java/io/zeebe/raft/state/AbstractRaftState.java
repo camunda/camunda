@@ -17,7 +17,6 @@ package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.BufferedLogStorageAppender;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.*;
@@ -29,8 +28,6 @@ public abstract class AbstractRaftState
     protected final Raft raft;
     protected final BufferedLogStorageAppender appender;
     protected final LogStream logStream;
-
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
     protected final JoinResponse joinResponse = new JoinResponse();
     protected final PollResponse pollResponse = new PollResponse();
