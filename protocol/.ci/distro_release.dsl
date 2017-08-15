@@ -47,7 +47,7 @@ def releaseProperties = [
     tag: '${RELEASE_VERSION}',
     releaseVersion: '${RELEASE_VERSION}',
     developmentVersion: '${DEVELOPMENT_VERSION}',
-    arguments: '--settings=${NEXUS_SETTINGS} -Dskip.central.release=true'
+    arguments: '--settings=${NEXUS_SETTINGS} -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}'
 ]
 
 
@@ -124,7 +124,7 @@ mavenJob(jobName) {
         maven {
           mavenInstallation mavenVersion
           providedSettings mavenSettingsId
-          goals 'release:prepare release:perform -Dgpg.passphrase="${GPG_PASSPHRASE}" \'-Darguments=--settings=${NEXUS_SETTINGS} -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}\' -B'
+          goals 'release:prepare release:perform -Dgpg.passphrase="${GPG_PASSPHRASE}" -B'
 
           properties releaseProperties
           localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
