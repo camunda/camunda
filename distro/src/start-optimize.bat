@@ -29,7 +29,7 @@ start %BASEDIR%\server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.
 :: if there was an error wait and retry
 if %ERRORLEVEL% neq 0 (
     echo Polling elasticsearch ... %RETRIES% retries left
-	timeout /t %SLEEP_TIME% /nobreak >nul 
+	timeout /t %SLEEP_TIME% /nobreak >nul
     set /a RETRIES-=1
     if %RETRIES% leq 0 (
         echo Error: Elasticsearch did not start!
@@ -44,5 +44,12 @@ set OPTIMIZE_CLASSPATH=%BASEDIR%\environment;%BASEDIR%\plugin\*;%BASEDIR%optimiz
 
 echo Elasticsearch has successfully been started.
 echo Starting jetty...
-java -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main > %LOG_FILE% 2>&1
- 
+
+IF DEFINED JAVA_HOME (
+  set JAVA="%JAVA_HOME%\bin\java.exe"
+) ELSE (
+  set JAVA=java
+)
+
+%JAVA% -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main > %LOG_FILE% 2>&1
+
