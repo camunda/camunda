@@ -19,7 +19,6 @@ import static io.zeebe.raft.VoteRequestEncoder.lastEventPositionNullValue;
 import static io.zeebe.raft.VoteRequestEncoder.lastEventTermNullValue;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -94,9 +93,17 @@ public class VoteController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final Raft raft = context.getRaft();
-            final Logger logger =  raft.getLogger();
+            final VoteRequest voteRequest = createVoteRequest(context);
 
+            final int workCount = sendVoteRequestToMembers(context, voteRequest);
+
+            context.take(TRANSITION_DEFAULT);
+
+            return workCount;
+        }
+
+        protected VoteRequest createVoteRequest(final Context context)
+        {
             final LoggedEvent lastEvent = context.getLastEvent();
 
             final long lastEventPosition;
@@ -116,11 +123,17 @@ public class VoteController
                 lastEventTerm = lastEventTermNullValue();
             }
 
-            final VoteRequest voteRequest = context.getVoteRequest()
-                                                   .reset()
-                                                   .setRaft(raft)
-                                                   .setLastEventPosition(lastEventPosition)
-                                                   .setLastEventTerm(lastEventTerm);
+            return context.getVoteRequest()
+                           .reset()
+                           .setRaft(context.getRaft())
+                           .setLastEventPosition(lastEventPosition)
+                           .setLastEventTerm(lastEventTerm);
+        }
+
+        protected int sendVoteRequestToMembers(final Context context, final VoteRequest voteRequest)
+        {
+            final Raft raft = context.getRaft();
+            final Logger logger = raft.getLogger();
 
             final int memberSize = raft.getMemberSize();
             for (int i = 0; i < memberSize; i++)
@@ -142,9 +155,7 @@ public class VoteController
                 }
             }
 
-            context.getRaft().getLogger().debug("Vote request send to {} other members", memberSize);
-
-            context.take(TRANSITION_DEFAULT);
+            logger.debug("Vote request send to {} other members", memberSize);
 
             return memberSize;
         }
@@ -164,14 +175,35 @@ public class VoteController
         {
             final Raft raft = context.getRaft();
             final Logger logger = raft.getLogger();
+
+            final int remainingClientRequests = checkVoteResponses(context);
+
+            if (context.isGranted())
+            {
+                logger.debug("Vote request successful with {} votes for a quorum of {}", context.getGranted(), raft.requiredQuorum());
+                raft.becomeLeader();
+                context.take(TRANSITION_CLOSE);
+            }
+            else if (remainingClientRequests == 0)
+            {
+                logger.debug("Vote request failed with {} votes for a quorum of {}", context.getGranted(), raft.requiredQuorum());
+                raft.becomeFollower();
+                context.take(TRANSITION_CLOSE);
+            }
+
+            return 1;
+        }
+
+        protected int checkVoteResponses(final Context context)
+        {
+            final Logger logger = context.getRaft().getLogger();
             final VoteResponse voteResponse = context.getVoteResponse();
 
             final List<ClientRequest> clientRequests = context.getClientRequests();
-            final Iterator<ClientRequest> iterator = clientRequests.iterator();
 
-            while (iterator.hasNext())
+            for (int i = 0; i < clientRequests.size(); i++)
             {
-                final ClientRequest clientRequest = iterator.next();
+                final ClientRequest clientRequest = clientRequests.get(i);
 
                 if (clientRequest.isDone())
                 {
@@ -194,25 +226,13 @@ public class VoteController
                     finally
                     {
                         clientRequest.close();
-                        iterator.remove();
+                        clientRequests.remove(i);
+                        i--;
                     }
                 }
             }
 
-            if (context.isGranted())
-            {
-                logger.debug("Vote request successful with {} votes for a quorum of {}", context.getGranted(), raft.requiredQuorum());
-                raft.becomeLeader();
-                context.take(TRANSITION_CLOSE);
-            }
-            else if (clientRequests.isEmpty())
-            {
-                logger.debug("Vote request failed with {} votes for a quorum of {}", context.getGranted(), raft.requiredQuorum());
-                raft.becomeFollower();
-                context.take(TRANSITION_CLOSE);
-            }
-
-            return 1;
+            return clientRequests.size();
         }
 
     }
@@ -223,13 +243,7 @@ public class VoteController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            // abort open client requests
-            for (final ClientRequest clientRequest : context.getClientRequests())
-            {
-                clientRequest.close();
-            }
-
-            // reset context for next iteration
+            // abort remaining requests and reset context for next iteration
             context.reset();
 
             context.take(TRANSITION_DEFAULT);
