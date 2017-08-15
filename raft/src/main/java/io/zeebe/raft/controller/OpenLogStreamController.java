@@ -49,6 +49,7 @@ public class OpenLogStreamController
         final State<Context> awaitInitialEventCommitted = new AwaitInitialEventCommittedState();
         final State<Context> closeLogController = new CloseLogControllerState();
         final State<Context> awaitCloseLogController = new AwaitCloseLogControllerState();
+        final State<Context> failedToOpenLogController = new FailedToOpenLogControllerState();
         final WaitState<Context> closed = context -> { };
 
         stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
@@ -58,6 +59,7 @@ public class OpenLogStreamController
             .from(closed).take(TRANSITION_CLOSE).to(closed)
 
             .from(openLogController).take(TRANSITION_DEFAULT).to(awaitOpenLogController)
+            .from(openLogController).take(TRANSITION_FAILED).to(failedToOpenLogController)
 
             .from(awaitOpenLogController).take(TRANSITION_DEFAULT).to(appendInitialEvent)
             .from(awaitOpenLogController).take(TRANSITION_FAILED).to(openLogController)
@@ -79,6 +81,8 @@ public class OpenLogStreamController
 
             .from(closeLogController).take(TRANSITION_DEFAULT).to(awaitCloseLogController)
             .from(awaitCloseLogController).take(TRANSITION_DEFAULT).to(closed)
+
+            .from(failedToOpenLogController).take(TRANSITION_DEFAULT).to(closed)
 
             .build();
 
@@ -121,10 +125,17 @@ public class OpenLogStreamController
         @Override
         public int doWork(final Context context) throws Exception
         {
-            final LogStream logStream = context.getRaft().getLogStream();
+            if (context.hasRetriesLeft())
+            {
+                final LogStream logStream = context.getRaft().getLogStream();
 
-            context.setFuture(logStream.openLogStreamController());
-            context.take(TRANSITION_DEFAULT);
+                context.setFuture(logStream.openLogStreamController());
+                context.take(TRANSITION_DEFAULT);
+            }
+            else
+            {
+                context.take(TRANSITION_FAILED);
+            }
 
             return 1;
         }
@@ -161,6 +172,7 @@ public class OpenLogStreamController
                 catch (final Exception e)
                 {
                     logger.warn("Failed to open log stream controller", e);
+                    context.decreaseRetries();
                     context.take(TRANSITION_FAILED);
                 }
                 finally
@@ -327,6 +339,27 @@ public class OpenLogStreamController
 
     }
 
+    static class FailedToOpenLogControllerState implements State<Context>
+    {
+
+        @Override
+        public int doWork(final Context context) throws Exception
+        {
+            // step down as we failed to open the log controller to write events
+            context.getRaft().becomeFollower();
+            context.reset();
+            context.take(TRANSITION_DEFAULT);
+            return 1;
+        }
+
+        @Override
+        public boolean isInterruptable()
+        {
+            return false;
+        }
+
+    }
+
     static class Context extends SimpleStateMachineContext implements LogStreamFailureListener
     {
 
@@ -337,6 +370,7 @@ public class OpenLogStreamController
         private CompletableFuture<Void> future;
         private long position;
         private long failedPosition;
+        private long retries;
 
         Context(final StateMachine<Context> stateMachine, final Raft raft)
         {
@@ -354,6 +388,7 @@ public class OpenLogStreamController
             future = null;
             position = -1;
             failedPosition = -1;
+            retries = 10;
 
             unregisterFailureListener();
         }
@@ -429,6 +464,16 @@ public class OpenLogStreamController
         public long getPosition()
         {
             return position;
+        }
+
+        public boolean hasRetriesLeft()
+        {
+            return retries > 0;
+        }
+
+        public void decreaseRetries()
+        {
+            retries--;
         }
     }
 
