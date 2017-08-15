@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.raft;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.*;
@@ -29,7 +30,6 @@ import java.util.List;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.StreamUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -46,9 +46,7 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     private final Path path;
     private final Path tmpPath;
 
-    private final MutableDirectBuffer writeBuffer = new UnsafeBuffer(0, 0);
-
-    private final MutableDirectBuffer readBuffer = new UnsafeBuffer(0, 0);
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
 
     private final SocketAddress votedFor = new SocketAddress();
     private LogStream logStream;
@@ -144,26 +142,27 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
         return this;
     }
 
-    public void load()
+    private void load()
     {
         if (file.exists())
         {
             final long length = file.length();
-            if (length > readBuffer.capacity())
+            if (length > buffer.capacity())
             {
-                allocateReadBuffer((int) length);
+                allocateBuffer((int) length);
             }
 
             try (InputStream is = new FileInputStream(file))
             {
-                StreamUtil.read(is, readBuffer.byteArray());
+                StreamUtil.read(is, buffer.byteArray());
             }
             catch (final IOException e)
             {
-                LangUtil.rethrowUnchecked(e);
+                throw new RuntimeException("Unable to read raft storage", e);
             }
 
-            configuration.wrap(readBuffer);
+            configuration.wrap(buffer);
+            configuration.getVotedFor(votedFor);
         }
     }
 
@@ -171,43 +170,46 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     {
         final int length = configuration.getEncodedLength();
 
-        if (length > writeBuffer.capacity())
+        if (length > buffer.capacity())
         {
-            allocateWriteBuffer(length);
+            allocateBuffer(length);
         }
 
-        configuration.write(writeBuffer, 0);
+        configuration.write(buffer, 0);
 
         try (FileOutputStream os = new FileOutputStream(tmpFile))
         {
-            os.write(writeBuffer.byteArray(), 0, length);
+            os.write(buffer.byteArray(), 0, length);
             os.flush();
         }
         catch (final IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException("Unable to write raft storage", e);
         }
 
         try
         {
-            Files.move(tmpPath, path, REPLACE_EXISTING);
+            try
+            {
+                Files.move(tmpPath, path, ATOMIC_MOVE);
+            }
+            catch (final Exception e)
+            {
+                // failed with atomic move, lets try again with normal replace move
+                Files.move(tmpPath, path, REPLACE_EXISTING);
+            }
         }
         catch (final IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException("Unable to replace raft storage", e);
         }
 
         return this;
     }
 
-    private void allocateWriteBuffer(final int capacity)
+    private void allocateBuffer(final int capacity)
     {
-        writeBuffer.wrap(new byte[capacity]);
-    }
-
-    private void allocateReadBuffer(final int capacity)
-    {
-        readBuffer.wrap(new byte[capacity]);
+        buffer.wrap(new byte[capacity]);
     }
 
     public DirectBuffer getTopicName()

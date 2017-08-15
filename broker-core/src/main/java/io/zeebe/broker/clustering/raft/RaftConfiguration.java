@@ -103,7 +103,7 @@ public class RaftConfiguration extends UnpackedObject
         termProp.setValue(term);
     }
 
-    public void getVotedForHostProp(final SocketAddress votedFor)
+    public void getVotedFor(final SocketAddress votedFor)
     {
         votedFor.reset();
 
