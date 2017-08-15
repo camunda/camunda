@@ -489,6 +489,10 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         persistentStorage.save();
     }
 
+    /**
+     *
+     * @param socketAddress the address of the new member, the object is stored so it cannot be reused
+     */
     private RaftMember addMember(final SocketAddress socketAddress)
     {
         ensureNotNull("Raft node socket address", socketAddress);
@@ -502,14 +506,13 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
         if (member == null)
         {
-            final SocketAddress address = new SocketAddress(socketAddress);
-            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(address);
+            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(socketAddress);
 
             member = new RaftMember(remoteAddress, logStream);
             member.reset(nextHeartbeat());
 
             members.add(member);
-            memberLookup.put(address, member);
+            memberLookup.put(socketAddress, member);
 
             persistentStorage.addMember(socketAddress);
         }

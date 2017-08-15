@@ -22,6 +22,7 @@ import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.raft.protocol.JoinRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.SocketAddress;
 
 public class LeaderState extends AbstractRaftState
 {
@@ -44,13 +45,15 @@ public class LeaderState extends AbstractRaftState
         {
             if (raft.isInitialEventCommitted() && raft.isConfigurationEventCommitted())
             {
-                if (raft.isMember(joinRequest.getSocketAddress()))
+                final SocketAddress socketAddress = joinRequest.getSocketAddress();
+                if (raft.isMember(socketAddress))
                 {
                     acceptJoinRequest(serverOutput, remoteAddress, requestId);
                 }
                 else
                 {
-                    raft.joinMember(serverOutput, remoteAddress, requestId, joinRequest.getSocketAddress());
+                    // create new socket address object as it is stored in a map
+                    raft.joinMember(serverOutput, remoteAddress, requestId, new SocketAddress(socketAddress));
                 }
             }
             else
