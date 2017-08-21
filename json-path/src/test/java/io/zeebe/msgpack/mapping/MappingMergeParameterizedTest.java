@@ -576,6 +576,24 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$[obj][1]"),
                 // expected result
                 "{'obj':{'0':{'test':1},'1':'bar'}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$['obj']['1']"),
+                // expected result
+                "{'obj':{'0':{'test':1},'1':'bar'}}" },
+            {
+                // source
+                "{'foo':'bar'}",
+                // target
+                "{'obj':{'0':{'test':1}}}",
+                // mapping
+                createMapping("$.foo", "$['obj.1']"),
+                // expected result
+                "{'obj':{'0':{'test':1}},'obj.1':'bar'}" },
         });
     }
 

@@ -59,6 +59,38 @@ public class JsonPathTokenizerTest
     }
 
     @Test
+    public void shouldTokenizeBracketNotation()
+    {
+        // given
+        final List<Token> tokens = new ArrayList<>();
+        final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+
+        final String jsonPath = "$['key1.key2'].test[index]";
+        final UnsafeBuffer jsonPathBuffer = new UnsafeBuffer(jsonPath.getBytes(StandardCharsets.UTF_8));
+
+        // when
+        tokenizer.tokenize(
+            jsonPathBuffer,
+            0,
+            jsonPathBuffer.capacity(),
+            (type, buf, offset, length) -> tokens.add(new Token(type, offset, length)));
+
+        // then
+        assertThat(tokens).hasSize(11);
+        assertThat(tokens.get(0)).isEqualTo(new Token(JsonPathToken.START_INPUT, 0, jsonPathBuffer.capacity()));
+        assertThat(tokens.get(1)).isEqualTo(new Token(JsonPathToken.ROOT_OBJECT, 0, 1));
+        assertThat(tokens.get(2)).isEqualTo(new Token(JsonPathToken.CHILD_BRACKET_OPERATOR_BEGIN, 1, 2));
+        assertThat(tokens.get(3)).isEqualTo(new Token(JsonPathToken.LITERAL, 3, 9));
+        assertThat(tokens.get(4)).isEqualTo(new Token(JsonPathToken.CHILD_BRACKET_OPERATOR_END, 12, 2));
+        assertThat(tokens.get(5)).isEqualTo(new Token(JsonPathToken.CHILD_OPERATOR, 14, 1));
+        assertThat(tokens.get(6)).isEqualTo(new Token(JsonPathToken.LITERAL, 15, 4));
+        assertThat(tokens.get(7)).isEqualTo(new Token(JsonPathToken.SUBSCRIPT_OPERATOR_BEGIN, 19, 1));
+        assertThat(tokens.get(8)).isEqualTo(new Token(JsonPathToken.LITERAL, 20, 5));
+        assertThat(tokens.get(9)).isEqualTo(new Token(JsonPathToken.SUBSCRIPT_OPERATOR_END, 25, 1));
+        assertThat(tokens.get(10)).isEqualTo(new Token(JsonPathToken.END_INPUT, 0, jsonPathBuffer.capacity()));
+    }
+
+    @Test
     public void testTokenizationFollowingSubscript()
     {
         // given

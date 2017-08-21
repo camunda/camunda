@@ -222,7 +222,35 @@ public class MappingExtractParameterizedTest
                 // mapping
                 createMapping("$.objArr", "$[arr][0][obj][otherArr][0][obj][arr]"),
                 // expected result
-                "{'arr':[{'obj':{'otherArr':[{'obj':{'arr':[0, 1]}}]}}]}" }});
+                "{'arr':[{'obj':{'otherArr':[{'obj':{'arr':[0, 1]}}]}}]}" },
+            {
+                // source
+                "{'foo':{'bar':1}, 'foo.bar':2}",
+                // mapping
+                createMapping("$['foo.bar']", "$.result"),
+                // expected result
+                "{'result':2}" },
+            {
+                // source
+                "{'foo':{'bar':1}, 'foo.bar':2}",
+                // mapping
+                createMapping("$.foo.bar", "$.result"),
+                // expected result
+                "{'result':1}" },
+            {
+                // source
+                "{'foo':{'bar':1}, 'foo.bar':2}",
+                // mapping
+                createMapping("$[foo][bar]", "$.result"),
+                // expected result
+                "{'result':1}" },
+            {
+                // source
+                "{'foo':{'bar':1}, 'foo.bar':2}",
+                // mapping
+                createMapping("$['foo']['bar']", "$.result"),
+                // expected result
+                "{'result':1}" }});
     }
 
     @Parameter

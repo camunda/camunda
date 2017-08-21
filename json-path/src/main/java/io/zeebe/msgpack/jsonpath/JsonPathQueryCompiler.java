@@ -87,11 +87,13 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
                     return;
                 case CHILD_OPERATOR:
                 case SUBSCRIPT_OPERATOR_BEGIN:
+                case CHILD_BRACKET_OPERATOR_BEGIN:
                     mode = ParsingMode.SUBORDINATE;
                     return;
                 case START_INPUT:
                 case END_INPUT:
                 case SUBSCRIPT_OPERATOR_END:
+                case CHILD_BRACKET_OPERATOR_END:
                     return; // ignore
                 default:
                     jsonPathQuery.invalidate(valueOffset, "Unexpected json-path token " + type);

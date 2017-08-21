@@ -16,6 +16,8 @@
 package io.zeebe.msgpack.mapping;
 
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 /**
  * Represents a mapping to map from one message pack document to another.
@@ -30,12 +32,12 @@ public class Mapping
     public static final String MAPPING_STRING = "%s -> %s";
 
     private final JsonPathQuery source;
-    private final String targetQueryString;
+    private final DirectBuffer targetQueryBuffer;
 
-    public Mapping(JsonPathQuery source, String targetQueryString)
+    public Mapping(JsonPathQuery source, DirectBuffer targetQueryBuffer)
     {
         this.source = source;
-        this.targetQueryString = targetQueryString;
+        this.targetQueryBuffer = targetQueryBuffer;
     }
 
     public JsonPathQuery getSource()
@@ -44,9 +46,9 @@ public class Mapping
     }
 
 
-    public String getTargetQueryString()
+    public DirectBuffer getTargetQueryBuffer()
     {
-        return this.targetQueryString;
+        return this.targetQueryBuffer;
     }
 
     @Override
@@ -54,6 +56,6 @@ public class Mapping
     {
         return String.format(MAPPING_STRING,
                              new String(source.getExpression().byteArray()),
-                             targetQueryString);
+                             BufferUtil.bufferAsString(targetQueryBuffer));
     }
 }

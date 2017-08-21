@@ -23,7 +23,6 @@ import io.zeebe.msgpack.jsonpath.JsonPathTokenVisitor;
 import io.zeebe.msgpack.jsonpath.JsonPathTokenizer;
 import io.zeebe.msgpack.query.MsgPackQueryExecutor;
 import io.zeebe.msgpack.query.MsgPackTraverser;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 /**
@@ -142,8 +141,8 @@ public final class MsgPackDocumentExtractor
         for (Mapping mapping : mappings)
         {
             targetPathVisitor.reset(mapping);
-            final String targetQueryString = mapping.getTargetQueryString();
-            tokenizer.tokenize(BufferUtil.wrapString(targetQueryString), 0, targetQueryString.length(), targetPathVisitor);
+            final DirectBuffer targetQueryString = mapping.getTargetQueryBuffer();
+            tokenizer.tokenize(targetQueryString, 0, targetQueryString.capacity(), targetPathVisitor);
         }
         return documentTreeReference;
     }

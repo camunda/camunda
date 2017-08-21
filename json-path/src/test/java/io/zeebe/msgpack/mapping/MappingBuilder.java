@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.util.buffer.BufferUtil;
 
 class MappingBuilder
 {
@@ -36,7 +37,7 @@ class MappingBuilder
 
     protected MappingBuilder mapping(String source, String target)
     {
-        mappings.add(new Mapping(new JsonPathQueryCompiler().compile(source), target));
+        mappings.add(new Mapping(new JsonPathQueryCompiler().compile(source), BufferUtil.wrapString(target)));
         return this;
     }
 

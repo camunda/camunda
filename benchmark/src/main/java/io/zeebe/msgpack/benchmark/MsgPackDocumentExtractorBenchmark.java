@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
@@ -87,8 +88,7 @@ public class MsgPackDocumentExtractorBenchmark
         final List<Mapping> mappings = new ArrayList<>();
         for (int i = 0; i < mappingCount; i++)
         {
-            mappings.add(new Mapping(rootSourceQuery,
-                                     generateJsonPathExpression(levelsOfNesting, numValuesPerLevel)));
+            mappings.add(new Mapping(rootSourceQuery, BufferUtil.wrapString(generateJsonPathExpression(levelsOfNesting, numValuesPerLevel))));
         }
         return mappings.toArray(new Mapping[mappingCount]);
     }
