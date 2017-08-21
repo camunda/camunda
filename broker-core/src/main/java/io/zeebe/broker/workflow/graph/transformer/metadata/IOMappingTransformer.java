@@ -27,6 +27,7 @@ import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
 
 import java.util.List;
 
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.Strings;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.instance.DomElement;
@@ -104,7 +105,7 @@ public class IOMappingTransformer
         else
         {
             mappings = new Mapping[]{new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
-                                                 targetMapping)};
+                                                 BufferUtil.wrapString(targetMapping))};
         }
 
         return mappings;
@@ -117,7 +118,7 @@ public class IOMappingTransformer
 
         //TODO make json path compiler re-usable!
         return new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
-                           targetMapping);
+                           BufferUtil.wrapString(targetMapping));
     }
 
     private static String getMappingQuery(DomElement mappingElement, String attributeName)
