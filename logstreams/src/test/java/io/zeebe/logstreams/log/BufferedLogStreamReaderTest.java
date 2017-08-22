@@ -860,7 +860,7 @@ public class BufferedLogStreamReaderTest
         reader.close();
 
         // reopen
-        reader.reOpen(mockLogStream);
+        reader.wrap(mockLogStream);
 
         // then
         assertThat(reader.allocatedBuffer.isClosed()).isFalse();

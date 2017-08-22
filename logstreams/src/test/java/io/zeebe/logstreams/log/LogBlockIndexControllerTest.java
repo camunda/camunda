@@ -28,12 +28,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.zeebe.util.actor.ActorReference;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogBlockIndexController;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.actor.ActorScheduler;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -51,6 +53,8 @@ public class LogBlockIndexControllerTest
 
     @Mock
     private ActorScheduler mockTaskScheduler;
+    @Mock
+    private ActorReference mockActorRef;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -88,9 +92,25 @@ public class LogBlockIndexControllerTest
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
+        when(mockTaskScheduler.schedule(any())).thenReturn(mockActorRef);
+
         blockIdxController = new LogBlockIndexController(builder, commitPosition);
 
         blockIdxController.doWork();
+    }
+
+    @After
+    public void tearDown()
+    {
+        closeBlockIdxCtrl(blockIdxController);
+    }
+
+    private void closeBlockIdxCtrl(LogBlockIndexController logBlockIndexController)
+    {
+        logBlockIndexController.closeAsync();
+
+        logBlockIndexController.doWork();
+        logBlockIndexController.doWork();
     }
 
     @Test
@@ -315,6 +335,7 @@ public class LogBlockIndexControllerTest
 
         // idx for block should be created
         verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+        closeBlockIdxCtrl(blockIndexController);
     }
 
     @Test
@@ -347,6 +368,7 @@ public class LogBlockIndexControllerTest
 
         // idx for block should be created
         verify(mockBlockIndex, never()).addBlock(LOG_POSITION, LOG_ADDRESS);
+        closeBlockIdxCtrl(blockIndexController);
     }
 
     @Test

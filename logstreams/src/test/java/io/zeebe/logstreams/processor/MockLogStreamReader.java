@@ -71,6 +71,8 @@ public class MockLogStreamReader implements LogStreamReader
     @Override
     public void wrap(LogStream log, long position)
     {
+        closed.compareAndSet(true, false);
+
         if (mockingLog != null && log != mockingLog)
         {
             throw new RuntimeException("not implemented");
@@ -142,12 +144,6 @@ public class MockLogStreamReader implements LogStreamReader
     public boolean isClosed()
     {
         return closed.get();
-    }
-
-    @Override
-    public void reOpen(LogStream logStream)
-    {
-        closed.compareAndSet(true, false);
     }
 
     @Override

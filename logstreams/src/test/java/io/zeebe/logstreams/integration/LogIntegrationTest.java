@@ -78,6 +78,7 @@ public class LogIntegrationTest
 
         final LogStreamReader logReader = new BufferedLogStreamReader(logStream, true);
         readLogAndAssertEvents(logReader, workPerIteration, MSG_SIZE);
+        logReader.close();
     }
 
     @Test
@@ -112,6 +113,7 @@ public class LogIntegrationTest
 
         final LogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
         readLogAndAssertEvents(logStreamReader, batchSize * eventSizePerBatch, MSG_SIZE);
+        logStreamReader.close();
     }
 
     @Test

@@ -73,7 +73,7 @@ public class StreamProcessorController implements Actor
             .from(snapshottingState).take(TRANSITION_DEFAULT).to(openedState)
             .from(snapshottingState).take(TRANSITION_FAIL).to(failedState)
             .from(snapshottingState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
-            .from(failedState).take(TRANSITION_CLOSE).to(closedState)
+            .from(failedState).take(TRANSITION_CLOSE).to(closingState)
             .from(failedState).take(TRANSITION_OPEN).to(openedState)
             .from(failedState).take(TRANSITION_RECOVER).to(recoveringState)
             .from(closingSnapshottingState).take(TRANSITION_DEFAULT).to(closingState)
@@ -251,26 +251,14 @@ public class StreamProcessorController implements Actor
         {
             final LogStream targetStream = streamProcessorContext.getTargetStream();
 
-            initReader(targetLogStreamReader, targetStream);
-            initReader(sourceLogStreamReader, streamProcessorContext.getSourceStream());
+            targetLogStreamReader.wrap(targetStream);
+            sourceLogStreamReader.wrap(streamProcessorContext.getSourceStream());
             logStreamWriter.wrap(targetStream);
 
             targetStream.removeFailureListener(targetLogStreamFailureListener);
             targetStream.registerFailureListener(targetLogStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
-        }
-
-        private void initReader(LogStreamReader logStreamReader, LogStream targetStream)
-        {
-            if (logStreamReader.isClosed())
-            {
-                logStreamReader.reOpen(targetStream);
-            }
-            else
-            {
-                logStreamReader.wrap(targetStream);
-            }
         }
 
         @Override
@@ -820,5 +808,4 @@ public class StreamProcessorController implements Actor
             this.failure = failure;
         }
     }
-
 }

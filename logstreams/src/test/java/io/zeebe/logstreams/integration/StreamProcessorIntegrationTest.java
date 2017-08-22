@@ -124,6 +124,7 @@ public class StreamProcessorIntegrationTest
         readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
 
         streamProcessorController.closeAsync().get();
+        logReader.close();
     }
 
     @Test
@@ -539,6 +540,8 @@ public class StreamProcessorIntegrationTest
         assertThat(exception).isNotNull();
         assertThat(exception).isInstanceOf(RuntimeException.class);
         assertThat(exception).hasMessageContaining("Cannot write event; Writing is disabled");
+
+        streamProcessorController.closeAsync().get();
     }
 
     @Test
@@ -582,6 +585,7 @@ public class StreamProcessorIntegrationTest
         targetLogStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.closeAsync().get();
+        sourceReader.close();
     }
 
     private class CopyStreamProcessor implements StreamProcessor

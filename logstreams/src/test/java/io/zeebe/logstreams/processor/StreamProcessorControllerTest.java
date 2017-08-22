@@ -268,7 +268,7 @@ public class StreamProcessorControllerTest
 
         // then
         assertThat(mockSourceLogStreamReader.isClosed()).isFalse();
-        verify(mockTargetLogStreamReader).reOpen(mockTargetLogStream);
+        verify(mockTargetLogStreamReader, times(2)).wrap(mockTargetLogStream);
     }
 
     @Test
@@ -741,6 +741,40 @@ public class StreamProcessorControllerTest
         assertThat(controller.isFailed()).isTrue();
 
         verify(mockEventProcessor, never()).updateState();
+    }
+
+    @Test
+    public void shouldClosingOnFailState() throws Exception
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(-1L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        targetLogStreamFailureListener.onFailed(2L);
+
+        // -> failed
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+        verify(mockEventProcessor, never()).updateState();
+
+        controller.closeAsync();
+
+        controller.doWork();
+        // -> closing
+        // -> closed
+        assertThat(controller.isClosed()).isTrue();
+        controller.doWork();
+        assertThat(mockSourceLogStreamReader.isClosed()).isTrue();
+        verify(mockTargetLogStreamReader).close();
     }
 
     @Test

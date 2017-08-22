@@ -35,12 +35,12 @@ public class LogStateMachineAgent extends StateMachineAgent<LogContext>
     public static final int TRANSITION_OPEN = 1;
     public static final int TRANSITION_CLOSE = 2;
 
-    protected final AtomicBoolean isRunning = new AtomicBoolean(false);
-    public final Runnable openStateRunnable;
-    public final Runnable closedStateRunnable;
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final Runnable openStateRunnable;
+    private final Runnable closedStateRunnable;
 
-    protected CompletableFuture<Void> closeFuture;
-    protected CompletableFuture<Void> openFuture;
+    private CompletableFuture<Void> closeFuture;
+    private CompletableFuture<Void> openFuture;
 
     public LogStateMachineAgent(StateMachine<LogContext> stateMachine, Runnable openStateRunnable, Runnable closedStateRunnable)
     {

@@ -138,6 +138,7 @@ public class LogRecoveryTest
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog, true);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
         newLog.close();
+        logReader.close();
 
         final int newIndexSize = newLog.getLogBlockIndex().size();
         assertThat(newIndexSize).isEqualTo(0);
@@ -179,6 +180,7 @@ public class LogRecoveryTest
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
         newLog.close();
+        logReader.close();
 
         // and after read events more block indices are created
         final int newIndexSize = newLog.getLogBlockIndex().size();
@@ -227,6 +229,7 @@ public class LogRecoveryTest
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog, true);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
         newLog.close();
+        logReader.close();
 
         final int newIndexSize = newLog.getLogBlockIndex().size();
         assertThat(newIndexSize).isEqualTo(recoveredIndexSize);
@@ -266,6 +269,7 @@ public class LogRecoveryTest
         final int calculatesIndexSize = calculateIndexSize(WORK_COUNT);
         assertThat(indexSize).isGreaterThan(calculatesIndexSize);
         readLogAndAssertEvents(WORK_COUNT, calculatesIndexSize);
+        newLog.close();
     }
 
     @Test
@@ -350,10 +354,10 @@ public class LogRecoveryTest
 
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, workCount, MSG_SIZE);
 
-        newLog.close();
-
         final int newIndexSize = newLog.getLogBlockIndex().size();
         assertThat(newIndexSize).isGreaterThanOrEqualTo(indexSize);
+        newLog.close();
+        logReader.close();
     }
 
     private int calculateIndexSize(int workCount)

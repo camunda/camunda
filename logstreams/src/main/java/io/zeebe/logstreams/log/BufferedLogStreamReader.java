@@ -90,6 +90,10 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
 
     private void init()
     {
+        if (allocatedBuffer != null && !allocatedBuffer.isClosed())
+        {
+            allocatedBuffer.close();
+        }
         this.allocatedBuffer = bufferAllocator.allocate(initialBufferCapacity);
         this.ioBuffer = allocatedBuffer.getRawBuffer();
         this.buffer.wrap(ioBuffer);
@@ -146,6 +150,11 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
 
     protected void initReader(LogStream logStream)
     {
+        if (allocatedBuffer == null || isClosed())
+        {
+            init();
+        }
+
         final LogStorage logStorage = logStream.getLogStorage();
         final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
 
@@ -491,20 +500,9 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
         return allocatedBuffer.isClosed();
     }
 
-    public void reOpen(LogStream logStream)
-    {
-        if (!allocatedBuffer.isClosed())
-        {
-            allocatedBuffer.close();
-        }
-        init();
-        wrap(logStream);
-    }
-
     @Override
     public void close()
     {
         allocatedBuffer.close();
     }
-
 }

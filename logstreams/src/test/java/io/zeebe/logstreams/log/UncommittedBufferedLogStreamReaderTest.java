@@ -60,6 +60,12 @@ public class UncommittedBufferedLogStreamReaderTest
         reader = new BufferedLogStreamReader(true);
     }
 
+    @After
+    public void tearDown()
+    {
+        reader.close();
+    }
+
     @Test
     public void shouldReadEvent()
     {

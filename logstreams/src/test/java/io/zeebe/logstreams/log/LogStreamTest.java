@@ -15,28 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import static java.lang.String.join;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
-import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogTestUtil.LOG_ADDRESS;
-import static io.zeebe.logstreams.log.LogTestUtil.PARTITION_ID;
-import static io.zeebe.logstreams.log.LogTestUtil.TOPIC_NAME_BUFFER;
-import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
-
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
@@ -50,12 +28,33 @@ import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.log.LogTestUtil.*;
+import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
+import static io.zeebe.util.StringUtil.getBytes;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.lang.String.join;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 public class LogStreamTest
 {
@@ -124,6 +123,37 @@ public class LogStreamTest
         when(mockActorScheduler.schedule(mockWriteBufferConductor)).thenReturn(mockWriteBufferRef);
 
         logStream = builder.build();
+    }
+
+    @After
+    public void tearDown()
+    {
+        closeLogStream(logStream);
+    }
+
+    private void closeLogStream(LogStream logStream)
+    {
+        logStream.closeAsync();
+
+        logStream.getLogBlockIndexController().doWork();
+        logStream.getLogBlockIndexController().doWork();
+
+        final LogStreamController logStreamController = logStream.getLogStreamController();
+        if (logStreamController != null && !logStreamController.isClosed())
+        {
+            try
+            {
+                logStream.getWriteBuffer().getConductor().doWork();
+                logStream.getWriteBuffer().getConductor().doWork();
+            }
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+
+            logStreamController.doWork();
+            logStreamController.doWork();
+        }
     }
 
     @Test
@@ -202,6 +232,7 @@ public class LogStreamTest
         // only  log block index controller is created
         assertNotNull(stream.getLogBlockIndexController());
         assertNull(stream.getLogStreamController());
+        closeLogStream(stream);
     }
 
     @Test
@@ -260,6 +291,7 @@ public class LogStreamTest
 
         // and logStorage is opened
         assertTrue(stream.getLogStorage().isOpen());
+        closeLogStream(stream);
     }
 
     @Test
@@ -366,7 +398,10 @@ public class LogStreamTest
             .sourceEventPosition(4L)
             .producerId(5)
             .value(getBytes("event")));
+
+        final ActorReference secondWriteBufferRef = mock(ActorReference.class);
         final ActorScheduler secondTaskScheduler = mock(ActorScheduler.class);
+        when(secondTaskScheduler.schedule(any())).thenReturn(secondWriteBufferRef);
 
         // given open log stream with stopped log stream controller
         logStream.openAsync();
@@ -444,6 +479,7 @@ public class LogStreamTest
         // verify usage of agent runner service
         verify(mockActorScheduler).schedule(writeBuffer.getConductor());
         verify(mockActorScheduler).schedule(logStreamController);
+        closeLogStream(stream);
     }
 
     @Test
@@ -539,6 +575,7 @@ public class LogStreamTest
 
         // and log storage was closed
         verify(mockLogStorage.getMock()).close();
+        closeLogStream(stream);
     }
 
     @Test
@@ -598,6 +635,7 @@ public class LogStreamTest
         // then controllers run again
         assertTrue(completableFuture.isDone());
         assertTrue(logBlockIndexController.isRunning());
+        closeLogStream(stream);
     }
 
     @Test
@@ -641,6 +679,7 @@ public class LogStreamTest
 
         // when truncate is called
         stream.truncate(TRUNCATE_POSITION);
+        closeLogStream(stream);
     }
 
     @Test
@@ -675,6 +714,7 @@ public class LogStreamTest
 
         // then
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+        closeLogStream(stream);
     }
 
     @Test
@@ -742,6 +782,7 @@ public class LogStreamTest
 
         // then
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+        closeLogStream(stream);
     }
 
     @Test
@@ -779,6 +820,7 @@ public class LogStreamTest
 
         // then
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+        closeLogStream(stream);
     }
 
     @Test
@@ -818,6 +860,8 @@ public class LogStreamTest
 
         // then
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+
+        closeLogStream(stream);
     }
 
     @Test
@@ -845,6 +889,7 @@ public class LogStreamTest
 
         // when truncate is called
         stream.truncate(TRUNCATE_POSITION);
+        closeLogStream(stream);
     }
 
     @Test
@@ -878,5 +923,6 @@ public class LogStreamTest
         // then
         verify(storage.getMock()).truncate(LOG_ADDRESS);
         assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+        closeLogStream(stream);
     }
 }
