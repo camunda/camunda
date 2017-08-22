@@ -29,6 +29,7 @@ import io.zeebe.client.event.EventMetadata;
 import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.task.impl.ControlMessageRequest;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.Actor;
 
@@ -109,6 +110,16 @@ public class RequestManager implements Actor
             final int targetPartition = dispatchStrategy.determinePartition(metadata.getTopicName(), metadata.getType(), event.getState());
             event.setPartitionId(targetPartition);
         }
+    }
+
+    public String getSystemTopic()
+    {
+        return Protocol.SYSTEM_TOPIC;
+    }
+
+    public int getSystemPartition()
+    {
+        return Protocol.SYSTEM_PARTITION;
     }
 
     public <E extends Event> E execute(final CommandImpl<E> command)

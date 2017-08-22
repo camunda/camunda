@@ -25,10 +25,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
@@ -42,15 +45,18 @@ import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.Actor;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
 {
@@ -76,6 +82,8 @@ public class ClusterManager implements Actor
     protected final ServerResponse response = new ServerResponse();
     protected final ServerInputSubscription inputSubscription;
 
+    protected final LogStreamsManager logStreamsManager;
+
     public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final ClusterManagementConfig config)
     {
         this.context = context;
@@ -87,6 +95,7 @@ public class ClusterManager implements Actor
         this.commandConsumer = Runnable::run;
         this.activeRequestControllers = new CopyOnWriteArrayList<>();
         this.invitationRequest = new InvitationRequest();
+        this.logStreamsManager = context.getLogStreamsManager();
 
         this.invitationResponse = new InvitationResponse();
 
@@ -143,9 +152,14 @@ public class ClusterManager implements Actor
                 createRaft(socketAddress, logStream, storage.getMembers(), storage);
             }
         }
-        else if (context.getPeers().sizeVolatile() == 1)
+        else
         {
-            logStreamManager.forEachLogStream(logStream -> createRaft(socketAddress, logStream, Collections.emptyList()));
+            final boolean isBootstrappingBroker = context.getPeers().sizeVolatile() == 1;
+            if (isBootstrappingBroker)
+            {
+                createPartition(Protocol.SYSTEM_TOPIC_BUF, Protocol.SYSTEM_PARTITION);
+                createPartition(LogStream.DEFAULT_TOPIC_NAME_BUFFER, LogStream.DEFAULT_PARTITION_ID);
+            }
         }
     }
 
@@ -281,7 +295,11 @@ public class ClusterManager implements Actor
         createRaft(socketAddress, logStream, members, storage);
     }
 
-    public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage)
+    public void createRaft(
+            final SocketAddress socketAddress,
+            final LogStream logStream,
+            final List<SocketAddress> members,
+            final RaftPersistentStorage persistentStorage)
     {
         final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage);
 
@@ -293,6 +311,17 @@ public class ClusterManager implements Actor
                         .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME), raftService.getServerTransportInjector())
                         .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME), raftService.getClientTransportInjector())
                         .install();
+    }
+
+    /**
+     * Creates log stream and sets up raft service to participate in raft group
+     */
+    protected void createPartition(DirectBuffer topicName, int partitionId)
+    {
+        final LogStream logStream = logStreamsManager.createLogStream(topicName, partitionId);
+
+        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+        createRaft(socketAddress, logStream, new ArrayList<>(invitationRequest.members()));
     }
 
     public boolean onInvitationRequest(
@@ -309,11 +338,7 @@ public class ClusterManager implements Actor
         final DirectBuffer topicName = invitationRequest.topicName();
         final int partitionId = invitationRequest.partitionId();
 
-        final LogStreamsManager logStreamManager = context.getLogStreamsManager();
-        final LogStream logStream = logStreamManager.createLogStream(topicName, partitionId);
-
-        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
-        createRaft(socketAddress, logStream, new ArrayList<>(invitationRequest.members()));
+        createPartition(topicName, partitionId);
 
         invitationResponse.reset();
         response.reset()

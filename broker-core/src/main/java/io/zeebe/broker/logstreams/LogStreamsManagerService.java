@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.logstreams;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
-
 import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.servicecontainer.Injector;
@@ -45,12 +42,7 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        serviceContext.run(() ->
-        {
-            service = new LogStreamsManager(logStreamsCfg, actorSchedulerInjector.getValue());
-
-            service.createLogStream(DEFAULT_TOPIC_NAME_BUFFER, DEFAULT_PARTITION_ID);
-        });
+        service = new LogStreamsManager(logStreamsCfg, actorSchedulerInjector.getValue());
     }
 
     @Override

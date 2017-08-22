@@ -25,6 +25,8 @@ public enum TopicEventType
     SUBSCRIPTION,
     DEPLOYMENT,
 
+    TOPIC,
+
     RAFT,
     UNKNOWN
 }

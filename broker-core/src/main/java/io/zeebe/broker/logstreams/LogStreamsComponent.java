@@ -47,7 +47,7 @@ public class LogStreamsComponent implements Component
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, topicSubscriptionService.getActorSchedulerInjector())
-            .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
+            .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();
     }
 

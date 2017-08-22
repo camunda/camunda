@@ -15,27 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.processor;
+package io.zeebe.broker.system.log;
 
-public class StreamProcessorIds
+public enum TopicState
 {
-    // a stream processor partitionId should be unique to distinguish event producers
 
-    public static final int TASK_QUEUE_STREAM_PROCESSOR_ID = 10;
-
-    public static final int TASK_LOCK_STREAM_PROCESSOR_ID = 20;
-
-    public static final int TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID = 30;
-
-    public static final int TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID = 40;
-
-    public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
-
-    public static final int DEPLOYMENT_PROCESSOR_ID = 60;
-
-    public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
-
-    public static final int INCIDENT_PROCESSOR_ID = 80;
-
-    public static final int SYSTEM_PROCESSOR_ID = 1000;
+    CREATE,
+    CREATE_REJECTED
 }

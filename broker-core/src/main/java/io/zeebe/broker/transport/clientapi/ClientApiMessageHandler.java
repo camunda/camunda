@@ -33,6 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
+import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
@@ -92,6 +93,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         eventsByType.put(EventType.WORKFLOW_INSTANCE_EVENT, new WorkflowInstanceEvent());
         eventsByType.put(EventType.SUBSCRIBER_EVENT, new TopicSubscriberEvent());
         eventsByType.put(EventType.SUBSCRIPTION_EVENT, new TopicSubscriptionEvent());
+        eventsByType.put(EventType.TOPIC_EVENT, new TopicEvent());
     }
 
     private boolean handleExecuteCommandRequest(

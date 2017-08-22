@@ -100,7 +100,8 @@ public class TransportComponent implements Component
         final ClientApiMessageHandlerService messageHandlerService = new ClientApiMessageHandlerService();
         serviceContainer.createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
             .dependency(controlMessageBufferService, messageHandlerService.getControlMessageBufferInjector())
-            .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, messageHandlerService.getLogStreamsGroupReference())
+            .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, messageHandlerService.getLogStreamsGroupReference())
+            .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, messageHandlerService.getLogStreamsGroupReference())
             .install();
 
         final long controlMessageRequestTimeoutInMillis = transportComponentCfg.clientApi.getControlMessageRequestTimeoutInMillis(Long.MAX_VALUE);

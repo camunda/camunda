@@ -18,14 +18,15 @@
 package io.zeebe.broker.clustering.management;
 
 import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.broker.logstreams.LogStreamService;
+import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -97,14 +98,19 @@ public class StartLogStreamServiceController
         public int doWork(final Context context) throws Exception
         {
             final ServiceName<LogStream> serviceName = context.getServiceName();
-            final LogStreamService service = new LogStreamService(context.getRaft().getLogStream());
+            final LogStream logStream = context.getRaft().getLogStream();
+            final LogStreamService service = new LogStreamService(logStream);
+
+            final ServiceName<LogStream> streamGroup = Protocol.SYSTEM_TOPIC_BUF.equals(logStream.getTopicName()) ?
+                    LogStreamServiceNames.SYSTEM_STREAM_GROUP :
+                    LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
 
             final CompletableFuture<Void> future =
                 context.getServiceContainer()
                        .createService(serviceName, service)
                        .dependency(ACTOR_SCHEDULER_SERVICE)
                        .dependency(CLUSTER_MANAGER_SERVICE)
-                       .group(LOG_STREAM_SERVICE_GROUP)
+                       .group(streamGroup)
                        .install();
 
             context.setServiceFuture(future);

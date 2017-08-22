@@ -34,6 +34,7 @@ public class EventTypeMapping
         MAPPING[EventType.SUBSCRIBER_EVENT.ordinal()] = TopicEventType.SUBSCRIBER;
         MAPPING[EventType.SUBSCRIPTION_EVENT.ordinal()] = TopicEventType.SUBSCRIPTION;
         MAPPING[EventType.DEPLOYMENT_EVENT.ordinal()] = TopicEventType.DEPLOYMENT;
+        MAPPING[EventType.TOPIC_EVENT.ordinal()] = TopicEventType.TOPIC;
 
         REVERSE_MAPPING = new EventType[MAPPING.length];
 

@@ -30,6 +30,7 @@ import org.junit.rules.ExternalResource;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -91,7 +92,8 @@ public class StubBrokerRule extends ExternalResource
         bindAddr = new InetSocketAddress(host, port);
 
         currentTopology.set(new Topology()
-                .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID)));
+            .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID))
+            .addTopic(new TopicLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)));
 
         stubTopologyRequest();
 
@@ -182,6 +184,19 @@ public class StubBrokerRule extends ExternalResource
     public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(EventType eventType, String eventStatus)
     {
         return onExecuteCommandRequest(ecr -> ecr.eventType() == eventType && eventStatus.equals(ecr.getCommand().get("state")));
+    }
+
+    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(
+            String topic,
+            int partitionId,
+            EventType eventType,
+            String eventStatus)
+    {
+        return onExecuteCommandRequest(ecr ->
+            topic.equals(ecr.topicName()) &&
+            ecr.partitionId() == partitionId &&
+            ecr.eventType() == eventType &&
+            eventStatus.equals(ecr.getCommand().get("state")));
     }
 
     public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest()

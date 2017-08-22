@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.WORKFLOW_QUEUE_MANAGER;
 
@@ -40,7 +40,7 @@ public class WorkflowComponent implements Component
         serviceContainer.createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, workflowQueueManagerService.getActorSchedulerInjector())
-            .groupReference(LOG_STREAM_SERVICE_GROUP, workflowQueueManagerService.getLogStreamsGroupReference())
+            .groupReference(WORKFLOW_STREAM_GROUP, workflowQueueManagerService.getLogStreamsGroupReference())
             .install();
     }
 

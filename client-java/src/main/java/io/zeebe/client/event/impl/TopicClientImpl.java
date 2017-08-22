@@ -16,9 +16,12 @@
 package io.zeebe.client.event.impl;
 
 import io.zeebe.client.TopicsClient;
+import io.zeebe.client.cmd.Request;
+import io.zeebe.client.event.Event;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.topic.impl.CreateTopicCommandImpl;
 
 
 public class TopicClientImpl implements TopicsClient
@@ -40,6 +43,12 @@ public class TopicClientImpl implements TopicsClient
     public PollableTopicSubscriptionBuilder newPollableSubscription(String topicName)
     {
         return client.getSubscriptionManager().newPollableTopicSubscription(this, topicName);
+    }
+
+    @Override
+    public Request<Event> create(String topicName, int partitions)
+    {
+        return new CreateTopicCommandImpl(client.getCommandManager(), topicName, partitions);
     }
 
     public CreateTopicSubscriptionCommandImpl createTopicSubscription(String topicName, int partitionId)
