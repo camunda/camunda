@@ -15,6 +15,8 @@
  */
 package io.zeebe.msgpack.mapping;
 
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR_END;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -134,5 +136,22 @@ public class MappingTestUtil
 
         assertThat(WRITER.getOffset()).isEqualTo(expectedBytes.length);
         assertThat(WRITE_BUFFER.byteArray()).startsWith(expectedBytes);
+    }
+
+    public static String constructNodeId(String ... nodeNames)
+    {
+        final StringBuilder builder = new StringBuilder();
+        if (nodeNames.length >= 1)
+        {
+            builder.append(nodeNames[0]);
+
+            for (int i = 1; i < nodeNames.length; i++)
+            {
+                builder.append(JSON_PATH_SEPARATOR)
+                       .append(nodeNames[i])
+                       .append(JSON_PATH_SEPARATOR_END);
+            }
+        }
+        return builder.toString();
     }
 }

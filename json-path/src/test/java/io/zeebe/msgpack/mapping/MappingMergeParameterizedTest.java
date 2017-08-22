@@ -594,6 +594,69 @@ public class MappingMergeParameterizedTest
                 createMapping("$.foo", "$['obj.1']"),
                 // expected result
                 "{'obj':{'0':{'test':1}},'obj.1':'bar'}" },
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'foo.bar':2, 'foo': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$['foo.bar']"),
+                // expected result
+                "{'foo.bar':1, 'foo': {'bar': 3}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'foo.bar':2, 'foo': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$.foo.bar"),
+                // expected result
+                "{'foo.bar':2, 'foo': {'bar': 1}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'array[bar]':2, 'array': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$array.bar"),
+                // expected result
+                "{'array[bar]':2, 'array': {'bar': 1}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'array[bar]':2, 'array': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$['array']['bar']"),
+                // expected result
+                "{'array[bar]':2, 'array': {'bar': 1}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$['array[bar]']"),
+                // expected result
+                "{'array[bar]':1, 'array': {'bar': 3}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$['array[bar]'][0]"),
+                // expected result
+                "{'array[bar]':[1, 1, 2], 'array': {'bar': 3}}"},
+            {
+                // source
+                "{'in':1}",
+                // target
+                "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}}",
+                // mapping
+                createMapping("$.in", "$['array[bar][0]']"),
+                // expected result
+                "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}, 'array[bar][0]':1}"},
         });
     }
 

@@ -21,11 +21,25 @@ package io.zeebe.msgpack.mapping;
  */
 public class MsgPackTreeNodeIdConstructor
 {
-    public static final String JSON_PATH_SEPARATOR_REGEX = "[\\.\\[\\]]+";
-    public static final String JSON_PATH_SEPARATOR = ".";
+    public static final String JSON_PATH_SEPARATOR = "[";
+    public static final String JSON_PATH_SEPARATOR_END = "]";
 
     public static String construct(String parentId, String nodeName)
     {
-        return parentId + "." + nodeName;
+        return parentId + JSON_PATH_SEPARATOR + nodeName  + JSON_PATH_SEPARATOR_END;
+    }
+
+    public static String getLastNodeName(String nodeId)
+    {
+        final int lastIndex = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
+        final String nodeName = nodeId.substring(lastIndex + JSON_PATH_SEPARATOR.length(), nodeId.length() - JSON_PATH_SEPARATOR_END.length());
+        return nodeName;
+    }
+
+    public static String getLastParentId(String nodeId)
+    {
+        final int indexOfLastSeparator = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
+        final String parentId = nodeId.substring(0, indexOfLastSeparator);
+        return parentId;
     }
 }

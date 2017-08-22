@@ -15,6 +15,7 @@
  */
 package io.zeebe.msgpack.mapping;
 
+import static io.zeebe.msgpack.mapping.MappingTestUtil.constructNodeId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMapping;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
@@ -63,7 +64,7 @@ public class MsgPackDocumentExtractorTest
 
         // then
         assertThatIsMapNode(extractTree, "$", "old");
-        assertThatIsLeafNode(extractTree, "$.old", MSG_PACK_BYTES);
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "old"), MSG_PACK_BYTES);
     }
 
     @Test
@@ -79,8 +80,8 @@ public class MsgPackDocumentExtractorTest
 
         // then
         assertThatIsMapNode(extractTree, "$", "old");
-        assertThatIsMapNode(extractTree, "$.old", "test");
-        assertThatIsLeafNode(extractTree, "$.old.test", MSG_PACK_BYTES);
+        assertThatIsMapNode(extractTree, constructNodeId("$", "old"), "test");
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "old", "test"), MSG_PACK_BYTES);
     }
 
     @Test
@@ -101,7 +102,7 @@ public class MsgPackDocumentExtractorTest
         final Map<String, Object> json = new HashMap<>();
         json.put("testAttr", "test");
         final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(json);
-        assertThatIsLeafNode(extractTree, "$.testObj", bytes);
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "testObj"), bytes);
     }
 
     @Test
@@ -140,10 +141,10 @@ public class MsgPackDocumentExtractorTest
         assertThatIsMapNode(extractTree, "$", "array");
 
         // and array node
-        assertThatIsArrayNode(extractTree, "$.array", "0");
+        assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
 
         // and value is
-        assertThatIsLeafNode(extractTree, "$.array.0", MSGPACK_MAPPER.writeValueAsBytes(1));
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "array", "0"), MSGPACK_MAPPER.writeValueAsBytes(1));
     }
 
     @Test
@@ -161,11 +162,11 @@ public class MsgPackDocumentExtractorTest
         assertThatIsMapNode(extractTree, "$", "array");
 
         // and array node
-        assertThatIsArrayNode(extractTree, "$.array", "0");
-        assertThatIsMapNode(extractTree, "$.array.0", "test");
+        assertThatIsArrayNode(extractTree, constructNodeId("$", "array"), "0");
+        assertThatIsMapNode(extractTree, constructNodeId("$", "array", "0"), "test");
 
         // and value is
-        assertThatIsLeafNode(extractTree, "$.array.0.test", MSGPACK_MAPPER.writeValueAsBytes(1));
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "array", "0", "test"), MSGPACK_MAPPER.writeValueAsBytes(1));
     }
 
     @Test
@@ -187,17 +188,18 @@ public class MsgPackDocumentExtractorTest
         assertThatIsMapNode(extractTree, "$", "newBoolean", "newArray", "newObject");
 
         // and new bool is expected as
-        assertThatIsLeafNode(extractTree, "$.newBoolean", MSGPACK_MAPPER.writeValueAsBytes(false));
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "newBoolean"), MSGPACK_MAPPER.writeValueAsBytes(false));
 
         // and new array is expected as
         byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(new int[]{0, 1, 2, 3});
-        assertThatIsLeafNode(extractTree, "$.newArray", bytes);
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "newArray"), bytes);
+
 
         // and new object is expected as
         final Map<String, Object> jsonObject = new HashMap<>();
         jsonObject.put("testAttr", "test");
         bytes = MSGPACK_MAPPER.writeValueAsBytes(jsonObject);
-        assertThatIsLeafNode(extractTree, "$.newObject", bytes);
+        assertThatIsLeafNode(extractTree, constructNodeId("$", "newObject"), bytes);
     }
 
     @Test

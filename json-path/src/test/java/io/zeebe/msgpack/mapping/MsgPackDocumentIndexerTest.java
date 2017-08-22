@@ -16,6 +16,7 @@
 package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.constructNodeId;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,19 +40,19 @@ public class MsgPackDocumentIndexerTest
         assertThatIsMapNode(documentTree, "$", NODE_STRING_KEY, NODE_BOOLEAN_KEY, NODE_INTEGER_KEY,
                                                                    NODE_LONG_KEY, NODE_DOUBLE_KEY, NODE_ARRAY_KEY,
                                                                    NODE_JSON_OBJECT_KEY);
-        assertThatIsMapNode(documentTree, "$.jsonObject", NODE_TEST_ATTR_KEY);
-        assertThatIsArrayNode(documentTree, "$.array", "0", "1", "2", "3");
+        assertThatIsMapNode(documentTree, constructNodeId("$", "jsonObject"), NODE_TEST_ATTR_KEY);
+        assertThatIsArrayNode(documentTree, constructNodeId("$", "array"), "0", "1", "2", "3");
 
-        assertThatIsLeafNode(documentTree, "$.string", MSGPACK_MAPPER.writeValueAsBytes(NODE_STRING_VALUE));
-        assertThatIsLeafNode(documentTree, "$.boolean", MSGPACK_MAPPER.writeValueAsBytes(NODE_BOOLEAN_VALUE));
-        assertThatIsLeafNode(documentTree, "$.integer", MSGPACK_MAPPER.writeValueAsBytes(NODE_INTEGER_VALUE));
-        assertThatIsLeafNode(documentTree, "$.long", MSGPACK_MAPPER.writeValueAsBytes(NODE_LONG_VALUE));
-        assertThatIsLeafNode(documentTree, "$.double", MSGPACK_MAPPER.writeValueAsBytes(NODE_DOUBLE_VALUE));
-        assertThatIsLeafNode(documentTree, "$.array.0", MSGPACK_MAPPER.writeValueAsBytes(0));
-        assertThatIsLeafNode(documentTree, "$.array.1", MSGPACK_MAPPER.writeValueAsBytes(1));
-        assertThatIsLeafNode(documentTree, "$.array.2", MSGPACK_MAPPER.writeValueAsBytes(2));
-        assertThatIsLeafNode(documentTree, "$.array.3", MSGPACK_MAPPER.writeValueAsBytes(3));
-        assertThatIsLeafNode(documentTree, "$.jsonObject.testAttr", MSGPACK_MAPPER.writeValueAsBytes(NODE_TEST_ATTR_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "string"), MSGPACK_MAPPER.writeValueAsBytes(NODE_STRING_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "boolean"), MSGPACK_MAPPER.writeValueAsBytes(NODE_BOOLEAN_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "integer"), MSGPACK_MAPPER.writeValueAsBytes(NODE_INTEGER_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "long"), MSGPACK_MAPPER.writeValueAsBytes(NODE_LONG_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "double"), MSGPACK_MAPPER.writeValueAsBytes(NODE_DOUBLE_VALUE));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "array", "0"), MSGPACK_MAPPER.writeValueAsBytes(0));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "array", "1"), MSGPACK_MAPPER.writeValueAsBytes(1));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "array", "2"), MSGPACK_MAPPER.writeValueAsBytes(2));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "array", "3"), MSGPACK_MAPPER.writeValueAsBytes(3));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "jsonObject", "testAttr"), MSGPACK_MAPPER.writeValueAsBytes(NODE_TEST_ATTR_VALUE));
     }
 
     @Test
@@ -70,20 +71,20 @@ public class MsgPackDocumentIndexerTest
 
         // then tree is expected as
         assertThatIsMapNode(documentTree, "$", "first");
-        assertThatIsMapNode(documentTree, "$.first", "range", "friends", "greeting", "favoriteFruit");
+        assertThatIsMapNode(documentTree, constructNodeId("$", "first"), "range", "friends", "greeting", "favoriteFruit");
 
-        assertThatIsArrayNode(documentTree, "$.first.range", "0", "1");
-        assertThatIsLeafNode(documentTree, "$.first.range.0", MSGPACK_MAPPER.writeValueAsBytes(0));
-        assertThatIsLeafNode(documentTree, "$.first.range.1", MSGPACK_MAPPER.writeValueAsBytes(2));
+        assertThatIsArrayNode(documentTree, constructNodeId("$", "first", "range"), "0", "1");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "range", "0"), MSGPACK_MAPPER.writeValueAsBytes(0));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "range", "1"), MSGPACK_MAPPER.writeValueAsBytes(2));
 
-        assertThatIsArrayNode(documentTree, "$.first.friends", "0", "1");
-        assertThatIsLeafNode(documentTree, "$.first.friends.0", MSGPACK_MAPPER.writeValueAsBytes(-1));
-        assertThatIsMapNode(documentTree, "$.first.friends.1", "id", "name");
-        assertThatIsLeafNode(documentTree, "$.first.friends.1.id", MSGPACK_MAPPER.writeValueAsBytes(0));
-        assertThatIsLeafNode(documentTree, "$.first.friends.1.name", MSGPACK_MAPPER.writeValueAsBytes("Rodriguez Richards"));
+        assertThatIsArrayNode(documentTree, constructNodeId("$", "first", "friends"), "0", "1");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "friends", "0"), MSGPACK_MAPPER.writeValueAsBytes(-1));
+        assertThatIsMapNode(documentTree, constructNodeId("$", "first", "friends", "1"), "id", "name");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "friends", "1", "id"), MSGPACK_MAPPER.writeValueAsBytes(0));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "friends", "1", "name"), MSGPACK_MAPPER.writeValueAsBytes("Rodriguez Richards"));
 
-        assertThatIsLeafNode(documentTree, "$.first.greeting", MSGPACK_MAPPER.writeValueAsBytes("Hello, Bauer! You have 7 unread messages."));
-        assertThatIsLeafNode(documentTree, "$.first.favoriteFruit", MSGPACK_MAPPER.writeValueAsBytes("apple"));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "greeting"), MSGPACK_MAPPER.writeValueAsBytes("Hello, Bauer! You have 7 unread messages."));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "first", "favoriteFruit"), MSGPACK_MAPPER.writeValueAsBytes("apple"));
     }
 
     @Test
@@ -101,15 +102,15 @@ public class MsgPackDocumentIndexerTest
 
         // then tree is expected as
         assertThatIsMapNode(documentTree, "$", "friends");
-        assertThatIsArrayNode(documentTree, "$.friends", "0", "1");
+        assertThatIsArrayNode(documentTree, constructNodeId("$", "friends"), "0", "1");
 
-        assertThatIsMapNode(documentTree, "$.friends.0", "id", "name");
-        assertThatIsLeafNode(documentTree, "$.friends.0.id", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("0")));
-        assertThatIsLeafNode(documentTree, "$.friends.0.name", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'Rodriguez Richards'")));
+        assertThatIsMapNode(documentTree, constructNodeId("$", "friends", "0"), "id", "name");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "friends", "0", "id"), MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("0")));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "friends", "0", "name"), MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'Rodriguez Richards'")));
 
-        assertThatIsMapNode(documentTree, "$.friends.1", "id", "name");
-        assertThatIsLeafNode(documentTree, "$.friends.1.id", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("0")));
-        assertThatIsLeafNode(documentTree, "$.friends.1.name", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'Rodriguez Richards'")));
+        assertThatIsMapNode(documentTree, constructNodeId("$", "friends", "1"), "id", "name");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "friends", "1", "id"), MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("0")));
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "friends", "1", "name"), MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'Rodriguez Richards'")));
     }
 
     @Test
@@ -127,12 +128,10 @@ public class MsgPackDocumentIndexerTest
         // then tree is expected as
         assertThatIsMapNode(documentTree, "$", "a", "a0");
 
-        assertThatIsArrayNode(documentTree, "$.a", "0");
-        assertThatIsLeafNode(documentTree, "$.a.0", MSGPACK_MAPPER.writeValueAsBytes("foo"));
+        assertThatIsArrayNode(documentTree, constructNodeId("$", "a"), "0");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "a", "0"), MSGPACK_MAPPER.writeValueAsBytes("foo"));
 
-        assertThatIsMapNode(documentTree, "$.a0", "b");
-        assertThatIsLeafNode(documentTree, "$.a0.b", MSGPACK_MAPPER.writeValueAsBytes("c"));
+        assertThatIsMapNode(documentTree, constructNodeId("$", "a0"), "b");
+        assertThatIsLeafNode(documentTree, constructNodeId("$", "a0", "b"), MSGPACK_MAPPER.writeValueAsBytes("c"));
     }
-
-
 }

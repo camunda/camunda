@@ -15,8 +15,7 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.JSON_PATH_SEPARATOR;
-import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.*;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -95,45 +94,45 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
     /**
      * The message pack tree which is constructed via the indexing of the message pack document.
      */
-    protected MsgPackTree msgPackTree;
+    private MsgPackTree msgPackTree;
 
     /**
      * The last key for the node, since
      * the node is divided in separate MsgPackTokens.
      */
-    protected final byte lastKey[] = new byte[MappingProcessor.MAX_JSON_KEY_LEN];
+    private final byte lastKey[] = new byte[MappingProcessor.MAX_JSON_KEY_LEN];
 
     /**
      * The length of the last key.
      */
-    protected int lastKeyLen;
+    private int lastKeyLen;
 
     /**
      * The type of the last processed node.
      */
-    protected MsgPackType lastType;
+    private MsgPackType lastType;
 
     /**
      * Contains the current parents of the current node.
      * A node become a parent if the node is of type MAP or ARRAY.
      * This node will be added several times, corresponding to the size of the MsgPackToken#size of this node.
      */
-    protected final Deque<String> parentsStack = new ArrayDeque<>();
+    private final Deque<String> parentsStack = new ArrayDeque<>();
 
     /**
      * Indicates if the current value belongs to an array.
      */
-    protected final Deque<Boolean> arrayValueStack = new ArrayDeque<>();
+    private final Deque<Boolean> arrayValueStack = new ArrayDeque<>();
 
     /**
      * Contains the type of the last msg pack token.
      */
-    protected final Deque<MsgPackType> lastTypeStack = new ArrayDeque<>();
+    private final Deque<MsgPackType> lastTypeStack = new ArrayDeque<>();
 
     /**
      * The traverser which is used to index the message pack document.
      */
-    protected final MsgPackTraverser traverser = new MsgPackTraverser();
+    private final MsgPackTraverser traverser = new MsgPackTraverser();
 
 
     public MsgPackDocumentIndexer()
@@ -317,9 +316,8 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
                 // plain array value
                 nodeId = parentId;
                 // parent id is without idx
-                final int indexOfLastSeparator = parentId.lastIndexOf(JSON_PATH_SEPARATOR);
-                nodeName = parentId.substring(indexOfLastSeparator + 1, parentId.length());
-                parentId = parentId.substring(0, indexOfLastSeparator);
+                nodeName = getLastNodeName(parentId);
+                parentId = getLastParentId(parentId);
             }
 
             arrayValueStack.pop();
