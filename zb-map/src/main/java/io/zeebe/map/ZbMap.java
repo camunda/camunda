@@ -547,7 +547,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         for (int i = 0; i < 10; i++)
         {
             builder.append("\n")
-                   .append(i)
+                   .append(i * 10)
                    .append("% ")
                    .append(blockCount[i])
                    .append(" blocks, is ")

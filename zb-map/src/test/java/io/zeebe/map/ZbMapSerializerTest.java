@@ -74,7 +74,6 @@ public class ZbMapSerializerTest
 
         writeAndReadmap(map);
 
-//        assertThat(map.get(8189, -1)).isEqualTo(8189);
         for (int i = 0; i < DATASET_SIZE; i++)
         {
             assertThat(map.get(i, NO_SUCH_KEY)).isEqualTo(i);
@@ -163,7 +162,7 @@ public class ZbMapSerializerTest
         readmap(map, inputStream);
     }
 
-    private void fillmap(final Long2LongZbMap map)
+    private static void fillmap(final Long2LongZbMap map)
     {
         for (int i = 0; i < DATASET_SIZE; i++)
         {

@@ -18,7 +18,7 @@ package io.zeebe.map;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
- * The map has 2 Buffers: the "hash table buffer" and the "buckets buffer".
+ * The ZbMap has 2 Buffers: the "hash table buffer" and the "buckets buffer".
  *
  * Hash table buffer layout
  *
@@ -26,6 +26,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *  0               1               2               3
  *  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                             MAP LENGTH                      |
+ *  +-------------------------------------------------------------+
  *  |                                                             |
  *  |                             MAP DATA                       ...
  * ...                                                            |

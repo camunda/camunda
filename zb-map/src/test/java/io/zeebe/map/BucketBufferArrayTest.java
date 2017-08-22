@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 /**
  *
  */
+@SuppressWarnings("ALL")
 public class BucketBufferArrayTest
 {
     private static final int MAX_KEY_LEN = SIZE_OF_LONG;

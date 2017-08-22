@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
+@SuppressWarnings("restriction")
 public class BucketBufferArray implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
@@ -44,9 +45,6 @@ public class BucketBufferArray implements AutoCloseable
 
     private long realAddresses[];
     private long bucketBufferHeaderAddress;
-    private long capacity;
-
-    private long countOfUsedBytes;
 
     public BucketBufferArray(int maxBucketBlockCount, int maxKeyLength, int maxValueLength)
     {
@@ -78,10 +76,6 @@ public class BucketBufferArray implements AutoCloseable
     private void init()
     {
         this.realAddresses = new long[ALLOCATION_FACTOR];
-
-        capacity = 0;
-        countOfUsedBytes = BUCKET_BUFFER_HEADER_LENGTH;
-
         bucketBufferHeaderAddress = UNSAFE.allocateMemory(MAIN_BUCKET_BUFFER_HEADER_LEN);
 
         setBucketBufferCount(0);
@@ -99,6 +93,11 @@ public class BucketBufferArray implements AutoCloseable
         bucketAddress += (long) bucketBufferId << 32;
         bucketAddress += bucketOffset;
         return bucketAddress;
+    }
+
+    private long getBlockAddress(long bucketAddress, int blockOffset)
+    {
+        return getRealAddress(bucketAddress) + blockOffset;
     }
 
     private long getRealAddress(final long bucketAddress)
@@ -168,17 +167,17 @@ public class BucketBufferArray implements AutoCloseable
 
     public long getCapacity()
     {
-        return capacity;
+        return getBucketBufferCount() * maxBucketBufferLength;
     }
 
     protected long getCountOfUsedBytes()
     {
-        return countOfUsedBytes;
+        return getBucketBufferCount() * BUCKET_BUFFER_HEADER_LENGTH + getBucketCount() * maxBucketLength;
     }
 
     public long size()
     {
-        return MAIN_BUCKET_BUFFER_HEADER_LEN + countOfUsedBytes;
+        return MAIN_BUCKET_BUFFER_HEADER_LEN + getCountOfUsedBytes();
     }
 
     public int getMaxBucketBufferLength()
@@ -289,7 +288,7 @@ public class BucketBufferArray implements AutoCloseable
 
     public void readValue(ValueHandler valueHandler, long bucketAddress, int blockOffset)
     {
-        final long valueOffset = getBlockValueOffset(getRealAddress(bucketAddress) + blockOffset, maxKeyLength);
+        final long valueOffset = getBlockValueOffset(getBlockAddress(bucketAddress, blockOffset), maxKeyLength);
         valueHandler.readValue(valueOffset, maxValueLength);
     }
 
@@ -313,9 +312,8 @@ public class BucketBufferArray implements AutoCloseable
         if (canAddRecord)
         {
             final int blockOffset = getBucketLength(bucketAddress);
-            final int blockLength = BucketBufferArrayDescriptor.getBlockLength(maxKeyLength, maxValueLength);
 
-            final long blockAddress = getRealAddress(bucketAddress) + blockOffset;
+            final long blockAddress = getBlockAddress(bucketAddress, blockOffset);
 
             keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
             valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
@@ -400,7 +398,6 @@ public class BucketBufferArray implements AutoCloseable
      */
     public long allocateNewBucket(int newBucketId, int newBucketDepth)
     {
-        long newUsed = countOfUsedBytes + maxBucketLength;
         int bucketBufferId = getBucketBufferCount() - 1;
         int bucketCountInBucketBuffer = getBucketCount(bucketBufferId);
 
@@ -408,16 +405,15 @@ public class BucketBufferArray implements AutoCloseable
         {
             allocateNewBucketBuffer(++bucketBufferId);
             bucketCountInBucketBuffer = 0;
-            newUsed += BUCKET_BUFFER_HEADER_LENGTH;
         }
 
         final int bucketOffset = BUCKET_BUFFER_HEADER_LENGTH + bucketCountInBucketBuffer * maxBucketLength;
         final long bucketAddress = getBucketAddress(bucketBufferId, bucketOffset);
 
-        countOfUsedBytes = newUsed;
 
         setBucketId(bucketBufferId, bucketOffset, newBucketId);
         setBucketDepth(bucketBufferId, bucketOffset, newBucketDepth);
+        clearBucketOverflowPointer(bucketBufferId, bucketOffset);
         initBucketFillCount(bucketBufferId, bucketOffset);
 
         setBucketCount(bucketBufferId, bucketCountInBucketBuffer + 1);
@@ -438,9 +434,9 @@ public class BucketBufferArray implements AutoCloseable
         }
         else
         {
-            final long srcBlockAddress = getRealAddress(bucketAddress) + blockOffset;
+            final long srcBlockAddress = getBlockAddress(bucketAddress, blockOffset);
             final int destBucketLength = getBucketLength(newBucketAddress);
-            final long destBlockAddress = getRealAddress(newBucketAddress) + destBucketLength;
+            final long destBlockAddress = getBlockAddress(newBucketAddress, destBucketLength);
 
             final int blockLength = getBlockLength();
 
@@ -483,6 +479,7 @@ public class BucketBufferArray implements AutoCloseable
         }
 
         // last bucket buffer is most of the time not full
+        final long countOfUsedBytes = getCountOfUsedBytes();
         final long remainingBytes = countOfUsedBytes - ((bucketBufferCount - 1) * getMaxBucketBufferLength());
         write(outputStream, writeBuffer, realAddresses[bucketBufferCount - 1], (int) remainingBytes);
     }
@@ -512,7 +509,7 @@ public class BucketBufferArray implements AutoCloseable
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
         clear();
-        countOfUsedBytes = 0;
+        long countOfUsedBytes = 0;
 
         try
         {
@@ -547,7 +544,7 @@ public class BucketBufferArray implements AutoCloseable
 
         if (srcOffset < bucketLength)
         {
-            final long srcAddress = getRealAddress(bucketAddress) + srcOffset;
+            final long srcAddress = getBlockAddress(bucketAddress, srcOffset);
             final int remainingBytes = bucketLength - srcOffset;
 
             UNSAFE.copyMemory(srcAddress, srcAddress + moveBytes, remainingBytes);
@@ -563,20 +560,8 @@ public class BucketBufferArray implements AutoCloseable
             realAddresses = newAddressTable;
         }
         realAddresses[newBucketBufferId] = UNSAFE.allocateMemory(maxBucketBufferLength);
-        UNSAFE.setMemory(realAddresses[newBucketBufferId], maxBucketBufferLength, (byte) 0);
-        capacity += maxBucketBufferLength;
         setBucketCount(newBucketBufferId, 0);
-        clearOverflowPointers(newBucketBufferId);
         setBucketBufferCount(getBucketBufferCount() + 1);
-    }
-
-    private void clearOverflowPointers(int bucketBufferId)
-    {
-        final int startOffset = BUCKET_BUFFER_HEADER_LENGTH;
-        for (int i = 0; i < ALLOCATION_FACTOR; i++)
-        {
-            clearBucketOverflowPointer(bucketBufferId, startOffset + i * maxBucketLength);
-        }
     }
 
     public String toString()
