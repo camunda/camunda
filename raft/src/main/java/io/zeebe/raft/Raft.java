@@ -77,8 +77,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     private final OpenLogStreamController openLogStreamController;
     private final ReplicateLogController replicateLogController;
-    private final PollController pollController;
-    private final VoteController voteController;
+    private final ConsensusRequestController pollController;
+    private final ConsensusRequestController voteController;
     private final AdvanceCommitController advanceCommitController;
 
     // state message  handlers
@@ -111,8 +111,9 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
         openLogStreamController = new OpenLogStreamController(this);
         replicateLogController = new ReplicateLogController(this);
-        pollController = new PollController(this);
-        voteController = new VoteController(this);
+
+        pollController = new ConsensusRequestController(this, new PollRequestHandler());
+        voteController = new ConsensusRequestController(this, new VoteRequestHandler());
         advanceCommitController = new AdvanceCommitController(this);
 
         followerState = new FollowerState(this, appender);
