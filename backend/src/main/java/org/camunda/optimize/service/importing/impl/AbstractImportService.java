@@ -41,12 +41,14 @@ public abstract class AbstractImportService
    * 2. prepare data for post-processing if required
    *
    * @param entries - new entries obtained from engine
+   * @param engineAlias
    * @return list of mapped optimize entities
    */
-  protected List<OPT> processNewEngineEntries(List<ENG> entries) {
+  protected List<OPT> processNewEngineEntries(List<ENG> entries, String engineAlias) {
     List<OPT> result = new ArrayList<>(entries.size());
     for (ENG entry : entries) {
-      result.add(this.mapToOptimizeDto(entry));
+      OPT mapped = this.mapToOptimizeDto(entry, engineAlias);
+      result.add(mapped);
       prepareDataForPostProcessing(entry);
     }
 
@@ -57,7 +59,7 @@ public abstract class AbstractImportService
     //nothing to do by default
   }
 
-  protected abstract OPT mapToOptimizeDto(ENG entry);
+  protected abstract OPT mapToOptimizeDto(ENG entry, String engineAlias);
 
   /**
    * imports the given events to optimize by

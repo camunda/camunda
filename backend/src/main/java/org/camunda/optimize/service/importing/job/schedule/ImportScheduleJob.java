@@ -15,6 +15,7 @@ public abstract class ImportScheduleJob<S extends ImportService> {
   protected S importService;
   protected boolean pageBased = true;
   protected LocalDateTime timeToExecute;
+  protected String engineAlias;
 
   public ImportResult execute() throws OptimizeException {
     ImportResult result;
@@ -48,5 +49,13 @@ public abstract class ImportScheduleJob<S extends ImportService> {
 
   public void setTimeToExecute(LocalDateTime timeToExecute) {
     this.timeToExecute = timeToExecute;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public void setEngineAlias(String engineAlias) {
+    this.engineAlias = engineAlias;
   }
 }

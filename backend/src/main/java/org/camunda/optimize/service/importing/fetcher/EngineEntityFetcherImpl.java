@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -44,16 +45,16 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
   private ConfigurationService configurationService;
 
   @Autowired
-  private Client client;
+  private EngineClientFactory engineClientFactory;
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) throws OptimizeException {
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
     List<HistoricProcessInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
     Map<String, Set<String>> pids = new HashMap<>();
     pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
     try {
-      entries = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .path(configurationService.getHistoricProcessInstanceEndpoint())
           .request(MediaType.APPLICATION_JSON)
           .acceptEncoding(UTF8)
@@ -69,7 +70,11 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
     return entries;
   }
 
-  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds) throws OptimizeException {
+  private Client getEngineClient(String engineAlias) {
+    return engineClientFactory.getInstance(engineAlias);
+  }
+
+  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
     List<HistoricVariableInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
     Map<String, Set<String>> pids = new HashMap<>();
@@ -77,8 +82,8 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
     Set<String> supportedVariableTypes = new HashSet<>(Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES));
     pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
     try {
-      entries = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .queryParam("deserializeValues", "false")
           .path(configurationService.getHistoricVariableInstanceEndpoint())
           .request(MediaType.APPLICATION_JSON)
@@ -104,11 +109,12 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
   }
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,
-                                                                  int maxPageSize) {
+                                                                  int maxPageSize,
+                                                                  String engineAlias) {
     List<ProcessDefinitionEngineDto> entries;
     try {
-      entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
         .path(configurationService.getProcessDefinitionEndpoint())
         .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
         .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
@@ -125,18 +131,18 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
     return entries;
   }
 
-  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, int maxPageSize) {
-    List<ProcessDefinitionEngineDto> entries = fetchProcessDefinitions(indexOfFirstResult, maxPageSize);
-    return fetchAllXmls(entries);
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, int maxPageSize, String engineAlias) {
+    List<ProcessDefinitionEngineDto> entries = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, engineAlias);
+    return fetchAllXmls(entries, engineAlias);
   }
 
-  private List<ProcessDefinitionXmlEngineDto> fetchAllXmls(List<ProcessDefinitionEngineDto> entries) {
+  private List<ProcessDefinitionXmlEngineDto> fetchAllXmls(List<ProcessDefinitionEngineDto> entries, String engineAlias) {
     List<ProcessDefinitionXmlEngineDto> xmls;
     try {
       xmls = new ArrayList<>(entries.size());
       for (ProcessDefinitionEngineDto engineDto : entries) {
-        ProcessDefinitionXmlEngineDto xml = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        ProcessDefinitionXmlEngineDto xml = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
           .request(MediaType.APPLICATION_JSON)
           .get(ProcessDefinitionXmlEngineDto.class);

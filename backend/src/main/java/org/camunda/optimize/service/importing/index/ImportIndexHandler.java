@@ -6,8 +6,9 @@ public interface ImportIndexHandler {
    * Initializes the import index.
    *
    * @param elasticsearchType to which the import index is refering to.
+   * @param engineAlias
    */
-  void initializeImportIndex(String elasticsearchType);
+  void initializeImportIndex(String elasticsearchType, String engineAlias);
 
   /**
    * If there are no new engine entities found the import index

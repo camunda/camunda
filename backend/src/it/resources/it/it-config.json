@@ -1,6 +1,18 @@
 {
+  "engines": {
+    "1": {
+      "name": "/engine/default",
+      "rest": "http://localhost:48080/engine-rest",
+      "authentication": {
+        "accessGroup": "",
+        "enabled": false,
+        "password": "",
+        "user": ""
+      },
+      "enabled": true
+    }
+  },
   "engine": {
-    "rest": "http://localhost:48080/engine-rest",
     "import": {
       "process-definition-xml": {
         "pageSize": {

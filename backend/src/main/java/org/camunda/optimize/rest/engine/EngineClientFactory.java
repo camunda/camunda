@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
+import org.camunda.optimize.service.util.Factory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.factory.FactoryBean;
@@ -8,46 +9,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import java.util.HashMap;
+import java.util.Map;
 
-public class EngineClientFactory implements FactoryBean<Client> {
+public class EngineClientFactory implements Factory<Client, String> {
 
-  private Client instance;
-
-  @Autowired
-  private OptimizeObjectMapperProvider optimizeObjectMapperProvider;
-
-  @Autowired
-  private ConfigurationService configurationService;
+  protected Map<String,Client> instances = new HashMap<>();
 
   @Autowired
-  private BasicAccessAuthenticationFilter basicAccessAuthenticationFilter;
+  protected OptimizeObjectMapperProvider optimizeObjectMapperProvider;
 
-  @Override
-  public Client getObject() throws Exception {
-    if (instance == null) {
-        instance = newClient();
-    }
-    return instance;
-  }
+  @Autowired
+  protected ConfigurationService configurationService;
 
-  private Client newClient() {
+  @Autowired
+  protected BasicAccessAuthenticationFilterFactory basicAccessAuthenticationFilterFactory;
+
+  protected Client newClient(String engineAlias) {
     Client client = ClientBuilder.newClient();
     client.property(ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
     client.property(ClientProperties.READ_TIMEOUT,    configurationService.getEngineReadTimeout());
-    if(configurationService.isEngineAuthenticationEnabled()) {
-      client.register(basicAccessAuthenticationFilter);
+    if(configurationService.isEngineAuthenticationEnabled(engineAlias)) {
+      client.register(basicAccessAuthenticationFilterFactory.getInstance(engineAlias));
     }
     client.register(optimizeObjectMapperProvider);
     return client;
   }
 
   @Override
-  public Class<?> getObjectType() {
-    return Client.class;
-  }
-
-  @Override
-  public boolean isSingleton() {
-    return true;
+  public Client getInstance(String engineAlias) {
+    if (!instances.containsKey(engineAlias)) {
+      instances.put(engineAlias,newClient(engineAlias));
+    }
+    return instances.get(engineAlias);
   }
 }

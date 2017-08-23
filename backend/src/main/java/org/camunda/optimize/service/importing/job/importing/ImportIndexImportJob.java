@@ -12,17 +12,19 @@ public class ImportIndexImportJob extends ImportJob<OptimizeDto> {
   private ImportIndexWriter importIndexWriter;
   private int importIndex;
   private String typeIndexComesFrom;
+  private String engine;
 
-  public ImportIndexImportJob(ImportIndexWriter importIndexWriter, int importIndex, String typeIndexComesFrom) {
+  public ImportIndexImportJob(ImportIndexWriter importIndexWriter, int importIndex, String typeIndexComesFrom, String engineAlias) {
     this.importIndexWriter = importIndexWriter;
     this.importIndex = importIndex;
     this.typeIndexComesFrom = typeIndexComesFrom;
+    this.engine = engineAlias;
   }
 
   @Override
   protected void executeImport() {
     try {
-      importIndexWriter.importIndex(importIndex, typeIndexComesFrom);
+      importIndexWriter.importIndex(importIndex, typeIndexComesFrom, engine);
     } catch (Exception e) {
       logger.error("error while writing import index to elasticsearch", e);
     }

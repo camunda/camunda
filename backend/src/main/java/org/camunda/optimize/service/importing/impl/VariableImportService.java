@@ -35,8 +35,8 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   private ImportAdapterProvider importServiceProvider;
 
   @Override
-  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds) throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricVariableInstances(processInstanceIds);
+  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
+    return engineEntityFetcher.fetchHistoricVariableInstances(processInstanceIds, engineAlias);
   }
 
   @Override
@@ -45,8 +45,8 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   }
 
   @Override
-  protected List<VariableDto> processNewEngineEntries(List<HistoricVariableInstanceDto> entries) {
-    List<? extends PluginVariableDto> result = super.processNewEngineEntries(entries);
+  protected List<VariableDto> processNewEngineEntries(List<HistoricVariableInstanceDto> entries, String engineAlias) {
+    List<? extends PluginVariableDto> result = super.processNewEngineEntries(entries, engineAlias);
     List<PluginVariableDto> pluginVariableList = new ArrayList<>(result.size());
     pluginVariableList.addAll(result);
     for (VariableImportAdapter variableImportAdapter : importServiceProvider.getAdapters()) {
@@ -114,7 +114,7 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   }
 
   @Override
-  protected VariableDto mapToOptimizeDto(HistoricVariableInstanceDto entry) {
+  protected VariableDto mapToOptimizeDto(HistoricVariableInstanceDto entry, String engineAlias) {
     return mapDefaults(entry);
   }
 

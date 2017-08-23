@@ -3,12 +3,14 @@ package org.camunda.optimize.service.importing.fetcher;
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -36,14 +38,17 @@ public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetche
   private ConfigurationService configurationService;
 
   @Autowired
-  private Client client;
+  private ApplicationContext applicationContext;
+
+  @Autowired
+  private EngineClientFactory engineClientFactory;
 
 
-  public Integer fetchProcessDefinitionCount() throws OptimizeException {
+  public Integer fetchProcessDefinitionCount(String engineAlias) throws OptimizeException {
     CountDto count;
     try {
-      count = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      count = getEngineClient(engineAlias)
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
         .path(configurationService.getProcessDefinitionCountEndpoint())
         .request()
         .get(CountDto.class);
@@ -53,12 +58,17 @@ public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetche
     return count.getCount();
   }
 
+  private Client getEngineClient(String engineAlias) {
+    return engineClientFactory.getInstance(engineAlias);
+  }
+
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,
-                                                                  int maxPageSize) {
+                                                                  int maxPageSize,
+                                                                  String engineAlias) {
     List<ProcessDefinitionEngineDto> entries;
     try {
-      entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
         .path(configurationService.getProcessDefinitionEndpoint())
         .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
         .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
@@ -75,18 +85,18 @@ public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetche
     return entries;
   }
 
-  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, int maxPageSize) {
-    List<ProcessDefinitionEngineDto> entries = fetchProcessDefinitions(indexOfFirstResult, maxPageSize);
-    return fetchAllXmls(entries);
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, int maxPageSize, String engineAlias) {
+    List<ProcessDefinitionEngineDto> entries = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, engineAlias);
+    return fetchAllXmls(entries, engineAlias);
   }
 
-  private List<ProcessDefinitionXmlEngineDto> fetchAllXmls(List<ProcessDefinitionEngineDto> entries) {
+  private List<ProcessDefinitionXmlEngineDto> fetchAllXmls(List<ProcessDefinitionEngineDto> entries, String engineAlias) {
     List<ProcessDefinitionXmlEngineDto> xmls;
     try {
       xmls = new ArrayList<>(entries.size());
       for (ProcessDefinitionEngineDto engineDto : entries) {
-        ProcessDefinitionXmlEngineDto xml = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        ProcessDefinitionXmlEngineDto xml = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
           .request(MediaType.APPLICATION_JSON)
           .get(ProcessDefinitionXmlEngineDto.class);

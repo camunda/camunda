@@ -21,6 +21,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected String processInstanceId;
   protected Date startDate;
   protected Date endDate;
+  protected String engine;
   protected List<SimpleEventDto> events = new ArrayList<>();
 
   protected List<StringVariableDto> stringVariables = new ArrayList<>();
@@ -158,5 +159,13 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   public void setDateVariables(List<DateVariableDto> dateVariables) {
     this.dateVariables = dateVariables;
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(String engine) {
+    this.engine = engine;
   }
 }

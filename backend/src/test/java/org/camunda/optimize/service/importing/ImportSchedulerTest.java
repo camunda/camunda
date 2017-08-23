@@ -150,8 +150,8 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     Mockito.verify(
         indexHandlerProvider.getIndexHandler(
             services.get(0).getElasticsearchType(),
-            services.get(0).getIndexHandlerType()
-        ),
+            services.get(0).getIndexHandlerType(),
+            "1"),
         times(1)
     ).resetImportIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
@@ -174,8 +174,8 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     Mockito.verify(
         indexHandlerProvider.getIndexHandler(
             services.get(0).getElasticsearchType(),
-            services.get(0).getIndexHandlerType()
-        ),
+            services.get(0).getIndexHandlerType(),
+            "1"),
         times(1)
     ).resetImportIndex();
 

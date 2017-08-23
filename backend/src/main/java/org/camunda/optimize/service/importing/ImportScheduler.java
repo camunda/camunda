@@ -165,7 +165,7 @@ public class ImportScheduler extends Thread {
     boolean engineHasStillNewData = importResult.getEngineHasStillNewData();
     if (toExecute.isPageBased()) {
       ImportIndexHandler importIndexHandler = indexHandlerProvider.getIndexHandler(
-          importResult.getElasticSearchType(), importResult.getIndexHandlerType()
+          importResult.getElasticSearchType(), importResult.getIndexHandlerType(), toExecute.getEngineAlias()
       );
 
       if (!engineHasStillNewData) {
@@ -185,7 +185,7 @@ public class ImportScheduler extends Thread {
    */
   public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
-      importScheduleJobs.addAll(scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch()));
+      importScheduleJobs.addAll(scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch(), toExecute.getEngineAlias()));
     }
 
     if (toExecute.isPageBased()) {
@@ -209,7 +209,7 @@ public class ImportScheduler extends Thread {
           elasticsearchType
       );
       backoffService.resetBackoff(toExecute);
-      importScheduleJobs.add(scheduleJobFactory.createPagedJob(elasticsearchType));
+      importScheduleJobs.add(scheduleJobFactory.createPagedJob(elasticsearchType, toExecute.getEngineAlias()));
     }
   }
 

@@ -8,7 +8,6 @@ import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
@@ -47,14 +46,15 @@ public class ProcessDefinitionXmlIdBasedImportService
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher.fetchProcessDefinitionXmls(
       job.getCurrentDefinitionBasedImportIndex(),
-      job.getCurrentProcessDefinitionId()
+      job.getCurrentProcessDefinitionId(),
+      job.getEngineAlias()
     );
   }
 
   @Override
-  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler) throws OptimizeException {
+  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher
-      .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
+      .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
   @Override
@@ -69,8 +69,10 @@ public class ProcessDefinitionXmlIdBasedImportService
   }
 
   @Override
-  public ProcessDefinitionXmlOptimizeDto mapToOptimizeDto(ProcessDefinitionXmlEngineDto entry) {
-    return mapDefaults(entry);
+  public ProcessDefinitionXmlOptimizeDto mapToOptimizeDto(ProcessDefinitionXmlEngineDto entry, String engineAlias) {
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlOptimizeDto = mapDefaults(entry);
+    processDefinitionXmlOptimizeDto.setEngine(engineAlias);
+    return processDefinitionXmlOptimizeDto;
   }
 
   private ProcessDefinitionXmlOptimizeDto mapDefaults(ProcessDefinitionXmlEngineDto dto) {

@@ -2,17 +2,14 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.EventDto;
-import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.fetcher.ActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
-import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,14 +50,15 @@ public class ActivityImportService
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) {
     return activityInstanceFetcher.fetchHistoricActivityInstances(
       job.getCurrentDefinitionBasedImportIndex(),
-      job.getCurrentProcessDefinitionId()
+      job.getCurrentProcessDefinitionId(),
+      job.getEngineAlias()
     );
   }
 
   @Override
-  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler) throws OptimizeException {
+  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
     return activityInstanceFetcher
-      .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
+      .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
   @Override
@@ -75,7 +73,7 @@ public class ActivityImportService
   }
 
   @Override
-  public EventDto mapToOptimizeDto(HistoricActivityInstanceEngineDto entry) {
+  public EventDto mapToOptimizeDto(HistoricActivityInstanceEngineDto entry, String engineAlias) {
     final EventDto createEvent = new EventDto();
     mapDefaults(entry, createEvent);
     return createEvent;

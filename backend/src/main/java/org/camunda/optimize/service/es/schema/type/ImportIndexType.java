@@ -10,6 +10,7 @@ import java.io.IOException;
 public class ImportIndexType extends StrictTypeMappingCreator {
 
   public static final String IMPORT_INDEX_FIELD = "importIndex";
+  public static final String ENGINE = "engine";
 
   @Override
   public String getType() {
@@ -19,6 +20,9 @@ public class ImportIndexType extends StrictTypeMappingCreator {
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
+      .startObject(ENGINE)
+        .field("type", "keyword")
+      .endObject()
       .startObject(IMPORT_INDEX_FIELD)
         .field("type", "integer")
       .endObject();

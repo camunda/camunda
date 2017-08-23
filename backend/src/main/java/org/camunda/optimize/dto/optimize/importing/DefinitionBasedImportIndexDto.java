@@ -10,6 +10,7 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
   protected int totalEntitiesImported;
   protected String currentProcessDefinitionId;
   protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
+  protected String engine;
 
   public int getCurrentDefinitionBasedImportIndex() {
     return currentDefinitionBasedImportIndex;
@@ -49,5 +50,13 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
 
   public void setTotalEntitiesImported(int totalEntitiesImported) {
     this.totalEntitiesImported = totalEntitiesImported;
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(String engine) {
+    this.engine = engine;
   }
 }

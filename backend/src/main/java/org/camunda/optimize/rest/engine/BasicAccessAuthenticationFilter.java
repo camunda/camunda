@@ -11,24 +11,26 @@ import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-@Component
 public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
+  protected String engineAlias;
+  protected ConfigurationService configurationService;
 
-  @Autowired
-  private ConfigurationService configurationService;
+  public BasicAccessAuthenticationFilter(String engineAlias, ConfigurationService configurationService) {
+    this.engineAlias = engineAlias;
+  }
 
   public void filter(ClientRequestContext requestContext) throws IOException {
     MultivaluedMap<String, Object> headers = requestContext.getHeaders();
-    final String basicAuthentication = getBasicAuthentication();
+    final String basicAuthentication = getBasicAuthentication(engineAlias);
     headers.add("Authorization", basicAuthentication);
 
   }
 
-  private String getBasicAuthentication() {
+  private String getBasicAuthentication(String engineAlias) {
     String token =
-      configurationService.getDefaultEngineAuthenticationUser() +
+      configurationService.getDefaultEngineAuthenticationUser(engineAlias) +
       ":" +
-      configurationService.getDefaultEngineAuthenticationPassword();
+      configurationService.getDefaultEngineAuthenticationPassword(engineAlias);
     return "Basic " + DatatypeConverter.printBase64Binary(token.getBytes(StandardCharsets.UTF_8));
   }
 }

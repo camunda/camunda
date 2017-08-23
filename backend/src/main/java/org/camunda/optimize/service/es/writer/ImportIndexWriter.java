@@ -23,7 +23,7 @@ public class ImportIndexWriter {
   @Autowired
   private ConfigurationService configurationService;
 
-  public void importIndex(int importStartIndex, String typeIndexComesFrom) throws IOException {
+  public void importIndex(int importStartIndex, String typeIndexComesFrom, String engine) throws IOException {
     logger.debug("Writing import index '{}' of type '{}' to elasticsearch", importStartIndex, typeIndexComesFrom);
     esclient
       .prepareIndex(
@@ -33,8 +33,10 @@ public class ImportIndexWriter {
       .setSource(
         XContentFactory.jsonBuilder()
           .startObject()
+            .field(ImportIndexType.ENGINE, importStartIndex)
             .field(ImportIndexType.IMPORT_INDEX_FIELD, importStartIndex)
-          .endObject())
+          .endObject()
+      )
       .setRefreshPolicy(IMMEDIATE)
       .get();
   }

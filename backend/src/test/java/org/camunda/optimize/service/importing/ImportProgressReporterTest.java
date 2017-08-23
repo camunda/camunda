@@ -7,6 +7,8 @@ import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,12 +17,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -28,6 +31,7 @@ import static org.hamcrest.core.Is.is;
 @RunWith(Parameterized.class)
 public class ImportProgressReporterTest {
 
+  private static final String TEST_ENGINE = "test-engine";
   @Mock
   private ActivityImportService activityImportService;
 
@@ -36,6 +40,9 @@ public class ImportProgressReporterTest {
 
   @Mock
   private IndexHandlerProvider indexHandlerProvider;
+
+  @Mock
+  private ConfigurationService configurationService;
 
   @InjectMocks
   private ImportProgressReporter reporter = new ImportProgressReporter();
@@ -83,15 +90,27 @@ public class ImportProgressReporterTest {
 
   private void initializeMocks() throws OptimizeException {
     DefinitionBasedImportIndexHandler indexHandler = Mockito.mock(DefinitionBasedImportIndexHandler.class);
-        Mockito.when(indexHandlerProvider.getIndexHandler(
-        activityImportService.getElasticsearchType(),
-        activityImportService.getIndexHandlerType()
-    )).thenReturn(indexHandler);
+        Mockito.when(
+            indexHandlerProvider.getIndexHandler(
+                activityImportService.getElasticsearchType(),
+                activityImportService.getIndexHandlerType(),
+                TEST_ENGINE
+            )
+        ).thenReturn(indexHandler);
     Collection<ImportIndexHandler> list = new ArrayList<>();
     list.add(indexHandler);
     Mockito.when(indexHandlerProvider.getAllHandlers()).thenReturn(list);
-    Mockito.when(activityImportService.getEngineEntityCount(indexHandler)).thenReturn(totalEngineEntityCount);
+    Mockito.when(activityImportService.getEngineEntityCount(indexHandler, TEST_ENGINE)).thenReturn(totalEngineEntityCount);
     Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
     Mockito.when(indexHandler.getAbsoluteImportIndex()).thenReturn(optimizeImportCount);
+
+    Mockito.when(configurationService.getConfiguredEngines()).thenReturn(mockEnginesConfig());
+  }
+
+  private Map<String, EngineConfiguration> mockEnginesConfig() {
+    HashMap<String, EngineConfiguration> engines = new HashMap<>();
+    EngineConfiguration engineConfig = new EngineConfiguration();
+    engines.put(TEST_ENGINE, engineConfig);
+    return engines;
   }
 }

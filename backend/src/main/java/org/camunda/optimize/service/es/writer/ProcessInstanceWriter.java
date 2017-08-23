@@ -76,11 +76,12 @@ public class ProcessInstanceWriter {
     params.put(ProcessInstanceType.START_DATE, sdf.format(procInst.getStartDate()));
     String endDate = (procInst.getEndDate() != null) ? sdf.format(procInst.getEndDate()) : null;
     params.put(ProcessInstanceType.END_DATE, endDate);
+    params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
 
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.startDate = params.startDate; ctx._source.endDate = params.endDate",
+      "ctx._source.startDate = params.startDate; ctx._source.endDate = params.endDate; ctx._source.engine = params.engine",
       params
     );
 

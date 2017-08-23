@@ -6,6 +6,7 @@ public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
 
   protected String id;
   protected String bpmn20Xml;
+  protected String engine;
 
   public String getId() {
     return id;
@@ -21,5 +22,13 @@ public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
 
   public void setBpmn20Xml(String bpmn20Xml) {
     this.bpmn20Xml = bpmn20Xml;
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(String engine) {
+    this.engine = engine;
   }
 }

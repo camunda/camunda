@@ -5,6 +5,7 @@ import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,9 @@ public class ImportProgressReporter {
 
   @Autowired
   private IndexHandlerProvider indexHandlerProvider;
+
+  @Autowired
+  private ConfigurationService configurationService;
 
   public boolean allEntitiesAreImported() {
     try {
@@ -32,7 +36,12 @@ public class ImportProgressReporter {
    * or the process definition count from the engine.
    */
   public int computeImportProgress() throws OptimizeException {
-    double totalEngineEntityCount = getTotalEngineCount();
+    double totalEngineEntityCount = 0;
+    if (configurationService.getConfiguredEngines() != null) {
+      for (String engine : configurationService.getConfiguredEngines().keySet()) {
+        totalEngineEntityCount = totalEngineEntityCount + getTotalEngineCount(engine);
+      }
+    }
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
@@ -50,15 +59,15 @@ public class ImportProgressReporter {
     return alreadyImportedCount;
   }
 
-  private double getTotalEngineCount() throws OptimizeException {
+  private double getTotalEngineCount(String engineAlias) throws OptimizeException {
     double engineCount = 0;
     for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
       ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(
           importService.getElasticsearchType(),
-          importService.getIndexHandlerType()
-      );
+          importService.getIndexHandlerType(),
+          engineAlias);
 
-      engineCount += importService.getEngineEntityCount(indexHandler);
+      engineCount += importService.getEngineEntityCount(indexHandler, engineAlias);
     }
     return engineCount;
   }

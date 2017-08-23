@@ -8,7 +8,6 @@ import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,9 +21,9 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   public abstract Class<IH> getIndexHandlerType();
 
   @Override
-  protected List<OPT> processNewEngineEntries(List<ENG> entries) {
+  protected List<OPT> processNewEngineEntries(List<ENG> entries, String engineAlias) {
     this.idsForPostProcessing = new HashSet<>();
-    return super.processNewEngineEntries(entries);
+    return super.processNewEngineEntries(entries, engineAlias);
   }
 
   @Override
@@ -42,7 +41,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     List<ENG> newEngineEntities =
         getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
     if (!newEngineEntities.isEmpty()) {
-      List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
+      List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities, job.getEngineAlias());
       importToElasticSearch(newOptimizeEntities);
     }
 
@@ -65,7 +64,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
    * @return Return the total number of entities that are to be expected to
    * be imported from the engine.
    */
-  public abstract int getEngineEntityCount(IH indexHandler) throws OptimizeException;
+  public abstract int getEngineEntityCount(IH indexHandler, String engineAlias) throws OptimizeException;
 
   public boolean isProcessDefinitionBased() {
     return false;

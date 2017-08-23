@@ -34,6 +34,8 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String VARIABLE_TYPE = "type";
   public static final String VARIABLE_VALUE = "value";
 
+  public static final String ENGINE = "engine";
+
   @Override
   public String getType() {
     return configurationService.getProcessInstanceType();
@@ -58,6 +60,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
             .startObject(END_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
+            .endObject()
+            .startObject(ENGINE)
+              .field("type", "keyword")
             .endObject()
             .startObject(EVENTS)
               .field("type", "nested")

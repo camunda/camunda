@@ -52,11 +52,13 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   private int currentDefinitionBasedImportIndex;
   private String elasticsearchType;
   private boolean initialized = false;
+  private String engineAlias;
 
 
   @Override
-  public void initializeImportIndex(String elasticsearchType) {
+  public void initializeImportIndex(String elasticsearchType, String engineAlias) {
     this.elasticsearchType = elasticsearchType;
+    this.engineAlias = engineAlias;
     loadImportDefaults();
     DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
     if (dto.getTotalEntitiesImported() > 0) {
@@ -136,8 +138,16 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   }
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
+    List<DefinitionImportInformation> result = new ArrayList<>();
+    for (String engine : configurationService.getConfiguredEngines().keySet()) {
+      result.addAll(this.retrieveDefinitionToImportFromEngine(engine));
+    }
+    return result;
+  }
+
+  private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine(String engineAlias) {
     int currentStart = 0;
-    List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
+    List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart, engineAlias);
 
     HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
@@ -158,7 +168,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
         versionSortedProcesses.get(dto.getKey()).add(definitionImportInformation);
       }
       currentStart = currentStart + currentPage.size();
-      currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart);
+      currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart, engineAlias);
     }
     List<DefinitionImportInformation> result = buildSortedOrder(versionSortedProcesses);
     return result;
@@ -218,6 +228,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     dto.setCurrentDefinitionBasedImportIndex(currentDefinitionBasedImportIndex);
     dto.setCurrentProcessDefinitionId(currentProcessDefinitionId);
     dto.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
+    dto.setEngine(this.engineAlias);
     DefinitionBasedImportIndexJob indexImportJob =
         new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
     try {

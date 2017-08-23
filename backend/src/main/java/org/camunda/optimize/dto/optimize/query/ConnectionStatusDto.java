@@ -1,19 +1,18 @@
 package org.camunda.optimize.dto.optimize.query;
 
+import java.util.Map;
+
 public class ConnectionStatusDto {
 
-  protected boolean isConnectedToEngine;
+  protected Map<String, Boolean> engineConnections;
   protected boolean isConnectedToElasticsearch;
 
-  /**
-   * True if Optimize is connected to Camunda, false otherwise.
-   */
-  public boolean isConnectedToEngine() {
-    return isConnectedToEngine;
+  public Map<String, Boolean> getEngineConnections() {
+    return engineConnections;
   }
 
-  public void setConnectedToEngine(boolean connectedToEngine) {
-    isConnectedToEngine = connectedToEngine;
+  public void setEngineConnections(Map<String, Boolean> engineConnections) {
+    this.engineConnections = engineConnections;
   }
 
   /**

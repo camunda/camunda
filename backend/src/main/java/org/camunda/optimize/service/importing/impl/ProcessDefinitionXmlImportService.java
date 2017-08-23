@@ -7,7 +7,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -45,14 +44,15 @@ public class ProcessDefinitionXmlImportService extends
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return processDefinitionXmlFetcher.fetchProcessDefinitionXmls(
-      job.getAbsoluteImportIndex()
+      job.getAbsoluteImportIndex(),
+      job.getEngineAlias()
     );
   }
 
   @Override
-  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler) throws OptimizeException {
+  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
     return processDefinitionXmlFetcher
-      .fetchProcessDefinitionCount();
+      .fetchProcessDefinitionCount(engineAlias);
   }
 
   @Override
@@ -67,8 +67,10 @@ public class ProcessDefinitionXmlImportService extends
   }
 
   @Override
-  public ProcessDefinitionXmlOptimizeDto mapToOptimizeDto(ProcessDefinitionXmlEngineDto entry) {
-    return mapDefaults(entry);
+  public ProcessDefinitionXmlOptimizeDto mapToOptimizeDto(ProcessDefinitionXmlEngineDto entry, String engineAlias) {
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlOptimizeDto = mapDefaults(entry);
+    processDefinitionXmlOptimizeDto.setEngine(engineAlias);
+    return processDefinitionXmlOptimizeDto;
   }
 
   private ProcessDefinitionXmlOptimizeDto mapDefaults(ProcessDefinitionXmlEngineDto dto) {

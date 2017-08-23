@@ -30,8 +30,8 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
     return missingProcessInstanceFinder;
   }
 
-  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(Set<String> idsToFetch) throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricProcessInstances(idsToFetch);
+  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(Set<String> idsToFetch, String engineAlias) throws OptimizeException {
+    return engineEntityFetcher.fetchHistoricProcessInstances(idsToFetch, engineAlias);
   }
 
   @Override
@@ -46,9 +46,10 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
   }
 
   @Override
-  public ProcessInstanceDto mapToOptimizeDto(HistoricProcessInstanceDto entry) {
+  public ProcessInstanceDto mapToOptimizeDto(HistoricProcessInstanceDto entry, String engineAlias) {
     final ProcessInstanceDto procInst = new ProcessInstanceDto();
     mapDefaults(entry, procInst);
+    procInst.setEngine(engineAlias);
     return procInst;
   }
 

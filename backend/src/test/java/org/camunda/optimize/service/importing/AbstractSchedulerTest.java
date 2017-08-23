@@ -9,7 +9,6 @@ import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexH
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -25,6 +24,9 @@ import static org.mockito.Mockito.when;
  * @author Askar Akhmerov
  */
 public abstract class AbstractSchedulerTest {
+
+  private static final String TEST_ENGINE = "1";
+
 
   protected List<PaginatedImportService> mockImportServices() throws OptimizeException {
     Map<String,PaginatedImportService> services = new HashMap<>();
@@ -58,8 +60,9 @@ public abstract class AbstractSchedulerTest {
     for (PaginatedImportService service : services) {
       ImportIndexHandler handlerMock = Mockito.mock(ImportIndexHandler.class);
       when(indexHandlerProvider.getIndexHandler(
-          service.getElasticsearchType(), service.getIndexHandlerType())
+          service.getElasticsearchType(), service.getIndexHandlerType(), TEST_ENGINE)
       ).thenReturn(handlerMock);
+
 
       allMocks.add(handlerMock);
     }

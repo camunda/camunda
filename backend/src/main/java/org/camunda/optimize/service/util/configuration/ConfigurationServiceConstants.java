@@ -13,26 +13,24 @@ public interface ConfigurationServiceConstants {
   String DEFAULT_PASSWORD = "$.auth.defaultAuthentication.password";
   String DEFAULT_USER_ENABLED = "$.auth.defaultAuthentication.creationEnabled";
 
-  String ENGINE_AUTH_USER = "$.engine.auth.user";
-  String ENGINE_AUTH_PASSWORD = "$.engine.auth.password";
-  String ENGINE_AUTH_ENABLED = "$.engine.auth.enabled";
-  String OPTIMIZE_ACCESS_GROUP = "$.engine.auth.accessGroup";
+  String CONFIGURED_ENGINES = "$.engines";
 
-  String MAX_JOB_QUEUE_SIZE = "$.engine.import.jobQueueMaxSize";
-  String IMPORT_EXECUTOR_THREAD_COUNT = "$.engine.import.executorThreadCount";
-  String NUMBER_OF_RETRIES_ON_CONFLICT = "$.engine.import.writer.numberOfRetries";
-  String PROCESS_DEFINITIONS_TO_IMPORT = "$.engine.import.process-definition-list";
 
-  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.engine.import.pageMaxSize";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.engine.import.process-definition.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.engine.import.process-definition-xml.pageSize.max";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.engine.import.activity-instance.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.engine.import.process-instance.pageSize.max";
-  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.engine.import.variable.pageSize.max";
+  String MAX_JOB_QUEUE_SIZE = "$.engine-commons.import.jobQueueMaxSize";
+  String IMPORT_EXECUTOR_THREAD_COUNT = "$.engine-commons.import.executorThreadCount";
+  String NUMBER_OF_RETRIES_ON_CONFLICT = "$.engine-commons.import.writer.numberOfRetries";
+  String PROCESS_DEFINITIONS_TO_IMPORT = "$.engine-commons.import.process-definition-list";
 
-  String ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE = "$.engine.import.process-definition.pageSize.min";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE = "$.engine.import.process-definition-xml.pageSize.min";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE = "$.engine.import.activity-instance.pageSize.min";
+  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.engine-commons.import.pageMaxSize";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.engine-commons.import.process-definition.pageSize.max";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.engine-commons.import.process-definition-xml.pageSize.max";
+  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.activity-instance.pageSize.max";
+  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.process-instance.pageSize.max";
+  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.variable.pageSize.max";
+
+  String ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE = "$.engine-commons.import.process-definition.pageSize.min";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE = "$.engine-commons.import.process-definition-xml.pageSize.min";
+  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE = "$.engine-commons.import.activity-instance.pageSize.min";
 
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
@@ -55,22 +53,19 @@ public interface ConfigurationServiceConstants {
   String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.es.procdef.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
 
-  String ENGINE_REST_API_ENDPOINT = "$.engine.rest";
-  String ENGINE_CONNECT_TIMEOUT = "$.engine.connection.timeout";
-  String ENGINE_READ_TIMEOUT = "$.engine.read.timeout";
-  String HAI_ENDPOINT = "$.engine.hai.resource";
-  String HAI_COUNT_ENDPOINT = "$.engine.hai.count";
-  String HVI_ENDPOINT = "$.engine.history.variable.resource";
-  String HVI_COUNT_ENDPOINT = "$.engine.history.variable.count";
-  String PROCESS_DEFINITION_ENDPOINT = "$.engine.procdef.resource";
-  String PROCESS_DEFINITION_COUNT_ENDPOINT = "$.engine.procdef.count";
-  String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine.procdef.xml";
-  String HPI_ENDPOINT = "$.engine.history.procinst.resource";
-  String HPI_COUNT_ENDPOINT = "$.engine.history.procinst.count";
-  String USER_VALIDATION_ENDPOINT = "$.engine.user.validation.resource";
-  String GET_GROUPS_ENDPOINT = "$.engine.groups.resource";
-  String ENGINE_NAME = "$.engine.name";
-  String ENGINE_ENABLED = "$.engine.enabled";
+  String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
+  String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
+  String HAI_ENDPOINT = "$.engine-commons.hai.resource";
+  String HAI_COUNT_ENDPOINT = "$.engine-commons.hai.count";
+  String HVI_ENDPOINT = "$.engine-commons.history.variable.resource";
+  String HVI_COUNT_ENDPOINT = "$.engine-commons.history.variable.count";
+  String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
+  String PROCESS_DEFINITION_COUNT_ENDPOINT = "$.engine-commons.procdef.count";
+  String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
+  String HPI_ENDPOINT = "$.engine-commons.history.procinst.resource";
+  String HPI_COUNT_ENDPOINT = "$.engine-commons.history.procinst.count";
+  String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
+  String GET_GROUPS_ENDPOINT = "$.engine-commons.groups.resource";
 
   String ANALYZER_NAME = "$.es.analyzer.name";
   String TOKENIZER = "$.es.analyzer.tokenizer";

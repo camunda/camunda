@@ -3,17 +3,28 @@ package org.camunda.optimize.service.util.configuration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
+import com.jayway.jsonpath.TypeRef;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.GenericType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.util.StringUtil.splitStringByComma;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
@@ -31,17 +42,16 @@ public class ConfigurationService {
   private ReadContext jsonContext;
 
 
+  private Map<String, EngineConfiguration> configuredEngines;
   private String secret;
   private Integer lifeTime;
   private String elasticSearchHost;
   private Integer elasticSearchPort;
-  private String engineRestApiEndpoint;
   private String optimizeIndex;
   private String haiEndpoint;
   private String haiCountEndpoint;
   private String eventType;
   private String userValidationEndpoint;
-  private String engineName;
   private String processDefinitionType;
   private String processDefinitionEndpoint;
   private String processDefinitionCountEndpoint;
@@ -50,7 +60,6 @@ public class ConfigurationService {
   private String analyzerName;
   private String tokenizer;
   private String tokenFilter;
-  private Boolean engineAuthenticationEnabled;
   private String defaultUser;
   private String defaultPassword;
   private String dateFormat;
@@ -65,7 +74,6 @@ public class ConfigurationService {
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
-  private Boolean engineEnabled;
   private String importIndexType;
   private String durationHeatmapTargetValueType;
   private String hviEndpoint;
@@ -94,10 +102,7 @@ public class ConfigurationService {
   private Integer engineImportProcessDefinitionMinPageSize;
   private Integer engineImportProcessDefinitionXmlMinPageSize;
   private Integer engineImportActivityInstanceMinPageSize;
-  private String defaultEngineAuthenticationUser;
   private Boolean defaultUserCreationEnabled;
-  private String defaultEngineAuthenticationPassword;
-  private String optimizeAccessGroupId;
   private String groupsEndpoint;
   private String importResetIntervalUnit;
   private String containerHost;
@@ -133,6 +138,27 @@ public class ConfigurationService {
 
     //read default values from the first location
     try {
+      Configuration.setDefaults(new Configuration.Defaults() {
+
+        private final JsonProvider jsonProvider = new JacksonJsonProvider();
+        private final MappingProvider mappingProvider = new JacksonMappingProvider();
+
+        @Override
+        public JsonProvider jsonProvider() {
+          return jsonProvider;
+        }
+
+        @Override
+        public MappingProvider mappingProvider() {
+          return mappingProvider;
+        }
+
+        @Override
+        public Set<Option> options() {
+          return EnumSet.noneOf(Option.class);
+        }
+      });
+
       JsonNode resultNode = objectMapper.readTree(sources.remove(0));
       //read with overriding default values all locations
       for (InputStream inputStream : sources) {
@@ -176,6 +202,14 @@ public class ConfigurationService {
     return this.getClass().getClassLoader().getResourceAsStream(location);
   }
 
+  public Map<String, EngineConfiguration> getConfiguredEngines() {
+    if (configuredEngines == null) {
+      TypeRef<HashMap<String, EngineConfiguration>> typeRef = new TypeRef<HashMap<String, EngineConfiguration>>() {};
+      configuredEngines = jsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
+    }
+    return configuredEngines;
+  }
+
   public String getSecret() {
     if (secret == null) {
       secret = jsonContext.read(ConfigurationServiceConstants.SECRET);
@@ -202,13 +236,6 @@ public class ConfigurationService {
       elasticSearchPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_PORT);
     }
     return elasticSearchPort;
-  }
-
-  public String getEngineRestApiEndpoint() {
-    if (engineRestApiEndpoint == null) {
-      engineRestApiEndpoint = jsonContext.read(ConfigurationServiceConstants.ENGINE_REST_API_ENDPOINT);
-    }
-    return engineRestApiEndpoint;
   }
 
   public String getOptimizeIndex() {
@@ -244,13 +271,6 @@ public class ConfigurationService {
       userValidationEndpoint = jsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT);
     }
     return userValidationEndpoint;
-  }
-
-  public String getEngineName() {
-    if (engineName == null) {
-      engineName = jsonContext.read(ConfigurationServiceConstants.ENGINE_NAME);
-    }
-    return engineName;
   }
 
   public String getProcessDefinitionType() {
@@ -307,13 +327,6 @@ public class ConfigurationService {
       tokenFilter = jsonContext.read(ConfigurationServiceConstants.TOKEN_FILTER);
     }
     return tokenFilter;
-  }
-
-  public boolean isEngineAuthenticationEnabled() {
-    if (engineAuthenticationEnabled == null) {
-      engineAuthenticationEnabled = jsonContext.read(ConfigurationServiceConstants.ENGINE_AUTH_ENABLED);
-    }
-    return engineAuthenticationEnabled;
   }
 
   public String getDefaultUser() {
@@ -413,13 +426,6 @@ public class ConfigurationService {
       engineReadTimeout = jsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
     }
     return engineReadTimeout;
-  }
-
-  public boolean isEngineConnected() {
-    if (engineEnabled == null) {
-      engineEnabled = jsonContext.read(ConfigurationServiceConstants.ENGINE_ENABLED, Boolean.class);
-    }
-    return engineEnabled;
   }
 
   public String getImportIndexType() {
@@ -633,27 +639,6 @@ public class ConfigurationService {
     return defaultUserCreationEnabled;
   }
 
-  public String getDefaultEngineAuthenticationUser() {
-    if (defaultEngineAuthenticationUser == null) {
-      defaultEngineAuthenticationUser = jsonContext.read(ConfigurationServiceConstants.ENGINE_AUTH_USER);
-    }
-    return defaultEngineAuthenticationUser;
-  }
-
-  public String getDefaultEngineAuthenticationPassword() {
-    if (defaultEngineAuthenticationPassword == null) {
-      defaultEngineAuthenticationPassword = jsonContext.read(ConfigurationServiceConstants.ENGINE_AUTH_PASSWORD);
-    }
-    return defaultEngineAuthenticationPassword;
-  }
-
-  public String getOptimizeAccessGroupId() {
-    if (optimizeAccessGroupId == null) {
-      optimizeAccessGroupId = jsonContext.read(ConfigurationServiceConstants.OPTIMIZE_ACCESS_GROUP);
-    }
-    return optimizeAccessGroupId;
-  }
-
   public String getGetGroupsEndpoint() {
     if (groupsEndpoint == null) {
       groupsEndpoint = jsonContext.read(ConfigurationServiceConstants.GET_GROUPS_ENDPOINT);
@@ -709,12 +694,44 @@ public class ConfigurationService {
     return processDefinitionXmlEndpoint;
   }
 
-  public boolean isAuthorizationCheckNecessary() {
-    return !getOptimizeAccessGroupId().trim().isEmpty();
+  public boolean isAuthorizationCheckNecessary(String engineAlias) {
+    return !getOptimizeAccessGroupId(engineAlias).trim().isEmpty();
   }
 
-  public String getEngineRestApiEndpointOfCustomEngine() {
-    return this.getEngineRestApiEndpoint() + getEngineName();
+  public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
+    return this.getEngineRestApiEndpoint(engineAlias) + getEngineName(engineAlias);
+  }
+
+  public boolean isEngineAuthenticationEnabled(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getAuthentication().isEnabled();
+  }
+
+  public String getDefaultEngineAuthenticationUser(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getAuthentication().getUser();
+  }
+
+  public String getDefaultEngineAuthenticationPassword(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getAuthentication().getPassword();
+  }
+
+  public String getOptimizeAccessGroupId(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getAuthentication().getAccessGroup();
+  }
+
+  public boolean isEngineConnected(String engineAlias) {
+    return getEngineConfiguration(engineAlias).isEnabled();
+  }
+
+  public String getEngineRestApiEndpoint(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getRest();
+  }
+
+  public String getEngineName(String engineAlias) {
+    return getEngineConfiguration(engineAlias).getName();
+  }
+
+  private EngineConfiguration getEngineConfiguration(String engineAlias) {
+    return this.getConfiguredEngines().get(engineAlias);
   }
 
   public String[] getVariableImportPluginBasePackagesAsArray() {
@@ -737,281 +754,19 @@ public class ConfigurationService {
     return getProcessDefinitionsToImportAsArray().length > 0;
   }
 
-
-  public void setSecret(String secret) {
-    this.secret = secret;
-  }
-
-  public void setLifeTime(Integer lifeTime) {
-    this.lifeTime = lifeTime;
-  }
-
-  public void setElasticSearchHost(String elasticSearchHost) {
-    this.elasticSearchHost = elasticSearchHost;
-  }
-
-  public void setElasticSearchPort(Integer elasticSearchPort) {
-    this.elasticSearchPort = elasticSearchPort;
-  }
-
-  public void setEngineRestApiEndpoint(String engineRestApiEndpoint) {
-    this.engineRestApiEndpoint = engineRestApiEndpoint;
-  }
-
-  public void setOptimizeIndex(String optimizeIndex) {
-    this.optimizeIndex = optimizeIndex;
-  }
-
-  public void setHaiEndpoint(String haiEndpoint) {
-    this.haiEndpoint = haiEndpoint;
-  }
-
-  public void setHaiCountEndpoint(String haiCountEndpoint) {
-    this.haiCountEndpoint = haiCountEndpoint;
-  }
-
-  public void setEventType(String eventType) {
-    this.eventType = eventType;
-  }
-
-  public void setUserValidationEndpoint(String userValidationEndpoint) {
-    this.userValidationEndpoint = userValidationEndpoint;
-  }
-
-  public void setEngineName(String engineName) {
-    this.engineName = engineName;
-  }
-
-  public void setProcessDefinitionType(String processDefinitionType) {
-    this.processDefinitionType = processDefinitionType;
-  }
-
-  public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
-    this.processDefinitionEndpoint = processDefinitionEndpoint;
-  }
-
-  public void setProcessDefinitionCountEndpoint(String processDefinitionCountEndpoint) {
-    this.processDefinitionCountEndpoint = processDefinitionCountEndpoint;
-  }
-
-  public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
-    this.processDefinitionXmlType = processDefinitionXmlType;
-  }
-
-  public void setElasticsearchUsersType(String elasticsearchUsersType) {
-    this.elasticsearchUsersType = elasticsearchUsersType;
-  }
-
-  public void setAnalyzerName(String analyzerName) {
-    this.analyzerName = analyzerName;
-  }
-
-  public void setTokenizer(String tokenizer) {
-    this.tokenizer = tokenizer;
-  }
-
-  public void setTokenFilter(String tokenFilter) {
-    this.tokenFilter = tokenFilter;
-  }
-
-  public void setEngineAuthenticationEnabled(Boolean engineAuthenticationEnabled) {
-    this.engineAuthenticationEnabled = engineAuthenticationEnabled;
-  }
-
-  public void setDefaultUser(String defaultUser) {
-    this.defaultUser = defaultUser;
-  }
-
-  public void setDefaultPassword(String defaultPassword) {
-    this.defaultPassword = defaultPassword;
-  }
-
-  public void setDateFormat(String dateFormat) {
-    this.dateFormat = dateFormat;
-  }
-
-  public void setEngineImportMaxPageSize(Integer engineImportMaxPageSize) {
-    this.engineImportMaxPageSize = engineImportMaxPageSize;
-  }
-
-  public void setImportHandlerWait(Long importHandlerWait) {
-    this.importHandlerWait = importHandlerWait;
-  }
-
-  public void setMaximumBackoff(Long maximumBackoff) {
-    this.maximumBackoff = maximumBackoff;
-  }
-
-  public void setMaxJobQueueSize(Integer maxJobQueueSize) {
-    this.maxJobQueueSize = maxJobQueueSize;
-  }
-
-  public void setImportExecutorThreadCount(Integer importExecutorThreadCount) {
-    this.importExecutorThreadCount = importExecutorThreadCount;
-  }
-
-  public void setHpiEndpoint(String hpiEndpoint) {
-    this.hpiEndpoint = hpiEndpoint;
-  }
-
-  public void setImportRestIntervalMs(Long importRestIntervalMs) {
-    this.importRestIntervalMs = importRestIntervalMs;
-  }
-
-  public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {
-    this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
-  }
-
-  public void setElasticsearchConnectionTimeout(Integer elasticsearchConnectionTimeout) {
-    this.elasticsearchConnectionTimeout = elasticsearchConnectionTimeout;
-  }
-
-  public void setEngineConnectTimeout(Integer engineConnectTimeout) {
-    this.engineConnectTimeout = engineConnectTimeout;
-  }
-
-  public void setEngineReadTimeout(Integer engineReadTimeout) {
-    this.engineReadTimeout = engineReadTimeout;
-  }
-
-  public void setEngineEnabled(Boolean engineEnabled) {
-    this.engineEnabled = engineEnabled;
-  }
-
-  public void setImportIndexType(String importIndexType) {
-    this.importIndexType = importIndexType;
-  }
-
-  public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
-    this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
-  }
-
-  public void setHviEndpoint(String hviEndpoint) {
-    this.hviEndpoint = hviEndpoint;
-  }
-
-  public void setVariableType(String variableType) {
-    this.variableType = variableType;
-  }
-
-  public void setMaxVariableValueListSize(Integer maxVariableValueListSize) {
-    this.maxVariableValueListSize = maxVariableValueListSize;
-  }
-
-  public void setHviCountEndpoint(String hviCountEndpoint) {
-    this.hviCountEndpoint = hviCountEndpoint;
-  }
-
-  public void setProcessInstanceType(String processInstanceType) {
-    this.processInstanceType = processInstanceType;
-  }
-
-  public void setHpiCountEndpoint(String hpiCountEndpoint) {
-    this.hpiCountEndpoint = hpiCountEndpoint;
-  }
-
-  public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
-    this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
-  }
-
-  public void setEngineImportVariableInstanceMaxPageSize(Integer engineImportVariableInstanceMaxPageSize) {
-    this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
-  }
-
-  public void setProcessDefinitionsToImport(String processDefinitionsToImport) {
-    this.processDefinitionsToImport = processDefinitionsToImport;
-  }
-
-  public void setProcessDefinitionImportIndexType(String processDefinitionImportIndexType) {
-    this.processDefinitionImportIndexType = processDefinitionImportIndexType;
-  }
-
-  public void setEsRefreshInterval(String esRefreshInterval) {
-    this.esRefreshInterval = esRefreshInterval;
-  }
-
-  public void setEsNumberOfReplicas(Integer esNumberOfReplicas) {
-    this.esNumberOfReplicas = esNumberOfReplicas;
-  }
-
-  public void setEsNumberOfShards(Integer esNumberOfShards) {
-    this.esNumberOfShards = esNumberOfShards;
-  }
-
-  public void setEngineImportProcessDefinitionXmlMaxPageSize(Integer engineImportProcessDefinitionXmlMaxPageSize) {
-    this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
-  }
-
-  public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
-    this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
-  }
-
-  public void setLicenseType(String licenseType) {
-    this.licenseType = licenseType;
-  }
-
-  public void setGeneralBackoff(Long generalBackoff) {
-    this.generalBackoff = generalBackoff;
-  }
-
-  public void setSamplerInterval(Long samplerInterval) {
-    this.samplerInterval = samplerInterval;
-  }
-
   public void setVariableImportPluginBasePackages(String variableImportPluginBasePackages) {
     this.variableImportPluginBasePackages = variableImportPluginBasePackages;
-  }
-
-  public void setPiIdTrackingType(String piIdTrackingType) {
-    this.piIdTrackingType = piIdTrackingType;
-  }
-
-  public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {
-    this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
-  }
-
-  public void setEngineImportProcessDefinitionMaxPageSize(Integer engineImportProcessDefinitionMaxPageSize) {
-    this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
-  }
-
-  public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
-    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
-  }
-
-  public void setEngineImportProcessDefinitionMinPageSize(Integer engineImportProcessDefinitionMinPageSize) {
-    this.engineImportProcessDefinitionMinPageSize = engineImportProcessDefinitionMinPageSize;
-  }
-
-  public void setEngineImportProcessDefinitionXmlMinPageSize(Integer engineImportProcessDefinitionXmlMinPageSize) {
-    this.engineImportProcessDefinitionXmlMinPageSize = engineImportProcessDefinitionXmlMinPageSize;
-  }
-
-  public void setEngineImportActivityInstanceMinPageSize(Integer engineImportActivityInstanceMinPageSize) {
-    this.engineImportActivityInstanceMinPageSize = engineImportActivityInstanceMinPageSize;
-  }
-
-  public void setDefaultEngineAuthenticationUser(String defaultEngineAuthenticationUser) {
-    this.defaultEngineAuthenticationUser = defaultEngineAuthenticationUser;
   }
 
   public void setDefaultUserCreationEnabled(Boolean defaultUserCreationEnabled) {
     this.defaultUserCreationEnabled = defaultUserCreationEnabled;
   }
 
-  public void setDefaultEngineAuthenticationPassword(String defaultEngineAuthenticationPassword) {
-    this.defaultEngineAuthenticationPassword = defaultEngineAuthenticationPassword;
+  public void setProcessDefinitionsToImport(String processDefinitionsToImport) {
+    this.processDefinitionsToImport = processDefinitionsToImport;
   }
 
-  public void setOptimizeAccessGroupId(String optimizeAccessGroupId) {
-    this.optimizeAccessGroupId = optimizeAccessGroupId;
+  public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
+    this.configuredEngines = configuredEngines;
   }
-
-  public void setGroupsEndpoint(String groupsEndpoint) {
-    this.groupsEndpoint = groupsEndpoint;
-  }
-
-  public void setImportResetIntervalUnit(String importResetIntervalUnit) {
-    this.importResetIntervalUnit = importResetIntervalUnit;
-  }
-
 }

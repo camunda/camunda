@@ -19,15 +19,19 @@ public class IndexHandlerProvider {
 
   private HashMap <String, ImportIndexHandler> initializedHandlers = new HashMap<>();
 
-  public ImportIndexHandler getIndexHandler(String elasticSearchType, Class<? extends ImportIndexHandler> indexHandlerType) {
+  public ImportIndexHandler getIndexHandler(String elasticSearchType, Class<? extends ImportIndexHandler> indexHandlerType, String engineAlias) {
 
-    if (!initializedHandlers.containsKey(elasticSearchType)) {
+    if (!initializedHandlers.containsKey(constructKey(elasticSearchType, engineAlias))) {
       ImportIndexHandler bean = applicationContext.getBean(indexHandlerType);
-      bean.initializeImportIndex(elasticSearchType);
-      initializedHandlers.put(elasticSearchType, bean);
+      bean.initializeImportIndex(elasticSearchType, engineAlias);
+      initializedHandlers.put(constructKey(elasticSearchType, engineAlias), bean);
     }
 
-    return initializedHandlers.get(elasticSearchType);
+    return initializedHandlers.get(constructKey(elasticSearchType, engineAlias));
+  }
+
+  private String constructKey(String elasticSearchType, String engineAlias) {
+    return elasticSearchType + "-" + engineAlias;
   }
 
   public Collection<ImportIndexHandler> getAllHandlers() {

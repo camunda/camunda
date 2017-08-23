@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,6 +30,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class StatusRestServiceIT {
 
+  public static final String ENGINE_ALIAS = "1";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -37,18 +39,24 @@ public class StatusRestServiceIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  private Client engineClient;
+  private EngineClientFactory engineClientFactory;
   private ConfigurationService configurationService;
 
   @Before
   public void initClients() throws InvalidTokenException {
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
+    engineClientFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
+    for (String engine : configurationService.getConfiguredEngines().keySet()) {
+      engineClientFactory.getInstance(engine);
+    }
   }
 
   @After
   public void resetMocks() throws InvalidTokenException {
-    Mockito.reset(engineClient);
+    engineClientFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
+    for (String engine : configurationService.getConfiguredEngines().keySet()) {
+      Mockito.reset(engineClientFactory.getInstance(engine));
+    }
   }
 
   @Test
@@ -84,7 +92,8 @@ public class StatusRestServiceIT {
       response.readEntity(ConnectionStatusDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.isConnectedToElasticsearch(), is(true));
-    assertThat(actual.isConnectedToEngine(), is(true));
+    assertThat(actual.getEngineConnections(), is(notNullValue()));
+    assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(true));
   }
 
   @Test
@@ -92,7 +101,7 @@ public class StatusRestServiceIT {
     // given
     String errorMessage = "Error";
     Mockito.when(
-        engineClient.target(Mockito.anyString())
+        engineClientFactory.getInstance(ENGINE_ALIAS).target(Mockito.anyString())
     ).thenThrow(
         new RuntimeException(errorMessage)
     );
@@ -108,7 +117,8 @@ public class StatusRestServiceIT {
       response.readEntity(ConnectionStatusDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.isConnectedToElasticsearch(), is(true));
-    assertThat(actual.isConnectedToEngine(), is(false));
+    assertThat(actual.getEngineConnections(), is(notNullValue()));
+    assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(false));
   }
 
   @Test
@@ -133,7 +143,7 @@ public class StatusRestServiceIT {
   public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws Exception {
     // given
     String errorMessage = "Error";
-    Mockito.when(engineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
+    Mockito.when(engineClientFactory.getInstance(ENGINE_ALIAS).target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
     configurationService.setProcessDefinitionsToImport("test");
 
     // when

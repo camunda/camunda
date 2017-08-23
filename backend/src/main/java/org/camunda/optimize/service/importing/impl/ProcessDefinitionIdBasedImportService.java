@@ -8,7 +8,6 @@ import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
@@ -48,14 +47,15 @@ public class ProcessDefinitionIdBasedImportService
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionFetcher.fetchProcessDefinitions(
         job.getCurrentDefinitionBasedImportIndex(),
-        job.getCurrentProcessDefinitionId()
+        job.getCurrentProcessDefinitionId(),
+        job.getEngineAlias()
     );
   }
 
   @Override
-  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler) throws OptimizeException {
+  public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
     return idBasedProcessDefinitionFetcher
-        .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions());
+        .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
   @Override
@@ -70,8 +70,10 @@ public class ProcessDefinitionIdBasedImportService
   }
 
   @Override
-  public ProcessDefinitionOptimizeDto mapToOptimizeDto(ProcessDefinitionEngineDto entry) {
-    return mapDefaults(entry);
+  public ProcessDefinitionOptimizeDto mapToOptimizeDto(ProcessDefinitionEngineDto entry, String engineAlias) {
+    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = mapDefaults(entry);
+    processDefinitionOptimizeDto.setEngine(engineAlias);
+    return processDefinitionOptimizeDto;
   }
 
   private ProcessDefinitionOptimizeDto mapDefaults(ProcessDefinitionEngineDto dto) {

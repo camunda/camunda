@@ -7,7 +7,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionFetcher;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -46,13 +45,14 @@ public class ProcessDefinitionImportService
   @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return processDefinitionFetcher.fetchProcessDefinitions(
-      job.getAbsoluteImportIndex()
+      job.getAbsoluteImportIndex(),
+      job.getEngineAlias()
     );
   }
 
   @Override
-  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler) throws OptimizeException {
-    return processDefinitionFetcher.fetchProcessDefinitionCount();
+  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
+    return processDefinitionFetcher.fetchProcessDefinitionCount(engineAlias);
   }
 
   @Override
@@ -67,8 +67,10 @@ public class ProcessDefinitionImportService
   }
 
   @Override
-  public ProcessDefinitionOptimizeDto mapToOptimizeDto(ProcessDefinitionEngineDto entry) {
-    return mapDefaults(entry);
+  public ProcessDefinitionOptimizeDto mapToOptimizeDto(ProcessDefinitionEngineDto entry, String engineAlias) {
+    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = mapDefaults(entry);
+    processDefinitionOptimizeDto.setEngine(engineAlias);
+    return processDefinitionOptimizeDto;
   }
 
   private ProcessDefinitionOptimizeDto mapDefaults(ProcessDefinitionEngineDto dto) {

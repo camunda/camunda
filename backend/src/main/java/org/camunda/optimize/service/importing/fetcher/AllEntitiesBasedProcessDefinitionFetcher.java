@@ -35,12 +35,13 @@ public class AllEntitiesBasedProcessDefinitionFetcher  {
     );
   }
 
-  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult) {
+  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult, String engineAlias) {
     logger.info("Using page size [{}] for fetching process definitions.", pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<ProcessDefinitionEngineDto> list =  engineEntityFetcher.fetchProcessDefinitions(
       indexOfFirstResult,
-      pageSizeCalculator.getCalculatedPageSize()
+      pageSizeCalculator.getCalculatedPageSize(),
+      engineAlias
     );
     long endRequestTime = System.currentTimeMillis();
     long requestDuration = endRequestTime - startRequestTime;
@@ -48,8 +49,8 @@ public class AllEntitiesBasedProcessDefinitionFetcher  {
     return list;
   }
 
-  public int fetchProcessDefinitionCount() throws OptimizeException {
-    return definitionBasedEngineEntityFetcher.fetchProcessDefinitionCount();
+  public int fetchProcessDefinitionCount(String engineAlias) throws OptimizeException {
+    return definitionBasedEngineEntityFetcher.fetchProcessDefinitionCount(engineAlias);
   }
 
 }

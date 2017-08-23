@@ -10,6 +10,7 @@ public class ProcessDefinitionOptimizeDto extends KeyProcessDefinitionOptimizeDt
   protected String id;
   protected String name;
   protected long version;
+  protected String engine;
 
   public String getId() {
     return id;
@@ -33,5 +34,13 @@ public class ProcessDefinitionOptimizeDto extends KeyProcessDefinitionOptimizeDt
 
   public void setVersion(long version) {
     this.version = version;
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(String engine) {
+    this.engine = engine;
   }
 }

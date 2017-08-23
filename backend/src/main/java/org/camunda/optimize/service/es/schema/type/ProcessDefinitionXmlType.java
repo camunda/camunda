@@ -11,6 +11,7 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
   public static final String BPMN_20_XML = "bpmn20Xml";
+  public static final String ENGINE = "engine";
 
   @Override
   public String getType() {
@@ -21,6 +22,9 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ENGINE)
         .field("type", "keyword")
       .endObject()
       .startObject(BPMN_20_XML)

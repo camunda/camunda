@@ -34,14 +34,16 @@ public class ActivityInstanceFetcher {
   }
 
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(int indexOfFirstResult,
-                                                                                String processDefinitionId) {
+                                                                                String processDefinitionId,
+                                                                                String engineAlias) {
 
     logger.info("Using page size of [{}] for fetching historic activity instances.", pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> list =  engineEntityFetcher.fetchHistoricActivityInstances(
       indexOfFirstResult,
       pageSizeCalculator.getCalculatedPageSize(),
-      processDefinitionId
+      processDefinitionId,
+      engineAlias
     );
     long endRequestTime = System.currentTimeMillis();
     long requestDuration = endRequestTime - startRequestTime;
@@ -49,8 +51,8 @@ public class ActivityInstanceFetcher {
     return list;
   }
 
-  public int fetchHistoricActivityInstanceCount(List<String> processDefinitionIds) throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricActivityInstanceCount(processDefinitionIds);
+  public int fetchHistoricActivityInstanceCount(List<String> processDefinitionIds, String engineAlias) throws OptimizeException {
+    return engineEntityFetcher.fetchHistoricActivityInstanceCount(processDefinitionIds, engineAlias);
   }
 
 }

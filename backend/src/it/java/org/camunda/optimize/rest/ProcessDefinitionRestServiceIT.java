@@ -58,6 +58,7 @@ public class ProcessDefinitionRestServiceIT {
   public static final String BEARER = "Bearer ";
   private static final String KEY = "testKey";
   public static final String BPMN_20_XML = "test";
+  private static final String TEST_ENGINE = "1";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
@@ -137,6 +138,7 @@ public class ProcessDefinitionRestServiceIT {
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     expected.setId(expectedProcessDefinitionId);
     expected.setKey(key);
+    expected.setEngine(TEST_ENGINE);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
   }
 
@@ -423,7 +425,7 @@ public class ProcessDefinitionRestServiceIT {
         response.readEntity(new GenericType<List<ProcessDefinitionGroupOptimizeDto>>() {});
     assertThat(actual, is(notNullValue()));
     assertThat(actual.size(), is(1));
-    assertThat(actual.get(0).getKey(), is(KEY));
+    assertThat(actual.get(0).getKey(), is(KEY + "-" + TEST_ENGINE));
     assertThat(actual.get(0).getVersions().size(), is(2));
   }
 

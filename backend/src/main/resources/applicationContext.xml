@@ -23,7 +23,7 @@
 
   <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService"/>
 
-  <bean id="engineClient"  class="org.camunda.optimize.rest.engine.EngineClientFactory"/>
+  <bean id="engineClientFactory"  class="org.camunda.optimize.rest.engine.EngineClientFactory"/>
 
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>

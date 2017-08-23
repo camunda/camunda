@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
@@ -42,16 +43,17 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
   private ConfigurationService configurationService;
 
   @Autowired
-  private Client client;
+  private EngineClientFactory engineClientFactory;
 
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(int indexOfFirstResult,
                                                                                 int maxPageSize,
-                                                                                String processDefinitionId) {
+                                                                                String processDefinitionId,
+                                                                                String engineAlias) {
     List<HistoricActivityInstanceEngineDto> entries;
     long requestStart = System.currentTimeMillis();
     try {
-      entries = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .path(configurationService.getHistoricActivityInstanceEndpoint())
           .queryParam(SORT_BY, SORT_TYPE_END_TIME)
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
@@ -73,12 +75,16 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
     return entries;
   }
 
-  public Integer fetchHistoricActivityInstanceCount(List<String> processDefinitionIds) throws OptimizeException {
+  private Client getEngineClient(String engineAlias) {
+    return engineClientFactory.getInstance(engineAlias);
+  }
+
+  public Integer fetchHistoricActivityInstanceCount(List<String> processDefinitionIds, String engineAlias) throws OptimizeException {
     int totalCount = 0;
     for (String processDefinitionId : processDefinitionIds) {
       try {
-        CountDto newCount = client
-            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        CountDto newCount = getEngineClient(engineAlias)
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
             .path(configurationService.getHistoricActivityInstanceCountEndpoint())
             .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
             .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
@@ -95,14 +101,15 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
 
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult,
                                                                         int maxPageSize,
-                                                                        String processDefinitionId) {
-    List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId);
+                                                                        String processDefinitionId,
+                                                                        String engineAlias) {
+    List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId, engineAlias);
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>();
     for (ProcessDefinitionEngineDto procDef : procDefs) {
       ProcessDefinitionXmlEngineDto xml;
       try {
-        xml = client
-            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        xml = getEngineClient(engineAlias)
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
             .path(configurationService.getProcessDefinitionXmlEndpoint(procDef.getId()))
             .request(MediaType.APPLICATION_JSON)
             .acceptEncoding(UTF8)
@@ -118,11 +125,12 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,
                                                                   int maxPageSize,
-                                                                  String processDefinitionId) {
+                                                                  String processDefinitionId,
+                                                                  String engineAlias) {
     List<ProcessDefinitionEngineDto> entries;
     try {
-      entries = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      entries = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
           .path(configurationService.getProcessDefinitionEndpoint())
           .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
           .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
@@ -140,12 +148,12 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
     return entries;
   }
 
-  public Integer fetchProcessDefinitionCount(List<String> processDefinitionIds) throws OptimizeException {
+  public Integer fetchProcessDefinitionCount(List<String> processDefinitionIds, String engineAlias) throws OptimizeException {
     int totalCount = 0;
     for (String processDefinitionId : processDefinitionIds) {
       try {
-        CountDto newCount = client
-            .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        CountDto newCount = getEngineClient(engineAlias)
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
             .path(configurationService.getProcessDefinitionCountEndpoint())
             .queryParam(EngineConstantsUtil.PROCESS_DEFINITION_ID, processDefinitionId)
             .request()
@@ -159,11 +167,11 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
     return totalCount;
   }
 
-  public Integer fetchProcessDefinitionCount() throws OptimizeException {
+  public Integer fetchProcessDefinitionCount(String engineAlias) throws OptimizeException {
     CountDto count;
     try {
-      count = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+      count = getEngineClient(engineAlias)
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
         .path(configurationService.getProcessDefinitionCountEndpoint())
         .request()
         .get(CountDto.class);

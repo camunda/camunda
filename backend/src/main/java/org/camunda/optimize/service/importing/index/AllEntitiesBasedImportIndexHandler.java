@@ -28,10 +28,12 @@ public class AllEntitiesBasedImportIndexHandler implements ImportIndexHandler {
 
   private int totalEntitiesImported;
   private String elasticsearchType;
+  private String engineAlias;
 
   @Override
-  public void initializeImportIndex(String elasticsearchType) {
+  public void initializeImportIndex(String elasticsearchType, String engineAlias) {
     this.elasticsearchType = elasticsearchType;
+    this.engineAlias = engineAlias;
     totalEntitiesImported = importIndexReader.getImportIndex(elasticsearchType);
   }
 
@@ -43,7 +45,7 @@ public class AllEntitiesBasedImportIndexHandler implements ImportIndexHandler {
   @Override
   public void persistImportIndexToElasticsearch() {
     ImportIndexImportJob indexImportJob =
-      new ImportIndexImportJob(importIndexWriter, totalEntitiesImported, elasticsearchType);
+      new ImportIndexImportJob(importIndexWriter, totalEntitiesImported, elasticsearchType, engineAlias);
     try {
       importJobExecutor.executeImportJob(indexImportJob);
     } catch (InterruptedException e) {

@@ -133,17 +133,21 @@ public class ProcessDefinitionReader {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
     List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
     for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
-      if (!resultMap.containsKey(process.getKey())) {
-        resultMap.put(process.getKey(), constructGroup(process));
+      if (!resultMap.containsKey(compoundKey(process))) {
+        resultMap.put(compoundKey(process), constructGroup(process));
       }
-      resultMap.get(process.getKey()).getVersions().add(process);
+      resultMap.get(compoundKey(process)).getVersions().add(process);
     }
     return new ArrayList<>(resultMap.values());
   }
 
+  private String compoundKey(ExtendedProcessDefinitionOptimizeDto process) {
+    return process.getKey() + "-" + process.getEngine();
+  }
+
   private ProcessDefinitionGroupOptimizeDto constructGroup(ExtendedProcessDefinitionOptimizeDto process) {
     ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
-    result.setKey(process.getKey());
+    result.setKey(compoundKey(process));
     return result;
   }
 

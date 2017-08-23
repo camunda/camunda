@@ -5,7 +5,8 @@ import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 /**
  * @author Askar Akhmerov
  */
-public interface AuthenticationProvider {
+public interface AuthenticationProvider <T extends CredentialsDto> {
 
-  boolean authenticate(CredentialsDto credentialsDto);
+  boolean authenticate(T credentialsDto);
+
 }

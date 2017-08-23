@@ -41,11 +41,11 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
           getElasticsearchType()
       );
 
-      List<ENG> pageOfEngineEntities = this.queryEngineRestPoint(this.getIdsForImport());
+      List<ENG> pageOfEngineEntities = this.queryEngineRestPoint(this.getIdsForImport(), job.getEngineAlias());
       List<ENG> newEngineEntities =
           getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
       if (!newEngineEntities.isEmpty()) {
-        List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities);
+        List<OPT> newOptimizeEntities = processNewEngineEntries(newEngineEntities, job.getEngineAlias());
         importToElasticSearch(newOptimizeEntities);
       }
       engineHasStillNewData = !pageOfEngineEntities.isEmpty();
@@ -62,6 +62,6 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
    * @return All entries from the engine that we want to
    * import to optimize, i.e. elasticsearch
    */
-  protected abstract List<ENG> queryEngineRestPoint(Set<String> ids) throws OptimizeException;
+  protected abstract List<ENG> queryEngineRestPoint(Set<String> ids, String engineAlias) throws OptimizeException;
 
 }

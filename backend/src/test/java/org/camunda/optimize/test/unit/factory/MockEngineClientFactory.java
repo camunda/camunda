@@ -1,5 +1,7 @@
 package org.camunda.optimize.test.unit.factory;
 
+import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.service.util.Factory;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 
@@ -13,24 +15,10 @@ import javax.ws.rs.client.ClientBuilder;
  *
  * @author Askar Akhmerov
  */
-public class MockEngineClientFactory implements FactoryBean<Client> {
-  private Client instance;
+public class MockEngineClientFactory extends EngineClientFactory {
 
   @Override
-  public Client getObject() throws Exception {
-    if (instance == null) {
-      instance = Mockito.mock(Client.class);
-    }
-    return instance;
-  }
-
-  @Override
-  public Class<?> getObjectType() {
-    return Client.class;
-  }
-
-  @Override
-  public boolean isSingleton() {
-    return true;
+  protected Client newClient(String engineAlias) {
+    return Mockito.mock(Client.class);
   }
 }

@@ -22,7 +22,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
  * @author Askar Akhmerov
  */
 @Component ("elasticAuthenticationProvider")
-public class ElasticAuthenticationProviderImpl implements AuthenticationProvider, ConfigurationReloadable {
+public class ElasticAuthenticationProviderImpl implements AuthenticationProvider<CredentialsDto>, ConfigurationReloadable {
   private static final Logger logger = LoggerFactory.getLogger(ElasticAuthenticationProviderImpl.class);
   private boolean initialized = false;
 
