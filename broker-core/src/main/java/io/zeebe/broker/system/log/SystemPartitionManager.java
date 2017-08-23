@@ -20,9 +20,14 @@ package io.zeebe.broker.system.log;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
+import java.time.Duration;
+
+import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.executor.ScheduledCommand;
+import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
@@ -38,7 +43,14 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     protected ServiceStartContext serviceContext;
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    protected final Injector<ClusterManager> clusterManagerInjector = new Injector<>();
+    protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
+
     protected ServerTransport clientApiTransport;
+    protected ClusterManager clusterManager;
+    protected ScheduledExecutor executor;
+
+    protected ScheduledCommand partitionCheck;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd((name, stream) -> addSystemPartition(stream, name))
@@ -46,8 +58,9 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(clientApiTransport.getOutput());
         final CreateTopicStreamProcessor processor =
-                new CreateTopicStreamProcessor(new CommandResponseWriter(clientApiTransport.getOutput()));
+                new CreateTopicStreamProcessor(responseWriter, clusterManager);
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
             "system",
@@ -60,7 +73,11 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .dependency(serviceName, streamProcessorService.getTargetStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-            .install();
+            .install()
+            .thenRun(() ->
+            {
+                partitionCheck = executor.scheduleAtFixedRate(processor::checkPendingPartitionsAsync, Duration.ofMillis(100));
+            });
     }
 
 
@@ -69,11 +86,18 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     {
         this.serviceContext = startContext;
         this.clientApiTransport = clientApiTransportInjector.getValue();
+        this.clusterManager = clusterManagerInjector.getValue();
+        this.executor = executorInjector.getValue();
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
+        if (partitionCheck != null)
+        {
+            partitionCheck.cancel();
+            partitionCheck = null;
+        }
     }
 
     @Override
@@ -87,10 +111,19 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         return logStreamsGroupReference;
     }
 
-
     public Injector<ServerTransport> getClientApiTransportInjector()
     {
         return clientApiTransportInjector;
+    }
+
+    public Injector<ClusterManager> getClusterManagerInjector()
+    {
+        return clusterManagerInjector;
+    }
+
+    public Injector<ScheduledExecutor> getExecutorInjector()
+    {
+        return executorInjector;
     }
 
 }

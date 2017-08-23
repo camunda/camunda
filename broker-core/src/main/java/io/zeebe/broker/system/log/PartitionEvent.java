@@ -24,51 +24,47 @@ import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 
-public class TopicEvent extends UnpackedObject
+public class PartitionEvent extends UnpackedObject
 {
+    protected final EnumProperty<PartitionState> state = new EnumProperty<>("state", PartitionState.class);
+    protected final StringProperty topicName = new StringProperty("topicName");
+    protected final IntegerProperty id = new IntegerProperty("id");
 
-    protected final EnumProperty<TopicState> state = new EnumProperty<>("state", TopicState.class);
-
-    protected final StringProperty name = new StringProperty("name");
-    protected final IntegerProperty partitions = new IntegerProperty("partitions");
-
-    public TopicEvent()
+    public PartitionEvent()
     {
         this
             .declareProperty(state)
-            .declareProperty(name)
-            .declareProperty(partitions);
+            .declareProperty(id)
+            .declareProperty(topicName);
     }
 
-    public TopicState getState()
-    {
-        return state.getValue();
-    }
-
-    public void setState(TopicState state)
+    public void setState(PartitionState state)
     {
         this.state.setValue(state);
     }
 
-    public DirectBuffer getName()
+    public PartitionState getState()
     {
-        return name.getValue();
+        return state.getValue();
     }
 
-    public void setName(DirectBuffer name)
+    public void setTopicName(DirectBuffer buffer)
     {
-        this.name.setValue(name);
+        this.topicName.setValue(buffer);
     }
 
-    public int getPartitions()
+    public DirectBuffer getTopicName()
     {
-        return partitions.getValue();
+        return topicName.getValue();
     }
 
-    public void setPartitions(int partitions)
+    public void setId(int id)
     {
-        this.partitions.setValue(partitions);
+        this.id.setValue(id);
     }
 
-
+    public int getId()
+    {
+        return id.getValue();
+    }
 }

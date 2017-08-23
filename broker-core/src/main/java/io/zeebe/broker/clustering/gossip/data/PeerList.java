@@ -22,17 +22,21 @@ import static io.zeebe.clustering.gossip.PeerState.ALIVE;
 import static io.zeebe.clustering.gossip.PeerState.SUSPECT;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
-import io.zeebe.util.collection.CompactList;
-import io.zeebe.util.CloseableSilently;
-import io.zeebe.util.allocation.DirectBufferAllocator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.clustering.gossip.PeerDescriptorDecoder;
+import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.allocation.DirectBufferAllocator;
+import io.zeebe.util.collection.CompactList;
 
 /**
  * <p>An instance of {@link PeerList} contains a list of peers.</p>
@@ -435,6 +439,16 @@ public class PeerList implements Iterable<Peer>, CloseableSilently
         listeners.remove(listener);
     }
 
+    public PeerList copy()
+    {
+        final DirectBuffer rawValues = underlyingList.getRawBuffer();
+        final UnsafeBuffer newBuf = new UnsafeBuffer(new byte[rawValues.capacity()]);
+        newBuf.putBytes(0, rawValues, 0, rawValues.capacity());
+
+        final CompactList newList = new CompactList(newBuf);
+
+        return new PeerList(newList);
+    }
 
     @Override
     public String toString()

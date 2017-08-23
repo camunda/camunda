@@ -180,7 +180,7 @@ public class BrokerLeaderChangeTest
     {
         LOG.info("starting broker {} with config {}", socketAddress, configFilePath);
 
-        try (final InputStream config = BrokerLeaderChangeTest.class.getClassLoader().getResourceAsStream(configFilePath))
+        try (InputStream config = BrokerLeaderChangeTest.class.getClassLoader().getResourceAsStream(configFilePath))
         {
             assertThat(config).isNotNull();
             brokers.put(socketAddress, new Broker(config));

@@ -168,6 +168,7 @@ public class StartLogStreamServiceController
             return false;
         }
     }
+
     static class OpenState implements State<Context>
     {
 

@@ -17,10 +17,12 @@
  */
 package io.zeebe.broker.system.log;
 
-public enum TopicState
+public enum PartitionState
 {
-
     CREATE,
-    CREATE_REJECTED,
+    CREATING,
+
+    CREATE_COMPLETE,
+    CREATE_COMPLETE_REJECTED,
     CREATED
 }

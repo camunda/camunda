@@ -14,7 +14,7 @@
   <properties>
     <!-- SUB PROJECTS -->
     <version.util>0.2.0-SNAPSHOT</version.util>
-    <version.logstreams>0.1.0</version.logstreams>
+    <version.logstreams>0.2.0-SNAPSHOT</version.logstreams>
     <version.zb-msgpack>0.2.0-SNAPSHOT</version.zb-msgpack>
     <version.service>0.1.0</version.service>
     <version.dispatcher>0.1.0</version.dispatcher>

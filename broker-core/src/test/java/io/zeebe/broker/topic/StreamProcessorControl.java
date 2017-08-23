@@ -15,12 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.log;
+package io.zeebe.broker.topic;
 
-public enum TopicState
+import java.util.function.Predicate;
+
+import io.zeebe.logstreams.log.LoggedEvent;
+
+public interface StreamProcessorControl
 {
 
-    CREATE,
-    CREATE_REJECTED,
-    CREATED
+    void unblock();
+
+    void blockAfterEvent(Predicate<LoggedEvent> test);
+
+    /**
+     * @return true if the event to block on has been processed and the stream processor won't handle
+     *   any more events until {@link #unblock()} is called.
+     */
+    boolean isBlocked();
+
+    void close();
+
+    void start();
 }

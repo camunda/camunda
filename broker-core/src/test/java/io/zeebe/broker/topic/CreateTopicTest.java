@@ -40,27 +40,68 @@ public class CreateTopicTest
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
     @Test
-    public void shouldRejectTopicCreation()
+    public void shouldCreateTopic()
+    {
+        // given
+        final String topicName = "newTopic";
+
+        // when
+        final ExecuteCommandResponse response = createTopic(topicName, 2);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATED"),
+                entry("name", topicName),
+                entry("partitions", 2)
+            );
+    }
+
+    @Test
+    public void shouldNotCreateSystemTopic()
     {
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+        final ExecuteCommandResponse response = createTopic(Protocol.SYSTEM_TOPIC, 2);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", Protocol.SYSTEM_TOPIC),
+                entry("partitions", 2)
+            );
+    }
+
+    @Test
+    public void shouldNotCreateExistingTopic() throws InterruptedException
+    {
+        // given
+        final String topicName = "newTopic";
+        createTopic(topicName, 2);
+
+        // when
+        final ExecuteCommandResponse response = createTopic(topicName, 2);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", topicName),
+                entry("partitions", 2)
+            );
+    }
+
+    protected ExecuteCommandResponse createTopic(String name, int partitions)
+    {
+        return apiRule.createCmdRequest()
             .topicName(Protocol.SYSTEM_TOPIC)
             .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.TOPIC_EVENT)
             .command()
                 .put("state", "CREATE")
-                .put("name", "newTopic")
-                .put("partitions", 123)
+                .put("name", name)
+                .put("partitions", 2)
                 .done()
             .sendAndAwait();
-
-        // then
-        assertThat(resp.getEvent())
-            .containsExactly(
-                entry("state", "CREATE_REJECTED"),
-                entry("name", "newTopic"),
-                entry("partitions", 123)
-            );
     }
-
 }

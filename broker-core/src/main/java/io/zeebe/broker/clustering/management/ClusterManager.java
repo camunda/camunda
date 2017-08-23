@@ -25,16 +25,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
+import io.zeebe.broker.clustering.gossip.data.PeerList;
+import io.zeebe.broker.clustering.gossip.data.RaftMembership;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
@@ -43,6 +45,7 @@ import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
@@ -56,9 +59,10 @@ import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 
-public class ClusterManager implements Actor
+public class ClusterManager implements Actor, PartitionManager
 {
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -68,8 +72,7 @@ public class ClusterManager implements Actor
     private final List<Raft> rafts;
     private final List<StartLogStreamServiceController> startLogStreamServiceControllers;
 
-    private final ManyToOneConcurrentArrayQueue<Runnable> managementCmdQueue;
-    private final Consumer<Runnable> commandConsumer;
+    private final DeferredCommandContext commandQueue;
 
     private final List<RequestResponseController> activeRequestControllers;
 
@@ -91,8 +94,7 @@ public class ClusterManager implements Actor
         this.config = config;
         this.rafts = new CopyOnWriteArrayList<>();
         this.startLogStreamServiceControllers = new CopyOnWriteArrayList<>();
-        this.managementCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
-        this.commandConsumer = Runnable::run;
+        this.commandQueue = new DeferredCommandContext();
         this.activeRequestControllers = new CopyOnWriteArrayList<>();
         this.invitationRequest = new InvitationRequest();
         this.logStreamsManager = context.getLogStreamsManager();
@@ -174,7 +176,7 @@ public class ClusterManager implements Actor
     {
         int workcount = 0;
 
-        workcount += managementCmdQueue.drain(commandConsumer);
+        workcount += commandQueue.doWork();
         workcount += inputSubscription.poll();
 
         int i = 0;
@@ -210,7 +212,7 @@ public class ClusterManager implements Actor
     {
         final Peer copy = new Peer();
         copy.wrap(peer);
-        managementCmdQueue.add(() ->
+        commandQueue.runAsync(() ->
         {
 
             for (int i = 0; i < rafts.size(); i++)
@@ -240,7 +242,7 @@ public class ClusterManager implements Actor
 
     public void addRaft(final Raft raft)
     {
-        managementCmdQueue.add(() ->
+        commandQueue.runAsync(() ->
         {
             context.getLocalPeer().addRaft(raft);
             rafts.add(raft);
@@ -254,7 +256,7 @@ public class ClusterManager implements Actor
         final DirectBuffer topicName = logStream.getTopicName();
         final int partitionId = logStream.getPartitionId();
 
-        managementCmdQueue.add(() ->
+        commandQueue.runAsync(() ->
         {
             for (int i = 0; i < rafts.size(); i++)
             {
@@ -324,6 +326,17 @@ public class ClusterManager implements Actor
         createRaft(socketAddress, logStream, new ArrayList<>(invitationRequest.members()));
     }
 
+    public void createPartitionAsync(DirectBuffer topicName, int partitionId)
+    {
+        final UnsafeBuffer nameBuffer = new UnsafeBuffer(new byte[topicName.capacity()]);
+        nameBuffer.putBytes(0, topicName, 0, topicName.capacity());
+
+        commandQueue.runAsync(() ->
+        {
+            createPartition(nameBuffer, partitionId);
+        });
+    }
+
     public boolean onInvitationRequest(
         final DirectBuffer buffer,
         final int offset,
@@ -349,4 +362,118 @@ public class ClusterManager implements Actor
         return output.sendResponse(response);
     }
 
+    /*
+     * There are some issues with how this connects the gossip state with the system partition processing.
+     *
+     * * not garbage-free
+     * * not thread-safe (peer list is shared state between multiple actors and therefore threads)
+     * * not efficient (the stream processor iterates all partitions when it looks for a specific
+     *   partition's leader)
+     *
+     * This code can be refactored in any way when we rewrite gossip.
+     * As a baseline, the system stream processor needs to know for a set of partitions
+     * if a partition leader becomes known. In that case, it must generate a command on the system log.
+     */
+    @Override
+    public Iterator<Partition> getKnownPartitions()
+    {
+        final PeerList currentPeers = context.getPeers();
+        final PeerList copy = currentPeers.copy();
+
+        final PartitionIterator iterator = new PartitionIterator();
+        iterator.wrap(copy);
+
+        return iterator;
+    }
+
+    protected class PartitionIterator implements Iterator<Partition>
+    {
+        protected PeerList peerList;
+        protected PartitionImpl currentPartition = null;
+
+        protected Iterator<Peer> peerIterator;
+        protected Iterator<RaftMembership> raftMemberIterator;
+
+        public void wrap(PeerList peerList)
+        {
+            this.peerList = peerList;
+            this.peerIterator = peerList.iterator();
+            this.raftMemberIterator = null;
+            seekNextPartitionLeader();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return currentPartition != null;
+        }
+
+        protected void seekNextPartitionLeader()
+        {
+            currentPartition = null;
+
+            while (currentPartition == null)
+            {
+                if (raftMemberIterator == null || !raftMemberIterator.hasNext())
+                {
+                    if (!peerIterator.hasNext())
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        raftMemberIterator = peerIterator.next().raftMemberships().iterator();
+                    }
+                }
+
+                if (raftMemberIterator.hasNext())
+                {
+                    final RaftMembership membership = raftMemberIterator.next();
+
+                    if (membership.state() == RaftMembershipState.LEADER)
+                    {
+                        currentPartition = new PartitionImpl(
+                                membership.topicNameBuffer(),
+                                0,
+                                membership.topicNameLength(),
+                                membership.partitionId());
+                    }
+                }
+            }
+        }
+
+        @Override
+        public Partition next()
+        {
+            final Partition partitionToReturn = currentPartition;
+            seekNextPartitionLeader();
+            return partitionToReturn;
+        }
+    }
+
+    protected class PartitionImpl implements Partition
+    {
+
+        protected UnsafeBuffer topicName = new UnsafeBuffer(0, 0);
+        protected int partitionId;
+
+        public PartitionImpl(DirectBuffer topicName, int offset, int length, int partitionId)
+        {
+            this.topicName.wrap(topicName, offset, length);
+            this.partitionId = partitionId;
+        }
+
+        @Override
+        public DirectBuffer getTopicName()
+        {
+            return topicName;
+        }
+
+        @Override
+        public int getPartitionId()
+        {
+            return partitionId;
+        }
+
+    }
 }

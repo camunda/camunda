@@ -21,6 +21,7 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.EXECUTOR_SERVICE;
 
+import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.CountersManagerService;
 import io.zeebe.broker.system.executor.ScheduledExecutorService;
@@ -53,6 +54,8 @@ public class SystemComponent implements Component
         final SystemPartitionManager systemPartitionManager = new SystemPartitionManager();
         serviceContainer.createService(SystemServiceNames.SYSTEM_LOG_MANAGER, systemPartitionManager)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), systemPartitionManager.getClientApiTransportInjector())
+            .dependency(ClusterServiceNames.CLUSTER_MANAGER_SERVICE, systemPartitionManager.getClusterManagerInjector())
+            .dependency(EXECUTOR_SERVICE, systemPartitionManager.getExecutorInjector())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, systemPartitionManager.getLogStreamsGroupReference())
             .install();
 

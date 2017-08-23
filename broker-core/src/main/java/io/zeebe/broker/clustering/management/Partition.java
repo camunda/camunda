@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.log;
+package io.zeebe.broker.clustering.management;
 
-public enum TopicState
+import org.agrona.DirectBuffer;
+
+public interface Partition
 {
 
-    CREATE,
-    CREATE_REJECTED,
-    CREATED
+    DirectBuffer getTopicName();
+
+    int getPartitionId();
 }

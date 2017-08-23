@@ -36,6 +36,8 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
@@ -479,6 +481,40 @@ public class BrokerRestartTest
         assertThat(raft.getTerm()).isEqualTo(testTerm + 1);
         assertThat(raft.getMembers()).isEmpty();
         assertThat(raft.getVotedFor()).isEqualTo(new SocketAddress("localhost", 51017));
+    }
+
+    @Test
+    public void shouldCreateTopicAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+        restartBroker();
+
+        // when
+        client.topics().create("foo", 2).execute();
+
+        // then
+        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
+        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+    }
+
+
+    @Test
+    public void shouldNotCreatePreviouslyCreatedTopicAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        final String topicName = "foo";
+        client.topics().create(topicName, 2).execute();
+
+        restartBroker();
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+
+        // when
+        client.topics().create(topicName, 2).execute();
     }
 
     protected void restartBroker()
