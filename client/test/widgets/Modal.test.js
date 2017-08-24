@@ -9,6 +9,8 @@ describe('<Modal>', () => {
   let $;
   let modalFct;
   let Modal;
+  let onClose;
+  let onOpen;
 
   beforeEach(() => {
     modalFct = sinon.spy();
@@ -18,9 +20,12 @@ describe('<Modal>', () => {
     });
     __set__('$', $);
 
+    onClose = sinon.spy();
+    onOpen = sinon.spy();
+
     Modal = createModal();
     ({update} = mountTemplate(
-      <Modal>
+      <Modal size="x-2large" onClose={onClose} onOpen={onOpen}>
         <Socket name="head"><span className="head">Header</span></Socket>
         <Socket name="body"><span className="body">Bodyer</span></Socket>
         <Socket name="foot"><span className="foot">Footer</span></Socket>
@@ -36,6 +41,11 @@ describe('<Modal>', () => {
   describe('initial', () => {
     it('should initialize the modal', () => {
       expect(modalFct.called).to.eql(true);
+    });
+
+    it('should add size class to modal dialog', () => {
+      expect($document.body.querySelector('.modal-dialog'))
+        .to.have.class('x-2large');
     });
   });
 
@@ -69,6 +79,10 @@ describe('<Modal>', () => {
     it('should open the modal', () => {
       expect(modalFct.calledWith('show')).to.eql(true);
     });
+
+    it('should call onOpen callback', () => {
+      expect(onOpen.called).to.eql(true);
+    });
   });
 
   describe('close', () => {
@@ -79,6 +93,10 @@ describe('<Modal>', () => {
 
     it('should close the modal', () => {
       expect(modalFct.calledWith('hide')).to.eql(true);
+    });
+
+    it('should call onClose callback', () => {
+      expect(onClose.called).to.eql(true);
     });
   });
 });

@@ -12,7 +12,9 @@ describe('<ProcessDisplay>', () => {
   let loadDiagram;
   let loadData;
   let resetStatisticData;
+  let getDiagramXML;
   let node;
+  let update;
 
   beforeEach(() => {
     Controls = createMockComponent('Controls', true);
@@ -22,6 +24,7 @@ describe('<ProcessDisplay>', () => {
     loadDiagram = sinon.spy();
     loadData = sinon.spy();
     resetStatisticData = sinon.spy();
+    getDiagramXML = sinon.stub().returns('xml');
 
     __set__('Controls', Controls);
     __set__('ViewsArea', ViewsArea);
@@ -30,8 +33,9 @@ describe('<ProcessDisplay>', () => {
     __set__('loadDiagram', loadDiagram);
     __set__('loadData', loadData);
     __set__('resetStatisticData', resetStatisticData);
+    __set__('getDiagramXML', getDiagramXML);
 
-    ({node} = mountTemplate(<ProcessDisplay />));
+    ({node, update} = mountTemplate(<ProcessDisplay />));
   });
 
   afterEach(() => {
@@ -42,6 +46,7 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadData');
     __ResetDependency__('resetStatisticData');
+    __ResetDependency__('getDiagramXML');
   });
 
   it('should load diagram', () => {
@@ -81,6 +86,15 @@ describe('<ProcessDisplay>', () => {
 
       expect(loadData.calledWith('criteria')).to.eql(true);
       expect(resetStatisticData.called).to.eql(true);
+    });
+
+    it('should pass xml to Controls', () => {
+      update({views: 'views'});
+
+      const getDiagramXMLCallback = Controls.getAttribute('getDiagramXML');
+
+      expect(getDiagramXMLCallback()).to.eql('xml');
+      expect(getDiagramXML.calledWith('views')).to.eql(true);
     });
   });
 

@@ -3,6 +3,7 @@ import {onNextTick} from 'utils';
 import {DateFilter} from './date/DateFilter';
 import {VariableFilter} from './variable/VariableFilter';
 import {deleteFilter as deleteFilterService} from './service';
+import {ExecutedNodeFilter} from './executedNode';
 
 export function FilterBar({onFilterDeleted}) {
   return <ul className="list-group filter-list">
@@ -15,6 +16,9 @@ export function FilterBar({onFilterDeleted}) {
             </Case>
             <Case predicate={isType('variable')}>
               <VariableFilter selector="data" onDelete={deleteFilter}/>
+            </Case>
+            <Case predicate={isType('executedNode')}>
+              <ExecutedNodeFilter selector="data" onDelete={deleteFilter} />
             </Case>
           </Match>
         </li>

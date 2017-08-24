@@ -5,12 +5,12 @@ import {getFilter} from './service';
 import {onHistoryStateChange} from './store';
 import {ControlsElement} from '../ControlsElement';
 
-export const Filter = ({onFilterChanged, getProcessDefinition}) => {
+export const Filter = ({onFilterChanged, getProcessDefinition, getDiagramXML}) => {
   const template = <Scope selector={createFilterState}>
     <ControlsElement name="Filter">
       <div className="filter">
         <FilterBar onFilterDeleted={onFilterChanged}  />
-        <CreateFilter onFilterAdded={onFilterChanged} getProcessDefinition={getProcessDefinition}  />
+        <CreateFilter onFilterAdded={onFilterChanged} getProcessDefinition={getProcessDefinition} getDiagramXML={getDiagramXML}  />
       </div>
     </ControlsElement>
   </Scope>;

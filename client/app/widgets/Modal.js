@@ -5,13 +5,13 @@ export function createModal() {
   let modalNode;
   let ignoreListeners = false;
 
-  const Modal = withSockets(({sockets: {head, body, foot}, onClose = noop}) => {
+  const Modal = withSockets(({sockets: {head, body, foot}, onClose = noop, onOpen = noop, size}) => {
     const nodes = {};
     const Reference = createReferenceComponent(nodes);
 
     const template = <div className="modal fade" tabindex="-1" role="dialog">
       <Reference name="modal" />
-      <div className="modal-dialog" role="document">
+      <div className={'modal-dialog ' + (size ? size : '')} role="document">
         <div className="modal-content">
           <div className="modal-header">
             <Children children={head} />
@@ -42,6 +42,12 @@ export function createModal() {
       modalNode.on('hide.bs.modal', () => {
         if (!ignoreListeners) {
           onClose();
+        }
+      });
+
+      modalNode.on('shown.bs.modal', () => {
+        if (!ignoreListeners) {
+          onOpen();
         }
       });
 

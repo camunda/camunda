@@ -1,6 +1,6 @@
 export {Dropdown, DropdownItem} from './Dropdown';
 export {createModal} from './Modal';
-export {createDiagram} from './Diagram';
+export {createDiagram, resetZoom} from './Diagram';
 export {createDiagramPreview} from './DiagramPreview';
 export {Chart} from './Chart';
 export {LoadingIndicator} from './LoadingIndicator';

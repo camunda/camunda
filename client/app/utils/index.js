@@ -19,3 +19,4 @@ export {isUnique} from './isUnique';
 export {readFiles, readFile} from './readFiles';
 export {range} from './range';
 export {formatDate, zeroCapNumber} from './formatDate';
+export {pipeReducers} from './pipeReducers';

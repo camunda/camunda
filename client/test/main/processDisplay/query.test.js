@@ -1,4 +1,5 @@
 import {expect} from 'chai';
+import {filterType as executedNodeType} from 'main/processDisplay/controls/filter/executedNode';
 import {getFilterQuery} from 'main/processDisplay/query';
 
 describe('getFilterQuery', () => {
@@ -33,5 +34,20 @@ describe('getFilterQuery', () => {
     expect(response.variables[0].type).to.eql('String');
     expect(response.variables[0].operator).to.eql('=');
     expect(response.variables[0].values[0]).to.eql(123);
+  });
+
+  it('should add executed nodes filter entries', () => {
+    const response = getFilterQuery([
+      {
+        type: executedNodeType,
+        data: [
+          {
+            id: 'd1'
+          }
+        ]
+      }
+    ]);
+
+    expect(response.executedFlowNodeIds).to.eql(['d1']);
   });
 });

@@ -158,7 +158,8 @@ describe('ProcessDisplay service', () => {
               upperBoundary : true
             }
           ],
-          variables: []
+          variables: [],
+          executedFlowNodeIds: []
         }
       };
 

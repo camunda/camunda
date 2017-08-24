@@ -9,3 +9,4 @@ export {resetStatisticData} from './analytics';
 export {ViewsDiagramArea} from './ViewsDiagramArea';
 export {ViewsArea} from './ViewsArea';
 export {definitions} from './viewDefinitions';
+export {getDiagramXML} from './selectors';

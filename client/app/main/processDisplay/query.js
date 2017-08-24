@@ -1,3 +1,5 @@
+import {filterType as executedNodeType} from 'main/processDisplay/controls/filter/executedNode';
+
 export function getFilterQuery(filter) {
   return {
     dates: filter
@@ -23,7 +25,14 @@ export function getFilterQuery(filter) {
 
     variables: filter
       .filter(entry => entry.type === 'variable')
-      .map(entry => parseVariableFilter(entry.data))
+      .map(entry => parseVariableFilter(entry.data)),
+
+    executedFlowNodeIds: filter
+      .filter(({type}) => type === executedNodeType)
+      .reduce((ids, {data}) =>
+        ids.concat(data.map(({id}) => id)),
+        []
+      )
   };
 }
 

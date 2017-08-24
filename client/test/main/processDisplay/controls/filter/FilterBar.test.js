@@ -8,6 +8,7 @@ describe('<FilterBar>', () => {
   let update;
   let DateFilter;
   let VariableFilter;
+  let ExecutedNodeFilter;
 
   beforeEach(() => {
     DateFilter = createMockComponent('DateFilter');
@@ -16,12 +17,16 @@ describe('<FilterBar>', () => {
     VariableFilter = createMockComponent('VariableFilter');
     __set__('VariableFilter', VariableFilter);
 
+    ExecutedNodeFilter = createMockComponent('ExecutedNodeFilter');
+    __set__('ExecutedNodeFilter', ExecutedNodeFilter);
+
     ({node, update} = mountTemplate(<FilterBar />));
   });
 
   afterEach(() => {
     __ResetDependency__('DateFilter');
     __ResetDependency__('VariableFilter');
+    __ResetDependency__('ExecutedNodeFilter');
   });
 
   it('should contain a filter list', () => {
@@ -48,5 +53,13 @@ describe('<FilterBar>', () => {
     ]});
 
     expect(node.querySelector('ul').textContent).to.eql('VariableFilter');
+  });
+
+  it('should contain a representation of a executed node filter', () => {
+    update({filter: [
+      {type: 'executedNode'}
+    ]});
+
+    expect(node.querySelector('ul').textContent).to.eql('ExecutedNodeFilter');
   });
 });

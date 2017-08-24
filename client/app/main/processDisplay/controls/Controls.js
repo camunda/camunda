@@ -3,10 +3,10 @@ import {runOnce} from 'utils';
 import {Filter, getFilter} from './filter';
 import {View, getView} from './view';
 
-export const Controls = withSelector(({onCriteriaChanged, getBpmnViewer, getProcessDefinition, children}) => {
+export const Controls = withSelector(({onCriteriaChanged, getBpmnViewer, getProcessDefinition, getDiagramXML, children}) => {
   const template = <div className="controls">
     <View onViewChanged={onViewChanged}/>
-    <Filter onFilterChanged={onControlsChange} getProcessDefinition={getProcessDefinition} />
+    <Filter onFilterChanged={onControlsChange} getProcessDefinition={getProcessDefinition} getDiagramXML={getDiagramXML} />
     <Children children={children} />
   </div>;
 

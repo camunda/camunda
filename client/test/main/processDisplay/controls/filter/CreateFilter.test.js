@@ -9,8 +9,10 @@ describe('<CreateFilter>', () => {
   let Dropdown;
   let DateModal;
   let VariableModal;
+  let ExecutedNodeModal;
   let createDateModal;
   let createVariableModal;
+  let createExecutedNodeModal;
   let Socket;
   let DropdownItem;
   let getProcessDefinition;
@@ -30,6 +32,11 @@ describe('<CreateFilter>', () => {
     createVariableModal = sinon.stub().returns(VariableModal);
     __set__('createVariableModal', createVariableModal);
 
+    ExecutedNodeModal = createMockComponent('ExecutedNodeModal', true);
+    ExecutedNodeModal.open = sinon.spy();
+    createExecutedNodeModal = sinon.stub().returns(ExecutedNodeModal);
+    __set__('createExecutedNodeModal', createExecutedNodeModal);
+
     Socket = createMockComponent('Socket', true);
     __set__('Socket', Socket);
 
@@ -47,6 +54,7 @@ describe('<CreateFilter>', () => {
     __ResetDependency__('Dropdown');
     __ResetDependency__('createDateModal');
     __ResetDependency__('createVariableModal');
+    __ResetDependency__('createExecutedNodeModal');
     __ResetDependency__('Socket');
     __ResetDependency__('DropdownItem');
   });
@@ -85,5 +93,9 @@ describe('<CreateFilter>', () => {
 
   it('should include the Variabe Modal', () => {
     expect(node.textContent).to.contain(VariableModal.text);
+  });
+
+  it('should include Executed Node Modal', () => {
+    expect(node.textContent).to.contain(ExecutedNodeModal.text);
   });
 });
