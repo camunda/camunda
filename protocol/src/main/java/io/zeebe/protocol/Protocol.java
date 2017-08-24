@@ -17,7 +17,10 @@ package io.zeebe.protocol;
 
 import java.nio.ByteOrder;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.util.buffer.BufferUtil;
 
 public class Protocol
 {
@@ -34,5 +37,16 @@ public class Protocol
      * The null value of an instant property which indicates that it is not set.
      */
     public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
+
+    /**
+     * By convention, the name of the topic that can be used for topic creation commands
+     */
+    public static final String SYSTEM_TOPIC = ".system";
+    public static final DirectBuffer SYSTEM_TOPIC_BUF = BufferUtil.wrapString(SYSTEM_TOPIC);
+
+    /**
+     * By convention, the partition id that can be used for topic creation commands
+     */
+    public static final int SYSTEM_PARTITION = 0;
 
 }

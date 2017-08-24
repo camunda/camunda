@@ -37,6 +37,7 @@
         <validValue name="INCIDENT_EVENT">6</validValue>
         <validValue name="WORKFLOW_EVENT">7</validValue>
         <validValue name="NOOP_EVENT">8</validValue>
+        <validValue name="TOPIC_EVENT">9</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
