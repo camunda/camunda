@@ -29,13 +29,6 @@ public class MsgPackTreeNodeIdConstructor
         return parentId + JSON_PATH_SEPARATOR + nodeName  + JSON_PATH_SEPARATOR_END;
     }
 
-    public static String getLastNodeName(String nodeId)
-    {
-        final int lastIndex = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
-        final String nodeName = nodeId.substring(lastIndex + JSON_PATH_SEPARATOR.length(), nodeId.length() - JSON_PATH_SEPARATOR_END.length());
-        return nodeName;
-    }
-
     public static String getLastParentId(String nodeId)
     {
         final int indexOfLastSeparator = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);

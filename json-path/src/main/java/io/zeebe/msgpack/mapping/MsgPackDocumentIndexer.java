@@ -315,8 +315,9 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
             {
                 // plain array value
                 nodeId = parentId;
+                // node name is array value index
+                nodeName = getArrayValueIndex(parentId);
                 // parent id is without idx
-                nodeName = getLastNodeName(parentId);
                 parentId = getLastParentId(parentId);
             }
 
@@ -330,6 +331,27 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor
 
         msgPackTree.addChildToNode(nodeName, parentId);
         msgPackTree.addLeafNode(nodeId, position, currentValue.getTotalLength());
+    }
+
+    /**
+     * <p>Extracts the index of the array value from the current node id.</p>
+     * <p>
+     * Example:
+     *  * given nodeId = "$[arrayId][0]"
+     *  * returns "0" as string
+     * </p>
+     *
+     * Even if the nodeId contains square brackets in the node name like
+     * "$[array[Id]][0]" will return the right index "0".
+     *
+     * @param nodeId the node id which contains the index
+     * @return the array value index
+     */
+    private static String getArrayValueIndex(String nodeId)
+    {
+        final int lastIndex = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
+        final String nodeName = nodeId.substring(lastIndex + JSON_PATH_SEPARATOR.length(), nodeId.length() - JSON_PATH_SEPARATOR_END.length());
+        return nodeName;
     }
 
     /**
