@@ -4,7 +4,8 @@ const assets = global.serviceWorkerOption ? global.serviceWorkerOption.assets : 
 
 const whiteListApis = [
   /\/api\/process-definition\/[^\/]+\/xml$/,
-  /\/api\/process-definition\/[^\/]+\/variables$/
+  /\/api\/process-definition\/[^\/]+\/variables$/,
+  /\/api\/process-definition\/xml/
 ];
 
 let assetsToCache = [
@@ -88,15 +89,11 @@ function isRequestCachable(request) {
 function handleAssetsRequests(event) {
   const {request} = event;
 
-  const updateResponse = fetchAndUpdate(request, ASSETS_CACHE);
-
-  event.waitUntil(updateResponse);
-
   return event.respondWith(
     caches
       .match(request)
       .then(response =>  {
-        return response || updateResponse;
+        return response || fetchAndUpdate(request, ASSETS_CACHE);
       })
   );
 }

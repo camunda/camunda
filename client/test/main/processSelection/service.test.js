@@ -12,7 +12,6 @@ describe('ProcessSelection service', () => {
   let router;
   let dispatchAction;
   let get;
-  let post;
   let createLoadProcessDefinitionsAction;
   let createLoadProcessDefinitionsResultAction;
   let createSetVersionAction;
@@ -24,9 +23,6 @@ describe('ProcessSelection service', () => {
   beforeEach(() => {
     get = sinon.stub();
     __set__('get', get);
-
-    post = sinon.stub();
-    __set__('post', post);
 
     processDefinitionResponse = [
       {
@@ -54,7 +50,7 @@ describe('ProcessSelection service', () => {
       }
     ];
 
-    get.returns(Promise.resolve({
+    get.withArgs('/api/process-definition/groupedByKey').returns(Promise.resolve({
       json: sinon.stub().returns(
         Promise.resolve(processDefinitionResponse)
       )
@@ -65,7 +61,7 @@ describe('ProcessSelection service', () => {
       c1: 'c1-xml'
     };
 
-    post.withArgs('/api/process-definition/xml').returns(Promise.resolve({
+    get.withArgs('/api/process-definition/xml?ids=d2&ids=c1').returns(Promise.resolve({
       json: sinon.stub().returns(
         Promise.resolve(xmlResponse)
       )
@@ -91,7 +87,6 @@ describe('ProcessSelection service', () => {
 
   afterEach(() => {
     __ResetDependency__('get');
-    __ResetDependency__('post');
     __ResetDependency__('router');
     __ResetDependency__('dispatchAction');
     __ResetDependency__('createLoadProcessDefinitionsAction');
@@ -111,7 +106,7 @@ describe('ProcessSelection service', () => {
     });
 
     it('should call the backend', () => {
-      expect(get.calledOnce).to.eql(true);
+      expect(get.calledTwice).to.eql(true);
     });
 
     it('should dispatch an action with the returned response', () => {
@@ -145,10 +140,11 @@ describe('ProcessSelection service', () => {
         }
       ];
 
-      expect(dispatchAction.calledWith(STOP_ACTION)).to.eql(true);
+      expect(dispatchAction.calledWith(STOP_ACTION))
+        .to.eql(true, 'expected loading to stop');
       expect(
         createLoadProcessDefinitionsResultAction.calledWith(expectedResponse)
-      ).to.eql(true);
+      ).to.eql(true, 'expected action to be created with right params');
     });
   });
 
@@ -160,7 +156,8 @@ describe('ProcessSelection service', () => {
     let createLoadProcessDefinitionsErrorAction;
 
     beforeEach(() => {
-      get.returns(Promise.reject(ERROR_MSG));
+      get = sinon.stub().returns(Promise.reject(ERROR_MSG));
+      __set__('get', get);
 
       addNotification = sinon.spy();
       __set__('addNotification', addNotification);
@@ -197,6 +194,15 @@ describe('ProcessSelection service', () => {
   });
 
   describe('setVersionForProcess', () => {
+    beforeEach(() => {
+      get = sinon.stub().returns(Promise.resolve({
+        json: sinon.stub().returns(
+          Promise.resolve(processDefinitionResponse)
+        )
+      }));
+      __set__('get', get);
+    });
+
     it('should create an action with the arguments', () => {
       setVersionForProcess('a', 1);
       expect(createSetVersionAction.calledWith('a', 1));

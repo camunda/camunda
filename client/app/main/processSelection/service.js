@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {get, post} from 'http';
+import {get} from 'http';
 import {
   createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
   createLoadProcessDefinitionsErrorAction, createSetVersionAction,
@@ -23,9 +23,17 @@ export function loadProcessDefinitions() {
           versions
         };
       });
-      const ids = withLastestVersions.map(({current: {id}}) => id);
+      const ids = withLastestVersions
+        .map(({current: {id}}) => id)
+        .reduce((ids, id) => {
+          if (ids.length) {
+            return ids + '&ids=' + id;
+          }
 
-      return post('/api/process-definition/xml', ids)
+          return 'ids=' + id;
+        }, '');
+
+      return get('/api/process-definition/xml?' + ids)
         .then(response => response.json())
         .then(xmls => {
           return withLastestVersions.map(entry => {
