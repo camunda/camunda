@@ -57,7 +57,7 @@ mvnCleanPackage.on('close', code => {
             const backendJar = utils.findFile(extractDir, '.jar');
             const config = utils.findPath(extractDir, [
               'environment',
-              'environment.properties'
+              'environment-config.json'
             ]);
             const environmentDir = path.resolve(extractDir, 'environment');
             const classpathSeparator = isWindows ? ';' : ':' ;
