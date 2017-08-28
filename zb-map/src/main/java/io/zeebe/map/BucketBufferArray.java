@@ -43,7 +43,7 @@ public class BucketBufferArray implements AutoCloseable
     private final int maxValueLength;
     private final int maxBucketBufferLength;
 
-    private long realAddresses[];
+    protected long realAddresses[];
     private long bucketBufferHeaderAddress;
 
     public BucketBufferArray(int maxBucketBlockCount, int maxKeyLength, int maxValueLength)
@@ -222,6 +222,11 @@ public class BucketBufferArray implements AutoCloseable
         return UNSAFE.getInt(getRealAddress(bucketAddress) + BUCKET_FILL_COUNT_OFFSET);
     }
 
+    private int getBucketFillCount(int bucketBufferId, int bucketOffset)
+    {
+        return UNSAFE.getInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_FILL_COUNT_OFFSET);
+    }
+
     private void initBucketFillCount(int bucketBufferId, int bucketOffset)
     {
         UNSAFE.putInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_FILL_COUNT_OFFSET, 0);
@@ -346,7 +351,99 @@ public class BucketBufferArray implements AutoCloseable
 
         moveRemainingMemory(bucketAddress, nextBlockOffset, -blockLength);
 
-        setBucketFillCount(bucketAddress, getBucketFillCount(bucketAddress) - 1);
+        final int newBucketFillCount = getBucketFillCount(bucketAddress) - 1;
+        setBucketFillCount(bucketAddress, newBucketFillCount);
+
+        if (newBucketFillCount <= 0)
+        {
+            cleanUpBucketBufferArray(bucketAddress);
+        }
+    }
+
+    private void cleanUpBucketBufferArray(long bucketAddress)
+    {
+        final int bucketBufferId = (int) (bucketAddress >> 32);
+        final int bucketOffset = (int) bucketAddress;
+        final int bucketCount = getBucketCount(bucketBufferId);
+
+        final int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
+        if (lastBucketOffset == bucketOffset)
+        {
+            final boolean bucketBufferIsEmpty = removeEmptyBucketsFromBucketBuffer(bucketBufferId, bucketCount, lastBucketOffset);
+            if (bucketBufferIsEmpty)
+            {
+                releaseEmptyBucketBuffers(bucketBufferId);
+            }
+        }
+    }
+
+    /**
+     * Removes bucket at offset `lastBucketOffset` from the bucket buffer with the id `bucketBufferId`.
+     * After removing the last bucket the method will check if the NEW last bucket is empty.
+     * If so then these bucket will removed as well, this is repeated until an non empty bucket is reached.
+     * If the last bucket is removed from the bucket buffer, which means the bucket buffer is empty true is returned.
+     *
+     * @param bucketBufferId the id of the bucket buffer
+     * @param bucketCount the bucket count before the removing process
+     * @param lastBucketOffset the bucket offset of the last bucket, place to start the removing process
+     * @return true if the bucket buffer is empty
+     */
+    private boolean removeEmptyBucketsFromBucketBuffer(int bucketBufferId, int bucketCount, int lastBucketOffset)
+    {
+        boolean bucketBufferIsEmpty = false;
+        int totalBucketCount = getBucketCount();
+        do
+        {
+            totalBucketCount--;
+            bucketCount--;
+            bucketBufferIsEmpty = bucketCount == 0;
+            lastBucketOffset -= maxBucketLength;
+        } while (!bucketBufferIsEmpty && getBucketFillCount(bucketBufferId, lastBucketOffset) == 0);
+
+        setBucketCount(bucketBufferId, bucketCount);
+        setBucketCount(totalBucketCount);
+        return bucketBufferIsEmpty;
+    }
+
+    /**
+     * <p>
+     * Releases the bucket buffer with the given id, if it is the last bucket buffer.
+     * After releasing the bucket buffer with the given id, the method checks if
+     * the next bucket buffer with id-1 can be released. This is done repeatly until
+     * it reaches a bucket buffer which is not empty.
+     * </p>
+     *
+     * <p>
+     * <b>Note</b>: shrink's the realAddress buffer, if the bucket buffer count is less then half of the realAddress buffer size
+     * </p>
+     * @param bucketBufferId the id of the bucket buffer which should be released at first
+     */
+    private void releaseEmptyBucketBuffers(int bucketBufferId)
+    {
+        int bucketBufferCount = getBucketBufferCount();
+
+        if (bucketBufferId != 0 && bucketBufferId == bucketBufferCount - 1)
+        {
+            boolean isEmpty;
+            do
+            {
+                UNSAFE.freeMemory(realAddresses[bucketBufferId]);
+                realAddresses[bucketBufferId] = INVALID_ADDRESS;
+                bucketBufferCount--;
+                bucketBufferId--;
+                isEmpty = getBucketCount(bucketBufferId) == 0;
+            } while (isEmpty && bucketBufferId > 0);
+
+            setBucketBufferCount(bucketBufferCount);
+
+            final int halfAddressBufferSize = realAddresses.length / 2;
+            if (bucketBufferCount < halfAddressBufferSize && halfAddressBufferSize >= ALLOCATION_FACTOR)
+            {
+                final long newAddressTable[] = new long[halfAddressBufferSize];
+                System.arraycopy(realAddresses, 0, newAddressTable, 0, bucketBufferCount);
+                realAddresses = newAddressTable;
+            }
+        }
     }
 
     private void setBucketId(int bucketBufferId, int bucketOffset, int newBlockId)
@@ -446,6 +543,8 @@ public class BucketBufferArray implements AutoCloseable
 
             // remove from this block (compacts this block)
             removeBlockFromBucket(bucketAddress, blockOffset);
+
+
 
             // TODO remove overflow buckets
         }

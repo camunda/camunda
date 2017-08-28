@@ -73,6 +73,12 @@ public class ZbMapTest
         return zbMap.valueHandler.theValue;
     }
 
+    public static boolean removeValue(ZbMap<LongKeyHandler, LongValueHandler> zbMap, long key)
+    {
+        zbMap.keyHandler.theKey = key;
+        return zbMap.remove();
+    }
+
     @Test
     public void shouldIncreaseHashTable()
     {
@@ -156,6 +162,31 @@ public class ZbMapTest
         {
             assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
         }
+    }
+
+    @Test
+    public void shouldPutAndRemoveLargeBunchOfData()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        // when
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        // then
+        assertThat(zbMap.getHashTableSize()).isEqualTo(BitUtil.findNextPositivePowerOfTwo(DATA_COUNT) * SIZE_OF_LONG);
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(DATA_COUNT / 32);
+
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            assertThat(removeValue(zbMap, i)).isTrue();
+        }
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
     }
 
     @Test

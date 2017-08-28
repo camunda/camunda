@@ -23,6 +23,10 @@ import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
@@ -730,6 +734,425 @@ public class BucketBufferArrayTest
             assertThat(bucketBufferArray.getLoadFactor())
                 .isEqualTo(getExpectedLoadFactor(blockCount, i + 1));
         }
+    }
+
+    @Test
+    public void shouldRemoveEmptyBucketOnRelocate()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long secondBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(secondBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(2);
+
+        // when
+        bucketBufferArray.relocateBlock(secondBucketAddress, newBlockOffset, firstBucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotRemoveEmptyBucketInBetweenOnRelocate()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long secondBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+        final long thirdBucketAddress = bucketBufferArray.allocateNewBucket(3, 1);
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(secondBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(thirdBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(3);
+
+        // when
+        bucketBufferArray.relocateBlock(secondBucketAddress, newBlockOffset, firstBucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketFillCount(secondBucketAddress)).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketLength(secondBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET);
+    }
+
+    @Test
+    public void shouldRemoveEmptyBucket()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+
+        // when
+        bucketBufferArray.removeBlock(firstBucketAddress, newBlockOffset);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotRemoveEmptyBucketInBetween()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long secondBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+        final long thirdBucketAddress = bucketBufferArray.allocateNewBucket(3, 1);
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(secondBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(thirdBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+
+        // when
+        bucketBufferArray.removeBlock(secondBucketAddress, newBlockOffset);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketFillCount(secondBucketAddress)).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketLength(secondBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET);
+    }
+
+    @Test
+    public void shouldRemoveAllEmptyBuckets()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long secondBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+        final long thirdBucketAddress = bucketBufferArray.allocateNewBucket(3, 1);
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(secondBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(thirdBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+
+        // when
+        bucketBufferArray.removeBlock(secondBucketAddress, newBlockOffset);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(3);
+
+        // when
+        bucketBufferArray.removeBlock(thirdBucketAddress, newBlockOffset);
+
+        // then
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldRemoveEmptyBucketBuffer()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        long lastBucketAddress = 0;
+        for (int i = 0; i < 33; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+        }
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(2);
+
+        // when
+        bucketBufferArray.removeBlock(lastBucketAddress, newBlockOffset);
+
+        // then
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldNotRemoveEmptyBucketBufferInBetween()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        for (int i = 0; i < 63; i++)
+        {
+            bucketBufferArray.allocateNewBucket(i, i);
+        }
+        // last bucket in second bucket buffer contains block
+        final long lastBucketAddress = bucketBufferArray.allocateNewBucket(63, 63);
+        bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        // alloc new bucket triggers allocation of third bucket buffer
+        bucketBufferArray.allocateNewBucket(64, 64);
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+
+        // when block from last bucket in second bucket buffer is removed -> clean up is triggered
+        bucketBufferArray.removeBlock(lastBucketAddress, newBlockOffset);
+
+        // then bucket buffer can't be removed since it is not last one, but buckets are removed
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(33);
+    }
+
+
+    @Test
+    public void shouldRemoveAllEmptyBucketBuffers()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        for (int i = 0; i < 63; i++)
+        {
+            bucketBufferArray.allocateNewBucket(i, i);
+        }
+        // last bucket in second bucket buffer contains block
+        final long lastBucketAddress = bucketBufferArray.allocateNewBucket(63, 63);
+        bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        // alloc new bucket triggers allocation of third bucket buffer
+        final long bucketAddressInThirdBuffer = bucketBufferArray.allocateNewBucket(64, 64);
+        bucketBufferArray.addBlock(bucketAddressInThirdBuffer, keyHandler, valueHandler);
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+
+        // when block from last bucket in second bucket buffer is removed -> clean up is triggered
+        bucketBufferArray.removeBlock(lastBucketAddress, newBlockOffset);
+
+        // then bucket buffer can't be removed since it is not last one, but buckets are removed
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(33);
+
+        // when
+        bucketBufferArray.removeBlock(bucketAddressInThirdBuffer, newBlockOffset);
+
+        // then second and third buffer is released
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldAbleToAllocateNewBufferAfterRemoveAllEmptyBucketBuffers()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        for (int i = 0; i < 63; i++)
+        {
+            bucketBufferArray.allocateNewBucket(i, i);
+        }
+        final long lastBucketAddress = bucketBufferArray.allocateNewBucket(64, 64);
+        bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+        final long bucketAddressInThirdBuffer = bucketBufferArray.allocateNewBucket(64, 64);
+        bucketBufferArray.addBlock(bucketAddressInThirdBuffer, keyHandler, valueHandler);
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+
+        // when
+        bucketBufferArray.removeBlock(lastBucketAddress, newBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddressInThirdBuffer, newBlockOffset);
+
+        // then second and third buffer is released
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32);
+
+        // then it is possible to allocate again a bucket which triggers allocation of new bucket buffer
+        bucketBufferArray.allocateNewBucket(33, 33);
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(33);
+    }
+
+    @Test
+    public void shouldAddAndRemoveBunchOfBlocks()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        long lastBucketAddress = 0;
+        for (int i = 0; i < 32 * 32 + 1; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketAddresses.add(lastBucketAddress);
+        }
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+
+        // when first block and buckets are removed
+        for (int i = 0; i < 32 * 32; i++)
+        {
+            final long bucketAddress = bucketAddresses.get(i);
+            final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        }
+
+        // then bucket buffers can't be freed
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(64);
+
+        // if last one is cleared
+        final long bucketAddress = bucketAddresses.get(32 * 32);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+
+        // then all other can be freed as well
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldAddAndRemoveInBunchReverse()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        long lastBucketAddress = 0;
+        for (int i = 0; i < 32 * 32 + 1; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketAddresses.add(lastBucketAddress);
+        }
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+
+        // when last block and buckets are removed
+        Collections.reverse(bucketAddresses);
+        for (int i = 0; i < 32 * 32; i++)
+        {
+            final long bucketAddress = bucketAddresses.get(i);
+            final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        }
+
+        // then bucket buffers are direct freed
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
+
+        // if last one is cleared
+        final long bucketAddress = bucketAddresses.get(32 * 32);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+
+        // then all other can be freed as well
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldShrinkAddressBuffer()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        long lastBucketAddress = 0;
+        for (int i = 0; i < 32 * 32 + 1; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketAddresses.add(lastBucketAddress);
+        }
+
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+
+
+        // when last block is removed
+        long bucketAddress = bucketAddresses.get(32 * 32);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+
+        // then bucket and bucket buffer is also removed
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(32);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(32 * 32 * 2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(64);
+
+        // after removing block and buckets of next bucket buffer
+        for (int i = 32 * 31; i < 32 * 32; i++)
+        {
+            bucketAddress = bucketAddresses.get(i);
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+            bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        }
+
+        // then realAddresses is shrinked -> since 31 (buffer count) is less then half of address buffer length (=64)
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(31);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(32 * 31 * 2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 31);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
     }
 
     private float getExpectedLoadFactor(float blockCount, int bucketCount)
