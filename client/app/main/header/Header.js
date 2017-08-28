@@ -14,7 +14,7 @@ export function Header({redirect}) {
         <span className="brand-name">Camunda Optimize</span>
       </a>
     </div>
-    <AppMenu/>
+    <AppMenu />
   </header>;
 
   function goToRoot({event}) {

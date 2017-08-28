@@ -1,25 +1,30 @@
-import {expect} from 'chai';
-import {mountTemplate, selectByText, triggerEvent} from 'testHelpers';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {jsx} from 'view-utils';
-import {AppMenu, __set__, __ResetDependency__} from 'main/header/appMenu/AppMenu';
+import React from 'react';
+import {mount} from 'enzyme';
+import {AppMenuReact, __set__, __ResetDependency__} from 'main/header/appMenu/AppMenu';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<AppMenu>', () => {
   describe('default state', () => {
-    let node;
+    let wrapper;
 
     beforeEach(() => {
-      ({node} = mountTemplate(<AppMenu/>));
+      wrapper = mount(<AppMenuReact/>);
     });
 
     it('has no logout button', () => {
-      expect(node).to.not.contain.text('Logout');
+      expect(wrapper).to.not.contain.text('Logout');
     });
   });
 
   describe('logged in state', () => {
-    let node;
-    let update;
+    let wrapper;
     let clearLogin;
     let getLogin;
 
@@ -33,8 +38,7 @@ describe('<AppMenu>', () => {
       });
       __set__('getLogin', getLogin);
 
-      ({node, update} = mountTemplate(<AppMenu/>));
-      update(getLogin());
+      wrapper = mount(<AppMenuReact />);
     });
 
     afterEach(() => {
@@ -43,19 +47,11 @@ describe('<AppMenu>', () => {
     });
 
     it('has a logout button', () => {
-      expect(node).to.contain.text('Logout');
+      expect(wrapper).to.contain.text('Logout');
     });
 
     it('calls clearLogin when clicked on Logout button', () => {
-      const [logoutBtn] = selectByText(
-        node.querySelectorAll('a'),
-        'Logout'
-      );
-
-      triggerEvent({
-        node: logoutBtn,
-        eventName: 'click'
-      });
+      wrapper.find({href: '#/login'}).simulate('click');
 
       expect(clearLogin.calledOnce).to.eql(true);
     });

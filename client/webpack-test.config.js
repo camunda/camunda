@@ -8,6 +8,12 @@ addTestFilesBabelLoader();
 
 module.exports = config;
 
+config.externals = {
+  'react/lib/ExecutionEnvironment': true,
+  'react/addons': true,
+  'react/lib/ReactContext': 'window'
+};
+
 function deleteUnneededConfigEntries() {
   delete config.devtool; // It is much quicker that way and source map do not work anyway
   delete config.entry;
