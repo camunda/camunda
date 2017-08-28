@@ -18,7 +18,6 @@
   <context:component-scan base-package="org.camunda.optimize.rest"/>
   <context:component-scan base-package="org.camunda.optimize.test"/>
   <context:component-scan base-package="org.camunda.optimize.plugin"/>
-  <!-- Please leave the empty space. Otherwise java runtime is trying to resolve an unintended placeholder. !-->
   <context:component-scan base-package="#{configurationService.getVariableImportPluginBasePackages()}"/>
 
   <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">

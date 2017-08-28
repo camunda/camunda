@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.util;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -25,6 +26,7 @@ public class ObjectMapperFactory {
   public ObjectMapper createDefaultMapper() {
     if (result == null) {
       result = new ObjectMapper();
+      result.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
       result.configure(SerializationFeature.INDENT_OUTPUT, true);
       result.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
       result.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
