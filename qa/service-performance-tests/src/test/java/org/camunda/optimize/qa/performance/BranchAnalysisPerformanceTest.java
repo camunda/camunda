@@ -3,6 +3,8 @@ package org.camunda.optimize.qa.performance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
@@ -32,7 +34,7 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());
-    filter.setExecutedFlowNodeIds(new ArrayList<>());
+    filter.setExecutedFlowNodes(new ExecutedFlowNodeFilterDto());
     test = this.testBuilder
         .step(new BranchAnalysisDataGenerationStep())
         .step(new GetBranchAnalysisStep(filter))
@@ -101,7 +103,11 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getBranchAnalysisWithExecutedFlowNodeFilter() {
     // given
-    filter.getExecutedFlowNodeIds().add("startEvent");
+    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+      ExecutedFlowNodeFilterBuilder.construct()
+        .id("startEvent")
+        .build();
+    filter.setExecutedFlowNodes(flowNodeFilterDto);
 
     // when
     PerfTestResult testResult = test.run();

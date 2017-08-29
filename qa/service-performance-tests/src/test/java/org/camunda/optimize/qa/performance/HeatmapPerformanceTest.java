@@ -3,6 +3,8 @@ package org.camunda.optimize.qa.performance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
@@ -30,7 +32,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());
-    filter.setExecutedFlowNodeIds(new ArrayList<>());
+    filter.setExecutedFlowNodes(new ExecutedFlowNodeFilterDto());
     testBuilder = this.testBuilder
         .step(new HeatMapDataGenerationStep());
   }
@@ -102,7 +104,11 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getFrequencyHeatmapWithExecutedFlowNodeFilter() {
     // given
-    filter.getExecutedFlowNodeIds().add("startEvent");
+    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+      ExecutedFlowNodeFilterBuilder.construct()
+        .id("startEvent")
+        .build();
+    filter.setExecutedFlowNodes(flowNodeFilterDto);
 
     test = testBuilder
       .step(new GetFrequencyGetHeatMapStep(filter))
@@ -184,7 +190,11 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getDurationHeatmapWithExecutedFlowNodeFilter() {
     // given
-    filter.getExecutedFlowNodeIds().add("startEvent");
+    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+      ExecutedFlowNodeFilterBuilder.construct()
+        .id("startEvent")
+        .build();
+    filter.setExecutedFlowNodes(flowNodeFilterDto);
 
     test = testBuilder
       .step(new GetDurationGetHeatMapStep(filter))
