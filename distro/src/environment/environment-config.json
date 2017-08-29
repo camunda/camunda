@@ -5,9 +5,18 @@
       "http": 8090
     }
   },
-  "engine": {
-    "name": "/engine/default",
-    "rest": "http://localhost:8080/engine-rest"
+  "engines": {
+    "1": {
+      "name": "/engine/default",
+      "rest": "http://localhost:8080/engine-rest",
+      "authentication": {
+        "accessGroup": "",
+        "enabled": false,
+        "password": "",
+        "user": ""
+      },
+      "enabled": true
+    }
   },
   "es": {
     "host": "localhost",
