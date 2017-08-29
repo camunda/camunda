@@ -1,14 +1,13 @@
-package org.camunda.optimize.dto.optimize.variable;
+package org.camunda.optimize.dto.optimize.query.variable;
 
-import java.util.LinkedList;
 import java.util.List;
 
-public class GetVariablesResponseDto {
+public class VariableFilterDto {
 
   protected String name;
+  protected String operator;
   protected String type;
   protected List<String> values;
-  protected boolean valuesAreComplete;
 
   public String getName() {
     return name;
@@ -16,6 +15,14 @@ public class GetVariablesResponseDto {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getOperator() {
+    return operator;
+  }
+
+  public void setOperator(String operator) {
+    this.operator = operator;
   }
 
   public String getType() {
@@ -32,13 +39,5 @@ public class GetVariablesResponseDto {
 
   public void setValues(List<String> values) {
     this.values = values;
-  }
-
-  public boolean isValuesAreComplete() {
-    return valuesAreComplete;
-  }
-
-  public void setValuesAreComplete(boolean valuesAreComplete) {
-    this.valuesAreComplete = valuesAreComplete;
   }
 }

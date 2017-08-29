@@ -2,7 +2,7 @@ package org.camunda.optimize.plugin.adapter.variable;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

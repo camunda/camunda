@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.variable.value;
+package org.camunda.optimize.dto.optimize.query.variable.value;
 
 import java.util.Date;
 

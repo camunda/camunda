@@ -1,6 +1,7 @@
 package org.camunda.optimize.dto.optimize.query;
 
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 public class FilterMapDto {
   protected List<DateFilterDto> dates = new ArrayList<>();
   protected List<VariableFilterDto> variables = new ArrayList<>();
-  protected List<String> executedFlowNodeIds = new ArrayList<>();
+  protected ExecutedFlowNodeFilterDto executedFlowNodes = new ExecutedFlowNodeFilterDto();
 
   public List<DateFilterDto> getDates() {
     return dates;
@@ -29,11 +30,11 @@ public class FilterMapDto {
     this.variables = variables;
   }
 
-  public List<String> getExecutedFlowNodeIds() {
-    return executedFlowNodeIds;
+  public ExecutedFlowNodeFilterDto getExecutedFlowNodes() {
+    return executedFlowNodes;
   }
 
-  public void setExecutedFlowNodeIds(List<String> executedFlowNodeIds) {
-    this.executedFlowNodeIds = executedFlowNodeIds;
+  public void setExecutedFlowNodes(ExecutedFlowNodeFilterDto executedFlowNodes) {
+    this.executedFlowNodes = executedFlowNodes;
   }
 }

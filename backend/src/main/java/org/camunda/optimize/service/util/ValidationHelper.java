@@ -3,8 +3,12 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.flownode.FlowNodeIdList;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+
+import java.util.List;
 
 /**
  * @author Askar Akhmerov
@@ -29,6 +33,13 @@ public class ValidationHelper {
         ensureNotEmpty("value", variable.getValues());
       }
     }
+    if (dto.getFilter() != null && dto.getFilter().getExecutedFlowNodes() != null) {
+      ExecutedFlowNodeFilterDto filterDto = dto.getFilter().getExecutedFlowNodes();
+      ensureNotEmpty("andLinkedIds", filterDto.getAndLinkedIds());
+      for (FlowNodeIdList flowNodeIdList : filterDto.getAndLinkedIds()) {
+        ensureNotEmptyList("orLinkedIds", flowNodeIdList.getOrLinkedIds());
+      }
+    }
   }
 
   public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
@@ -39,6 +50,12 @@ public class ValidationHelper {
 
   public static void ensureNotEmpty(String fieldName, Object target) {
     if (target == null || target.toString().isEmpty()) {
+      throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
+    }
+  }
+
+  public static void ensureNotEmptyList(String fieldName, List target) {
+    if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }

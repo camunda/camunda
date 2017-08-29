@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.variable;
+package org.camunda.optimize.dto.optimize.query.variable;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;

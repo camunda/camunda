@@ -1,18 +1,13 @@
-package org.camunda.optimize.dto.optimize.variable;
+package org.camunda.optimize.dto.optimize.query.variable;
 
 import java.util.List;
 
-public class VariableFilterDto {
-
-  public String GRATER_OR_EQUAL = ">=";
-  public String LESS_OR_EQUAL = "<=";
-  public String LESS = "<";
-  public String GRATER = ">";
+public class GetVariablesResponseDto {
 
   protected String name;
-  protected String operator;
   protected String type;
   protected List<String> values;
+  protected boolean valuesAreComplete;
 
   public String getName() {
     return name;
@@ -20,14 +15,6 @@ public class VariableFilterDto {
 
   public void setName(String name) {
     this.name = name;
-  }
-
-  public String getOperator() {
-    return operator;
-  }
-
-  public void setOperator(String operator) {
-    this.operator = operator;
   }
 
   public String getType() {
@@ -44,5 +31,13 @@ public class VariableFilterDto {
 
   public void setValues(List<String> values) {
     this.values = values;
+  }
+
+  public boolean isValuesAreComplete() {
+    return valuesAreComplete;
+  }
+
+  public void setValuesAreComplete(boolean valuesAreComplete) {
+    this.valuesAreComplete = valuesAreComplete;
   }
 }

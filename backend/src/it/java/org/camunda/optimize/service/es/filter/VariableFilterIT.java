@@ -5,7 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;

@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;

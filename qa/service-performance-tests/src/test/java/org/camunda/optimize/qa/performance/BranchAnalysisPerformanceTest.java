@@ -3,7 +3,7 @@ package org.camunda.optimize.qa.performance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;

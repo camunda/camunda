@@ -1,14 +1,14 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.variable.value.BooleanVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.DateVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.DoubleVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.IntegerVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.LongVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.ShortVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.StringVariableDto;
-import org.camunda.optimize.dto.optimize.variable.value.VariableInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.DoubleVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.IntegerVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.LongVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.ShortVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 
 import java.util.ArrayList;
 import java.util.Date;

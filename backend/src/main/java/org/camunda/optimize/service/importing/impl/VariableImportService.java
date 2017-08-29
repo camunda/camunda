@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
-import org.camunda.optimize.dto.optimize.variable.VariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;

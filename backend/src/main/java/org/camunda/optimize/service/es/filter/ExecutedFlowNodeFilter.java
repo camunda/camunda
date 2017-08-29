@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.flownode.FlowNodeIdList;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
@@ -18,32 +20,41 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class ExecutedFlowNodeFilter implements QueryFilter {
 
   public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    addExecutedFlowNodeFilters(query, filter.getExecutedFlowNodeIds());
-  }
-
-  private void addExecutedFlowNodeFilters(BoolQueryBuilder query, List<String> executedFlowNodeIds) {
-    if (executedFlowNodeIds != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (String executedFlowNodeId : executedFlowNodeIds) {
-
-        filters.add(createFilterQueryBuilder(executedFlowNodeId));
-      }
+    if (filter.getExecutedFlowNodes() != null) {
+      addExecutedFlowNodeFilters(query, filter.getExecutedFlowNodes());
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(String activityId) {
+  private void addExecutedFlowNodeFilters(BoolQueryBuilder query, ExecutedFlowNodeFilterDto flowNodeFilterDto) {
+    List<QueryBuilder> filters = query.filter();
+    for (FlowNodeIdList executedFlowNodeId : flowNodeFilterDto.getAndLinkedIds()) {
+      filters.add(createFilterQueryBuilder(executedFlowNodeId));
+    }
+  }
+
+  private QueryBuilder createFilterQueryBuilder(FlowNodeIdList activityIds) {
     return nestedQuery(
       EVENTS,
-      createBoolFilterForAllActivityIds(activityId),
+      createAndFilter(activityIds),
       ScoreMode.None
     );
   }
 
-  private BoolQueryBuilder createBoolFilterForAllActivityIds(String activityId) {
+  private BoolQueryBuilder createAndFilter(FlowNodeIdList flowNodeIdList) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     boolQueryBuilder.must(
-      termQuery(nestedActivityIdFieldLabel(), activityId)
+      createOrFilter(flowNodeIdList.getOrLinkedIds())
     );
+    return boolQueryBuilder;
+  }
+
+  private BoolQueryBuilder createOrFilter(List<String> orCombinedFlowNodeIds) {
+    BoolQueryBuilder boolQueryBuilder = boolQuery();
+    for (String activityId : orCombinedFlowNodeIds) {
+      boolQueryBuilder.should(
+        termQuery(nestedActivityIdFieldLabel(), activityId)
+      );
+    }
     return boolQueryBuilder;
   }
 

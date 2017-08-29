@@ -2,10 +2,12 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -80,7 +82,10 @@ public class MixedFilterIT {
     VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     DataUtilHelper.addDateFilter("<", "start_date", date, queryDto);
-    queryDto.getFilter().getExecutedFlowNodeIds().add(USER_TASK_ACTIVITY_ID);
+    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+          .id(USER_TASK_ACTIVITY_ID)
+          .build();
+    queryDto.getFilter().setExecutedFlowNodes(flowNodeFilterDto);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then

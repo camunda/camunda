@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;

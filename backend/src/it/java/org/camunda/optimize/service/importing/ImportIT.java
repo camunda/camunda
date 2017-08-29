@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimize
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.variable.GetVariablesResponseDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;

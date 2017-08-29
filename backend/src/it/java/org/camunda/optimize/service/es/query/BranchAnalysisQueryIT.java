@@ -5,8 +5,10 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -505,7 +507,10 @@ public class BranchAnalysisQueryIT {
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
     FilterMapDto mapDto = new FilterMapDto();
-    mapDto.getExecutedFlowNodeIds().add(TASK_ID_2);
+    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+          .id(TASK_ID_2)
+          .build();
+    mapDto.setExecutedFlowNodes(flowNodeFilterDto);
     dto.setFilter(mapDto);
 
     //when
