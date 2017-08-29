@@ -58,6 +58,11 @@ public class HashTable implements Closeable
         return length;
     }
 
+    public int getCapacity()
+    {
+        return length / SIZE_OF_LONG;
+    }
+
     public void resize(int tableSize)
     {
         tableSize = BitUtil.findNextPositivePowerOfTwo(tableSize);
@@ -70,6 +75,21 @@ public class HashTable implements Closeable
             // hash table was duplicated the new indices should point to the
             // same corresponding buckets like there counter-part
             UNSAFE.copyMemory(realAddress, realAddress + oldLength, length - oldLength);
+        }
+        else if (newLength < length)
+        {
+            length = newLength;
+            realAddress = UNSAFE.reallocateMemory(realAddress, length);
+        }
+    }
+
+    public void updateTable(int stepPower, int startIdx, long newBucketAddress)
+    {
+        final int mapDiff = 1 << stepPower;
+        final int tableSize = getCapacity();
+        for (int i = startIdx; i < tableSize; i += mapDiff)
+        {
+            setBucketAddress(i, newBucketAddress);
         }
     }
 

@@ -46,6 +46,49 @@ public class HashTableTest
     }
 
     @Test
+    public void shouldShrinkHashTable()
+    {
+        // given
+        final HashTable hashTable = new HashTable(4);
+        hashTable.setBucketAddress(0, 167);
+
+        // when
+        hashTable.resize(2);
+
+        // then
+        assertThat(hashTable.getLength()).isEqualTo(2 * SIZE_OF_LONG);
+        assertThat(hashTable.getBucketAddress(0)).isEqualTo(167);
+    }
+
+    @Test
+    public void shouldUpdateHashTable()
+    {
+        // given
+        final HashTable hashTable = new HashTable(64);
+
+        // when
+        hashTable.updateTable(2, 1, 0xFF);
+
+        // then
+        assertThat(hashTable.getBucketAddress(0)).isEqualTo(0);
+        for (int i = 1; i < 64; i += 4)
+        {
+            assertThat(hashTable.getBucketAddress(i)).isEqualTo(0xFF);
+        }
+    }
+
+    @Test
+    public void shouldGetCapacity()
+    {
+        // given
+        final HashTable hashTable = new HashTable(4);
+
+        // when
+        assertThat(hashTable.getCapacity()).isEqualTo(4);
+        assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+    }
+
+    @Test
     public void shouldNotCreateToLargeHashTable()
     {
         // expect

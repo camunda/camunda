@@ -28,6 +28,29 @@ import org.openjdk.jmh.annotations.Threads;
 @BenchmarkMode(Mode.Throughput)
 public class Long2LongZbMapBenchmark
 {
+
+    @Benchmark
+    @Threads(1)
+    public long removeLinearKeysChronicleMap(Long2LongChronicleMapSupplier chronicleMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final ChronicleMap<Long, Long> map = chronicleMapSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.remove(keys[i]);
+        }
+
+        return result;
+    }
+
     @Benchmark
     @Threads(1)
     public long randomKeysChronicleMap(Long2LongChronicleMapSupplier chronicleMapSupplier, RandomKeysSupplier randomKeysSupplier)
@@ -118,6 +141,28 @@ public class Long2LongZbMapBenchmark
 
     @Benchmark
     @Threads(1)
+    public long removeLinearKeysFastUtilMap(Long2LongFastUtilMapSupplier fastUtilMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final Long2LongMap map = fastUtilMapSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.remove(keys[i], -1);
+        }
+
+        return result;
+    }
+
+    @Benchmark
+    @Threads(1)
     public long randomKeys(Long2LongZbMapSupplier hashMapSupplier, RandomKeysSupplier randomKeysSupplier)
     {
         final Long2LongZbMap map = hashMapSupplier.map;
@@ -155,6 +200,28 @@ public class Long2LongZbMapBenchmark
         for (int i = 0; i < keys.length; i++)
         {
             result += map.get(keys[i], -1);
+        }
+
+        return result;
+    }
+
+    @Benchmark
+    @Threads(1)
+    public long removeLinearKeys(Long2LongZbMapSupplier hashMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final Long2LongZbMap map = hashMapSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.remove(keys[i], -1);
         }
 
         return result;
@@ -205,5 +272,26 @@ public class Long2LongZbMapBenchmark
         return result;
     }
 
+    @Benchmark
+    @Threads(1)
+    public long removeBaselineLinearKeys(Long2LongHashMapSupplier hashMapSupplier, LinearKeysSupplier keysSupplier)
+    {
+        final HashMap<Long, Long> map = hashMapSupplier.map;
+        final long[] keys = keysSupplier.keys;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], (long) i);
+        }
+
+        long result = 0;
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            result += map.remove(keys[i]);
+        }
+
+        return result;
+    }
 
 }

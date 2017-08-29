@@ -105,7 +105,7 @@ public class BucketBufferUtilTest
 
         // then
         assertThat(string).isEqualTo("Bucket-1 contains 0.0 % of all blocks:[ Blocks:0 ,Overflow:1]\n" +
-                                     "Bucket--1 contains 0.0 % of all blocks:[ Blocks:0 ,Overflow:0]\n");
+                                     "Overflow-Bucket-1 contains 0.0 % of all blocks:[ Blocks:0 ,Overflow:0]\n");
     }
 
     @Test
@@ -146,8 +146,8 @@ public class BucketBufferUtilTest
         final String string = bucketBufferArray.toString();
 
         // then
-        assertThat(string).isEqualTo("Bucket-1 contains 100.0 % of all blocks:[ Blocks:1 ,Overflow:1]\n" +
-                                     "Bucket--1 contains 100.0 % of all blocks:[ Blocks:1 ,Overflow:0]\n");
+        assertThat(string).isEqualTo("Bucket-1 contains 0.0 % of all blocks:[ Blocks:0 ,Overflow:1]\n" +
+                                     "Overflow-Bucket-1 contains 100.0 % of all blocks:[ Blocks:1 ,Overflow:0]\n");
     }
 
 }

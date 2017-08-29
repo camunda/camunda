@@ -31,7 +31,8 @@ import sun.misc.Unsafe;
 public class BucketBufferArray implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
-    public static final int OVERFLOW_BUCKET_ID = -1;
+    public static final int OVERFLOW_BUCKET = -1;
+    public static final int REMOVABLE_BUCKET = -73;
     private static final long INVALID_ADDRESS = 0;
 
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
@@ -112,6 +113,11 @@ public class BucketBufferArray implements AutoCloseable
         if (offset < 0 || offset >= maxBucketBufferLength)
         {
             throw new IllegalArgumentException("Can't access " + offset + " max bucket buffer length is: " + maxBucketBufferLength);
+        }
+
+        if (realAddresses[bucketBufferId] == INVALID_ADDRESS)
+        {
+            throw new IllegalArgumentException("Bucket buffer was already released!");
         }
 
         return realAddresses[bucketBufferId] + offset;
@@ -338,13 +344,14 @@ public class BucketBufferArray implements AutoCloseable
         return canAddRecord;
     }
 
-    public void removeBlock(long bucketAddress, int blockOffset)
+    public int removeBlock(long bucketAddress, int blockOffset)
     {
-        removeBlockFromBucket(bucketAddress, blockOffset);
+        final int newBucketFillCount = removeBlockFromBucket(bucketAddress, blockOffset);
         setBlockCount(getBlockCount() - 1);
+        return newBucketFillCount;
     }
 
-    private void removeBlockFromBucket(long bucketAddress, int blockOffset)
+    private int removeBlockFromBucket(long bucketAddress, int blockOffset)
     {
         final int blockLength = getBlockLength();
         final int nextBlockOffset = blockOffset + blockLength;
@@ -354,55 +361,74 @@ public class BucketBufferArray implements AutoCloseable
         final int newBucketFillCount = getBucketFillCount(bucketAddress) - 1;
         setBucketFillCount(bucketAddress, newBucketFillCount);
 
-        if (newBucketFillCount <= 0)
-        {
-            cleanUpBucketBufferArray(bucketAddress);
-        }
+        return newBucketFillCount;
     }
 
-    private void cleanUpBucketBufferArray(long bucketAddress)
+    public boolean isBucketRemoveable(long bucketAddress)
     {
         final int bucketBufferId = (int) (bucketAddress >> 32);
         final int bucketOffset = (int) bucketAddress;
         final int bucketCount = getBucketCount(bucketBufferId);
 
         final int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
-        if (lastBucketOffset == bucketOffset)
-        {
-            final boolean bucketBufferIsEmpty = removeEmptyBucketsFromBucketBuffer(bucketBufferId, bucketCount, lastBucketOffset);
-            if (bucketBufferIsEmpty)
-            {
-                releaseEmptyBucketBuffers(bucketBufferId);
-            }
-        }
+        return lastBucketOffset == bucketOffset;
     }
 
-    /**
-     * Removes bucket at offset `lastBucketOffset` from the bucket buffer with the id `bucketBufferId`.
-     * After removing the last bucket the method will check if the NEW last bucket is empty.
-     * If so then these bucket will removed as well, this is repeated until an non empty bucket is reached.
-     * If the last bucket is removed from the bucket buffer, which means the bucket buffer is empty true is returned.
-     *
-     * @param bucketBufferId the id of the bucket buffer
-     * @param bucketCount the bucket count before the removing process
-     * @param lastBucketOffset the bucket offset of the last bucket, place to start the removing process
-     * @return true if the bucket buffer is empty
-     */
-    private boolean removeEmptyBucketsFromBucketBuffer(int bucketBufferId, int bucketCount, int lastBucketOffset)
+    public long removeBucket(long bucketAddress)
     {
-        boolean bucketBufferIsEmpty = false;
-        int totalBucketCount = getBucketCount();
-        do
-        {
-            totalBucketCount--;
-            bucketCount--;
-            bucketBufferIsEmpty = bucketCount == 0;
-            lastBucketOffset -= maxBucketLength;
-        } while (!bucketBufferIsEmpty && getBucketFillCount(bucketBufferId, lastBucketOffset) == 0);
+        final int bucketBufferId = (int) (bucketAddress >> 32);
+        final int bucketOffset = (int) bucketAddress;
+        final int bucketCount = getBucketCount(bucketBufferId);
 
-        setBucketCount(bucketBufferId, bucketCount);
-        setBucketCount(totalBucketCount);
-        return bucketBufferIsEmpty;
+        if (bucketCount <= 0)
+        {
+            throw new IllegalArgumentException(String.format("No bucket in buffer %d on offset %d", bucketBufferId, bucketOffset));
+        }
+
+        final int bucketFillCount = getBucketFillCount(bucketAddress);
+        if (bucketFillCount > 0)
+        {
+            throw new IllegalStateException("Bucket can't be removed, since it is not empty!");
+        }
+
+        int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
+        long nextBucketAddress = 0;
+        if (lastBucketOffset == bucketOffset)
+        {
+            final int totalBucketCount = getBucketCount();
+            setBucketCount(bucketBufferId, bucketCount - 1);
+            setBucketCount(totalBucketCount - 1);
+            lastBucketOffset = bucketCount == 1 ? 0 : BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 2) * maxBucketLength);
+
+            final boolean bufferIsEmpty = (bucketCount - 1) == 0;
+            if (bufferIsEmpty)
+            {
+                releaseEmptyBucketBuffers(bucketBufferId);
+                if (bucketBufferId > 0)
+                {
+                    int nextBucketBufferId = bucketBufferId - 1;
+                    if (realAddresses[nextBucketBufferId] == INVALID_ADDRESS)
+                    {
+                        nextBucketBufferId = resolveLastFilledBucketBuffer();
+                    }
+
+                    int bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
+                    while (nextBucketBufferId > 0 && bucketCountOfNextBuffer == 0)
+                    {
+                        nextBucketBufferId--;
+                        bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
+                    }
+                    lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCountOfNextBuffer - 1) * maxBucketLength);
+                    nextBucketAddress = getBucketAddress(nextBucketBufferId, lastBucketOffset);
+                }
+            }
+        }
+        return nextBucketAddress == 0 ? getBucketAddress(bucketBufferId, lastBucketOffset) : nextBucketAddress;
+    }
+
+    private int resolveLastFilledBucketBuffer()
+    {
+        return getBucketBufferCount() - 1;
     }
 
     /**
@@ -446,6 +472,11 @@ public class BucketBufferArray implements AutoCloseable
         }
     }
 
+    public void setBucketId(long bucketAddress, int newBlockId)
+    {
+        UNSAFE.putInt(getRealAddress(bucketAddress) + BUCKET_ID_OFFSET, newBlockId);
+    }
+
     private void setBucketId(int bucketBufferId, int bucketOffset, int newBlockId)
     {
         UNSAFE.putInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_ID_OFFSET, newBlockId);
@@ -480,9 +511,25 @@ public class BucketBufferArray implements AutoCloseable
         }
         else
         {
-            final long overflowBucketAddress = allocateNewBucket(OVERFLOW_BUCKET_ID, 0);
+            final int bucketId = getBucketId(bucketAddress);
+            final long overflowBucketAddress = allocateNewBucket(bucketId, OVERFLOW_BUCKET);
             setBucketOverflowPointer(bucketAddress, overflowBucketAddress);
             return overflowBucketAddress;
+        }
+    }
+
+    public void removeOverflowBucket(long bucketAddress, long overflowBucket)
+    {
+        long bucketOverflowPointer = bucketAddress;
+        long bucketBefore;
+        do
+        {
+            bucketBefore = bucketOverflowPointer;
+            bucketOverflowPointer = getBucketOverflowPointer(bucketBefore);
+        } while (bucketOverflowPointer != overflowBucket || bucketOverflowPointer == 0);
+        if (bucketOverflowPointer != 0)
+        {
+            setBucketOverflowPointer(bucketBefore, getBucketOverflowPointer(bucketOverflowPointer));
         }
     }
 
@@ -517,6 +564,32 @@ public class BucketBufferArray implements AutoCloseable
         setBucketCount(getBucketCount() + 1);
 
         return bucketAddress;
+    }
+
+    public void relocateBlocksFromBucket(long bucketAddress, long newBucketAddress)
+    {
+        final int srcBucketFillCount = getBucketFillCount(bucketAddress);
+        final int destBucketFillCount = getBucketFillCount(newBucketAddress);
+
+        if (srcBucketFillCount + destBucketFillCount > maxBucketBlockCount)
+        {
+            throw new IllegalArgumentException(String.format("Blocks can't be relocate from bucket %d to bucket %d. Not enough space on destination bucket.", bucketAddress, newBucketAddress));
+        }
+        else
+        {
+            final long srcFirstBlockAddress = getBlockAddress(bucketAddress, getFirstBlockOffset());
+            final int destBucketLength = getBucketLength(newBucketAddress);
+            final long destBlockAddress = getBlockAddress(newBucketAddress, destBucketLength);
+
+            final int copyLength = srcBucketFillCount * getBlockLength();
+
+            // copy blocks to new bucket
+            UNSAFE.copyMemory(srcFirstBlockAddress, destBlockAddress, copyLength);
+
+            // set new bucket fill counts
+            setBucketFillCount(newBucketAddress, destBucketFillCount + srcBucketFillCount);
+            setBucketFillCount(bucketAddress, 0);
+        }
     }
 
     public void relocateBlock(long bucketAddress, int blockOffset, long newBucketAddress)
@@ -690,25 +763,30 @@ public class BucketBufferArray implements AutoCloseable
     private String toString(long bucketAddress)
     {
         final StringBuilder builder = new StringBuilder();
-        int bucketFillCount = getBucketFillCount(bucketAddress);
-        long address = getBucketOverflowPointer(bucketAddress);
-        int count = 0;
-        while (address != 0)
-        {
-            bucketFillCount += getBucketFillCount(address);
-            address = getBucketOverflowPointer(address);
-            count++;
-        }
+        final int bucketFillCount = getBucketFillCount(bucketAddress);
 
-        builder.append("Bucket-")
-               .append(getBucketId(bucketAddress))
-               .append(" contains ")
+
+        final int bucketId = getBucketId(bucketAddress);
+        if (bucketId == REMOVABLE_BUCKET)
+        {
+            builder.append("REMOVABLE-BUCKET");
+        }
+        else
+        {
+            final int bucketDepth = getBucketDepth(bucketAddress);
+            if (bucketDepth == OVERFLOW_BUCKET)
+            {
+                builder.append("Overflow-");
+            }
+            builder.append("Bucket-").append(bucketId);
+        }
+        builder.append(" contains ")
                .append(getBlockCount() == 0 ? 0 : ((double) bucketFillCount / (double) getBlockCount()) * 100D)
                .append(" % of all blocks")
                .append(":[ Blocks:")
                .append(bucketFillCount)
                .append(" ,Overflow:")
-               .append(count)
+               .append(getBucketOverflowCount(bucketAddress))
                .append("]");
         return builder.toString();
     }

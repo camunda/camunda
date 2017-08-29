@@ -46,6 +46,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      */
     private static final float LOAD_FACTOR_OVERFLOW_LIMIT = 0.6F;
 
+    /**
+     * The shrink limit which is used to indicate, whether the hash table should be shrinked or not, see {@link #tryShrinkHashTable()}.
+     */
+    private static final float HASH_TABLE_SHRINK_LIMIT = 0.25F;
+
     public static final int DEFAULT_TABLE_SIZE = 32;
     public static final int DEFAULT_BLOCK_COUNT = 16;
 
@@ -83,9 +88,12 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     protected int maxTableSize;
     protected int tableSize;
+    protected final int initialTableSize;
     protected int mask;
-    protected final int minBlockCountPerBucket;
+    protected final int blockCountPerBucket;
     protected double loadFactorOverflowLimit;
+
+    protected ZbMapBucketMergeHelper bucketMergeHelper;
 
     /**
      * The number of times this HashMap has been structurally modified.
@@ -146,13 +154,15 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         this.valueHandler = createInstance(VALUE_HANDLER_IDX);
 
         this.maxTableSize = MAX_TABLE_SIZE;
-        this.tableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
+        this.initialTableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
+        this.tableSize = this.initialTableSize;
         this.mask = this.tableSize - 1;
-        this.minBlockCountPerBucket = minBlockCount;
+        this.blockCountPerBucket = minBlockCount;
         this.loadFactorOverflowLimit = LOAD_FACTOR_OVERFLOW_LIMIT;
 
         this.hashTable = new HashTable(this.tableSize);
         this.bucketBufferArray = new BucketBufferArray(minBlockCount, maxKeyLength, maxValueLength);
+        this.bucketMergeHelper = new ZbMapBucketMergeHelper(bucketBufferArray, hashTable, blockCountPerBucket);
 
         init();
     }
@@ -321,11 +331,39 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
             final long bucketAddress = block.getBucketAddress();
             final int blockOffset = block.getBlockOffset();
             bucketBufferArray.readValue(valueHandler, bucketAddress, blockOffset);
-            bucketBufferArray.removeBlock(bucketAddress, blockOffset);
+            final int newBucketFillCount = bucketBufferArray.removeBlock(bucketAddress, blockOffset);
 
+            bucketMergeHelper.tryMergingBuckets(bucketAddress, newBucketFillCount);
+            tryShrinkHashTable();
             modCount += 1;
         }
         return wasFound;
+    }
+
+    /**
+     * Tries to shrink the hash table.
+     *
+     * If the current bucket count is below the {@link #HASH_TABLE_SHRINK_LIMIT} multiplied with the hash table capacity,
+     * then the hash table will be shrinked.
+     */
+    private void tryShrinkHashTable()
+    {
+        final int bucketCount = getBucketBufferArray().getBucketCount();
+        if (bucketCount < (hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT))
+        {
+            if (bucketCount < initialTableSize && hashTable.getCapacity() > initialTableSize)
+            {
+                hashTable.resize(initialTableSize);
+                tableSize = hashTable.getCapacity();
+                mask = hashTable.getCapacity() - 1;
+            }
+            else
+            {
+                hashTable.resize(bucketCount * 2);
+                tableSize = hashTable.getCapacity();
+                mask = hashTable.getCapacity() - 1;
+            }
+        }
     }
 
     protected boolean get()
@@ -432,11 +470,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         distributeEntries(filledBucketAddress, newBucketAddress, bucketDepth);
 
         // update map
-        final int mapDiff = 1 << newBucketDepth;
-        for (int i = newBucketId; i < tableSize; i += mapDiff)
-        {
-            hashTable.setBucketAddress(i, newBucketAddress);
-        }
+        hashTable.updateTable(newBucketDepth, newBucketId, newBucketAddress);
     }
 
     private void distributeEntries(long filledBucketAddress, long newBucketAddress, int bucketDepth)

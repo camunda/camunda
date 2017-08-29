@@ -16,6 +16,8 @@
 package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
+import static io.zeebe.map.BucketBufferArray.getBucketAddress;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
 import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
 import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -112,9 +114,54 @@ public class ZbMapTest
         assertThat(getValue(zbMap, 9, -1)).isEqualTo(1 << 3);
         assertThat(getValue(zbMap, 11, -1)).isEqualTo(1 << 4);
         assertThat(getValue(zbMap, 19, -1)).isEqualTo(1 << 5);
+    }
 
-        // finally
-        zbMap.close();
+    @Test
+    public void shouldShrinkHashTable()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        for (int i = 0; i < 64; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+        assertThat(zbMap.getHashTableSize()).isEqualTo(32 * SIZE_OF_LONG);
+
+        // when
+        for (int i = 63; i > 7; i--)
+        {
+            removeValue(zbMap, i);
+        }
+        // if only 25% bucket exist of the table size
+        removeValue(zbMap, 7);
+
+        // then table is shrinked
+        assertThat(zbMap.getHashTableSize()).isEqualTo(16 * SIZE_OF_LONG);
+    }
+
+    @Test
+    public void shouldNotShrinkHashTableUnderInitSize()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        for (int i = 0; i < 64; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+        assertThat(zbMap.getHashTableSize()).isEqualTo(32 * SIZE_OF_LONG);
+
+        // when
+        for (int i = 63; i >= 0; i--)
+        {
+            removeValue(zbMap, i);
+        }
+
+        // then table is shrinked - but only till init table size
+        assertThat(zbMap.getHashTableSize()).isEqualTo(4 * SIZE_OF_LONG);
     }
 
     @Test
@@ -168,7 +215,7 @@ public class ZbMapTest
     public void shouldPutAndRemoveLargeBunchOfData()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -178,8 +225,8 @@ public class ZbMapTest
         }
 
         // then
-        assertThat(zbMap.getHashTableSize()).isEqualTo(BitUtil.findNextPositivePowerOfTwo(DATA_COUNT) * SIZE_OF_LONG);
-        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(DATA_COUNT / 32);
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(BitUtil.findNextPositivePowerOfTwo(DATA_COUNT / 2));
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isGreaterThanOrEqualTo(DATA_COUNT / 2 / 32);
 
         for (int i = 0; i < DATA_COUNT; i++)
         {
@@ -187,6 +234,42 @@ public class ZbMapTest
         }
         assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
         assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
+    }
+
+    @Test
+    public void shouldPutRemoveAndPutLargeBunchOfData()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        // when
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            assertThat(removeValue(zbMap, i)).isTrue();
+        }
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
+
+        // then again put is possible
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(BitUtil.findNextPositivePowerOfTwo(DATA_COUNT / 2));
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isGreaterThanOrEqualTo(DATA_COUNT / 2 / 32);
+
+        // then all content is available
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
+        }
     }
 
     @Test
@@ -472,6 +555,880 @@ public class ZbMapTest
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Maximum bucket buffer length exceeds integer maximum value.")
             .hasCauseInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
+    public void shouldMergeOverflowBuckets()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 32, 32);
+
+        // split - relocate - overflow
+        putValue(zbMap, 64, 0xFF);
+        putValue(zbMap, 128, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 192, 192);
+
+        // Bucket 0 [0, 32] -> O1
+        // Bucket 1 [-, -]
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [64, 128] -> O2
+        // O2       [192, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        final long bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        // when
+        removeValue(zbMap, 64);
+        removeValue(zbMap, 128);
+
+        // then O2 is removed and 192 relocated to first overflow bucket
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(5);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isEqualTo(0);
+
+        assertThat(getValue(zbMap, 192, -1)).isEqualTo(192);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 32, -1)).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldMergeOverflowBucketInBetween()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 32, 32);
+
+        // split - relocate - overflow
+        putValue(zbMap, 64, 0xFF);
+        putValue(zbMap, 128, 128);
+
+        // split - relocate - overflow
+        putValue(zbMap, 192, 192);
+
+        // Bucket 0 [0, 32] -> O1
+        // Bucket 1 [-, -]
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [64, 128] -> O2
+        // O2       [192, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        long bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        // when
+        removeValue(zbMap, 32);
+        removeValue(zbMap, 64);
+        removeValue(zbMap, 0);
+
+        // then O1 is marked as removable
+        // 129 moved to bucket 0 -> overflow pointer is replaced with pointer to O2
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isEqualTo(0);
+
+        assertThat(getValue(zbMap, 192, -1)).isEqualTo(192);
+        assertThat(getValue(zbMap, 128, -1)).isEqualTo(128);
+    }
+
+    @Test
+    public void shouldRemoveEmptyOverflowBucketOnBlockRemoveOfParentOverflowBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 32, 32);
+
+        // split - relocate - overflow
+        putValue(zbMap, 64, 64);
+        putValue(zbMap, 128, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 192, 0xFF);
+
+        // Bucket 0 [0, 32] -> O1
+        // Bucket 1 [-, -]
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [64, 128] -> O2
+        // O2       [192, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        long bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        // when
+        removeValue(zbMap, 192);
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        removeValue(zbMap, 128);
+
+        // then O2 is removed
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(5);
+        bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isEqualTo(0);
+
+        assertThat(getValue(zbMap, 64, -1)).isEqualTo(64);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 32, -1)).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldRemoveEmptyOverflowBucketOnBlockRemoveOfOriginalBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 32, 32);
+
+        // split - relocate - overflow
+        putValue(zbMap, 64, 64);
+        putValue(zbMap, 128, 128);
+
+        // split - relocate - overflow
+        putValue(zbMap, 192, 0xFF);
+
+        // Bucket 0 [0, 32] -> O1
+        // Bucket 1 [-, -]
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [64, 128] -> O2
+        // O2       [192, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        long bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        // when
+        removeValue(zbMap, 32);
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(6);
+        bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isGreaterThan(0);
+
+        removeValue(zbMap, 192);
+
+        // then O2 is removed
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(5);
+        bucketOverflowPointer = bucketBufferArray.getBucketOverflowPointer(firstBucketAddress);
+        assertThat(bucketOverflowPointer).isGreaterThan(0);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketOverflowPointer)).isEqualTo(0);
+
+
+        assertThat(getValue(zbMap, 64, -1)).isEqualTo(64);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 128, -1)).isEqualTo(128);
+    }
+
+    @Test
+    public void shouldNotMergeOverflowBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 0xFF);
+
+        // put 1, 9 in B1
+        putValue(zbMap, 1, 0xFF);
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 17, 0xFF);
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [1, 9] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, -]
+        // Bucket 3 [-, -]
+        // Bucket 5 [-, -]
+        // O2       [17, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                        .getBucketCount()).isEqualTo(8);
+
+        // when
+        removeValue(zbMap, 16);
+
+        // then block is removed but overflow bucket is not merged since
+        // original bucket is full
+        assertThat(bucketBufferArray
+                        .getBucketCount()).isEqualTo(8);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                        .getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
+        final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
+        assertThat(bucketBufferArray
+                        .getBucketOverflowPointer(secondBucketAddress)).isGreaterThan(0);
+    }
+
+    @Test
+    public void shouldNotMergeOverflowBucketEvenIfLastBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 0xFF);
+
+        // put 1, 9 in B1
+        putValue(zbMap, 1, 0xFF);
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 17, 0xFF);
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [1, 9] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, -]
+        // Bucket 3 [-, -]
+        // Bucket 5 [-, -]
+        // O2       [17, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+
+        // when
+        removeValue(zbMap, 17);
+
+        // then block is removed but overflow bucket is not merged since
+        // original bucket is full
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
+        final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(secondBucketAddress)).isGreaterThan(0);
+    }
+
+    @Test
+    public void shouldRelocateBlocksOfOverflowBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 0xFF);
+        putValue(zbMap, 24, 24);
+
+        // put 1, 9 in B1
+        putValue(zbMap, 1, 0xFF);
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 17, 0xFF);
+
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [1, 9] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, 24]
+        // Bucket 3 [-, -]
+        // Bucket 5 [-, -]
+        // O2       [17, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+
+        // when
+        removeValue(zbMap, 0);
+        removeValue(zbMap, 8);
+        removeValue(zbMap, 16);
+
+        // then blocks of overflow bucket are relocated to original bucket
+        // overflow bucket is marked as removable
+        // overflow pointer is removed
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
+        final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(secondBucketAddress)).isGreaterThan(0);
+
+        // block is still available
+        assertThat(getValue(zbMap, 24, -1)).isEqualTo(24);
+    }
+
+    @Test
+    public void shouldRelocateBlocksOfOverflowBucketAndRemoveOverflowBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 16);
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [-, -] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(5);
+
+        // when
+        removeValue(zbMap, 0);
+        removeValue(zbMap, 8);
+
+        // then blocks of overflow bucket are relocated to original bucket
+        // overflow bucket is marked as removable
+        // overflow pointer is removed
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(1);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
+
+        // block is still available
+        assertThat(getValue(zbMap, 16, -1)).isEqualTo(16);
+    }
+
+    @Test
+    public void shouldMergeRecursivelyAndRemoveOverflowBucketFromOverflowBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 0xFF);
+        putValue(zbMap, 24, 24);
+
+        // put 1, 9 in B1
+        putValue(zbMap, 1, 1);
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 17, 0xFF);
+
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [1, 9] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, 24]
+        // Bucket 3 [-, -]
+        // Bucket 5 [-, -]
+        // O2       [17, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+
+        // when
+        removeValue(zbMap, 0);
+        removeValue(zbMap, 8);
+        removeValue(zbMap, 16);
+
+
+        // if block with key 9 is not removed overflow bucket will not been merged since original bucket is still full
+        removeValue(zbMap, 9);
+        removeValue(zbMap, 17);
+
+        // on removing 17 an merge process will be triggered
+        // this merges 02 with bucket 1
+        // merges 5, 3 with 1
+        // removes 01 since it is marked as removable
+        // merges 4 and 2 with 0
+        // end at bucket 1 since it has one block and bucket 0 as well
+
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(2);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
+        final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(secondBucketAddress)).isEqualTo(0);
+
+        // block is still available
+        assertThat(getValue(zbMap, 24, -1)).isEqualTo(24);
+        assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldMergeRecursivelyAndRemoveOverflowBucketFromOriginalBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 8, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 16, 0xFF);
+        putValue(zbMap, 24, 24);
+
+        // put 1, 9 in B1
+        putValue(zbMap, 1, 1);
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate - overflow
+        putValue(zbMap, 17, 17);
+
+        // Bucket 0 [0, 8] -> O1
+        // Bucket 1 [1, 9] -> O2
+        // Bucket 2 [-, -]
+        // Bucket 4 [-, -]
+        // O1       [16, 24]
+        // Bucket 3 [-, -]
+        // Bucket 5 [-, -]
+        // O2       [17, -]
+        final BucketBufferArray bucketBufferArray = zbMap.getBucketBufferArray();
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(8);
+
+        // when
+        removeValue(zbMap, 0);
+        removeValue(zbMap, 8);
+        removeValue(zbMap, 16);
+
+
+        // if block with key 9 is not removed overflow bucket will not been merged since original bucket is still full
+        removeValue(zbMap, 9);
+        removeValue(zbMap, 1);
+
+        // on removing 1 an merge process will be triggered
+        // this merges 02 with bucket 1 -> relocate 17 to bucket 1
+        // merges 5, 3 with 1
+        // removes 01 since it is marked as removable
+        // merges 4 and 2 with 0
+        // end at bucket 1 since it has one block and bucket 0 as well
+
+        assertThat(bucketBufferArray
+                       .getBucketCount()).isEqualTo(2);
+        final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
+        final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
+        assertThat(bucketBufferArray
+                       .getBucketOverflowPointer(secondBucketAddress)).isEqualTo(0);
+
+        // block is still available
+        assertThat(getValue(zbMap, 24, -1)).isEqualTo(24);
+        assertThat(getValue(zbMap, 17, -1)).isEqualTo(17);
+    }
+
+    @Test
+    public void shouldMergeChildBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 0xFF);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 0xFF);
+
+        putValue(zbMap, 3, 0xFF);
+        // split - relocate 3
+        putValue(zbMap, 5, 0xFF);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 0xFF);
+
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        removeValue(zbMap, 9);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+        // Bucket 1 is half full but merge should not happen since then bucket is again full
+        // makes no sense to merge since after that an next add we have to split again
+
+        removeValue(zbMap, 5);
+        // -> Bucket 5 is empty - merging 5 with 1
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(4);
+    }
+
+    @Test
+    public void shouldMergeParentWithChildBucket()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 1, 1);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 2);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 8);
+
+        putValue(zbMap, 3, 3);
+        // split - relocate 3
+        putValue(zbMap, 5, 5);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 9);
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        removeValue(zbMap, 9);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+        // Bucket 1 is half full but merge should not happen since then bucket is again full
+        // makes no sense to merge since after that an next add we have to split again
+
+        removeValue(zbMap, 1);
+        // -> Bucket 1 is empty - merging 5 with 1
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(4);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
+        assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
+        assertThat(getValue(zbMap, 3, -1)).isEqualTo(3);
+        assertThat(getValue(zbMap, 5, -1)).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldMergeParentWithChildBucketsRecursively()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 1, 1);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 2);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 8);
+
+        putValue(zbMap, 3, 3);
+        // split - relocate 3
+        putValue(zbMap, 5, 5);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 9);
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        removeValue(zbMap, 9);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+        // Bucket 1 is half full but merge should not happen since then bucket is again full
+        // makes no sense to merge since after that an next add we have to split again
+
+        removeValue(zbMap, 3);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+        // Bucket 3 is empty
+        removeValue(zbMap, 1);
+        // -> Bucket 1 is empty - merging 5 with 1 and also 3 with 1 since Bucket 3 is empty
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(3);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
+        assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
+        assertThat(getValue(zbMap, 5, -1)).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldMergeBuckets()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 1, 1);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 2);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 8);
+
+        putValue(zbMap, 3, 3);
+        // split - relocate 3
+        putValue(zbMap, 5, 5);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 9);
+
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        removeValue(zbMap, 9);
+        removeValue(zbMap, 8);
+        // -> Bucket 0 and 1 is half full - can't be merged with 2 or 5 since bucket will be again full
+        removeValue(zbMap, 2);
+        // -> Bucket 2 is empty - can't be merged
+        removeValue(zbMap, 3);
+        // -> Bucket 3 is empty - can't be merged
+        removeValue(zbMap, 5);
+        // -> Bucket 5 is empty - merging 5, 3 and 2 since bucket 1 and 0 is half full
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(2);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+        assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotMergeOnDifferentDepths()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 0xFF);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 0xFF);
+
+        putValue(zbMap, 3, 0xFF);
+        // split - relocate 3
+        putValue(zbMap, 5, 0xFF);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 0xFF);
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        // when
+        removeValue(zbMap, 9);
+        removeValue(zbMap, 3);
+
+        // then bucket 3 can't be merged - since bucket 3 depth is 2 and bucket 1 depth is 3
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldNotMergeIfNotLastBucket()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 0xFF);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 0xFF);
+
+        putValue(zbMap, 3, 0xFF);
+        // split - relocate 3
+        putValue(zbMap, 5, 0xFF);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 0xFF);
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        // when
+        removeValue(zbMap, 8);
+        removeValue(zbMap, 2);
+
+        // then bucket 2 can't be merged - since bucket 2 is not removable
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldNotMergeIfNotHalfFull()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+        putValue(zbMap, 3, 0xFF);
+
+        // split - relocate 1, 3, 9
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate 3
+        putValue(zbMap, 17, 0xFF);
+        putValue(zbMap, 11, 0xFF);
+        putValue(zbMap, 19, 0xFF);
+
+        // Bucket 0 [0, -, -]
+        // Bucket 1 [1, 9, 17]
+        // Bucket 3 [3, 11, 19]
+
+        // when
+        removeValue(zbMap, 19);
+
+        // then bucket 3 can't be merged - since bucket 3 is not leq half full
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void shouldNotMergeIfParentBucketAfterMergeIsLessThenFull()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+        putValue(zbMap, 3, 0xFF);
+
+        // split - relocate 1, 3, 9
+        putValue(zbMap, 9, 0xFF);
+
+        // split - relocate 3
+        putValue(zbMap, 17, 0xFF);
+
+        // Bucket 0 [0, -, -]
+        // Bucket 1 [1, 9, 17]
+        // Bucket 3 [3, -, -]
+
+        // when
+        removeValue(zbMap, 3);
+
+        // then bucket 3 can't be merged - since bucket 1 + blocks of 3 is not less then full bucket
+        // even if bucket 3 is empty this will cause merge and split again if a new value is added
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void shouldNotMergeIfOnlyOneBucket()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+
+        // Bucket 0 [0, 1, -]
+
+        // when
+        removeValue(zbMap, 1);
+
+        // then merge should not be triggered
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotMergeBuckets()
+    {
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+
+        putValue(zbMap, 0, 0xFF);
+        putValue(zbMap, 1, 0xFF);
+
+        // split - relocate 1
+        putValue(zbMap, 2, 0xFF);
+
+        // split - relocate 2
+        putValue(zbMap, 8, 0xFF);
+
+        putValue(zbMap, 3, 0xFF);
+        // split - relocate 3
+        putValue(zbMap, 5, 0xFF);
+
+        // split - relocate 5
+        putValue(zbMap, 9, 0xFF);
+
+
+        // Bucket 0 [0, 8]
+        // Bucket 1 [1, 9]
+        // Bucket 2 [2, -]
+        // Bucket 3 [3, -]
+        // Bucket 5 [5, -]
+
+        removeValue(zbMap, 2);
+        // -> Bucket 2 is empty - can't be merged
+        removeValue(zbMap, 3);
+        // -> Bucket 3 is empty - can't be merged
+        removeValue(zbMap, 5);
+        // -> Bucket 5 is empty - not merging 5 since bucket 1 is not half full
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
     }
 
     private int maxRecordPerBlockForLong2Longmap()
