@@ -8,7 +8,6 @@ folder=$(basename "${PWD}")
 rm -rf .terraform
 
 echo "disable_checkpoint = true" > .terraformrc
-export HTTP_PROXY=http://35.157.187.165:3128
 
 terraform remote config \
     -backend=s3 \
