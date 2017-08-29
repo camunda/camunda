@@ -15,29 +15,58 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStreamController;
-import io.zeebe.logstreams.integration.util.*;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
+import io.zeebe.logstreams.integration.util.Counter;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
 
 public class StreamProcessorIntegrationTest
 {
@@ -62,6 +91,8 @@ public class StreamProcessorIntegrationTest
     private SerializableWrapper<Counter> resourceCounter;
 
     private String logPath;
+
+    protected List<StreamProcessorController> controllers;
 
     @Before
     public void setup()
@@ -90,15 +121,28 @@ public class StreamProcessorIntegrationTest
 
         sourceLogStream.open();
         targetLogStream.open();
+
+        controllers = new ArrayList<>();
     }
 
     @After
     public void destroy() throws Exception
     {
+        for (StreamProcessorController controller : controllers)
+        {
+            controller.closeAsync().get();
+        }
+
         sourceLogStream.close();
         targetLogStream.close();
 
         actorScheduler.close();
+
+    }
+
+    protected void manage(StreamProcessorController controller)
+    {
+        this.controllers.add(controller);
     }
 
     @Test
@@ -510,6 +554,73 @@ public class StreamProcessorIntegrationTest
     }
 
     @Test
+    @Ignore
+    public void shouldReceoverWithIntermediateIndexingState() throws InterruptedException, ExecutionException
+    {
+        // given
+        final ControllableStreamProcessor streamProcessor = new ControllableStreamProcessor();
+        streamProcessor.blockOnKey(2);
+
+        final StreamProcessorController streamProcessorController = LogStreams
+                .createStreamProcessor("test", STREAM_PROCESSOR_ID, streamProcessor)
+                .sourceStream(sourceLogStream)
+                .targetStream(sourceLogStream)
+                .actorScheduler(actorScheduler)
+                .snapshotPolicy(p -> true)
+                .snapshotStorage(snapshotStorage)
+                .build();
+        manage(streamProcessorController);
+
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+
+        final LogStreamReader logReader = newLogReader(sourceLogStream);
+
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, 2, MSG_SIZE, 1);
+        logReader.seekToFirstEvent();
+        waitUntil(() -> logReader.hasNext());
+        final long firstEventPosition = logReader.next().getPosition();
+        waitUntil(() -> logReader.hasNext());
+        final long secondEventPosition = logReader.next().getPosition();
+
+        waitUntil(() -> streamProcessor.successfullyHandledEvents.contains(firstEventPosition));
+
+        // when
+        streamProcessorController.closeAsync().get();
+        streamProcessor.successfullyHandledEvents.clear();
+
+        final long newEventKey = Integer.MAX_VALUE;
+        streamProcessor.blockOnKey(-1);
+
+        final LogStreamWriter writer = new LogStreamWriterImpl(sourceLogStream);
+
+        // write one more event to verify that the processor resume on snapshot position
+        final long newEventPosition = TestUtil.doRepeatedly(() ->
+        {
+            return writer
+                    .key(newEventKey)
+                    .value(new UnsafeBuffer(new byte[4]))
+                    .tryWrite();
+        })
+                .until(p -> p >= 0);
+
+        streamProcessorController.openAsync().get();
+
+        waitUntil(() -> streamProcessor.successfullyHandledEvents.contains(newEventPosition));
+
+        assertThat(streamProcessor.successfullyHandledEvents).contains(secondEventPosition);
+    }
+
+
+    protected LogStreamReader newLogReader(LogStream stream)
+    {
+        final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
+        autoCloseableRule.manage(reader);
+        return reader;
+    }
+
+    @Test
     public void shouldUseDisabledWriterForReadOnlyProcessor() throws InterruptedException, ExecutionException
     {
         // given
@@ -588,6 +699,7 @@ public class StreamProcessorIntegrationTest
         sourceReader.close();
     }
 
+
     private class CopyStreamProcessor implements StreamProcessor
     {
         private final SerializableWrapper<Counter> resourceCounter;
@@ -617,7 +729,6 @@ public class StreamProcessorIntegrationTest
                             .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                             .tryWrite();
                 }
-
             };
         }
 
@@ -730,8 +841,75 @@ public class StreamProcessorIntegrationTest
                 }
             };
         }
+    }
+
+    protected class ControllableStreamProcessor implements StreamProcessor, EventProcessor
+    {
+
+        protected long eventKeyToBlock = -1;
+        protected CopyOnWriteArrayList<Long> successfullyHandledEvents = new CopyOnWriteArrayList<>();
+        protected final SerializableWrapper stateResource = new SerializableWrapper<>(successfullyHandledEvents);
+
+
+        protected boolean blockOnCurrentEvent = false;
+        protected LoggedEvent currentEvent;
+
+        public void blockOnKey(long key)
+        {
+            this.eventKeyToBlock = key;
+        }
+
+        @Override
+        public void onOpen(StreamProcessorContext context)
+        {
+            this.successfullyHandledEvents = (CopyOnWriteArrayList<Long>) stateResource.getObject();
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return stateResource;
+        }
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            System.out.println("Handling event");
+            currentEvent = event;
+            return this;
+        }
+
+        @Override
+        public void processEvent()
+        {
+            blockOnCurrentEvent = eventKeyToBlock == currentEvent.getKey();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            if (blockOnCurrentEvent)
+            {
+                return -1;
+            }
+            else
+            {
+                System.out.println("Writing new event");
+                return writer
+                    .key(currentEvent.getKey())
+                    .value(currentEvent.getValueBuffer(), currentEvent.getValueOffset(), currentEvent.getValueLength())
+                    .tryWrite();
+            }
+        }
+
+        @Override
+        public void updateState()
+        {
+            successfullyHandledEvents.add(currentEvent.getPosition());
+        }
 
     }
+
 
     protected class ControllableSnapshotStorage implements SnapshotStorage
     {
