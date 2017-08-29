@@ -1,10 +1,9 @@
 import React from 'react';
 import {getLogin, clearLogin} from 'login';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
 const jsx = React.createElement;
 
-export function AppMenuReact() {
+export function AppMenu() {
   return <nav className="app-menu">
     <ul>
       {getLogoutBtn()}
@@ -22,5 +21,3 @@ function getLogoutBtn() {
     </li>;
   }
 }
-
-export const AppMenu = createViewUtilsComponentFromReact('div', AppMenuReact);

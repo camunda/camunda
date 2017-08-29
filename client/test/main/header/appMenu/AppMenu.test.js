@@ -3,7 +3,7 @@ import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import React from 'react';
 import {mount} from 'enzyme';
-import {AppMenuReact, __set__, __ResetDependency__} from 'main/header/appMenu/AppMenu';
+import {AppMenu, __set__, __ResetDependency__} from 'main/header/appMenu/AppMenu';
 
 chai.use(chaiEnzyme());
 
@@ -15,7 +15,7 @@ describe('<AppMenu>', () => {
     let wrapper;
 
     beforeEach(() => {
-      wrapper = mount(<AppMenuReact/>);
+      wrapper = mount(<AppMenu/>);
     });
 
     it('has no logout button', () => {
@@ -38,7 +38,7 @@ describe('<AppMenu>', () => {
       });
       __set__('getLogin', getLogin);
 
-      wrapper = mount(<AppMenuReact />);
+      wrapper = mount(<AppMenu />);
     });
 
     afterEach(() => {

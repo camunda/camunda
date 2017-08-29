@@ -1,11 +1,17 @@
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {mountTemplate, triggerEvent} from 'testHelpers';
-import {jsx} from 'view-utils';
-import {Header, __set__, __ResetDependency__} from 'main/header/Header';
+import React from 'react';
+import {mount} from 'enzyme';
+import {HeaderReact, __set__, __ResetDependency__} from 'main/header/Header';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<Header>', () => {
-  let node;
+  let wrapper;
   let router;
 
   beforeEach(() => {
@@ -15,7 +21,7 @@ describe('<Header>', () => {
 
     __set__('router', router);
 
-    ({node} = mountTemplate(<Header/>));
+    (wrapper = mount(<HeaderReact/>));
   });
 
   afterEach(() => {
@@ -23,15 +29,11 @@ describe('<Header>', () => {
   });
 
   it('should contain header text', () => {
-    expect(node).to.contain.text('Camunda Optimize');
+    expect(wrapper).to.contain.text('Camunda Optimize');
   });
 
   it('should redirect to default route on click', () => {
-    triggerEvent({
-      node,
-      selector: '.navbar-brand',
-      eventName: 'click'
-    });
+    wrapper.find('.navbar-brand').simulate('click');
 
     expect(router.goTo.calledWith('default', {})).to.eql(true);
   });
