@@ -30,7 +30,7 @@ export function loadProcessDefinitions() {
             return ids + '&ids=' + encodeURIComponent(id);
           }
 
-          return 'ids=' + id;
+          return 'ids=' + encodeURIComponent(id);
         }, '');
 
       return get('/api/process-definition/xml?' + ids)
