@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -133,21 +134,18 @@ public class ProcessDefinitionReader {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
     List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
     for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
-      if (!resultMap.containsKey(compoundKey(process))) {
-        resultMap.put(compoundKey(process), constructGroup(process));
+      if (!resultMap.containsKey(EsHelper.constructKey(process.getKey(), process.getEngine()))) {
+        resultMap.put(EsHelper.constructKey(process.getKey(), process.getEngine()), constructGroup(process));
       }
-      resultMap.get(compoundKey(process)).getVersions().add(process);
+      resultMap.get(EsHelper.constructKey(process.getKey(), process.getEngine())).getVersions().add(process);
     }
     return new ArrayList<>(resultMap.values());
   }
 
-  private String compoundKey(ExtendedProcessDefinitionOptimizeDto process) {
-    return process.getKey() + "-" + process.getEngine();
-  }
 
   private ProcessDefinitionGroupOptimizeDto constructGroup(ExtendedProcessDefinitionOptimizeDto process) {
     ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
-    result.setKey(compoundKey(process));
+    result.setKey(EsHelper.constructKey(process.getKey(), process.getEngine()));
     return result;
   }
 

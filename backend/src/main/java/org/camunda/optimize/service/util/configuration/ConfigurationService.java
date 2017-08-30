@@ -140,6 +140,8 @@ public class ConfigurationService {
     objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS,true);
     //read default values from the first location
     try {
+      //configure Jackson as provider in order to be able to use TypeRef objects
+      //during serialization process
       Configuration.setDefaults(new Configuration.Defaults() {
 
         private final JsonProvider jsonProvider = new JacksonJsonProvider();

@@ -104,10 +104,10 @@ public class ImportProgressReporterTest {
     Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
     Mockito.when(indexHandler.getAbsoluteImportIndex()).thenReturn(optimizeImportCount);
 
-    Mockito.when(configurationService.getConfiguredEngines()).thenReturn(mockEnginesConfig());
+    Mockito.when(configurationService.getConfiguredEngines()).thenReturn(engineConfigsToReturn());
   }
 
-  private Map<String, EngineConfiguration> mockEnginesConfig() {
+  private Map<String, EngineConfiguration> engineConfigsToReturn() {
     HashMap<String, EngineConfiguration> engines = new HashMap<>();
     EngineConfiguration engineConfig = new EngineConfiguration();
     engines.put(TEST_ENGINE, engineConfig);

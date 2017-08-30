@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.importing.provider;
 
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
+import org.camunda.optimize.service.util.EsHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -21,18 +22,15 @@ public class IndexHandlerProvider {
 
   public ImportIndexHandler getIndexHandler(String elasticSearchType, Class<? extends ImportIndexHandler> indexHandlerType, String engineAlias) {
 
-    if (!initializedHandlers.containsKey(constructKey(elasticSearchType, engineAlias))) {
+    if (!initializedHandlers.containsKey(EsHelper.constructKey(elasticSearchType, engineAlias))) {
       ImportIndexHandler bean = applicationContext.getBean(indexHandlerType);
       bean.initializeImportIndex(elasticSearchType, engineAlias);
-      initializedHandlers.put(constructKey(elasticSearchType, engineAlias), bean);
+      initializedHandlers.put(EsHelper.constructKey(elasticSearchType, engineAlias), bean);
     }
 
-    return initializedHandlers.get(constructKey(elasticSearchType, engineAlias));
+    return initializedHandlers.get(EsHelper.constructKey(elasticSearchType, engineAlias));
   }
 
-  private String constructKey(String elasticSearchType, String engineAlias) {
-    return elasticSearchType + "-" + engineAlias;
-  }
 
   public Collection<ImportIndexHandler> getAllHandlers() {
     return initializedHandlers.values();

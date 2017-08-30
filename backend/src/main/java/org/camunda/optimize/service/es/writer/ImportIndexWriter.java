@@ -33,7 +33,7 @@ public class ImportIndexWriter {
       .setSource(
         XContentFactory.jsonBuilder()
           .startObject()
-            .field(ImportIndexType.ENGINE, importStartIndex)
+            .field(ImportIndexType.ENGINE, engine)
             .field(ImportIndexType.IMPORT_INDEX_FIELD, importStartIndex)
           .endObject()
       )
