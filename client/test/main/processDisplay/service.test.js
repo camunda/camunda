@@ -159,7 +159,9 @@ describe('ProcessDisplay service', () => {
             }
           ],
           variables: [],
-          executedFlowNodeIds: []
+          executedFlowNodes: {
+            andLinkedIds: []
+          }
         }
       };
 

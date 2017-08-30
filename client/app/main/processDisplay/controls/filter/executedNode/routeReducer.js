@@ -1,34 +1,23 @@
 export const filterType = 'executedNode';
-const CHANGE_SELECTED_NODES = 'CHANGE_SELECTED_NODES';
+const ADD_FLOW_NODES_FILTER = 'ADD_FLOW_NODES_FILTER';
 
 export function routeReducer(filters = [], action) {
-  if (action.type === CHANGE_SELECTED_NODES) {
+  if (action.type === ADD_FLOW_NODES_FILTER) {
     const {data} = action;
-    const hasExecutedNodeFilter = filters.some(({type}) => type === filterType);
     const newFilter = {
       type: filterType,
       data
     };
 
-    if (!hasExecutedNodeFilter) {
-      return filters.concat(newFilter);
-    }
-
-    return filters.map(filter => {
-      if (filter.type === filterType) {
-        return newFilter;
-      }
-
-      return filter;
-    });
+    return filters.concat(newFilter);
   }
 
   return filters;
 }
 
-export function createChangeSelectNodesAction(selected) {
+export function createAddFlowNodesFilterAction(selected) {
   return {
-    type: CHANGE_SELECTED_NODES,
+    type: ADD_FLOW_NODES_FILTER,
     data: selected
   };
 }

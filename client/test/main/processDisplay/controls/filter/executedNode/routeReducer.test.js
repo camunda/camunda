@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {routeReducer, createChangeSelectNodesAction} from 'main/processDisplay/controls/filter/executedNode/routeReducer';
+import {routeReducer, createAddFlowNodesFilterAction} from 'main/processDisplay/controls/filter/executedNode/routeReducer';
 
 describe('main/processDisplay/controls/filter/executedNode routeReduce', () => {
   let initialState;
@@ -13,7 +13,7 @@ describe('main/processDisplay/controls/filter/executedNode routeReduce', () => {
   });
 
   it('should not change initial state', () => {
-    routeReducer(initialState, createChangeSelectNodesAction('nodes'));
+    routeReducer(initialState, createAddFlowNodesFilterAction('nodes'));
     routeReducer(initialState, {type: 'other-action'});
 
     expect(initialState).to.eql([
@@ -24,7 +24,7 @@ describe('main/processDisplay/controls/filter/executedNode routeReduce', () => {
   });
 
   it('should add executedNode filter', () => {
-    const resultState = routeReducer(initialState, createChangeSelectNodesAction('nodes'));
+    const resultState = routeReducer(initialState, createAddFlowNodesFilterAction('nodes'));
 
     expect(resultState).to.contain({
       type: 'some-filter'

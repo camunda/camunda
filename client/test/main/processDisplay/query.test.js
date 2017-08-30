@@ -43,11 +43,31 @@ describe('getFilterQuery', () => {
         data: [
           {
             id: 'd1'
+          },
+          {
+            id: 'd2'
+          }
+        ]
+      },
+      {
+        type: executedNodeType,
+        data: [
+          {
+            id: 'c1'
           }
         ]
       }
     ]);
 
-    expect(response.executedFlowNodeIds).to.eql(['d1']);
+    expect(response.executedFlowNodes).to.eql({
+      andLinkedIds: [
+        {
+          orLinkedIds: ['d1', 'd2']
+        },
+        {
+          orLinkedIds: ['c1']
+        }
+      ]
+    });
   });
 });

@@ -1,6 +1,6 @@
 import {dispatch} from '../store';
-import {createChangeSelectNodesAction} from './routeReducer';
+import {createAddFlowNodesFilterAction} from './routeReducer';
 
-export function changeSelectedNodes(selected) {
-  dispatch(createChangeSelectNodesAction(selected));
+export function addFlowNodesFilter(selected) {
+  dispatch(createAddFlowNodesFilterAction(selected));
 }

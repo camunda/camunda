@@ -1,9 +1,8 @@
-import {jsx, Socket, OnEvent, Scope, createStateComponent} from 'view-utils';
+import {jsx, Socket, OnEvent, createStateComponent} from 'view-utils';
 import {createModal} from 'widgets';
 import {onNextTick} from 'utils';
 import {createSelectedNodeDiagram} from './SelectNodeDiagram';
-import {changeSelectedNodes} from './service';
-import {filterType} from './routeReducer';
+import {addFlowNodesFilter} from './service';
 
 export function createExecutedNodeModal(onFilterAdded, getDiagramXML) {
   const Modal = createModal();
@@ -22,9 +21,7 @@ export function createExecutedNodeModal(onFilterAdded, getDiagramXML) {
           <h4 className="modal-title">New Executed Node Filter</h4>
         </Socket>
         <Socket name="body">
-          <Scope selector={() => currentlySelected}>
-            <SelectNodeDiagram onSelectionChange={onSelectionChange} />
-          </Scope>
+          <SelectNodeDiagram onSelectionChange={onSelectionChange} />
         </Socket>
         <Socket name="foot">
           <button type="button" className="btn btn-default">
@@ -48,7 +45,7 @@ export function createExecutedNodeModal(onFilterAdded, getDiagramXML) {
     }
 
     function createFilter() {
-      changeSelectedNodes(currentlySelected);
+      addFlowNodesFilter(currentlySelected);
 
       Modal.close();
       onNextTick(onFilterAdded);
@@ -56,25 +53,12 @@ export function createExecutedNodeModal(onFilterAdded, getDiagramXML) {
 
     function abort() {
       Modal.close();
-      setCurrentlySelected();
     }
   };
 
   ExecutedNodeModal.open = () => {
-    setCurrentlySelected();
     Modal.open();
   };
-
-  function setCurrentlySelected() {
-    const state = State.getState();
-
-    if (state) {
-      const executedNodeFilter = state.filter
-        .find(({type}) => type === filterType);
-
-      currentlySelected = executedNodeFilter ? executedNodeFilter.data : [];
-    }
-  }
 
   return ExecutedNodeModal;
 }

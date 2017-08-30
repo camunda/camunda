@@ -27,11 +27,17 @@ export function getFilterQuery(filter) {
       .filter(entry => entry.type === 'variable')
       .map(entry => parseVariableFilter(entry.data)),
 
-    executedFlowNodeIds: filter
+    executedFlowNodes: filter
       .filter(({type}) => type === executedNodeType)
-      .reduce((ids, {data}) =>
-        ids.concat(data.map(({id}) => id)),
-        []
+      .reduce(
+        ({andLinkedIds}, {data}) => {
+          return {
+            andLinkedIds: andLinkedIds.concat({
+              orLinkedIds: data.map(({id}) => id)
+            })
+          };
+        },
+        {andLinkedIds: []}
       )
   };
 }

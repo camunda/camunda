@@ -9,7 +9,7 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
   let SelectNodeDiagram;
   let Socket;
   let ExecutedNodeModal;
-  let changeSelectedNodes;
+  let addFlowNodesFilter;
   let onFilterAdded;
   let getDiagramXML;
   let onNextTick;
@@ -29,8 +29,8 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
     Socket = createMockComponent('Socket', true);
     __set__('Socket', Socket);
 
-    changeSelectedNodes = sinon.spy();
-    __set__('changeSelectedNodes', changeSelectedNodes);
+    addFlowNodesFilter = sinon.spy();
+    __set__('addFlowNodesFilter', addFlowNodesFilter);
 
     onFilterAdded = sinon.spy();
     getDiagramXML = sinon.stub().returns('diagram');
@@ -50,7 +50,7 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
     __ResetDependency__('createModal');
     __ResetDependency__('createSelectedNodeDiagram');
     __ResetDependency__('Socket');
-    __ResetDependency__('changeSelectedNodes');
+    __ResetDependency__('  addFlowNodesFilter');
     __ResetDependency__('onNextTick');
     __ResetDependency__('filterType');
   });
@@ -94,15 +94,11 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
       expect(body).to.contain.text(SelectNodeDiagram.text);
     });
 
-    it('should pass onSelectionChange callback to SelectNodeDiagram that changes currently selected nodes passed to diagram', () => {
+    it('should pass onSelectionChange callback to SelectNodeDiagram', () => {
       const onSelectionChange = SelectNodeDiagram.getAttribute('onSelectionChange');
       const nodes = 'nodes';
 
-      onSelectionChange(nodes);
-
-      update([]);
-
-      expect(SelectNodeDiagram.updatedWith(nodes)).to.eql(true);
+      expect(onSelectionChange.bind(null, nodes)).not.to.throw;
     });
   });
 
@@ -141,7 +137,7 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
         eventName: 'click'
       });
 
-      expect(changeSelectedNodes.calledWith(nodes))
+      expect(addFlowNodesFilter.calledWith(nodes))
         .to.eql(true, 'expected selected nodes to be changed');
       expect(Modal.close.calledOnce)
         .to.eql(true, 'expected Modal to be closed');

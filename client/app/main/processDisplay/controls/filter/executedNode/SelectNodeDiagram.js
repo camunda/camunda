@@ -64,33 +64,21 @@ export const createSelectedNodeDiagram = () => {
       diagramLoaded = false;
 
       return [
-        update,
-        updateSelected
+        update
       ];
     };
   }
 
-  function updateSelected(selected = []) {
-    if (!Array.isArray(selected) || selected.some(id => typeof id !== 'string')) {
-      return;
-    }
-
+  function clearSelected() {
     elementRegistry.forEach(element => {
-      const hasMarker = canvas.hasMarker(element.id, selectedMarker);
-      const isSelected = selected.some(id => id === element.id);
-
-      if (isSelected && !hasMarker) {
-        canvas.addMarker(element.id, selectedMarker);
-      } else if (!isSelected && hasMarker) {
-        canvas.removeMarker(element.id, selectedMarker);
-      }
+      canvas.removeMarker(element.id, selectedMarker);
     });
   }
 
   SelectNodeDiagram.loadDiagram = (xml, selected) => {
     if (diagramLoaded) {
       resetZoom(viewer);
-      updateSelected(selected);
+      clearSelected();
 
       return;
     }
@@ -115,7 +103,7 @@ export const createSelectedNodeDiagram = () => {
           }
         });
 
-        updateSelected(selected);
+        clearSelected();
       }, 20);
     });
   };

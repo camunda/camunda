@@ -15,7 +15,6 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
   let onSelectionChange;
   let SelectNodeDiagram;
   let node;
-  let update;
 
   beforeEach(() => {
     resetZoom = sinon.spy();
@@ -55,7 +54,7 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
 
     SelectNodeDiagram = createSelectedNodeDiagram();
 
-    ({node, update} = mountTemplate(<SelectNodeDiagram onSelectionChange={onSelectionChange} />));
+    ({node} = mountTemplate(<SelectNodeDiagram onSelectionChange={onSelectionChange} />));
   });
 
   afterEach(() => {
@@ -79,37 +78,6 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
     const container = ViewerCall.firstCall.args[0].container;
 
     expect(container).to.eql(node.querySelector('.diagram__holder'));
-  });
-
-  it('should update selected from state', () => {
-    const element = {
-      id: 'id-1'
-    };
-    const element2 = {
-      id: 'K#233'
-    };
-    const element3 = {
-      id: 'a3f467cd'
-    };
-    const selected = [element.id, element3.id];
-
-    viewer.hasMarker.returns(false);
-    update(selected);
-
-    const [iteratee] = viewer.forEach.firstCall.args;
-
-    iteratee(element);
-
-    viewer.hasMarker.returns(true);
-    iteratee(element2);
-
-    viewer.hasMarker.returns(false);
-    iteratee(element3);
-
-    expect(viewer.addMarker.calledWith(element.id)).to.eql(true);
-    expect(viewer.removeMarker.calledWith(element2.id)).to.eql(true);
-    expect(viewer.removeMarker.calledWith(element3.id)).to.eql(false);
-    expect(viewer.removeMarker.calledWith(element3.id)).to.eql(false);
   });
 
   describe('on element.click', () => {
