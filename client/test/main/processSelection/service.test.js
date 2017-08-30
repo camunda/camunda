@@ -40,9 +40,9 @@ describe('ProcessSelection service', () => {
         ]
       },
       {
-        versions:[
+        versions: [
           {
-            id: 'c1',
+            id: 'c&1',
             version: 1,
             key: 'c'
           }
@@ -58,10 +58,10 @@ describe('ProcessSelection service', () => {
 
     xmlResponse = {
       d2: 'd2-xml',
-      c1: 'c1-xml'
+      'c&1': 'c1-xml'
     };
 
-    get.withArgs('/api/process-definition/xml?ids=d2&ids=c1').returns(Promise.resolve({
+    get.withArgs('/api/process-definition/xml?ids=d2&ids=c%261').returns(Promise.resolve({
       json: sinon.stub().returns(
         Promise.resolve(xmlResponse)
       )
@@ -129,12 +129,12 @@ describe('ProcessSelection service', () => {
         {
           current: {
             ...processDefinitionResponse[1].versions[0],
-            bpmn20Xml: xmlResponse.c1
+            bpmn20Xml: xmlResponse['c&1']
           },
           versions: [
             {
               ...processDefinitionResponse[1].versions[0],
-              bpmn20Xml: xmlResponse.c1
+              bpmn20Xml: xmlResponse['c&1']
             }
           ]
         }

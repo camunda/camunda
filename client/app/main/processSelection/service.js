@@ -27,7 +27,7 @@ export function loadProcessDefinitions() {
         .map(({current: {id}}) => id)
         .reduce((ids, id) => {
           if (ids.length) {
-            return ids + '&ids=' + id;
+            return ids + '&ids=' + encodeURIComponent(id);
           }
 
           return 'ids=' + id;
