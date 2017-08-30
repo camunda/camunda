@@ -20,6 +20,7 @@ exports.runWithColor = runWithColor;
 exports.isWindows = /^win/.test(process.platform);
 exports.runInSequence = runInSequence;
 exports.changeFile = changeFile;
+exports.changeJsonFile = changeJsonFile;
 
 function runWithColor(command, name, color, options = {}) {
   console.log(chalk.yellow(command), options);
@@ -152,16 +153,40 @@ function splitIntoChunks(data, chunkSize) {
 }
 
 function changeFile(file, change) {
-  if (change.regexp instanceof RegExp) {
-    return changeFile(file, (content) => {
-      return content.replace(change.regexp, change.replacement);
-    });
-  }
+  const changeFn = constructChangeFn(change);
 
   const content = fs.readFileSync(file);
 
   fs.writeFileSync(
     file,
-    change(content.toString())
+    changeFn(content.toString())
   );
+}
+
+const identitity = x => x;
+
+function constructChangeFn(change) {
+  if (Array.isArray(change)) {
+    return change.reduce((fn, change) => {
+      const changeFn = constructChangeFn(change);
+
+      return content => changeFn(fn(content));
+    }, identitity);
+  }
+
+  if (change.regexp instanceof RegExp) {
+    return content => {
+      return content.replace(change.regexp, change.replacement);
+    };
+  }
+
+  return change;
+}
+
+function changeJsonFile(file, changeFn) {
+  return changeFile(file, content => {
+    const jsonContent = JSON.parse(content);
+
+    return JSON.stringify(changeFn(jsonContent), null, 2);
+  });
 }

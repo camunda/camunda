@@ -9,12 +9,12 @@ export const LOAD_PROCESSDEFINITIONS = 'LOAD_PROCESSDEFINITIONS';
 
 export const LOADING_PROPERTY = 'processDefinitions';
 
-export const reducer = addLoading((state, {type, key, version, xml}) => {
+export const reducer = addLoading((state, {type, previousId, version, xml}) => {
   if (state[LOADING_PROPERTY]) {
     if (type === SET_VERSION) {
       return changeData(state, LOADING_PROPERTY, definitions => {
         return definitions.map(entry => {
-          if (entry.current.key === key) {
+          if (entry.current.id === previousId) {
             const current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
 
             return {
@@ -31,7 +31,7 @@ export const reducer = addLoading((state, {type, key, version, xml}) => {
     if (type === SET_VERSION_XML) {
       return changeData(state, LOADING_PROPERTY, definitions => {
         return definitions.map(entry => {
-          if (entry.current.key === key) {
+          if (entry.current.id === previousId) {
             return {
               ...entry,
               versions: entry.versions.map(definition => {
@@ -56,18 +56,18 @@ export const reducer = addLoading((state, {type, key, version, xml}) => {
   return state;
 }, LOADING_PROPERTY);
 
-export function createSetVersionAction(key, version) {
+export function createSetVersionAction(previousId, version) {
   return {
     type: SET_VERSION,
-    key,
+    previousId,
     version
   };
 }
 
-export function createSetVersionXmlAction(key, version, xml) {
+export function createSetVersionXmlAction(previousId, version, xml) {
   return {
     type: SET_VERSION_XML,
-    key,
+    previousId,
     version,
     xml
   };

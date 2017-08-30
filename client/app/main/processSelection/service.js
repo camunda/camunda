@@ -67,15 +67,15 @@ export function openDefinition(id) {
   router.goTo('processDisplay', {definition: id});
 }
 
-export function setVersionForProcess({id, key, version, bpmn20Xml}) {
+export function setVersionForProcess(previousId, {id, key, version, bpmn20Xml}) {
   if (typeof bpmn20Xml !== 'string') {
     return get(`/api/process-definition/${id}/xml`)
       .then(response => response.text())
       .then(xml => {
-        dispatchAction(createSetVersionXmlAction(key, version, xml));
-        dispatchAction(createSetVersionAction(key, version));
+        dispatchAction(createSetVersionXmlAction(previousId, version, xml));
+        dispatchAction(createSetVersionAction(previousId, version));
       });
   }
 
-  dispatchAction(createSetVersionAction(key, version));
+  dispatchAction(createSetVersionAction(previousId, version));
 }

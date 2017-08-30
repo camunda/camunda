@@ -1,1 +1,1 @@
-exports.c7port = 8050;
+exports.c7ports = [8050];

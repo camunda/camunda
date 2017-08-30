@@ -5,7 +5,7 @@ const chalk = require('chalk');
 const shell = require('shelljs');
 const utils = require('./utils');
 const engine = require('./engine');
-const {c7port} = require('./config');
+const {c7ports} = require('./config');
 
 const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
@@ -63,9 +63,30 @@ mvnCleanPackage.on('close', code => {
             const classpathSeparator = isWindows ? ';' : ':' ;
             const classpath = environmentDir + classpathSeparator + backendJar;
 
-            utils.changeFile(config, {
-              regexp: /http:\/\/localhost:8080\/engine-rest/g,
-              replacement: `http://localhost:${c7port}/engine-rest`
+            utils.changeJsonFile(config, content => {
+              return Object.assign(
+                content,
+                {
+                  engines: c7ports.reduce((engines, port) => {
+                    return Object.assign(
+                      engines,
+                      {
+                        [`engine_${port}`]: {
+                          name: '/engine/default',
+                          rest: `http://localhost:${port}/engine-rest`,
+                          authentication: {
+                            accessGroup: '',
+                            enabled: false,
+                            password: '',
+                            user: ''
+                          },
+                          enabled: true
+                        }
+                      }
+                    );
+                  }, {})
+                }
+              );
             });
 
             runWithColor('java -cp ' + classpath + ' org.camunda.optimize.Main', 'BE', chalk.green);

@@ -146,7 +146,7 @@ describe('<PreviewCard>', () => {
       });
 
       expect(setVersionForProcess.calledOnce).to.eql(true);
-      expect(setVersionForProcess.calledWith(state.versions[1])).to.eql(true);
+      expect(setVersionForProcess.calledWith(state.current.id, state.versions[1])).to.eql(true);
     });
 
     it('should set the version from state', () => {
