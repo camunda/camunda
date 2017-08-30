@@ -8,12 +8,6 @@ const jsx = React.createElement;
 const router = getRouter();
 
 export class HeaderReact extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.goToRoot = this.goToRoot.bind(this);
-  }
-
   render() {
     return <header>
       <div className="navbar-header">
@@ -27,7 +21,7 @@ export class HeaderReact extends React.Component {
     </header>;
   }
 
-  goToRoot(event) {
+  goToRoot = (event) => {
     if (!this.props.redirect) {
       event.preventDefault();
     }

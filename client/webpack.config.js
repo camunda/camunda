@@ -91,6 +91,7 @@ module.exports = {
           presets: ['latest'],
           plugins: [
             'transform-object-rest-spread',
+            'transform-class-properties',
             ['transform-react-jsx', {
               'pragma': 'jsx'
             }]
