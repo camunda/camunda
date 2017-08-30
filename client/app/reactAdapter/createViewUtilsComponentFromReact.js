@@ -5,7 +5,7 @@ import {DESTROY_EVENT} from 'view-utils';
 export function createViewUtilsComponentFromReact(tag, ReactComponent) {
   return ({children, ...props}) => {
     return (node, eventsBus) => {
-      let listener;
+      let setState;
 
       class AdapterComponent extends React.Component {
         constructor(props) {
@@ -13,7 +13,7 @@ export function createViewUtilsComponentFromReact(tag, ReactComponent) {
 
           this.state = {};
 
-          listener = this.setState.bind(this);
+          setState = this.setState.bind(this);
         }
 
         render() {
@@ -39,8 +39,8 @@ export function createViewUtilsComponentFromReact(tag, ReactComponent) {
       eventsBus.on(DESTROY_EVENT, () => ReactDOM.unmountComponentAtNode(target));
 
       return state => {
-        if (listener && typeof listener === 'function') {
-          listener(state);
+        if (setState && typeof setState === 'function') {
+          setState(state);
         }
       };
     };

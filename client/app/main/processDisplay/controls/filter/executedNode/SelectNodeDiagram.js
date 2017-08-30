@@ -93,7 +93,6 @@ export const createSelectedNodeDiagram = () => {
 
       setElementVisibility(loaderNode, false);
 
-      window.resetModalZoom = resetZoom.bind(null, viewer);
       resetZoom(viewer);
 
       onNextTick(() => {
