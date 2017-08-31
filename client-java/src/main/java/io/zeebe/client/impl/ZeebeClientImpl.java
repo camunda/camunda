@@ -155,6 +155,12 @@ public class ZeebeClientImpl implements ZeebeClient
     }
 
     @Override
+    public boolean isConnected()
+    {
+        return connected;
+    }
+
+    @Override
     public void disconnect()
     {
         if (connected)

@@ -50,6 +50,12 @@ public interface ZeebeClient extends AutoCloseable
     void connect();
 
     /**
+     * Indicates current state of connection.
+     * @return <code>true</code> if connected
+     */
+    boolean isConnected();
+
+    /**
      * Disconnects the client from the configured broker. Not thread-safe.
      */
     void disconnect();
