@@ -59,15 +59,15 @@ describe('getFilterQuery', () => {
       }
     ]);
 
-    expect(response.executedFlowNodes).to.eql({
-      andLinkedIds: [
-        {
-          orLinkedIds: ['d1', 'd2']
-        },
-        {
-          orLinkedIds: ['c1']
-        }
-      ]
-    });
+    expect(response.executedFlowNodes).to.eql([
+      {
+        operator: '=',
+        values: ['d1', 'd2']
+      },
+      {
+        operator: '=',
+        values: ['c1']
+      }
+    ]);
   });
 });

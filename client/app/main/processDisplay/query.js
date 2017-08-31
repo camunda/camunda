@@ -29,16 +29,12 @@ export function getFilterQuery(filter) {
 
     executedFlowNodes: filter
       .filter(({type}) => type === executedNodeType)
-      .reduce(
-        ({andLinkedIds}, {data}) => {
-          return {
-            andLinkedIds: andLinkedIds.concat({
-              orLinkedIds: data.map(({id}) => id)
-            })
-          };
-        },
-        {andLinkedIds: []}
-      )
+      .map(({data}) => {
+        return {
+          operator: '=',
+          values: data.map(({id}) => id)
+        };
+      })
   };
 }
 
