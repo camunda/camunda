@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0</version>
   </parent>
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>camunda-optimize</artifactId>
-  <version>1.3.0-SNAPSHOT</version>
+  <version>1.3.0</version>
   <packaging>pom</packaging>
 
   <properties>
