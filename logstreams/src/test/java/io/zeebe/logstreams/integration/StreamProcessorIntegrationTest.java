@@ -874,7 +874,6 @@ public class StreamProcessorIntegrationTest
         @Override
         public EventProcessor onEvent(LoggedEvent event)
         {
-            System.out.println("Handling event");
             currentEvent = event;
             return this;
         }
@@ -894,7 +893,6 @@ public class StreamProcessorIntegrationTest
             }
             else
             {
-                System.out.println("Writing new event");
                 return writer
                     .key(currentEvent.getKey())
                     .value(currentEvent.getValueBuffer(), currentEvent.getValueOffset(), currentEvent.getValueLength())
