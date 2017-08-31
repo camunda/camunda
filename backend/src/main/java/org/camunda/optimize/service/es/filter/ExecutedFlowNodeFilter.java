@@ -20,6 +20,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class ExecutedFlowNodeFilter implements QueryFilter {
 
+  public static final String EQUAL_OPERATOR = "=";
+  public static final String UNEQUAL_OPERATOR = "!=";
+
   private Logger logger = LoggerFactory.getLogger(ExecutedFlowNodeFilter.class);
 
   public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
@@ -37,7 +40,7 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
 
   private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    if (flowNodeFilter.getOperator().equals("=")) {
+    if (EQUAL_OPERATOR.equals(flowNodeFilter.getOperator())) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
           nestedQuery(
@@ -47,7 +50,7 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
           )
         );
       }
-    } else if (flowNodeFilter.getOperator().equals("!=")) {
+    } else if (UNEQUAL_OPERATOR.equals(flowNodeFilter.getOperator())) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
           nestedQuery(
