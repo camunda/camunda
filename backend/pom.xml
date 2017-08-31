@@ -14,7 +14,7 @@
     <jetty.version>9.2.21.v20170120</jetty.version>
     <jersy.version>2.25</jersy.version>
     <skip.elasticsearch>false</skip.elasticsearch>
-    <skip.unit.tests>false</skip.unit.tests>
+    <skip.unit.tests>${skipTests}</skip.unit.tests>
   </properties>
 
   <dependencies>
