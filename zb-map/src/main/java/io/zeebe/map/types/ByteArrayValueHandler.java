@@ -15,10 +15,11 @@
  */
 package io.zeebe.map.types;
 
-import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
+import org.agrona.DirectBuffer;
+import org.agrona.UnsafeAccess;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.map.ValueHandler;
-import org.agrona.UnsafeAccess;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
@@ -26,23 +27,33 @@ public class ByteArrayValueHandler implements ValueHandler
 {
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    public byte[] theValue;
+    public UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public int getValueLength()
     {
-        return theValue.length;
+        return valueBuffer.capacity();
+    }
+
+    public void setValue(byte[] value)
+    {
+        valueBuffer.wrap(value);
+    }
+
+    public void setValue(DirectBuffer buffer, int offset, int length)
+    {
+        valueBuffer.wrap(buffer, offset, length);
     }
 
     @Override
     public void writeValue(long writeValueAddr)
     {
-        UNSAFE.copyMemory(theValue, ARRAY_BASE_OFFSET, null, writeValueAddr, getValueLength());
+        UNSAFE.copyMemory(valueBuffer.byteArray(), valueBuffer.addressOffset(), null, writeValueAddr, valueBuffer.capacity());
     }
 
     @Override
     public void readValue(long valueAddr, int valueLength)
     {
-        UNSAFE.copyMemory(null, valueAddr, theValue, ARRAY_BASE_OFFSET, valueLength);
+        UNSAFE.copyMemory(null, valueAddr, valueBuffer.byteArray(), valueBuffer.addressOffset(), valueLength);
     }
 }

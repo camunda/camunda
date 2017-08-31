@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
+import io.zeebe.util.buffer.BufferUtil;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -347,7 +349,7 @@ public class Long2BytesZbMapTest
         {
             final Long2BytesZbMapEntry entry = iterator.next();
 
-            assertThat(entry.getValue()).isEqualTo(VALUE);
+            assertThat(entry.getValue()).isEqualTo(BufferUtil.wrapArray(VALUE));
 
             foundKeys.add(entry.getKey());
         }

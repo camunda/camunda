@@ -48,7 +48,7 @@ public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler
     public boolean get(long key, byte[] value)
     {
         keyHandler.theKey = key;
-        valueHandler.theValue = value;
+        valueHandler.setValue(value);
         return get();
     }
 
@@ -57,14 +57,14 @@ public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler
         ensureValueMaxLength(value);
 
         keyHandler.theKey = key;
-        valueHandler.theValue = value;
+        valueHandler.setValue(value);
         return put();
     }
 
     public boolean remove(long key, byte[] value)
     {
         keyHandler.theKey = key;
-        valueHandler.theValue = value;
+        valueHandler.setValue(value);
         return remove();
     }
 
