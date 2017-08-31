@@ -1,17 +1,25 @@
 package org.camunda.optimize.dto.optimize.query.flownode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ExecutedFlowNodeFilterDto {
 
-  protected List<FlowNodeIdList> andLinkedIds = new ArrayList<>();
+  protected String operator;
+  protected List<String> values;
 
-  public List<FlowNodeIdList> getAndLinkedIds() {
-    return andLinkedIds;
+  public String getOperator() {
+    return operator;
   }
 
-  public void setAndLinkedIds(List<FlowNodeIdList> andLinkedIds) {
-    this.andLinkedIds = andLinkedIds;
+  public void setOperator(String operator) {
+    this.operator = operator;
+  }
+
+  public List<String> getValues() {
+    return values;
+  }
+
+  public void setValues(List<String> values) {
+    this.values = values;
   }
 }

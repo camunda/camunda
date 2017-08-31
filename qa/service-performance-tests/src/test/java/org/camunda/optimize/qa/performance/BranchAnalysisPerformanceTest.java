@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +35,7 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());
-    filter.setExecutedFlowNodes(new ExecutedFlowNodeFilterDto());
+    filter.setExecutedFlowNodes(new ArrayList<>());
     test = this.testBuilder
         .step(new BranchAnalysisDataGenerationStep())
         .step(new GetBranchAnalysisStep(filter))
@@ -103,11 +104,11 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getBranchAnalysisWithExecutedFlowNodeFilter() {
     // given
-    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes =
       ExecutedFlowNodeFilterBuilder.construct()
         .id("startEvent")
         .build();
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
+    filter.setExecutedFlowNodes(executedFlowNodes);
 
     // when
     PerfTestResult testResult = test.run();

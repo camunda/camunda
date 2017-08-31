@@ -4,7 +4,6 @@ import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.flownode.FlowNodeIdList;
 import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
@@ -34,10 +33,9 @@ public class ValidationHelper {
       }
     }
     if (dto.getFilter() != null && dto.getFilter().getExecutedFlowNodes() != null) {
-      ExecutedFlowNodeFilterDto filterDto = dto.getFilter().getExecutedFlowNodes();
-      ensureNotEmpty("andLinkedIds", filterDto.getAndLinkedIds());
-      for (FlowNodeIdList flowNodeIdList : filterDto.getAndLinkedIds()) {
-        ensureNotEmptyList("orLinkedIds", flowNodeIdList.getOrLinkedIds());
+      for (ExecutedFlowNodeFilterDto flowNodeFilter : dto.getFilter().getExecutedFlowNodes()) {
+        ensureNotEmpty("operator", flowNodeFilter.getOperator());
+        ensureNotEmpty("value", flowNodeFilter.getValues());
       }
     }
   }

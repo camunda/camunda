@@ -82,10 +82,10 @@ public class MixedFilterIT {
     VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     DataUtilHelper.addDateFilter("<", "start_date", date, queryDto);
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    queryDto.getFilter().setExecutedFlowNodes(flowNodeFilterDto);
+    queryDto.getFilter().setExecutedFlowNodes(flowNodeFilter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then

@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,7 +33,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     super.setUp();
     filter.setDates(new ArrayList<>());
     filter.setVariables(new ArrayList<>());
-    filter.setExecutedFlowNodes(new ExecutedFlowNodeFilterDto());
+    filter.setExecutedFlowNodes(new ArrayList<>());
     testBuilder = this.testBuilder
         .step(new HeatMapDataGenerationStep());
   }
@@ -104,11 +105,11 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getFrequencyHeatmapWithExecutedFlowNodeFilter() {
     // given
-    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes =
       ExecutedFlowNodeFilterBuilder.construct()
         .id("startEvent")
         .build();
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
+    filter.setExecutedFlowNodes(executedFlowNodes);
 
     test = testBuilder
       .step(new GetFrequencyGetHeatMapStep(filter))
@@ -190,11 +191,11 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getDurationHeatmapWithExecutedFlowNodeFilter() {
     // given
-    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes =
       ExecutedFlowNodeFilterBuilder.construct()
         .id("startEvent")
         .build();
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
+    filter.setExecutedFlowNodes(executedFlowNodes);
 
     test = testBuilder
       .step(new GetDurationGetHeatMapStep(filter))

@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.flownode.FlowNodeIdList;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -24,8 +23,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -56,10 +57,11 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
+          .equalOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -81,10 +83,11 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
+          .equalOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -108,12 +111,12 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -139,10 +142,11 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
-          .linkIdsByOr(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
+          .equalOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
@@ -195,14 +199,15 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto =
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes =
       ExecutedFlowNodeFilterBuilder
         .construct()
-          .linkIdsByOr("UserTask-PathA", "UserTask-PathB")
+            .ids("UserTask-PathA", "UserTask-PathB")
+            .equalOperator()
           .and()
-          .id("FinalUserTask")
+            .id("FinalUserTask")
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
@@ -227,10 +232,10 @@ public class ExecutedFlowNodeFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, flowNodeFilterDto);
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -238,14 +243,16 @@ public class ExecutedFlowNodeFilterIT {
   }
 
   @Test
-  public void andLinkedIdListIsNull() {
+  public void validationExceptionOnNullOperatorField() {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId("TestDefinition");
     FilterMapDto filter = new FilterMapDto();
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = new ExecutedFlowNodeFilterDto();
-    flowNodeFilterDto.setAndLinkedIds(null);
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
+    List<ExecutedFlowNodeFilterDto> executedFlowNodeFilter = new ArrayList<>();
+    ExecutedFlowNodeFilterDto flowNodeFilter = new ExecutedFlowNodeFilterDto();
+    flowNodeFilter.setValues(Collections.singletonList("foo"));
+    executedFlowNodeFilter.add(flowNodeFilter);
+    filter.setExecutedFlowNodes(executedFlowNodeFilter);
     dto.setFilter(filter);
 
     // when
@@ -256,15 +263,16 @@ public class ExecutedFlowNodeFilterIT {
   }
 
   @Test
-  public void orLinkedIdListIsEmpty() {
+  public void validationExceptionOnNullValueField() {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId("TestDefinition");
     FilterMapDto filter = new FilterMapDto();
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = new ExecutedFlowNodeFilterDto();
-    FlowNodeIdList flowNodeIdList = new FlowNodeIdList();
-    flowNodeFilterDto.setAndLinkedIds(Collections.singletonList(flowNodeIdList));
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
+    List<ExecutedFlowNodeFilterDto> executedFlowNodeFilter = new ArrayList<>();
+    ExecutedFlowNodeFilterDto flowNodeFilter = new ExecutedFlowNodeFilterDto();
+    flowNodeFilter.setOperator("foo");
+    executedFlowNodeFilter.add(flowNodeFilter);
+    filter.setExecutedFlowNodes(executedFlowNodeFilter);
     dto.setFilter(filter);
 
     // when
@@ -273,28 +281,6 @@ public class ExecutedFlowNodeFilterIT {
     // then
     assertThat(response.getStatus(),is(500));
   }
-
-  @Test
-  public void orLinkedIdListIsNull() {
-    //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId("TestDefinition");
-    FilterMapDto filter = new FilterMapDto();
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = new ExecutedFlowNodeFilterDto();
-    FlowNodeIdList flowNodeIdList = new FlowNodeIdList();
-    flowNodeIdList.setOrLinkedIds(null);
-    flowNodeFilterDto.setAndLinkedIds(Collections.singletonList(flowNodeIdList));
-    filter.setExecutedFlowNodes(flowNodeFilterDto);
-    dto.setFilter(filter);
-
-    // when
-    Response response = getResponse(dto);
-
-    // then
-    assertThat(response.getStatus(),is(500));
-  }
-
-
 
   private void assertResults(HeatMapResponseDto resultMap, String activityId, long piCount) {
     assertThat(resultMap.getFlowNodes().get(activityId), is(piCount));
@@ -302,11 +288,11 @@ public class ExecutedFlowNodeFilterIT {
   }
 
   private HeatMapQueryDto createHeatMapQueryWithFLowNodeFilter(String processDefinitionId,
-                                                               ExecutedFlowNodeFilterDto flowNodeFilterDto) {
+                                                               List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
     FilterMapDto mapDto = new FilterMapDto();
-    mapDto.setExecutedFlowNodes(flowNodeFilterDto);
+    mapDto.setExecutedFlowNodes(executedFlowNodes);
     dto.setFilter(mapDto);
     return dto;
   }

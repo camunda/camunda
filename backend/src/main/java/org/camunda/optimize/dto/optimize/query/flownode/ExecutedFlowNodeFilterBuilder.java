@@ -6,41 +6,58 @@ import java.util.List;
 
 public class ExecutedFlowNodeFilterBuilder {
 
-  private List<FlowNodeIdList> andLinkedFlowNodeIds = new ArrayList<>();
-  private List<String> orLinkedFlowNodeIds = new ArrayList<>();
+  private String operator = "=";
+  private List<String> values = new ArrayList<>();
+  private List<ExecutedFlowNodeFilterDto> executedFlowNodes = new ArrayList<>();
 
   public static ExecutedFlowNodeFilterBuilder construct() {
     return new ExecutedFlowNodeFilterBuilder();
   }
 
   public ExecutedFlowNodeFilterBuilder id(String flowNodeId) {
-    orLinkedFlowNodeIds.add(flowNodeId);
+    values.add(flowNodeId);
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder linkIdsByOr(String... flowNodeIds) {
-    orLinkedFlowNodeIds.addAll(Arrays.asList(flowNodeIds));
+  public ExecutedFlowNodeFilterBuilder equalOperator() {
+    operator = "=";
+    return this;
+  }
+
+  public ExecutedFlowNodeFilterBuilder unequalOperator() {
+    operator = "!=";
+    return this;
+  }
+
+  public ExecutedFlowNodeFilterBuilder ids(String... flowNodeIds) {
+    values.addAll(Arrays.asList(flowNodeIds));
     return this;
   }
 
   public ExecutedFlowNodeFilterBuilder and() {
-    FlowNodeIdList flowNodeIdList = new FlowNodeIdList();
-    flowNodeIdList.getOrLinkedIds().addAll(orLinkedFlowNodeIds);
-    andLinkedFlowNodeIds.add(flowNodeIdList);
-    orLinkedFlowNodeIds.clear();
+    addNewFilter();
     return this;
   }
 
-  public ExecutedFlowNodeFilterDto build() {
-    if (!orLinkedFlowNodeIds.isEmpty()) {
-      FlowNodeIdList flowNodeIdList = new FlowNodeIdList();
-      flowNodeIdList.getOrLinkedIds().addAll(orLinkedFlowNodeIds);
-      andLinkedFlowNodeIds.add(flowNodeIdList);
-      orLinkedFlowNodeIds.clear();
+  private void addNewFilter() {
+    ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
+    executedFlowNodeFilterDto.setOperator(operator);
+    executedFlowNodeFilterDto.setValues(new ArrayList<>(values));
+    executedFlowNodes.add(executedFlowNodeFilterDto);
+    values.clear();
+    restoreDefaultOperator();
+  }
+
+  private void restoreDefaultOperator() {
+    operator = "=";
+  }
+
+  public List<ExecutedFlowNodeFilterDto> build() {
+    if (!values.isEmpty()) {
+      addNewFilter();
     }
-    ExecutedFlowNodeFilterDto flowNodeFilter = new ExecutedFlowNodeFilterDto();
-    flowNodeFilter.getAndLinkedIds().addAll(andLinkedFlowNodeIds);
-    andLinkedFlowNodeIds.clear();
-    return flowNodeFilter;
+    List<ExecutedFlowNodeFilterDto> result = new ArrayList<>(executedFlowNodes);
+    executedFlowNodes.clear();
+    return result;
   }
 }

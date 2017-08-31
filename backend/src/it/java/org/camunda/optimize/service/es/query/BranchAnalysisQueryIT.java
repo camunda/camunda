@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -507,10 +508,10 @@ public class BranchAnalysisQueryIT {
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
     FilterMapDto mapDto = new FilterMapDto();
-    ExecutedFlowNodeFilterDto flowNodeFilterDto = ExecutedFlowNodeFilterBuilder.construct()
+    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(TASK_ID_2)
           .build();
-    mapDto.setExecutedFlowNodes(flowNodeFilterDto);
+    mapDto.setExecutedFlowNodes(flowNodeFilter);
     dto.setFilter(mapDto);
 
     //when

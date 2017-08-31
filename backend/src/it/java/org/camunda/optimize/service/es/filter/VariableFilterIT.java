@@ -911,10 +911,6 @@ public class VariableFilterIT {
     return new Date(System.currentTimeMillis() - nSecondsInMilliSecond);
   }
 
-  private String nowDateMinusSecondsAsString(int nSeconds) {
-    return sdf.format(nowDateMinusSeconds(nSeconds));
-  }
-
   private Date nowDatePlusSeconds(int nSeconds) {
     long nSecondsInMilliSecond = (nSeconds * 1000L);
     return new Date(System.currentTimeMillis() + nSecondsInMilliSecond);

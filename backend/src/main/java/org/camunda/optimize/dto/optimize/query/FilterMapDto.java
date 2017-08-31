@@ -12,7 +12,7 @@ import java.util.List;
 public class FilterMapDto {
   protected List<DateFilterDto> dates = new ArrayList<>();
   protected List<VariableFilterDto> variables = new ArrayList<>();
-  protected ExecutedFlowNodeFilterDto executedFlowNodes = new ExecutedFlowNodeFilterDto();
+  protected List<ExecutedFlowNodeFilterDto> executedFlowNodes = new ArrayList<>();
 
   public List<DateFilterDto> getDates() {
     return dates;
@@ -30,11 +30,11 @@ public class FilterMapDto {
     this.variables = variables;
   }
 
-  public ExecutedFlowNodeFilterDto getExecutedFlowNodes() {
+  public List<ExecutedFlowNodeFilterDto> getExecutedFlowNodes() {
     return executedFlowNodes;
   }
 
-  public void setExecutedFlowNodes(ExecutedFlowNodeFilterDto executedFlowNodes) {
+  public void setExecutedFlowNodes(List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
     this.executedFlowNodes = executedFlowNodes;
   }
 }

@@ -1,11 +1,12 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.flownode.FlowNodeIdList;
+import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,40 +20,43 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class ExecutedFlowNodeFilter implements QueryFilter {
 
+  private Logger logger = LoggerFactory.getLogger(ExecutedFlowNodeFilter.class);
+
   public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
     if (filter.getExecutedFlowNodes() != null) {
       addExecutedFlowNodeFilters(query, filter.getExecutedFlowNodes());
     }
   }
 
-  private void addExecutedFlowNodeFilters(BoolQueryBuilder query, ExecutedFlowNodeFilterDto flowNodeFilterDto) {
+  private void addExecutedFlowNodeFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDto> flowNodeFilter) {
     List<QueryBuilder> filters = query.filter();
-    for (FlowNodeIdList executedFlowNodeId : flowNodeFilterDto.getAndLinkedIds()) {
-      filters.add(createFilterQueryBuilder(executedFlowNodeId));
+    for (ExecutedFlowNodeFilterDto executedFlowNode : flowNodeFilter) {
+      filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(FlowNodeIdList activityIds) {
-    return nestedQuery(
-      EVENTS,
-      createAndFilter(activityIds),
-      ScoreMode.None
-    );
-  }
-
-  private BoolQueryBuilder createAndFilter(FlowNodeIdList flowNodeIdList) {
+  private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    boolQueryBuilder.must(
-      createOrFilter(flowNodeIdList.getOrLinkedIds())
-    );
+    if (flowNodeFilter.getOperator().equals("=")) {
+      boolQueryBuilder.must(
+        nestedQuery(
+          EVENTS,
+          createValueFilter(flowNodeFilter.getValues()),
+          ScoreMode.None
+        )
+      );
+    } else {
+      logger.error("Could not filter for flow nodes. " +
+        "Operator [{}] is not allowed! Use [=]", flowNodeFilter.getOperator());
+    }
     return boolQueryBuilder;
   }
 
-  private BoolQueryBuilder createOrFilter(List<String> orCombinedFlowNodeIds) {
+  private BoolQueryBuilder createValueFilter(List<String> values) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    for (String activityId : orCombinedFlowNodeIds) {
+    for (String value : values) {
       boolQueryBuilder.should(
-        termQuery(nestedActivityIdFieldLabel(), activityId)
+        termQuery(nestedActivityIdFieldLabel(), value)
       );
     }
     return boolQueryBuilder;
