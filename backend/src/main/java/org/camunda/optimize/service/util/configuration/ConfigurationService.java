@@ -35,6 +35,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterTh
  */
 public class ConfigurationService {
 
+  private static final String ENGINES_FIELD = "engines";
   private final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
 
   private static final String[] DEFAULT_LOCATIONS = { "service-config.json", "environment-config.json" };
@@ -186,20 +187,24 @@ public class ConfigurationService {
       String fieldName = fieldNames.next();
       JsonNode jsonNode = mainNode.get(fieldName);
       // if field exists and is an embedded object
-      if (jsonNode != null && jsonNode.isObject()) {
+      if (jsonNode != null && jsonNode.isObject() && !ENGINES_FIELD.equals(fieldName)) {
         merge(jsonNode, updateNode.get(fieldName));
-      }
-      else {
-        if (mainNode instanceof ObjectNode) {
-          // Overwrite field
-          JsonNode value = updateNode.get(fieldName);
-          ((ObjectNode) mainNode).put(fieldName, value);
-        }
+      } else if (jsonNode != null && jsonNode.isObject() && ENGINES_FIELD.equals(fieldName)) {
+        // Overwrite field
+        overwriteField((ObjectNode) mainNode, updateNode, fieldName);
+      } else if (mainNode instanceof ObjectNode) {
+        // Overwrite field
+        overwriteField((ObjectNode) mainNode, updateNode, fieldName);
       }
 
     }
 
     return mainNode;
+  }
+
+  private static void overwriteField(ObjectNode mainNode, JsonNode updateNode, String fieldName) {
+    JsonNode value = updateNode.get(fieldName);
+    mainNode.put(fieldName, value);
   }
 
   private InputStream wrapInputStream(String location) {

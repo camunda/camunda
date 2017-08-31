@@ -1,0 +1,45 @@
+{
+  "engines": {
+    /*
+    an alias of the engine, which will be used for internal purposes like
+    logging
+    */
+    "myAwesomeEngine": {
+      /*
+      The name of the engine that will be used to import data.
+      */
+      "name": "/engine/default",
+      /*
+      A base URL that will be used for connections to the Camunda Engine REST API.
+      */
+      "rest": "http://localhost:8080/engine-rest",
+      "authentication": {
+        /*
+        With the specified group id, only engine users that are part of the
+        group can access optimize.
+        */
+        "accessGroup": "",
+        /*
+        Toggles basic authentication on or off. When enabling basic
+        authentication, please be aware that you also need to adjust the values
+        of the user and password
+        */
+        "enabled": false,
+        /*
+        When basic authentication is enabled, this password is used to
+        authenticate against the engine.
+        */
+        "password": "",
+        /*
+        When basic authentication is enabled, this user is used to authenticate
+        against the engine.
+        */
+        "user": ""
+      },
+      /*
+      Check if engine should be considered connected. Disable only for testing!
+      */
+      "enabled": true
+    }
+  }
+}

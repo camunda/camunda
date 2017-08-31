@@ -22,6 +22,13 @@ public class ConfigurationServiceTest {
   }
 
   @Test
+  public void testOverrideAliasOfEngine() {
+    String[] locations = { "service-config.json", "environment-config.json", "override-engine-config.json" };
+    ConfigurationService underTest = new ConfigurationService(locations);
+    assertThat(underTest.getConfiguredEngines().size(), is(1));
+  }
+
+  @Test
   public void testOverride() {
     String[] locations = { "service-config.json", "environment-config.json", "override-test-config.json" };
     ConfigurationService underTest = new ConfigurationService(locations);
