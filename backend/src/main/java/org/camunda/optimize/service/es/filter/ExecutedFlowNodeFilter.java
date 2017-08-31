@@ -38,26 +38,28 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
   private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (flowNodeFilter.getOperator().equals("=")) {
-      boolQueryBuilder.must(
-        nestedQuery(
-          EVENTS,
-          createValueFilter(flowNodeFilter.getValues()),
-          ScoreMode.None
-        )
-      );
+      for (String value : flowNodeFilter.getValues()) {
+        boolQueryBuilder.should(
+          nestedQuery(
+            EVENTS,
+            termQuery(nestedActivityIdFieldLabel(), value),
+            ScoreMode.None
+          )
+        );
+      }
+    } else if (flowNodeFilter.getOperator().equals("!=")) {
+      for (String value : flowNodeFilter.getValues()) {
+        boolQueryBuilder.mustNot(
+          nestedQuery(
+            EVENTS,
+            termQuery(nestedActivityIdFieldLabel(), value),
+            ScoreMode.None
+          )
+        );
+      }
     } else {
       logger.error("Could not filter for flow nodes. " +
-        "Operator [{}] is not allowed! Use [=]", flowNodeFilter.getOperator());
-    }
-    return boolQueryBuilder;
-  }
-
-  private BoolQueryBuilder createValueFilter(List<String> values) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
-    for (String value : values) {
-      boolQueryBuilder.should(
-        termQuery(nestedActivityIdFieldLabel(), value)
-      );
+        "Operator [{}] is not allowed! Use either [=] or [!=]", flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;
   }

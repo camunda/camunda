@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -62,10 +63,33 @@ public class ExecutedFlowNodeFilterIT {
           .equalOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
-    assertResults(testDefinition, USER_TASK_ACTIVITY_ID, 1L);
+    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 1L);
+  }
+
+  @Test
+  public void filterByOneFlowNodeWithUnequalOperator() throws Exception {
+    // given
+    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.startProcessInstance(processDefinitionId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .id(USER_TASK_ACTIVITY_ID)
+          .unequalOperator()
+          .build();
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(1L));
   }
 
   @Test
@@ -88,10 +112,38 @@ public class ExecutedFlowNodeFilterIT {
           .equalOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
-    assertResults(testDefinition, USER_TASK_ACTIVITY_ID, 3L);
+    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 3L);
+  }
+  
+  @Test
+  public void filterMultipleProcessInstancesByOneFlowNodeWithUnequalOperator() throws Exception {
+    // given
+    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinitionId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .id(USER_TASK_ACTIVITY_ID)
+          .unequalOperator()
+          .build();
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(2L));
   }
 
   @Test
@@ -117,11 +169,61 @@ public class ExecutedFlowNodeFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
-    assertResults(testDefinition, USER_TASK_ACTIVITY_ID, 2L);
-    assertResults(testDefinition, USER_TASK_ACTIVITY_ID_2, 2L);
+    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 2L);
+    assertResults(resultMap, USER_TASK_ACTIVITY_ID_2, 2L);
+  }
+
+  @Test
+  public void filterByMultipleAndCombinedFlowNodesWithUnequalOperator() throws Exception {
+    // given
+    String processDefinitionId = deployProcessDefinitionWithTwoUserTasks();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinitionId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .id(USER_TASK_ACTIVITY_ID)
+          .equalOperator()
+          .and()
+          .id(USER_TASK_ACTIVITY_ID_2)
+          .unequalOperator()
+          .build();
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(1L));
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID_2), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(1L));
+
+    // when
+    executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .id(USER_TASK_ACTIVITY_ID)
+          .unequalOperator()
+          .and()
+          .id(USER_TASK_ACTIVITY_ID_2)
+          .unequalOperator()
+          .build();
+    queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
+    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID_2), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(2L));
   }
 
   @Test
@@ -156,23 +258,48 @@ public class ExecutedFlowNodeFilterIT {
   }
 
   @Test
+  public void filterByMultipleOrCombinedFlowNodesWithUnequalOperator() throws Exception {
+    // given
+    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
+
+    Map<String, Object> takePathA = new HashMap<>();
+    takePathA.put("takePathA", true);
+    Map<String, Object> takePathB = new HashMap<>();
+    takePathB.put("takePathA", false);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.startProcessInstance(processDefinitionId, takePathB);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
+          .ids("UserTask-PathA", "FinalUserTask")
+          .unequalOperator()
+          .build();
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get("UserTask-PathA"), is(nullValue()));
+    assertThat(resultMap.getFlowNodes().get("UserTask-PathB"), is(1L));
+    assertThat(resultMap.getFlowNodes().get("FinalUserTask"), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(3L));
+  }
+
+  @Test
   public void filterByMultipleAndOrCombinedFlowNodes() throws Exception {
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-        .startEvent()
-        .exclusiveGateway("splittingGateway")
-          .condition("Take path A", "${takePathA}")
-          .userTask("UserTask-PathA")
-          .exclusiveGateway("mergeExclusiveGateway")
-          .userTask("FinalUserTask")
-          .endEvent()
-        .moveToLastGateway()
-        .moveToLastGateway()
-          .condition("Take path B", "${!takePathA}")
-          .userTask("UserTask-PathB")
-          .connectTo("mergeExclusiveGateway")
-        .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
     Map<String, Object> takePathA = new HashMap<>();
     takePathA.put("takePathA", true);
@@ -218,6 +345,68 @@ public class ExecutedFlowNodeFilterIT {
   }
 
   @Test
+  public void equalAndUnequalOperatorCombined() throws Exception {
+    // given
+    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
+
+    Map<String, Object> takePathA = new HashMap<>();
+    takePathA.put("takePathA", true);
+    Map<String, Object> takePathB = new HashMap<>();
+    takePathB.put("takePathA", false);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.startProcessInstance(processDefinitionId, takePathA);
+    engineRule.startProcessInstance(processDefinitionId, takePathB);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ExecutedFlowNodeFilterDto> executedFlowNodes =
+      ExecutedFlowNodeFilterBuilder
+        .construct()
+            .ids("UserTask-PathA", "FinalUserTask")
+            .unequalOperator()
+          .and()
+            .id("UserTask-PathB")
+            .equalOperator()
+          .build();
+    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    // then
+    assertThat(resultMap.getFlowNodes().get("UserTask-PathA"), is(nullValue()));
+    assertThat(resultMap.getFlowNodes().get("UserTask-PathB"), is(1L));
+    assertThat(resultMap.getFlowNodes().get("FinalUserTask"), is(nullValue()));
+    assertThat(resultMap.getPiCount(), is(1L));
+  }
+
+  private String deployProcessWIthGatewayAndOneUserTaskEachBranch() throws IOException {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+        .startEvent()
+        .exclusiveGateway("splittingGateway")
+          .condition("Take path A", "${takePathA}")
+          .userTask("UserTask-PathA")
+          .exclusiveGateway("mergeExclusiveGateway")
+          .userTask("FinalUserTask")
+          .endEvent()
+        .moveToLastGateway()
+        .moveToLastGateway()
+          .condition("Take path B", "${!takePathA}")
+          .userTask("UserTask-PathB")
+          .connectTo("mergeExclusiveGateway")
+        .done();
+    return engineRule.deployProcessAndGetId(modelInstance);
+  }
+
+  @Test
   public void sameFlowNodeInDifferentProcessDefinitionDoesNotDistortResult() throws Exception {
     // given
     String processDefinitionId = deploySimpleUserTaskProcessDefinition();
@@ -236,10 +425,10 @@ public class ExecutedFlowNodeFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
     // then
-    assertResults(testDefinition, USER_TASK_ACTIVITY_ID, 2L);
+    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 2L);
   }
 
   @Test
