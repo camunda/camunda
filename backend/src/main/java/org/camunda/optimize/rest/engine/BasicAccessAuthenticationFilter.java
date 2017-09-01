@@ -17,6 +17,7 @@ public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
 
   public BasicAccessAuthenticationFilter(String engineAlias, ConfigurationService configurationService) {
     this.engineAlias = engineAlias;
+    this.configurationService = configurationService;
   }
 
   public void filter(ClientRequestContext requestContext) throws IOException {

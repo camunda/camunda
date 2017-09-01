@@ -5,6 +5,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -12,7 +13,9 @@ import java.util.Map;
  */
 @Component
 public class BasicAccessAuthenticationFilterFactory implements Factory<BasicAccessAuthenticationFilter, String> {
-  protected Map<String, BasicAccessAuthenticationFilter> instances;
+
+  protected Map<String, BasicAccessAuthenticationFilter> instances = new HashMap<>();
+
   @Autowired
   private ConfigurationService configurationService;
 
