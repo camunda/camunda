@@ -1,4 +1,4 @@
-import {get} from 'http';
+import {get} from 'request';
 import {dispatchAction} from 'view-utils';
 import {addNotification} from 'notifications';
 import {interval} from 'utils';

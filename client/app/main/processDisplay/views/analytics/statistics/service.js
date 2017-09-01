@@ -1,6 +1,6 @@
 import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction, createSetHeightAction} from './reducer';
 import {dispatchAction} from 'view-utils';
-import {post} from 'http';
+import {post} from 'request';
 import {getFilterQuery} from 'main/processDisplay/query';
 import {addNotification} from 'notifications';
 import {getDefinitionId} from 'main/processDisplay/service';

@@ -1,6 +1,6 @@
 import {$window, dispatchAction} from 'view-utils';
 import {createLoginAction, createClearLoginAction, createLoginCheckAction} from './reducer';
-import {get, post} from 'http';
+import {get, post} from 'request';
 
 const localStorage = $window.localStorage;
 const LOGIN_KEY = 'LOGIN_KEY';

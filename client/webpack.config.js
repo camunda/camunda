@@ -19,23 +19,25 @@ module.exports = {
     path: path.join(__dirname, 'dist')
   },
   resolve: {
-    root: path.resolve(__dirname, 'app'),
     modules: [
+      path.resolve(__dirname, 'app'),
       'node_modules'
     ]
   },
   module: {
-    preLoaders: [
+    rules: [
       {
+        enforce: 'pre',
         test: /\.js$/,
         loader: 'eslint-loader',
         include: [
           path.resolve(__dirname, 'app'),
           path.resolve(__dirname, 'test')
-        ]
-      }
-    ],
-    loaders: [
+        ],
+        options: {
+          configFile: './.eslintrc.json'
+        }
+      },
       {
         test: /\.html$/,
         loader: 'html-loader',
@@ -88,7 +90,14 @@ module.exports = {
         loader: 'babel-loader',
         query: {
           cacheDirectory: true,
-          presets: ['latest'],
+          presets: [
+            ['env', {
+              targets: {
+                browsers: ['last 2 versions', 'IE 11'],
+                modules: false
+              }
+            }]
+          ],
           plugins: [
             'transform-object-rest-spread',
             'transform-class-properties',
@@ -144,8 +153,5 @@ module.exports = {
         target: 'http://localhost:8090/'
       }
     }
-  },
-  eslint: {
-    configFile: './.eslintrc.json'
   }
 };

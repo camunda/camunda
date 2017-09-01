@@ -1,7 +1,7 @@
 import {dispatchAction, $document} from 'view-utils';
 import {createSetTargetValueAction} from './reducer';
 import {formatNumber, createDelayedTimePrecisionElement} from 'utils';
-import {put} from 'http';
+import {put} from 'request';
 import {addNotification} from 'notifications';
 import * as timeUtil from 'utils/formatTime';
 import {addDiagramTooltip} from '../service';

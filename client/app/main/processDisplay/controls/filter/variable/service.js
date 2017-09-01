@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {get} from 'http';
+import {get} from 'request';
 import {createLoadingVariablesAction, createLoadingVariablesResultAction, createLoadingVariablesErrorAction,
         createSelectVariableIdxAction, createSetOperatorAction, createSetValueAction, createAddValueAction, createRemoveValueAction} from './reducer';
 import {createCreateVariableFilterAction} from './routeReducer';

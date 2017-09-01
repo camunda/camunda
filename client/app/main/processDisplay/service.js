@@ -1,5 +1,5 @@
 import {dispatchAction, includes} from 'view-utils';
-import {get, post} from 'http';
+import {get, post} from 'request';
 import {
   createLoadingDiagramAction, createLoadingDiagramResultAction, createLoadingDiagramErrorAction,
   createLoadingHeatmapAction, createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,

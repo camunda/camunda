@@ -22,14 +22,13 @@ function deleteUnneededConfigEntries() {
 }
 
 function addTestRoot() {
-  config.resolve.root = [
-    config.resolve.root,
+  config.resolve.modules.push(
     path.resolve(__dirname, 'test')
-  ];
+  );
 }
 
 function addBabelRewirePlugin() {
-  config.module.loaders
+  config.module.rules
     .filter(function(loaderConf){
       return loaderConf.loader === 'babel-loader';
     })
@@ -39,16 +38,24 @@ function addBabelRewirePlugin() {
 }
 
 function addTestFilesBabelLoader() {
-  config.module.loaders.push({
+  config.module.rules.push({
     test: /\.js$/,
     include: [
       path.resolve(__dirname, 'test'),
     ],
     loader: 'babel-loader',
     query: {
-      presets: ['latest'],
+      presets: [
+        ['env', {
+          targets: {
+            browsers: ['last 2 versions', 'IE 11'],
+            modules: false
+          }
+        }]
+      ],
       plugins: [
         'transform-object-rest-spread',
+        'transform-class-properties',
         ['transform-react-jsx', {
           'pragma': 'jsx'
         }]

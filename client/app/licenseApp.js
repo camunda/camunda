@@ -1,4 +1,8 @@
+import Promise from 'promise-polyfill';
+
 if (isPolyfillNeeded()) {
+  window.Promise = Promise;
+
   require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
     require('babel-polyfill');
     require('whatwg-fetch');

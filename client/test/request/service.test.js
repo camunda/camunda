@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {setupPromiseMocking} from 'testHelpers';
 import sinon from 'sinon';
-import {get, post, put, request, formatQuery, __set__, __ResetDependency__} from 'http/service';
+import {get, post, put, request, formatQuery, __set__, __ResetDependency__} from 'request/service';
 
 describe('http service', () => {
   setupPromiseMocking();

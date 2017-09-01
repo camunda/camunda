@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {get} from 'http';
+import {get} from 'request';
 import {
   createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
   createLoadProcessDefinitionsErrorAction, createSetVersionAction,

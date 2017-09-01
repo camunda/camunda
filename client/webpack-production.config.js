@@ -5,7 +5,7 @@ var HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin
 var config = require('./webpack.config');
 
 config.plugins = addProductionPlugins();
-config.module.loaders = correctLoadersForProduction(config.module.loaders);
+config.module.rules = correctLoadersForProduction(config.module.rules);
 
 // ATTENTION: Might need to be adjusted
 // Root of static resources
@@ -37,8 +37,8 @@ function addProductionPlugins() {
   ]);
 }
 
-function correctLoadersForProduction(loaders) {
-  return loaders.map(function(loader) {
+function correctLoadersForProduction(rules) {
+  return rules.map(function(loader) {
     if (loader.loader === 'url-loader' && !loader.test.test('.gif')) {
       return Object.assign(loader, {
         loader: 'file-loader'

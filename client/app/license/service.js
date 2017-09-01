@@ -1,5 +1,5 @@
 import {$window} from 'view-utils';
-import {get, post} from 'http';
+import {get, post} from 'request';
 import {addNotification} from 'notifications';
 import {formatDate} from 'utils';
 

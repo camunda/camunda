@@ -1,3 +1,4 @@
+import 'es6-promise/auto';
 import './bootstrap';
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 
