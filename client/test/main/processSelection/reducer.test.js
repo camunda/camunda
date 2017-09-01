@@ -10,22 +10,24 @@ describe('processSelection reducer', () => {
   beforeEach(() => {
     inputState = {
       processDefinitions: {
-        data: [
-          {
-            current: {
-              id: previousId
-            },
-            versions: [
-              {
-                version: 3442
+        data: {
+          list: [
+            {
+              current: {
+                id: previousId
               },
-              {
-                version,
-                a: 1
-              }
-            ]
-          }
-        ]
+              versions: [
+                {
+                  version: 3442
+                },
+                {
+                  version,
+                  a: 1
+                }
+              ]
+            }
+          ]
+        }
       }
     };
   });
@@ -38,23 +40,25 @@ describe('processSelection reducer', () => {
 
     expect(resultState).to.eql({
       processDefinitions: {
-        data: [
-          {
-            current: {
-              version,
-              a: 1
-            },
-            versions: [
-              {
-                version: 3442
-              },
-              {
+        data: {
+          list: [
+            {
+              current: {
                 version,
                 a: 1
-              }
-            ]
-          }
-        ]
+              },
+              versions: [
+                {
+                  version: 3442
+                },
+                {
+                  version,
+                  a: 1
+                }
+              ]
+            }
+          ]
+        }
       }
     });
   });
@@ -67,23 +71,25 @@ describe('processSelection reducer', () => {
 
     expect(resultState).to.eql({
       processDefinitions: {
-        data: [
-          {
-            current: {
-              id: previousId
-            },
-            versions: [
-              {
-                version: 3442
+        data: {
+          list: [
+            {
+              current: {
+                id: previousId
               },
-              {
-                version,
-                bpmn20Xml: xml,
-                a: 1
-              }
-            ]
-          }
-        ]
+              versions: [
+                {
+                  version: 3442
+                },
+                {
+                  version,
+                  bpmn20Xml: xml,
+                  a: 1
+                }
+              ]
+            }
+          ]
+        }
       }
     });
   });

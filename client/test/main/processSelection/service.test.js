@@ -30,12 +30,14 @@ describe('ProcessSelection service', () => {
           {
             id: 'd1',
             version: 1,
-            key: 'd'
+            key: 'd',
+            engine: 'e1'
           },
           {
             id: 'd2',
             version: 2,
-            key: 'd'
+            key: 'd',
+            engine: 'e1'
           }
         ]
       },
@@ -44,7 +46,8 @@ describe('ProcessSelection service', () => {
           {
             id: 'c&1',
             version: 1,
-            key: 'c'
+            key: 'c',
+            engine: 'e2'
           }
         ]
       }
@@ -110,35 +113,38 @@ describe('ProcessSelection service', () => {
     });
 
     it('should dispatch an action with the returned response', () => {
-      const expectedResponse = [
-        {
-          current: {
-            ...processDefinitionResponse[0].versions[0],
-            bpmn20Xml: xmlResponse.d2
-          },
-          versions: [
-            {
+      const expectedResponse = {
+        engineCount: 2,
+        list: [
+          {
+            current: {
               ...processDefinitionResponse[0].versions[0],
               bpmn20Xml: xmlResponse.d2
             },
-            {
-              ...processDefinitionResponse[0].versions[1],
-            }
-          ]
-        },
-        {
-          current: {
-            ...processDefinitionResponse[1].versions[0],
-            bpmn20Xml: xmlResponse['c&1']
+            versions: [
+              {
+                ...processDefinitionResponse[0].versions[0],
+                bpmn20Xml: xmlResponse.d2
+              },
+              {
+                ...processDefinitionResponse[0].versions[1],
+              }
+            ]
           },
-          versions: [
-            {
+          {
+            current: {
               ...processDefinitionResponse[1].versions[0],
               bpmn20Xml: xmlResponse['c&1']
-            }
-          ]
-        }
-      ];
+            },
+            versions: [
+              {
+                ...processDefinitionResponse[1].versions[0],
+                bpmn20Xml: xmlResponse['c&1']
+              }
+            ]
+          }
+        ]
+      };
 
       expect(dispatchAction.calledWith(STOP_ACTION))
         .to.eql(true, 'expected loading to stop');

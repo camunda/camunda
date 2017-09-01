@@ -23,6 +23,15 @@ export function loadProcessDefinitions() {
           versions
         };
       });
+      const engineCount = withLastestVersions
+        .reduce((engines, {current: {engine}}) => {
+          if (engines.find(other => other === engine)) {
+            return engines;
+          }
+
+          return engines.concat(engine);
+        }, [])
+      .length;
       const ids = withLastestVersions
         .map(({current: {id}}) => id)
         .reduce((ids, id) => {
@@ -36,13 +45,16 @@ export function loadProcessDefinitions() {
       return get('/api/process-definition/xml?' + ids)
         .then(response => response.json())
         .then(xmls => {
-          return withLastestVersions.map(entry => {
-            const xml = xmls[entry.current.id];
+          return {
+            list: withLastestVersions.map(entry => {
+              const xml = xmls[entry.current.id];
 
-            entry.current.bpmn20Xml = xml;
+              entry.current.bpmn20Xml = xml;
 
-            return entry;
-          });
+              return entry;
+            }),
+            engineCount
+          };
         });
     })
     .then(result => {

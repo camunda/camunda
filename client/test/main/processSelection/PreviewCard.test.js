@@ -38,13 +38,13 @@ describe('<PreviewCard>', () => {
   describe('single version', () => {
     beforeEach(() => {
       state = {
-        current: {
-          id: 'processId',
-          key: 'processKey',
-          name: 'processName',
-          version: 1,
-          bpmn20Xml: 'some xml'
-        },
+        id: 'processId',
+        key: 'processKey',
+        name: 'processName',
+        version: 1,
+        engineCount: 1,
+        engine: 'some engine',
+        bpmn20Xml: 'some xml',
         versions: [{
           id: 'processId',
           key: 'processKey',
@@ -53,6 +53,18 @@ describe('<PreviewCard>', () => {
       };
 
       update(state);
+    });
+
+    it('should not display engine name when only one engine is available', () => {
+      expect(node).not.to.contain.text(state.engine);
+    });
+
+    it('should display engine name when more than one engine is available', () => {
+      state.engineCount = 2;
+
+      update(state);
+
+      expect(node).to.contain.text(state.engine);
     });
 
     it('should display a preview diagram of the definition', () => {
@@ -83,7 +95,7 @@ describe('<PreviewCard>', () => {
     });
 
     it('should disable click listener if diagram is not defined', () => {
-      state.current.bpmn20Xml = null;
+      state.bpmn20Xml = null;
 
       update(state);
 
@@ -97,7 +109,7 @@ describe('<PreviewCard>', () => {
     });
 
     it('should add no-xml class to diagram if bpmn20Xml is not defined', () => {
-      state.current.bpmn20Xml = null;
+      state.bpmn20Xml = null;
 
       update(state);
 
@@ -108,13 +120,11 @@ describe('<PreviewCard>', () => {
   describe('multiple versions', () => {
     beforeEach(() => {
       state = {
-        current: {
-          id: 'processId',
-          key: 'processKey',
-          name: 'processName',
-          version: 2,
-          bpmn20Xml: 'some xml',
-        },
+        id: 'processId',
+        key: 'processKey',
+        name: 'processName',
+        version: 2,
+        bpmn20Xml: 'some xml',
         versions: [{
           id: 'processId',
           key: 'processKey',
@@ -146,11 +156,11 @@ describe('<PreviewCard>', () => {
       });
 
       expect(setVersionForProcess.calledOnce).to.eql(true);
-      expect(setVersionForProcess.calledWith(state.current.id, state.versions[1])).to.eql(true);
+      expect(setVersionForProcess.calledWith(state.id, state.versions[1])).to.eql(true);
     });
 
     it('should set the version from state', () => {
-      expect(node.querySelector('select').value).to.eql(state.current.version.toString());
+      expect(node.querySelector('select').value).to.eql(state.version.toString());
     });
 
     it('should trigger loading of diagram preview when switching the version', () => {

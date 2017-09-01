@@ -49,7 +49,9 @@ describe('<ProcessSelection>', () => {
   it('should display a hint when no process Definitions are present', () => {
     update({processDefinitions:{
       state: LOADED_STATE,
-      data: []
+      data: {
+        list: []
+      }
     }});
 
     expect(node.querySelector('.no-definitions')).to.exist;
@@ -68,13 +70,15 @@ describe('<ProcessSelection>', () => {
       state = {
         processDefinitions: {
           state: LOADED_STATE,
-          data: [{
-            id: 'processId',
-            key: 'processKey',
-            name: 'processName',
-            version: 4,
-            bpmn20Xml: 'some xml'
-          }]
+          data: {
+            list: [{
+              id: 'processId',
+              key: 'processKey',
+              name: 'processName',
+              version: 4,
+              bpmn20Xml: 'some xml'
+            }]
+          }
         }
       };
 

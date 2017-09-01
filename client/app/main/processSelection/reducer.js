@@ -12,43 +12,49 @@ export const LOADING_PROPERTY = 'processDefinitions';
 export const reducer = addLoading((state, {type, previousId, version, xml}) => {
   if (state[LOADING_PROPERTY]) {
     if (type === SET_VERSION) {
-      return changeData(state, LOADING_PROPERTY, definitions => {
-        return definitions.map(entry => {
-          if (entry.current.id === previousId) {
-            const current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
+      return changeData(state, LOADING_PROPERTY, ({list, ...rest}) => {
+        return {
+          ...rest,
+          list: list.map(entry => {
+            if (entry.current.id === previousId) {
+              const current = entry.versions.filter(({version: otherVersion}) => otherVersion === version)[0];
 
-            return {
-              current,
-              versions: entry.versions
-            };
-          }
+              return {
+                current,
+                versions: entry.versions
+              };
+            }
 
-          return entry;
-        });
+            return entry;
+          })
+        };
       });
     }
 
     if (type === SET_VERSION_XML) {
-      return changeData(state, LOADING_PROPERTY, definitions => {
-        return definitions.map(entry => {
-          if (entry.current.id === previousId) {
-            return {
-              ...entry,
-              versions: entry.versions.map(definition => {
-                if (definition.version === version) {
-                  return {
-                    ...definition,
-                    bpmn20Xml: xml
-                  };
-                }
+      return changeData(state, LOADING_PROPERTY, ({list, ...rest}) => {
+        return {
+          ...rest,
+          list: list.map(entry => {
+            if (entry.current.id === previousId) {
+              return {
+                ...entry,
+                versions: entry.versions.map(definition => {
+                  if (definition.version === version) {
+                    return {
+                      ...definition,
+                      bpmn20Xml: xml
+                    };
+                  }
 
-                return definition;
-              })
-            };
-          }
+                  return definition;
+                })
+              };
+            }
 
-          return entry;
-        });
+            return entry;
+          })
+        };
       });
     }
   }
