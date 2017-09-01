@@ -67,6 +67,22 @@ The Zeebe configuration is located under
 `/usr/local/zeebe/conf/zeebe.cfg.toml`. The logging configuration is located
 under `/usr/local/zeebe/conf/log4j2.xml`.
 
+The configuration of the docker image can be changed also using environment
+variables.
+
+Available environment variables:
+
+ - `DEBUG`
+
+If set to `true` enables the debug log.
+
+ - `DEPLOY_ON_KUBERNETES`
+
+If set to `true` applies some configuration changes in order to run zeebe
+in a kubernetes environment. Please note that the recommended method to
+run zeebe on kubernetes is using the
+[zeebe-operator](https://github.com/zeebe-io/zeebe-operator).
+
 ### Mac and Windows users
 
 **Note**: On systems which use a VM to run Docker containers like Mac and
