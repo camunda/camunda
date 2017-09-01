@@ -2,6 +2,8 @@ FROM openjdk:8
 
 ARG DISTBALL
 
+ENV DEBUG=false
+ENV DEPLOY_ON_KUBERNETES=false
 ENV ZB_HOME=/usr/local/zeebe/
 
 COPY ${DISTBALL} ${ZB_HOME}
@@ -12,4 +14,7 @@ WORKDIR ${ZB_HOME}/bin
 EXPOSE 51016 51017 51015
 VOLUME ${ZB_HOME}/bin/data
 
-ENTRYPOINT ["./broker"]
+COPY docker-utils/startup.sh /usr/local/bin
+COPY docker-utils/zeebe.cfg.toml $ZB_HOME/conf/
+
+ENTRYPOINT ["/usr/local/bin/startup.sh"]

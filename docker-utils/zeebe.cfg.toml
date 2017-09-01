@@ -1,0 +1,54 @@
+# Default Zeebe Config File. Used if no config file is provided to the broker.
+
+# Networking configuration ----------------------------
+
+[network]
+host = "@DNSNAME@"
+sendBufferSize = 128
+
+[network.clientApi]
+port = 51015
+receiveBufferSize = 16
+controlMessageRequestTimeoutInMillis = 10000
+
+[network.managementApi]
+host = "@DNSNAME@"
+port = 51016
+receiveBufferSize = 16
+
+[network.replicationApi]
+host = "@DNSNAME@"
+port = 51017
+receiveBufferSize = 16
+
+[network.gossip]
+@INITIAL_CONTACT_POINT@
+peersStorageFile = "../data/gossip-state.data"
+
+[network.management]
+metaDirectory = "../data/meta"
+
+# System Configuration --------------------------------
+
+[threading]
+# numberOfThreads = 2
+maxIdleTimeMs = 10
+idleStrategy = "BACKOFF"
+
+[metrics]
+countersFileName = "../data/counters.data"
+
+# Log Configuration -----------------------------------
+
+[logs]
+defaultLogSegmentSize = 512
+logDirectories = [ "../data/logstreams" ]
+indexDirectory = "../data/index"
+
+[snapshot]
+snapshotDirectory = "../data/index/snapshots"
+
+# Topic Subscriptions ------------------------------------------
+
+[subscriptions]
+snapshotDirectory = "../data/snapshots/subscriptions"
