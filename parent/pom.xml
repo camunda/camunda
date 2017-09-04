@@ -20,7 +20,7 @@
     <version.dispatcher>0.1.0</version.dispatcher>
     <version.transport>0.1.1</version.transport>
     <version.protocol>0.2.0-SNAPSHOT</version.protocol>
-    <version.raft>0.1.1</version.raft>
+    <version.raft>0.2.0-SNAPSHOT</version.raft>
   </properties>
 
   <dependencyManagement>
