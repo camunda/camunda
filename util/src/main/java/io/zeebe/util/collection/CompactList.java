@@ -282,25 +282,14 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
         return length;
     }
 
-    /**
-     * Copies another list
-     */
-    public void copy(CompactList other)
+    public int getEncodedSize()
     {
-        final int thisCapacity = this.listBuffer.capacity();
-        final int otherCapacity = other.listBuffer.capacity();
+        return listBuffer.capacity();
+    }
 
-        if (thisCapacity < otherCapacity)
-        {
-            throw new IndexOutOfBoundsException("Other list is larger than this list's capacity");
-        }
-
-        this.listBuffer.putBytes(0, other.listBuffer, 0, other.listBuffer.capacity());
-
-        if (thisCapacity > otherCapacity)
-        {
-            this.listBuffer.setMemory(otherCapacity, thisCapacity - otherCapacity, (byte) 0);
-        }
+    public DirectBuffer getRawBuffer()
+    {
+        return listBuffer;
     }
 
     /**
