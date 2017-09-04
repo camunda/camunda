@@ -434,26 +434,18 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         else
         {
             final float loadFactor = bucketBufferArray.getLoadFactor();
-            if (loadFactor < loadFactorOverflowLimit)
+            final int newTableSize = tableSize << 1;
+            if (loadFactor < loadFactorOverflowLimit ||
+                newTableSize > maxTableSize)
             {
                 bucketBufferArray.overflow(filledBucketAddress);
             }
             else
             {
-                final int newTableSize = tableSize << 1;
-                if (newTableSize <= maxTableSize)
-                {
-                    tableSize = newTableSize;
-                    mask = tableSize - 1;
-                    hashTable.resize(tableSize);
-                    createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
-                }
-                else
-                {
-                    throw new RuntimeException("ZbMap is full. Cannot resize the hash table to size: " + newTableSize +
-                                                   ", reached max table size of " + maxTableSize);
-
-                }
+                tableSize = newTableSize;
+                mask = tableSize - 1;
+                hashTable.resize(tableSize);
+                createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
             }
         }
     }

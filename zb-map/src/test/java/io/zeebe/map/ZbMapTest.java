@@ -17,16 +17,17 @@ package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
 import static io.zeebe.map.BucketBufferArray.getBucketAddress;
-import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
-import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
-import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
+import static io.zeebe.map.BucketBufferArrayDescriptor.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.map.types.*;
+import io.zeebe.map.types.LongKeyHandler;
+import io.zeebe.map.types.LongValueHandler;
 import org.agrona.BitUtil;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class ZbMapTest
@@ -273,33 +274,6 @@ public class ZbMapTest
     }
 
     @Test
-    public void shouldThrowExceptionIfTableSizeReachesDefaultMaxSize()
-    {
-        // given
-        final ZbMap<EvenOddKeyHandler, LongValueHandler> zbMap = new ZbMap<EvenOddKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
-        { };
-
-        // when
-        try
-        {
-            for (int i = 0; i < DATA_COUNT; i++)
-            {
-                putValue(zbMap, i, i);
-            }
-        }
-        catch (RuntimeException rte)
-        {
-            assertThat(rte).hasMessage("ZbMap is full. Cannot resize the hash table to size: " + (1L << 28) +
-                                           ", reached max table size of " + ZbMap.MAX_TABLE_SIZE);
-
-        }
-        finally
-        {
-            zbMap.close();
-        }
-    }
-
-    @Test
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
@@ -386,7 +360,7 @@ public class ZbMapTest
     }
 
     @Test
-    public void shouldThrowExceptionIfTableSizeReachesMaxSize()
+    public void shouldUseOverflowIfTableSizeReachesMaxSize()
     {
         // given
         // we will add 3 blocks which all zbMap to the idx 0, which is possible with the help of bucket overflow
@@ -401,13 +375,51 @@ public class ZbMapTest
             putValue(zbMap, 8 * i, i);
         }
 
-        // expect
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage("ZbMap is full. Cannot resize the hash table to size: " + 8 +
-                                            ", reached max table size of " + 4);
-
         // when we now add another entry the table resize will be triggered
-        putValue(zbMap, 24, 5);
+        putValue(zbMap, 24, 3);
+
+        // then since max table size is reached overflow will be again used
+
+        // Bucket 0 [0] -> O1
+        // Bucket 1 [-]
+        // Bucket 2 [-]
+        // O1       [8] -> O2
+        // O2       [16] -> O3
+        // O3       [24]
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
+        assertThat(zbMap.bucketCount()).isEqualTo(6);
+
+        for (int i = 0; i < 4; i++)
+        {
+            assertThat(getValue(zbMap, 8 * i, -1)).isEqualTo(i);
+        }
+
+    }
+
+
+    @Test
+    public void shouldUseOverflowToAddManyEntriesEvenIfMaxTableSizeIsReached()
+    {
+        // given
+        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+        zbMap.setMaxTableSize(512);
+
+        // when
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        // then
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(512);
+        assertThat(zbMap.bucketCount()).isEqualTo(DATA_COUNT);
+
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
+        }
+
     }
 
     @Test

@@ -203,19 +203,29 @@ public class Long2LongZbMapMinimalBlockSizeTest
     }
 
     @Test
-    public void shouldThrowExceptionOnCollision()
+    public void shouldUseOverflowOnOnCollision()
     {
+        // given
         map.setMaxTableSize(16);
         for (int i = 0; i < 16; i++)
         {
             map.put(i, i);
         }
 
-        expectedException.expect(RuntimeException.class);
 
-        // hash collision with 0L hashes to the same block. Block size = 1 => exception expected.
-        // resize not possible
+
+        // when
         map.put(16L, 2L);
+
+        // then hash collision with 0L hashes to the same block. Block size = 1 => use overflow.
+        // resize not possible
+        assertThat(map.getHashTable().getCapacity()).isEqualTo(16);
+
+        for (int i = 0; i < 16; i++)
+        {
+            assertThat(map.get(i, -1)).isEqualTo(i);
+        }
+        assertThat(map.get(16, -1)).isEqualTo(2);
     }
 
     @Test
