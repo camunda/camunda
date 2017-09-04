@@ -31,13 +31,11 @@ import java.util.Properties;
  */
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
-  private final static String contextLocation = "classpath:embeddedOptimizeContext.xml";
+  private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
 
   private static String authenticationToken;
   private Properties properties;
-
-  private static TestEmbeddedCamundaOptimize optimize;
 
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
 
@@ -59,39 +57,47 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * optimize instance for all tests.
    */
   public static TestEmbeddedCamundaOptimize getInstance() {
+    return getInstance(null);
+  }
+
+  /**
+   * If instance is not initialized, initialize it from specific context. Otherwise
+   * return existing instance.
+   *
+   * @param contextLocation - if null default location will be used.
+   * @return static instance of embedded Optimize
+   */
+  public static TestEmbeddedCamundaOptimize getInstance(String contextLocation) {
     if (testOptimizeInstance == null) {
-      testOptimizeInstance = new TestEmbeddedCamundaOptimize();
+      String context = contextLocation != null ? contextLocation : DEFAULT_CONTEXT_LOCATION;
+      testOptimizeInstance = new TestEmbeddedCamundaOptimize(context);
     }
     return testOptimizeInstance;
   }
 
   private TestEmbeddedCamundaOptimize(String contextLocation) {
     super(contextLocation);
-  }
-
-  private TestEmbeddedCamundaOptimize() {
-    optimize = new TestEmbeddedCamundaOptimize(contextLocation);
     properties = PropertyUtil.loadProperties(propertiesLocation);
   }
 
   public void start() throws Exception {
-    if (!optimize.isOptimizeStarted()) {
-      optimize.startOptimize();
+    if (!testOptimizeInstance.isOptimizeStarted()) {
+      testOptimizeInstance.startOptimize();
       storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
         defaultConfiguration = new ConfigurationService();
-        BeanUtils.copyProperties(optimize.getConfigurationService(), defaultConfiguration);
+        BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), defaultConfiguration);
         perTestConfiguration = new ConfigurationService();
         BeanUtils.copyProperties(defaultConfiguration, perTestConfiguration);
       }
-      BeanUtils.copyProperties(perTestConfiguration, optimize.getConfigurationService());
+      BeanUtils.copyProperties(perTestConfiguration, testOptimizeInstance.getConfigurationService());
       reloadConfiguration();
     }
   }
 
   public boolean isStarted() {
-    return optimize.isOptimizeStarted();
+    return testOptimizeInstance.isOptimizeStarted();
   }
 
   private boolean isThisTheFirstTimeOptimizeWasStarted() {
@@ -99,14 +105,14 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public void destroy() throws Exception {
-    BeanUtils.copyProperties(optimize.getConfigurationService(), perTestConfiguration);
-    optimize.destroyOptimize();
+    BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), perTestConfiguration);
+    testOptimizeInstance.destroyOptimize();
     testOptimizeInstance = null;
   }
 
   public void resetConfiguration() {
     // copy all properties from the default configuration to the embedded optimize
-    BeanUtils.copyProperties(defaultConfiguration, optimize.getConfigurationService());
+    BeanUtils.copyProperties(defaultConfiguration, testOptimizeInstance.getConfigurationService());
   }
 
   public void reloadConfiguration() {
@@ -122,7 +128,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   protected ApplicationContext getApplicationContext() {
-    return optimize.getOptimizeApplicationContext();
+    return testOptimizeInstance.getOptimizeApplicationContext();
   }
 
   public ScheduleJobFactory getImportScheduleFactory() {

@@ -2,17 +2,19 @@ package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.util.Factory;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EngineClientFactory implements Factory<Client, String> {
+public class EngineClientFactory implements Factory<Client, String>, ConfigurationReloadable {
 
   protected Map<String,Client> instances = new HashMap<>();
 
@@ -42,5 +44,13 @@ public class EngineClientFactory implements Factory<Client, String> {
       instances.put(engineAlias,newClient(engineAlias));
     }
     return instances.get(engineAlias);
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    for (Map.Entry<String, Client> e : instances.entrySet()) {
+      e.getValue().close();
+    }
+    instances = new HashMap<>();
   }
 }

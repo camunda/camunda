@@ -16,6 +16,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.camunda.bpm.engine.authorization.Resources;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
@@ -458,6 +459,27 @@ public class EngineIntegrationRule extends TestWatcher {
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.json(userDto));
     assertThat(res.getStatus(),is(204));
+
+    this.addAuthorizations(username);
+  }
+
+  private void addAuthorizations(String username) {
+    for (Resources r : Resources.values()) {
+      HashMap<String, Object> values = new HashMap<>();
+      values.put("type", 1);
+      values.put("permissions", new String [] {"ALL"});
+      values.put("userId", username);
+      values.put("groupId", null);
+      values.put("resourceType", r.resourceType());
+      values.put("resourceId", "*");
+
+      Response res = target()
+          .path("/authorization/create")
+          .request(MediaType.APPLICATION_JSON)
+          .post(Entity.json(values));
+      assertThat(res.getStatus(),is(200));
+    }
+
   }
 
   private UserDto constructDemoUserDto(String username, String password) {
@@ -497,11 +519,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public final WebTarget target() {
-    return this.client().target(getBaseUri());
-  }
-
-  private String getBaseUri() {
-    return properties.getProperty("camunda.optimize.engine.rest");
+    return this.client().target(getEngineUrl());
   }
 
   public final Client client() {

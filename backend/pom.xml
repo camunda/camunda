@@ -464,6 +464,14 @@
         </dependency>
 
         <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-rest-secure</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
           <groupId>org.camunda.bpm.example</groupId>
           <artifactId>camunda-example-invoice</artifactId>
           <scope>test</scope>
@@ -640,6 +648,18 @@
                   <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
                   <properties>
                     <context>engine-rest</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-rest-secure</artifactId>
+                  <type>war</type>
+                  <pingURL>
+                    http://localhost:${tomcat.connector.http.port}/engine-rest-secure/engine/default/process-definition
+                  </pingURL>
+                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
+                  <properties>
+                    <context>engine-rest-secure</context>
                   </properties>
                 </deployable>
                 <deployable>

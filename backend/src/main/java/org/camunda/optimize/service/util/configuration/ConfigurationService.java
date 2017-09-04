@@ -723,6 +723,13 @@ public class ConfigurationService {
     return getEngineConfiguration(engineAlias).isEnabled();
   }
 
+  /**
+   * This method is mostly for internal usage. All API invocations
+   * should rely on {@link org.camunda.optimize.service.util.configuration.ConfigurationService#getEngineRestApiEndpointOfCustomEngine(java.lang.String)}
+   *
+   * @param engineAlias - an alias of configured engine
+   * @return <b>raw</b> REST endpoint, without engine suffix
+   */
   public String getEngineRestApiEndpoint(String engineAlias) {
     return getEngineConfiguration(engineAlias).getRest();
   }

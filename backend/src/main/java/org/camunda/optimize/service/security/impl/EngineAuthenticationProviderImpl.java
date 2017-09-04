@@ -45,7 +45,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
     boolean isAuthorized = false;
     try {
       Response response = getEngineClient(credentialsDto.getEngineAlias())
-          .target(configurationService.getEngineRestApiEndpoint(credentialsDto.getEngineAlias()))
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
           .queryParam(USER_ID, credentialsDto.getUsername())
           .path(configurationService.getGetGroupsEndpoint())
           .request(MediaType.APPLICATION_JSON)
@@ -60,7 +60,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
       logger.warn("Connection to engine cannot be established", e.getMessage());
       if (logger.isDebugEnabled()) {
         logger.debug("Engine endpoint: ["
-            + configurationService.getEngineRestApiEndpoint(credentialsDto.getEngineAlias())
+            + configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias())
             + "] with path ["
             + configurationService.getGetGroupsEndpoint()
             + "]", e);
@@ -77,7 +77,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
     boolean authenticated = false;
     try {
       Response response = getEngineClient(credentialsDto.getEngineAlias())
-          .target(configurationService.getEngineRestApiEndpoint(credentialsDto.getEngineAlias()))
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
           .path(configurationService.getUserValidationEndpoint())
           .request(MediaType.APPLICATION_JSON)
           .post(Entity.json(credentialsDto));
@@ -91,7 +91,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
       logger.warn("Connection to engine cannot be established", e.getMessage());
       if (logger.isDebugEnabled()) {
         logger.debug("Engine endpoint: ["
-            + configurationService.getEngineRestApiEndpoint(credentialsDto.getEngineAlias())
+            + configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias())
             + "] with path ["
             + configurationService.getUserValidationEndpoint()
             + "]", e);

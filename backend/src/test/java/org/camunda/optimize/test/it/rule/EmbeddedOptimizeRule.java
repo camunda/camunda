@@ -34,8 +34,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
 
-  private TestEmbeddedCamundaOptimize camundaOptimize;
-
   /**
    * Schedule import of all entities, execute all available jobs sequentially
    * until nothing more exists in scheduler queue.
@@ -81,19 +79,28 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   private ImportScheduler getImportScheduler() {
-    return camundaOptimize.getApplicationContext().getBean(ImportScheduler.class);
+    return getOptimize().getApplicationContext().getBean(ImportScheduler.class);
+  }
+
+  private TestEmbeddedCamundaOptimize getOptimize() {
+    return TestEmbeddedCamundaOptimize.getInstance();
+  }
+
+
+  private TestEmbeddedCamundaOptimize getOptimize(String location) {
+    return TestEmbeddedCamundaOptimize.getInstance(location);
   }
 
   private ScheduleJobFactory getScheduleFactory() {
-    return camundaOptimize.getImportScheduleFactory();
+    return getOptimize().getImportScheduleFactory();
   }
 
   private ImportServiceProvider getServiceProvider() {
-    return camundaOptimize.getImportServiceProvider();
+    return getOptimize().getImportServiceProvider();
   }
 
   private ImportJobExecutor getJobExecutor() {
-    return camundaOptimize.getImportJobExecutor();
+    return getOptimize().getImportJobExecutor();
   }
 
   protected void starting(Description description) {
@@ -102,7 +109,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public String getAuthenticationToken() {
-    return camundaOptimize.getAuthenticationToken();
+    return getOptimize().getAuthenticationToken();
   }
 
   public String authenticateDemo() {
@@ -125,16 +132,19 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void startOptimize() {
-    camundaOptimize = TestEmbeddedCamundaOptimize.getInstance();
+    this.startOptimize(null);
+  }
+
+  public void startOptimize(String contextLocation) {
     try {
-      camundaOptimize.start();
+      getOptimize(contextLocation).start();
     } catch (Exception e) {
       logger.error("Failed to start Optimize", e);
     }
   }
 
   public void initializeSchema() {
-    camundaOptimize.initializeSchema();
+    getOptimize().initializeSchema();
   }
 
   protected void finished(Description description) {
@@ -145,31 +155,31 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void reloadConfiguration() {
-    camundaOptimize.reloadConfiguration();
+    getOptimize().reloadConfiguration();
   }
 
   public void stopOptimize() {
     try {
-      camundaOptimize.destroy();
+      getOptimize().destroy();
     } catch (Exception e) {
       logger.error("Failed to stop Optimize", e);
     }
   }
 
   public final WebTarget target(String path) {
-    return camundaOptimize.target(path);
+    return getOptimize().target(path);
   }
 
   public final WebTarget target() {
-    return camundaOptimize.target();
+    return getOptimize().target();
   }
 
   public final WebTarget rootTarget(String path) {
-    return camundaOptimize.rootTarget(path);
+    return getOptimize().rootTarget(path);
   }
 
   public final WebTarget rootTarget() {
-    return camundaOptimize.rootTarget();
+    return getOptimize().rootTarget();
   }
 
   public String getProcessDefinitionEndpoint() {
@@ -216,7 +226,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void startImportScheduler() {
-    camundaOptimize.startImportScheduler();
+    getOptimize().startImportScheduler();
   }
 
   public boolean isImporting() {
@@ -224,7 +234,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public ApplicationContext getApplicationContext() {
-    return camundaOptimize.getApplicationContext();
+    return getOptimize().getApplicationContext();
   }
 
 
@@ -233,7 +243,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public ConfigurationService getConfigurationService() {
-    return camundaOptimize.getConfigurationService();
+    return getOptimize().getConfigurationService();
   }
 
   /**

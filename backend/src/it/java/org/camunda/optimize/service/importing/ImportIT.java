@@ -15,12 +15,14 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -54,6 +56,7 @@ public class ImportIT  {
   private static final String SUB_PROCESS_ID = "testProcess";
   private static final String CALL_ACTIVITY = "callActivity";
   private static final String TEST_MI_PROCESS = "testMIProcess";
+  private static final String CONFIGURATION_WITH_SECURITY = "classpath:";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -148,6 +151,29 @@ public class ImportIT  {
 
     //then
     allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType(),1L);
+  }
+
+  @Test
+  public void allEventFieldDataOfImportIsAvailableWithAuthentication() throws Exception {
+    //given
+    EngineConfiguration engineConfiguration = embeddedOptimizeRule.getConfigurationService().getConfiguredEngines().get("1");
+    engineConfiguration.getAuthentication().setEnabled(true);
+    engineConfiguration.getAuthentication().setPassword("demo");
+    engineConfiguration.getAuthentication().setUser("demo");
+    engineConfiguration.setRest("http://localhost:48080/engine-rest-secure");
+    engineRule.addUser("demo", "demo");
+    embeddedOptimizeRule.reloadConfiguration();
+    deployAndStartSimpleServiceTask();
+
+    //when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType(),1L);
+
+    engineConfiguration.getAuthentication().setEnabled(false);
+    engineConfiguration.setRest("http://localhost:48080/engine-rest");
   }
 
   @Test

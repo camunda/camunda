@@ -45,6 +45,8 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class MultipleEngineSupportIT {
 
+  public static final String REST_ENDPOINT = "http://localhost:48080/engine-rest";
+  private static final String SECURE_REST_ENDPOINT = "http://localhost:48080/engine-rest-secure";
   private final String SECOND_ENGINE_ALIAS = "secondTestEngine";
   public EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
   public EngineIntegrationRule secondEngineRule =
@@ -274,6 +276,11 @@ public class MultipleEngineSupportIT {
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess2");
+
+    assertImportResults(searchResponse, allowedProcessDefinitionKeys);
+  }
+
+  private void assertImportResults(SearchResponse searchResponse, Set<String> allowedProcessDefinitionKeys) {
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionKey = (String) searchHit.getSource().get(ProcessInstanceType.PROCESS_DEFINITION_KEY);
@@ -284,6 +291,32 @@ public class MultipleEngineSupportIT {
       List stringVariables = (List) searchHit.getSource().get(STRING_VARIABLES);
       assertThat(stringVariables.size(), is(1));
     }
+  }
+
+  @Test
+  public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() throws OptimizeException {
+    // given
+    secondEngineRule.addUser("demo", "demo");
+    addSecureEngineToConfiguration("anotherEngine");
+    embeddedOptimizeRule.reloadConfiguration();
+    deployAndStartSimpleProcessDefinitionForAllEngines();
+
+    // when
+    embeddedOptimizeRule.updateImportIndex();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(matchAllQuery())
+      .setSize(100)
+      .get();
+
+    // then
+    Set<String> allowedProcessDefinitionKeys = new HashSet<>();
+    allowedProcessDefinitionKeys.add("TestProcess1");
+    allowedProcessDefinitionKeys.add("TestProcess2");
+
+    assertImportResults(searchResponse, allowedProcessDefinitionKeys);
   }
 
   @Test
@@ -420,18 +453,32 @@ public class MultipleEngineSupportIT {
   }
 
   private void addEngineToConfiguration(String engineName) {
-    EngineAuthenticationConfiguration engineAuthenticationConfiguration = new EngineAuthenticationConfiguration();
-    engineAuthenticationConfiguration.setAccessGroup("");
-    engineAuthenticationConfiguration.setEnabled(false);
-    engineAuthenticationConfiguration.setPassword("");
-    engineAuthenticationConfiguration.setUser("");
+    addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "");
+  }
+
+  private void addSecureEngineToConfiguration(String engineName) {
+    addEngineToConfiguration(engineName, SECURE_REST_ENDPOINT, true, "demo", "demo");
+  }
+
+  private void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication, String username, String password) {
+    EngineAuthenticationConfiguration engineAuthenticationConfiguration = constructEngineAuthenticationConfiguration(withAuthentication, username, password);
+
     EngineConfiguration anotherEngineConfig = new EngineConfiguration();
     anotherEngineConfig.setEnabled(true);
     anotherEngineConfig.setName(engineName);
-    anotherEngineConfig.setRest("http://localhost:48080/engine-rest");
+    anotherEngineConfig.setRest(restEndpoint);
     anotherEngineConfig.setAuthentication(engineAuthenticationConfiguration);
     configurationService
       .getConfiguredEngines()
       .put(SECOND_ENGINE_ALIAS, anotherEngineConfig);
+  }
+
+  private EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication, String username, String password) {
+    EngineAuthenticationConfiguration engineAuthenticationConfiguration = new EngineAuthenticationConfiguration();
+    engineAuthenticationConfiguration.setAccessGroup("");
+    engineAuthenticationConfiguration.setEnabled(withAuthentication);
+    engineAuthenticationConfiguration.setPassword(password);
+    engineAuthenticationConfiguration.setUser(username);
+    return engineAuthenticationConfiguration;
   }
 }
