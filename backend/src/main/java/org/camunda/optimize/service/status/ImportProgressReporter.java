@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.status;
 
+import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
@@ -8,6 +9,10 @@ import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class ImportProgressReporter {
@@ -20,6 +25,9 @@ public class ImportProgressReporter {
 
   @Autowired
   private ConfigurationService configurationService;
+
+  @Autowired
+  private StatusCheckingService statusCheckingService;
 
   public boolean allEntitiesAreImported() {
     try {
@@ -36,13 +44,12 @@ public class ImportProgressReporter {
    * or the process definition count from the engine.
    */
   public int computeImportProgress() throws OptimizeException {
-    double totalEngineEntityCount = 0;
-    if (configurationService.getConfiguredEngines() != null) {
-      for (String engine : configurationService.getConfiguredEngines().keySet()) {
-        totalEngineEntityCount = totalEngineEntityCount + getTotalEngineCount(engine);
-      }
+    List<String> connectedEngineAliases = getAllConnectedEngines();
+    if (connectedEngineAliases.isEmpty()) {
+      throw new OptimizeException();
     }
-    double alreadyImportedCount = getAlreadyImportedCount();
+    double totalEngineEntityCount = getTotalEngineEntityCount(connectedEngineAliases);
+    double alreadyImportedCount = getAlreadyImportedCount(connectedEngineAliases);
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
       return Math.min(tempResult, 100);
@@ -51,9 +58,31 @@ public class ImportProgressReporter {
     }
   }
 
-  private double getAlreadyImportedCount() {
+  private double getTotalEngineEntityCount(List<String> connectedEngineAliases) throws OptimizeException {
+    double totalEngineEntityCount = 0;
+    if (configurationService.getConfiguredEngines() != null) {
+      for (String engine : connectedEngineAliases) {
+        totalEngineEntityCount = totalEngineEntityCount + getTotalEngineCount(engine);
+      }
+    }
+    return totalEngineEntityCount;
+  }
+
+  private List<String> getAllConnectedEngines() {
+    ConnectionStatusDto statusDto = statusCheckingService.getConnectionStatus();
+    List<String> connectedEngines = new ArrayList<>();
+    Map<String, Boolean> engineStatus = statusDto.getEngineConnections();
+    for (Map.Entry<String, Boolean> statusEntry : engineStatus.entrySet()) {
+      if (statusEntry.getValue()) {
+        connectedEngines.add(statusEntry.getKey());
+      }
+    }
+    return connectedEngines;
+  }
+
+  private double getAlreadyImportedCount(List<String> connectedEngineAliases) {
     double alreadyImportedCount = 0;
-    for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+    for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlersForAliases(connectedEngineAliases)) {
       alreadyImportedCount += importIndexHandler.getAbsoluteImportIndex();
     }
     return alreadyImportedCount;

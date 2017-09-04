@@ -6,8 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Askar Akhmerov
@@ -18,22 +22,44 @@ public class IndexHandlerProvider {
   @Autowired
   private ApplicationContext applicationContext;
 
-  private HashMap <String, ImportIndexHandler> initializedHandlers = new HashMap<>();
+  private Map<String, Map<String,ImportIndexHandler>> initializedHandlers = new HashMap<>();
 
-  public ImportIndexHandler getIndexHandler(String elasticSearchType, Class<? extends ImportIndexHandler> indexHandlerType, String engineAlias) {
+  public ImportIndexHandler getIndexHandler(String elasticSearchType,
+                                            Class<? extends ImportIndexHandler> indexHandlerType,
+                                            String engineAlias) {
 
-    if (!initializedHandlers.containsKey(EsHelper.constructKey(elasticSearchType, engineAlias))) {
-      ImportIndexHandler bean = applicationContext.getBean(indexHandlerType);
-      bean.initializeImportIndex(elasticSearchType, engineAlias);
-      initializedHandlers.put(EsHelper.constructKey(elasticSearchType, engineAlias), bean);
+    if (!initializedHandlers.containsKey(engineAlias) ||
+      !initializedHandlers.get(engineAlias).containsKey(elasticSearchType)) {
+      ImportIndexHandler indexHandler = applicationContext.getBean(indexHandlerType);
+      indexHandler.initializeImportIndex(elasticSearchType, engineAlias);
+      if (initializedHandlers.containsKey(engineAlias)) {
+        initializedHandlers.get(engineAlias).put(elasticSearchType, indexHandler);
+      } else {
+        Map<String, ImportIndexHandler> esTypeToIndexHandler = new HashMap<>();
+        esTypeToIndexHandler.put(elasticSearchType, indexHandler);
+        initializedHandlers.put(engineAlias, esTypeToIndexHandler);
+      }
     }
 
-    return initializedHandlers.get(EsHelper.constructKey(elasticSearchType, engineAlias));
+    return initializedHandlers.get(engineAlias).get(elasticSearchType);
   }
 
 
   public Collection<ImportIndexHandler> getAllHandlers() {
-    return initializedHandlers.values();
+    List<ImportIndexHandler> allHandlers = new ArrayList<>();
+    for (Map<String, ImportIndexHandler> typeToIndexHandler : initializedHandlers.values()) {
+      allHandlers.addAll(typeToIndexHandler.values());
+    }
+    return allHandlers;
+  }
+
+  public Collection<ImportIndexHandler> getAllHandlersForAliases(List<String> engineAliases) {
+    List<ImportIndexHandler> allHandlers = new ArrayList<>();
+    for (String engineAlias : engineAliases) {
+      Map<String, ImportIndexHandler> typeToIndexHandler = initializedHandlers.get(engineAlias);
+      allHandlers.addAll(typeToIndexHandler.values());
+    }
+    return allHandlers;
   }
 
   public void unregisterHandlers() {

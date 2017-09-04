@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
@@ -7,6 +8,7 @@ import org.camunda.optimize.service.importing.index.ImportIndexHandler;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.status.ImportProgressReporter;
+import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.junit.Before;
@@ -27,6 +29,7 @@ import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.ArgumentMatchers.any;
 
 @RunWith(Parameterized.class)
 public class ImportProgressReporterTest {
@@ -43,6 +46,9 @@ public class ImportProgressReporterTest {
 
   @Mock
   private ConfigurationService configurationService;
+
+  @Mock
+  private StatusCheckingService statusCheckingService;
 
   @InjectMocks
   private ImportProgressReporter reporter = new ImportProgressReporter();
@@ -99,12 +105,21 @@ public class ImportProgressReporterTest {
         ).thenReturn(indexHandler);
     Collection<ImportIndexHandler> list = new ArrayList<>();
     list.add(indexHandler);
-    Mockito.when(indexHandlerProvider.getAllHandlers()).thenReturn(list);
+    mockstatusCheckingService();
+    Mockito.when(indexHandlerProvider.getAllHandlersForAliases(any())).thenReturn(list);
     Mockito.when(activityImportService.getEngineEntityCount(indexHandler, TEST_ENGINE)).thenReturn(totalEngineEntityCount);
     Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
     Mockito.when(indexHandler.getAbsoluteImportIndex()).thenReturn(optimizeImportCount);
 
     Mockito.when(configurationService.getConfiguredEngines()).thenReturn(engineConfigsToReturn());
+  }
+
+  private void mockstatusCheckingService() {
+    Map<String, Boolean> engineConnections = new HashMap<>();
+    engineConnections.put(TEST_ENGINE, true);
+    ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
+    connectionStatusDto.setEngineConnections(engineConnections);
+    Mockito.when(statusCheckingService.getConnectionStatus()).thenReturn(connectionStatusDto);
   }
 
   private Map<String, EngineConfiguration> engineConfigsToReturn() {
