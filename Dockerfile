@@ -2,9 +2,9 @@ FROM openjdk:8
 
 ARG DISTBALL
 
-ENV DEBUG=false
-ENV DEPLOY_ON_KUBERNETES=false
-ENV ZB_HOME=/usr/local/zeebe/
+ENV ZB_HOME=/usr/local/zeebe/ \
+    DEBUG=false \
+    DEPLOY_ON_KUBERNETES=false
 
 COPY ${DISTBALL} ${ZB_HOME}
 
