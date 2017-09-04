@@ -1,5 +1,8 @@
 package org.camunda.optimize.rest;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -15,6 +18,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+
+import java.io.UnsupportedEncodingException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -116,6 +121,43 @@ public class AuthenticationRestServiceIT {
 
     //then
     assertThat(logoutResponse.getStatus(),is(401));
+  }
+
+  @Test
+  public void cantKickOutUserByProvidingWrongToken() throws JsonProcessingException, UnsupportedEncodingException {
+    // given
+    elasticSearchRule.addDemoUser();
+    embeddedOptimizeRule.authenticateDemo();
+    Algorithm algorithm = Algorithm.HMAC256("secret");
+    String selfGeneratedEvilToken = JWT.create()
+        .withIssuer("demo")
+        .sign(algorithm);
+
+    //when
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + selfGeneratedEvilToken)
+        .get();
+
+    //then
+    assertThat(logoutResponse.getStatus(), is(401));
+  }
+
+  @Test
+  public void authenticatingSameUserTwiceDisablesFirstToken() throws JsonProcessingException {
+    // given
+    elasticSearchRule.addDemoUser();
+    String firstToken = embeddedOptimizeRule.authenticateDemo();
+    embeddedOptimizeRule.authenticateDemo();
+
+    // when
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + firstToken)
+        .get();
+
+    // then
+    assertThat(logoutResponse.getStatus(), is(401));
   }
 
 }

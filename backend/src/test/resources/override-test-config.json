@@ -1,7 +1,7 @@
 {
   "auth": {
     "token": {
-      "secret": "test-obfuscate"
+      "lifeMin": 10
     }
   }
 }

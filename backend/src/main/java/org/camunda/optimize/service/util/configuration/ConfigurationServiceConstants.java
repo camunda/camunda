@@ -8,7 +8,6 @@ package org.camunda.optimize.service.util.configuration;
  */
 public interface ConfigurationServiceConstants {
   String LIFE_TIME = "$.auth.token.lifeMin";
-  String SECRET = "$.auth.token.secret";
   String DEFAULT_USER = "$.auth.defaultAuthentication.user";
   String DEFAULT_PASSWORD = "$.auth.defaultAuthentication.password";
   String DEFAULT_USER_ENABLED = "$.auth.defaultAuthentication.creationEnabled";

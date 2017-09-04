@@ -23,11 +23,7 @@
       Optimize uses token-based authentication to keep track of which users are
       logged in. Define when a token is supposed to expire.
       */
-      "lifeMin": 15,
-      /*
-      Define a secret (password), which is used to hash the token.
-      */
-      "secret": "obfuscate"
+      "lifeMin": 15
     }
   },
   "container": {

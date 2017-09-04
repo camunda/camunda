@@ -42,6 +42,17 @@ public class TokenServiceTest {
   }
 
   @Test
+  public void tokenGenerationDoesNotCreateSameTokenTwice() throws InvalidTokenException {
+    // when
+    String firstToken = tokenService.issueToken("Kermit");
+    tokenService.issueToken("Kermit");
+
+    // then
+    thrown.expect(InvalidTokenException.class);
+    tokenService.validateToken(firstToken);
+  }
+
+  @Test
   public void tokenShouldExpireAfterConfiguredTime() throws InvalidTokenException {
     // given
     int expiryTime = configurationService.getLifetime();

@@ -18,7 +18,7 @@ public class ConfigurationServiceTest {
   @Test
   public void getSecret() throws Exception {
     ConfigurationService underTest = new ConfigurationService();
-    assertThat(underTest.getSecret(), is("obfuscate"));
+    assertThat(underTest.getLifetime(), is(15));
   }
 
   @Test
@@ -32,7 +32,7 @@ public class ConfigurationServiceTest {
   public void testOverride() {
     String[] locations = { "service-config.json", "environment-config.json", "override-test-config.json" };
     ConfigurationService underTest = new ConfigurationService(locations);
-    assertThat(underTest.getSecret(), is("test-obfuscate"));
+    assertThat(underTest.getLifetime(), is(10));
   }
 
   @Test

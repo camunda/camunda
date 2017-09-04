@@ -45,7 +45,6 @@ public class ConfigurationService {
 
 
   private Map<String, EngineConfiguration> configuredEngines;
-  private String secret;
   private Integer lifeTime;
   private String elasticSearchHost;
   private Integer elasticSearchPort;
@@ -217,13 +216,6 @@ public class ConfigurationService {
       configuredEngines = jsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
     }
     return configuredEngines;
-  }
-
-  public String getSecret() {
-    if (secret == null) {
-      secret = jsonContext.read(ConfigurationServiceConstants.SECRET);
-    }
-    return secret;
   }
 
   public Integer getLifetime() {
