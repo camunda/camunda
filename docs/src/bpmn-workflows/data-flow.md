@@ -18,7 +18,7 @@ Lets see for example a clothing web shop and the following workflow defines ther
 The first task orders the articles from the logistic center, the second debit the total price from the customers bank account.
 The third task will simply initiate the shipping of the articles to the customer.
 
-For example a customer ordered tree black socks and a jeans.
+For example a customer ordered three black socks and a jeans.
 After the order is send by the customer a workflow instance is created, which contain
 the following workflow instance payload:
 
@@ -64,7 +64,7 @@ So the JSON structure of the task payload, which is expected by the second task 
 }
 ```
 
-To extract the `orderId` and the `totalPrice` and rename it to `sum` the following mapping can be used.
+To extract the `orderId` and the `totalPrice` and rename it to `sum` the following JSON path based mapping can be used.
 
 ```xml
   <serviceTask id="debitTask">
@@ -138,9 +138,6 @@ the task payload with the existing workflow instance payload. Per default, if no
 and the task was completed without payload, the workflow uses the same payload, which has used
 before the task creation. In that case, no changes on the payload happens.
 
-If the task was completed with a payload and no output mapping was defined the task payload will replace the workflow instance
-payload.
-
 It is possible to define multiple input and output mappings as you can see in the example above.
 These mappings are executed in the defined order, this means a second mapping can overwrite the first one.
 
@@ -193,8 +190,7 @@ on which the value of the matching source should be written to. In the following
 #### JSON Path expression
 
 JSON Path expressions always refer to a JSON structure in the same way as XPath expression are used in combination with an XML document.
-Since a JSON structure is usually anonymous and doesn't necessarily have a "root member object"
-JSON Path assumes the abstract name `$` assigned to the outer level object. [1](http://goessner.net/articles/JsonPath/)
+JSON Path defines `$` as root, see the [JSON path documentation](http://goessner.net/articles/JsonPath/) for more information.
 
 The payload will be on root level always a JSON Object.
 JSON Path expressions can use the dot or bracket notation.
@@ -287,17 +283,20 @@ mapping can be used.
 <table>
 
   <tr>
+    <th>Description</th>
     <th>Workflow Instance Payload</th>
     <th>Input Mapping</th>
     <th>Task Payload</th>
-    <th>Description</th>
   </tr>
 
   <tr>
+    <td>
+    Copy hole payload
+    </td>
     <td><pre>
 {
  "price": 342.99,
- "productId": "3232-24-241"
+ "productId": 41234
 }
     </pre></td>
     <td><pre>
@@ -307,19 +306,19 @@ Target: $
     <td><pre>
 {
  "price": 342.99,
- "productId": "3232-24-241"
+ "productId": 41234
 }
     </pre></td>
-    <td>
-    Copy hole payload
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Move payload in new object
+    </td>
     <td><pre>
 {
  "price": 342.99,
- "productId": "3232-24-241"
+ "productId": 41234
 }
     </pre></td>
     <td><pre>
@@ -330,16 +329,16 @@ Target: $.orderedItem
 {
   "orderedItem": {
     "price": 342.99,
-    "productId": "3232-24-241"
+    "productId": 41234
   }
 }
     </pre></td>
-    <td>
-    Move payload in new object
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract object
+    </td>
     <td><pre>
 {
  "address": {
@@ -363,12 +362,12 @@ Target: $
   "country": "UK"
 }
     </pre></td>
-    <td>
-    Extract object
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract and put into new object
+    </td>
     <td><pre>
 {
  "address": {
@@ -394,12 +393,12 @@ Target: $.newAddress
  }
 }
     </pre></td>
-    <td>
-    Extract and put into new object
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract and put into new objects
+    </td>
     <td><pre>
 {
  "order":
@@ -414,11 +413,11 @@ Target: $.newAddress
     </pre></td>
     <td><pre>
 Source: $.order.customer
-Target: $.newCustomer.details
+Target: $.new.details
     </pre></td>
     <td><pre>
 {
- "newCustomer":{
+ "new":{
    "details": {
      "name": "Hans Horst",
      "customerId": 231
@@ -426,16 +425,16 @@ Target: $.newCustomer.details
  }
 }
     </pre></td>
-    <td>
-    Extract and put into new objects
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract array and put into new array
+    </td>
     <td><pre>
 {
  "name": "Hans Hols",
- "telephonNumbers": [
+ "numbers": [
    "221-3231-31",
    "312-312313",
    "31-21313-1313"
@@ -444,7 +443,7 @@ Target: $.newCustomer.details
 {
     </pre></td>
     <td><pre>
-Source: $.telephoneNumbers
+Source: $.numbers
 Target: $.contactNrs
     </pre></td>
     <td><pre>
@@ -456,16 +455,16 @@ Target: $.contactNrs
   ]
 }
     </pre></td>
-    <td>
-    Extract array and put into new array
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract single array value and put into new array
+    </td>
     <td><pre>
 {
  "name": "Hans Hols",
- "telephonNumbers": [
+ "numbers": [
    "221-3231-31",
    "312-312313",
    "31-21313-1313"
@@ -474,25 +473,27 @@ Target: $.contactNrs
 {
     </pre></td>
     <td><pre>
-Source: $.telephoneNumbers[1]
+Source: $.numbers[1]
 Target: $.contactNrs[0]
     </pre></td>
     <td><pre>
 {
- "contactNrs": [ "312-312313" ]
+ "contactNrs": [
+   "312-312313"
+  ]
  }
 }
     </pre></td>
-    <td>
-    Extract single array value and put into new array
-    </td>
   </tr>
 
   <tr>
+    <td>
+    Extract single array value and put into property
+    </td>
     <td><pre>
 {
  "name": "Hans Hols",
- "telephonNumbers": [
+ "numbers": [
    "221-3231-31",
    "312-312313",
    "31-21313-1313"
@@ -501,7 +502,7 @@ Target: $.contactNrs[0]
 {
     </pre></td>
     <td><pre>
-Source: $.telephoneNumbers[1]
+Source: $.numbers[1]
 Target: $.contactNr
     </pre></td>
     <td><pre>
@@ -510,9 +511,6 @@ Target: $.contactNr
  }
 }
     </pre></td>
-    <td>
-    Extract single array value and put into property
-    </td>
   </tr>
 
 </table>
@@ -531,15 +529,16 @@ in the result column. Each row has a description to identify the use case.
 <table>
 
   <tr>
+    <th>Description</th>
     <th>Task payload</th>
     <th>Workflow instance Payload</th>
     <th>Output mapping</th>
     <th>Result</th>
-    <th>Description</th>
   </tr>
 
 <!-- NEW ROW -->
   <tr>
+  <td>Replace with hole payload</td>
   <td><pre>
 {
  "sum": 234.97
@@ -565,11 +564,11 @@ Target: $
  "sum": 234.97
 }
   </pre></td>
-  <td>Replace with hole payload</td>
   </tr>
 
 <!-- NEW ROW -->
   <tr>
+  <td>Merge payload and write into new object</td>
   <td><pre>
 {
  "sum": 234.97
@@ -601,11 +600,11 @@ Target: $.total
  }
 }
   </pre></td>
-  <td>Merge payload and write into new object</td>
   </tr>
 
 <!-- NEW ROW -->
 <tr>
+  <td>Replace payload with object value</td>
   <td><pre>
 {
  "order":{
@@ -632,12 +631,12 @@ Target: $
   "sum": 21.23
 }
   </pre></td>
-  <td>Replace payload with object value</td>
 </tr>
 
 
 <!-- NEW ROW -->
 <tr>
+  <td>Merge payload and write into new property</td>
   <td><pre>
 {
  "sum": 234.97
@@ -667,14 +666,13 @@ Target: $.total
  "total": 234.97
 }
   </pre></td>
-  <td>Merge payload and write into new property</td>
 </tr>
 
 
 <!-- NEW ROW -->
 
-
 <tr>
+  <td>Merge payload and write into array</td>
   <td><pre>
 {
  "prices": [
@@ -704,11 +702,11 @@ Target: $.prices
    4.99]
 }
   </pre></td>
-  <td>Merge payload and write into array</td>
 </tr>
 
 
 <tr>
+  <td>Merge and update array value</td>
   <td><pre>
 {
  "newPrices": [
@@ -740,10 +738,10 @@ Target: $.prices[0]
    4.99]
 }
   </pre></td>
-  <td>Merge and update array value</td>
 </tr>
 
 <tr>
+  <td>Extract array value and write into payload</td>
   <td><pre>
 {
  "newPrices": [
@@ -770,7 +768,6 @@ Target: $.price
  "price": 99.99
 }
   </pre></td>
-  <td>Extract array value and write into payload</td>
 </tr>
 
 </table>
