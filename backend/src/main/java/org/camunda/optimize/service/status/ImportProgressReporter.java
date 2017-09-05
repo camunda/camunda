@@ -46,7 +46,10 @@ public class ImportProgressReporter {
   public int computeImportProgress() throws OptimizeException {
     List<String> connectedEngineAliases = getAllConnectedEngines();
     if (connectedEngineAliases.isEmpty()) {
-      throw new OptimizeException();
+      throw new OptimizeException(
+        "Unable to compute import progress. All configured engines cannot be reached! " +
+          "Maybe there is a problem with the connection!"
+      );
     }
     double totalEngineEntityCount = getTotalEngineEntityCount(connectedEngineAliases);
     double alreadyImportedCount = getAlreadyImportedCount(connectedEngineAliases);
