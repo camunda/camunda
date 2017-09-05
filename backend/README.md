@@ -140,6 +140,7 @@ realpath es-java/es-java-rest/target/docs/apidocs/index.html | xargs firefox
 There are two kinds of tests in the backend:
 * [Unit tests](#unit-testing)
 * [Integration tests](#integration-testing)
+* [Performance tests](#performance-testing)
 
 ### Unit testing
 
@@ -209,3 +210,12 @@ as follows:
   @Rule
   public EngineIntegrationRule rule = EngineIntegrationRule.getInstance();
 ```
+
+### Performance testing
+
+There are two kinds of performance tests:
+
+* [Import Performance Tests](../qa/import-performance-tests/README.md)
+* [Query Performance Tests](../qa/service-performance-tests/README.md)
+
+Have a look at the dedicated readme files to get more information about how to run them.
