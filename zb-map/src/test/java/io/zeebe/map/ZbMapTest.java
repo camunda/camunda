@@ -169,6 +169,24 @@ public class ZbMapTest
     }
 
     @Test
+    public void shouldNotShrinkHashTable()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(32, 16, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+        putValue(zbMap, 1, 1);
+
+        // when
+        assertThat(removeValue(zbMap, 1)).isTrue();
+
+        // then
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(32);
+    }
+
+    @Test
     public void shouldPutNextPowerOfTwoForOddTableSize()
     {
         // given zbMap not power of two
@@ -179,7 +197,7 @@ public class ZbMapTest
         { };
 
         // then zbMap size is set to next power of two
-        assertThat(zbMap.tableSize).isEqualTo(4);
+        assertThat(zbMap.hashTable.getCapacity()).isEqualTo(4);
 
         // and a values can be inserted and read again - put many values to trigger resize
         for (int i = 0; i < 16; i++)
@@ -482,7 +500,7 @@ public class ZbMapTest
         final Long2LongZbMap zbMap = new Long2LongZbMap(tableSize, 1);
 
         // then zbMap size is set to next power of two
-        assertThat(zbMap.tableSize).isEqualTo(16);
+        assertThat(zbMap.hashTable.getCapacity()).isEqualTo(16);
 
         // and a value can be inserted and read again
         zbMap.put(KEY, VALUE);
@@ -500,7 +518,7 @@ public class ZbMapTest
         final Long2LongZbMap zbMap = new Long2LongZbMap(tableSize, 1);
 
         // then zbMap size is set to max value
-        assertThat(zbMap.tableSize).isEqualTo(ZbMap.MAX_TABLE_SIZE);
+        assertThat(zbMap.hashTable.getCapacity()).isEqualTo(ZbMap.MAX_TABLE_SIZE);
 
         // and a value can be inserted and read again
         zbMap.put(KEY, VALUE);

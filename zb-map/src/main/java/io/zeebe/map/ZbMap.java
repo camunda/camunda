@@ -87,9 +87,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     protected final BucketBufferArray bucketBufferArray;
 
     protected int maxTableSize;
-    protected int tableSize;
     protected final int initialTableSize;
-    protected int mask;
     protected final int blockCountPerBucket;
     protected double loadFactorOverflowLimit;
 
@@ -155,12 +153,10 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
         this.maxTableSize = MAX_TABLE_SIZE;
         this.initialTableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
-        this.tableSize = this.initialTableSize;
-        this.mask = this.tableSize - 1;
         this.blockCountPerBucket = minBlockCount;
         this.loadFactorOverflowLimit = LOAD_FACTOR_OVERFLOW_LIMIT;
 
-        this.hashTable = new HashTable(this.tableSize);
+        this.hashTable = new HashTable(this.initialTableSize);
         this.bucketBufferArray = new BucketBufferArray(minBlockCount, maxKeyLength, maxValueLength);
         this.bucketMergeHelper = new ZbMapBucketMergeHelper(bucketBufferArray, hashTable, blockCountPerBucket);
 
@@ -174,7 +170,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     public long size()
     {
-        return hashTable.getLength() + bucketBufferArray.size();
+        return hashTable.serializationSize() + bucketBufferArray.size();
     }
 
     private int ensureTableSizeIsPowerOfTwo(final int tableSize)
@@ -200,7 +196,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     private void init()
     {
         final long bucketAddress = this.bucketBufferArray.allocateNewBucket(0, 0);
-        for (int idx = 0; idx < tableSize; idx++)
+        for (int idx = 0; idx < hashTable.getCapacity(); idx++)
         {
             hashTable.setBucketAddress(idx, bucketAddress);
         }
@@ -318,6 +314,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     private int getBucketId(long keyHashCode)
     {
         final int bucketId;
+        final int mask = hashTable.getCapacity() - 1;
         bucketId = (int) (keyHashCode & mask);
         return bucketId;
     }
@@ -349,19 +346,16 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     private void tryShrinkHashTable()
     {
         final int bucketCount = getBucketBufferArray().getBucketCount();
-        if (bucketCount < (hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT))
+        if (bucketCount < (hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT) &&
+            hashTable.getCapacity() != initialTableSize)
         {
             if (bucketCount < initialTableSize && hashTable.getCapacity() > initialTableSize)
             {
                 hashTable.resize(initialTableSize);
-                tableSize = hashTable.getCapacity();
-                mask = hashTable.getCapacity() - 1;
             }
             else
             {
                 hashTable.resize(bucketCount * 2);
-                tableSize = hashTable.getCapacity();
-                mask = hashTable.getCapacity() - 1;
             }
         }
     }
@@ -427,14 +421,14 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         final int newBucketId = 1 << bucketDepth | filledBucketId;
         final int newBucketDepth = bucketDepth + 1;
 
-        if (newBucketId < tableSize)
+        if (newBucketId < hashTable.getCapacity())
         {
             createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
         }
         else
         {
             final float loadFactor = bucketBufferArray.getLoadFactor();
-            final int newTableSize = tableSize << 1;
+            final int newTableSize = hashTable.getCapacity() << 1;
             if (loadFactor < loadFactorOverflowLimit ||
                 newTableSize > maxTableSize)
             {
@@ -442,9 +436,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
             }
             else
             {
-                tableSize = newTableSize;
-                mask = tableSize - 1;
-                hashTable.resize(tableSize);
+                hashTable.resize(newTableSize);
                 createNewBucket(filledBucketAddress, bucketDepth, newBucketId, newBucketDepth);
             }
         }
@@ -553,6 +545,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         final long overflowCount[] = new long[10];
         final Set<Long> addresses = new HashSet<>();
         int count = 0;
+        final int tableSize = hashTable.getCapacity();
         for (int i = 0; i < tableSize; i++)
         {
             final int idx = (int) (((double) i / (double) tableSize) * 10);

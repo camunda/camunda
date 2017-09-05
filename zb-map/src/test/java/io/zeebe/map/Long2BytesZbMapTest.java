@@ -265,7 +265,7 @@ public class Long2BytesZbMapTest
         map.put(16L, ANOTHER_VALUE);
 
         // then resize
-        assertThat(map.tableSize).isEqualTo(16);
+        assertThat(map.hashTable.getCapacity()).isEqualTo(16);
 
         final byte[] value = new byte[VALUE_LENGTH];
         assertThat(map.get(0L, value)).isTrue();
@@ -287,7 +287,7 @@ public class Long2BytesZbMapTest
         map.put(16L, ANOTHER_VALUE);
 
         // then resize
-        assertThat(map.tableSize).isEqualTo(32);
+        assertThat(map.hashTable.getCapacity()).isEqualTo(32);
 
         final byte[] value = new byte[VALUE_LENGTH];
         assertThat(map.get(0L, value)).isTrue();

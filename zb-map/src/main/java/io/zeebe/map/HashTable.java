@@ -15,6 +15,7 @@
  */
 package io.zeebe.map;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
 
@@ -25,6 +26,7 @@ import java.io.OutputStream;
 
 import org.agrona.BitUtil;
 import org.agrona.UnsafeAccess;
+import org.agrona.concurrent.UnsafeBuffer;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
@@ -32,6 +34,7 @@ public class HashTable implements Closeable
 {
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
+    private final UnsafeBuffer ioBuffer = new UnsafeBuffer(0, 0);
     private int length;
     private long realAddress;
 
@@ -51,6 +54,11 @@ public class HashTable implements Closeable
     public void clear()
     {
         UNSAFE.setMemory(realAddress, length, (byte) 0);
+    }
+
+    public int serializationSize()
+    {
+        return SIZE_OF_INT + length;
     }
 
     public int getLength()
@@ -109,6 +117,10 @@ public class HashTable implements Closeable
 
     public void writeToStream(OutputStream outputStream, byte[] buffer) throws IOException
     {
+        ioBuffer.wrap(buffer);
+        ioBuffer.putInt(0, getCapacity());
+        outputStream.write(buffer, 0, SIZE_OF_INT);
+
         for (int offset = 0; offset < length; offset += buffer.length)
         {
             final int copyLength = Math.min(buffer.length, length - offset);
@@ -117,8 +129,14 @@ public class HashTable implements Closeable
         }
     }
 
+
     public void readFromStream(InputStream inputStream, byte[] buffer) throws IOException
     {
+        ioBuffer.wrap(buffer);
+        inputStream.read(buffer, 0, SIZE_OF_INT);
+        final int newTableSize = ioBuffer.getInt(0);
+        resize(newTableSize);
+
         int bytesRead = 0;
         for (int offset = 0; offset < length; offset += bytesRead)
         {

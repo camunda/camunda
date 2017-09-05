@@ -15,6 +15,7 @@
  */
 package io.zeebe.map;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
@@ -46,7 +47,7 @@ public class ZbMapSerializerTest
     @Before
     public void createmap() throws Exception
     {
-        map = new Long2LongZbMap(DATASET_SIZE / 16, 16);
+        map = new Long2LongZbMap();
         mapSerializer = new ZbMapSerializer();
     }
 
@@ -57,7 +58,7 @@ public class ZbMapSerializerTest
     }
 
     @Test
-    public void shouldRestoreEmptymap() throws IOException
+    public void shouldRestoreEmptyMap() throws IOException
     {
         writeAndReadmap(map);
 
@@ -68,9 +69,35 @@ public class ZbMapSerializerTest
     }
 
     @Test
+    public void shouldRestoreEmptyMapInNewMapObject() throws IOException
+    {
+        final InputStream inputStream = writeMap(map);
+
+        // when
+        final Long2LongZbMap newMap = new Long2LongZbMap();
+        readMap(newMap, inputStream);
+
+        // then
+        assertThat(newMap.size()).isEqualTo(map.size());
+        assertThat(newMap.getHashTable().getCapacity()).isEqualTo(map.getHashTable().getCapacity());
+        assertThat(newMap.getHashTable().getLength()).isEqualTo(map.getHashTable().getLength());
+
+        assertThat(newMap.getBucketBufferArray().size()).isEqualTo(map.getBucketBufferArray().size());
+        assertThat(newMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(map.getBucketBufferArray().getBucketBufferCount());
+        assertThat(newMap.getBucketBufferArray().getBucketCount()).isEqualTo(map.getBucketBufferArray().getBucketCount());
+        assertThat(newMap.getBucketBufferArray().getBlockCount()).isEqualTo(map.getBucketBufferArray().getBlockCount());
+
+        for (int i = 0; i < DATASET_SIZE; i++)
+        {
+            assertThat(newMap.get(i, NO_SUCH_KEY)).isEqualTo(NO_SUCH_KEY);
+        }
+        newMap.close();
+    }
+
+    @Test
     public void shouldRestoreFullmap() throws IOException
     {
-        fillmap(map);
+        fillMap(map);
 
         writeAndReadmap(map);
 
@@ -81,15 +108,44 @@ public class ZbMapSerializerTest
     }
 
     @Test
-    public void shouldRestoreFullmapWithTemporaryReadErrors() throws IOException
+    public void shouldRestoreInNewMapObject() throws IOException
     {
         // given
-        fillmap(map);
-        final InputStream inputStream = writemap(map);
+        fillMap(map);
+
+        final InputStream inputStream = writeMap(map);
+
+        // when
+        final Long2LongZbMap newMap = new Long2LongZbMap();
+        readMap(newMap, inputStream);
+
+        // then
+        assertThat(newMap.size()).isEqualTo(map.size());
+        assertThat(newMap.getHashTable().getCapacity()).isEqualTo(map.getHashTable().getCapacity());
+        assertThat(newMap.getHashTable().getLength()).isEqualTo(map.getHashTable().getLength());
+
+        assertThat(newMap.getBucketBufferArray().size()).isEqualTo(map.getBucketBufferArray().size());
+        assertThat(newMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(map.getBucketBufferArray().getBucketBufferCount());
+        assertThat(newMap.getBucketBufferArray().getBucketCount()).isEqualTo(map.getBucketBufferArray().getBucketCount());
+        assertThat(newMap.getBucketBufferArray().getBlockCount()).isEqualTo(map.getBucketBufferArray().getBlockCount());
+
+        for (int i = 0; i < DATASET_SIZE; i++)
+        {
+            assertThat(newMap.get(i, NO_SUCH_KEY)).isEqualTo(i);
+        }
+        newMap.close();
+    }
+
+    @Test
+    public void shouldRestoreFullMapWithTemporaryReadErrors() throws IOException
+    {
+        // given
+        fillMap(map);
+        final InputStream inputStream = writeMap(map);
         map.clear();
 
         // when
-        readmap(map, new RepeatedlyFailingInputStream(inputStream));
+        readMap(map, new RepeatedlyFailingInputStream(inputStream));
 
         // then
         for (int i = 0; i < DATASET_SIZE; i++)
@@ -99,32 +155,61 @@ public class ZbMapSerializerTest
     }
 
     @Test
+    public void shouldRestoreFullMapWithTemporaryReadErrorsInNewMapObject() throws IOException
+    {
+        // given
+        fillMap(map);
+
+        final InputStream inputStream = writeMap(map);
+
+        // when
+        final Long2LongZbMap newMap = new Long2LongZbMap();
+        readMap(newMap, new RepeatedlyFailingInputStream(inputStream));
+
+        // then
+        assertThat(newMap.size()).isEqualTo(map.size());
+        assertThat(newMap.getHashTable().getCapacity()).isEqualTo(map.getHashTable().getCapacity());
+        assertThat(newMap.getHashTable().getLength()).isEqualTo(map.getHashTable().getLength());
+
+        assertThat(newMap.getBucketBufferArray().size()).isEqualTo(map.getBucketBufferArray().size());
+        assertThat(newMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(map.getBucketBufferArray().getBucketBufferCount());
+        assertThat(newMap.getBucketBufferArray().getBucketCount()).isEqualTo(map.getBucketBufferArray().getBucketCount());
+        assertThat(newMap.getBucketBufferArray().getBlockCount()).isEqualTo(map.getBucketBufferArray().getBlockCount());
+
+        for (int i = 0; i < DATASET_SIZE; i++)
+        {
+            assertThat(newMap.get(i, NO_SUCH_KEY)).isEqualTo(i);
+        }
+        newMap.close();
+    }
+
+    @Test
     public void shouldThrowOnShortReadOfmapBuffer() throws IOException
     {
         // given
-        fillmap(map);
-        final InputStream inputStream = new ShortReadInputStream(writemap(map), 1024, false);
+        fillMap(map);
+        final InputStream inputStream = new ShortReadInputStream(writeMap(map), 1024 + SIZE_OF_INT, false);
 
         expectedException.expect(IOException.class);
         expectedException.expectMessage("Unable to read full map buffer from input stream. " +
             "Only read 1020 bytes but expected 65536 bytes.");
 
         // when
-        readmap(map, inputStream);
+        readMap(map, inputStream);
     }
 
     @Test
     public void shouldThrowOnFailedReadOfmapBuffer() throws IOException
     {
         // given
-        fillmap(map);
-        final InputStream inputStream = new ShortReadInputStream(writemap(map), 1025, true);
+        fillMap(map);
+        final InputStream inputStream = new ShortReadInputStream(writeMap(map), 1025, true);
 
         expectedException.expect(IOException.class);
         expectedException.expectMessage("Read failure");
 
         // when
-        readmap(map, inputStream);
+        readMap(map, inputStream);
     }
 
     @Test
@@ -152,17 +237,17 @@ public class ZbMapSerializerTest
     public void shouldThrowOnShortReadOfVersion() throws IOException
     {
         // given
-        fillmap(map);
-        final InputStream inputStream = new ShortReadInputStream(writemap(map), 3, false);
+        fillMap(map);
+        final InputStream inputStream = new ShortReadInputStream(writeMap(map), 3, false);
 
         expectedException.expect(IOException.class);
         expectedException.expectMessage("Unable to read map snapshot version");
 
         // when
-        readmap(map, inputStream);
+        readMap(map, inputStream);
     }
 
-    private static void fillmap(final Long2LongZbMap map)
+    private static void fillMap(final Long2LongZbMap map)
     {
         for (int i = 0; i < DATASET_SIZE; i++)
         {
@@ -173,16 +258,16 @@ public class ZbMapSerializerTest
     private void writeAndReadmap(final ZbMap map) throws IOException
     {
         final long sizeBefore = map.size();
-        final InputStream inputStream = writemap(map);
+        final InputStream inputStream = writeMap(map);
 
         map.clear();
 
-        readmap(map, inputStream);
+        readMap(map, inputStream);
         final long sizeAfter = map.size();
         assertThat(sizeBefore).isEqualTo(sizeAfter);
     }
 
-    private InputStream writemap(final ZbMap map) throws IOException
+    private InputStream writeMap(final ZbMap map) throws IOException
     {
         mapSerializer.wrap(map);
 
@@ -193,7 +278,7 @@ public class ZbMapSerializerTest
         return new ByteArrayInputStream(out.toByteArray());
     }
 
-    private void readmap(final ZbMap map, final InputStream inputStream) throws IOException
+    private void readMap(final ZbMap map, final InputStream inputStream) throws IOException
     {
         mapSerializer.wrap(map);
         mapSerializer.readFromStream(inputStream);

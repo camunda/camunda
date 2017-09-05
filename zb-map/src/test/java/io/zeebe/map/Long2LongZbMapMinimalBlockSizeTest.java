@@ -241,7 +241,7 @@ public class Long2LongZbMapMinimalBlockSizeTest
         map.put(16L, 2L);
 
         // then resize
-        assertThat(map.tableSize).isEqualTo(32);
+        assertThat(map.hashTable.getCapacity()).isEqualTo(32);
         for (int i = 0; i < 16; i++)
         {
             assertThat(map.get(i, -1)).isEqualTo(i);
