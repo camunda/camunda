@@ -47,21 +47,6 @@ git config --global user.email "ci@camunda.com"
 git config --global user.name "camunda-jenkins"
 '''
 
-def dockerHubUpload =
-'''\
-#!/bin/bash -xe
-echo "Building Zeebe Docker image."
-docker build -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=./dist/target/zeebe-distribution-${RELEASE_VERSION}.tar.gz .
-
-echo "Authenticating with DockerHub and pushing image."
-docker login --username ${DOCKER_HUB_USERNAME} --pasword ${DOCKER_HUB_PASSWORD}
-
-docker push camunda/zeebe:${RELEASE_VERSION}
-
-docker tag camunda/zeebe:${RELEASE_VERSION} camunda/zeebe:latest
-docker push camunda/zeebe:latest
-'''
-
 // properties used by the release build
 def releaseProperties =
 [
@@ -102,7 +87,7 @@ mavenJob(jobName)
     {
         githubPush()
     }
-    label 'dind'
+    label 'ubuntu'
     jdk 'jdk-8-latest'
 
     rootPOM pom
@@ -142,7 +127,6 @@ mavenJob(jobName)
           string('GPG_PASSPHRASE', 'password_maven_central_gpg_signing_key')
           file('MVN_CENTRAL_GPG_KEY_SEC', 'maven_central_gpg_signing_key')
           file('MVN_CENTRAL_GPG_KEY_PUB', 'maven_central_gpg_signing_key_pub')
-          usernamePassword('DOCKER_HUB_USERNAME', 'DOCKER_HUB_PASSWORD', 'camundajenkins-dockerhub')
         }
 
         release
@@ -177,7 +161,21 @@ mavenJob(jobName)
                     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
                 }
 
-                //shell dockerHubUpload
+            }
+
+            postBuildPublishers
+            {
+                downstreamParameterized
+                {
+                    trigger('zeebe-DISTRO-docker')
+                    {
+                        condition('SUCCESS')
+                        parameters {
+                            currentBuild()
+                            booleanParam('IS_LATEST', true)
+                        }
+                    }
+                }
             }
 
         }
