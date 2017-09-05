@@ -22,8 +22,4 @@ else
 
 fi
 
-if [[ "$DEBUG" == "true" ]]; then
-    sed -i 's/<Logger name="io.zeebe" level="info"\/>/<Logger name="io.zeebe" level="debug"\/>/g' $cfgLog
-fi
-
 exec /usr/local/zeebe/bin/broker

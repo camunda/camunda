@@ -22,7 +22,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.zeebe" level="info"/>
+    <Logger name="io.zeebe" level="${env:ZEEBE_LOG_LEVEL:-info}"/>
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>

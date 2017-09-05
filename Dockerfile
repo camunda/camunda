@@ -3,7 +3,7 @@ FROM openjdk:8
 ARG DISTBALL
 
 ENV ZB_HOME=/usr/local/zeebe/ \
-    DEBUG=false \
+    ZEEBE_LOG_LEVEL=info \
     DEPLOY_ON_KUBERNETES=false
 
 COPY ${DISTBALL} ${ZB_HOME}

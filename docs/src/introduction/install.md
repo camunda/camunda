@@ -72,9 +72,9 @@ variables.
 
 Available environment variables:
 
- - `DEBUG`
+ - `ZEEBE_LOG_LEVEL`
 
-If set to `true` enables the debug log.
+Sets the log level of the Zeebe Logger (default: `info`).
 
  - `DEPLOY_ON_KUBERNETES`
 
