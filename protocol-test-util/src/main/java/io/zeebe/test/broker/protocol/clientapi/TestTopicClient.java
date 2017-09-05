@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.collection.MapBuilder;
 import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -190,6 +191,7 @@ public class TestTopicClient
         return apiRule
                 .moveMessageStreamToHead()
                 .subscribedEvents()
+                .filter(s -> s.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION)
                 .filter(filter);
     }
 
