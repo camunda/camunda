@@ -41,7 +41,7 @@ public class Protocol
     /**
      * By convention, the name of the topic that can be used for topic creation commands
      */
-    public static final String SYSTEM_TOPIC = ".system";
+    public static final String SYSTEM_TOPIC = "internal-system";
     public static final DirectBuffer SYSTEM_TOPIC_BUF = BufferUtil.wrapString(SYSTEM_TOPIC);
 
     /**
