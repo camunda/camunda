@@ -20,11 +20,13 @@ import java.io.*;
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.impl.*;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.zeebe.model.bpmn.impl.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public class Bpmn
 {
     private static BpmnParser parser = new BpmnParser();
+    private static BpmnYamlParser yamlParser = new BpmnYamlParser();
     private static BpmnTransformer transformer = new BpmnTransformer();
     private static BpmnValidator validator = new BpmnValidator();
 
@@ -52,6 +54,16 @@ public class Bpmn
     public static WorkflowDefinition readFromString(String workflow)
     {
         return readFromStream(new ByteArrayInputStream(workflow.getBytes()));
+    }
+
+    public static WorkflowDefinition readFromYamlFile(File file)
+    {
+        return yamlParser.readFromFile(file);
+    }
+
+    public static WorkflowDefinition readFromYamlStream(InputStream stream)
+    {
+        return yamlParser.readFromStream(stream);
     }
 
     public static ValidationResult validate(WorkflowDefinition definition)

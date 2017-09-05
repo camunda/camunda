@@ -18,6 +18,7 @@
   <properties>
     <version.util>0.1.0</version.util>
     <version.msgpack>0.1.0</version.msgpack>
+    <version.yaml>1.18</version.yaml>
   </properties>
 
   <dependencies>
@@ -43,6 +44,12 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${version.yaml}</version>
     </dependency>
 
     <dependency>
