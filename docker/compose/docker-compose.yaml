@@ -1,0 +1,27 @@
+version: '2'
+
+services:
+
+  broker-1:
+    image: camunda/zeebe:SNAPSHOT
+    ports:
+      - 51015:51015
+    volumes:
+        - $PWD/broker-1:/usr/local/zeebe/conf
+        - $PWD/volumes/broker-1:/usr/local/zeebe/bin/data
+
+  broker-2:
+    image: camunda/zeebe:SNAPSHOT
+    ports:
+      - 51016:51015
+    volumes:
+        - $PWD/broker-2:/usr/local/zeebe/conf
+        - $PWD/volumes/broker-2:/usr/local/zeebe/bin/data
+
+  broker-3:
+    image: camunda/zeebe:SNAPSHOT
+    ports:
+      - 51017:51015
+    volumes:
+        - $PWD/broker-3:/usr/local/zeebe/conf
+        - $PWD/volumes/broker-3:/usr/local/zeebe/bin/data
