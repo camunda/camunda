@@ -69,7 +69,10 @@ def releaseProperties =
     tag: '${RELEASE_VERSION}',
     releaseVersion: '${RELEASE_VERSION}',
     developmentVersion: '${DEVELOPMENT_VERSION}',
-    arguments: '--settings=${NEXUS_SETTINGS} -DskipTests=true -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}'
+    pushChanges: '${PUSH_CHANGES}',
+    remoteTagging: '${PUSH_CHANGES}',
+    localCheckout: '${USE_LOCAL_CHECKOUT}',
+    arguments: '--settings=${NEXUS_SETTINGS} -DskipTests=true -Dgpg.passphrase="${GPG_PASSPHRASE}" -Dskip.central.release=${SKIP_DEPLOY_TO_MAVEN_CENTRAL} -Dskip.camunda.release=${SKIP_DEPLOY_TO_CAMUNDA_NEXUS}',
 ]
 
 
@@ -151,6 +154,8 @@ mavenJob(jobName)
             {
                 stringParam('RELEASE_VERSION', '0.1.0', 'Version to release')
                 stringParam('DEVELOPMENT_VERSION', '0.2.0-SNAPSHOT', 'Next development version')
+                booleanParam('PUSH_CHANGES', true, 'If <strong>TRUE</strong>, push the changes to remote repositories.  If <strong>FALSE</strong>, do not push changes to remote repositories. Must be used in conjunction with USE_LOCAL_CHECKOUT = <strong>TRUE</strong> to test the release!')
+                booleanParam('USE_LOCAL_CHECKOUT', false, 'If <strong>TRUE</strong>, uses the local git repository to checkout the release tag to build.  If <strong>FALSE</strong>, checks out the release tag from the remote repositoriy. Must be used in conjunction with PUSH_CHANGES = <strong>FALSE</strong> to test the release!')
                 booleanParam('SKIP_DEPLOY_TO_MAVEN_CENTRAL', false, 'If <strong>TRUE</strong>, skip the deployment to maven central. Should be used when testing the release.')
                 booleanParam('SKIP_DEPLOY_TO_CAMUNDA_NEXUS', false, 'If <strong>TRUE</strong>, skip the deployment to camunda nexus. Should be used when testing the release.')
             }
