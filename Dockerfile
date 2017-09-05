@@ -14,7 +14,7 @@ WORKDIR ${ZB_HOME}/bin
 EXPOSE 51016 51017 51015
 VOLUME ${ZB_HOME}/bin/data
 
-COPY docker-utils/startup.sh /usr/local/bin
-COPY docker-utils/zeebe.cfg.toml $ZB_HOME/conf/
+COPY docker/utils/startup.sh /usr/local/bin
+COPY docker/utils/zeebe.cfg.toml $ZB_HOME/conf/
 
 ENTRYPOINT ["/usr/local/bin/startup.sh"]
