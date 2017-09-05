@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 public interface WorkflowDefinition
 {
 
-    Workflow getWorklow(DirectBuffer bpmnProcessId);
+    Workflow getWorkflow(DirectBuffer bpmnProcessId);
 
     Collection<Workflow> getWorkflows();
 

@@ -56,7 +56,7 @@ public class DefinitionsImpl extends BaseElement implements WorkflowDefinition
     }
 
     @Override
-    public Workflow getWorklow(DirectBuffer bpmnProcessId)
+    public Workflow getWorkflow(DirectBuffer bpmnProcessId)
     {
         return workflowsById.get(bpmnProcessId);
     }

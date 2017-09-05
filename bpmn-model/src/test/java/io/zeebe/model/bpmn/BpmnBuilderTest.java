@@ -39,7 +39,7 @@ public class BpmnBuilderTest
 
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         assertThat(workflow).isNotNull();
         assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
 
@@ -74,7 +74,7 @@ public class BpmnBuilderTest
         final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
         assertThat(validationResult.hasErrors()).isFalse();
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
         final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
@@ -113,7 +113,7 @@ public class BpmnBuilderTest
         final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
         assertThat(validationResult.hasErrors()).isFalse();
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
         final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
@@ -136,7 +136,7 @@ public class BpmnBuilderTest
         final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
         assertThat(validationResult.hasErrors()).isFalse();
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         assertThat(workflow.getFlowElementMap())
             .containsKey(wrapString("task1"))
@@ -169,7 +169,7 @@ public class BpmnBuilderTest
         final ValidationResult validationResult = Bpmn.validate(deserializedWorkflowDefinition);
         assertThat(validationResult.hasErrors()).isFalse();
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
         final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
         assertThat(taskDefinition).isNotNull();

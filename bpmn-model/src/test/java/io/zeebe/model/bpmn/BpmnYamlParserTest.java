@@ -65,7 +65,7 @@ public class BpmnYamlParserTest
         final InputStream stream = getClass().getResourceAsStream(YAML_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("test"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
         assertThat(workflow).isNotNull();
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task1"));
@@ -101,7 +101,7 @@ public class BpmnYamlParserTest
         final InputStream stream = getClass().getResourceAsStream(YAML_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("test"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
         assertThat(workflow).isNotNull();
 
         final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));

@@ -31,7 +31,7 @@ public class InputOutputMappingImpl extends BaseElement implements InputOutputMa
     private List<MappingImpl> outputs = new ArrayList<>();
 
     private Mapping[] inputMappings;
-    private Mapping[] ouputMappings;
+    private Mapping[] outputMappings;
 
     @XmlElement(name = BpmnConstants.ZEEBE_ELEMENT_MAPPING_INPUT, namespace = BpmnConstants.ZEEBE_NS)
     public void setInputs(List<MappingImpl> inputs)
@@ -70,13 +70,13 @@ public class InputOutputMappingImpl extends BaseElement implements InputOutputMa
     @XmlTransient
     public void setOutputMappings(Mapping[] outputMappings)
     {
-        this.ouputMappings = outputMappings;
+        this.outputMappings = outputMappings;
     }
 
     @Override
     public Mapping[] getOutputMappings()
     {
-        return ouputMappings;
+        return outputMappings;
     }
 
     @Override

@@ -87,7 +87,7 @@ public class BpmnParserTest
 
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         assertThat(workflow).isNotNull();
         assertThat(workflow.getBpmnProcessId()).isEqualTo(wrapString("process"));
     }
@@ -98,7 +98,7 @@ public class BpmnParserTest
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final StartEvent initialStartEvent = workflow.getInitialStartEvent();
         assertThat(initialStartEvent).isNotNull();
@@ -111,7 +111,7 @@ public class BpmnParserTest
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         final StartEvent initialStartEvent = workflow.getInitialStartEvent();
 
         assertThat(initialStartEvent.getOutgoingSequenceFlows()).hasSize(1);
@@ -140,7 +140,7 @@ public class BpmnParserTest
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
 
-        final Workflow workflow = workflowDefinition.getWorklow(wrapString("process"));
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
         final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
