@@ -44,7 +44,7 @@ public interface TopicSubscriptionBuilder
      * @param handler the handler to register
      * @return this builder
      */
-    TopicSubscriptionBuilder handler(TopicEventHandler handler);
+    TopicSubscriptionBuilder handler(UniversalEventHandler handler);
 
     /**
      * Registers a handler that handles all task events.

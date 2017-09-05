@@ -52,7 +52,7 @@ public class TopicSubscriptionTest
 
     protected static final String SUBSCRIPTION_NAME = "foo";
 
-    protected static final TopicEventHandler DO_NOTHING = e ->
+    protected static final UniversalEventHandler DO_NOTHING = e ->
     { };
 
     public ClientRule clientRule = new ClientRule();
@@ -532,8 +532,8 @@ public class TopicSubscriptionTest
         // then
         waitUntil(() -> eventHandler.numTopicEvents() == 2);
 
-        final TopicEvent event1 = eventHandler.topicEvents.get(0);
-        final TopicEvent event2 = eventHandler.topicEvents.get(1);
+        final GeneralEvent event1 = eventHandler.topicEvents.get(0);
+        final GeneralEvent event2 = eventHandler.topicEvents.get(1);
 
         assertMetadata(event1, 1L, 1L, TopicEventType.RAFT);
         assertMetadata(event2, 1L, 2L, TopicEventType.RAFT);
@@ -883,14 +883,14 @@ public class TopicSubscriptionTest
     }
 
     private static class RecordingTopicEventHandler implements
-        TopicEventHandler,
+        UniversalEventHandler,
         TaskEventHandler,
         WorkflowInstanceEventHandler,
         IncidentEventHandler,
         WorkflowEventHandler,
         RaftEventHandler
     {
-        protected List<TopicEvent> topicEvents = new CopyOnWriteArrayList<>();
+        protected List<GeneralEvent> topicEvents = new CopyOnWriteArrayList<>();
         protected List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
         protected List<WorkflowEvent> workflowEvents = new CopyOnWriteArrayList<>();
         protected List<WorkflowInstanceEvent> workflowInstanceEvents = new CopyOnWriteArrayList<>();
@@ -898,7 +898,7 @@ public class TopicSubscriptionTest
         protected List<RaftEvent> raftEvents = new CopyOnWriteArrayList<>();
 
         @Override
-        public void handle(TopicEvent event) throws Exception
+        public void handle(GeneralEvent event) throws Exception
         {
             topicEvents.add(event);
         }

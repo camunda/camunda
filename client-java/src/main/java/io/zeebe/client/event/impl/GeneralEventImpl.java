@@ -15,17 +15,17 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.event.TopicEvent;
+import io.zeebe.client.event.GeneralEvent;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.impl.subscription.MsgPackField;
 
-public class TopicEventImpl extends EventImpl implements TopicEvent
+public class GeneralEventImpl extends EventImpl implements GeneralEvent
 {
 
     protected final MsgPackField content;
 
-    public TopicEventImpl(
+    public GeneralEventImpl(
             final String topicName,
             final int partitionId,
             final long key,

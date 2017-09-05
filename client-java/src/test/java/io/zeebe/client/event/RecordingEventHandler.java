@@ -18,13 +18,13 @@ package io.zeebe.client.event;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RecordingEventHandler implements TopicEventHandler
+public class RecordingEventHandler implements UniversalEventHandler
 {
 
-    protected List<TopicEvent> events = new ArrayList<>();
+    protected List<GeneralEvent> events = new ArrayList<>();
 
     @Override
-    public void handle(TopicEvent event)
+    public void handle(GeneralEvent event)
     {
         this.events.add(event);
     }
@@ -34,7 +34,7 @@ public class RecordingEventHandler implements TopicEventHandler
         return events.size();
     }
 
-    public List<TopicEvent> getRecordedEvents()
+    public List<GeneralEvent> getRecordedEvents()
     {
         return events;
     }

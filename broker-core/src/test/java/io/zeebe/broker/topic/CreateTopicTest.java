@@ -91,6 +91,65 @@ public class CreateTopicTest
             );
     }
 
+    @Test
+    public void shouldNotCreateTopicWithZeroPartitions()
+    {
+        // given
+        final String topicName = "newTopic";
+        final int numberOfPartitions = 0;
+
+        // when
+        final ExecuteCommandResponse response = createTopic(topicName, numberOfPartitions);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", topicName),
+                entry("partitions", numberOfPartitions)
+            );
+    }
+
+    @Test
+    public void shouldNotCreateTopicWithNegativePartitions()
+    {
+        // given
+        final String topicName = "newTopic";
+        final int numberOfPartitions = -100;
+
+        // when
+        final ExecuteCommandResponse response = createTopic(topicName, numberOfPartitions);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", topicName),
+                entry("partitions", numberOfPartitions)
+            );
+    }
+
+    @Test
+    public void shouldCreateTopicAfterRejection()
+    {
+
+        // given a rejected creation request
+        final String topicName = "newTopic";
+        createTopic(topicName, 0);
+
+        // when I send a valid creation request for the same topic
+        final ExecuteCommandResponse response = createTopic(topicName, 1);
+
+        // then this is successful
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATED"),
+                entry("name", topicName),
+                entry("partitions", 1)
+            );
+
+    }
+
     protected ExecuteCommandResponse createTopic(String name, int partitions)
     {
         return apiRule.createCmdRequest()
@@ -100,7 +159,7 @@ public class CreateTopicTest
             .command()
                 .put("state", "CREATE")
                 .put("name", name)
-                .put("partitions", 2)
+                .put("partitions", partitions)
                 .done()
             .sendAndAwait();
     }

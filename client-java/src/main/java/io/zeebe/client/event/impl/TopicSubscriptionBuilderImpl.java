@@ -23,7 +23,7 @@ import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 {
-    protected TopicEventHandler defaultEventHandler;
+    protected UniversalEventHandler defaultEventHandler;
     protected TaskEventHandler taskEventHandler;
     protected WorkflowInstanceEventHandler wfInstanceEventHandler;
     protected WorkflowEventHandler wfEventHandler;
@@ -46,7 +46,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     }
 
     @Override
-    public TopicSubscriptionBuilder handler(TopicEventHandler handler)
+    public TopicSubscriptionBuilder handler(UniversalEventHandler handler)
     {
         this.defaultEventHandler = handler;
         return this;
@@ -104,7 +104,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         return subscription;
     }
 
-    protected void dispatchEvent(TopicEventImpl event) throws Exception
+    protected void dispatchEvent(GeneralEventImpl event) throws Exception
     {
         final TopicEventType eventType = event.getMetadata().getType();
 

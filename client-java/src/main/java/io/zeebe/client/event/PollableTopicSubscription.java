@@ -38,6 +38,6 @@ public interface PollableTopicSubscription
      * @param eventHandler the handler that is invoked for each event
      * @return number of handled events
      */
-    int poll(TopicEventHandler eventHandler);
+    int poll(UniversalEventHandler eventHandler);
 
 }

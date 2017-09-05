@@ -45,8 +45,8 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicEvent;
-import io.zeebe.client.event.TopicEventHandler;
+import io.zeebe.client.event.GeneralEvent;
+import io.zeebe.client.event.UniversalEventHandler;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.test.util.TestUtil;
@@ -199,7 +199,7 @@ public class TopicSubscriptionTest
 
         waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
-        final List<TopicEvent> recordedTaskEvents = recordingHandler.getRecordedEvents().stream()
+        final List<GeneralEvent> recordedTaskEvents = recordingHandler.getRecordedEvents().stream()
                 .filter((re) -> re.getMetadata().getType() == TopicEventType.TASK)
                 .collect(Collectors.toList());
 
@@ -217,7 +217,7 @@ public class TopicSubscriptionTest
         waitUntil(() -> subscription2Handler.numRecordedEvents() > 0);
 
         // only the second event is pushed to the second subscription
-        final TopicEvent firstEvent = subscription2Handler.getRecordedEvents().get(0);
+        final GeneralEvent firstEvent = subscription2Handler.getRecordedEvents().get(0);
         assertThat(firstEvent.getMetadata().getPosition()).isEqualTo(secondTaskEventPosition);
 
     }
@@ -442,7 +442,7 @@ public class TopicSubscriptionTest
         assertThat(firstEventPositionAfterReopen).isGreaterThan(lastEventPosition);
     }
 
-    protected static class ParallelismDetectionHandler implements TopicEventHandler
+    protected static class ParallelismDetectionHandler implements UniversalEventHandler
     {
 
         protected AtomicBoolean executing = new AtomicBoolean(false);
@@ -456,7 +456,7 @@ public class TopicSubscriptionTest
         }
 
         @Override
-        public void handle(TopicEvent event) throws Exception
+        public void handle(GeneralEvent event) throws Exception
         {
             numInvocations.incrementAndGet();
             if (executing.compareAndSet(false, true))

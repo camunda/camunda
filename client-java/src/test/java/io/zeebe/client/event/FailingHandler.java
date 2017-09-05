@@ -20,9 +20,9 @@ import java.util.function.Predicate;
 public class FailingHandler extends RecordingEventHandler
 {
 
-    protected Predicate<TopicEvent> failureCondition;
+    protected Predicate<GeneralEvent> failureCondition;
 
-    public FailingHandler(Predicate<TopicEvent> failureCondition)
+    public FailingHandler(Predicate<GeneralEvent> failureCondition)
     {
         this.failureCondition = failureCondition;
     }
@@ -33,7 +33,7 @@ public class FailingHandler extends RecordingEventHandler
     }
 
     @Override
-    public void handle(TopicEvent event)
+    public void handle(GeneralEvent event)
     {
         super.handle(event);
 

@@ -18,7 +18,7 @@ package io.zeebe.client.event.impl;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.client.event.PollableTopicSubscription;
-import io.zeebe.client.event.TopicEventHandler;
+import io.zeebe.client.event.UniversalEventHandler;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.client.task.impl.subscription.EventSubscription;
@@ -32,7 +32,7 @@ public class TopicSubscriptionImpl
 
     protected static final int MAX_HANDLING_RETRIES = 2;
 
-    protected CheckedConsumer<TopicEventImpl> handler;
+    protected CheckedConsumer<GeneralEventImpl> handler;
     protected final TopicClientImpl client;
 
     protected AtomicBoolean processingFlag = new AtomicBoolean(false);
@@ -48,7 +48,7 @@ public class TopicSubscriptionImpl
             TopicClientImpl client,
             String topic,
             int partitionId,
-            CheckedConsumer<TopicEventImpl> handler,
+            CheckedConsumer<GeneralEventImpl> handler,
             int prefetchCapacity,
             long startPosition,
             boolean forceStart,
@@ -86,16 +86,16 @@ public class TopicSubscriptionImpl
     }
 
     @Override
-    public int poll(TopicEventHandler taskHandler)
+    public int poll(UniversalEventHandler taskHandler)
     {
-        final CheckedConsumer<TopicEventImpl> consumer = (e) -> taskHandler.handle(e);
+        final CheckedConsumer<GeneralEventImpl> consumer = (e) -> taskHandler.handle(e);
         return pollEvents(consumer
                 .andThen(this::recordProcessedEvent)
                 .andOnException(this::logExceptionAndPropagate));
     }
 
     @Override
-    public int pollEvents(CheckedConsumer<TopicEventImpl> pollHandler)
+    public int pollEvents(CheckedConsumer<GeneralEventImpl> pollHandler)
     {
 
         // ensuring at most one thread polls at a time which is the guarantee we give for
@@ -117,24 +117,24 @@ public class TopicSubscriptionImpl
         }
     }
 
-    protected void logExceptionAndClose(TopicEventImpl event, Exception e)
+    protected void logExceptionAndClose(GeneralEventImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Closing subscription.");
         this.closeAsync();
     }
 
-    protected void logExceptionAndPropagate(TopicEventImpl event, Exception e)
+    protected void logExceptionAndPropagate(GeneralEventImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Propagating exception to caller.");
         throw new RuntimeException(e);
     }
 
-    protected void logRetry(TopicEventImpl event, Exception e)
+    protected void logRetry(GeneralEventImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Retrying.");
     }
 
-    public CheckedConsumer<TopicEventImpl> getHandler()
+    public CheckedConsumer<GeneralEventImpl> getHandler()
     {
         return handler;
     }
@@ -182,12 +182,12 @@ public class TopicSubscriptionImpl
         }
     }
 
-    protected void recordProcessedEvent(TopicEventImpl event)
+    protected void recordProcessedEvent(GeneralEventImpl event)
     {
         this.lastProcessedEventPosition = event.getMetadata().getPosition();
     }
 
-    protected void logEventHandlingError(Exception e, TopicEventImpl event, String resolution)
+    protected void logEventHandlingError(Exception e, GeneralEventImpl event, String resolution)
     {
         LOGGER.error("Topic subscription " + name + ": Unhandled exception during handling of event " + event + ". " + resolution, e);
     }

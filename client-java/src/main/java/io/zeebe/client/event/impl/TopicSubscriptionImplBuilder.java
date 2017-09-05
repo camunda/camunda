@@ -24,7 +24,7 @@ public class TopicSubscriptionImplBuilder
     protected final TopicClientImpl client;
     protected final String topic;
     protected final int partitionId;
-    protected CheckedConsumer<TopicEventImpl> handler;
+    protected CheckedConsumer<GeneralEventImpl> handler;
     protected long startPosition;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
     protected String name;
@@ -49,7 +49,7 @@ public class TopicSubscriptionImplBuilder
         startAtTailOfTopic();
     }
 
-    public TopicSubscriptionImplBuilder handler(CheckedConsumer<TopicEventImpl> handler)
+    public TopicSubscriptionImplBuilder handler(CheckedConsumer<GeneralEventImpl> handler)
     {
         this.handler = handler;
         return this;
@@ -83,7 +83,7 @@ public class TopicSubscriptionImplBuilder
         return this;
     }
 
-    public CheckedConsumer<TopicEventImpl> getHandler()
+    public CheckedConsumer<GeneralEventImpl> getHandler()
     {
         return handler;
     }

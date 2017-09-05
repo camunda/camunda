@@ -19,11 +19,11 @@ package io.zeebe.client.event;
  * General handler for all kind of events.
  */
 @FunctionalInterface
-public interface TopicEventHandler
+public interface UniversalEventHandler
 {
 
     /**
      * @param event the next event of the topic
      */
-    void handle(TopicEvent event) throws Exception;
+    void handle(GeneralEvent event) throws Exception;
 }

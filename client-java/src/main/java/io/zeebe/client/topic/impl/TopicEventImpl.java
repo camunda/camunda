@@ -21,14 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.impl.EventImpl;
 
-// TODO: rename the current TopicEvent to something that reflects its purpose (=> that it is "raw")
-public class NewTopicEventImpl extends EventImpl
+public class TopicEventImpl extends EventImpl
 {
     protected final String name;
     protected final int partitions;
 
     @JsonCreator
-    public NewTopicEventImpl(
+    public TopicEventImpl(
             @JsonProperty("state") String state,
             @JsonProperty("name") String name,
             @JsonProperty("partitions") int partitions)

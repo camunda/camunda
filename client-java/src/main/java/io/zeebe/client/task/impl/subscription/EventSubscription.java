@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.Logger;
 
-import io.zeebe.client.event.impl.TopicEventImpl;
+import io.zeebe.client.event.impl.GeneralEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
@@ -77,7 +77,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected AtomicBoolean isCloseIssued = new AtomicBoolean(false);
 
     protected long subscriberKey;
-    protected final ManyToManyConcurrentArrayQueue<TopicEventImpl> pendingEvents;
+    protected final ManyToManyConcurrentArrayQueue<GeneralEventImpl> pendingEvents;
     protected final int capacity;
     protected final EventAcquisition<T> acquisition;
 
@@ -363,7 +363,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected abstract void requestEventSourceReplenishment(int eventsProcessed);
 
-    public boolean addEvent(TopicEventImpl event)
+    public boolean addEvent(GeneralEventImpl event)
     {
         final boolean added = this.pendingEvents.offer(event);
 
@@ -393,12 +393,12 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return eventsInProcessing.get() > 0;
     }
 
-    protected int pollEvents(CheckedConsumer<TopicEventImpl> pollHandler)
+    protected int pollEvents(CheckedConsumer<GeneralEventImpl> pollHandler)
     {
         final int currentlyAvailableEvents = size();
         int handledEvents = 0;
 
-        TopicEventImpl event;
+        GeneralEventImpl event;
 
         // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
@@ -444,7 +444,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return handledEvents;
     }
 
-    protected void logHandling(TopicEventImpl event)
+    protected void logHandling(GeneralEventImpl event)
     {
         try
         {
@@ -457,7 +457,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
-    protected void onUnhandledEventHandlingException(TopicEventImpl event, Exception e)
+    protected void onUnhandledEventHandlingException(GeneralEventImpl event, Exception e)
     {
         throw new RuntimeException("Exception during handling of event " + event.getMetadata().getKey(), e);
     }

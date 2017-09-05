@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 import io.zeebe.client.event.impl.EventTypeMapping;
-import io.zeebe.client.event.impl.TopicEventImpl;
+import io.zeebe.client.event.impl.GeneralEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -97,7 +97,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
                 final String topicName = subscribedEventDecoder.topicName();
                 final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
 
-                final TopicEventImpl event = new TopicEventImpl(
+                final GeneralEventImpl event = new GeneralEventImpl(
                         topicName,
                         partitionId,
                         key,

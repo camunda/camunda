@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.impl.TopicEventImpl;
+import io.zeebe.client.event.impl.GeneralEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
@@ -54,7 +54,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     }
 
     @Override
-    public boolean onEvent(long subscriberKey, TopicEventImpl event)
+    public boolean onEvent(long subscriberKey, GeneralEventImpl event)
     {
         final EventMetadata eventMetadata = event.getMetadata();
         final T subscription = subscriptions.getSubscription(eventMetadata.getTopicName(), eventMetadata.getPartitionId(), subscriberKey);

@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.event;
 
-public interface TopicEvent extends Event
+public interface GeneralEvent extends Event
 {
 
     /**

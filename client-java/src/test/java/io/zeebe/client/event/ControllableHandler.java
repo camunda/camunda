@@ -17,7 +17,7 @@ package io.zeebe.client.event;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ControllableHandler implements TopicEventHandler
+public class ControllableHandler implements UniversalEventHandler
 {
 
     protected Object monitor = new Object();
@@ -26,7 +26,7 @@ public class ControllableHandler implements TopicEventHandler
     protected AtomicInteger numHandledEvents = new AtomicInteger(0);
 
     @Override
-    public void handle(TopicEvent event) throws Exception
+    public void handle(GeneralEvent event) throws Exception
     {
         if (shouldWait)
         {

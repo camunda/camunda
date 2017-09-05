@@ -182,7 +182,7 @@ public class CreateTopicStreamProcessor implements StreamProcessor
             final DirectBuffer nameBuffer = topicEvent.getName();
             final boolean topicExists = topics.moveTo(nameBuffer);
 
-            if (topicExists)
+            if (topicExists || topicEvent.getPartitions() <= 0)
             {
                 topicEvent.setState(TopicState.CREATE_REJECTED);
             }
@@ -258,9 +258,12 @@ public class CreateTopicStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            final DirectBuffer nameBuffer = topicEvent.getName();
+            if (topicEvent.getState() != TopicState.CREATE_REJECTED)
+            {
+                final DirectBuffer nameBuffer = topicEvent.getName();
 
-            topics.put(nameBuffer, topicEvent.getPartitions(), currentEvent.getPosition());
+                topics.put(nameBuffer, topicEvent.getPartitions(), currentEvent.getPosition());
+            }
         }
 
     }

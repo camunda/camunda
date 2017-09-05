@@ -25,19 +25,19 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.TopicEvent;
-import io.zeebe.client.event.TopicEventHandler;
+import io.zeebe.client.event.GeneralEvent;
+import io.zeebe.client.event.UniversalEventHandler;
 import io.zeebe.client.event.TopicEventType;
 
-public class RecordingEventHandler implements TopicEventHandler
+public class RecordingEventHandler implements UniversalEventHandler
 {
 
-    protected List<TopicEvent> events = new CopyOnWriteArrayList<>();
+    protected List<GeneralEvent> events = new CopyOnWriteArrayList<>();
     protected ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Override
-    public void handle(TopicEvent event)
+    public void handle(GeneralEvent event)
     {
         this.events.add(event);
     }
@@ -62,18 +62,18 @@ public class RecordingEventHandler implements TopicEventHandler
         return numRecordedEventsOfType(TopicEventType.RAFT);
     }
 
-    public List<TopicEvent> getRecordedEvents()
+    public List<GeneralEvent> getRecordedEvents()
     {
         return events;
     }
 
     public void assertTaskEvent(int index, long taskKey, String eventType) throws IOException
     {
-        final List<TopicEvent> taskEvents = events.stream()
+        final List<GeneralEvent> taskEvents = events.stream()
                 .filter(e -> e.getMetadata().getType() == TopicEventType.TASK)
                 .collect(Collectors.toList());
 
-        final TopicEvent taskEvent = taskEvents.get(index);
+        final GeneralEvent taskEvent = taskEvents.get(index);
 
         final EventMetadata eventMetadata = taskEvent.getMetadata();
         assertThat(eventMetadata.getType()).isEqualTo(TopicEventType.TASK);
@@ -91,13 +91,13 @@ public class RecordingEventHandler implements TopicEventHandler
     public static class RecordedEvent
     {
         protected EventMetadata metadata;
-        protected TopicEvent event;
+        protected GeneralEvent event;
 
         public EventMetadata getMetadata()
         {
             return metadata;
         }
-        public TopicEvent getEvent()
+        public GeneralEvent getEvent()
         {
             return event;
         }

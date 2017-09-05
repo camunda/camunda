@@ -24,14 +24,14 @@ import io.zeebe.util.EnsureUtil;
 public class CreateTopicCommandImpl extends CommandImpl<Event>
 {
 
-    protected final NewTopicEventImpl event;
+    protected final TopicEventImpl event;
 
     public CreateTopicCommandImpl(RequestManager client, String name, int partitions)
     {
         super(client);
         EnsureUtil.ensureNotNull("name", name);
 
-        this.event = new NewTopicEventImpl(TopicEventType.CREATE.name(), name, partitions);
+        this.event = new TopicEventImpl(TopicEventType.CREATE.name(), name, partitions);
         this.event.setTopicName(client.getSystemTopic());
         this.event.setPartitionId(client.getSystemPartition());
     }
