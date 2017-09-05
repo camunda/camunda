@@ -8,8 +8,6 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 public class TokenService {
-  private final Logger logger = LoggerFactory.getLogger(TokenService.class);
   private static ConcurrentHashMap<String, TokenVerifier> tokenVerifiers = new ConcurrentHashMap<>();
   protected Random secureRandom = new SecureRandom();
   private final static int SECRET_LENGTH = 16;
