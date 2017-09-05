@@ -190,6 +190,7 @@ mvn -Pit cargo:run
 Second, run elastic search instance with proper configuration
 ```
 mvn -Pit elasticsearch:runforked
+./target/elasticsearch0/bin/elasticsearch
 ```
 
 Now you should be able to run your tests in your preferred IDE.
