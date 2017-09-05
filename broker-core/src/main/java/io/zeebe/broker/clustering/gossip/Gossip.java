@@ -23,8 +23,6 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
@@ -39,6 +37,7 @@ import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
 
 public class Gossip implements Actor
 {
@@ -143,7 +142,8 @@ public class Gossip implements Actor
             {
                 if (PeerState.ALIVE == peer.state())
                 {
-                    final SocketAddress clientEndpoint = peer.clientEndpoint();
+                    // TODO(menski): creates garbage
+                    final SocketAddress clientEndpoint = new SocketAddress(peer.clientEndpoint());
 
                     topology.brokers().add()
                             .setHost(clientEndpoint.getHostBuffer(), 0, clientEndpoint.hostLength())
