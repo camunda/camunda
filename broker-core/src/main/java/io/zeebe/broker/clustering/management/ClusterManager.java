@@ -29,10 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
@@ -53,14 +49,13 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestResponseController;
-import io.zeebe.transport.ServerInputSubscription;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class ClusterManager implements Actor, PartitionManager
 {
@@ -328,8 +323,7 @@ public class ClusterManager implements Actor, PartitionManager
 
     public void createPartitionAsync(DirectBuffer topicName, int partitionId)
     {
-        final UnsafeBuffer nameBuffer = new UnsafeBuffer(new byte[topicName.capacity()]);
-        nameBuffer.putBytes(0, topicName, 0, topicName.capacity());
+        final DirectBuffer nameBuffer = BufferUtil.cloneBuffer(topicName);
 
         commandQueue.runAsync(() ->
         {

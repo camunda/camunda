@@ -19,6 +19,7 @@ package io.zeebe.broker.system.log;
 
 import java.nio.ByteOrder;
 
+import io.zeebe.logstreams.log.LogStream;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -38,7 +39,7 @@ public class TopicsIndex
 {
 
     protected static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
-    public static final int MAX_TOPIC_NAME_LENGTH = 128; // TODO: could be configurable
+    public static final int MAX_TOPIC_NAME_LENGTH = LogStream.MAX_TOPIC_NAME_LENGTH; // TODO: could be configurable
 
     protected static final int REMAINING_PARTITIONS_OFFSET = 0;
     protected static final int REQUEST_OFFSET = BitUtil.SIZE_OF_INT;
