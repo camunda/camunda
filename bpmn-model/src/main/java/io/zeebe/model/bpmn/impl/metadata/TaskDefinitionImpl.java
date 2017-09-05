@@ -21,10 +21,11 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
 import org.agrona.DirectBuffer;
 
-public class TaskDefinitionImpl implements TaskDefinition
+public class TaskDefinitionImpl extends BaseElement implements TaskDefinition
 {
     private DirectBuffer type;
     private int retries = DEFAULT_TASK_RETRIES;

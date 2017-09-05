@@ -54,12 +54,14 @@ public class FlowNodeImpl extends FlowElementImpl implements FlowNode
         return outgoing;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public List<SequenceFlow> getIncomingSequenceFlows()
     {
         return (List) incoming;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public List<SequenceFlow> getOutgoingSequenceFlows()
     {

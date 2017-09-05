@@ -21,10 +21,11 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.InputOutputMapping;
 import io.zeebe.msgpack.mapping.Mapping;
 
-public class InputOutputMappingImpl implements InputOutputMapping
+public class InputOutputMappingImpl extends BaseElement implements InputOutputMapping
 {
     private List<MappingImpl> inputs  = new ArrayList<>();
     private List<MappingImpl> outputs = new ArrayList<>();

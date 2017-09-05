@@ -16,8 +16,6 @@
 package io.zeebe.model.bpmn.impl;
 
 import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.util.*;
@@ -61,7 +59,10 @@ public class BpmnTransformer
 
     private void transformProcess(final ProcessImpl process)
     {
-        final Map<DirectBuffer, FlowElementImpl> flowElementsById = getFlowElementsById(process);
+        final List<FlowElementImpl> flowElements = collectFlowElements(process);
+        process.getFlowElements().addAll(flowElements);
+
+        final Map<DirectBuffer, FlowElementImpl> flowElementsById = getFlowElementsById(flowElements);
         process.getFlowElementMap().putAll(flowElementsById);
 
         setInitialStartEvent(process);
@@ -71,35 +72,36 @@ public class BpmnTransformer
         transformServiceTasks(process.getServiceTasks());
     }
 
-    private Map<DirectBuffer, FlowElementImpl> getFlowElementsById(final ProcessImpl process)
+    private List<FlowElementImpl> collectFlowElements(final ProcessImpl process)
     {
-        final Map<DirectBuffer, FlowElementImpl> flowElementsById = new HashMap<>();
-
         final List<FlowElementImpl> flowElements = new ArrayList<>();
         flowElements.addAll(process.getStartEvents());
         flowElements.addAll(process.getEndEvents());
         flowElements.addAll(process.getSequenceFlows());
         flowElements.addAll(process.getServiceTasks());
+        return flowElements;
+    }
 
-        for (int f = 0; f < flowElements.size(); f++)
+    private Map<DirectBuffer, FlowElementImpl> getFlowElementsById(List<FlowElementImpl> flowElements)
+    {
+        final Map<DirectBuffer, FlowElementImpl> map = new HashMap<>();
+
+        for (FlowElementImpl flowElement : flowElements)
         {
-            final FlowElementImpl flowElement = flowElements.get(f);
-
-            flowElementsById.put(flowElement.getIdAsBuffer(), flowElement);
+            map.put(flowElement.getIdAsBuffer(), flowElement);
         }
 
-        return flowElementsById;
+        return map;
     }
 
     private void setInitialStartEvent(final ProcessImpl process)
     {
         final List<StartEventImpl> startEvents = process.getStartEvents();
-        ensureGreaterThan("start events", startEvents.size(), 0);
-
-        final StartEventImpl startEvent = startEvents.get(0);
-        ensureNotNull("start event", startEvent);
-
-        process.setInitialStartEvent(startEvent);
+        if (startEvents.size() >= 1)
+        {
+            final StartEventImpl startEvent = startEvents.get(0);
+            process.setInitialStartEvent(startEvent);
+        }
     }
 
     private void linkSequenceFlows(final ProcessImpl process, final Map<DirectBuffer, FlowElementImpl> flowElementsById)
@@ -110,12 +112,16 @@ public class BpmnTransformer
             final SequenceFlowImpl sequenceFlow = sequenceFlows.get(s);
 
             final FlowElementImpl sourceElement = flowElementsById.get(sequenceFlow.getSourceRefAsBuffer());
-            ensureNotNull("source element", sourceElement);
-            sequenceFlow.setSourceNode((FlowNodeImpl) sourceElement);
+            if (sourceElement != null)
+            {
+                sequenceFlow.setSourceNode((FlowNodeImpl) sourceElement);
+            }
 
             final FlowElementImpl targetElement = flowElementsById.get(sequenceFlow.getTargetRefAsBuffer());
-            ensureNotNull("target element", targetElement);
-            sequenceFlow.setTargetNode((FlowNodeImpl) targetElement);
+            if (targetElement != null)
+            {
+                sequenceFlow.setTargetNode((FlowNodeImpl) targetElement);
+            }
         }
     }
 
@@ -203,7 +209,7 @@ public class BpmnTransformer
 
     private Mapping createMapping(MappingImpl mapping)
     {
-        //TODO make JSON path compiler re-usable!
+        // TODO make JSON path compiler re-usable!
         final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
 

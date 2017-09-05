@@ -18,9 +18,10 @@ package io.zeebe.model.bpmn.impl.metadata;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.InputOutputMapping;
 
-public class MappingImpl
+public class MappingImpl extends BaseElement
 {
     private String source = InputOutputMapping.DEFAULT_MAPPING;
     private String target = InputOutputMapping.DEFAULT_MAPPING;

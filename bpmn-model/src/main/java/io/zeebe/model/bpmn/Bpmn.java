@@ -18,8 +18,7 @@ package io.zeebe.model.bpmn;
 import java.io.*;
 
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
-import io.zeebe.model.bpmn.impl.BpmnParser;
-import io.zeebe.model.bpmn.impl.BpmnTransformer;
+import io.zeebe.model.bpmn.impl.*;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
@@ -27,7 +26,7 @@ public class Bpmn
 {
     private static BpmnParser parser = new BpmnParser();
     private static BpmnTransformer transformer = new BpmnTransformer();
-
+    private static BpmnValidator validator = new BpmnValidator();
 
     public static BpmnBuilder createExecutableWorkflow(String bpmnProcessId)
     {
@@ -37,7 +36,6 @@ public class Bpmn
     public static WorkflowDefinition readFromFile(File file)
     {
         final DefinitionsImpl definitions = parser.readFromFile(file);
-        // TODO validate workflow
         final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
 
         return workflowDefinition;
@@ -46,7 +44,6 @@ public class Bpmn
     public static WorkflowDefinition readFromStream(InputStream stream)
     {
         final DefinitionsImpl definitions = parser.readFromStream(stream);
-        // TODO validate workflow
         final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
 
         return workflowDefinition;
@@ -55,6 +52,11 @@ public class Bpmn
     public static WorkflowDefinition readFromString(String workflow)
     {
         return readFromStream(new ByteArrayInputStream(workflow.getBytes()));
+    }
+
+    public static ValidationResult validate(WorkflowDefinition definition)
+    {
+        return validator.validate(definition);
     }
 
     public static String convertToString(WorkflowDefinition definition)

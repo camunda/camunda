@@ -20,10 +20,11 @@ import java.util.*;
 import javax.xml.bind.annotation.XmlElement;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.TaskHeaders;
 import org.agrona.DirectBuffer;
 
-public class TaskHeadersImpl implements TaskHeaders
+public class TaskHeadersImpl extends BaseElement implements TaskHeaders
 {
     private List<TaskHeaderImpl> taskHeaders = new ArrayList<>();
 

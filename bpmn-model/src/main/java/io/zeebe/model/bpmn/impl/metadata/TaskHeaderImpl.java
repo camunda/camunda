@@ -18,8 +18,9 @@ package io.zeebe.model.bpmn.impl.metadata;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 
-public class TaskHeaderImpl
+public class TaskHeaderImpl extends BaseElement
 {
     private String key;
     private String value;

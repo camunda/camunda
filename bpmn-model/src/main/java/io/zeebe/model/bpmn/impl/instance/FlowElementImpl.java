@@ -24,7 +24,7 @@ import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import org.agrona.DirectBuffer;
 
-public class FlowElementImpl implements FlowElement
+public class FlowElementImpl extends BaseElement implements FlowElement
 {
     private DirectBuffer id;
     private DirectBuffer name;

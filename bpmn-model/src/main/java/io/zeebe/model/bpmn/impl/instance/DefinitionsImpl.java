@@ -25,7 +25,7 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
 
 @XmlRootElement(name = BpmnConstants.BPMN_ELEMENT_DEFINITIONS, namespace = BpmnConstants.BPMN20_NS)
-public class DefinitionsImpl implements WorkflowDefinition
+public class DefinitionsImpl extends BaseElement implements WorkflowDefinition
 {
     private String targetNamespace = "http://zeebe.io/model/bpmn";
 

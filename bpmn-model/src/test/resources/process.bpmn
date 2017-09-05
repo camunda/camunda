@@ -6,13 +6,13 @@
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_01hx9mv" sourceRef="start" targetRef="task" />
     <bpmn:sequenceFlow id="SequenceFlow_1t7jge2" sourceRef="task" targetRef="end" />
-    <bpmn:endEvent id="end" name="End&#10;&#10;">
+    <bpmn:endEvent id="end" name="End">
       <bpmn:incoming>SequenceFlow_1t7jge2</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="task" name="task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="task" retries="3" />
-      	<zeebe:taskHeaders>
+        <zeebe:taskHeaders>
           <zeebe:header key="foo" value="f" />
           <zeebe:header key="bar" value="b" />
         </zeebe:taskHeaders>

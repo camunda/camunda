@@ -15,6 +15,7 @@
  */
 package io.zeebe.model.bpmn.instance;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
@@ -27,7 +28,9 @@ public interface Workflow
 
     StartEvent getInitialStartEvent();
 
-    FlowElement findFlowElementById(DirectBuffer id);
+    <T extends FlowElement> T findFlowElementById(DirectBuffer id);
+
+    Collection<FlowElement> getFlowElements();
 
     Map<DirectBuffer, FlowElement> getFlowElementMap();
 

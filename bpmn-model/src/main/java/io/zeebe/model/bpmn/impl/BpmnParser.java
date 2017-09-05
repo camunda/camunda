@@ -22,10 +22,13 @@ import java.net.URL;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.*;
+import javax.xml.bind.Unmarshaller.Listener;
+import javax.xml.stream.*;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
 import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.impl.instance.BaseElement;
 import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
 import org.xml.sax.SAXException;
 
@@ -33,6 +36,9 @@ public class BpmnParser
 {
     private final Unmarshaller unmarshaller;
     private final Marshaller marshaller;
+
+    private final XMLInputFactory xmlInputFactory;
+    private final BaseElementListener baseElementListener;
 
     public BpmnParser()
     {
@@ -45,13 +51,18 @@ public class BpmnParser
             ensureNotNull("BPMN schema", bpmnSchema);
             final Schema schema = schemaFactory.newSchema(bpmnSchema);
 
+            baseElementListener = new BaseElementListener();
+
             unmarshaller = jaxbContext.createUnmarshaller();
             unmarshaller.setSchema(schema);
+            unmarshaller.setListener(baseElementListener);
 
             marshaller = jaxbContext.createMarshaller();
             marshaller.setSchema(schema);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+
+            xmlInputFactory = XMLInputFactory.newFactory();
         }
         catch (JAXBException | SAXException e)
         {
@@ -63,11 +74,9 @@ public class BpmnParser
     {
         try
         {
-            final DefinitionsImpl definitions = (DefinitionsImpl) unmarshaller.unmarshal(file);
-
-            return definitions;
+            return readFromStream(new FileInputStream(file));
         }
-        catch (JAXBException e)
+        catch (FileNotFoundException e)
         {
             throw new RuntimeException(e);
         }
@@ -77,11 +86,14 @@ public class BpmnParser
     {
         try
         {
-            final DefinitionsImpl definitions = (DefinitionsImpl) unmarshaller.unmarshal(stream);
+            final XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(stream);
+            baseElementListener.wrap(xmlStreamReader);
+
+            final DefinitionsImpl definitions = (DefinitionsImpl) unmarshaller.unmarshal(xmlStreamReader);
 
             return definitions;
         }
-        catch (JAXBException e)
+        catch (JAXBException | XMLStreamException e)
         {
             throw new RuntimeException(e);
         }
@@ -101,6 +113,36 @@ public class BpmnParser
         }
 
         return writer.toString();
+    }
+
+    /**
+     * Add metadata for validation.
+     */
+    private class BaseElementListener extends Listener
+    {
+        private XMLStreamReader xsr;
+
+        public void wrap(XMLStreamReader xsr)
+        {
+            this.xsr = xsr;
+        }
+
+        @Override
+        public void beforeUnmarshal(Object target, Object parent)
+        {
+            final int lineNumber = xsr.getLocation().getLineNumber();
+            final String localName = xsr.getLocalName();
+            final String prefix = xsr.getPrefix();
+
+            if (target instanceof BaseElement)
+            {
+                final BaseElement element = (BaseElement) target;
+
+                element.setNamespace(prefix);
+                element.setElementName(localName);
+                element.setLineNumber(lineNumber);
+            }
+        }
     }
 
 }

@@ -33,6 +33,7 @@ public class ProcessImpl extends FlowElementImpl implements Workflow
     private List<ServiceTaskImpl> serviceTasks = new ArrayList<>();
 
     private StartEvent initialStartEvent;
+    private final List<FlowElement> flowElements = new ArrayList<>();
     private final Map<DirectBuffer, FlowElement> flowElementMap = new HashMap<>();
 
     @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_IS_EXECUTABLE)
@@ -110,9 +111,16 @@ public class ProcessImpl extends FlowElementImpl implements Workflow
     }
 
     @Override
-    public FlowElement findFlowElementById(DirectBuffer id)
+    public List<FlowElement> getFlowElements()
     {
-        return flowElementMap.get(id);
+        return flowElements;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends FlowElement> T findFlowElementById(DirectBuffer id)
+    {
+        return (T) flowElementMap.get(id);
     }
 
     @Override
