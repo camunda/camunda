@@ -1,7 +1,7 @@
 # Camunda Optimize REST API
 
 The following REST API is providing backend service based on elasticsearch(ES) to perform aggregation of the 
-data that has been previously imported into elasticsearch(ES) instance\cluster. 
+data that has been previously imported into elasticsearch(ES) instance\cluster.
 
 ## ES Installation 
 
@@ -44,14 +44,6 @@ logger = ESLoggerFactory.getLogger('myscript')
 logger.info("TEST")
 ```
 
-### Pre-populating data
-
-in order to work with authentication, please add a user to corresponding index type
-
-```
-curl -XPUT http://localhost:9200/optimize/users/1?pretty -d '{ "username":"admin", "password":"admin"}'
-```
-
 ## REST API
 
 in order to run API you have to run 
@@ -65,7 +57,7 @@ to run from command line please execute following from root folder of the projec
 
 ```
 mvn -DskipTests clean package
-java -jar ./es-java/es-java-rest/target/es-java-rest-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+java -jar ./es-java/es-java-rest/target/es-java-rest-1.4.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 ### Authentication
@@ -120,9 +112,21 @@ to logout
 curl -XGET http://localhost:8080/api/authentication/logout -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.S8EUdXzC3pL5UHz11aBwx36OBlYEL02FS5GH81XFneE"
 ```
 
-### Enunciate documentation 
+### Trigger data import from engine to elasticsearch
 
-you can generate documentation using [enunciate](http://enunciate.webcohesion.com/) 
+Whenever you start Optimize, the import is triggered automatically. However, you can still do that manually by 
+sending the following request:
+
+```bash
+curl -XGET http://localhost:8080/api/import -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.S8EUdXzC3pL5UHz11aBwx36OBlYEL02FS5GH81XFneE"
+```
+
+The response tells you, if the import was successfully triggered.
+
+### Enunciate REST-API documentation
+
+You can generate documentation for the REST-API using [enunciate](http://enunciate.webcohesion.com/).
+Just run the following command:
 
 ```
 mvn clean package -DskipTests -Pdocs
@@ -131,17 +135,23 @@ realpath es-java/es-java-rest/target/docs/apidocs/index.html | xargs firefox
 
 [Here](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/job/master/lastSuccessfulBuild/artifact/backend/target/docs/apidocs/index.html) you can also find the documentation of the last successful build.
 
-### Trigger data import from engine to elasticsearch
+## Testing
 
-To trigger the data import from the engine to elasticsearch you need to send the following request:
+There are two kinds of tests in the backend:
+* [Unit tests](#unit-testing)
+* [Integration tests](#integration-testing)
 
-```bash
-curl -XGET http://localhost:8080/api/import -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.S8EUdXzC3pL5UHz11aBwx36OBlYEL02FS5GH81XFneE"
+### Unit testing
+
+Run the following command to run the unit tests:
+```
+mvn clean test -Pproduction
 ```
 
-The response tells you, if the import was successfully triggered.
+There are certain tests, which need the webapps. Therfore, we need to
+add the production profile.
 
-## Integration testing 
+### Integration testing
 
 This project has integration tests implemented that rely on following facts: 
 
@@ -151,21 +161,39 @@ for HTTP requests
 for HTTP connections
 * build is performed with ```it``` profile
 
-in order to debug your test locally you have to perform following steps: 
+in order to debug your test locally you have the following options:
 
-* run tomcat with proper modules deployed 
+* [run all integration tests via maven](#run-all-tests)
+* [setup environment and run tests manually](#run-tests-manually)
+
+#### Run all tests
+
+If you just want to run all tests in one command without making additional
+efforts, just run the following:
 ```
 mvn -Pit clean verify
-mvn -Pit -f backend/pom.xml cargo:run
 ```
-* run elastic search instance with proper configuration
-```
-mvn -Pit -f backend/pom.xml elasticsearch:runforked
-backend/target/elasticsearch0/bin/elasticsearch 
-```
-now you should be able to run your tests
 
-### Cleaning up data after test run
+Elasticsearch and the engine are setup automatically.
+
+#### Run tests manually
+
+Especially, if you want to debug a test, it can make sense to setup the
+environment manually to step through a failing test case.
+
+First, run tomcat with the engine deployed:
+```
+mvn -Pit cargo:run
+```
+
+Second, run elastic search instance with proper configuration
+```
+mvn -Pit elasticsearch:runforked
+```
+
+Now you should be able to run your tests in your preferred IDE.
+
+#### Cleaning up data after test run
 
 please note that your test is expected to be responsible for populating 
 data into engine\elasticsearch as well as clean up. In order to ease 
