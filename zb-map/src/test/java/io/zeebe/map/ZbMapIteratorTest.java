@@ -78,12 +78,23 @@ public class ZbMapIteratorTest
     }
 
     @Test
-    public void shouldIterateOverAllEntries()
+    public void shouldThrowNoSuchElementException()
+    {
+        // expect
+        thrown.expect(NoSuchElementException.class);
+
+        // when
+        iterator.next();
+    }
+
+    @Test
+    public void shouldIteratorOverMoreThenOneFilledBucketBuffers()
     {
         // given
-        final List<Long> keys = LongStream.range(0, 4 * 3).boxed().collect(Collectors.toList());
+        final List<Long> keys = LongStream.range(0, 4096).boxed().collect(Collectors.toList());
 
         keys.forEach(k -> putValue(map, k, k + 1));
+        assertThat(map.bucketBufferArray.getBucketBufferCount()).isEqualTo(64);
 
         // if then
         final List<Long> foundKeys = new ArrayList<>();
