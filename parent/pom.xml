@@ -13,14 +13,14 @@
 
   <properties>
     <!-- SUB PROJECTS -->
-    <version.util>0.2.0-SNAPSHOT</version.util>
-    <version.logstreams>0.2.0-SNAPSHOT</version.logstreams>
-    <version.zb-msgpack>0.2.0-SNAPSHOT</version.zb-msgpack>
-    <version.service>0.1.0</version.service>
-    <version.dispatcher>0.1.0</version.dispatcher>
-    <version.transport>0.1.1</version.transport>
-    <version.protocol>0.2.0-SNAPSHOT</version.protocol>
-    <version.raft>0.2.0-SNAPSHOT</version.raft>
+    <version.util>0.2.0</version.util>
+    <version.logstreams>0.2.0</version.logstreams>
+    <version.zb-msgpack>0.2.0</version.zb-msgpack>
+    <version.service>0.2.0</version.service>
+    <version.dispatcher>0.2.0</version.dispatcher>
+    <version.transport>0.2.0</version.transport>
+    <version.protocol>0.2.0</version.protocol>
+    <version.raft>0.2.0</version.raft>
   </properties>
 
   <dependencyManagement>
