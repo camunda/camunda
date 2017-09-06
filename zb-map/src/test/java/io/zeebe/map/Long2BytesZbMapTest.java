@@ -297,11 +297,13 @@ public class Long2BytesZbMapTest
     }
 
     @Test
-    public void cannotPutValueIfValueIsTooLong()
+    public void shouldRejectPutIfValueTooLong()
     {
+        // then
         thrown.expect(IllegalArgumentException.class);
 
-        map.put(0, "too long".getBytes());
+        // when
+        map.put(0, new byte[65]);
     }
 
     @Test
