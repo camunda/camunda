@@ -175,6 +175,94 @@ public class BucketBufferArrayTest
     }
 
     @Test
+    public void shouldAllocateBucketOnBufferWhichHasFreeBuckets()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+
+        for (int i = 0; i < 3 * ALLOCATION_FACTOR; i++)
+        {
+            keyHandler.theKey = i;
+            valueHandler.theValue = i;
+            final long bucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(bucketAddress, keyHandler, valueHandler);
+        }
+
+        // remove some buckets on second buffer
+        for (int i = ALLOCATION_FACTOR - 1; i >= ALLOCATION_FACTOR - 11; i--)
+        {
+            final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+            final long bucketAddress = getBucketAddress(1, bucketOffset);
+            bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset());
+            final long nextRemoveAddress = bucketBufferArray.removeBucket(bucketAddress);
+            assertThat(bucketAddress).isGreaterThan(nextRemoveAddress);
+        }
+
+        // when
+        final long newBucketAddress = bucketBufferArray.allocateNewBucket(0xFF, 0xFF);
+
+        // then
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(86);
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(22);
+        assertThat(bucketBufferArray.getBucketCount(2)).isEqualTo(32);
+
+        final int bucketOffset = (ALLOCATION_FACTOR - 11) * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+        assertThat(newBucketAddress).isEqualTo(getBucketAddress(1,  bucketOffset));
+    }
+
+    @Test
+    public void shouldAllocateBucketOnLastBufferAfterAllFreeBucketsAreUsed()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+
+        for (int i = 0; i < 3 * ALLOCATION_FACTOR; i++)
+        {
+            keyHandler.theKey = i;
+            valueHandler.theValue = i;
+            final long bucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(bucketAddress, keyHandler, valueHandler);
+        }
+
+        // remove some buckets on second buffer
+        for (int i = ALLOCATION_FACTOR - 1; i >= ALLOCATION_FACTOR - 11; i--)
+        {
+            final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+            final long bucketAddress = getBucketAddress(1, bucketOffset);
+            bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset());
+            final long nextRemoveAddress = bucketBufferArray.removeBucket(bucketAddress);
+            assertThat(bucketAddress).isGreaterThan(nextRemoveAddress);
+        }
+
+        // allocate bucket in second buffer
+        for (int i = ALLOCATION_FACTOR - 11; i < ALLOCATION_FACTOR; i++)
+        {
+            final long newBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+            assertThat(newBucketAddress).isEqualTo(getBucketAddress(1,  bucketOffset));
+        }
+
+        // when
+        final long newBucketAddress = bucketBufferArray.allocateNewBucket(0xFF, 0xFF);
+
+        // then
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(4);
+
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(97);
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(2)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(3)).isEqualTo(1);
+
+        final int bucketOffset = BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+        assertThat(newBucketAddress).isEqualTo(getBucketAddress(3,  bucketOffset));
+    }
+
+    @Test
     public void shouldIncreaseAddressArrayOnCreatingBuckets()
     {
         // given

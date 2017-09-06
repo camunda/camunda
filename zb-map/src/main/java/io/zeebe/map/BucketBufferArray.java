@@ -534,6 +534,24 @@ public class BucketBufferArray implements AutoCloseable
     }
 
     /**
+
+     * @return the first not fully filled bucket buffer or the last bucket buffer if all are filled.
+     */
+    private int findNotFullBucketBuffer()
+    {
+        int bucketBufferId = 0;
+        final int bucketBufferCount = getBucketBufferCount();
+        boolean isBufferCountReached = false;
+        while (!isBufferCountReached &&
+                getBucketCount(bucketBufferId) == ALLOCATION_FACTOR)
+        {
+            bucketBufferId++;
+            isBufferCountReached = bucketBufferId == bucketBufferCount;
+        }
+        return isBufferCountReached ? bucketBufferId - 1 : bucketBufferId;
+    }
+
+    /**
      * Allocates new bucket and returns the bucket start address.
      *
      * @param newBucketId the new block id
@@ -542,7 +560,7 @@ public class BucketBufferArray implements AutoCloseable
      */
     public long allocateNewBucket(int newBucketId, int newBucketDepth)
     {
-        int bucketBufferId = getBucketBufferCount() - 1;
+        int bucketBufferId = findNotFullBucketBuffer();
         int bucketCountInBucketBuffer = getBucketCount(bucketBufferId);
 
         if (bucketCountInBucketBuffer >= ALLOCATION_FACTOR)
