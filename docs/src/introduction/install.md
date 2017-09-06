@@ -24,7 +24,7 @@ You can always download the latest Zeebe release from the [Github release page](
 Once you have downloaded a distribution, extract it into a folder of your choice. In order to extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
-$ tar -xzf zeebe-distribution-0.1.0.tar.gz -C zeebe/
+$ tar -xzf zeebe-distribution-0.2.0.tar.gz -C zeebe/
 $ cd zeebe/bin
 $ ./broker
 ```
@@ -47,7 +47,7 @@ Once the Zeebe broker has started, it should produce the following output:
 You can run Zeebe with Docker:
 
 ```bash
-docker run -p 51015:51015 camunda/zeebe:0.1.0
+docker run -p 51015:51015 camunda/zeebe:0.2.0
 ```
 
 ### Exposed Ports
