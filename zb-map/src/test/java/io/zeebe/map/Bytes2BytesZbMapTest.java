@@ -172,13 +172,43 @@ public class Bytes2BytesZbMapTest
     }
 
     @Test
-    public void shouldRejectIfKeyTooLong()
+    public void shouldRejectGetIfKeyTooLong()
     {
         // then
         expection.expect(IllegalArgumentException.class);
 
         // when
         map.get(new byte[65], value);
+    }
+
+    @Test
+    public void shouldRejectPutIfKeyTooLong()
+    {
+        // then
+        expection.expect(IllegalArgumentException.class);
+
+        // when
+        map.put(new byte[65], value);
+    }
+
+    @Test
+    public void shouldRejectPutIfValueTooLong()
+    {
+        // then
+        expection.expect(IllegalArgumentException.class);
+
+        // when
+        map.put(key, new byte[65]);
+    }
+
+    @Test
+    public void shouldRejectRemoveIfKeyTooLong()
+    {
+        // then
+        expection.expect(IllegalArgumentException.class);
+
+        // when
+        map.remove(new byte[65]);
     }
 
 
