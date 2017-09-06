@@ -18,9 +18,9 @@ package io.zeebe.model.bpmn.impl.instance;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlIDREF;
+import javax.xml.bind.annotation.*;
 
+import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
@@ -29,6 +29,8 @@ public class FlowNodeImpl extends FlowElementImpl implements FlowNode
 {
     private List<SequenceFlowImpl> incoming = new ArrayList<>();
     private List<SequenceFlowImpl> outgoing = new ArrayList<>();
+
+    private BpmnAspect bpmnAspect = BpmnAspect.NONE;
 
     @XmlIDREF
     @XmlElement(name = BpmnConstants.BPMN_ELEMENT_INCOMING, namespace = BpmnConstants.BPMN20_NS)
@@ -66,6 +68,18 @@ public class FlowNodeImpl extends FlowElementImpl implements FlowNode
     public List<SequenceFlow> getOutgoingSequenceFlows()
     {
         return (List) outgoing;
+    }
+
+    @Override
+    public BpmnAspect getBpmnAspect()
+    {
+        return bpmnAspect;
+    }
+
+    @XmlTransient
+    public void setBpmnAspect(BpmnAspect bpmnAspect)
+    {
+        this.bpmnAspect = bpmnAspect;
     }
 
     @Override

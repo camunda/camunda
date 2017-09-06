@@ -20,11 +20,11 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.util.*;
 
+import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.impl.metadata.*;
-import io.zeebe.model.bpmn.instance.Workflow;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.instance.*;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.Mapping;
@@ -70,6 +70,8 @@ public class BpmnTransformer
         linkSequenceFlows(process, flowElementsById);
 
         transformServiceTasks(process.getServiceTasks());
+
+        addBpmnAspects(process);
     }
 
     private List<FlowElementImpl> collectFlowElements(final ProcessImpl process)
@@ -214,6 +216,30 @@ public class BpmnTransformer
         final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
 
         return new Mapping(query, mapping.getTarget());
+    }
+
+    private void addBpmnAspects(ProcessImpl process)
+    {
+        final List<FlowElement> flowElements = process.getFlowElements();
+        for (int f = 0; f < flowElements.size(); f++)
+        {
+            final FlowElement flowElement = flowElements.get(f);
+
+            if (flowElement instanceof FlowNodeImpl)
+            {
+                final FlowNodeImpl flowNode = (FlowNodeImpl) flowElement;
+
+                final List<SequenceFlow> outgoingSequenceFlows = flowNode.getOutgoingSequenceFlows();
+                if (outgoingSequenceFlows.isEmpty())
+                {
+                    flowNode.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
+                }
+                else if (outgoingSequenceFlows.size() == 1)
+                {
+                    flowNode.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+                }
+            }
+        }
     }
 
 }
