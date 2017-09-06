@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Logstreams</name>
   <artifactId>zb-logstreams</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -198,7 +198,7 @@
     <url>https://github.com/zeebe-io/zb-logstreams</url>
     <connection>scm:git:git@github.com:zeebe-io/zb-logstreams.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zb-logstreams.git</developerConnection>
-    <tag>0.2.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
