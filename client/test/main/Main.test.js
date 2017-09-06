@@ -81,8 +81,7 @@ describe('<Main>', () => {
 
     expect(node).to.contain.text(DynamicLoader.text);
     expect(DynamicLoader.appliedWith({
-      module: 'processSelection',
-      selector: 'processSelection'
+      module: 'processSelection'
     })).to.eql(true, 'expected DynamicLoader to be created with processSelection module');
   });
 

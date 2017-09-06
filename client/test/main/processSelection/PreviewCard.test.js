@@ -1,7 +1,7 @@
 import chai from 'chai';
 import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {PreviewCardReact, __set__, __ResetDependency__} from 'main/processSelection/PreviewCard';
+import {PreviewCard, __set__, __ResetDependency__} from 'main/processSelection/PreviewCard';
 import React from 'react';
 import {mount} from 'enzyme';
 import {createReactMock} from 'testHelpers';
@@ -59,7 +59,7 @@ describe('<PreviewCard>', () => {
 
       engineCount = 1;
 
-      node = mount(<PreviewCardReact current={current} versions={versions} engineCount={engineCount} />);
+      node = mount(<PreviewCard current={current} versions={versions} engineCount={engineCount} />);
     });
 
     it('should not display engine name when only one engine is available', () => {
@@ -67,7 +67,7 @@ describe('<PreviewCard>', () => {
     });
 
     it('should display engine name when more than one engine is available', () => {
-      node = mount(<PreviewCardReact current={current} versions={versions} engineCount={3} />);
+      node = mount(<PreviewCard current={current} versions={versions} engineCount={3} />);
 
       expect(node).to.contain.text(current.engine);
     });
@@ -97,7 +97,7 @@ describe('<PreviewCard>', () => {
 
     it('should disable click listener if diagram is not defined', () => {
       current.bpmn20Xml = null;
-      node = mount(<PreviewCardReact current={current} versions={versions} engineCount={1} />);
+      node = mount(<PreviewCard current={current} versions={versions} engineCount={1} />);
 
       node.find('.diagram').simulate('click');
 
@@ -106,7 +106,7 @@ describe('<PreviewCard>', () => {
 
     it('should add no-xml class to diagram if bpmn20Xml is not defined', () => {
       current.bpmn20Xml = null;
-      node = mount(<PreviewCardReact current={current} versions={versions} engineCount={1} />);
+      node = mount(<PreviewCard current={current} versions={versions} engineCount={1} />);
 
       expect(node.find('.diagram.no-xml')).to.present();
     });
@@ -142,7 +142,7 @@ describe('<PreviewCard>', () => {
 
       engineCount = 1;
 
-      node = mount(<PreviewCardReact current={current} versions={versions} engineCount={engineCount} />);
+      node = mount(<PreviewCard current={current} versions={versions} engineCount={engineCount} />);
     });
 
     it('should display a select to choose a version', () => {

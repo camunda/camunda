@@ -1,65 +1,50 @@
-import {
-  jsx, withSelector, Match, Case, Default, Scope, List, dispatchAction,
-  createStateComponent
-} from 'view-utils';
-import {LoadingIndicator} from 'widgets';
+import React from 'react';
+import {LoadingIndicator} from 'widgets/LoadingIndicator.react';
 import {loadProcessDefinitions} from './service';
-import {isLoaded, runOnce, addDestroyEventCleanUp} from 'utils';
+import {isLoaded} from 'utils';
 import {PreviewCard} from './PreviewCard';
-import {LOADING_PROPERTY} from './reducer';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
-export const ProcessSelection = withSelector(() => {
-  return (parentNode, eventsBus) => {
-    const State = createStateComponent();
-    const template = <State>
-      <div className="process-selection">
-        <h3>Select a Process Definition:</h3>
-        <LoadingIndicator predicate={isLoading}>
-          <Match>
-            <Case predicate={areThereNoProcessDefinitions}>
-              <div className="no-definitions">
-                <span className="indicator glyphicon glyphicon-info-sign"></span>
-                <div className="title">No Process Definitions</div>
-                <div className="text"><a href="https://docs.camunda.org/optimize/">Find out how to import your data</a></div>
-              </div>
-            </Case>
-            <Default>
-              <Scope selector={({processDefinitions: {data: {list}}}) => list}>
-                <div className="row">
-                  <List>
-                    <Scope selector={getCardState}>
-                      <PreviewCard />
-                    </Scope>
-                  </List>
-                </div>
-              </Scope>
-            </Default>
-          </Match>
-        </LoadingIndicator>
-      </div>
-    </State>;
-    const templateUpdate = template(parentNode, eventsBus);
+const jsx = React.createElement;
 
-    addDestroyEventCleanUp(eventsBus, dispatchAction, LOADING_PROPERTY);
-
-    return [templateUpdate, runOnce(loadProcessDefinitions)];
-
-    function isLoading({processDefinitions}) {
-      return !isLoaded(processDefinitions);
+export class ProcessSelectionReact extends React.Component {
+  render() {
+    if (!this.props.processDefinitions) {
+      return null;
     }
 
-    function areThereNoProcessDefinitions({processDefinitions: {data: {list}}}) {
-      return list.length === 0;
-    }
+    return <div className="process-selection">
+      <h3>Select a Process Definition:</h3>
+      <LoadingIndicator loading={!isLoaded(this.props.processDefinitions)}>
+        {isLoaded(this.props.processDefinitions) ? this.getDefinitions() : null}
+      </LoadingIndicator>
+    </div>;
+  }
 
-    function getCardState({current, versions}) {
-      const {processDefinitions: {data: {engineCount}}} = State.getState();
+  getDefinitions() {
+    const {data: {list, engineCount}} = this.props.processDefinitions;
+    const hasDefinitions = list.length > 0;
 
-      return {
-        current,
-        versions,
-        engineCount
-      };
-    }
-  };
-});
+    const noDefinitions = <div className="no-definitions">
+      <span className="indicator glyphicon glyphicon-info-sign"></span>
+      <div className="title">No Process Definitions</div>
+      <div className="text"><a href="https://docs.camunda.org/optimize/">Find out how to import your data</a></div>
+    </div>;
+
+    const cardList = <div className="row">
+      {
+        list.map(({current, versions}) =>
+          <PreviewCard key={current.id} current={current} versions={versions} engineCount={engineCount} />
+        )
+      }
+    </div>;
+
+    return hasDefinitions ? cardList : noDefinitions;
+  }
+
+  componentWillMount() {
+    loadProcessDefinitions();
+  }
+}
+
+export const ProcessSelection = createViewUtilsComponentFromReact('div', ProcessSelectionReact);

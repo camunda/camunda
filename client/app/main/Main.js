@@ -1,4 +1,4 @@
-import {jsx, Match} from 'view-utils';
+import {jsx, Match, Scope} from 'view-utils';
 import {Header} from './header';
 import {Footer} from './footer';
 import {Router, RouteView} from 'router';
@@ -21,7 +21,9 @@ export function Main() {
             </RouteView>
             <RouteView name="default">
               <Authenticated routeName="login">
-                <DynamicLoader module="processSelection" selector="processSelection" />
+                <Scope selector="processSelection">
+                  <DynamicLoader module="processSelection" />
+                </Scope>
               </Authenticated>
             </RouteView>
             <RouteView name="processDisplay">

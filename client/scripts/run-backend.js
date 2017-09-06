@@ -72,7 +72,7 @@ mvnCleanPackage.on('close', code => {
                       engines,
                       {
                         [`engine_${port}`]: {
-                          name: '/engine/default',
+                          name: 'default',
                           rest: `http://localhost:${port}/engine-rest`,
                           authentication: {
                             accessGroup: '',

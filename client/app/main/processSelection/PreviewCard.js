@@ -1,11 +1,10 @@
 import React from 'react';
 import {openDefinition, setVersionForProcess} from './service';
 import {DiagramPreview} from 'widgets';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
 const jsx = React.createElement;
 
-export class PreviewCardReact extends React.PureComponent {
+export class PreviewCard extends React.PureComponent {
   constructor(props) {
     super(props);
 
@@ -82,5 +81,3 @@ export class PreviewCardReact extends React.PureComponent {
     });
   }
 }
-
-export const PreviewCard = createViewUtilsComponentFromReact('div', PreviewCardReact);
