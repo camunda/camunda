@@ -5,3 +5,4 @@ export * from './promiseMockingSetup';
 export * from './selectBy';
 export * from './observeFunction';
 export * from './addActionListener';
+export * from './createReactMock';

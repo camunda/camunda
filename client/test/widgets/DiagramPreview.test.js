@@ -1,20 +1,25 @@
-import {jsx} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {createDiagramPreview, __set__, __ResetDependency__} from 'widgets/DiagramPreview';
+import {DiagramPreview, __set__, __ResetDependency__} from 'widgets/DiagramPreview';
+import React from 'react';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<DiagramPreview>', () => {
   const diagramXml = 'diagram-xml';
 
   let Viewer;
   let viewer;
+  let onLoaded;
   let canvas;
-  let update;
   let queue;
   let done;
   let node;
-  let DiagramPreview;
 
   beforeEach(() => {
     canvas = {
@@ -40,19 +45,15 @@ describe('<DiagramPreview>', () => {
     done = sinon.spy();
 
     queue = {
-      addTask: sinon.stub()
-        .callsArgWith(0, done)
-        .returns(() => true)
+      addTask: sinon.spy()
     };
     __set__('queue', queue);
 
-    DiagramPreview = createDiagramPreview();
+    onLoaded = sinon.spy();
 
-    ({node, update} = mountTemplate(
-      <DiagramPreview />
-    ));
-
-    update(diagramXml);
+    node = mount(
+      <DiagramPreview diagram={diagramXml} loading={true} onLoaded={onLoaded} />
+    );
   });
 
   afterEach(() => {
@@ -61,60 +62,26 @@ describe('<DiagramPreview>', () => {
   });
 
   it('should import xml on update', () => {
+    queue.addTask.firstCall.args[0](done);
+
     expect(viewer.importXML.calledWith(diagramXml)).to.eql(true);
     expect(done.called).to.eql(true);
   });
 
   it('should reset zoom after importing xml', () => {
+    queue.addTask.firstCall.args[0](done);
+
     expect(canvas.resized.calledOnce).to.eql(true, 'expected canvas.resized to be called');
     expect(canvas.zoom.calledWith('fit-viewport', 'auto'))
       .to.eql(true, 'expected canvas.zoom to be called with "fit-viewport", "auto"');
   });
 
-  it('should not import xml on second update', () => {
-    update(diagramXml);
-
-    expect(viewer.importXML.calledOnce).to.eql(true);
-  });
-
   it('should display error when diagram is not given', () => {
-    update(null);
+    node = mount(
+      <DiagramPreview loading={true} onLoaded={onLoaded} />
+    );
 
     expect(node).to.contain.text('No diagram');
-    expect(node.querySelector('.diagram-error')).not.to.have.class('hidden');
-  });
-
-  describe('setLoading', () => {
-    it('should hide loader when used with false', () => {
-      //given
-      DiagramPreview.setLoading(true);
-      expect(node.querySelector('.diagram-loading')).not.to.have.class('hidden');
-
-      //when
-      DiagramPreview.setLoading(false);
-
-      //expected
-      expect(node.querySelector('.diagram-loading')).to.have.class('hidden');
-    });
-
-    it('should show loader when used with true', () => {
-      //given
-      DiagramPreview.setLoading(false);
-      expect(node.querySelector('.diagram-loading')).to.have.class('hidden');
-
-      //when
-      DiagramPreview.setLoading(true);
-
-      //expected
-      expect(node.querySelector('.diagram-loading')).not.to.have.class('hidden');
-    });
-
-    it('should import diagram when loading is in progress', () => {
-      DiagramPreview.setLoading(true);
-
-      update(diagramXml);
-
-      expect(viewer.importXML.calledTwice).to.eql(true);
-    });
+    expect(node).not.to.contain('.diagram__holder');
   });
 });

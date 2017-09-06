@@ -1,7 +1,7 @@
 export {Dropdown, DropdownItem} from './Dropdown';
 export {createModal} from './Modal';
 export {createDiagram, resetZoom} from './Diagram';
-export {createDiagramPreview} from './DiagramPreview';
+export {DiagramPreview} from './DiagramPreview';
 export {Chart} from './Chart';
 export {LoadingIndicator} from './LoadingIndicator';
 export {Select, Option} from './Select';

@@ -27,7 +27,9 @@ export const ProcessSelection = withSelector(() => {
               <Scope selector={({processDefinitions: {data: {list}}}) => list}>
                 <div className="row">
                   <List>
-                    <PreviewCard selector={getCardState} />
+                    <Scope selector={getCardState}>
+                      <PreviewCard />
+                    </Scope>
                   </List>
                 </div>
               </Scope>
@@ -54,7 +56,7 @@ export const ProcessSelection = withSelector(() => {
       const {processDefinitions: {data: {engineCount}}} = State.getState();
 
       return {
-        ...current,
+        current,
         versions,
         engineCount
       };

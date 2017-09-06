@@ -1,96 +1,97 @@
-import {
-  jsx, updateOnlyWhenStateChanges, withSelector,
-  createReferenceComponent, setElementVisibility, isElementVisible
-} from 'view-utils';
+import React from 'react';
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
-import {Loader} from './Loader';
-import {Icon} from './Icon';
+import {Loader} from './Loader.react';
 import {createQueue} from 'utils';
-import isEqual from 'lodash.isequal';
+
+const jsx = React.createElement;
 
 const queue = createQueue();
 
-export function createDiagramPreview() {
-  const Reference = createReferenceComponent();
+export class DiagramPreview extends React.Component {
+  constructor(props) {
+    super(props);
 
-  const DiagramPreview = withSelector(() => {
-    return (node, eventsBus) => {
-      const template = <div style="position: relative; height: 100%; width: 100%">
-        <Loader className="diagram-loading" style="position: absolute">
-          <Reference name="loader" />
-        </Loader>
-        <div className="diagram-error">
-          <Icon icon="alert" />
-          <div className="text">
-            No diagram
-          </div>
-          <Reference name="error" />
-        </div>
-        <div className="diagram__holder" style="position: relative;">
-          <Reference name="viewer" />
-        </div>
-      </div>;
-
-      const templateUpdate = template(node, eventsBus);
-      const viewerNode = Reference.getNode('viewer');
-      const loaderNode = Reference.getNode('loader');
-      const errorNode = Reference.getNode('error');
-
-      setElementVisibility(errorNode, false);
-
-      const viewer = new Viewer({
-        container: viewerNode
-      });
-
-      const update = (diagram) => {
-        if (diagram) {
-          // make sure error isn't displayed
-          setElementVisibility(errorNode, false);
-
-          queue.addTask((done) => {
-            viewer.importXML(diagram, (err) => {
-              DiagramPreview.setLoading(false);
-
-              if (err) {
-                setElementVisibility(errorNode, true);
-                setElementVisibility(viewerNode, false);
-                setElementVisibility(loaderNode, false);
-              }
-
-              try {
-                resetZoom(viewer);
-              } catch (error) {
-                // Do nothing it is fine. Sometimes reset zoom throws error in FF
-                // But it seems like nothing brakes, so let's just ignore it
-                // This is knows issue: https://github.com/bpmn-io/bpmn-js/issues/665
-              } finally {
-                done();
-              }
-            });
-          });
-        } else {
-          setElementVisibility(errorNode, true);
-          setElementVisibility(viewerNode, false);
-          setElementVisibility(loaderNode, false);
-        }
-      };
-
-      function updatePreventionCondition(previousState, newState) {
-        return !isElementVisible(loaderNode) && isEqual(previousState, newState);
-      }
-
-      return [templateUpdate, updateOnlyWhenStateChanges(update, updatePreventionCondition)];
+    this.state = {
+      error: false
     };
-  });
+  }
 
-  DiagramPreview.setLoading = (loading) => {
-    const viewerNode = Reference.getNode('viewer');
-    const loaderNode = Reference.getNode('loader');
+  componentDidMount() {
+    this.viewer = new Viewer({
+      container: this.container
+    });
 
-    setElementVisibility(loaderNode, loading);
-    setElementVisibility(viewerNode, !loading);
-  };
+    if (this.props.loading) {
+      this.loadDiagram();
+    }
+  }
 
-  return DiagramPreview;
+  render() {
+    // <Icon icon="alert" />
+    // Icon usage is left here so it can be found be search while changeing Icon component to use React
+    // TODO: change to Icon as soon as Icon component is reactified
+    const error = <div className="diagram-error">
+      <span className="glyphicon glyphicon-alert"></span>
+      <div className="text">
+        No diagram
+      </div>
+    </div>;
+
+    const diagram = <div className="diagram__holder" style={{position: 'relative'}} ref={this.attachDiagramContainer}>
+    </div>;
+
+    return <div style={{position: 'relative', height: '100%', width: '100%'}}>
+      <Loader visible={this.props.loading} className="diagram-loading" style={{position: 'absolute'}} />
+      {this.state.error ? error : ''}
+      {!this.state.error ? diagram : ''}
+    </div>;
+  }
+
+  attachDiagramContainer = container => this.container = container;
+
+  componentDidUpdate() {
+    if (this.props.loading && this.props.diagram && this.viewer) {
+      this.loadDiagram();
+    }
+  }
+
+  loadDiagram() {
+    const viewer = this.viewer;
+
+    if (this.props.diagram) {
+      this.lastDiagram = this.props.diagram;
+
+      queue.addTask(done => {
+        viewer.importXML(this.props.diagram, err => {
+          if (err) {
+            this.props.onLoaded();
+            return this.setState({
+              error: true
+            });
+          }
+
+          this.setState({
+            error: false
+          });
+          this.props.onLoaded();
+
+          try {
+            resetZoom(viewer);
+          } catch (error) {
+            // Do nothing it is fine. Sometimes reset zoom throws error in FF
+            // But it seems like nothing brakes, so let's just ignore it
+            // This is knows issue: https://github.com/bpmn-io/bpmn-js/issues/665
+          } finally {
+            done();
+          }
+        });
+      });
+    } else {
+      this.props.onLoaded();
+      this.setState({
+        error: true
+      });
+    }
+  }
 }
