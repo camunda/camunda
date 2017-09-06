@@ -17,7 +17,7 @@ if [[ "$DEPLOY_ON_KUBERNETES" == "true" ]]; then
 
 else
 
-    sed -i "s/@DNSNAME@/$(hostname --ip-address)/g" $cfgHome
+    sed -i "s/@DNSNAME@/$(hostname -i)/g" $cfgHome
     sed -i "s/@INITIAL_CONTACT_POINT@//g" $cfgHome
 
 fi
