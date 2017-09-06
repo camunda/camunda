@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.status;
 
+import org.camunda.optimize.dto.engine.ProcessEngineDto;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -10,9 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -49,11 +52,18 @@ public class StatusCheckingService {
         .target(engineEndpoint)
         .request(MediaType.APPLICATION_JSON)
         .get();
-      isConnected = response.getStatus() == 200;
+      boolean hasCorrectResponseCode = response.getStatus() == 200;
+      boolean engineIsRunning = engineWithEngineNameIsRunning(response, configurationService.getEngineName(engineAlias));
+      isConnected = hasCorrectResponseCode && engineIsRunning;
     } catch (Exception ignored) {
       // do nothing
     }
     return isConnected;
+  }
+
+  private boolean engineWithEngineNameIsRunning(Response response, String engineName) {
+    List<ProcessEngineDto> engineNames = response.readEntity(new GenericType<List<ProcessEngineDto>>() {});
+    return engineNames.stream().anyMatch(e -> e.getName().equals(engineName));
   }
 
   private Client getEngineClient(String engineAlias) {

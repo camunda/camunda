@@ -1,11 +1,11 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineAuthenticationConfiguration;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -14,9 +14,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.Response;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -33,9 +30,21 @@ public class AuthenticationRestServiceEngineIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
+  private ConfigurationService configurationService;
+
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
+  @Before
+  public void init() {
+    configurationService = embeddedOptimizeRule.getConfigurationService();
+  }
+
+  @After
+  public void reset() {
+    setAccessGroupInConfiguration("");
+  }
 
   @Test
   public void authenticateUser() throws Exception {
@@ -53,8 +62,7 @@ public class AuthenticationRestServiceEngineIT {
   @Test
   public void everyUserCanBeAuthenticatedFromEngineIfNoAccessGroupWasSpecified() {
     // given
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    configureEngine(configurationService, "");
+    setAccessGroupInConfiguration("");
     engineRule.addUser("demo", "demo");
 
     // when
@@ -66,15 +74,10 @@ public class AuthenticationRestServiceEngineIT {
     assertThat(responseEntity,is(notNullValue()));
   }
 
-  private void configureEngine(ConfigurationService configurationService, String s) {
-    configurationService.getConfiguredEngines().get("1").getAuthentication().setAccessGroup(s);
-  }
-
   @Test
   public void onlyUsersAddedToAccessGroupCanBeAuthenticatedFromEngine() {
     // given
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    configureEngine(configurationService,"optimizeGroup");
+    setAccessGroupInConfiguration("optimizeGroup");
     engineRule.createGroup("optimizeGroup", "Optimize Access Group", "Foo type");
     engineRule.addUser("demo", "demo");
     engineRule.addUserToGroup("demo", "optimizeGroup");
@@ -93,6 +96,10 @@ public class AuthenticationRestServiceEngineIT {
 
     // then
     assertThat(response.getStatus(),is(401));
+  }
+
+  private void setAccessGroupInConfiguration(String s) {
+    configurationService.getConfiguredEngines().get("1").getAuthentication().setAccessGroup(s);
   }
 
 }

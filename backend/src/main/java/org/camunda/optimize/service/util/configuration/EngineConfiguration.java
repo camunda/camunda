@@ -1,7 +1,5 @@
 package org.camunda.optimize.service.util.configuration;
 
-import java.util.HashMap;
-
 /**
  * @author Askar Akhmerov
  */
@@ -27,7 +25,12 @@ public class EngineConfiguration {
   }
 
   public void setRest(String rest) {
+    rest = removeTrailingSlashes(rest);
     this.rest = rest;
+  }
+
+  private String removeTrailingSlashes(String str) {
+    return str.replaceAll("/$", "");
   }
 
   public String getAlias() {

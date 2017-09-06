@@ -1,6 +1,7 @@
 package org.camunda.bpm.platform.servlet.purge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.impl.ManagementServiceImpl;
 import org.camunda.bpm.engine.impl.management.PurgeReport;
 
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
  *
@@ -20,23 +22,25 @@ import java.io.IOException;
  */
 @WebServlet(name="DeployBasicProcessServlet", urlPatterns={"/*"})
 public class PurgeServlet extends HttpServlet {
-  private ManagementServiceImpl managementService;
+  private List<ManagementServiceImpl> managementServices;
   private ObjectMapper objectMapper;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
-    managementService = (ManagementServiceImpl) config.getServletContext().getAttribute("managementService");
+    managementServices = (List<ManagementServiceImpl>) config.getServletContext().getAttribute("managementServices");
     this.objectMapper = new ObjectMapper();
   }
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    PurgeReport purgeReport = managementService.purge();
+    for (ManagementServiceImpl managementService : managementServices) {
+      PurgeReport purgeReport = managementService.purge();
+      resp.setCharacterEncoding("UTF-8");
+      resp.getWriter().println(objectMapper.writeValueAsString(purgeReport));
+    }
+    resp.getWriter().flush();
     resp.setStatus(200);
     resp.setContentType("application/json");
-    resp.setCharacterEncoding("UTF-8");
-    resp.getWriter().println(objectMapper.writeValueAsString(purgeReport));
-    resp.getWriter().flush();
   }
 }

@@ -67,7 +67,7 @@
       /*
       The name of the engine that will be used to import data.
       */
-      "name": "/engine/default",
+      "name": "default",
       /*
       A base URL that will be used for connections to the Camunda Engine REST API.
       */

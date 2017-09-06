@@ -139,9 +139,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
     List<DefinitionImportInformation> result = new ArrayList<>();
-    for (String engine : configurationService.getConfiguredEngines().keySet()) {
-      result.addAll(this.retrieveDefinitionToImportFromEngine(engine));
-    }
+    result.addAll(this.retrieveDefinitionToImportFromEngine(this.engineAlias));
     return result;
   }
 

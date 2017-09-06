@@ -10,6 +10,7 @@ import java.io.IOException;
 public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
   public static final String PROCESS_DEFINITION_ID = "id";
+  public static final String PROCESS_DEFINITION_KEY = "key";
 
   @Override
   public String getType() {
@@ -22,7 +23,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
       .startObject(PROCESS_DEFINITION_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject("key")
+      .startObject(PROCESS_DEFINITION_KEY)
         .field("type", "keyword")
       .endObject()
       .startObject("version")

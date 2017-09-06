@@ -7,7 +7,7 @@
   },
   "engines": {
     "1": {
-      "name": "/engine/default",
+      "name": "default",
       "rest": "http://localhost:8080/engine-rest",
       "authentication": {
         "accessGroup": "",

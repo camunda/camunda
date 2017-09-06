@@ -16,7 +16,6 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.GenericType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -36,6 +35,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterTh
 public class ConfigurationService {
 
   private static final String ENGINES_FIELD = "engines";
+  private static final String ENGINE_REST_PATH = "/engine/";
   private final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
 
   private static final String[] DEFAULT_LOCATIONS = { "service-config.json", "environment-config.json" };
@@ -700,7 +700,7 @@ public class ConfigurationService {
   }
 
   public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
-    return this.getEngineRestApiEndpoint(engineAlias) + getEngineName(engineAlias);
+    return this.getEngineRestApiEndpoint(engineAlias) + ENGINE_REST_PATH + getEngineName(engineAlias);
   }
 
   public boolean isEngineAuthenticationEnabled(String engineAlias) {
@@ -769,5 +769,345 @@ public class ConfigurationService {
 
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
     this.configuredEngines = configuredEngines;
+  }
+
+  public static String getEnginesField() {
+    return ENGINES_FIELD;
+  }
+
+  public static String getEngineRestPath() {
+    return ENGINE_REST_PATH;
+  }
+
+  public Logger getLogger() {
+    return logger;
+  }
+
+  public static String[] getDefaultLocations() {
+    return DEFAULT_LOCATIONS;
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  public void setObjectMapper(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public HashMap getDefaults() {
+    return defaults;
+  }
+
+  public void setDefaults(HashMap defaults) {
+    this.defaults = defaults;
+  }
+
+  public ReadContext getJsonContext() {
+    return jsonContext;
+  }
+
+  public void setJsonContext(ReadContext jsonContext) {
+    this.jsonContext = jsonContext;
+  }
+
+  public Integer getLifeTime() {
+    return lifeTime;
+  }
+
+  public void setLifeTime(Integer lifeTime) {
+    this.lifeTime = lifeTime;
+  }
+
+  public void setElasticSearchHost(String elasticSearchHost) {
+    this.elasticSearchHost = elasticSearchHost;
+  }
+
+  public void setElasticSearchPort(Integer elasticSearchPort) {
+    this.elasticSearchPort = elasticSearchPort;
+  }
+
+  public void setOptimizeIndex(String optimizeIndex) {
+    this.optimizeIndex = optimizeIndex;
+  }
+
+  public String getHaiEndpoint() {
+    return haiEndpoint;
+  }
+
+  public void setHaiEndpoint(String haiEndpoint) {
+    this.haiEndpoint = haiEndpoint;
+  }
+
+  public String getHaiCountEndpoint() {
+    return haiCountEndpoint;
+  }
+
+  public void setHaiCountEndpoint(String haiCountEndpoint) {
+    this.haiCountEndpoint = haiCountEndpoint;
+  }
+
+  public void setEventType(String eventType) {
+    this.eventType = eventType;
+  }
+
+  public void setUserValidationEndpoint(String userValidationEndpoint) {
+    this.userValidationEndpoint = userValidationEndpoint;
+  }
+
+  public void setProcessDefinitionType(String processDefinitionType) {
+    this.processDefinitionType = processDefinitionType;
+  }
+
+  public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
+    this.processDefinitionEndpoint = processDefinitionEndpoint;
+  }
+
+  public void setProcessDefinitionCountEndpoint(String processDefinitionCountEndpoint) {
+    this.processDefinitionCountEndpoint = processDefinitionCountEndpoint;
+  }
+
+  public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
+    this.processDefinitionXmlType = processDefinitionXmlType;
+  }
+
+  public String getElasticsearchUsersType() {
+    return elasticsearchUsersType;
+  }
+
+  public void setElasticsearchUsersType(String elasticsearchUsersType) {
+    this.elasticsearchUsersType = elasticsearchUsersType;
+  }
+
+  public void setAnalyzerName(String analyzerName) {
+    this.analyzerName = analyzerName;
+  }
+
+  public void setTokenizer(String tokenizer) {
+    this.tokenizer = tokenizer;
+  }
+
+  public void setTokenFilter(String tokenFilter) {
+    this.tokenFilter = tokenFilter;
+  }
+
+  public void setDefaultUser(String defaultUser) {
+    this.defaultUser = defaultUser;
+  }
+
+  public void setDefaultPassword(String defaultPassword) {
+    this.defaultPassword = defaultPassword;
+  }
+
+  public void setDateFormat(String dateFormat) {
+    this.dateFormat = dateFormat;
+  }
+
+  public void setEngineImportMaxPageSize(Integer engineImportMaxPageSize) {
+    this.engineImportMaxPageSize = engineImportMaxPageSize;
+  }
+
+  public void setImportHandlerWait(Long importHandlerWait) {
+    this.importHandlerWait = importHandlerWait;
+  }
+
+  public void setMaximumBackoff(Long maximumBackoff) {
+    this.maximumBackoff = maximumBackoff;
+  }
+
+  public void setMaxJobQueueSize(Integer maxJobQueueSize) {
+    this.maxJobQueueSize = maxJobQueueSize;
+  }
+
+  public void setImportExecutorThreadCount(Integer importExecutorThreadCount) {
+    this.importExecutorThreadCount = importExecutorThreadCount;
+  }
+
+  public String getHpiEndpoint() {
+    return hpiEndpoint;
+  }
+
+  public void setHpiEndpoint(String hpiEndpoint) {
+    this.hpiEndpoint = hpiEndpoint;
+  }
+
+  public Long getImportRestIntervalMs() {
+    return importRestIntervalMs;
+  }
+
+  public void setImportRestIntervalMs(Long importRestIntervalMs) {
+    this.importRestIntervalMs = importRestIntervalMs;
+  }
+
+  public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {
+    this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
+  }
+
+  public void setElasticsearchConnectionTimeout(Integer elasticsearchConnectionTimeout) {
+    this.elasticsearchConnectionTimeout = elasticsearchConnectionTimeout;
+  }
+
+  public void setEngineConnectTimeout(Integer engineConnectTimeout) {
+    this.engineConnectTimeout = engineConnectTimeout;
+  }
+
+  public void setEngineReadTimeout(Integer engineReadTimeout) {
+    this.engineReadTimeout = engineReadTimeout;
+  }
+
+  public void setImportIndexType(String importIndexType) {
+    this.importIndexType = importIndexType;
+  }
+
+  public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
+    this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
+  }
+
+  public String getHviEndpoint() {
+    return hviEndpoint;
+  }
+
+  public void setHviEndpoint(String hviEndpoint) {
+    this.hviEndpoint = hviEndpoint;
+  }
+
+  public void setVariableType(String variableType) {
+    this.variableType = variableType;
+  }
+
+  public void setMaxVariableValueListSize(Integer maxVariableValueListSize) {
+    this.maxVariableValueListSize = maxVariableValueListSize;
+  }
+
+  public String getHviCountEndpoint() {
+    return hviCountEndpoint;
+  }
+
+  public void setHviCountEndpoint(String hviCountEndpoint) {
+    this.hviCountEndpoint = hviCountEndpoint;
+  }
+
+  public void setProcessInstanceType(String processInstanceType) {
+    this.processInstanceType = processInstanceType;
+  }
+
+  public String getHpiCountEndpoint() {
+    return hpiCountEndpoint;
+  }
+
+  public void setHpiCountEndpoint(String hpiCountEndpoint) {
+    this.hpiCountEndpoint = hpiCountEndpoint;
+  }
+
+  public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
+    this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
+  }
+
+  public void setEngineImportVariableInstanceMaxPageSize(Integer engineImportVariableInstanceMaxPageSize) {
+    this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
+  }
+
+  public void setProcessDefinitionImportIndexType(String processDefinitionImportIndexType) {
+    this.processDefinitionImportIndexType = processDefinitionImportIndexType;
+  }
+
+  public void setEsRefreshInterval(String esRefreshInterval) {
+    this.esRefreshInterval = esRefreshInterval;
+  }
+
+  public void setEsNumberOfReplicas(Integer esNumberOfReplicas) {
+    this.esNumberOfReplicas = esNumberOfReplicas;
+  }
+
+  public void setEsNumberOfShards(Integer esNumberOfShards) {
+    this.esNumberOfShards = esNumberOfShards;
+  }
+
+  public void setEngineImportProcessDefinitionXmlMaxPageSize(Integer engineImportProcessDefinitionXmlMaxPageSize) {
+    this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
+    this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
+  }
+
+  public void setLicenseType(String licenseType) {
+    this.licenseType = licenseType;
+  }
+
+  public void setGeneralBackoff(Long generalBackoff) {
+    this.generalBackoff = generalBackoff;
+  }
+
+  public void setSamplerInterval(Long samplerInterval) {
+    this.samplerInterval = samplerInterval;
+  }
+
+  public String getPiIdTrackingType() {
+    return piIdTrackingType;
+  }
+
+  public void setPiIdTrackingType(String piIdTrackingType) {
+    this.piIdTrackingType = piIdTrackingType;
+  }
+
+  public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {
+    this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
+  }
+
+  public void setEngineImportProcessDefinitionMaxPageSize(Integer engineImportProcessDefinitionMaxPageSize) {
+    this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
+  }
+
+  public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
+    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionMinPageSize(Integer engineImportProcessDefinitionMinPageSize) {
+    this.engineImportProcessDefinitionMinPageSize = engineImportProcessDefinitionMinPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionXmlMinPageSize(Integer engineImportProcessDefinitionXmlMinPageSize) {
+    this.engineImportProcessDefinitionXmlMinPageSize = engineImportProcessDefinitionXmlMinPageSize;
+  }
+
+  public void setEngineImportActivityInstanceMinPageSize(Integer engineImportActivityInstanceMinPageSize) {
+    this.engineImportActivityInstanceMinPageSize = engineImportActivityInstanceMinPageSize;
+  }
+
+  public Boolean getDefaultUserCreationEnabled() {
+    return defaultUserCreationEnabled;
+  }
+
+  public String getGroupsEndpoint() {
+    return groupsEndpoint;
+  }
+
+  public void setGroupsEndpoint(String groupsEndpoint) {
+    this.groupsEndpoint = groupsEndpoint;
+  }
+
+  public void setImportResetIntervalUnit(String importResetIntervalUnit) {
+    this.importResetIntervalUnit = importResetIntervalUnit;
+  }
+
+  public void setContainerHost(String containerHost) {
+    this.containerHost = containerHost;
+  }
+
+  public void setContainerKeystorePassword(String containerKeystorePassword) {
+    this.containerKeystorePassword = containerKeystorePassword;
+  }
+
+  public void setContainerKeystoreLocation(String containerKeystoreLocation) {
+    this.containerKeystoreLocation = containerKeystoreLocation;
+  }
+
+  public void setContainerHttpsPort(Integer containerHttpsPort) {
+    this.containerHttpsPort = containerHttpsPort;
+  }
+
+  public void setContainerHttpPort(Integer containerHttpPort) {
+    this.containerHttpPort = containerHttpPort;
   }
 }
