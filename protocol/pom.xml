@@ -18,7 +18,7 @@
     <protocol.version>1</protocol.version>
 
     <!-- SUB PROJECTS -->
-    <version.util>0.1.0</version.util>
+    <version.util>0.2.0</version.util>
   </properties>
 
   <dependencies>
