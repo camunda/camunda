@@ -215,7 +215,7 @@ public class BpmnTransformer
         final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         final JsonPathQuery query = queryCompiler.compile(mapping.getSource());
 
-        return new Mapping(query, mapping.getTarget());
+        return new Mapping(query, wrapString(mapping.getTarget()));
     }
 
     private void addBpmnAspects(ProcessImpl process)

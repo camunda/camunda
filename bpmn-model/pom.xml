@@ -3,7 +3,6 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe BPMN model API</name>
   <artifactId>zb-bpmn-model</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -16,9 +15,8 @@
 
 
   <properties>
-    <version.util>0.1.0</version.util>
-    <version.msgpack>0.1.0</version.msgpack>
-    <version.yaml>1.18</version.yaml>
+    <version.util>0.2.0</version.util>
+    <version.msgpack>0.2.0</version.msgpack>
   </properties>
 
   <dependencies>
@@ -28,13 +26,7 @@
       <artifactId>zb-util</artifactId>
       <version>${version.util}</version>
     </dependency>
-    
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-core</artifactId>
-      <version>${version.msgpack}</version>
-    </dependency>
-    
+        
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-path</artifactId>
@@ -46,23 +38,16 @@
       <artifactId>agrona</artifactId>
     </dependency>
     
-    <dependency>
-        <groupId>org.yaml</groupId>
-        <artifactId>snakeyaml</artifactId>
-        <version>${version.yaml}</version>
+     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
-
+    
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
-      <version>${version.util}</version>
-    </dependency>
-
+   
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -72,18 +57,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
       <scope>test</scope>
     </dependency>
 

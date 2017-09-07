@@ -18,15 +18,16 @@ package io.zeebe.model.bpmn.impl.yaml;
 import java.io.*;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.builder.BpmnServiceTaskBuilder;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import org.yaml.snakeyaml.Yaml;
 
 public class BpmnYamlParser
 {
-    private final Yaml parser = new Yaml();
+    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
     public WorkflowDefinition readFromFile(File file)
     {
@@ -42,9 +43,17 @@ public class BpmnYamlParser
 
     public WorkflowDefinition readFromStream(InputStream inputStream)
     {
-        final YamlDefinitionImpl definition = parser.loadAs(inputStream, YamlDefinitionImpl.class);
+        try
+        {
+            final YamlDefinitionImpl definition = mapper.readValue(inputStream, YamlDefinitionImpl.class);
+            final WorkflowDefinition workflowDefinition = createWorkflow(definition);
 
-        return createWorkflow(definition);
+            return workflowDefinition;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     private WorkflowDefinition createWorkflow(final YamlDefinitionImpl definition)
