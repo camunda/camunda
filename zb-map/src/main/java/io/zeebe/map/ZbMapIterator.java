@@ -114,6 +114,7 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
             // the current bucket contains no more blocks
             // go to the next bucket which contains blocks
             currentBlock = 0;
+            currentBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
             do
             {
@@ -126,22 +127,16 @@ public class ZbMapIterator<K extends KeyHandler, V extends ValueHandler, E exten
 
             hasNext = currentBucket < bucketBufferArray.getBucketCount(currentBucketBuffer);
 
-            if (!hasNext)
+            if (!hasNext && currentBucketBuffer + 1 < bucketBufferArray.getBucketBufferCount())
             {
-                // check next bucket buffer
-                if (currentBucketBuffer + 1 < bucketBufferArray.getBucketBufferCount())
-                {
-                    currentBucketBuffer++;
-                    currentBucket = 0;
-                    currentBucketOffset = bucketBufferArray.getFirstBucketOffset();
-                    currentBucketAddress = getBucketAddress(currentBucketBuffer, currentBucketOffset);
-                    hasNext = true;
-                }
-            }
+                // the current bucket buffer contains no more blocks
+                // go to the next bucket buffer
+                currentBucketBuffer += 1;
+                currentBucket = 0;
+                currentBucketOffset = bucketBufferArray.getFirstBucketOffset();
+                currentBucketAddress = getBucketAddress(currentBucketBuffer, currentBucketOffset);
 
-            if (hasNext)
-            {
-                currentBlockOffset = bucketBufferArray.getFirstBlockOffset();
+                hasNext = bucketBufferArray.getBucketCount(currentBucketBuffer) > 0;
             }
         }
 
