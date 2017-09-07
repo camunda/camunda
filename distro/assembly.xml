@@ -39,10 +39,10 @@
     </fileSet>
     <fileSet>
       <!--create empty plugin directory-->
-      <directory>src/plugin</directory>
+      <directory>src/</directory>
       <outputDirectory>/plugin</outputDirectory>
       <excludes>
-        <exclude>*</exclude>
+        <exclude>*/**</exclude>
       </excludes>
     </fileSet>
   </fileSets>
