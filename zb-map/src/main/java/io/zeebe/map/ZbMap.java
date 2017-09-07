@@ -51,7 +51,15 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      */
     private static final float HASH_TABLE_SHRINK_LIMIT = 0.25F;
 
+    /**
+     * Default hash table start size.
+     */
     public static final int DEFAULT_TABLE_SIZE = 32;
+
+    /**
+     * The default block count of 16 is the optimal block count regarding to performance and memory usage.
+     * Was determined with help of some benchmarks see {@link io.zeebe.map.benchmarks.ZbMapDetermineSizesBenchmark}.
+     */
     public static final int DEFAULT_BLOCK_COUNT = 16;
 
     private static final String FINALIZER_WARNING = "ZbMap is being garbage collected but is not closed.\n" +
@@ -67,17 +75,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      * which have to be allocated to store all addresses. The addresses, which are stored in the hash table buffer, are longs.
      */
     public static final int MAX_TABLE_SIZE = 1 << 27;
-
-    /**
-     * The optimal block count regarding to performance and memory usage.
-     * Was determined with help of some benchmarks see {@link io.zeebe.map.benchmarks.ZbMapDetermineSizesBenchmark}.
-     */
-    public static final int OPTIMAL_BLOCK_COUNT = DEFAULT_BLOCK_COUNT;
-
-    /**
-     * Deprecated since the hash table can grow dynamic now. It is used only for the start hash table size.
-     */
-    public static final int OPTIMAL_TABLE_SIZE = DEFAULT_TABLE_SIZE;
 
     protected final K keyHandler;
     protected final K splitKeyHandler;
