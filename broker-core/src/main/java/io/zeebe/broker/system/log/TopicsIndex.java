@@ -19,13 +19,12 @@ package io.zeebe.broker.system.log;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.logstreams.log.LogStream;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.map.Bytes2BytesZbMap;
 
 /**
@@ -47,19 +46,17 @@ public class TopicsIndex
     protected static final int VALUE_LENGTH = REQUEST_OFFSET + BitUtil.SIZE_OF_LONG;
 
     protected final Bytes2BytesZbMap topics;
-    protected final ZbMapSnapshotSupport<?> stateResource;
 
     protected MutableDirectBuffer value = new UnsafeBuffer(new byte[VALUE_LENGTH]);
 
     public TopicsIndex()
     {
         this.topics = new Bytes2BytesZbMap(MAX_TOPIC_NAME_LENGTH, VALUE_LENGTH);
-        this.stateResource = new ZbMapSnapshotSupport<>(topics);
     }
 
-    public ZbMapSnapshotSupport<?> getStateResource()
+    public Bytes2BytesZbMap getRawMap()
     {
-        return stateResource;
+        return topics;
     }
 
     public boolean moveTo(DirectBuffer topicName)

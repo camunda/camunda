@@ -53,7 +53,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class LogStreamEnvironment
+public class TestStreams
 {
     protected static final Map<Class<?>, EventType> EVENT_TYPES = new HashMap<>();
 
@@ -72,7 +72,7 @@ public class LogStreamEnvironment
 
     protected SnapshotStorage snapshotStorage;
 
-    public LogStreamEnvironment(
+    public TestStreams(
             File storageDirectory,
             AutoCloseableRule closeables,
             ActorScheduler actorScheduler)
@@ -134,11 +134,16 @@ public class LogStreamEnvironment
 
     public StreamProcessorControl runStreamProcessor(String log, StreamProcessor streamProcessor)
     {
+        return runStreamProcessor(log, 0, streamProcessor);
+    }
+
+    public StreamProcessorControl runStreamProcessor(String log, int streamProcessorId, StreamProcessor streamProcessor)
+    {
         final LogStream stream = getLogStream(log);
 
         final SuspendableStreamProcessor processor = new SuspendableStreamProcessor(streamProcessor);
 
-        final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(streamProcessor.toString(), 0, processor)
+        final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(streamProcessor.toString(), streamProcessorId, processor)
             .sourceStream(stream)
             .targetStream(stream)
             .snapshotStorage(getSnapshotStorage())
@@ -334,7 +339,7 @@ public class LogStreamEnvironment
         }
     }
 
-    protected static class FluentLogWriter
+    public static class FluentLogWriter
     {
 
         protected BrokerEventMetadata metadata = new BrokerEventMetadata();
@@ -356,13 +361,13 @@ public class LogStreamEnvironment
             return this;
         }
 
-        public LogStreamEnvironment.FluentLogWriter key(long key)
+        public TestStreams.FluentLogWriter key(long key)
         {
             this.key = key;
             return this;
         }
 
-        public LogStreamEnvironment.FluentLogWriter event(UnpackedObject event)
+        public TestStreams.FluentLogWriter event(UnpackedObject event)
         {
             final EventType eventType = EVENT_TYPES.get(event.getClass());
             if (eventType == null)
@@ -375,7 +380,7 @@ public class LogStreamEnvironment
             return this;
         }
 
-        public void write()
+        public long write()
         {
             final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
 
@@ -391,7 +396,7 @@ public class LogStreamEnvironment
             writer.metadataWriter(metadata);
             writer.valueWriter(value);
 
-            doRepeatedly(() -> writer.tryWrite()).until(p -> p >= 0);
+            return doRepeatedly(() -> writer.tryWrite()).until(p -> p >= 0);
         }
     }
 }

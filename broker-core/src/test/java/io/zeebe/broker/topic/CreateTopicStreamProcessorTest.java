@@ -19,7 +19,7 @@ package io.zeebe.broker.topic;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
@@ -36,18 +36,25 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.clustering.management.Partition;
 import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.system.log.CreateTopicStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.PartitionState;
+import io.zeebe.broker.system.log.PartitionsIndex;
+import io.zeebe.broker.system.log.ResolvePendingPartitionsCommand;
+import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.system.log.TopicState;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.system.log.TopicsIndex;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.FluentMock;
+import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
@@ -63,28 +70,43 @@ public class CreateTopicStreamProcessorTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(closeables);
 
-    @FluentMock
-    public CommandResponseWriter responseWriter;
+    @Mock
+    public ServerOutput output;
 
     public PartitionManagerImpl partitionManager;
+    protected TestStreams streams;
 
-    protected LogStreamEnvironment streams;
+    private TypedStreamProcessor streamProcessor;
+    private ResolvePendingPartitionsCommand checkPartitionsCmd;
 
     @Before
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
+        when(output.sendResponse(any())).thenReturn(true);
 
         final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
         closeables.manage(scheduler);
 
-        streams = new LogStreamEnvironment(tempFolder.getRoot(), closeables, scheduler);
-        streams.createLogStream(STREAM_NAME);
+        streams = new TestStreams(tempFolder.getRoot(), closeables, scheduler);
+        final LogStream stream = streams.createLogStream(STREAM_NAME);
 
         this.partitionManager = new PartitionManagerImpl();
 
-        when(responseWriter.tryWriteResponse(anyInt(), anyInt())).thenReturn(true);
+        final TopicsIndex topicsIndex = new TopicsIndex();
+        final PartitionsIndex partitionsIndex = new PartitionsIndex();
+
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(stream, output)
+            .withEventType(EventType.TOPIC_EVENT, TopicEvent.class)
+            .withEventType(EventType.PARTITION_EVENT, PartitionEvent.class);
+
+        streamEnvironment.buildStreamWriter();
+
+        checkPartitionsCmd = new ResolvePendingPartitionsCommand(partitionsIndex, partitionManager, streamEnvironment.buildStreamWriter());
+
+        streamProcessor = SystemPartitionManager.buildSystemStreamProcessor(streamEnvironment, partitionManager, topicsIndex, partitionsIndex);
     }
+
 
     /**
      * Tests the case where the stream processor is slower than the interval in which
@@ -95,7 +117,6 @@ public class CreateTopicStreamProcessorTest
     {
         // given
         // stream processor is registered and active; configured to block on first partition creating event
-        final CreateTopicStreamProcessor streamProcessor = new CreateTopicStreamProcessor(responseWriter, partitionManager);
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
 
         processorControl.blockAfterEvent(e ->
@@ -116,7 +137,7 @@ public class CreateTopicStreamProcessorTest
         partitionManager.makePartitionAvailable("foo", 0);
 
         // calling check pending partition once
-        streamProcessor.checkPendingPartitionsAsync();
+        streamProcessor.runAsync(checkPartitionsCmd);
 
         // waiting for partition creation complete command
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE_COMPLETE)
@@ -125,7 +146,7 @@ public class CreateTopicStreamProcessorTest
 
         // when
         // calling check pending partition again
-        streamProcessor.checkPendingPartitionsAsync();
+        streamProcessor.runAsync(checkPartitionsCmd);
 
         // waiting for partition creation complete command
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE_COMPLETE)
@@ -158,7 +179,6 @@ public class CreateTopicStreamProcessorTest
     public void shouldNotCreatePartitionsOnRejection()
     {
         // given
-        final CreateTopicStreamProcessor streamProcessor = new CreateTopicStreamProcessor(responseWriter, partitionManager);
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
         processorControl.unblock();
 
@@ -170,7 +190,7 @@ public class CreateTopicStreamProcessorTest
 
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).findFirst().isPresent());
         partitionManager.makePartitionAvailable("foo", 0);
-        streamProcessor.checkPendingPartitionsAsync();
+        streamProcessor.runAsync(checkPartitionsCmd);
 
         waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
 
@@ -191,7 +211,6 @@ public class CreateTopicStreamProcessorTest
     public void shouldNotResendPartitionRequestOnRecovery() throws InterruptedException
     {
         // given
-        final CreateTopicStreamProcessor streamProcessor = new CreateTopicStreamProcessor(responseWriter, partitionManager);
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
 
         processorControl.blockAfterEvent(e ->

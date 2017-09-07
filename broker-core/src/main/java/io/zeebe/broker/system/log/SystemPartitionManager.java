@@ -23,13 +23,16 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import java.time.Duration;
 
 import io.zeebe.broker.clustering.management.ClusterManager;
+import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -50,36 +53,57 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     protected ClusterManager clusterManager;
     protected ScheduledExecutor executor;
 
-    protected ScheduledCommand partitionCheck;
-
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd((name, stream) -> addSystemPartition(stream, name))
         .build();
 
+    private ScheduledCommand command;
+
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(clientApiTransport.getOutput());
-        final CreateTopicStreamProcessor processor =
-                new CreateTopicStreamProcessor(responseWriter, clusterManager);
+
+        final PartitionsIndex partitionsIndex = new PartitionsIndex();
+        final TopicsIndex topicsIndex = new TopicsIndex();
+
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput())
+            .withEventType(EventType.TOPIC_EVENT, TopicEvent.class)
+            .withEventType(EventType.PARTITION_EVENT, PartitionEvent.class);
+
+        final ResolvePendingPartitionsCommand cmd =
+                new ResolvePendingPartitionsCommand(partitionsIndex, clusterManager, streamEnvironment.buildStreamWriter());
+
+        final TypedStreamProcessor streamProcessor = buildSystemStreamProcessor(streamEnvironment, clusterManager, topicsIndex, partitionsIndex);
+        command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(cmd), Duration.ofMillis(100));
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
             "system",
             StreamProcessorIds.SYSTEM_PROCESSOR_ID,
-            processor)
-            .eventFilter(CreateTopicStreamProcessor.eventFilter());
+            streamProcessor)
+            .eventFilter(streamEnvironment.buildFilterForRegisteredTypes());
 
         serviceContext.createService(SystemServiceNames.SYSTEM_PROCESSOR, streamProcessorService)
             .dependency(serviceName, streamProcessorService.getSourceStreamInjector())
             .dependency(serviceName, streamProcessorService.getTargetStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-            .install()
-            .thenRun(() ->
-            {
-                partitionCheck = executor.scheduleAtFixedRate(processor::checkPendingPartitionsAsync, Duration.ofMillis(100));
-            });
+            .install();
     }
 
+    public static TypedStreamProcessor buildSystemStreamProcessor(
+            TypedStreamEnvironment streamEnvironment,
+            PartitionManager partitionManager,
+            TopicsIndex topicsIndex,
+            PartitionsIndex partitionsIndex)
+    {
+        return streamEnvironment.newStreamProcessor()
+            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(partitionManager, partitionsIndex))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_COMPLETE, new CompletePartitionProcessor(topicsIndex, partitionsIndex))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicsIndex, streamEnvironment.buildStreamReader()))
+            .withStateResource(topicsIndex.getRawMap())
+            .withStateResource(partitionsIndex.getRawMap())
+            .build();
+    }
 
     @Override
     public void start(ServiceStartContext startContext)
@@ -93,10 +117,9 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        if (partitionCheck != null)
+        if (command != null)
         {
-            partitionCheck.cancel();
-            partitionCheck = null;
+            command.cancel();
         }
     }
 

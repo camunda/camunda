@@ -24,7 +24,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 
 /**
@@ -41,19 +40,17 @@ public class PartitionsIndex
     protected static final int PENDING_PARTITION_KEY_LENGTH = TopicsIndex.MAX_TOPIC_NAME_LENGTH + BitUtil.SIZE_OF_INT;
 
     protected final Bytes2LongZbMap pendingPartitions;
-    protected final ZbMapSnapshotSupport<?> stateResource;
 
     protected final MutableDirectBuffer indexKey = new UnsafeBuffer(new byte[PENDING_PARTITION_KEY_LENGTH]);
 
     public PartitionsIndex()
     {
         this.pendingPartitions = new Bytes2LongZbMap(PENDING_PARTITION_KEY_LENGTH);
-        this.stateResource = new ZbMapSnapshotSupport<>(pendingPartitions);
     }
 
-    public ZbMapSnapshotSupport<?> getStateResource()
+    public Bytes2LongZbMap getRawMap()
     {
-        return stateResource;
+        return pendingPartitions;
     }
 
     public long getPartitionKey(DirectBuffer topicName, int partitionId)
