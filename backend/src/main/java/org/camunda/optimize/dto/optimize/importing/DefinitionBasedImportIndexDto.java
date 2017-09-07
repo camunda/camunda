@@ -10,6 +10,7 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
   protected int totalEntitiesImported;
   protected String currentProcessDefinitionId;
   protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
+  protected String esTypeIndexRefersTo;
   protected String engine;
 
   public int getCurrentDefinitionBasedImportIndex() {
@@ -58,5 +59,13 @@ public class DefinitionBasedImportIndexDto implements OptimizeDto {
 
   public void setEngine(String engine) {
     this.engine = engine;
+  }
+
+  public String getEsTypeIndexRefersTo() {
+    return esTypeIndexRefersTo;
+  }
+
+  public void setEsTypeIndexRefersTo(String esTypeIndexRefersTo) {
+    this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
 }

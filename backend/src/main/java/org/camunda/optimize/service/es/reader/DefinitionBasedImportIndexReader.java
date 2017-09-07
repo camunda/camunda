@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
@@ -26,13 +27,16 @@ public class DefinitionBasedImportIndexReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public DefinitionBasedImportIndexDto getImportIndex(String typeIndexComesFrom) {
+  public DefinitionBasedImportIndexDto getImportIndex(String typeIndexComesFrom, String engineAlias) {
     logger.debug("Fetching definition based import index of type '{}'", typeIndexComesFrom);
     DefinitionBasedImportIndexDto dto = new DefinitionBasedImportIndexDto();
     GetResponse getResponse = null;
     try {
       getResponse = esclient
-        .prepareGet(configurationService.getOptimizeIndex(), configurationService.getProcessDefinitionImportIndexType(), typeIndexComesFrom)
+        .prepareGet(
+          configurationService.getOptimizeIndex(),
+          configurationService.getProcessDefinitionImportIndexType(),
+          EsHelper.constructKey(typeIndexComesFrom, engineAlias))
         .setFetchSource(true)
         .get();
     } catch (Exception ignored) {}

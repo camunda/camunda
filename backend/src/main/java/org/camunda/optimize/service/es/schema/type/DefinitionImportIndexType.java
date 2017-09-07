@@ -15,6 +15,7 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
   public static final String ALREADY_IMPORTED_PROCESS_DEFINITIONS = "alreadyImportedProcessDefinitions";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String DEFINITION_BASED_IMPORT_INDEX = "definitionBasedImportIndex";
+  public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
 
   @Override
@@ -26,6 +27,9 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ENGINE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ES_TYPE_INDEX_REFERS_TO)
         .field("type", "keyword")
       .endObject()
       .startObject(TOTAL_ENTITIES_IMPORTED)

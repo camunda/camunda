@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
+import static org.camunda.optimize.service.es.schema.type.DefinitionImportIndexType.CURRENT_PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -358,6 +359,37 @@ public class MultipleEngineSupportIT {
     assertThat(response.getStatus(),is(200));
     responseEntity = response.readEntity(String.class);
     assertThat(responseEntity,is(notNullValue()));
+  }
+
+  @Test
+  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws OptimizeException {
+    // given
+    addSecondEngineToConfiguration();
+    deployAndStartSimpleProcessDefinitionForAllEngines();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+
+    // then
+    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+      .setTypes(configurationService.getProcessDefinitionImportIndexType())
+      .setQuery(matchAllQuery())
+      .setSize(100)
+      .get();
+    Set<String> allowedProcessDefinitionKeys = new HashSet<>();
+    allowedProcessDefinitionKeys.add("TestProcess1");
+    allowedProcessDefinitionKeys.add("TestProcess2");
+    assertThat(searchResponse.getHits().getTotalHits(), is(2L));
+    for (SearchHit searchHit : searchResponse.getHits().getHits()) {
+      String processDefinitionId = searchHit.getSource().get(CURRENT_PROCESS_DEFINITION_ID).toString();
+      String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
+      assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
+      allowedProcessDefinitionKeys.remove(processDefinitionKey);
+    }
+    assertThat(allowedProcessDefinitionKeys.isEmpty(), is(true));
   }
 
   private void deployAndStartSimpleProcessDefinitionForAllEngines() {

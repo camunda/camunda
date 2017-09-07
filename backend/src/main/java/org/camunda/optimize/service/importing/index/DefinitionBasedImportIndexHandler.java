@@ -60,7 +60,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     this.elasticsearchType = elasticsearchType;
     this.engineAlias = engineAlias;
     loadImportDefaults();
-    DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType);
+    DefinitionBasedImportIndexDto dto = importIndexReader.getImportIndex(elasticsearchType, engineAlias);
     if (dto.getTotalEntitiesImported() > 0) {
       alreadyImportedProcessDefinitions = new HashSet<>(dto.getAlreadyImportedProcessDefinitions());
       DefinitionImportInformation currentDefinition = new DefinitionImportInformation();
@@ -227,6 +227,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
     dto.setCurrentProcessDefinitionId(currentProcessDefinitionId);
     dto.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
     dto.setEngine(this.engineAlias);
+    dto.setEsTypeIndexRefersTo(elasticsearchType);
     DefinitionBasedImportIndexJob indexImportJob =
         new DefinitionBasedImportIndexJob(importIndexWriter, dto, elasticsearchType);
     try {
