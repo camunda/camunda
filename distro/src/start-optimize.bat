@@ -1,9 +1,8 @@
 @echo off
 
-echo Starting Camunda Optimize ${project.version} with Elasticsearch ${elasticsearch.version}
-
 echo Setting up environment variables...
 
+set ARGUMENT=%1
 set PROGRAM=optimize
 set BASEDIR=%~dp0
 cd %BASEDIR%
@@ -20,30 +19,33 @@ set COMMAND=curl.exe -XGET http://localhost:9200/_cluster/health?wait_for_status
 
 echo Environment is set up.
 
-echo Starting Elasticsearch...
-start %BASEDIR%\server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat
+if "%ARGUMENT%" neq "standalone" (
 
-:while1
-:: query elasticsearch if it's up
-%COMMAND% >nul 2>&1
-:: if there was an error wait and retry
-if %ERRORLEVEL% neq 0 (
-    echo Polling elasticsearch ... %RETRIES% retries left
-	timeout /t %SLEEP_TIME% /nobreak >nul
-    set /a RETRIES-=1
-    if %RETRIES% leq 0 (
-        echo Error: Elasticsearch did not start!
-        exit /b
+    echo Starting Elasticsearch ${elasticsearch.version}...
+    start %BASEDIR%\server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat
+
+    :while1
+    :: query elasticsearch if it's up
+    %COMMAND% >nul 2>&1
+    :: if there was an error wait and retry
+    if %ERRORLEVEL% neq 0 (
+        echo Polling elasticsearch ... %RETRIES% retries left
+        timeout /t %SLEEP_TIME% /nobreak >nul
+        set /a RETRIES-=1
+        if %RETRIES% leq 0 (
+            echo Error: Elasticsearch did not start!
+            exit /b
+        )
+        goto :while1
     )
-    goto :while1
+    echo Elasticsearch has successfully been started.
 )
 
 :: Set up the optimize classpaths, i.e. add the environment folder, all jars in the
 :: plugin directory and the optimize jar
 set OPTIMIZE_CLASSPATH=%BASEDIR%\environment;%BASEDIR%\plugin\*;%BASEDIR%optimize-backend-${project.version}.jar
 
-echo Elasticsearch has successfully been started.
-echo Starting jetty...
+echo Starting Camunda Optimize ${project.version}
 
 IF DEFINED JAVA_HOME (
   set JAVA="%JAVA_HOME%\bin\java.exe"
