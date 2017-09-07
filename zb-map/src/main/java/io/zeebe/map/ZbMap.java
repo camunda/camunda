@@ -88,7 +88,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     protected int maxTableSize;
     protected final int initialTableSize;
-    protected final int blockCountPerBucket;
     protected double loadFactorOverflowLimit;
 
     protected ZbMapBucketMergeHelper bucketMergeHelper;
@@ -114,7 +113,8 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      * Creates an hash map object.
      *
      * <p>
-     * The map can store `X` entries, which is at maximum equal to `tableSize * maxBlockLength`.
+     * The map will grow dynamically. After storing `X` entries, which is equal to `{@link #MAX_TABLE_SIZE} * maxBlockLength`,
+     * the hash table can't grow further, then overflow will be used as fallback.
      * The maxBlockLength is equal to {@link BucketBufferArrayDescriptor#BUCKET_DATA_OFFSET} + (bucketCount * {@link BucketBufferArrayDescriptor#getBlockLength(int, int)}))
      * </p>
      *
@@ -153,12 +153,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
         this.maxTableSize = MAX_TABLE_SIZE;
         this.initialTableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
-        this.blockCountPerBucket = minBlockCount;
         this.loadFactorOverflowLimit = LOAD_FACTOR_OVERFLOW_LIMIT;
 
         this.hashTable = new HashTable(this.initialTableSize);
         this.bucketBufferArray = new BucketBufferArray(minBlockCount, maxKeyLength, maxValueLength);
-        this.bucketMergeHelper = new ZbMapBucketMergeHelper(bucketBufferArray, hashTable, blockCountPerBucket);
+        this.bucketMergeHelper = new ZbMapBucketMergeHelper(bucketBufferArray, hashTable, minBlockCount);
 
         init();
     }

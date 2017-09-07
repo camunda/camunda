@@ -32,7 +32,7 @@ public class BucketBufferArray implements AutoCloseable
 {
     public static final int ALLOCATION_FACTOR = 32;
     public static final int OVERFLOW_BUCKET = -1;
-    public static final int REMOVABLE_BUCKET = -73;
+    public static final int ABANDONED_BUCKET = -73;
     private static final long INVALID_ADDRESS = 0;
 
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
@@ -226,11 +226,6 @@ public class BucketBufferArray implements AutoCloseable
     public int getBucketFillCount(long bucketAddress)
     {
         return UNSAFE.getInt(getRealAddress(bucketAddress) + BUCKET_FILL_COUNT_OFFSET);
-    }
-
-    private int getBucketFillCount(int bucketBufferId, int bucketOffset)
-    {
-        return UNSAFE.getInt(getRealAddress(bucketBufferId, bucketOffset) + BUCKET_FILL_COUNT_OFFSET);
     }
 
     private void initBucketFillCount(int bucketBufferId, int bucketOffset)
@@ -785,9 +780,9 @@ public class BucketBufferArray implements AutoCloseable
 
 
         final int bucketId = getBucketId(bucketAddress);
-        if (bucketId == REMOVABLE_BUCKET)
+        if (bucketId == ABANDONED_BUCKET)
         {
-            builder.append("REMOVABLE-BUCKET");
+            builder.append("ABANDONED-BUCKET");
         }
         else
         {

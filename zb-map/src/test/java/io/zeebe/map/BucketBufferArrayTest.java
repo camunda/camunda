@@ -15,9 +15,7 @@
  */
 package io.zeebe.map;
 
-import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
-import static io.zeebe.map.BucketBufferArray.OVERFLOW_BUCKET;
-import static io.zeebe.map.BucketBufferArray.getBucketAddress;
+import static io.zeebe.map.BucketBufferArray.*;
 import static io.zeebe.map.BucketBufferArrayDescriptor.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +36,6 @@ import org.junit.rules.ExpectedException;
 /**
  *
  */
-@SuppressWarnings("ALL")
 public class BucketBufferArrayTest
 {
     private static final int MAX_KEY_LEN = SIZE_OF_LONG;
@@ -144,10 +141,7 @@ public class BucketBufferArrayTest
     public void shouldAllocateNewBucketBufferOnCreatingBuckets()
     {
         // given
-        for (int i = 0; i < ALLOCATION_FACTOR; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
+        allocateBuckets(ALLOCATION_FACTOR);
 
         // when
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(0xFF, 0xFF);
@@ -178,16 +172,7 @@ public class BucketBufferArrayTest
     public void shouldAllocateBucketOnBufferWhichHasFreeBuckets()
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-
-        for (int i = 0; i < 3 * ALLOCATION_FACTOR; i++)
-        {
-            keyHandler.theKey = i;
-            valueHandler.theValue = i;
-            final long bucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            bucketBufferArray.addBlock(bucketAddress, keyHandler, valueHandler);
-        }
+        fillBucketBufferArray(3 * ALLOCATION_FACTOR);
 
         // remove some buckets on second buffer
         for (int i = ALLOCATION_FACTOR - 1; i >= ALLOCATION_FACTOR - 11; i--)
@@ -195,8 +180,8 @@ public class BucketBufferArrayTest
             final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
             final long bucketAddress = getBucketAddress(1, bucketOffset);
             bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset());
-            final long nextRemoveAddress = bucketBufferArray.removeBucket(bucketAddress);
-            assertThat(bucketAddress).isGreaterThan(nextRemoveAddress);
+            bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset() + bucketBufferArray.getBlockLength());
+            bucketBufferArray.removeBucket(bucketAddress);
         }
 
         // when
@@ -217,16 +202,7 @@ public class BucketBufferArrayTest
     public void shouldAllocateBucketOnLastBufferAfterAllFreeBucketsAreUsed()
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-
-        for (int i = 0; i < 3 * ALLOCATION_FACTOR; i++)
-        {
-            keyHandler.theKey = i;
-            valueHandler.theValue = i;
-            final long bucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            bucketBufferArray.addBlock(bucketAddress, keyHandler, valueHandler);
-        }
+        fillBucketBufferArray(3 * ALLOCATION_FACTOR);
 
         // remove some buckets on second buffer
         for (int i = ALLOCATION_FACTOR - 1; i >= ALLOCATION_FACTOR - 11; i--)
@@ -234,17 +210,12 @@ public class BucketBufferArrayTest
             final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
             final long bucketAddress = getBucketAddress(1, bucketOffset);
             bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset());
-            final long nextRemoveAddress = bucketBufferArray.removeBucket(bucketAddress);
-            assertThat(bucketAddress).isGreaterThan(nextRemoveAddress);
+            bucketBufferArray.removeBlock(bucketAddress, bucketBufferArray.getFirstBlockOffset() + bucketBufferArray.getBlockLength());
+            bucketBufferArray.removeBucket(bucketAddress);
         }
 
         // allocate bucket in second buffer
-        for (int i = ALLOCATION_FACTOR - 11; i < ALLOCATION_FACTOR; i++)
-        {
-            final long newBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            final int bucketOffset = i * bucketBufferArray.getMaxBucketLength() + BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
-            assertThat(newBucketAddress).isEqualTo(getBucketAddress(1,  bucketOffset));
-        }
+        allocateBuckets(11);
 
         // when
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(0xFF, 0xFF);
@@ -268,17 +239,13 @@ public class BucketBufferArrayTest
         // given
         // default address array is 32 - so in the begin we can create 32 bucket buffers after that the
         // array will be doubled
-        for (int i = 0; i < 32 * 32; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(32);
+        allocateBuckets(32 * 32);
 
         // when
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(0xFF, 0xFF);
 
         // then address array is increased so we can create new bucket buffer
+        assertThat(newBucketAddress).isEqualTo(getBucketAddress(32, bucketBufferArray.getFirstBucketOffset()));
         assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
         assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
     }
@@ -287,7 +254,7 @@ public class BucketBufferArrayTest
     public void shouldClearBucketArray()
     {
         // given bucketBufferArray
-        final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        bucketBufferArray.allocateNewBucket(1, 1);
 
         // when
         bucketBufferArray.clear();
@@ -342,12 +309,13 @@ public class BucketBufferArrayTest
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.removeBlock(newBucketAddress, newBlockOffset);
 
         // then
@@ -362,16 +330,16 @@ public class BucketBufferArrayTest
         // given bucket array with 2 blocks
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.setValue("1".getBytes());
-        boolean wasAdded = bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        assertThat(wasAdded).isTrue();
-        wasAdded = bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        assertThat(wasAdded).isTrue();
+        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
 
         // when
-        wasAdded = bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+        final boolean wasAdded = bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
 
         // then
         assertThat(wasAdded).isFalse();
@@ -387,13 +355,15 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         valueHandler.theValue = 0xAA;
         bucketBufferArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
 
@@ -417,16 +387,19 @@ public class BucketBufferArrayTest
         bucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         byte[] value = "hallo".getBytes();
         valueHandler.setValue(value);
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         value = "new".getBytes();
         valueHandler.setValue(value);
         bucketBufferArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
@@ -474,9 +447,9 @@ public class BucketBufferArrayTest
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         value = "hallo".getBytes();
         valueHandler.setValue(value);
         bucketBufferArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
@@ -513,22 +486,26 @@ public class BucketBufferArrayTest
     {
         // given bucket array with 1 bucket and two blocks
         bucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
+
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         byte[] value = "old".getBytes();
         valueHandler.setValue(value);
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // expect
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("Value can't exceed the max value length of 8");
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         value = "toLargeValue1234".getBytes();
         valueHandler.setValue(value);
         bucketBufferArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
@@ -540,14 +517,16 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.relocateBlock(firstBucketAddress, newBlockOffset, newBucketAddress);
 
         // then
@@ -576,16 +555,19 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.relocateBlock(firstBucketAddress, newBlockOffset, newBucketAddress);
 
         // then
@@ -628,18 +610,22 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(2, 2);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 12;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.relocateBlock(firstBucketAddress, newBlockOffset, newBucketAddress);
 
         // then new bucket overflows
@@ -672,17 +658,20 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         valueHandler.theValue = 0xAF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.relocateBlocksFromBucket(firstBucketAddress, newBucketAddress);
 
         // then
@@ -718,15 +707,17 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         valueHandler.theValue = 0xAF;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
         bucketBufferArray.relocateBlocksFromBucket(firstBucketAddress, newBucketAddress);
@@ -740,6 +731,7 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2);
 
         final int blockLength = bucketBufferArray.getBlockLength();
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         assertThat(bucketBufferArray.keyEquals(keyHandler, newBucketAddress, newBlockOffset)).isTrue();
         keyHandler.theKey = 10;
@@ -764,18 +756,21 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(2, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         valueHandler.theValue = 0xAF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 12;
         valueHandler.theValue = 0xAB;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // expect
         expectedException.expectMessage("Blocks can't be relocate from bucket " + firstBucketAddress + " to bucket " + newBucketAddress + ". Not enough space on destination bucket.");
@@ -810,11 +805,14 @@ public class BucketBufferArrayTest
         // given
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long overflowBucketAddress = bucketBufferArray.overflow(newBucketAddress);
+
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
+
         keyHandler.theKey = 11;
         bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
 
@@ -911,8 +909,8 @@ public class BucketBufferArrayTest
     {
         // given
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
-        final long overflowBucketAddress = bucketBufferArray.overflow(newBucketAddress);
-        final long newOverflowBucketAddress = bucketBufferArray.overflow(newBucketAddress);
+        bucketBufferArray.overflow(newBucketAddress);
+        bucketBufferArray.overflow(newBucketAddress);
 
         // when
         final int bucketOverflowCount = bucketBufferArray.getBucketOverflowCount(newBucketAddress);
@@ -959,11 +957,12 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // expect
         expectedException.expectMessage("Bucket can't be removed, since it is not empty!");
@@ -980,13 +979,15 @@ public class BucketBufferArrayTest
         // given
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final LongValueHandler valueHandler = new LongValueHandler();
+
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
         bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.removeBlock(firstBucketAddress, newBlockOffset);
         final long nextRemovableBucket = bucketBufferArray.removeBucket(firstBucketAddress);
 
@@ -1054,13 +1055,8 @@ public class BucketBufferArrayTest
     public void shouldReleaseBucketBufferIfEmptyAfterRemoveBucket()
     {
         // given
-        for (int i = 0; i < 32; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
+        allocateBuckets(32);
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(32, 32);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(2);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(33);
 
         // when
         final long nextRemovableBucket = bucketBufferArray.removeBucket(firstBucketAddress);
@@ -1081,13 +1077,8 @@ public class BucketBufferArrayTest
     public void shouldNotReleaseBucketBufferIfNotEmptyAfterRemoveBucket()
     {
         // given
-        for (int i = 0; i <= 32; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
+        allocateBuckets(33);
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(33, 33);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(2);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(34);
 
         // when
         final long nextRemovableBucket = bucketBufferArray.removeBucket(firstBucketAddress);
@@ -1108,13 +1099,7 @@ public class BucketBufferArrayTest
     {
 
         // given
-        for (int i = 0; i < 64; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
-        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(64, 64);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+        allocateBuckets(65);
 
         // when
         for (int i = 31; i >= 0; i--)
@@ -1137,13 +1122,7 @@ public class BucketBufferArrayTest
     public void shouldResolveNextRemovableAddressIfBucketBufferIsNotReleased()
     {
         // given
-        for (int i = 0; i < 64; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
-        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(64, 64);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+        allocateBuckets(65);
 
         // when
         for (int i = 31; i >= 1; i--)
@@ -1152,9 +1131,6 @@ public class BucketBufferArrayTest
             final int bucketOffset = BUCKET_BUFFER_HEADER_LENGTH + i * bucketBufferArray.getMaxBucketLength();
             bucketBufferArray.removeBucket(getBucketAddress(bufferId, bucketOffset));
         }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(34);
         final long nextRemovableBucket = bucketBufferArray.removeBucket(getBucketAddress(1, BUCKET_BUFFER_HEADER_LENGTH));
 
         // then
@@ -1170,17 +1146,12 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBucketCount(2)).isEqualTo(1);
     }
 
+
     @Test
     public void shouldResolveNextRemovableAddressIfNextEmptyBucketBufferWasReleased()
     {
         // given
-        for (int i = 0; i < 64; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
-        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(64, 64);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
+        allocateBuckets(65);
 
         // when
         for (int i = 31; i >= 0; i--)
@@ -1189,9 +1160,6 @@ public class BucketBufferArrayTest
             final int bucketOffset = BUCKET_BUFFER_HEADER_LENGTH + i * bucketBufferArray.getMaxBucketLength();
             bucketBufferArray.removeBucket(getBucketAddress(bufferId, bucketOffset));
         }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(33);
         final long nextRemovableBucket = bucketBufferArray.removeBucket(getBucketAddress(2, BUCKET_BUFFER_HEADER_LENGTH));
 
         // then
@@ -1209,13 +1177,7 @@ public class BucketBufferArrayTest
     public void shouldResolveNextRemovableAddressIfNextBucketBufferIsEmptyAndIsNotReleased()
     {
         // given
-        for (int i = 0; i < 96; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
-        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(96, 96);
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(4);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(97);
+        allocateBuckets(97);
 
         // when
         // buffer 1 is cleared
@@ -1233,8 +1195,6 @@ public class BucketBufferArrayTest
             bucketBufferArray.removeBucket(getBucketAddress(bufferId, bucketOffset));
         }
 
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(4);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(34);
         final long nextRemovableBucket = bucketBufferArray.removeBucket(getBucketAddress(2, BUCKET_BUFFER_HEADER_LENGTH));
 
         // then
@@ -1260,20 +1220,15 @@ public class BucketBufferArrayTest
         keyHandler.theKey = 10;
         valueHandler.theValue = 0xFF;
 
-        for (int i = 0; i < 63; i++)
-        {
-            bucketBufferArray.allocateNewBucket(i, i);
-        }
+        allocateBuckets(63);
         final long lastBucketAddress = bucketBufferArray.allocateNewBucket(64, 64);
         bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+
         final long bucketAddressInThirdBuffer = bucketBufferArray.allocateNewBucket(64, 64);
         bucketBufferArray.addBlock(bucketAddressInThirdBuffer, keyHandler, valueHandler);
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(3);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(65);
 
         // when
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         bucketBufferArray.removeBlock(lastBucketAddress, newBlockOffset);
         for (int i = 31; i >= 0; i--)
         {
@@ -1299,24 +1254,7 @@ public class BucketBufferArrayTest
     public void shouldAddAndRemoveBunchOfBlocks()
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-        keyHandler.theKey = 10;
-        valueHandler.theValue = 0xFF;
-
-        final List<Long> bucketAddresses = new ArrayList<>();
-        long lastBucketAddress = 0;
-        for (int i = 0; i < 32 * 32 + 1; i++)
-        {
-            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketAddresses.add(lastBucketAddress);
-        }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
-        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+        final List<Long> bucketAddresses = fillBucketBufferArray(32 * 32 + 1);
 
         // when first block and buckets are removed
         for (int i = 0; i < 32 * 32; i++)
@@ -1352,24 +1290,7 @@ public class BucketBufferArrayTest
     public void shouldAddAndRemoveInBunchReverse()
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-        keyHandler.theKey = 10;
-        valueHandler.theValue = 0xFF;
-
-        final List<Long> bucketAddresses = new ArrayList<>();
-        long lastBucketAddress = 0;
-        for (int i = 0; i < 32 * 32 + 1; i++)
-        {
-            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketAddresses.add(lastBucketAddress);
-        }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
-        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+        final List<Long> bucketAddresses = fillBucketBufferArray(32 * 32 + 1);
 
         // when last block and buckets are removed
         Collections.reverse(bucketAddresses);
@@ -1406,24 +1327,7 @@ public class BucketBufferArrayTest
     public void shouldShrinkAddressBuffer()
     {
         // given
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final LongValueHandler valueHandler = new LongValueHandler();
-        keyHandler.theKey = 10;
-        valueHandler.theValue = 0xFF;
-
-        final List<Long> bucketAddresses = new ArrayList<>();
-        long lastBucketAddress = 0;
-        for (int i = 0; i < 32 * 32 + 1; i++)
-        {
-            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
-            bucketAddresses.add(lastBucketAddress);
-        }
-
-        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(33);
-        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(2 * 32 * 32 + 2);
-        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 32 + 1);
+        final List<Long> bucketAddresses = fillBucketBufferArray(32 * 32 + 1);
 
         // when last block is removed
         long bucketAddress = bucketAddresses.get(32 * 32);
@@ -1461,4 +1365,30 @@ public class BucketBufferArrayTest
             : blockCount / ((float) bucketCount * 2);
     }
 
+    private void allocateBuckets(int bucketCount)
+    {
+        for (int i = 0; i < bucketCount; i++)
+        {
+            bucketBufferArray.allocateNewBucket(i, i);
+        }
+    }
+
+    private List<Long> fillBucketBufferArray(int bucketCount)
+    {
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        long lastBucketAddress;
+        for (int i = 0; i < bucketCount; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketAddresses.add(lastBucketAddress);
+        }
+        return bucketAddresses;
+    }
 }

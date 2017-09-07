@@ -15,7 +15,7 @@
  */
 package io.zeebe.map;
 
-import static io.zeebe.map.BucketBufferArray.REMOVABLE_BUCKET;
+import static io.zeebe.map.BucketBufferArray.ABANDONED_BUCKET;
 
 /**
  * Helper class to capsulate the bucket merging behavior.
@@ -75,9 +75,9 @@ final class ZbMapBucketMergeHelper
      *
      * <p>
      * Since this method is recursively it is possible that one merge call can clean up a bunch of empty or mergable
-     * buckets. It is also possible that merge is called on a bucket which has as ID {@link BucketBufferArray#REMOVABLE_BUCKET}.
+     * buckets. It is also possible that merge is called on a bucket which has as ID {@link BucketBufferArray#ABANDONED_BUCKET}.
      * In that case the bucket will be removed if it is the last one. Like on the normal merge we will call
-     * again {@link #tryMerging(long, int)} with the new last bucket address. If it is not the last one the method returns.
+     * again {@link #tryMergingBuckets(long, int)} with the new last bucket address. If it is not the last one the method returns.
      * Also if the bucket id and the depth is zero, which means the first bucket was not splitted before the method simply returns.
      * </p>
      *
@@ -95,7 +95,7 @@ final class ZbMapBucketMergeHelper
      *         <li>
      *             Overflow bucket is removable and blocks of overflow bucket can be relocated to the current bucket,
      *             then we relocate the blocks and remove the overflow bucket. Like on the normal merge we will call
-     *             again {@link #tryMerging(long, int)} with the new last bucket address.
+     *             again {@link #tryMergingBuckets(long, int)} with the new last bucket address.
      *         </li>
      *         <li>
      *             Overflow bucket is removable but can't be merged, then nothing happens.
@@ -103,7 +103,7 @@ final class ZbMapBucketMergeHelper
      *         <li>
      *             Overflow bucket is not removable but it can be merged
      *             Existing blocks are relocated to the current bucket and the overflow pointer is removed.
-     *             Overflow bucket is marked as removable, see {@link BucketBufferArray#REMOVABLE_BUCKET}.
+     *             Overflow bucket is marked as removable, see {@link BucketBufferArray#ABANDONED_BUCKET}.
      *         </li>
      *         <li>
      *             Overflow bucket is not removable and can't be merged, then nothing happens.
@@ -117,7 +117,7 @@ final class ZbMapBucketMergeHelper
      *     <li>
      *          Is overflow bucket removable and the block can be relocated to the parent/original bucket,
      *          then this will be done. Like on the normal merge we will call
-     *          again {@link #tryMerging(long, int)} with the new last bucket address.
+     *          again {@link #tryMergingBuckets(long, int)} with the new last bucket address.
      *     </li>
      *     <li>
      *         If the overflow bucket is not removable the next steps are depending, whether the overflow bucket has
@@ -133,18 +133,18 @@ final class ZbMapBucketMergeHelper
      *                      We only have to check if it is possible to merge the overflow bucket into the parent bucket.
      *                  </p>
      *                  If the blocks of overflow bucket are relocatable to the parent bucket, this will be done and the overflow bucket pointer is removed.
-     *                  Overflow bucket is marked as removable, see {@link BucketBufferArray#REMOVABLE_BUCKET}.
+     *                  Overflow bucket is marked as removable, see {@link BucketBufferArray#ABANDONED_BUCKET}.
      *             </li>
      *             <li>
      *                  If the overflow bucket has also an overflow bucket pointer it tries to merge this overflow bucket into the current one.
      *                  <ul>
      *                      <li>
      *                          Are the blocks relocatable to the current overflow bucket and the overflow bucket is removable, then this is done and the overflow
-     *                          bucket is removed. Like on the normal merge we will call again {@link #tryMerging(long, int)} with the new last bucket address.
+     *                          bucket is removed. Like on the normal merge we will call again {@link #tryMergingBuckets(long, int)} with the new last bucket address.
      *                      </li>
      *                      <li>
      *                          Are the blocks relocatable to the current overflow bucket and the overflow bucket is NOT removable, then the blocks are relocated
-     *                          and the overflow bucket is marked as removable, see {@link BucketBufferArray#REMOVABLE_BUCKET}.
+     *                          and the overflow bucket is marked as removable, see {@link BucketBufferArray#ABANDONED_BUCKET}.
      *                      </li>
      *                      <li>
      *                          Otherwise nothing happens.
@@ -205,20 +205,15 @@ final class ZbMapBucketMergeHelper
      */
     void tryMergingBuckets(long bucketAddress, int newBucketFillCount)
     {
-        tryMerging(bucketAddress, newBucketFillCount);
-    }
-
-    private void tryMerging(long bucketAddress, int newBucketFillCount)
-    {
         final int bucketId = bucketBufferArrayRef.getBucketId(bucketAddress);
         final int depth = bucketBufferArrayRef.getBucketDepth(bucketAddress);
 
         if (splitWasCalledAtLeastOnce(bucketId, depth))
         {
             long newLastBucketAddress = 0;
-            if (bucketId == REMOVABLE_BUCKET)
+            if (bucketId == ABANDONED_BUCKET)
             {
-                newLastBucketAddress = tryRemoveWithoutMergeBucket(bucketAddress);
+                newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
             }
             else if (depth == BucketBufferArray.OVERFLOW_BUCKET)
             {
@@ -241,7 +236,7 @@ final class ZbMapBucketMergeHelper
             if (newLastBucketAddress > 0)
             {
                 final int bucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
-                tryMerging(newLastBucketAddress, bucketFillCount);
+                tryMergingBuckets(newLastBucketAddress, bucketFillCount);
             }
         }
     }
@@ -266,7 +261,7 @@ final class ZbMapBucketMergeHelper
      * @return zero if no bucket was removed or no remaining bucket exist, otherwise the address of the new last bucket
      *          which can be removed
      */
-    private long tryRemoveWithoutMergeBucket(long bucketAddress)
+    private long tryRemoveAbandonedBucketWithoutMerge(long bucketAddress)
     {
         long newLastBucketAddress = 0;
         if (bucketBufferArrayRef.isBucketRemoveable(bucketAddress))
@@ -311,7 +306,7 @@ final class ZbMapBucketMergeHelper
             {
                 bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
                 bucketBufferArrayRef.removeOverflowBucket(parentBucketAddress, bucketAddress);
-                bucketBufferArrayRef.setBucketId(bucketAddress, REMOVABLE_BUCKET);
+                bucketBufferArrayRef.setBucketId(bucketAddress, ABANDONED_BUCKET);
             }
         }
         return newLastBucketAddress;
@@ -322,8 +317,6 @@ final class ZbMapBucketMergeHelper
      *
      * @param bucketAddress
      * @param bucketOverflowPointer
-     * @param depth
-     * @param bucketId
      * @return zero if no bucket was removed or no remaining bucket exist, otherwise the address of the new last bucket
      *          which can be removed
      */
@@ -345,7 +338,7 @@ final class ZbMapBucketMergeHelper
             }
             else
             {
-                bucketBufferArrayRef.setBucketId(bucketAddress, REMOVABLE_BUCKET);
+                bucketBufferArrayRef.setBucketId(bucketAddress, ABANDONED_BUCKET);
             }
         }
 
@@ -354,7 +347,7 @@ final class ZbMapBucketMergeHelper
 
     /**
      * Tries to merge normal bucket with the parent bucket.
-     * Merges the bucket if the merge rules are satisfied, see {@link #tryMerging(long, int)}.
+     * Merges the bucket if the merge rules are satisfied, see {@link #tryMergingBuckets(long, int)}.
      *
      * @param bucketAddress
      * @param newBucketFillCount
@@ -392,7 +385,7 @@ final class ZbMapBucketMergeHelper
 
     /**
      * Tries to merge normal bucket with the parent bucket.
-     * Merges the bucket if the merge rules are satisfied, see {@link #tryMerging(long, int)}.
+     * Merges the bucket if the merge rules are satisfied, see {@link #tryMergingBuckets(long, int)}.
      *
      * @param parentBucketAddress
      * @param parentBucketDepth
