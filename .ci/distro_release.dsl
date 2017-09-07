@@ -87,7 +87,7 @@ mavenJob(jobName)
     {
         githubPush()
     }
-    label 'ubuntu'
+    label 'ubuntu-large'
     jdk 'jdk-8-latest'
 
     rootPOM pom
