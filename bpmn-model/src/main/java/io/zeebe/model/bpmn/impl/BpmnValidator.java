@@ -32,9 +32,6 @@ import org.agrona.DirectBuffer;
 
 public class BpmnValidator
 {
-    // TODO move it
-    public static final int ID_MAX_LENGTH = 255;
-
     private static final String PROHIBITED_EXPRESSIONS_REGEX = "(\\.\\*)|(\\[.*,.*\\])";
     private static final Pattern PROHIBITED_EXPRESSIONS = Pattern.compile(PROHIBITED_EXPRESSIONS_REGEX);
 
@@ -70,9 +67,9 @@ public class BpmnValidator
         {
             validationResult.addError(workflow, "BPMN process id is required.");
         }
-        else if (bpmnProcessId.capacity() > ID_MAX_LENGTH)
+        else if (bpmnProcessId.capacity() > ZeebeConstraints.ID_MAX_LENGTH)
         {
-            validationResult.addError(workflow, String.format("BPMN process id must not be longer than %d.", ID_MAX_LENGTH));
+            validationResult.addError(workflow, String.format("BPMN process id must not be longer than %d.", ZeebeConstraints.ID_MAX_LENGTH));
         }
 
         if (workflow.getInitialStartEvent() == null)
@@ -93,9 +90,9 @@ public class BpmnValidator
         {
             validationResult.addError(flowElement, "Activity id is required.");
         }
-        else if (id.capacity() > ID_MAX_LENGTH)
+        else if (id.capacity() > ZeebeConstraints.ID_MAX_LENGTH)
         {
-            validationResult.addError(flowElement, String.format("Activity id must not be longer than %d.", ID_MAX_LENGTH));
+            validationResult.addError(flowElement, String.format("Activity id must not be longer than %d.", ZeebeConstraints.ID_MAX_LENGTH));
         }
 
         if (flowElement instanceof FlowNode)
