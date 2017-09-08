@@ -17,11 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
-import static io.zeebe.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
-import static io.zeebe.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUNDANT_MAPPING;
-import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
-import static io.zeebe.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
 import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
@@ -36,10 +31,10 @@ import java.util.Map;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
@@ -49,8 +44,6 @@ import org.junit.rules.RuleChain;
  */
 public class WorkflowTaskIOMappingTest
 {
-    private static final String PROP_TASK_TYPE = "type";
-    private static final String PROP_TASK_RETRIES = "retries";
     private static final String PROP_TASK_PAYLOAD = "payload";
     private static final String PROP_ERRO_MSG = "errorMessage";
 
@@ -79,17 +72,12 @@ public class WorkflowTaskIOMappingTest
     public void shouldNotDeployIfInputMappingIsNotValid() throws Throwable
     {
         // given
-        final HashMap<String, String> map = new HashMap<>();
-        map.put("$.*", NODE_ROOT_PATH);
-
-        final ZeebeExtensions.ZeebeModelInstance modelInstance = wrap(
-            Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .input("$.*", NODE_ROOT_PATH))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service", map, null);
+                .done();
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
@@ -98,33 +86,27 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
+                .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
-            .contains(Integer.toString(PROHIBITED_JSON_PATH_EXPRESSION))
-            .contains(ERROR_MSG_PROHIBITED_EXPRESSION);
+            .contains("Source mapping: JSON path '$.*' contains prohibited expression");
     }
 
     @Test
     public void shouldNotDeployIfInputMappingMapsRootAndOtherObject() throws Throwable
     {
         // given
-        final ZeebeExtensions.ZeebeModelInstance modelInstance = wrap(
-            Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .input(NODE_STRING_PATH, NODE_ROOT_PATH)
+                             .input(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .input(NODE_STRING_PATH, NODE_ROOT_PATH)
-                .input(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH)
-            .done();
-
+                .done();
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
@@ -133,28 +115,25 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
-            .contains(Integer.toString(REDUNDANT_MAPPING))
-            .contains(ERROR_MSG_REDUNDANT_MAPPING);
+            .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 
     @Test
     public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external"))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5));
+                .done());
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -163,37 +142,6 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5);
-        final byte[] result = (byte[]) event.event().get(PROP_TASK_PAYLOAD);
-        assertThat(MSGPACK_MAPPER.readTree(result))
-            .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
-    }
-
-    @Test
-    public void shouldUseDefaultInputMappingIfNullIsAsMappingSpecified() throws Throwable
-    {
-        // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done()).taskDefinition("service", "external", 5)
-                        .ioMapping("service", null, null));
-
-        // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-
-        // then
-        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
-
-        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5);
-
         final byte[] result = (byte[]) event.event().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
@@ -203,17 +151,13 @@ public class WorkflowTaskIOMappingTest
     public void shouldCreateTwoNewObjectsViaInputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .input(NODE_STRING_PATH, "$.newFoo")
+                             .input(NODE_JSON_OBJECT_PATH, "$.newObj"))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .input(NODE_STRING_PATH, "$.newFoo")
-                .input(NODE_JSON_OBJECT_PATH, "$.newObj")
-            .done());
+                .done());
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -229,15 +173,11 @@ public class WorkflowTaskIOMappingTest
     public void shouldUseNILIfCreatedWithNoPayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external"))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-            .done());
+                .done());
 
         // when
         testClient.createWorkflowInstance("process");
@@ -252,16 +192,12 @@ public class WorkflowTaskIOMappingTest
     public void shouldCreateIncidentForNoMatchOnInputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .input("$.notExisting", NODE_ROOT_PATH))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .input("$.notExisting", NODE_ROOT_PATH)
-            .done());
+                .done());
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -278,17 +214,14 @@ public class WorkflowTaskIOMappingTest
     public void shouldCreateIncidentForNonMatchingAndMatchingValueOnInputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .input("$.notExisting", "$.nullVal")
+                             .input(NODE_STRING_PATH, "$.existing"))
+
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .input("$.notExisting", "$.nullVal")
-                .input(NODE_STRING_PATH, "$.existing")
-            .done());
+                .done());
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -304,17 +237,13 @@ public class WorkflowTaskIOMappingTest
     @Test
     public void shouldNotDeployIfOutputMappingIsNotValid() throws Throwable
     {
-        final Map<String, String> outMapping = new HashMap<>();
-        outMapping.put(NODE_STRING_KEY, null);
         // given
-        final ZeebeExtensions.ZeebeModelInstance modelInstance = wrap(
-            Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                             .output(NODE_STRING_KEY, ""))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service", null, outMapping);
+                .done();
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .topicName(DEFAULT_TOPIC_NAME)
@@ -322,7 +251,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
@@ -333,13 +262,12 @@ public class WorkflowTaskIOMappingTest
     public void shouldUseDefaultOutputMappingIfNoMappingIsSpecified() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external"))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5));
+                .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -357,11 +285,11 @@ public class WorkflowTaskIOMappingTest
     public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5));
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external"))
+                          .endEvent()
+                          .done());
 
         final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final long secondWFInstanceKey = testClient.createWorkflowInstance("process");
@@ -385,11 +313,12 @@ public class WorkflowTaskIOMappingTest
     public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5).ioMapping("service").output("$", "$.taskPayload").done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .output("$", "$.taskPayload"))
+                          .endEvent()
+                          .done());
 
         final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
         final long secondWFInstanceKey = testClient.createWorkflowInstance("process",
@@ -418,14 +347,12 @@ public class WorkflowTaskIOMappingTest
         // given
         final Map<String, String> inputMapping = new HashMap<>();
         inputMapping.put(NODE_ROOT_PATH, NODE_ROOT_PATH);
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service", inputMapping, null));
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .input(NODE_ROOT_PATH, NODE_ROOT_PATH))
+                          .endEvent()
+                          .done());
 
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
@@ -444,13 +371,11 @@ public class WorkflowTaskIOMappingTest
     public void shouldUseWFPayloadIfCompleteWithNoPayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5));
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external"))
+                          .endEvent()
+                          .done());
 
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
@@ -468,17 +393,14 @@ public class WorkflowTaskIOMappingTest
     public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .output(NODE_STRING_PATH, "$.newFoo")
-                .output(NODE_JSON_OBJECT_PATH, "$.newObj")
-            .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                              .output(NODE_STRING_PATH, "$.newFoo")
+                              .output(NODE_JSON_OBJECT_PATH, "$.newObj"))
+                          .endEvent()
+                          .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -497,16 +419,13 @@ public class WorkflowTaskIOMappingTest
     public void shouldCreateIncidentForNotMatchingOnOutputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .output("$.notExisting", "$.notExist")
-            .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                              .output("$.notExisting", "$.notExist"))
+                          .endEvent()
+                          .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -525,18 +444,13 @@ public class WorkflowTaskIOMappingTest
     public void shouldNotMapPayloadToWorkflowIfOutMappingMapsRootAndOtherPath() throws Throwable
     {
         // given
-        final ZeebeExtensions.ZeebeModelInstance modelInstance = wrap(
-            Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("service")
+                .serviceTask("service", t -> t.taskType("external")
+                    .output(NODE_STRING_PATH, NODE_ROOT_PATH)
+                    .output(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH))
                 .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-            .output(NODE_STRING_PATH, NODE_ROOT_PATH)
-            .output(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH)
-            .done();
-
+                .done();
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
@@ -545,32 +459,27 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance))
+            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
-            .contains(Integer.toString(REDUNDANT_MAPPING))
-            .contains(ERROR_MSG_REDUNDANT_MAPPING);
+            .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
 
     @Test
     public void shouldUseInOutMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service")
-                .endEvent()
-                .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service")
-                .input(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
-                .output("$.testAttr", "$.result")
-             .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                              .input(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
+                              .output("$.testAttr", "$.result"))
+                          .endEvent()
+                          .done());
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -594,9 +503,9 @@ public class WorkflowTaskIOMappingTest
                 "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}"));
     }
 
-    private byte[] bpmnXml(final ZeebeExtensions.ZeebeModelInstance modelInstance)
+    private byte[] bpmnXml(final WorkflowDefinition definition)
     {
-        return Bpmn.convertToString(modelInstance).getBytes(UTF_8);
+        return Bpmn.convertToString(definition).getBytes(UTF_8);
     }
 
 }

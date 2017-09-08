@@ -23,30 +23,24 @@ import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.List;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.DeploymentState;
-import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.broker.workflow.data.WorkflowState;
-import io.zeebe.broker.workflow.graph.WorkflowValidationResultFormatter;
-import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
-import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
+import io.zeebe.broker.workflow.data.*;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.model.bpmn.BpmnModelApi;
+import io.zeebe.model.bpmn.ValidationResult;
+import io.zeebe.model.bpmn.impl.BpmnValidator;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class DeploymentStreamProcessor implements StreamProcessor, EventProcessor
 {
@@ -56,13 +50,12 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     protected final DeploymentEvent deploymentEvent = new DeploymentEvent();
     protected final WorkflowEvent workflowEvent = new WorkflowEvent();
 
-    protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
-    protected final WorkflowValidationResultFormatter validationResultFormatter = new WorkflowValidationResultFormatter();
-
     protected final CommandResponseWriter responseWriter;
 
     protected final Bytes2LongZbMap map;
     protected final ZbMapSnapshotSupport<Bytes2LongZbMap> indexSnapshotSupport;
+
+    protected final BpmnModelApi bpmn = new BpmnModelApi();
 
     protected final ArrayList<DeployedWorkflow> deployedWorkflows = new ArrayList<>();
 
@@ -80,7 +73,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     {
         this.responseWriter = responseWriter;
 
-        this.map = new Bytes2LongZbMap(BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.map = new Bytes2LongZbMap(BpmnValidator.ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
@@ -152,20 +145,19 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     {
         try
         {
-            final BpmnModelInstance bpmnModelInstance = bpmnTransformer.readModelFromBuffer(deploymentEvent.getBpmnXml());
-            final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+            final WorkflowDefinition definition = bpmn.readFromBuffer(deploymentEvent.getBpmnXml());
+            final ValidationResult validationResult = bpmn.validate(definition);
 
-            if (!validationResults.hasErrors())
+            if (!validationResult.hasErrors())
             {
                 deploymentEvent.setState(DeploymentState.DEPLOYMENT_CREATED);
 
-                collectDeployedWorkflows(bpmnModelInstance);
+                collectDeployedWorkflows(definition);
             }
 
-            if (validationResults.getErrorCount() > 0 || validationResults.getWarinigCount() > 0)
+            if (validationResult.hasErrors() || validationResult.hasWarnings())
             {
-                final String errorMessage = generateErrorMessage(validationResults);
-                deploymentEvent.setErrorMessage(errorMessage);
+                deploymentEvent.setErrorMessage(validationResult.format());
             }
         }
         catch (Exception e)
@@ -180,13 +172,12 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         }
     }
 
-    protected void collectDeployedWorkflows(final BpmnModelInstance bpmnModelInstance)
+    protected void collectDeployedWorkflows(final WorkflowDefinition definition)
     {
-        final List<ExecutableWorkflow> workflows = bpmnTransformer.transform(bpmnModelInstance);
         // currently, it can only be one process
-        final ExecutableWorkflow workflow = workflows.get(0);
+        final Workflow workflow = definition.getWorkflows().iterator().next();
 
-        final DirectBuffer bpmnProcessId = workflow.getId();
+        final DirectBuffer bpmnProcessId = workflow.getBpmnProcessId();
 
         final int latestVersion = (int) map.get(bpmnProcessId.byteArray(), 0L);
         final int version = latestVersion + 1;
@@ -196,15 +187,6 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
             .setVersion(version);
 
         deployedWorkflows.add(new DeployedWorkflow(bpmnProcessId, version));
-    }
-
-    protected String generateErrorMessage(final ValidationResults validationResults)
-    {
-        final StringWriter errorMessageWriter = new StringWriter();
-
-        validationResults.write(errorMessageWriter, validationResultFormatter);
-
-        return errorMessageWriter.toString();
     }
 
     protected String generateErrorMessage(final Exception e)

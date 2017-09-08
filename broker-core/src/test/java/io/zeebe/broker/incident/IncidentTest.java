@@ -17,31 +17,23 @@
  */
 package io.zeebe.broker.incident;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.broker.test.MsgPackUtil.*;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
-import org.agrona.MutableDirectBuffer;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceState;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.agrona.MutableDirectBuffer;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 public class IncidentTest
@@ -56,25 +48,17 @@ public class IncidentTest
 
     private TestTopicClient testClient;
 
-    private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING = wrap(
-            Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW_INPUT_MAPPING = Bpmn.createExecutableWorkflow("process")
             .startEvent()
-            .serviceTask("failingTask")
-            .done())
-            .taskDefinition("failingTask", "test", 3)
-            .ioMapping("failingTask")
-                .input("$.foo", "$.foo")
-                .done();
+            .serviceTask("failingTask", t -> t.taskType("test")
+                         .input("$.foo", "$.foo"))
+            .done();
 
-    private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING = wrap(
-            Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW_OUTPUT_MAPPING = Bpmn.createExecutableWorkflow("process")
             .startEvent()
-            .serviceTask("failingTask")
-            .done())
-            .taskDefinition("failingTask", "test", 3)
-            .ioMapping("failingTask")
-                .output("$.foo", "$.foo")
-                .done();
+            .serviceTask("failingTask", t -> t.taskType("test")
+                         .output("$.foo", "$.foo"))
+            .done();
 
     private static final byte[] PAYLOAD;
 
@@ -215,14 +199,11 @@ public class IncidentTest
     public void shouldCreateIncidentForInvalidResultOnInputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.string", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("failingTask", t -> t.taskType("external")
+                                       .input("$.string", "$"))
+                          .done());
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -239,14 +220,11 @@ public class IncidentTest
     public void shouldResolveIncidentForInvalidResultOnInputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.string", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .input("$.string", "$"))
+                          .done());
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -281,15 +259,13 @@ public class IncidentTest
     public void shouldCreateIncidentForInvalidResultOnOutputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.jsonObject", "$")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("failingTask", t -> t.taskType("external")
+                                       .input("$.jsonObject", "$")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -308,15 +284,13 @@ public class IncidentTest
     public void shouldResolveIncidentForInvalidResultOnOutputMapping() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.jsonObject", "$")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .input("$.jsonObject", "$")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -353,15 +327,13 @@ public class IncidentTest
     public void shouldCreateIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.jsonObject", "$")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("failingTask", t -> t.taskType("external")
+                                       .input("$.jsonObject", "$")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -379,15 +351,13 @@ public class IncidentTest
     public void shouldResolveIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .input("$.jsonObject", "$")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .input("$.jsonObject", "$")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -423,14 +393,12 @@ public class IncidentTest
     public void shouldCreateIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("failingTask", t -> t.taskType("external")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -448,14 +416,12 @@ public class IncidentTest
     public void shouldResolveIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable
     {
         // given
-        testClient.deploy(wrap(Bpmn.createExecutableProcess("process")
-                                   .startEvent()
-                                   .serviceTask("service")
-                                   .endEvent()
-                                   .done()).taskDefinition("service", "external", 5)
-                                           .ioMapping("service")
-                                           .output("$.testAttr", "$")
-                                           .done());
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+                          .startEvent()
+                          .serviceTask("service", t -> t.taskType("external")
+                                       .output("$.testAttr", "$"))
+                          .done());
+
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // when
@@ -491,16 +457,12 @@ public class IncidentTest
     public void shouldFailToResolveIncident() throws Exception
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("failingTask")
-                    .done())
-                    .taskDefinition("failingTask", "test", 3)
-                    .ioMapping("failingTask")
-                        .input("$.foo", "$.foo")
-                        .input("$.bar", "$.bar")
-                        .done();
+        final WorkflowDefinition modelInstance = Bpmn.createExecutableWorkflow("process")
+                .startEvent()
+                .serviceTask("failingTask", t -> t.taskType("external")
+                             .input("$.foo", "$.foo")
+                             .input("$.bar", "$.bar"))
+               .done();
 
         testClient.deploy(modelInstance);
 
@@ -733,7 +695,7 @@ public class IncidentTest
             .command()
                 .put("state", "FAIL")
                 .put("retries", 0)
-                .put("type", "test")
+                .put("type", "failingTask")
                 .put("lockOwner", taskEvent.event().get("lockOwner"))
                 .put("headers", taskEvent.event().get("headers"))
                 .done()

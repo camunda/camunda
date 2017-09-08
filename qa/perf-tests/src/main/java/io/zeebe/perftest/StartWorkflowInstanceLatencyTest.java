@@ -15,18 +15,16 @@
  */
 package io.zeebe.perftest;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.perftest.helper.FixedRateLatencyTest;
 
 
@@ -37,18 +35,16 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     {
         final WorkflowsClient workflowsClient = client.workflows();
 
-        final BpmnModelInstance processModel = Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
                 .startEvent()
-                .serviceTask("serviceTask")
+                .serviceTask("serviceTask", t -> t.taskType("foo").taskRetries(3))
                 .endEvent()
                 .done();
-
-        wrap(processModel).taskDefinition("serviceTask", "foo", 3);
 
         // create deployment
         workflowsClient
             .deploy(DEFAULT_TOPIC_NAME)
-            .bpmnModelInstance(processModel)
+            .model(workflow)
             .execute();
 
         try

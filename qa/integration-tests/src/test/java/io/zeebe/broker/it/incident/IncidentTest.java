@@ -17,16 +17,9 @@ package io.zeebe.broker.it.incident;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
-
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -35,18 +28,19 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.task.TaskHandler;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class IncidentTest
 {
-    private static final BpmnModelInstance WORKFLOW = wrap(
-            Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
             .startEvent()
-            .serviceTask("failingTask")
-            .done())
-            .taskDefinition("failingTask", "test", 3)
-            .ioMapping("failingTask")
-                .input("$.foo", "$.foo")
-                .done();
+            .serviceTask("failingTask", t -> t.taskType("test")
+                         .input("$.foo", "$.foo"))
+            .done();
 
     private static final String PAYLOAD = "{\"foo\": \"bar\"}";
 
@@ -65,7 +59,7 @@ public class IncidentTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -92,7 +86,7 @@ public class IncidentTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -113,7 +107,7 @@ public class IncidentTest
     {
         // given a workflow instance with an open task
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

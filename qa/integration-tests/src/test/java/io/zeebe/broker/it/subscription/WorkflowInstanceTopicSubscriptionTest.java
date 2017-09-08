@@ -21,20 +21,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.event.WorkflowInstanceEventHandler;
+import io.zeebe.client.event.*;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceTopicSubscriptionTest
 {
@@ -54,13 +49,13 @@ public class WorkflowInstanceTopicSubscriptionTest
     {
         this.client = clientRule.getClient();
 
-        final BpmnModelInstance workflow = Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
                 .startEvent("a")
                 .endEvent("b")
                 .done();
 
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(workflow)
+            .model(workflow)
             .execute();
     }
 

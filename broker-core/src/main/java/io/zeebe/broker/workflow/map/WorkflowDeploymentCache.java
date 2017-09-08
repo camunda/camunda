@@ -23,12 +23,14 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import java.nio.ByteOrder;
 
 import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
-import io.zeebe.broker.workflow.graph.transformer.BpmnTransformer;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.model.bpmn.BpmnModelApi;
+import io.zeebe.model.bpmn.impl.BpmnValidator;
+import io.zeebe.model.bpmn.instance.Workflow;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -47,21 +49,22 @@ public class WorkflowDeploymentCache implements AutoCloseable
 {
     private static final int LATEST_VERSION = -1;
 
-    private static final int SIZE_OF_PROCESS_ID = BpmnTransformer.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int SIZE_OF_PROCESS_ID = BpmnValidator.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_COMPOSITE_KEY]);
     private int bufferLength;
 
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
-    private final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
     private final Bytes2LongZbMap idVersionToKeyMap;
 
     private final ZbMapSnapshotSupport<Bytes2LongZbMap> snapshotSupport;
 
-    private final LongLruCache<ExecutableWorkflow> cache;
+    private final LongLruCache<DeployedWorkflow> cache;
     private final LogStreamReader logStreamReader;
+
+    private final BpmnModelApi bpmn = new BpmnModelApi();
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
@@ -109,9 +112,9 @@ public class WorkflowDeploymentCache implements AutoCloseable
         return idVersionToKeyMap.get(buffer, 0, bufferLength, -1L);
     }
 
-    public ExecutableWorkflow getWorkflow(long workflowKey)
+    public DeployedWorkflow getWorkflow(long workflowKey)
     {
-        ExecutableWorkflow workflow = null;
+        DeployedWorkflow workflow = null;
 
         if (workflowKey >= 0)
         {
@@ -121,9 +124,9 @@ public class WorkflowDeploymentCache implements AutoCloseable
         return workflow;
     }
 
-    private ExecutableWorkflow lookupWorkflow(long position)
+    private DeployedWorkflow lookupWorkflow(long position)
     {
-        ExecutableWorkflow workflow = null;
+        DeployedWorkflow deployedWorkflow = null;
 
         final boolean found = logStreamReader.seek(position);
         if (found && logStreamReader.hasNext())
@@ -134,11 +137,12 @@ public class WorkflowDeploymentCache implements AutoCloseable
             event.readValue(workflowEvent);
 
             // currently, it can only be one
-            workflow = bpmnTransformer.transform(workflowEvent.getBpmnXml()).get(0);
+            final WorkflowDefinition workflowDefinition = bpmn.readFromBuffer(workflowEvent.getBpmnXml());
+            final Workflow workflow = workflowDefinition.getWorkflows().iterator().next();
 
-            workflow.setVersion(workflowEvent.getVersion());
+            deployedWorkflow = new DeployedWorkflow(workflow, workflowEvent.getVersion());
         }
-        return workflow;
+        return deployedWorkflow;
     }
 
     @Override

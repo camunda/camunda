@@ -16,7 +16,6 @@
 package io.zeebe.broker.it.startup;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.*;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -35,12 +34,11 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.*;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
@@ -48,41 +46,31 @@ import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class BrokerRestartTest
 {
 
-    private static final ZeebeModelInstance WORKFLOW = wrap(Bpmn.createExecutableProcess("process")
-                                                                .startEvent("start")
-                                                                .serviceTask("task")
-                                                                .endEvent("end")
-                                                                .done())
-            .taskDefinition("task", "foo", 3);
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.taskType("foo"))
+            .endEvent("end")
+            .done();
 
-    private static final ZeebeModelInstance WORKFLOW_TWO_TASKS = wrap(Bpmn.createExecutableProcess("process")
-                                                                          .startEvent("start")
-                                                                          .serviceTask("task1")
-                                                                          .serviceTask("task2")
-                                                                          .endEvent("end")
-                                                                          .done())
-           .taskDefinition("task1", "foo", 3)
-           .taskDefinition("task2", "bar", 3);
+    private static final WorkflowDefinition WORKFLOW_TWO_TASKS = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task1", t -> t.taskType("foo"))
+            .serviceTask("task2", t -> t.taskType("bar"))
+            .endEvent("end")
+            .done();
 
-    private static final ZeebeModelInstance WORKFLOW_INCIDENT = wrap(Bpmn.createExecutableProcess("process")
-                                                                         .startEvent()
-                                                                         .serviceTask("task")
-                                                                         .done())
-            .taskDefinition("task", "test", 3)
-            .ioMapping("task")
-                .input("$.foo", "$.foo")
-                .done();
+    private static final WorkflowDefinition WORKFLOW_INCIDENT = Bpmn.createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.taskType("test")
+                         .input("$.foo", "$.foo"))
+            .endEvent("end")
+            .done();
 
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -123,7 +111,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         // when
@@ -142,7 +130,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -171,7 +159,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -204,7 +192,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW_TWO_TASKS)
+            .model(WORKFLOW_TWO_TASKS)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -240,14 +228,14 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         // when
         restartBroker();
 
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         // then
@@ -398,7 +386,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW_INCIDENT)
+            .model(WORKFLOW_INCIDENT)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -427,7 +415,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW_INCIDENT)
+            .model(WORKFLOW_INCIDENT)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

@@ -23,12 +23,12 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.collection.MapBuilder;
 import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 public class TestTopicClient
 {
@@ -57,7 +57,7 @@ public class TestTopicClient
         this.partitionId = partitionId;
     }
 
-    public long deploy(final BpmnModelInstance modelInstance)
+    public long deploy(final WorkflowDefinition workflow)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
                 .topicName(topicName)
@@ -65,11 +65,13 @@ public class TestTopicClient
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance).getBytes(UTF_8))
+                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(workflow).getBytes(UTF_8))
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_CREATED");
+        assertThat(response.getEvent().get(PROP_STATE))
+            .withFailMessage("Deployment failed: %s", response.getEvent().get("errorMessage"))
+            .isEqualTo("DEPLOYMENT_CREATED");
 
         return response.key();
     }

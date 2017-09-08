@@ -17,16 +17,9 @@ package io.zeebe.client.workflow.impl;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.DeploymentEvent;
@@ -34,11 +27,15 @@ import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.workflow.cmd.CreateDeploymentCommand;
+import io.zeebe.model.bpmn.BpmnModelApi;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.util.StreamUtil;
 
 public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> implements CreateDeploymentCommand
 {
     protected final DeploymentEventImpl deploymentEvent = new DeploymentEventImpl(DeploymentEventType.CREATE_DEPLOYMENT.name());
+
+    protected final BpmnModelApi bpmn = new BpmnModelApi();
 
     public CreateDeploymentCommandImpl(final RequestManager commandManager, String topic)
     {
@@ -124,14 +121,12 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand bpmnModelInstance(final BpmnModelInstance modelInstance)
+    public CreateDeploymentCommand model(final WorkflowDefinition workflowDefinition)
     {
-        ensureNotNull("model instance", modelInstance);
+        ensureNotNull("workflow definition", workflowDefinition);
 
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Bpmn.writeModelToStream(out, modelInstance);
-
-        return resourceBytes(out.toByteArray());
+        final String bpmnXml = bpmn.convertToString(workflowDefinition);
+        return resourceStringUtf8(bpmnXml);
     }
 
     @Override

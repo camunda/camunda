@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.subscription;
 
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -23,22 +22,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.IncidentEvent;
-import io.zeebe.client.event.IncidentEventHandler;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.*;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.TestUtil;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class IncidentTopicSubscriptionTest
 {
@@ -58,19 +50,15 @@ public class IncidentTopicSubscriptionTest
     {
         this.client = clientRule.getClient();
 
-        final BpmnModelInstance workflow =
-                wrap(Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
                      .startEvent("start")
-                     .serviceTask("task")
+                     .serviceTask("task", t -> t.taskType("test")
+                         .input("$.foo", "$.foo"))
                      .endEvent("end")
-                     .done())
-                .taskDefinition("task", "test", 3)
-                    .ioMapping("task")
-                        .input("$.foo", "$.foo")
-                        .done();
+                     .done();
 
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(workflow)
+            .model(workflow)
             .execute();
     }
 

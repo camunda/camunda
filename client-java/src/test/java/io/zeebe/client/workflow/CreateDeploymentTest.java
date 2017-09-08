@@ -21,33 +21,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import java.util.*;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.util.ClientRule;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest
 {
-    private static final BpmnModelInstance BPMN_MODEL_INSTANCE = Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW_MODEL = Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .done();
 
-    private static final byte[] WORKFLOW_AS_BYTES = Bpmn.convertToString(BPMN_MODEL_INSTANCE).getBytes(UTF_8);
+    private static final byte[] WORKFLOW_AS_BYTES = Bpmn.convertToString(WORKFLOW_MODEL).getBytes(UTF_8);
 
     public ClientRule clientRule = new ClientRule();
     public StubBrokerRule brokerRule = new StubBrokerRule();
@@ -93,7 +87,7 @@ public class CreateDeploymentTest
 
         // when
         final DeploymentEvent deployment = clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .bpmnModelInstance(BPMN_MODEL_INSTANCE)
+            .model(WORKFLOW_MODEL)
             .execute();
 
         // then
@@ -129,19 +123,19 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .bpmnModelInstance(BPMN_MODEL_INSTANCE)
+            .model(WORKFLOW_MODEL)
             .execute();
     }
 
     @Test
-    public void shouldDeployResourceAsBpmnModelInstance()
+    public void shouldDeployResourceAsBpmnModel()
     {
         // given
         stubDeploymentRequest();
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .bpmnModelInstance(BPMN_MODEL_INSTANCE)
+            .model(WORKFLOW_MODEL)
             .execute();
 
         // then
@@ -159,7 +153,7 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceStringUtf8(Bpmn.convertToString(BPMN_MODEL_INSTANCE))
+            .resourceStringUtf8(Bpmn.convertToString(WORKFLOW_MODEL))
             .execute();
 
         // then

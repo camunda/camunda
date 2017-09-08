@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Map;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -50,7 +50,7 @@ public class CreateDeploymentTest
     public void shouldCreateDeployment()
     {
         // given charset
-        final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .endEvent()
             .done();
@@ -62,7 +62,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(modelInstance))
+                    .put("bpmnXml", bpmnXml(definition))
                 .done()
                 .sendAndAwait();
 
@@ -79,7 +79,7 @@ public class CreateDeploymentTest
     public void shouldReturnDeployedWorkflowDefinitions()
     {
         // given
-        final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .endEvent()
             .done();
@@ -91,7 +91,7 @@ public class CreateDeploymentTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("bpmnXml", bpmnXml(modelInstance))
+                .put("bpmnXml", bpmnXml(definition))
             .done()
             .sendAndAwait();
 
@@ -108,7 +108,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(modelInstance))
+                    .put("bpmnXml", bpmnXml(definition))
                 .done()
                 .sendAndAwait();
 
@@ -123,7 +123,7 @@ public class CreateDeploymentTest
     public void shouldWriteWorkflowEvent()
     {
         // given
-        final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .endEvent()
             .done();
@@ -135,7 +135,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(modelInstance))
+                    .put("bpmnXml", bpmnXml(definition))
                 .done()
                 .sendAndAwait();
 
@@ -150,7 +150,7 @@ public class CreateDeploymentTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry("deploymentKey", deploymentKey)
-            .containsEntry(PROP_WORKFLOW_BPMN_XML, bpmnXml(modelInstance));
+            .containsEntry(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition));
     }
 
 
@@ -159,7 +159,7 @@ public class CreateDeploymentTest
     public void shouldRejectDeploymentIfNotValid()
     {
         // given
-        final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process").done();
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process").done();
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -168,7 +168,7 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(modelInstance))
+                    .put("bpmnXml", bpmnXml(definition))
                 .done()
                 .sendAndAwait();
 
@@ -202,9 +202,9 @@ public class CreateDeploymentTest
         assertThat((String) resp.getEvent().get("errorMessage")).contains("Failed to deploy BPMN model");
     }
 
-    private byte[] bpmnXml(final BpmnModelInstance modelInstance)
+    private byte[] bpmnXml(final WorkflowDefinition definition)
     {
-        return Bpmn.convertToString(modelInstance).getBytes(UTF_8);
+        return Bpmn.convertToString(definition).getBytes(UTF_8);
     }
 
 }

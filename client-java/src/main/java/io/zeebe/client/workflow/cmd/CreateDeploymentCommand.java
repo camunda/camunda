@@ -19,10 +19,9 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public interface CreateDeploymentCommand extends Request<DeploymentEvent>
 {
@@ -58,7 +57,7 @@ public interface CreateDeploymentCommand extends Request<DeploymentEvent>
     CreateDeploymentCommand resourceFile(String filename);
 
     /**
-     * Add the given workflow as model instance to the deployment.
+     * Add the given workflow as model to the deployment.
      */
-    CreateDeploymentCommand bpmnModelInstance(BpmnModelInstance modelInstance);
+    CreateDeploymentCommand model(WorkflowDefinition workflowDefinition);
 }

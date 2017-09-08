@@ -17,43 +17,24 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_STATE;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 
 public class CreateWorkflowInstanceTest
@@ -101,7 +82,7 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessId()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent()
                 .done());
@@ -136,12 +117,12 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessIdAndLatestVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent("foo")
                 .endEvent()
                 .done());
 
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent("bar")
                 .endEvent()
                 .done());
@@ -179,12 +160,12 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessIdAndPreviosuVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent("foo")
                 .endEvent()
                 .done());
 
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent("bar")
                 .endEvent()
                 .done());
@@ -222,12 +203,12 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByWorkflowKeyAndLatestVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
               .startEvent("foo")
               .endEvent()
               .done());
 
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
               .startEvent("bar")
               .endEvent()
               .done());
@@ -265,12 +246,12 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByWorkflowKeyAndPreviousVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent()
                 .done());
 
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                   .startEvent()
                   .endEvent()
                   .done());
@@ -308,7 +289,7 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceWithPayload()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .endEvent()
             .done());
@@ -341,7 +322,7 @@ public class CreateWorkflowInstanceTest
     public void shouldRejectWorkflowInstanceWithInvalidPayload() throws Exception
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                               .startEvent()
                               .endEvent()
                               .done());
@@ -373,12 +354,12 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateMultipleWorkflowInstancesForDifferentBpmnProcessIds()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("foo")
+        testClient.deploy(Bpmn.createExecutableWorkflow("foo")
                 .startEvent()
                 .endEvent()
                 .done());
 
-        testClient.deploy(Bpmn.createExecutableProcess("baaaar")
+        testClient.deploy(Bpmn.createExecutableWorkflow("baaaar")
                 .startEvent()
                 .endEvent()
                 .done());
@@ -405,16 +386,14 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateMultipleWorkflowInstancesForDifferentVersions()
     {
         // given
-        final Map<String, String> headers = new HashMap<>();
-        headers.put("foo", "bar");
-
-        final BpmnModelInstance workflow = wrap(Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
              .startEvent("start")
-             .serviceTask("task")
+             .serviceTask("task", task -> task
+                          .taskType("test")
+                          .taskRetries(3)
+                          .taskHeader("foo", "bar"))
              .endEvent("end")
-             .done())
-                 .taskDefinition("task", "test", 3)
-                 .taskHeaders("task", headers);
+             .done();
 
         testClient.deploy(workflow);
 

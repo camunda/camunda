@@ -17,38 +17,31 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 public class UpdatePayloadTest
 {
 
-    private static final BpmnModelInstance WORKFLOW = wrap(
-            Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
             .startEvent()
-            .serviceTask("task-1")
-            .serviceTask("task-2")
+            .serviceTask("task-1", t -> t
+                         .taskType("task-1")
+                         .taskRetries(5)
+                         .output("$.jsonObject", "$.obj"))
+            .serviceTask("task-2", t -> t
+                         .taskType("task-2")
+                         .taskRetries(5))
             .endEvent()
-            .done())
-                .taskDefinition("task-1", "task-1", 5)
-                .taskDefinition("task-2", "task-2", 5)
-                .ioMapping("task-1")
-                    .output("$.jsonObject", "$.obj")
-                    .done();
+            .done();
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();

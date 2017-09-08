@@ -25,51 +25,29 @@ import static io.zeebe.protocol.clientapi.EventType.WORKFLOW_INSTANCE_EVENT;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceState;
-import io.zeebe.broker.workflow.graph.model.BpmnAspect;
-import io.zeebe.broker.workflow.graph.model.ExecutableEndEvent;
-import io.zeebe.broker.workflow.graph.model.ExecutableFlowElement;
-import io.zeebe.broker.workflow.graph.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.graph.model.ExecutableSequenceFlow;
-import io.zeebe.broker.workflow.graph.model.ExecutableServiceTask;
-import io.zeebe.broker.workflow.graph.model.ExecutableStartEvent;
-import io.zeebe.broker.workflow.graph.model.ExecutableWorkflow;
-import io.zeebe.broker.workflow.graph.model.metadata.TaskMetadata;
-import io.zeebe.broker.workflow.map.ActivityInstanceMap;
-import io.zeebe.broker.workflow.map.PayloadCache;
-import io.zeebe.broker.workflow.map.WorkflowDeploymentCache;
-import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.map.*;
+import io.zeebe.broker.workflow.map.DeployedWorkflow;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.model.bpmn.BpmnAspect;
+import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -279,7 +257,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             case END_EVENT_OCCURRED:
             case ACTIVITY_COMPLETED:
             {
-                final ExecutableFlowNode currentActivity = getCurrentActivity();
+                final FlowNode currentActivity = getCurrentActivity();
                 eventProcessor = aspectHandlers.get(currentActivity.getBpmnAspect());
                 break;
             }
@@ -344,16 +322,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    protected <T extends ExecutableFlowElement> T getCurrentActivity()
+    protected <T extends FlowElement> T getCurrentActivity()
     {
         final long workflowKey = workflowInstanceEvent.getWorkflowKey();
-        final ExecutableWorkflow workflow = workflowDeploymentCache.getWorkflow(workflowKey);
+        final DeployedWorkflow deployedWorkflow = workflowDeploymentCache.getWorkflow(workflowKey);
 
-        if (workflow != null)
+        if (deployedWorkflow != null)
         {
             final DirectBuffer currentActivityId = workflowInstanceEvent.getActivityId();
 
-            return workflow.getChildById(currentActivityId);
+            final Workflow workflow = deployedWorkflow.getWorkflow();
+            return workflow.findFlowElementById(currentActivityId);
         }
         else
         {
@@ -448,15 +427,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             if (workflowKey > 0)
             {
-                final ExecutableWorkflow workflow = workflowDeploymentCache.getWorkflow(workflowKey);
+                final DeployedWorkflow deployedWorkflow = workflowDeploymentCache.getWorkflow(workflowKey);
                 final DirectBuffer payload = workflowInstanceEvent.getPayload();
 
-                if (workflow != null && (isNilPayload(payload) || isValidPayload(payload)))
+                if (deployedWorkflow != null && (isNilPayload(payload) || isValidPayload(payload)))
                 {
                     workflowInstanceEvent
                         .setWorkflowKey(workflowKey)
-                        .setBpmnProcessId(workflow.getId())
-                        .setVersion(workflow.getVersion());
+                        .setBpmnProcessId(deployedWorkflow.getWorkflow().getBpmnProcessId())
+                        .setVersion(deployedWorkflow.getVersion());
 
                     newEventType = WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED;
                 }
@@ -486,12 +465,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         public void processEvent()
         {
             final long workflowKey = workflowInstanceEvent.getWorkflowKey();
-            final ExecutableWorkflow workflow = workflowDeploymentCache.getWorkflow(workflowKey);
+            final DeployedWorkflow deployedWorkflow = workflowDeploymentCache.getWorkflow(workflowKey);
 
-            if (workflow != null)
+            if (deployedWorkflow != null)
             {
-                final ExecutableStartEvent startEvent = workflow.getScopeStartEvent();
-                final DirectBuffer activityId = startEvent.getId();
+                final Workflow workflow = deployedWorkflow.getWorkflow();
+                final StartEvent startEvent = workflow.getInitialStartEvent();
+                final DirectBuffer activityId = startEvent.getIdAsBuffer();
 
                 workflowInstanceEvent
                     .setState(WorkflowInstanceState.START_EVENT_OCCURRED)
@@ -527,14 +507,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ExecutableFlowNode currentActivity = getCurrentActivity();
+            final FlowNode currentActivity = getCurrentActivity();
 
             // the activity has exactly one outgoing sequence flow
-            final ExecutableSequenceFlow sequenceFlow = currentActivity.getOutgoingSequenceFlows()[0];
+            final SequenceFlow sequenceFlow = currentActivity.getOutgoingSequenceFlows().get(0);
 
             workflowInstanceEvent
                 .setState(WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)
-                .setActivityId(sequenceFlow.getId());
+                .setActivityId(sequenceFlow.getIdAsBuffer());
         }
 
         @Override
@@ -602,16 +582,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
-            final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
+            final SequenceFlow sequenceFlow = getCurrentActivity();
+            final FlowNode targetNode = sequenceFlow.getTargetNode();
 
-            workflowInstanceEvent.setActivityId(targetNode.getId());
+            workflowInstanceEvent.setActivityId(targetNode.getIdAsBuffer());
 
-            if (targetNode instanceof ExecutableEndEvent)
+            if (targetNode instanceof EndEvent)
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.END_EVENT_OCCURRED);
             }
-            else if (targetNode instanceof ExecutableServiceTask)
+            else if (targetNode instanceof ServiceTask)
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_READY);
             }
@@ -635,17 +615,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ExecutableFlowElement activty = getCurrentActivity();
+            final FlowElement activty = getCurrentActivity();
 
-            if (activty instanceof ExecutableServiceTask)
+            if (activty instanceof ServiceTask)
             {
-                final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
+                final ServiceTask serviceTask = (ServiceTask) activty;
 
                 workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
                 try
                 {
-                    setWorkflowInstancePayload(serviceTask.getIoMapping().getInputMappings());
+                    setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
                 }
                 catch (Exception e)
                 {
@@ -705,34 +685,34 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ExecutableServiceTask serviceTask = getCurrentActivity();
-            final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
+            final ServiceTask serviceTask = getCurrentActivity();
+            final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
 
             taskEvent.reset();
 
             taskEvent
                 .setState(TaskState.CREATE)
-                .setType(taskMetadata.getTaskType())
-                .setRetries(taskMetadata.getRetries())
+                .setType(taskDefinition.getTypeAsBuffer())
+                .setRetries(taskDefinition.getRetries())
                 .setPayload(workflowInstanceEvent.getPayload());
 
-            setTaskHeaders(serviceTask, taskMetadata);
+            setTaskHeaders(serviceTask);
         }
 
-        private void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
+        private void setTaskHeaders(ServiceTask serviceTask)
         {
-            final TaskHeaders taskHeaders = taskEvent.headers()
+            taskEvent.headers()
                 .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
                 .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
                 .setWorkflowKey(workflowInstanceEvent.getWorkflowKey())
                 .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityId(serviceTask.getId())
+                .setActivityId(serviceTask.getIdAsBuffer())
                 .setActivityInstanceKey(eventKey);
 
-            final DirectBuffer customHeaders = taskMetadata.getHeaders();
-            if (customHeaders.capacity() > 0)
+            final io.zeebe.model.bpmn.instance.TaskHeaders customHeaders = serviceTask.getTaskHeaders();
+            if (!customHeaders.isEmpty())
             {
-                taskEvent.setCustomHeaders(customHeaders);
+                taskEvent.setCustomHeaders(customHeaders.asMsgpackEncoded());
             }
         }
 
@@ -834,11 +814,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ExecutableServiceTask serviceTask = getCurrentActivity();
+            final ServiceTask serviceTask = getCurrentActivity();
 
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETED);
 
-            setWorkflowInstancePayload(serviceTask.getIoMapping().getOutputMappings());
+            setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getOutputMappings());
         }
 
         private void setWorkflowInstancePayload(Mapping[] mappings)

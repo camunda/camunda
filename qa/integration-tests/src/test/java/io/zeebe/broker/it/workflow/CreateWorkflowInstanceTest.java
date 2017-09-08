@@ -20,20 +20,16 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest
 {
@@ -57,16 +53,16 @@ public class CreateWorkflowInstanceTest
         final WorkflowsClient workflowService = clientRule.workflows();
 
         workflowService.deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(
-                Bpmn.createExecutableProcess("anId")
+            .model(
+                Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()
                     .done())
             .execute();
 
         workflowService.deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(
-                Bpmn.createExecutableProcess("anId")
+            .model(
+                Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()
                     .done())

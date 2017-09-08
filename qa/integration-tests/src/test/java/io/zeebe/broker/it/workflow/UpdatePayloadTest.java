@@ -17,42 +17,35 @@ package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.taskType;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.ZeebeModelInstance;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class UpdatePayloadTest
 {
     private static final String PAYLOAD = "{\"foo\": \"bar\"}";
 
-    private static final ZeebeModelInstance WORKFLOW = wrap(Bpmn.createExecutableProcess("process")
-                                                                .startEvent("start")
-                                                                .serviceTask("task-1")
-                                                                .serviceTask("task-2")
-                                                                .endEvent("end")
-                                                                .done())
-                .taskDefinition("task-1", "task-1", 3)
-                .taskDefinition("task-2", "task-2", 3)
-                .ioMapping("task-1")
-                    .output("$.result", "$.result")
-                    .done();
+    private static final WorkflowDefinition WORKFLOW = Bpmn
+            .createExecutableWorkflow("process")
+            .startEvent("start")
+            .serviceTask("task-1", t -> t.taskType("task-1")
+                         .output("$.result", "$.result"))
+            .serviceTask("task-2", t -> t.taskType("task-2"))
+            .endEvent("end")
+            .done();
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
@@ -71,7 +64,7 @@ public class UpdatePayloadTest
     public void init()
     {
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
     }
 

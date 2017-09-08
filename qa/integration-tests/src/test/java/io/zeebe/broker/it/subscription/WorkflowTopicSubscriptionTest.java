@@ -21,23 +21,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.event.*;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.WorkflowEvent;
-import io.zeebe.client.event.WorkflowEventHandler;
-import io.zeebe.test.util.TestUtil;
-
 public class WorkflowTopicSubscriptionTest
 {
-    private static final BpmnModelInstance WORKFLOW = Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
             .startEvent("a")
             .endEvent("b")
             .done();
@@ -56,7 +52,7 @@ public class WorkflowTopicSubscriptionTest
     {
         // given
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(WORKFLOW)
+            .model(WORKFLOW)
             .execute();
 
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
@@ -84,7 +80,7 @@ public class WorkflowTopicSubscriptionTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-                .bpmnModelInstance(WORKFLOW)
+                .model(WORKFLOW)
                 .execute();
 
         final RecordingEventHandler handler = new RecordingEventHandler();

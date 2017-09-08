@@ -17,41 +17,29 @@
  */
 package io.zeebe.broker.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 public class CancelWorkflowInstanceTest
 {
-    private static final BpmnModelInstance WORKFLOW = wrap(
-            Bpmn.createExecutableProcess("process")
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
             .startEvent()
-            .serviceTask("task")
+            .serviceTask("task", t -> t.taskType("test").taskRetries(5))
             .endEvent()
-            .done())
-                .taskDefinition("task", "test", 5);
+            .done();
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -178,7 +166,7 @@ public class CancelWorkflowInstanceTest
     public void shouldRejectCancelCompletedWorkflowInstance()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent()
                 .done());

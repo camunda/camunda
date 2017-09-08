@@ -15,9 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.graph.model;
+package io.zeebe.broker.workflow.map;
 
-public class ExecutableEndEvent extends ExecutableBpmnEvent
+import io.zeebe.model.bpmn.instance.Workflow;
+
+public class DeployedWorkflow
 {
+    private final Workflow workflow;
+
+    private final int version;
+
+    public DeployedWorkflow(Workflow workflow, int version)
+    {
+        super();
+        this.workflow = workflow;
+        this.version = version;
+    }
+
+    public Workflow getWorkflow()
+    {
+        return workflow;
+    }
+
+    public int getVersion()
+    {
+        return version;
+    }
 
 }

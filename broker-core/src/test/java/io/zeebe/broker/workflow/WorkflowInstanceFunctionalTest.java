@@ -18,26 +18,19 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
-import static io.zeebe.broker.workflow.graph.transformer.ZeebeExtensions.wrap;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceFunctionalTest
@@ -63,7 +56,7 @@ public class WorkflowInstanceFunctionalTest
     public void shouldStartWorkflowInstanceAtNoneStartEvent()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent("foo")
                 .endEvent()
                 .done());
@@ -88,9 +81,9 @@ public class WorkflowInstanceFunctionalTest
     public void shouldTakeSequenceFlowFromStartEvent()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .sequenceFlowId("foo")
+                    .sequenceFlow("foo")
                     .endEvent()
                     .done());
 
@@ -112,7 +105,7 @@ public class WorkflowInstanceFunctionalTest
     public void shouldOccureEndEvent()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent("foo")
                 .done());
@@ -135,7 +128,7 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCompleteWorkflowInstance()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent()
                 .done());
@@ -158,7 +151,7 @@ public class WorkflowInstanceFunctionalTest
     public void shouldConsumeTokenIfEventHasNoOutgoingSequenceflow()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .done());
 
@@ -180,14 +173,12 @@ public class WorkflowInstanceFunctionalTest
     public void shouldConsumeTokenIfActivityHasNoOutgoingSequenceflow()
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .serviceTask("foo")
-                    .done())
-                        .taskDefinition("foo", "bar", 5);
+                    .serviceTask("foo", t -> t.taskType("bar"))
+                    .done();
 
-        testClient.deploy(modelInstance);
+        testClient.deploy(definition);
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -209,13 +200,11 @@ public class WorkflowInstanceFunctionalTest
     public void shouldActivateServiceTask()
     {
         // given
-        testClient.deploy(wrap(
-                Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .serviceTask("foo")
+                    .serviceTask("foo", t -> t.taskType("bar"))
                     .endEvent()
-                    .done())
-                        .taskDefinition("foo", "bar", 5));
+                    .done());
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -235,13 +224,11 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCreateTaskWhenServiceTaskIsActivated()
     {
         // given
-        testClient.deploy(wrap(
-                Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .serviceTask("foo")
+                    .serviceTask("foo", t -> t.taskType("bar").taskRetries(5))
                     .endEvent()
-                    .done())
-                        .taskDefinition("foo", "bar", 5));
+                    .done());
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -259,18 +246,13 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCreateTaskWithWorkflowInstanceAndCustomHeaders()
     {
         // given
-        final Map<String, String> taskHeaders = new HashMap<>();
-        taskHeaders.put("a", "b");
-        taskHeaders.put("c", "d");
-
-        testClient.deploy(wrap(
-                Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .serviceTask("foo")
+                    .serviceTask("foo", t -> t.taskType("bar")
+                                 .taskHeader("a", "b")
+                                 .taskHeader("c", "d"))
                     .endEvent()
-                    .done())
-                        .taskDefinition("foo", "bar", 5)
-                        .taskHeaders("foo", taskHeaders));
+                    .done());
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -297,15 +279,13 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCompleteServiceTaskWhenTaskIsCompleted()
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                     .startEvent()
-                    .serviceTask("foo")
+                    .serviceTask("foo", t -> t.taskType("bar"))
                     .endEvent()
-                    .done())
-                        .taskDefinition("foo", "bar", 5);
+                    .done();
 
-        testClient.deploy(modelInstance);
+        testClient.deploy(definition);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
@@ -328,15 +308,13 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCreateAndCompleteWorkflowInstance()
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
                     .startEvent("a")
-                    .serviceTask("b")
+                    .serviceTask("b", t -> t.taskType("foo"))
                     .endEvent("c")
-                    .done())
-                        .taskDefinition("b", "foo", 5);
+                    .done();
 
-        testClient.deploy(modelInstance);
+        testClient.deploy(definition);
 
         testClient.createWorkflowInstance("process");
 

@@ -20,21 +20,18 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.WorkflowDefinition;
-import io.zeebe.client.event.WorkflowEvent;
+import io.zeebe.client.event.*;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class DeployBpmnResourceTest
 {
@@ -57,15 +54,15 @@ public class DeployBpmnResourceTest
         // given
         final WorkflowsClient workflowService = clientRule.workflows();
 
-        final BpmnModelInstance workflow = Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .endEvent()
-                .done();
-
+        final io.zeebe.model.bpmn.instance.WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
+               .startEvent()
+               .endEvent()
+               .done();
         // when
-        final DeploymentEvent result = workflowService.deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(workflow)
-            .execute();
+        final DeploymentEvent result = workflowService
+                .deploy(clientRule.getDefaultTopic())
+                .model(workflow)
+                .execute();
 
         // then
         assertThat(result.getMetadata().getKey()).isGreaterThan(0);
@@ -92,7 +89,7 @@ public class DeployBpmnResourceTest
 
         // then
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage(containsString("Failed to read BPMN model"));
+        exception.expectMessage(containsString("Failed to deploy BPMN model"));
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
@@ -112,7 +109,7 @@ public class DeployBpmnResourceTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(Bpmn.createExecutableProcess("no-start-event").done()) // does not have a start event
+            .model(Bpmn.createExecutableWorkflow("no-start-event").done()) // does not have a start event
             .execute();
     }
 
@@ -122,16 +119,21 @@ public class DeployBpmnResourceTest
         // given
         final WorkflowsClient workflowService = clientRule.workflows();
 
+        final io.zeebe.model.bpmn.instance.WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("not-executable")
+                .startEvent()
+                .endEvent()
+                .done();
+
+        final ProcessImpl workflowImpl = (ProcessImpl) workflowDefinition.getWorkflows().iterator().next();
+        workflowImpl.setExecutable(false);
+
         // then
         exception.expect(ClientCommandRejectedException.class);
         exception.expectMessage(containsString("BPMN model must contain at least one executable process"));
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .bpmnModelInstance(Bpmn.createProcess()
-                    .startEvent()
-                    .endEvent()
-                    .done())
+            .model(workflowDefinition)
             .execute();
     }
 
