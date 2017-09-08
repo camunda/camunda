@@ -28,7 +28,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.model.bpmn.BpmnModelApi;
-import io.zeebe.model.bpmn.impl.BpmnValidator;
+import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.agrona.DirectBuffer;
@@ -49,7 +49,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
 {
     private static final int LATEST_VERSION = -1;
 
-    private static final int SIZE_OF_PROCESS_ID = BpmnValidator.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int SIZE_OF_PROCESS_ID = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_COMPOSITE_KEY]);

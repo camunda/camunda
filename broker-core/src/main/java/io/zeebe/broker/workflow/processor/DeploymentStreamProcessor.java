@@ -34,7 +34,7 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.ValidationResult;
-import io.zeebe.model.bpmn.impl.BpmnValidator;
+import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
@@ -73,7 +73,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     {
         this.responseWriter = responseWriter;
 
-        this.map = new Bytes2LongZbMap(BpmnValidator.ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.map = new Bytes2LongZbMap(ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 

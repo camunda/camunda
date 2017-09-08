@@ -23,7 +23,7 @@ import java.nio.ByteOrder;
 
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.model.bpmn.impl.BpmnValidator;
+import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -36,7 +36,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class ActivityInstanceMap implements AutoCloseable
 {
-    private static final int SIZE_OF_ACTIVITY_ID = BpmnValidator.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int SIZE_OF_ACTIVITY_ID = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
 
     private static final int TASK_KEY_OFFSET = 0;
