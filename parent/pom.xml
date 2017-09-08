@@ -35,6 +35,7 @@
     <version.mockito>1.8.5</version.mockito>
     <version.assertj>3.8.0</version.assertj>
     <version.msgpack>0.8.13</version.msgpack>
+    <version.jackson>2.9.0</version.jackson>
     <version.jmh>1.11.2</version.jmh>
     <version.sbe>1.5.6</version.sbe>
     <version.slf4j>1.7.23</version.slf4j>
@@ -61,6 +62,18 @@
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${version.jackson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${version.jackson}</version>
       </dependency>
 
       <dependency>
