@@ -51,7 +51,7 @@ public class ValidationResultImpl implements ValidationResult
     }
 
     @Override
-    public String toString()
+    public String format()
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -111,6 +111,12 @@ public class ValidationResultImpl implements ValidationResult
             this.message = message;
             this.element = element;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return format();
     }
 
 }

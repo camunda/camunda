@@ -66,7 +66,7 @@ public class BpmnParser
         }
         catch (JAXBException | SAXException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to initialize XML parser", e);
         }
     }
 
@@ -78,7 +78,7 @@ public class BpmnParser
         }
         catch (FileNotFoundException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read BPMN from file", e);
         }
     }
 
@@ -95,7 +95,7 @@ public class BpmnParser
         }
         catch (JAXBException | XMLStreamException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read BPMN model", e);
         }
     }
 
@@ -109,7 +109,7 @@ public class BpmnParser
         }
         catch (JAXBException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to write BPMN XML", e);
         }
 
         return writer.toString();

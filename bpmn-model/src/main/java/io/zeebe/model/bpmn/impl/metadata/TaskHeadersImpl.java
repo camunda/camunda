@@ -65,6 +65,12 @@ public class TaskHeadersImpl extends BaseElement implements TaskHeaders
     }
 
     @Override
+    public boolean isEmpty()
+    {
+        return taskHeaders.isEmpty();
+    }
+
+    @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();

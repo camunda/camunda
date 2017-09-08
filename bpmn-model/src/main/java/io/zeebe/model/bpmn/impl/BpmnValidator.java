@@ -32,6 +32,7 @@ import org.agrona.DirectBuffer;
 
 public class BpmnValidator
 {
+    // TODO move it
     public static final int ID_MAX_LENGTH = 255;
 
     private static final String PROHIBITED_EXPRESSIONS_REGEX = "(\\.\\*)|(\\[.*,.*\\])";
@@ -200,6 +201,11 @@ public class BpmnValidator
             if (PROHIBITED_EXPRESSIONS.matcher(target).find())
             {
                 validationResult.addError(element, String.format("Target mapping: JSON path '%s' contains prohibited expression (for example $.* or $.(foo|bar)).", target));
+            }
+
+            if (mappings.size() > 1 && target.equals(Mapping.JSON_ROOT_PATH))
+            {
+                validationResult.addError(element, "Target mapping: root mapping is not allowed because it would override other mapping.");
             }
         }
     }

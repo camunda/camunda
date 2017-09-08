@@ -15,72 +15,61 @@
  */
 package io.zeebe.model.bpmn;
 
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
 
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
-import io.zeebe.model.bpmn.impl.*;
-import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
-import io.zeebe.model.bpmn.impl.yaml.BpmnYamlParser;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import org.agrona.DirectBuffer;
 
 public class Bpmn
 {
-    private static BpmnParser parser = new BpmnParser();
-    private static BpmnYamlParser yamlParser = new BpmnYamlParser();
-    private static BpmnTransformer transformer = new BpmnTransformer();
-    private static BpmnValidator validator = new BpmnValidator();
+
+    private static final BpmnModelApi INSTANCE = new BpmnModelApi();
 
     public static BpmnBuilder createExecutableWorkflow(String bpmnProcessId)
     {
-        return new BpmnBuilder(transformer, bpmnProcessId);
+        return INSTANCE.createExecutableWorkflow(bpmnProcessId);
     }
 
     public static WorkflowDefinition readFromFile(File file)
     {
-        final DefinitionsImpl definitions = parser.readFromFile(file);
-        final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
-
-        return workflowDefinition;
+        return INSTANCE.readFromFile(file);
     }
 
     public static WorkflowDefinition readFromStream(InputStream stream)
     {
-        final DefinitionsImpl definitions = parser.readFromStream(stream);
-        final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
+        return INSTANCE.readFromStream(stream);
+    }
 
-        return workflowDefinition;
+    public static WorkflowDefinition readFromBuffer(DirectBuffer buffer)
+    {
+        return INSTANCE.readFromBuffer(buffer);
     }
 
     public static WorkflowDefinition readFromString(String workflow)
     {
-        return readFromStream(new ByteArrayInputStream(workflow.getBytes()));
+        return INSTANCE.readFromString(workflow);
     }
 
     public static WorkflowDefinition readFromYamlFile(File file)
     {
-        return yamlParser.readFromFile(file);
+        return INSTANCE.readFromYamlFile(file);
     }
 
     public static WorkflowDefinition readFromYamlStream(InputStream stream)
     {
-        return yamlParser.readFromStream(stream);
+        return INSTANCE.readFromYamlStream(stream);
     }
 
     public static ValidationResult validate(WorkflowDefinition definition)
     {
-        return validator.validate(definition);
+        return INSTANCE.validate(definition);
     }
 
     public static String convertToString(WorkflowDefinition definition)
     {
-        if (definition instanceof DefinitionsImpl)
-        {
-            return parser.convertToString((DefinitionsImpl) definition);
-        }
-        else
-        {
-            throw new RuntimeException("not supported");
-        }
+        return INSTANCE.convertToString(definition);
     }
 
 }

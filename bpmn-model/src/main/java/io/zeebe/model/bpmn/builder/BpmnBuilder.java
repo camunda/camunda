@@ -25,22 +25,31 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public class BpmnBuilder
 {
-    private final AtomicLong nextId = new AtomicLong(1);
-
     private final BpmnTransformer transformer;
 
-    private final ProcessImpl process;
+    private final AtomicLong nextId = new AtomicLong();
 
+    private ProcessImpl process;
     private FlowNodeImpl sourceNode;
     private SequenceFlowImpl sequenceFlow;
 
-    public BpmnBuilder(BpmnTransformer transformer, String bpmnProcessId)
+    public BpmnBuilder(BpmnTransformer transformer)
     {
         this.transformer = transformer;
+    }
+
+    public BpmnBuilder wrap(String bpmnProcessId)
+    {
+        nextId.set(1L);
 
         this.process = new ProcessImpl();
         process.setId(bpmnProcessId);
         process.setExecutable(true);
+
+        sourceNode = null;
+        sequenceFlow = null;
+
+        return this;
     }
 
     private String generateId(String prefix)

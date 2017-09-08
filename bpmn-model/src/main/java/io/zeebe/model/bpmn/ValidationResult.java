@@ -22,4 +22,6 @@ public interface ValidationResult
 
     boolean hasWarnings();
 
+    String format();
+
 }

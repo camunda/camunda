@@ -20,14 +20,21 @@ import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
 import io.zeebe.model.bpmn.builder.BpmnServiceTaskBuilder;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public class BpmnYamlParser
 {
+    private final BpmnBuilder bpmnBuilder;
+
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+
+    public BpmnYamlParser(BpmnBuilder bpmnBuilder)
+    {
+        this.bpmnBuilder = bpmnBuilder;
+    }
 
     public WorkflowDefinition readFromFile(File file)
     {
@@ -37,7 +44,7 @@ public class BpmnYamlParser
         }
         catch (FileNotFoundException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read YAML from file", e);
         }
     }
 
@@ -50,16 +57,16 @@ public class BpmnYamlParser
 
             return workflowDefinition;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read YAML model", e);
         }
     }
 
     private WorkflowDefinition createWorkflow(final YamlDefinitionImpl definition)
     {
         // only simple workflow with start event, service tasks* and end event
-        final BpmnBuilder builder = Bpmn.createExecutableWorkflow(definition.getName())
+        final BpmnBuilder builder = bpmnBuilder.wrap(definition.getName())
                 .startEvent();
 
         for (YamlTask task : definition.getTasks())

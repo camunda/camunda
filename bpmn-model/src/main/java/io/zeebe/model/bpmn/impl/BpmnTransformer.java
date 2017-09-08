@@ -133,17 +133,28 @@ public class BpmnTransformer
         {
             final ServiceTaskImpl serviceTaskImpl = serviceTasks.get(s);
 
-            final TaskHeadersImpl taskHeaders = serviceTaskImpl.getTaskHeaders();
-            if (taskHeaders != null)
+            ExtensionElementsImpl extensionElements = serviceTaskImpl.getExtensionElements();
+            if (extensionElements == null)
             {
-                transformTaskHeaders(taskHeaders);
+                extensionElements = new ExtensionElementsImpl();
+                serviceTaskImpl.setExtensionElements(extensionElements);
             }
 
-            final InputOutputMappingImpl inputOutputMapping = serviceTaskImpl.getInputOutputMapping();
-            if (inputOutputMapping != null)
+            TaskHeadersImpl taskHeaders = extensionElements.getTaskHeaders();
+            if (taskHeaders == null)
             {
-                transformInputOutputMappings(inputOutputMapping);
+                taskHeaders = new TaskHeadersImpl();
+                extensionElements.setTaskHeaders(taskHeaders);
             }
+            transformTaskHeaders(taskHeaders);
+
+            InputOutputMappingImpl inputOutputMapping = serviceTaskImpl.getInputOutputMapping();
+            if (inputOutputMapping == null)
+            {
+                inputOutputMapping = new InputOutputMappingImpl();
+                extensionElements.setInputOutputMapping(inputOutputMapping);
+            }
+            transformInputOutputMappings(inputOutputMapping);
         }
     }
 
@@ -187,18 +198,24 @@ public class BpmnTransformer
 
     private Mapping[] createMappings(final List<MappingImpl> mappings)
     {
-        final Mapping[] map = new Mapping[mappings.size()];
+        final Mapping[] map;
 
         if (mappings.size() == 1 && !isRootMapping(mappings.get(0)))
         {
-            map[0] = createMapping(mappings.get(0));
+            map = new Mapping[] { createMapping(mappings.get(0)) };
         }
         else if (mappings.size() > 1)
         {
+            map = new Mapping[mappings.size()];
+
             for (int i = 0; i < mappings.size(); i++)
             {
                 map[i] = createMapping(mappings.get(i));
             }
+        }
+        else
+        {
+            map = new Mapping[0];
         }
 
         return map;

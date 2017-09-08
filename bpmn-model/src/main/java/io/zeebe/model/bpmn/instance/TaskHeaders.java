@@ -26,4 +26,6 @@ public interface TaskHeaders
 
     Map<String, String> asMap();
 
+    boolean isEmpty();
+
 }

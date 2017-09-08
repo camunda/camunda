@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 
 public class ProcessImpl extends FlowElementImpl implements Workflow
 {
-    private boolean isExecutable = false;
+    private boolean isExecutable = true;
 
     private List<SequenceFlowImpl> sequenceFlows = new ArrayList<>();
     private List<StartEventImpl> startEvents = new ArrayList<>();
