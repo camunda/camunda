@@ -33,14 +33,14 @@ public class SocketAddress implements Comparable<SocketAddress>
 
     public static final int MAX_HOST_LENGTH = 128;
 
+    protected final byte[] byteArray;
     protected final UnsafeBuffer hostBuffer;
-    protected int hostLength;
     protected int port;
 
     public SocketAddress()
     {
-        final byte[] byteArray = new byte[MAX_HOST_LENGTH];
-        this.hostBuffer = new UnsafeBuffer(byteArray);
+        byteArray = new byte[MAX_HOST_LENGTH];
+        this.hostBuffer = new UnsafeBuffer(byteArray, 0, 0);
     }
 
     public SocketAddress(String host, int port)
@@ -58,7 +58,7 @@ public class SocketAddress implements Comparable<SocketAddress>
     public SocketAddress(SocketAddress other)
     {
         this();
-        host(other.hostBuffer, 0, other.hostLength);
+        host(other.hostBuffer, 0, other.hostLength());
         port(other.port);
     }
 
@@ -70,25 +70,22 @@ public class SocketAddress implements Comparable<SocketAddress>
     public SocketAddress host(final DirectBuffer src, int offset, final int length)
     {
         checkHostLength(length);
+        hostLength(length);
         hostBuffer.putBytes(0, src, offset, length);
-        hostBuffer.setMemory(length, hostBuffer.capacity() - length, (byte) 0);
-        hostLength = length;
         return this;
     }
 
     public SocketAddress host(final byte[] src, final int offset, final int length)
     {
         checkHostLength(length);
+        hostLength(length);
         hostBuffer.putBytes(0, src, offset, length);
-        hostBuffer.setMemory(length, hostBuffer.capacity() - length, (byte) 0);
-        hostLength = length;
         return this;
     }
 
     public SocketAddress host(final String host)
     {
         final byte[] hostBytes = getBytes(host);
-        checkHostLength(hostBytes.length);
         return host(hostBytes, 0, hostBytes.length);
     }
 
@@ -109,13 +106,12 @@ public class SocketAddress implements Comparable<SocketAddress>
 
     public int hostLength()
     {
-        return hostLength;
+        return getHostBuffer().capacity();
     }
 
     public SocketAddress hostLength(final int hostLength)
     {
-        checkHostLength(hostLength);
-        this.hostLength = hostLength;
+        hostBuffer.wrap(byteArray, 0, hostLength);
         return this;
     }
 
@@ -144,12 +140,12 @@ public class SocketAddress implements Comparable<SocketAddress>
         return port(port);
     }
 
-    public void reset()
+    public SocketAddress reset()
     {
-        final int capacity = hostBuffer.capacity();
-        hostBuffer.setMemory(0, capacity, (byte) 0);
-        hostLength = 0;
         port = 0;
+        hostLength(0);
+
+        return this;
     }
 
     public void wrap(final SocketAddress endpoint)
@@ -180,49 +176,33 @@ public class SocketAddress implements Comparable<SocketAddress>
         return cmp;
     }
 
-
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((hostBuffer == null) ? 0 : hostBuffer.hashCode());
-        result = prime * result + port;
+        int result = hostBuffer.hashCode();
+        result = 31 * result + port;
         return result;
     }
 
     @Override
-    public boolean equals(Object obj)
+    public boolean equals(Object o)
     {
-        if (this == obj)
+        if (this == o)
         {
             return true;
         }
-        if (obj == null)
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        if (getClass() != obj.getClass())
+
+        final SocketAddress that = (SocketAddress) o;
+
+        if (port != that.port)
         {
             return false;
         }
-        final SocketAddress other = (SocketAddress) obj;
-        if (port != other.port)
-        {
-            return false;
-        }
-        if (hostBuffer == null)
-        {
-            if (other.hostBuffer != null)
-            {
-                return false;
-            }
-        }
-        else if (!hostBuffer.equals(other.hostBuffer))
-        {
-            return false;
-        }
-        return true;
+        return hostBuffer.equals(that.hostBuffer);
     }
 
     @Override
@@ -231,7 +211,7 @@ public class SocketAddress implements Comparable<SocketAddress>
         return host() + ":" + port();
     }
 
-    /**
+        /**
      * Tries to parse a address string to create a new socket address.
      *
      * @param address the address string with format host:port
