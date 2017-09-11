@@ -18,7 +18,6 @@
     <module>util</module>
     <module>test-util</module>
     <module>zb-map</module>
-    <module>compact-graph</module>
   </modules>
 
   <dependencyManagement>
