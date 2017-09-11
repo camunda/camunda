@@ -183,7 +183,7 @@ You did it! You want to see how the workflow instance is executed?
 
 Unfortunately, we have no UI for Zeebe, yet.
 
-But we can use a topic subscription for the monitoring of the workflow instance.
+But we can use a [topic subscription] for the monitoring of the workflow instance.
 When the topic subscription is open then we receive all events which are written while the execution of the workflow instance.
 The given handler is invoked for each received event.
 
@@ -310,7 +310,7 @@ Optionally, you can define parameters of the task by adding a `zeebe:taskHeaders
 
 Save the BPMN diagram and switch back to the main class.
 
-Add the following lines to open a task subscription for the first task's type:
+Add the following lines to open a [task subscription] for the first task's type:
 
 ```java
 package io.zeebe;
@@ -328,7 +328,7 @@ public class Application
             .taskType("reserveOrderItems")
             .lockOwner("stocker")
             .lockTime(Duration.ofMinutes(5))
-            .handler((controller, task) ->
+            .handler((tasksClient, task) ->
             {
                 final Map<String, Object> headers = task.getCustomHeaders();
                 final String reservationTime = (String) headers.get("reservationTime");
@@ -337,7 +337,10 @@ public class Application
 
                 // ...
 
-                controller.completeTaskWithoutPayload();
+                tasksClient
+                    .complete(task)
+                    .withoutPayload()
+                    .execute();
             })
             .open();
 
@@ -452,7 +455,7 @@ public class Application
             .taskType("reserveOrderItems")
             .lockOwner("stocker")
             .lockTime(Duration.ofMinutes(5))
-            .handler((controller, task) ->
+            .handler((tasksClient, task) ->
             {
                 final Map<String, Object> headers = task.getCustomHeaders();
                 final String reservationTime = (String) headers.get("reservationTime");
@@ -463,7 +466,10 @@ public class Application
 
                 // ...
 
-                controller.completeTask("{ \"orderStatus\": \"RESERVED\" }");
+                tasksClient
+                     .complete(task)
+                     .payload("{ \"orderStatus\": \"RESERVED\" }")
+                     .execute();
             })
             .open();
 
@@ -522,3 +528,6 @@ Next steps:
 * learn more about the [concepts behind Zeebe](/basics/README.html)
 * learn more about [BPMN workflows](/bpmn-workflows/README.html)
 * take a deeper look into the [Java client](java-client/README.html)
+
+[topic subscription]: ../basics/topics-and-logs.html
+[task subscription]: ../basics/task-workers.html
