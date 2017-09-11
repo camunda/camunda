@@ -15,9 +15,10 @@
  */
 package io.zeebe.msgpack.spec;
 
-import static org.agrona.BitUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackCodes.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.ensurePositive;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -153,7 +154,7 @@ public class MsgPackReader
         switch (headerByte)
         {
             case BIN8:
-                length = buffer.getByte(offset);
+                length = buffer.getByte(offset) & 0xff;
                 ++offset;
                 break;
 

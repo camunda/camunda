@@ -15,8 +15,8 @@
  */
 package io.zeebe.msgpack.spec;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.msgpack.spec.MsgPackUtil.toByte;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -74,6 +74,11 @@ public class MsgPackReadingTest
                 doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Byte.MAX_VALUE))
             },
             {
+                "bin 8 (> 127)",
+                given((b) -> b.add(0xc4, 0xff)),
+                doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(255))
+            },
+            {
                 "bin 16",
                 given((b) -> b.add(0xc5, 0x7f, 0xff)),
                 doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Short.MAX_VALUE))
@@ -97,7 +102,7 @@ public class MsgPackReadingTest
                  */
                 "float 32",
                 given((b) -> b.add(0xca).add(toByte(123123.12f))),
-                doAssert((r) -> assertThat(r.readFloat()).isEqualTo((double) 123123.12f))
+                doAssert((r) -> assertThat(r.readFloat()).isEqualTo(123123.12f))
             },
             {
                 "float 64",
