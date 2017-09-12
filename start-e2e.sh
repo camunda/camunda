@@ -3,9 +3,9 @@ echo "Starting E2E tests"
 sh ./start-selenium.sh &
 
 if [ ! -f ./settings.xml ]; then
-  mvn -Pproduction,e2e,add-license-key,docs -DskipTests clean package
+  mvn -Pe2e,add-license-key -DskipTests clean package
 else
-  mvn -s settings.xml -Pproduction,e2e,add-license-key,docs -DskipTests clean package
+  mvn -s settings.xml -Pe2e,add-license-key -DskipTests clean package
 fi
 
 RETRIES=6

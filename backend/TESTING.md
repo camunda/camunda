@@ -9,11 +9,8 @@ There are three kinds of tests in the backend:
 
 Run the following command to run the unit tests:
 ```
-mvn clean test -Pproduction
+mvn clean test
 ```
-
-There are certain tests, which need the webapps. Therefore, we need to
-add the production profile.
 
 All the unit tests are contained in the [src/test](./src/test/java/.) folder.
 To write your own unit test, just add the springrunner class and the respective application context like this:
