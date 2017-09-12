@@ -16,7 +16,6 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.bpm.engine.authorization.Resources;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
@@ -464,13 +463,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void addAuthorizations(String username) {
-    for (Resources r : Resources.values()) {
+    for (int i = 0; i <15; i++) {
       HashMap<String, Object> values = new HashMap<>();
       values.put("type", 1);
       values.put("permissions", new String [] {"ALL"});
       values.put("userId", username);
       values.put("groupId", null);
-      values.put("resourceType", r.resourceType());
+      values.put("resourceType", i);
       values.put("resourceId", "*");
 
       Response res = target()
