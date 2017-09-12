@@ -42,7 +42,11 @@ The diamond with the "+" in the middle marks that the workflow forks or joins mu
 
 ## BPMN 2.0
 
-Zeebe uses BPMN 2.0 for representing workflows. BPMN is an industry standard which is widely supported by different vendors and implementations. Using BPMN ensures that workflows can be interchanged between Zeebe and other workflow systems.
+Zeebe uses mainly BPMN 2.0 for representing workflows. BPMN is an industry standard which is widely supported by different vendors and implementations. Using BPMN ensures that workflows can be interchanged between Zeebe and other workflow systems.
+
+## Simple Workflows
+
+As an alternative to BPMN 2.0, Zeebe supports a YAML format for workflows. It offers an easy way to define simple workflows for technical users. Unlike BPMN, it has no visual representation and is not standardized.
 
 ## The Modeler
 

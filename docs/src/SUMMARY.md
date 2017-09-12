@@ -21,6 +21,8 @@
     * [Activities](bpmn-workflows/activities.md)
     * [Gateways](bpmn-workflows/gateways.md)
     * [Data Flow](bpmn-workflows/data-flow.md)
+* [Simple Workflows](simple-workflows/README.md)
+    * [Tasks](simple-workflows/tasks.md)
 * [Java Client](java-client/README.md)
     * [Setup](java-client/setup.md)
     * [Get Started](java-client/get-started.md)
