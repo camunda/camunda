@@ -59,7 +59,7 @@ public class IncidentTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -86,7 +86,7 @@ public class IncidentTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         final WorkflowInstanceEvent workflowInstance = clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -107,7 +107,7 @@ public class IncidentTest
     {
         // given a workflow instance with an open task
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

@@ -137,7 +137,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
             event.readValue(workflowEvent);
 
             // currently, it can only be one
-            final WorkflowDefinition workflowDefinition = bpmn.readFromBuffer(workflowEvent.getBpmnXml());
+            final WorkflowDefinition workflowDefinition = bpmn.readFromXmlBuffer(workflowEvent.getBpmnXml());
             final Workflow workflow = workflowDefinition.getWorkflows().iterator().next();
 
             deployedWorkflow = new DeployedWorkflow(workflow, workflowEvent.getVersion());

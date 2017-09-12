@@ -20,19 +20,21 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
 import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
+import org.assertj.core.util.Files;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,7 +49,7 @@ public class CreateDeploymentTest
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
     @Test
-    public void shouldCreateDeployment()
+    public void shouldCreateDeploymentWithBpmnXml()
     {
         // given charset
         final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
@@ -62,7 +64,8 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(definition))
+                    .put("resource", bpmnXml(definition))
+                    .put("resourceType", ResourceType.BPMN_XML)
                 .done()
                 .sendAndAwait();
 
@@ -91,7 +94,8 @@ public class CreateDeploymentTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("bpmnXml", bpmnXml(definition))
+                .put("resource", bpmnXml(definition))
+                .put("resourceType", ResourceType.BPMN_XML)
             .done()
             .sendAndAwait();
 
@@ -108,7 +112,8 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(definition))
+                    .put("resource", bpmnXml(definition))
+                    .put("resourceType", ResourceType.BPMN_XML)
                 .done()
                 .sendAndAwait();
 
@@ -135,7 +140,8 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(definition))
+                    .put("resource", bpmnXml(definition))
+                    .put("resourceType", ResourceType.BPMN_XML)
                 .done()
                 .sendAndAwait();
 
@@ -150,10 +156,8 @@ public class CreateDeploymentTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
             .containsEntry("deploymentKey", deploymentKey)
-            .containsEntry(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition));
+            .containsEntry("bpmnXml", bpmnXml(definition));
     }
-
-
 
     @Test
     public void shouldRejectDeploymentIfNotValid()
@@ -168,7 +172,8 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", bpmnXml(definition))
+                    .put("resource", bpmnXml(definition))
+                    .put("resourceType", ResourceType.BPMN_XML)
                 .done()
                 .sendAndAwait();
 
@@ -190,7 +195,8 @@ public class CreateDeploymentTest
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", "not a workflow".getBytes(UTF_8))
+                    .put("resource", "not a workflow".getBytes(UTF_8))
+                    .put("resourceType", ResourceType.BPMN_XML)
                 .done()
                 .sendAndAwait();
 
@@ -200,6 +206,36 @@ public class CreateDeploymentTest
         assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("Failed to deploy BPMN model");
+    }
+
+    @Test
+    public void shouldCreateDeploymentWithYamlWorfklow() throws Exception
+    {
+        // given
+        final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
+        final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put("resource", yamlWorkflow.getBytes(UTF_8))
+                    .put("resourceType", ResourceType.YAML_WORKFLOW)
+                .done()
+                .sendAndAwait();
+
+        // then
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+
+        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents());
+        assertThat(workflowEvent.event())
+            .containsEntry(PROP_STATE, "CREATED")
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
+            .containsEntry("deploymentKey", resp.key())
+            .containsEntry("bpmnXml", bpmnXml(Bpmn.readFromYamlFile(yamlFile)));
     }
 
     private byte[] bpmnXml(final WorkflowDefinition definition)

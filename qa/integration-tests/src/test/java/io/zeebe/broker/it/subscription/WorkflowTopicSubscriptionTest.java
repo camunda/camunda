@@ -52,7 +52,7 @@ public class WorkflowTopicSubscriptionTest
     {
         // given
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         final RecordingWorkflowEventHandler handler = new RecordingWorkflowEventHandler();
@@ -80,7 +80,7 @@ public class WorkflowTopicSubscriptionTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-                .model(WORKFLOW)
+                .workflowModel(WORKFLOW)
                 .execute();
 
         final RecordingEventHandler handler = new RecordingEventHandler();

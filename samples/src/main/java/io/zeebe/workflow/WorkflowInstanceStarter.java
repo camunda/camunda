@@ -15,7 +15,6 @@
  */
 package io.zeebe.workflow;
 
-import java.io.InputStream;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -31,7 +30,6 @@ public class WorkflowInstanceStarter
     public static void main(String[] args)
     {
         final String brokerContactPoint = "127.0.0.1:51015";
-        final InputStream bpmnStream = WorkflowInstanceStarter.class.getResourceAsStream("/demoProcess.bpmn");
         final String bpmnProcessId = "demoProcess";
         final String topicName = "default-topic";
         final int partitionId = 0;
@@ -50,7 +48,7 @@ public class WorkflowInstanceStarter
 
         final DeploymentEvent deploymentResult = zeebeClient.workflows()
             .deploy(topicName)
-            .resourceStream(bpmnStream)
+            .resourceFromClasspath("demoProcess.bpmn")
             .execute();
 
         try

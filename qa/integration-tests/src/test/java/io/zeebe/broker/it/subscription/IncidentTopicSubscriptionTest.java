@@ -58,7 +58,7 @@ public class IncidentTopicSubscriptionTest
                      .done();
 
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(workflow)
+            .workflowModel(workflow)
             .execute();
     }
 

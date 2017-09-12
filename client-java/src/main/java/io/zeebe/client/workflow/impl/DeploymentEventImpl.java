@@ -18,19 +18,15 @@ package io.zeebe.client.workflow.impl;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.WorkflowDefinition;
+import io.zeebe.client.event.*;
 import io.zeebe.client.event.impl.EventImpl;
 
 public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
 {
-    private byte[] bpmnXml;
+    private byte[] resource;
+    private ResourceType resourceType;
 
     private List<WorkflowDefinition> deployedWorkflows;
 
@@ -42,16 +38,29 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         super(TopicEventType.DEPLOYMENT, state);
     }
 
-    public byte[] getBpmnXml()
+    @Override
+    public byte[] getResource()
     {
-        return bpmnXml;
+        return resource;
     }
 
-    public void setBpmnXml(byte[] bpmnXml)
+    public void setResource(byte[] resource)
     {
-        this.bpmnXml = bpmnXml;
+        this.resource = resource;
     }
 
+    @Override
+    public ResourceType getResourceType()
+    {
+        return resourceType;
+    }
+
+    public void setResourceType(ResourceType resourceType)
+    {
+        this.resourceType = resourceType;
+    }
+
+    @Override
     @JsonTypeInfo(use = Id.NAME, defaultImpl = WorkflowDefinitionImpl.class)
     public List<WorkflowDefinition> getDeployedWorkflows()
     {
@@ -63,6 +72,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         this.deployedWorkflows = deployedWorkflows;
     }
 
+    @Override
     public String getErrorMessage()
     {
         return errorMessage;
@@ -77,8 +87,8 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("DeploymentEvent [bpmnXml=");
-        builder.append(new String(bpmnXml, StandardCharsets.UTF_8));
+        builder.append("DeploymentEvent [resource=");
+        builder.append(new String(resource, StandardCharsets.UTF_8));
         builder.append(", deployedWorkflows=");
         builder.append(deployedWorkflows);
         builder.append(", errorMessage=");

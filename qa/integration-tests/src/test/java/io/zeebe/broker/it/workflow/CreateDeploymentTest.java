@@ -17,8 +17,11 @@ package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
+
+import java.io.InputStream;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -33,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class DeployBpmnResourceTest
+public class CreateDeploymentTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
@@ -49,7 +52,7 @@ public class DeployBpmnResourceTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldDeployModelInstance()
+    public void shouldDeployWorkflowModel()
     {
         // given
         final WorkflowsClient workflowService = clientRule.workflows();
@@ -61,11 +64,13 @@ public class DeployBpmnResourceTest
         // when
         final DeploymentEvent result = workflowService
                 .deploy(clientRule.getDefaultTopic())
-                .model(workflow)
+                .workflowModel(workflow)
                 .execute();
 
         // then
         assertThat(result.getMetadata().getKey()).isGreaterThan(0);
+        assertThat(result.getResource()).isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
+        assertThat(result.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
@@ -93,7 +98,7 @@ public class DeployBpmnResourceTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-                .resourceStringUtf8("Foooo")
+                .resourceStringUtf8("Foooo", ResourceType.BPMN_XML)
                 .execute();
     }
 
@@ -109,7 +114,7 @@ public class DeployBpmnResourceTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("no-start-event").done()) // does not have a start event
+            .workflowModel(Bpmn.createExecutableWorkflow("no-start-event").done()) // does not have a start event
             .execute();
     }
 
@@ -133,8 +138,42 @@ public class DeployBpmnResourceTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .model(workflowDefinition)
+            .workflowModel(workflowDefinition)
             .execute();
+    }
+
+    @Test
+    public void shouldDeployYamlWorkflow()
+    {
+        // given
+        final WorkflowsClient workflowService = clientRule.workflows();
+
+        // when
+        final DeploymentEvent result = workflowService
+                .deploy(clientRule.getDefaultTopic())
+                .resourceFromClasspath("workflows/simple-workflow.yaml")
+                .execute();
+
+        // then
+        assertThat(result.getMetadata().getKey()).isGreaterThan(0);
+        assertThat(result.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
+        assertThat(result.getDeployedWorkflows()).hasSize(1);
+
+        final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
+        assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
+        assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+
+        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("CREATED")));
+
+        final InputStream yamlStream = getClass().getResourceAsStream("/workflows/simple-workflow.yaml");
+        final io.zeebe.model.bpmn.instance.WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(yamlStream);
+        final String bpmnXml = Bpmn.convertToString(workflowDefinition);
+
+        final WorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("CREATED"));
+        assertThat(workflowEvent.getBpmnProcessId()).isEqualTo("yaml-workflow");
+        assertThat(workflowEvent.getVersion()).isEqualTo(1);
+        assertThat(workflowEvent.getDeploymentKey()).isEqualTo(result.getMetadata().getKey());
+        assertThat(workflowEvent.getBpmnXml()).isEqualTo(bpmnXml);
     }
 
 }

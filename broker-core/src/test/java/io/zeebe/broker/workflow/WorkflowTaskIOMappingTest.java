@@ -86,7 +86,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
+                .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
@@ -115,7 +115,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
+            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
@@ -251,7 +251,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
+            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
 
@@ -459,7 +459,7 @@ public class WorkflowTaskIOMappingTest
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put(PROP_WORKFLOW_BPMN_XML, bpmnXml(definition))
+            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
 

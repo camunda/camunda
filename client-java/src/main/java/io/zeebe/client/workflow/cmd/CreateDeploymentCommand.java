@@ -21,43 +21,49 @@ import java.nio.charset.StandardCharsets;
 
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.ResourceType;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 
 public interface CreateDeploymentCommand extends Request<DeploymentEvent>
 {
     /**
-     * Add the given workflow XML as bytes to the deployment.
+     * Add the given resource to the deployment.
      */
-    CreateDeploymentCommand resourceBytes(byte[] resourceBytes);
+    CreateDeploymentCommand resourceBytes(byte[] resourceBytes, ResourceType resourceType);
 
     /**
-     * Add the given workflow XML as String to the deployment. The charset parameter should match the
-     * XML header's charset if defined.
+     * Add the given resource to the deployment. The charset must match the
+     * encoding of the resource.
      */
-    CreateDeploymentCommand resourceString(String resourceString, Charset charset);
+    CreateDeploymentCommand resourceString(String resourceString, Charset charset, ResourceType resourceType);
 
     /**
-     * Convenience method for invoking {@link #resourceString(String, Charset)} with {@link StandardCharsets#UTF_8}.
+     * Convenience method for invoking
+     * {@link #resourceString(String, Charset, ResourceType)} with
+     * {@link StandardCharsets#UTF_8}.
      */
-    CreateDeploymentCommand resourceStringUtf8(String resourceString);
+    CreateDeploymentCommand resourceStringUtf8(String resourceString, ResourceType resourceType);
 
     /**
-     * Add the given workflow XML as stream to the deployment.
+     * Add the given resource stream to the deployment.
      */
-    CreateDeploymentCommand resourceStream(InputStream resourceStream);
+    CreateDeploymentCommand resourceStream(InputStream resourceStream, ResourceType resourceType);
 
     /**
-     * Add the given workflow XML as classpath resource to the deployment.
+     * Add the given classpath resource to the deployment. The resource type is
+     * detected by the resource name.
      */
     CreateDeploymentCommand resourceFromClasspath(String classpathResource);
 
     /**
-     * Add the given workflow XML as file to the deployment.
+     * Add the given file resource to the deployment. The resource type is
+     * detected by the resource name.
      */
     CreateDeploymentCommand resourceFile(String filename);
 
     /**
-     * Add the given workflow as model to the deployment.
+     * Add the given workflow model to the deployment.
      */
-    CreateDeploymentCommand model(WorkflowDefinition workflowDefinition);
+    CreateDeploymentCommand workflowModel(WorkflowDefinition workflowDefinition);
+
 }

@@ -111,7 +111,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         // when
@@ -130,7 +130,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -159,7 +159,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -192,7 +192,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW_TWO_TASKS)
+            .workflowModel(WORKFLOW_TWO_TASKS)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -228,14 +228,14 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         // when
         restartBroker();
 
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
 
         // then
@@ -386,7 +386,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW_INCIDENT)
+            .workflowModel(WORKFLOW_INCIDENT)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -415,7 +415,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW_INCIDENT)
+            .workflowModel(WORKFLOW_INCIDENT)
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

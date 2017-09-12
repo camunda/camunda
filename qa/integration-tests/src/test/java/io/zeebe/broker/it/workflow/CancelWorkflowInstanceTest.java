@@ -59,7 +59,7 @@ public class CancelWorkflowInstanceTest
     public void init()
     {
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
     }
 

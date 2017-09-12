@@ -15,28 +15,9 @@
  */
 package io.zeebe.client.event;
 
-import java.util.List;
-
-public interface DeploymentEvent extends Event
+public enum ResourceType
 {
+    BPMN_XML,
 
-    /**
-     * @return the resource for deployment
-     */
-    byte[] getResource();
-
-    /**
-     * @return the type of the resource
-     */
-    ResourceType getResourceType();
-
-    /**
-     * @return the workflow definitions that were created as a result of the deployment
-     */
-    List<WorkflowDefinition> getDeployedWorkflows();
-
-    /**
-     * @return a message identifying the error that prevented deployment success
-     */
-    String getErrorMessage();
+    YAML_WORKFLOW
 }

@@ -1,0 +1,10 @@
+name: workflow-mappings
+
+tasks:
+    
+    - id: task1
+      type: foo
+      retries: 3
+      inputs:
+            - source: $.foo
+              target: $.bar

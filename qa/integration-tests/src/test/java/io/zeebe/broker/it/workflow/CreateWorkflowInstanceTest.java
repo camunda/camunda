@@ -53,7 +53,7 @@ public class CreateWorkflowInstanceTest
         final WorkflowsClient workflowService = clientRule.workflows();
 
         workflowService.deploy(clientRule.getDefaultTopic())
-            .model(
+            .workflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()
@@ -61,7 +61,7 @@ public class CreateWorkflowInstanceTest
             .execute();
 
         workflowService.deploy(clientRule.getDefaultTopic())
-            .model(
+            .workflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
                     .endEvent()

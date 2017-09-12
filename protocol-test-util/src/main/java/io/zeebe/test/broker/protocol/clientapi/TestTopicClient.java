@@ -38,7 +38,7 @@ public class TestTopicClient
     // workflow related properties
 
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
-    public static final String PROP_WORKFLOW_BPMN_XML = "bpmnXml";
+    public static final String PROP_WORKFLOW_RESOURCE = "resource";
     public static final String PROP_WORKFLOW_VERSION = "version";
     public static final String PROP_WORKFLOW_PAYLOAD = "payload";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
@@ -65,7 +65,8 @@ public class TestTopicClient
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(workflow).getBytes(UTF_8))
+                    .put(PROP_WORKFLOW_RESOURCE, Bpmn.convertToString(workflow).getBytes(UTF_8))
+                    .put("resouceType", "BPMN_XML")
                 .done()
                 .sendAndAwait();
 

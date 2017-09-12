@@ -44,7 +44,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
         // create deployment
         workflowsClient
             .deploy(DEFAULT_TOPIC_NAME)
-            .model(workflow)
+            .workflowModel(workflow)
             .execute();
 
         try

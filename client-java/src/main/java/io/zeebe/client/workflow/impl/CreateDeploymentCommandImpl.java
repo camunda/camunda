@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.ResourceType;
 import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.cmd.CommandImpl;
@@ -44,26 +45,27 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand resourceBytes(final byte[] resource)
+    public CreateDeploymentCommand resourceBytes(final byte[] resource, ResourceType resourceType)
     {
-        this.deploymentEvent.setBpmnXml(resource);
+        this.deploymentEvent.setResource(resource);
+        this.deploymentEvent.setResourceType(resourceType);
         return this;
     }
 
     @Override
-    public CreateDeploymentCommand resourceString(final String resource, Charset charset)
+    public CreateDeploymentCommand resourceString(final String resource, Charset charset, ResourceType resourceType)
     {
-        return resourceBytes(resource.getBytes(charset));
+        return resourceBytes(resource.getBytes(charset), resourceType);
     }
 
     @Override
-    public CreateDeploymentCommand resourceStringUtf8(String resourceString)
+    public CreateDeploymentCommand resourceStringUtf8(String resourceString, ResourceType resourceType)
     {
-        return resourceString(resourceString, StandardCharsets.UTF_8);
+        return resourceString(resourceString, StandardCharsets.UTF_8, resourceType);
     }
 
     @Override
-    public CreateDeploymentCommand resourceStream(final InputStream resourceStream)
+    public CreateDeploymentCommand resourceStream(final InputStream resourceStream, ResourceType resourceType)
     {
         ensureNotNull("resource stream", resourceStream);
 
@@ -71,7 +73,7 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
         {
             final byte[] bytes = StreamUtil.read(resourceStream);
 
-            return resourceBytes(bytes);
+            return resourceBytes(bytes, resourceType);
         }
         catch (final IOException e)
         {
@@ -89,7 +91,7 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
         {
             if (resourceStream != null)
             {
-                return resourceStream(resourceStream);
+                return resourceStream(resourceStream, getResourceType(resourceName));
             }
             else
             {
@@ -111,7 +113,7 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
 
         try (InputStream resourceStream = new FileInputStream(filename))
         {
-            return resourceStream(resourceStream);
+            return resourceStream(resourceStream, getResourceType(filename));
         }
         catch (final IOException e)
         {
@@ -121,12 +123,12 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand model(final WorkflowDefinition workflowDefinition)
+    public CreateDeploymentCommand workflowModel(final WorkflowDefinition workflowDefinition)
     {
-        ensureNotNull("workflow definition", workflowDefinition);
+        ensureNotNull("workflow model", workflowDefinition);
 
         final String bpmnXml = bpmn.convertToString(workflowDefinition);
-        return resourceStringUtf8(bpmnXml);
+        return resourceStringUtf8(bpmnXml, ResourceType.BPMN_XML);
     }
 
     @Override
@@ -145,6 +147,22 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     public String generateError(DeploymentEvent request, DeploymentEvent responseEvent)
     {
         return "Deployment was rejected: " + responseEvent.getErrorMessage();
+    }
+
+    private ResourceType getResourceType(String resourceName)
+    {
+        if (resourceName.endsWith(".yaml"))
+        {
+            return ResourceType.YAML_WORKFLOW;
+        }
+        else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml"))
+        {
+            return ResourceType.BPMN_XML;
+        }
+        else
+        {
+            throw new RuntimeException(String.format("Cannot resolve type of resource '%s'.", resourceName));
+        }
     }
 
 }

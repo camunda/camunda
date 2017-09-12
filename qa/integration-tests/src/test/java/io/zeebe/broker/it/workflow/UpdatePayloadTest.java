@@ -64,7 +64,7 @@ public class UpdatePayloadTest
     public void init()
     {
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .model(WORKFLOW)
+            .workflowModel(WORKFLOW)
             .execute();
     }
 

@@ -18,21 +18,32 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
+import org.assertj.core.util.Files;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
@@ -422,6 +433,36 @@ public class CreateWorkflowInstanceTest
 
         final long createdTasks = testClient.receiveEvents(taskEvents("CREATED")).limit(2).count();
         assertThat(createdTasks).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldCreateInstanceOfYamlWorkflow() throws Exception
+    {
+        // given
+        final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
+        final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
+
+        final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put("resource", yamlWorkflow.getBytes(UTF_8))
+                .put("resourceType", ResourceType.YAML_WORKFLOW)
+                .done()
+                .sendAndAwait();
+
+        assertThat(deploymentResp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
+
+        // then
+        final SubscribedEvent workflowInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_CREATED"));
+        assertThat(workflowInstanceEvent.event())
+            .containsEntry("bpmnProcessId", "yaml-workflow")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey);
     }
 
 }

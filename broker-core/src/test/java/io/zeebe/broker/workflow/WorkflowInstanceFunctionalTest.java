@@ -18,18 +18,24 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
+import org.assertj.core.util.Files;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
@@ -242,6 +248,7 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry(PROP_TASK_RETRIES, 5);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldCreateTaskWithWorkflowInstanceAndCustomHeaders()
     {
@@ -260,7 +267,6 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        @SuppressWarnings("unchecked")
         final Map<String, Object> headers = (Map<String, Object>) event.event().get("headers");
         assertThat(headers)
             .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
@@ -340,6 +346,43 @@ public class WorkflowInstanceFunctionalTest
                 "SEQUENCE_FLOW_TAKEN",
                 "END_EVENT_OCCURRED",
                 "WORKFLOW_INSTANCE_COMPLETED");
+    }
+
+    @Test
+    public void shouldCreateAndCompleteInstanceOfYamlWorkflow() throws Exception
+    {
+        // given
+        final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
+        final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
+
+        final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put("resource", yamlWorkflow.getBytes(UTF_8))
+                .put("resourceType", ResourceType.YAML_WORKFLOW)
+                .done()
+                .sendAndAwait();
+
+        assertThat(deploymentResp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
+
+        // when
+        testClient.completeTaskOfType("foo");
+        testClient.completeTaskOfType("bar");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+
+        assertThat(event.key()).isEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
     }
 
 }

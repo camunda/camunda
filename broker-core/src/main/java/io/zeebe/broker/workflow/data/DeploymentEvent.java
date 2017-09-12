@@ -32,7 +32,9 @@ public class DeploymentEvent extends UnpackedObject
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
     private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_STATE, DeploymentState.class);
-    private final BinaryProperty bpmnXmlProp = new BinaryProperty("bpmnXml");
+
+    private final BinaryProperty resourceProp = new BinaryProperty("resource");
+    private final EnumProperty<ResourceType> resourceTypeProp = new EnumProperty<ResourceType>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
             "deployedWorkflows",
@@ -45,7 +47,8 @@ public class DeploymentEvent extends UnpackedObject
     public DeploymentEvent()
     {
         this.declareProperty(stateProp)
-            .declareProperty(bpmnXmlProp)
+            .declareProperty(resourceProp)
+            .declareProperty(resourceTypeProp)
             .declareProperty(deployedWorkflowsProp)
             .declareProperty(errorMessageProp);
     }
@@ -61,19 +64,30 @@ public class DeploymentEvent extends UnpackedObject
         return this;
     }
 
-    public DirectBuffer getBpmnXml()
+    public DirectBuffer getResource()
     {
-        return bpmnXmlProp.getValue();
+        return resourceProp.getValue();
     }
 
-    public DeploymentEvent setBpmnXml(DirectBuffer bpmnXml)
+    public DeploymentEvent setResource(DirectBuffer resource)
     {
-        return setBpmnXml(bpmnXml, 0, bpmnXml.capacity());
+        return setResource(resource, 0, resource.capacity());
     }
 
-    public DeploymentEvent setBpmnXml(DirectBuffer bpmnXml, int offset, int length)
+    public DeploymentEvent setResource(DirectBuffer resource, int offset, int length)
     {
-        this.bpmnXmlProp.setValue(bpmnXml, offset, length);
+        this.resourceProp.setValue(resource, offset, length);
+        return this;
+    }
+
+    public ResourceType getResourceType()
+    {
+        return resourceTypeProp.getValue();
+    }
+
+    public DeploymentEvent setResourceName(ResourceType resourceType)
+    {
+        this.resourceTypeProp.setValue(resourceType);
         return this;
     }
 

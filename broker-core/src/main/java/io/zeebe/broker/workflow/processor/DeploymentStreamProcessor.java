@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
 import java.io.PrintWriter;
@@ -145,7 +146,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     {
         try
         {
-            final WorkflowDefinition definition = bpmn.readFromBuffer(deploymentEvent.getBpmnXml());
+            final WorkflowDefinition definition = readWorkflowDefinition();
             final ValidationResult validationResult = bpmn.validate(definition);
 
             if (!validationResult.hasErrors())
@@ -172,6 +173,21 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         }
     }
 
+    private WorkflowDefinition readWorkflowDefinition()
+    {
+        final DirectBuffer resource = deploymentEvent.getResource();
+
+        switch (deploymentEvent.getResourceType())
+        {
+            case BPMN_XML:
+                return bpmn.readFromXmlBuffer(resource);
+            case YAML_WORKFLOW:
+                return bpmn.readFromYamlBuffer(resource);
+            default:
+                return bpmn.readFromXmlBuffer(resource);
+        }
+    }
+
     protected void collectDeployedWorkflows(final WorkflowDefinition definition)
     {
         // currently, it can only be one process
@@ -186,7 +202,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
             .setBpmnProcessId(bpmnProcessId)
             .setVersion(version);
 
-        deployedWorkflows.add(new DeployedWorkflow(bpmnProcessId, version));
+        deployedWorkflows.add(new DeployedWorkflow(definition, bpmnProcessId, version));
     }
 
     protected String generateErrorMessage(final Exception e)
@@ -230,19 +246,25 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
             .valueWriter(deploymentEvent)
             .done();
 
-        // write workflow events
+         // write workflow events
         targetEventMetadata.eventType(EventType.WORKFLOW_EVENT);
 
         for (int i = 0; i < deployedWorkflows.size(); i++)
         {
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
 
+            DirectBuffer bpmnXml = deploymentEvent.getResource();
+            if (deploymentEvent.getResourceType() != ResourceType.BPMN_XML)
+            {
+                bpmnXml = wrapString(bpmn.convertToString(deployedWorkflow.getWorkflowDefinition()));
+            }
+
             workflowEvent.reset();
             workflowEvent
                 .setState(WorkflowState.CREATED)
                 .setBpmnProcessId(deployedWorkflow.getBpmnProcessId())
                 .setVersion(deployedWorkflow.getVersion())
-                .setBpmnXml(deploymentEvent.getBpmnXml())
+                .setBpmnXml(bpmnXml)
                 .setDeploymentKey(eventKey);
 
             logStreamBatchWriter.event()
@@ -268,13 +290,20 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
     private static final class DeployedWorkflow
     {
+        private final WorkflowDefinition workflowDefinition;
         private final DirectBuffer bpmnProcessId;
         private final int version;
 
-        DeployedWorkflow(DirectBuffer bpmnProcessId, int version)
+        DeployedWorkflow(WorkflowDefinition workflowDefinition, DirectBuffer bpmnProcessId, int version)
         {
+            this.workflowDefinition = workflowDefinition;
             this.bpmnProcessId = bpmnProcessId;
             this.version = version;
+        }
+
+        public WorkflowDefinition getWorkflowDefinition()
+        {
+            return workflowDefinition;
         }
 
         public DirectBuffer getBpmnProcessId()

@@ -65,11 +65,11 @@ public class ServiceTaskTest
     }
 
     @Test
-    public void shouldStartWorkflowInstanceWithServiceTask()
+    public void shouldCreateWorkflowInstanceWithServiceTask()
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("process")
+            .workflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
@@ -95,7 +95,7 @@ public class ServiceTaskTest
         taskHeaders.put("cust2", "b");
 
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("process")
+            .workflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                                 .taskHeader("cust1", "a")
@@ -144,7 +144,7 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("process")
+            .workflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
@@ -173,7 +173,7 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(
+            .workflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
@@ -209,7 +209,7 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(
+            .workflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
@@ -242,7 +242,7 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("process")
+            .workflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                        .input("$.foo", "$.foo")
@@ -280,7 +280,7 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .model(Bpmn.createExecutableWorkflow("process")
+            .workflowModel(Bpmn.createExecutableWorkflow("process")
                        .startEvent("start")
                        .serviceTask("task", t -> t.taskType("foo")
                        .input("$.foo", "$.foo")
