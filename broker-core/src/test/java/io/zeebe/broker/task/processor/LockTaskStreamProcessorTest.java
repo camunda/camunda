@@ -22,14 +22,25 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -43,12 +54,6 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.time.ClockUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public class LockTaskStreamProcessorTest
 {
@@ -57,8 +62,6 @@ public class LockTaskStreamProcessorTest
 
     private static final byte[] ANOTHER_TASK_TYPE = getBytes("another-task");
     private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(ANOTHER_TASK_TYPE);
-
-    private static final int TERM = 3;
 
     private TaskSubscription subscription;
     private TaskSubscription anotherSubscription;
@@ -81,8 +84,6 @@ public class LockTaskStreamProcessorTest
     public void setup() throws InterruptedException, ExecutionException
     {
         MockitoAnnotations.initMocks(this);
-
-        when(mockLogStream.getTerm()).thenReturn(TERM);
 
         // fix the current time to calculate lock time
         ClockUtil.setCurrentTime(Instant.now());
@@ -134,7 +135,6 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
-        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -159,7 +159,6 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
-        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -185,7 +184,6 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
-        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -212,7 +210,6 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getRequestStreamId()).isEqualTo(subscription.getStreamId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
-        assertThat(metadata.getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test

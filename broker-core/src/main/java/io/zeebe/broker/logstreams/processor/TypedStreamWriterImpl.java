@@ -72,8 +72,14 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     public long writeFollowupEvent(long key, UnpackedObject event)
     {
         writer.reset();
+        writer.raftTermId(stream.getTerm());
         writer.producerId(producerId);
-        batchWriter.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+
+        if (sourceTopicName != null)
+        {
+            writer.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+        }
+
         initMetadata(event);
 
         if (key >= 0)
@@ -97,10 +103,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         final EventType eventType = typeRegistry.get(event.getClass());
 
         metadata.eventType(eventType);
-        // TODO: raft term id should not be part of the event metadata but
-        //  one layer up in LogEntryDescriptor
-        metadata.raftTermId(stream.getTerm());
-
     }
 
     @Override
@@ -152,7 +154,13 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     {
         batchWriter.reset();
         batchWriter.producerId(producerId);
-        batchWriter.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+        batchWriter.raftTermId(stream.getTerm());
+
+        if (sourceTopicName != null)
+        {
+            batchWriter.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+        }
+
         return this;
     }
 

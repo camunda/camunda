@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
@@ -48,7 +50,6 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
-import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -319,8 +320,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Protocol.PROTOCOL_VERSION)
-                .raftTermId(targetStream.getTerm());
+            metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
 
             return writer
                 .key(currentEvent.getKey())
@@ -402,15 +402,13 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
             metadata.eventType(EventType.SUBSCRIPTION_EVENT)
                 .requestStreamId(-1)
-                .requestId(-1)
-                .raftTermId(targetStream.getTerm());
+                .requestId(-1);
 
             return writer
                     .key(currentEvent.getKey())
                     .metadataWriter(metadata)
                     .valueWriter(subscriptionEvent)
                     .tryWrite();
-
         }
     }
 

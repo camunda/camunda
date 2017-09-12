@@ -225,8 +225,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     {
         targetEventMetadata.reset();
         targetEventMetadata.eventType(EventType.INCIDENT_EVENT)
-            .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .raftTermId(targetStream.getTerm());
+            .protocolVersion(Protocol.PROTOCOL_VERSION);
 
         return writer
                 .metadataWriter(targetEventMetadata)
@@ -373,8 +372,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 targetEventMetadata
                     .incidentKey(eventKey)
-                    .protocolVersion(Protocol.PROTOCOL_VERSION)
-                    .raftTermId(targetStream.getTerm());
+                    .protocolVersion(Protocol.PROTOCOL_VERSION);
 
                 position = writer
                         .key(failureEvent.getKey())

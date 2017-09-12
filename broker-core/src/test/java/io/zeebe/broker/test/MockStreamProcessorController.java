@@ -72,7 +72,6 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         {
             m.subscriberKey(0L);
             m.protocolVersion(0);
-            m.raftTermId(0);
             m.requestStreamId(0);
             m.requestId(0);
             m.eventType(defaultEventType);

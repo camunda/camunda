@@ -352,7 +352,6 @@ public class TestStreams
             this.logStream = logStream;
 
             metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
-            metadata.raftTermId(logStream.getTerm());
         }
 
         public FluentLogWriter metadata(Consumer<BrokerEventMetadata> metadata)
@@ -393,6 +392,7 @@ public class TestStreams
                 writer.positionAsKey();
             }
 
+            writer.raftTermId(logStream.getTerm());
             writer.metadataWriter(metadata);
             writer.valueWriter(value);
 

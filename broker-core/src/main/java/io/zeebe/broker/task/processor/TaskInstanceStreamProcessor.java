@@ -190,8 +190,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
             .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .eventType(TASK_EVENT)
-            .raftTermId(targetStream.getTerm());
+            .eventType(TASK_EVENT);
 
         return writer
             .key(eventKey)

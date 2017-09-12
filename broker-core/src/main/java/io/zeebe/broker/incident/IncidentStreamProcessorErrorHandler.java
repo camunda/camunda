@@ -74,8 +74,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     {
         incidentEventMetadata.reset()
             .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .eventType(EventType.INCIDENT_EVENT)
-            .raftTermId(logStream.getTerm());
+            .eventType(EventType.INCIDENT_EVENT);
 
         incidentEvent.reset();
         incidentEvent
@@ -103,6 +102,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         final long position = logStreamWriter
                 .producerId(StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID)
+                .raftTermId(logStream.getTerm())
                 .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
                 .metadataWriter(incidentEventMetadata)
                 .valueWriter(incidentEvent)

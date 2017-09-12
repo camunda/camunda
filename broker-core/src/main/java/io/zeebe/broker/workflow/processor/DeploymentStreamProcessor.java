@@ -230,6 +230,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     public long writeEvent(LogStreamWriter writer)
     {
         logStreamBatchWriter
+            .raftTermId(targetStream.getTerm())
             .producerId(streamProcessorId)
             .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
 
@@ -237,8 +238,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         targetEventMetadata.reset();
         targetEventMetadata
             .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .eventType(DEPLOYMENT_EVENT)
-            .raftTermId(targetStream.getTerm());
+            .eventType(DEPLOYMENT_EVENT);
 
         logStreamBatchWriter.event()
             .key(eventKey)

@@ -145,7 +145,6 @@ public class TaskExpireLockStreamProcessorTest
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
-        assertThat(metadata.getRaftTermId()).isEqualTo(TARGET_LOG_STREAM_TERM);
 
         verify(mockLogStreamWriter).key(2L);
         verify(mockLogStreamWriter).producerId(STREAM_PROCESSOR_ID);

@@ -158,7 +158,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         }
 
         eventMetadata.eventType(eventType);
-        eventMetadata.raftTermId(logStream.getTerm());
 
         logStreamWriter.wrap(logStream);
 
@@ -172,6 +171,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         }
 
         final long eventPosition = logStreamWriter
+                .raftTermId(logStream.getTerm())
                 .metadataWriter(eventMetadata)
                 .value(buffer, eventOffset, eventLength)
                 .tryWrite();

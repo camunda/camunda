@@ -345,8 +345,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .eventType(WORKFLOW_INSTANCE_EVENT)
-                .raftTermId(targetStream.getTerm());
+                .eventType(WORKFLOW_INSTANCE_EVENT);
 
         // don't forget to set the key or use positionAsKey
         return writer
@@ -360,8 +359,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         targetEventMetadata.reset();
         targetEventMetadata
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT)
-                .raftTermId(targetStream.getTerm());
+                .eventType(TASK_EVENT);
 
         // don't forget to set the key or use positionAsKey
         return writer
@@ -900,6 +898,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             logStreamBatchWriter
                 .producerId(streamProcessorId)
+                .raftTermId(targetStream.getTerm())
                 .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
 
             if (taskKey > 0)
@@ -922,7 +921,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             targetEventMetadata.reset();
             targetEventMetadata
                     .protocolVersion(Protocol.PROTOCOL_VERSION)
-                    .raftTermId(targetStream.getTerm())
                     .eventType(WORKFLOW_INSTANCE_EVENT);
 
             logEntryBuilder
@@ -937,7 +935,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             targetEventMetadata.reset();
             targetEventMetadata
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .raftTermId(targetStream.getTerm())
                 .eventType(TASK_EVENT);
 
             taskEvent.reset();
@@ -963,7 +960,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             targetEventMetadata.reset();
             targetEventMetadata
                     .protocolVersion(Protocol.PROTOCOL_VERSION)
-                    .raftTermId(targetStream.getTerm())
                     .eventType(WORKFLOW_INSTANCE_EVENT);
 
             activityInstanceEvent.reset();

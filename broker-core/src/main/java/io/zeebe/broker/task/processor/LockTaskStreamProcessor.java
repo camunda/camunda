@@ -308,7 +308,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
                 .requestStreamId(lockSubscription.getStreamId())
                 .subscriberKey(lockSubscription.getSubscriberKey())
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .raftTermId(targetStream.getTerm())
                 .eventType(TASK_EVENT);
 
             position = writer.key(eventKey)

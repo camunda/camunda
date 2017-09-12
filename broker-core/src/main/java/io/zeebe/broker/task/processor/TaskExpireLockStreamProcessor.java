@@ -246,8 +246,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             targetEventMetadata
                 .reset()
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT)
-                .raftTermId(targetStream.getTerm());
+                .eventType(TASK_EVENT);
 
             final long position = targetLogStreamWriter
                     .producerId(streamProcessorId)

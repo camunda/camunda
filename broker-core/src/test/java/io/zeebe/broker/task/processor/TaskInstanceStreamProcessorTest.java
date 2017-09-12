@@ -52,7 +52,6 @@ import org.mockito.MockitoAnnotations;
 public class TaskInstanceStreamProcessorTest
 {
     public static final DirectBuffer TASK_TYPE = wrapString("foo");
-    private static final int TERM = 3;
 
     private TaskInstanceStreamProcessor streamProcessor;
 
@@ -85,7 +84,6 @@ public class TaskInstanceStreamProcessorTest
 
         when(mockLogStream.getTopicName()).thenReturn(wrapString("test-topic"));
         when(mockLogStream.getPartitionId()).thenReturn(1);
-        when(mockLogStream.getTerm()).thenReturn(TERM);
 
         streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
 
@@ -140,7 +138,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
 
@@ -182,7 +179,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
 
@@ -224,7 +220,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
 
@@ -253,7 +248,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -282,7 +276,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -307,7 +300,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAILED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -333,7 +325,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -363,7 +354,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.RETRIES_UPDATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -413,7 +403,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -435,7 +424,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -461,7 +449,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
 
     @Test
@@ -517,7 +504,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -545,7 +531,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -574,7 +559,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -594,7 +578,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -619,7 +602,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -635,7 +617,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -664,7 +645,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -684,7 +664,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -713,7 +692,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -738,7 +716,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -753,7 +730,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, never()).tryWriteResponse(anyInt(), anyLong());
     }
@@ -780,7 +756,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -800,7 +775,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -828,7 +802,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -856,7 +829,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -872,7 +844,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -900,7 +871,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -924,7 +894,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -955,7 +924,6 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
     }
@@ -983,6 +951,5 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCEL_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-        assertThat(mockController.getLastWrittenEventMetadata().getRaftTermId()).isEqualTo(TERM);
     }
 }
