@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -19,9 +21,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class ExecutedFlowNodeFilter implements QueryFilter {
-
-  public static final String EQUAL_OPERATOR = "=";
-  public static final String UNEQUAL_OPERATOR = "!=";
 
   private Logger logger = LoggerFactory.getLogger(ExecutedFlowNodeFilter.class);
 
@@ -40,7 +39,7 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
 
   private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    if (EQUAL_OPERATOR.equals(flowNodeFilter.getOperator())) {
+    if (IN.equals(flowNodeFilter.getOperator())) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
           nestedQuery(
@@ -50,7 +49,7 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
           )
         );
       }
-    } else if (UNEQUAL_OPERATOR.equals(flowNodeFilter.getOperator())) {
+    } else if (NOT_IN.equals(flowNodeFilter.getOperator())) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
           nestedQuery(
@@ -62,7 +61,7 @@ public class ExecutedFlowNodeFilter implements QueryFilter {
       }
     } else {
       logger.error("Could not filter for flow nodes. " +
-        "Operator [{}] is not allowed! Use either [=] or [!=]", flowNodeFilter.getOperator());
+        "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;
   }

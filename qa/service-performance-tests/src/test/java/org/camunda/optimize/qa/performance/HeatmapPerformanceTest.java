@@ -12,6 +12,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.steps.GetDurationGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
+import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
@@ -85,7 +87,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setName("var");
     variableFilterDto.setType("string");
-    variableFilterDto.setOperator("=");
+    variableFilterDto.setOperator(IN);
     variableFilterDto.setValues(Collections.singletonList("aStringValue"));
     filter.getVariables().add(variableFilterDto);
 
@@ -171,7 +173,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setName("var");
     variableFilterDto.setType("string");
-    variableFilterDto.setOperator("=");
+    variableFilterDto.setOperator(IN);
     variableFilterDto.setValues(Collections.singletonList("aStringValue"));
     filter.getVariables().add(variableFilterDto);
 

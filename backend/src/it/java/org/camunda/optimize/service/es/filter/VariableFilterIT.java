@@ -31,6 +31,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.service.util.VariableHelper.BOOLEAN_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.DATE_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
@@ -77,7 +84,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "value");
+    VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -98,7 +105,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "stringVar", STRING_TYPE, "aStringValue");
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "stringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -119,7 +126,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
+    VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -142,7 +149,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "anotherStringVar", STRING_TYPE, "aStringValue");
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "anotherStringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -164,7 +171,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
+    VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "aStringValue");
     filter.getValues().add("anotherValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
@@ -185,7 +192,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "value");
+    VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -206,7 +213,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "var", STRING_TYPE, "1");
+    VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "1");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -229,7 +236,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "var", STRING_TYPE, "value");
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -252,7 +259,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "var", STRING_TYPE, "1");
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "var", STRING_TYPE, "1");
     filter.getValues().add("2");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
@@ -276,7 +283,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "var", BOOLEAN_TYPE, "false");
+    VariableFilterDto filter = createVariableFilter(EQUALS, "var", BOOLEAN_TYPE, "false");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -299,7 +306,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "var", BOOLEAN_TYPE, "true");
+    VariableFilterDto filter = createVariableFilter(EQUALS, "var", BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -322,7 +329,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "var", BOOLEAN_TYPE, "true");
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "var", BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -347,7 +354,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("<", "var", variableType, "5");
+      VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", variableType, "5");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -374,7 +381,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("=", "var", variableType, "1");
+      VariableFilterDto filter = createVariableFilter(IN, "var", variableType, "1");
       filter.getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
@@ -402,7 +409,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("!=", "var", variableType, "1");
+      VariableFilterDto filter = createVariableFilter(NOT_IN, "var", variableType, "1");
       filter.getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
@@ -431,7 +438,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("<=", "var", variableType, "2");
+      VariableFilterDto filter = createVariableFilter(LESS_THAN_EQUALS, "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -458,7 +465,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter(">", "var", variableType, "1");
+      VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", variableType, "1");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -485,7 +492,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter(">=", "var", variableType, "2");
+      VariableFilterDto filter = createVariableFilter(GREATER_THAN_EQUALS, "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -512,7 +519,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("=", "var", variableType, "2");
+      VariableFilterDto filter = createVariableFilter(IN, "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -539,7 +546,7 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("!=", "var", variableType, "2");
+      VariableFilterDto filter = createVariableFilter(NOT_IN, "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -566,8 +573,8 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter(">", "var", variableType, "1");
-      VariableFilterDto filter2 = createVariableFilter("<", "var", variableType, "10");
+      VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", variableType, "1");
+      VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", variableType, "10");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -594,8 +601,8 @@ public class VariableFilterIT {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
       // when
-      VariableFilterDto filter = createVariableFilter("<", "var", variableType, "2");
-      VariableFilterDto filter2 = createVariableFilter(">", "var", variableType, "2");
+      VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", variableType, "2");
+      VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", variableType, "2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -620,7 +627,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<", "var", DATE_TYPE, nowDateAsString());
+    VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", DATE_TYPE, nowDateAsString());
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -645,7 +652,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<=", "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter = createVariableFilter(LESS_THAN_EQUALS, "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -670,7 +677,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, nowMinusTwoSecondsAsString);
+    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, nowMinusTwoSecondsAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -694,7 +701,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">=", "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter = createVariableFilter(GREATER_THAN_EQUALS, "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -719,7 +726,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter = createVariableFilter(IN, "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -745,7 +752,7 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter = createVariableFilter(NOT_IN, "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -770,8 +777,8 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">", "var", DATE_TYPE, sdf.format(nowMinus2Seconds));
-    VariableFilterDto filter2 = createVariableFilter("<", "var", DATE_TYPE, sdf.format(nowPlus10Seconds));
+    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, sdf.format(nowMinus2Seconds));
+    VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, sdf.format(nowPlus10Seconds));
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -796,8 +803,8 @@ public class VariableFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<", "var", DATE_TYPE, nowAsString);
-    VariableFilterDto filter2 = createVariableFilter(">", "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", DATE_TYPE, nowAsString);
+    VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, nowAsString);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 

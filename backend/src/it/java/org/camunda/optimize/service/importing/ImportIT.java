@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
@@ -316,7 +317,7 @@ public class ImportIT  {
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setName("stringVar");
     variableFilterDto.setType("String");
-    variableFilterDto.setOperator("!=");
+    variableFilterDto.setOperator(NOT_IN);
     variableFilterDto.setValues(Collections.singletonList("aStringValue"));
 
     FilterMapDto filterMapDto = new FilterMapDto();

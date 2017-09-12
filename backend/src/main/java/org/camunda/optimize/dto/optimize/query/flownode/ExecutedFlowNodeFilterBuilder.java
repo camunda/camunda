@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.ExecutedFlowNodeFilter.EQUAL_OPERATOR;
-import static org.camunda.optimize.service.es.filter.ExecutedFlowNodeFilter.UNEQUAL_OPERATOR;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 
 public class ExecutedFlowNodeFilterBuilder {
 
-  private String operator = EQUAL_OPERATOR;
+  private String operator = IN;
   private List<String> values = new ArrayList<>();
   private List<ExecutedFlowNodeFilterDto> executedFlowNodes = new ArrayList<>();
 
@@ -22,13 +22,13 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder equalOperator() {
-    operator = EQUAL_OPERATOR;
+  public ExecutedFlowNodeFilterBuilder inOperator() {
+    operator = IN;
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder unequalOperator() {
-    operator = UNEQUAL_OPERATOR;
+  public ExecutedFlowNodeFilterBuilder notInOperator() {
+    operator = NOT_IN;
     return this;
   }
 
@@ -52,7 +52,7 @@ public class ExecutedFlowNodeFilterBuilder {
   }
 
   private void restoreDefaultOperator() {
-    operator = EQUAL_OPERATOR;
+    operator = IN;
   }
 
   public List<ExecutedFlowNodeFilterDto> build() {

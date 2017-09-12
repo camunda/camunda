@@ -60,7 +60,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .equalOperator()
+          .inOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -82,7 +82,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .unequalOperator()
+          .notInOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -109,7 +109,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .equalOperator()
+          .inOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -136,7 +136,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .unequalOperator()
+          .notInOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -196,10 +196,10 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .equalOperator()
+          .inOperator()
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
-          .unequalOperator()
+          .notInOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -212,10 +212,10 @@ public class ExecutedFlowNodeFilterIT {
     // when
     executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
-          .unequalOperator()
+          .notInOperator()
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
-          .unequalOperator()
+          .notInOperator()
           .build();
     queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     resultMap = getHeatMapResponseDto(queryDto);
@@ -246,7 +246,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
-          .equalOperator()
+          .inOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -284,7 +284,7 @@ public class ExecutedFlowNodeFilterIT {
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .ids("UserTask-PathA", "FinalUserTask")
-          .unequalOperator()
+          .notInOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
@@ -330,7 +330,7 @@ public class ExecutedFlowNodeFilterIT {
       ExecutedFlowNodeFilterBuilder
         .construct()
             .ids("UserTask-PathA", "UserTask-PathB")
-            .equalOperator()
+            .inOperator()
           .and()
             .id("FinalUserTask")
           .build();
@@ -373,10 +373,10 @@ public class ExecutedFlowNodeFilterIT {
       ExecutedFlowNodeFilterBuilder
         .construct()
             .ids("UserTask-PathA", "FinalUserTask")
-            .unequalOperator()
+            .notInOperator()
           .and()
             .id("UserTask-PathB")
-            .equalOperator()
+            .inOperator()
           .build();
     HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
     HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);

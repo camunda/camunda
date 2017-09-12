@@ -16,6 +16,11 @@ import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+
 /**
  * Helper class that defines mapping rules between FE Dto and ES filters used
  * on event type
@@ -52,13 +57,13 @@ public class DateFilter implements QueryFilter {
 
   private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateFilterDto dto) {
 
-    if (dto.LESS.equalsIgnoreCase(dto.getOperator())) {
+    if (LESS_THAN.equalsIgnoreCase(dto.getOperator())) {
       queryDate.lt(formatter.format(dto.getValue()));
-    } else if (dto.LESS_OR_EQUAL.equalsIgnoreCase(dto.getOperator())) {
+    } else if (LESS_THAN_EQUALS.equalsIgnoreCase(dto.getOperator())) {
       queryDate.lte(formatter.format(dto.getValue()));
-    } else if (dto.GRATER.equalsIgnoreCase(dto.getOperator())) {
+    } else if (GREATER_THAN.equalsIgnoreCase(dto.getOperator())) {
       queryDate.gt(formatter.format(dto.getValue()));
-    } else if (dto.GRATER_OR_EQUAL.equalsIgnoreCase(dto.getOperator())) {
+    } else if (GREATER_THAN_EQUALS.equalsIgnoreCase(dto.getOperator())) {
       queryDate.gte(formatter.format(dto.getValue()));
     }
 

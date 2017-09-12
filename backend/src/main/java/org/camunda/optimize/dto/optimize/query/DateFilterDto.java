@@ -10,11 +10,6 @@ public class DateFilterDto {
   public static String START_DATE = "start_date";
   public static String END_DATE = "end_date";
 
-  public static String GRATER_OR_EQUAL = ">=";
-  public static String LESS_OR_EQUAL = "<=";
-  public static String LESS = "<";
-  public static String GRATER = ">";
-
   protected String type;
   protected String operator;
   protected Date value;

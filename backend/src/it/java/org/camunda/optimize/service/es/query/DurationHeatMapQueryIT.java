@@ -28,6 +28,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -270,7 +274,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = ">";
+    String operator = GREATER_THAN;
     String type = "start_date";
 
     //when
@@ -303,7 +307,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = ">=";
+    String operator = GREATER_THAN_EQUALS;
     String type = "start_date";
 
     //when
@@ -336,7 +340,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = ">=";
+    String operator = GREATER_THAN_EQUALS;
     String type = "end_date";
 
     //when
@@ -369,7 +373,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = "<";
+    String operator = LESS_THAN;
     String type = "start_date";
 
     //when
@@ -404,11 +408,11 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = ">";
+    String operator = GREATER_THAN;
     String type = "start_date";
 
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - 1000));
-    operator = "<";
+    operator = LESS_THAN;
     type = "end_date";
     past = historicProcessInstance.getEndTime();
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 2000), dto);
@@ -420,11 +424,11 @@ public class DurationHeatMapQueryIT {
     assertResults(resultMap, 3, 1L);
 
     //given
-    operator = ">";
+    operator = GREATER_THAN;
     type = "start_date";
     past = historicProcessInstance.getStartTime();
     dto = getHeatMapQueryDtoInPast(past, processDefinitionId, operator, type);
-    operator = "<";
+    operator = LESS_THAN;
     type = "end_date";
     past = historicProcessInstance.getEndTime();
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
@@ -446,7 +450,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = "<";
+    String operator = LESS_THAN;
     String type = "end_date";
 
     //when
@@ -479,7 +483,7 @@ public class DurationHeatMapQueryIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String operator = "<=";
+    String operator = LESS_THAN_EQUALS;
     String type = "start_date";
 
     //when

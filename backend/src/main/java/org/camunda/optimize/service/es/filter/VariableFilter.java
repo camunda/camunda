@@ -11,6 +11,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
@@ -65,9 +72,9 @@ public class VariableFilter implements QueryFilter {
   }
 
   private QueryBuilder createStringQueryBuilder(VariableFilterDto dto) {
-    if (dto.getOperator().equals("=")) {
+    if (dto.getOperator().equals(IN)) {
       return createEqualityMultiValueQueryBuilder(dto);
-    } else if (dto.getOperator().equals("!=")) {
+    } else if (dto.getOperator().equals(NOT_IN)) {
       return createInequalityMultiValueQueryBuilder(dto);
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not allowed for type [String]", dto.getOperator());
@@ -130,22 +137,22 @@ public class VariableFilter implements QueryFilter {
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(dto.getType());
     Object value = retrieveValue(dto);
     switch (dto.getOperator()) {
-      case "=":
+      case IN:
         resultQuery = createEqualityMultiValueQueryBuilder(dto);
         break;
-      case "!=":
+      case NOT_IN:
         resultQuery = createInequalityMultiValueQueryBuilder(dto);
         break;
-      case "<":
+      case LESS_THAN:
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).lt(value));
         break;
-      case ">":
+      case GREATER_THAN:
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).gt(value));
         break;
-      case "<=":
+      case LESS_THAN_EQUALS:
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).lte(value));
         break;
-      case ">=":
+      case GREATER_THAN_EQUALS:
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).gte(value));
         break;
       default:
@@ -181,7 +188,7 @@ public class VariableFilter implements QueryFilter {
 
   private QueryBuilder createBoolQueryBuilder(VariableFilterDto dto) {
     QueryBuilder queryBuilder = matchAllQuery();
-    if (dto.getOperator().equals("=")) {
+    if (dto.getOperator().equals(EQUALS)) {
       queryBuilder =
         nestedQuery(
           BOOLEAN_VARIABLES,
