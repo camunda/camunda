@@ -29,6 +29,11 @@ public interface LoggedEvent
     long getPosition();
 
     /**
+     * @return the raft term this event was committed in
+     */
+    int getRaftTerm();
+
+    /**
      * @return the offset of the log stream topic name of the event which caused this event
      */
     int getSourceEventLogStreamTopicNameOffset();

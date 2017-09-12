@@ -79,6 +79,7 @@ public class MockLogStorage
         private long nextAddress = 0;
 
         private long position = 0;
+        private long raftTerm = -1;
 
         private byte[] sourceEventLogStreamTopicName = null;
         private int sourceEventLogStreamPartitionId = 1;
@@ -151,6 +152,12 @@ public class MockLogStorage
         public MockLogEntryBuilder key(long key)
         {
             this.key = key;
+            return this;
+        }
+
+        public MockLogEntryBuilder raftTerm(int raftTerm)
+        {
+            this.raftTerm = raftTerm;
             return this;
         }
 
@@ -266,6 +273,7 @@ public class MockLogStorage
 
             offset = messageOffset(offset);
             setPosition(buffer, offset, position);
+            setRaftTerm(buffer, offset, raftTerm);
             setProducerId(buffer, offset, producerId);
             setSourceEventLogStreamPartitionId(buffer, offset, sourceEventLogStreamPartitionId);
             setSourceEventPosition(buffer, offset, sourceEventPosition);
@@ -327,6 +335,7 @@ public class MockLogStorage
                 if (messageOffset < byteBuffer.limit())
                 {
                     setPosition(buffer, messageOffset, position + i);
+                    setRaftTerm(buffer, messageOffset, raftTerm);
                     setProducerId(buffer, messageOffset, producerId);
                     setSourceEventLogStreamPartitionId(buffer, messageOffset, sourceEventLogStreamPartitionId);
                     setSourceEventPosition(buffer, messageOffset, sourceEventPosition);

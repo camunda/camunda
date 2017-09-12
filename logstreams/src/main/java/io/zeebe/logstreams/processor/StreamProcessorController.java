@@ -338,8 +338,11 @@ public class StreamProcessorController implements Actor
         private Step<Context> writeEventStep = context ->
         {
             final LogStream sourceStream = streamProcessorContext.getSourceStream();
+            final LogStream targetStream = streamProcessorContext.getTargetStream();
+
             logStreamWriter
                 .producerId(streamProcessorContext.getId())
+                .raftTermId(targetStream.getTerm())
                 .sourceEvent(sourceStream.getTopicName(), sourceStream.getPartitionId(), context.getEvent().getPosition());
 
             eventPosition = eventProcessor.writeEvent(logStreamWriter);

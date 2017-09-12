@@ -33,6 +33,12 @@ public class DisabledLogStreamWriter implements LogStreamWriter
     }
 
     @Override
+    public LogStreamWriter raftTermId(int termId)
+    {
+        return this;
+    }
+
+    @Override
     public LogStreamWriter key(long key)
     {
         return this;

@@ -143,6 +143,8 @@ public interface LogStorage
      */
     boolean isOpen();
 
+    boolean isClosed();
+
     /**
      * Returns the address of the first block in the storage or -1 if the storage is currently
      * empty.

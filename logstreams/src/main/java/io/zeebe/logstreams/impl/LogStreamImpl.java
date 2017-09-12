@@ -180,7 +180,7 @@ public final class LogStreamImpl implements LogStream
         {
             return CompletableFuture.allOf(logBlockIndexController.closeAsync(),
                 writeBuffer.closeAsync()
-                           .thenApply((v) -> logStreamController.closeAsync())
+                           .thenCompose((v) -> logStreamController.closeAsync())
                            .thenAccept((v) -> logStorage.close()));
         }
         else
@@ -261,7 +261,7 @@ public final class LogStreamImpl implements LogStream
         if (logStreamController != null)
         {
             return writeBuffer.closeAsync()
-                              .thenApply((v) -> logStreamController.closeAsync())
+                              .thenCompose((v) -> logStreamController.closeAsync())
                               .thenAccept((v) -> writeBuffer = null);
         }
         else

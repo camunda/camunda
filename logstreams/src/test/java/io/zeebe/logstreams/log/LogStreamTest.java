@@ -15,145 +15,80 @@
  */
 package io.zeebe.logstreams.log;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.fs.FsLogStreamBuilder;
-import io.zeebe.logstreams.impl.LogBlockIndexController;
-import io.zeebe.logstreams.impl.LogStreamController;
-import io.zeebe.logstreams.impl.LogStreamImpl;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static io.zeebe.logstreams.log.LogTestUtil.PARTITION_ID;
+import static io.zeebe.logstreams.log.LogTestUtil.TOPIC_NAME_BUFFER;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.lang.String.join;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import org.agrona.DirectBuffer;
-import org.junit.After;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
-import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogTestUtil.*;
-import static io.zeebe.logstreams.log.MockLogStorage.newLogEntry;
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.lang.String.join;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.fs.FsLogStreamBuilder;
+import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.impl.LogStreamImpl;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
 
 public class LogStreamTest
 {
-    private static final int MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 6;
-    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
-
-    private static final long TRUNCATE_START_ADDRESS = 12345L;
-    private static final int TRUNCATE_POSITION = 101;
-    private static final int EVENT_SIZE = alignedLength(HEADER_BLOCK_LENGTH);
-
-    public LogStream logStream;
-
-    @Mock
-    private ActorScheduler mockActorScheduler;
-    @Mock
-    private ActorReference mockControllerRef;
-    @Mock
-    private ActorReference mockWriteBufferRef;
-
-    @Mock
-    private Dispatcher mockWriteBuffer;
-    @Mock
-    private Subscription mockWriteBufferSubscription;
-    @Mock
-    private Actor mockWriteBufferConductor;
-
-    @Mock
-    private LogBlockIndex mockBlockIndex;
-
-    private MockLogStorage mockLogStorage;
-
-    @Mock
-    private SnapshotStorage mockSnapshotStorage;
-    @Mock
-    private SnapshotWriter mockSnapshotWriter;
-    @Mock
-    private SnapshotPolicy mockSnapshotPolicy;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public RuleChain chain = RuleChain.outerRule(tempFolder).around(closeables);
+
+    private ActorScheduler actorScheduler;
+
     @Before
-    public void init() throws Exception
+    public void setUp()
     {
-        MockitoAnnotations.initMocks(this);
+        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
+        closeables.manage(actorScheduler);
+    }
 
-        this.mockLogStorage = new MockLogStorage();
-
+    protected LogStream buildLogStream(Consumer<FsLogStreamBuilder> streamConfig)
+    {
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        builder.actorScheduler(mockActorScheduler)
-            .writeBuffer(mockWriteBuffer)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE);
+        builder.actorScheduler(actorScheduler)
+            .logRootPath(tempFolder.getRoot().getAbsolutePath())
+            .snapshotPolicy(pos -> false);
 
-        when(mockWriteBuffer.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
-        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
-        when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
-        when(mockWriteBuffer.getConductor()).thenReturn(mockWriteBufferConductor);
-        when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
+        streamConfig.accept(builder);
 
-        when(mockActorScheduler.schedule(any(LogStreamController.class))).thenReturn(mockControllerRef);
-        when(mockActorScheduler.schedule(mockWriteBufferConductor)).thenReturn(mockWriteBufferRef);
-
-        logStream = builder.build();
+        return builder.build();
     }
 
-    @After
-    public void tearDown()
+    protected LogStream buildLogStream()
     {
-        closeLogStream(logStream);
-    }
-
-    private void closeLogStream(LogStream logStream)
-    {
-        logStream.closeAsync();
-
-        logStream.getLogBlockIndexController().doWork();
-        logStream.getLogBlockIndexController().doWork();
-
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        if (logStreamController != null && !logStreamController.isClosed())
+        return buildLogStream(c ->
         {
-            try
-            {
-                logStream.getWriteBuffer().getConductor().doWork();
-                logStream.getWriteBuffer().getConductor().doWork();
-            }
-            catch (Exception ex)
-            {
-                ex.printStackTrace();
-            }
-
-            logStreamController.doWork();
-            logStreamController.doWork();
-        }
+        });
     }
 
     @Test
@@ -163,14 +98,8 @@ public class LogStreamTest
         final DirectBuffer topicName = wrapString(join("", Collections.nCopies(MAX_TOPIC_NAME_LENGTH + 1, "f")));
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(topicName, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .writeBuffer(mockWriteBuffer)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE);
+                .logRootPath(tempFolder.getRoot().getAbsolutePath())
+                .actorScheduler(actorScheduler);
 
         // expect exception
         thrown.expect(RuntimeException.class);
@@ -181,80 +110,43 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldInitCorrectly()
-    {
-        // when log stream is created with builder
-
-        // then log stream contains
-        // log storage
-        assertNotNull(logStream.getLogStorage());
-        assertEquals(logStream.getLogStorage(), mockLogStorage.getMock());
-
-        // block index
-        assertNotNull(logStream.getLogBlockIndex());
-        assertEquals(logStream.getLogBlockIndex(), mockBlockIndex);
-
-        // and dispatcher
-        assertNotNull(logStream.getWriteBuffer());
-        assertEquals(logStream.getWriteBuffer(), mockWriteBuffer);
-
-        // both controllers are created
-        assertNotNull(logStream.getLogBlockIndexController());
-        assertNotNull(logStream.getLogStreamController());
-    }
-
-    @Test
     public void shouldInitWithoutLogStreamController()
     {
         // when log stream is created with builder and without flag is set
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.actorScheduler(mockActorScheduler)
-            .logStreamControllerDisabled(true)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE).build();
+        final LogStream stream = buildLogStream(b -> b.logStreamControllerDisabled(true));
 
         // then log stream contains
         // log storage
         assertNotNull(stream.getLogStorage());
-        assertEquals(stream.getLogStorage(), mockLogStorage.getMock());
+        assertThat(stream.getLogStorage()).isInstanceOf(FsLogStorage.class);
 
         // block index
         assertNotNull(stream.getLogBlockIndex());
-        assertEquals(stream.getLogBlockIndex(), mockBlockIndex);
 
         // and no dispatcher
         assertNull(stream.getWriteBuffer());
 
-        // only  log block index controller is created
+        // only log block index controller is created
         assertNotNull(stream.getLogBlockIndexController());
         assertNull(stream.getLogStreamController());
-        closeLogStream(stream);
     }
 
     @Test
     public void shouldOpenBothController()
     {
         // given log stream
-        when(logStream.getLogStorage().isOpen()).thenReturn(true);
+        final LogStream logStream = buildLogStream();
 
         // when log stream is open
-        final CompletableFuture<Void> completableFuture = logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        logStream.open();
+        closeables.manage(logStream);
 
         // then
-        assertTrue(completableFuture.isDone());
         // log block index is opened and runs now
-        assertTrue(logBlockIndexController.isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isRunning());
 
         // log stream controller is opened and runs now
-        assertTrue(logStreamController.isRunning());
+        assertTrue(logStream.getLogStreamController().isRunning());
 
         // and logStorage is opened
         assertTrue(logStream.getLogStorage().isOpen());
@@ -264,389 +156,222 @@ public class LogStreamTest
     public void shouldOpenLogBlockIndexControllerOnly()
     {
         // given log stream with without flag
-        when(logStream.getLogStorage().isOpen()).thenReturn(true);
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.actorScheduler(mockActorScheduler)
-            .logStreamControllerDisabled(true)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE).build();
+        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
 
         // when log stream is open
-        final CompletableFuture<Void> completableFuture = stream.openAsync();
-        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = stream.getLogStreamController();
+        logStream.open();
+        closeables.manage(logStream);
 
         // then
-        assertTrue(completableFuture.isDone());
         // log block index is opened and runs now
-        assertTrue(logBlockIndexController.isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isRunning());
 
         // log stream controller is null
-        assertNull(logStreamController);
+        assertNull(logStream.getLogStreamController());
 
         // and logStorage is opened
-        assertTrue(stream.getLogStorage().isOpen());
-        closeLogStream(stream);
+        assertTrue(logStream.getLogStorage().isOpen());
     }
 
     @Test
     public void shouldStopLogStreamController()
     {
-        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(null);
-        when(mockWriteBuffer.closeAsync()).thenReturn(completableFuture);
+        final LogStream logStream = buildLogStream();
 
         // given open log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        logStream.open();
+        final Dispatcher writeBuffer = logStream.getWriteBuffer();
 
         // when log streaming is stopped
-        logStream.closeLogStreamController();
-        verify(mockWriteBuffer).closeAsync();
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
+        logStream.closeLogStreamController().join();
+
+        assertThat(writeBuffer.isClosed()).isTrue();
 
         // then
         // log stream controller has stop running and reference is not null for reuse
-        assertFalse(logStreamController.isRunning());
         assertNotNull(logStream.getLogStreamController());
+        assertFalse(logStream.getLogStreamController().isRunning());
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
-
-        // agent and controller is removed from agent runner's
-        verify(mockControllerRef).close();
-        verify(mockWriteBufferRef).close();
     }
 
     @Test
     public void shouldStopAndStartLogStreamController()
     {
-        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(null);
-        when(mockWriteBuffer.closeAsync()).thenReturn(completableFuture);
-
-        // set up block index and log storage
-        when(mockBlockIndex.size()).thenReturn(1);
-        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
-
-        mockLogStorage.add(newLogEntry()
-            .address(10)
-            .position(1)
-            .key(2)
-            .sourceEventLogStreamId(3)
-            .sourceEventPosition(4L)
-            .producerId(5)
-            .value(getBytes("event")));
+        // given
+        final LogStream logStream = buildLogStream();
 
         // given open log stream with stopped log stream controller
-        logStream.openAsync();
-        logStream.getLogBlockIndexController().doWork();
+        logStream.open();
         final LogStreamController controller1 = logStream.getLogStreamController();
-        controller1.doWork();
 
-        logStream.closeLogStreamController();
-        controller1.doWork(); // closing
-        controller1.doWork(); // close
+        logStream.closeLogStreamController().join();
 
         // when log streaming is started
-        logStream.openLogStreamController();
+        logStream.openLogStreamController().join();
         final LogStreamController controller2 = logStream.getLogStreamController();
 
         // then
         // log stream controller is reused
         assertEquals(controller2, controller1);
         assertNotNull(controller2);
-        controller2.doWork();
+
         // is running
         assertTrue(controller2.isRunning());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
-
-        // verify usage of agent runner service, only one times with mock because after re-opening new agent is used
-        verify(mockActorScheduler).schedule(mockWriteBufferConductor);
-        verify(mockActorScheduler, times(2)).schedule(controller2);
     }
 
     @Test
     public void shouldStopAndStartLogStreamControllerWithDifferentAgentRunners()
     {
-        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(null);
-        when(mockWriteBuffer.closeAsync()).thenReturn(completableFuture);
+        // given
+        final LogStream logStream = buildLogStream();
 
         // set up block index and log storage
-        when(mockBlockIndex.size()).thenReturn(1);
-        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
-
-        mockLogStorage.add(newLogEntry()
-            .address(10)
-            .position(1)
-            .key(2)
-            .sourceEventLogStreamId(3)
-            .sourceEventPosition(4L)
-            .producerId(5)
-            .value(getBytes("event")));
-
-        final ActorReference secondWriteBufferRef = mock(ActorReference.class);
-        final ActorScheduler secondTaskScheduler = mock(ActorScheduler.class);
-        when(secondTaskScheduler.schedule(any())).thenReturn(secondWriteBufferRef);
+        final ActorScheduler scheduler2 = ActorSchedulerBuilder.createDefaultScheduler("bar");
 
         // given open log stream with stopped log stream controller
-        logStream.openAsync();
-        logStream.getLogBlockIndexController().doWork();
-        final LogStreamController logStreamController1 = logStream.getLogStreamController();
-        logStreamController1.doWork();
-
-        logStream.closeLogStreamController();
-        logStreamController1.doWork(); // closing
-        logStreamController1.doWork(); // close
+        logStream.open();
+        closeables.manage(logStream);
+        logStream.closeLogStreamController().join();
 
         // when log streaming is started
-        logStream.openLogStreamController(secondTaskScheduler);
+        logStream.openLogStreamController(scheduler2).join();
         final LogStreamController logStreamController2 = logStream.getLogStreamController();
 
         // then
-        // log stream controller has been set
+        // log stream controller has been set and is running
         assertNotNull(logStreamController2);
-        logStreamController2.doWork();
-        // is running
         assertTrue(logStreamController2.isRunning());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
-
-        // verify usage of agent runner service
-        verify(mockActorScheduler).schedule(mockWriteBufferConductor);
-        verify(mockActorScheduler).schedule(logStreamController1);
-        verify(secondTaskScheduler).schedule(logStreamController2);
     }
 
     @Test
     public void shouldStartLogStreamController()
     {
-        // set up block index and log storage
-        when(mockBlockIndex.size()).thenReturn(1);
-        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
-
-        mockLogStorage.add(newLogEntry()
-            .address(10)
-            .position(1)
-            .key(2)
-            .sourceEventLogStreamId(3)
-            .sourceEventPosition(4L)
-            .producerId(5)
-            .value(getBytes("event")));
-
         // given log stream with without flag
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.actorScheduler(mockActorScheduler)
-            .logStreamControllerDisabled(true)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE).build();
+        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
 
         // when log streaming is started
-        stream.openLogStreamController(mockActorScheduler);
-        final LogStreamController logStreamController = stream.getLogStreamController();
+        logStream.openLogStreamController(actorScheduler);
+        final LogStreamController logStreamController = logStream.getLogStreamController();
 
         // then
-        // log stream controller has been set
+        // log stream controller has been set and is running
         assertNotNull(logStreamController);
-        logStreamController.doWork();
-        // is running
         assertTrue(logStreamController.isRunning());
 
         // dispatcher is initialized
-        final Dispatcher writeBuffer = stream.getWriteBuffer();
+        final Dispatcher writeBuffer = logStream.getWriteBuffer();
         assertNotNull(writeBuffer);
-
-        // verify usage of agent runner service
-        verify(mockActorScheduler).schedule(writeBuffer.getConductor());
-        verify(mockActorScheduler).schedule(logStreamController);
-        closeLogStream(stream);
     }
 
     @Test
-    public void shouldCloseBothController()
+    public void shouldCloseBothControllers()
     {
         // given open log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStream logStream = buildLogStream();
+
+        logStream.open();
 
         // when log stream is closed
-        final CompletableFuture<Void> completableFuture = logStream.closeAsync();
-        verify(mockWriteBuffer).closeAsync();
+        logStream.close();
 
-        logBlockIndexController.doWork(); //closing
-        logBlockIndexController.doWork(); //close
-
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
-
-        // then future is complete
-        assertTrue(completableFuture.isDone());
-
-        // controllers are not running
-        assertFalse(logBlockIndexController.isRunning());
-        assertFalse(logStreamController.isRunning());
+        // then controllers are not running
+        assertFalse(logStream.getLogBlockIndexController().isRunning());
+        assertFalse(logStream.getLogStreamController().isRunning());
 
         // and log storage was closed
-        verify(mockLogStorage.getMock()).close();
+        assertThat(logStream.getLogStorage().isClosed()).isTrue();
     }
 
     @Test
     public void shouldCloseLogStreamControllerAndAfterwardsStream()
     {
         // given open log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStream logStream = buildLogStream();
+        logStream.open();
 
         // when log stream controller is closed
-        final CompletableFuture<Void> completableFuture = logStream.closeLogStreamController();
-        verify(mockWriteBuffer).closeAsync();
+        logStream.closeLogStreamController().join();
 
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
-
-        // then future is complete
-        assertThat(completableFuture.isDone()).isTrue();
+        // then the log stream is closed
         assertThat(logStream.getWriteBuffer()).isNull();
-        assertThat(logStreamController.isRunning()).isFalse();
+        assertThat(logStream.getLogStreamController().isRunning()).isFalse();
 
         // when log stream is closed
-        final CompletableFuture<Void> streamCloseFuture = logStream.closeAsync();
+        logStream.closeAsync().join();
 
-        logBlockIndexController.doWork(); //closing
-        logBlockIndexController.doWork(); //close
-
-        assertThat(streamCloseFuture.isDone()).isTrue();
+        // then
+        assertThat(logStream.getLogBlockIndexController().isClosed()).isTrue();
     }
 
     @Test
     public void shouldCloseLogBlockIndexController()
     {
         // given open log stream without log stream controller
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.actorScheduler(mockActorScheduler)
-            .logStreamControllerDisabled(true)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE).build();
-        stream.openAsync();
-
-        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
+        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        logStream.open();
 
         // when log stream is closed
-        final CompletableFuture<Void> completableFuture = stream.closeAsync();
-        logBlockIndexController.doWork(); //closing
-        logBlockIndexController.doWork(); //close
+        logStream.closeAsync().join();
 
-        // then future is complete
-        assertTrue(completableFuture.isDone());
-
+        // then
         // controllers are not running
-        assertFalse(logBlockIndexController.isRunning());
+        assertFalse(logStream.getLogBlockIndexController().isRunning());
 
         // and log storage was closed
-        verify(mockLogStorage.getMock()).close();
-        closeLogStream(stream);
+        assertThat(logStream.getLogStorage().isClosed()).isTrue();
     }
 
     @Test
     public void shouldOpenBothClosedController()
     {
         // given open->close log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStream logStream = buildLogStream();
+        closeables.manage(logStream);
 
-        logStream.closeAsync();
-        verify(mockWriteBuffer).closeAsync();
-        logBlockIndexController.doWork(); //closing
-        logBlockIndexController.doWork(); //close
-
-        logStreamController.doWork(); // closing
-        logStreamController.doWork(); // close
+        logStream.open();
+        logStream.close();
 
         // when open log stream again
-        final CompletableFuture<Void> completableFuture = logStream.openAsync();
-        logBlockIndexController.doWork(); //opening
-        logStreamController.doWork(); // opening
+        logStream.open();
 
         // then controllers run again
-        assertTrue(completableFuture.isDone());
-        assertTrue(logBlockIndexController.isRunning());
-        assertTrue(logStreamController.isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isRunning());
+        assertTrue(logStream.getLogStreamController().isRunning());
     }
 
     @Test
     public void shouldOpenClosedLogBlockIndexController()
     {
         // given open->close log stream without log stream controller
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        final LogStream stream = builder.actorScheduler(mockActorScheduler)
-            .logStreamControllerDisabled(true)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE).build();
-        stream.openAsync();
-        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
+        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        logStream.open();
+        closeables.manage(logStream);
 
-        stream.closeAsync();
-        logBlockIndexController.doWork(); //closing
-        logBlockIndexController.doWork(); //close
+        logStream.close();
 
-        // when open log stream again
-        final CompletableFuture<Void> completableFuture = stream.openAsync();
-        logBlockIndexController.doWork(); //opening
+        // when
+        logStream.open();
 
-        // then controllers run again
-        assertTrue(completableFuture.isDone());
-        assertTrue(logBlockIndexController.isRunning());
-        closeLogStream(stream);
+        // then
+        assertThat(logStream.getLogBlockIndexController().isRunning()).isTrue();
     }
 
     @Test
     public void shouldThrowExceptionForTruncationWithLogStreamController()
     {
         // given open log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        final LogStream logStream = buildLogStream();
+
+        logStream.open();
+        closeables.manage(logStream);
 
         // expect exception
         thrown.expect(IllegalStateException.class);
@@ -659,270 +384,211 @@ public class LogStreamTest
     @Test
     public void shouldThrowExceptionForTruncationOfAlreadyCommittedPosition()
     {
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(mockLogStorage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
+        // given
+        final int truncatePosition = 101;
+        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
 
         // given open log stream and committed position
-        stream.openAsync();
-        stream.setCommitPosition(TRUNCATE_POSITION);
+        logStream.open();
+        closeables.manage(logStream);
+
+        logStream.setCommitPosition(truncatePosition);
 
         // expect exception
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage(LogStreamImpl.EXCEPTION_MSG_TRUNCATE_COMMITTED_POSITION);
 
         // when truncate is called
-        stream.truncate(TRUNCATE_POSITION);
-        closeLogStream(stream);
+        logStream.truncate(truncatePosition);
     }
 
     @Test
     public void shouldTruncateLogStorage()
     {
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().partlyRead());
-
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
+        // given
+        final LogStream logStream = buildLogStream();
 
         // given open log stream and open block index controller
-        stream.openAsync();
-        stream.getLogBlockIndexController().doWork();
+        logStream.open();
+        closeables.manage(logStream);
+
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+        final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+
+        waitUntil(() -> events(logStream).count() == 2);
+        logStream.getLogStreamController().close();
 
         // when
-        stream.truncate(TRUNCATE_POSITION);
+        logStream.truncate(secondPosition);
 
         // then
-        verify(storage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
+        ensureLogStreamCanBeClosed(logStream);
+        assertThat(events(logStream).count()).isEqualTo(1);
+        assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
+    }
 
-        // when
-        stream.getLogBlockIndexController().doWork();
-
-        // then
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
-        closeLogStream(stream);
+    protected void ensureLogStreamCanBeClosed(LogStream stream)
+    {
+        // closing the log stream successfully only works when the stream controller is open...
+        // TODO: fix this properly by making the log stream close method tolerate these cases
+        stream.getLogStreamController().open();
     }
 
     @Test
-    public void shouldTruncateLogStorageWithClosedLogStreamController()
+    public void shouldWriteNewEventAfterTruncation()
     {
-        // given open log stream
-        logStream.openAsync();
-        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
-        logBlockIndexController.doWork();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        logStreamController.doWork();
+        // given
+        final LogStream logStream = buildLogStream();
 
-        // close log stream controller
-        logStream.closeLogStreamController();
-        logStreamController.doWork();
+        // given open log stream and open block index controller
+        logStream.open();
+        closeables.manage(logStream);
 
-        // mock log storage for truncation
-        mockLogStorage.add(newLogEntry().partlyRead());
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+        final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
 
-        // when
-        logStream.truncate(TRUNCATE_POSITION);
+        waitUntil(() -> events(logStream).count() == 1);
+        logStream.getLogStreamController().close();
 
-        // then
-        verify(mockLogStorage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(logStream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
+        logStream.truncate(firstPosition);
+        logStream.getLogStreamController().open();
 
         // when
-        logStream.getLogBlockIndexController().doWork();
+        final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        waitUntil(() -> events(logStream).count() == 1);
 
         // then
-        assertThat(logStream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
+        assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(secondPosition);
     }
 
     @Test
     public void shouldTruncateLogStorageWithCommittedPosition()
     {
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().partlyRead());
+        // given
+        final LogStream logStream = buildLogStream();
 
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
+        logStream.open();
+        closeables.manage(logStream);
 
-        // given open log stream and open block index controller
-        // and committed position
-        stream.setCommitPosition(TRUNCATE_POSITION - 1);
-        stream.openAsync();
-        stream.getLogBlockIndexController().doWork();
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+        final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+
+        waitUntil(() -> events(logStream).count() == 2);
+
+        logStream.setCommitPosition(firstPosition);
+
+        logStream.getLogStreamController().close();
 
         // when
-        stream.truncate(TRUNCATE_POSITION);
+        logStream.truncate(secondPosition);
 
         // then
-        verify(storage.getMock()).truncate(EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
-
-        // when
-        stream.getLogBlockIndexController().doWork();
-
-        // then
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
-        closeLogStream(stream);
-    }
-
-    @Test
-    public void shouldTruncateLogStorageForExistingBlockIndex()
-    {
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().partlyRead());
-
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
-
-        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_START_ADDRESS);
-        when(mockBlockIndex.size()).thenReturn(1);
-
-        // given open log stream and open block index controller
-        stream.openAsync();
-        stream.getLogBlockIndexController().doWork();
-
-        // when
-        stream.truncate(TRUNCATE_POSITION);
-
-        // then
-        verify(storage.getMock()).truncate(TRUNCATE_START_ADDRESS + EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
-
-        // when
-        stream.getLogBlockIndexController().doWork();
-
-        // then
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
-        closeLogStream(stream);
+        ensureLogStreamCanBeClosed(logStream);
+        assertThat(events(logStream).count()).isEqualTo(1);
+        assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
     }
 
     @Test
     public void shouldTruncateLogStorageForExistingBlockIndexAndCommittedPosition()
     {
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().partlyRead());
+        // given
+        final LogStream logStream = buildLogStream(b -> b.indexBlockSize(20));
 
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
+        logStream.open();
+        closeables.manage(logStream);
 
-        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_START_ADDRESS);
-        when(mockBlockIndex.size()).thenReturn(1);
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+        final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        waitUntil(() -> events(logStream).count() == 1);
 
-        // given open log stream and open block index controller
-        // and committed position
-        stream.setCommitPosition(TRUNCATE_POSITION - 1);
-        stream.openAsync();
-        stream.getLogBlockIndexController().doWork();
+        logStream.setCommitPosition(firstPosition);
+        waitUntil(() -> logStream.getLogBlockIndex().size() > 0);
+
+        final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        waitUntil(() -> events(logStream).count() == 2);
+
+        logStream.getLogStreamController().close();
 
         // when
-        stream.truncate(TRUNCATE_POSITION);
+        logStream.truncate(secondPosition);
 
         // then
-        verify(storage.getMock()).truncate(TRUNCATE_START_ADDRESS + EVENT_SIZE * TRUNCATE_POSITION);
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isNotEqualTo(INVALID_ADDRESS);
-
-        // when
-        stream.getLogBlockIndexController().doWork();
-
-        // then
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
-
-        closeLogStream(stream);
+        ensureLogStreamCanBeClosed(logStream);
+        assertThat(events(logStream).count()).isEqualTo(1);
     }
 
+    /**
+     * If position is greater than any logged indexed log entry
+     */
     @Test
-    public void shouldNotTruncateIfPositionWasNotFound()
+    public void shouldNotTruncateIfPositionIsGreaterThanCurrentHead()
     {
         // given
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().maxPosition(TRUNCATE_POSITION - 1).partlyRead());
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
+        final LogStream logStream = buildLogStream();
+        logStream.open();
+        closeables.manage(logStream);
+        logStream.getLogStreamController().close();
 
-        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(LOG_ADDRESS);
-        when(mockBlockIndex.size()).thenReturn(1);
+        final long nonExistingPosition = Long.MAX_VALUE;
 
         // expect
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Truncation failed! Position 101 was not found.");
+        thrown.expectMessage("Truncation failed! Position " + nonExistingPosition + " was not found.");
 
         // when truncate is called
-        stream.truncate(TRUNCATE_POSITION);
-        closeLogStream(stream);
+        try
+        {
+            logStream.truncate(nonExistingPosition);
+        }
+        finally
+        {
+            ensureLogStreamCanBeClosed(logStream);
+        }
     }
 
+    /**
+     * If position does not match a log entry exactly but there is an entry with a higher position
+     */
     @Test
-    public void shouldTruncateIfPositionOfEventWasHigher()
+    public void shouldTruncateWhenPositionDoesNotMatchEntry()
     {
         // given
-        final MockLogStorage storage = new MockLogStorage();
-        storage.add(newLogEntry().position(TRUNCATE_POSITION + 1).maxPosition(TRUNCATE_POSITION + 1).partlyRead());
-
-        final LogStream stream = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID)
-            .actorScheduler(mockActorScheduler)
-            .logStorage(storage.getMock())
-            .snapshotStorage(mockSnapshotStorage)
-            .snapshotPolicy(mockSnapshotPolicy)
-            .logBlockIndex(mockBlockIndex)
-            .logStreamControllerDisabled(true)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .build();
-
-        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION + 1)).thenReturn(LOG_ADDRESS);
-        when(mockBlockIndex.size()).thenReturn(1);
+        final LogStream logStream = buildLogStream();
 
         // given open log stream and open block index controller
-        stream.openAsync();
-        stream.getLogBlockIndexController().doWork();
+        logStream.open();
+        closeables.manage(logStream);
 
-        // when truncate is called
-        stream.truncate(TRUNCATE_POSITION);
-        stream.getLogBlockIndexController().doWork();
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
+        final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+        final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
+
+        waitUntil(() -> events(logStream).count() == 2);
+        logStream.getLogStreamController().close();
+
+        // when
+        logStream.truncate(secondPosition - 1);
 
         // then
-        verify(storage.getMock()).truncate(LOG_ADDRESS);
-        assertThat(stream.getLogBlockIndexController().getNextAddress()).isEqualTo(INVALID_ADDRESS);
-        closeLogStream(stream);
+        ensureLogStreamCanBeClosed(logStream);
+        assertThat(events(logStream).count()).isEqualTo(1);
+        assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
     }
+
+    /**
+     * including uncommited entries
+     */
+    protected Stream<LoggedEvent> events(LogStream stream)
+    {
+        final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
+        closeables.manage(reader);
+
+        reader.seekToFirstEvent();
+        final Iterable<LoggedEvent> iterable = () -> reader;
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+
 }

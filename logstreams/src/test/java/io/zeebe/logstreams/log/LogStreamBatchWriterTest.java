@@ -27,6 +27,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
@@ -204,10 +206,13 @@ public class LogStreamBatchWriterTest
     {
         when(mockWriteBuffer.claim(any(ClaimedFragmentBatch.class), anyInt(), anyInt())).thenAnswer(claimFragment());
 
+        final int metadata1Offset = 2;
+        final int metadata1Length = 3;
+
         writer
             .event()
                 .key(1L)
-                .metadata(new UnsafeBuffer(EVENT_METADATA_1), 2, 3)
+                .metadata(new UnsafeBuffer(EVENT_METADATA_1), metadata1Offset, metadata1Length)
                 .value(EVENT_VALUE_BUFFER_1)
                 .done()
             .event()
@@ -219,11 +224,13 @@ public class LogStreamBatchWriterTest
 
         int offset = 0;
 
-        byte[] metadataBuffer = new byte[2];
+        byte[] metadataBuffer = new byte[metadata1Length];
         writeBuffer.getBytes(metadataOffset(messageOffset(offset), (short) 0), metadataBuffer);
-        assertThat(metadataBuffer).isEqualTo(new byte[] {EVENT_METADATA_1[2], EVENT_METADATA_1[3]});
 
-        offset += alignedLength(headerLength(0, 2) + EVENT_VALUE_1.length);
+        final byte[] expectedMetadata1 = Arrays.copyOfRange(EVENT_METADATA_1, metadata1Offset, metadata1Offset + metadata1Length);
+        assertThat(metadataBuffer).isEqualTo(expectedMetadata1);
+
+        offset += alignedLength(headerLength(0, metadata1Length) + EVENT_VALUE_1.length);
 
         metadataBuffer = new byte[EVENT_METADATA_2.length];
         writeBuffer.getBytes(metadataOffset(messageOffset(offset), (short) 0), metadataBuffer);
@@ -313,6 +320,33 @@ public class LogStreamBatchWriterTest
         final long positionEvent2 = position(PARTITION_ID, offset);
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(positionEvent2);
         assertThat(writeBuffer.getLong(keyOffset(messageOffset(offset)))).isEqualTo(positionEvent2);
+    }
+
+    @Test
+    public void shouldWriteEventsWithRaftTerm()
+    {
+        final int raftTerm = 123;
+        when(mockWriteBuffer.claim(any(ClaimedFragmentBatch.class), anyInt(), anyInt())).thenAnswer(claimFragment());
+
+        writer
+            .raftTermId(raftTerm)
+            .event()
+                .key(1L)
+                .value(EVENT_VALUE_BUFFER_1)
+                .done()
+            .event()
+                .key(2L)
+                .value(EVENT_VALUE_BUFFER_2)
+                .done()
+            .tryWrite();
+
+        int offset = 0;
+
+        assertThat(writeBuffer.getInt(raftTermOffset(messageOffset(offset)))).isEqualTo(raftTerm);
+
+        offset += alignedLength(headerLength(0, 0) + EVENT_VALUE_1.length);
+
+        assertThat(writeBuffer.getInt(raftTermOffset(messageOffset(offset)))).isEqualTo(raftTerm);
     }
 
     @Test

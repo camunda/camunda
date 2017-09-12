@@ -520,6 +520,12 @@ public class FsLogStorage implements LogStorage
         return state == STATE_OPENED;
     }
 
+    @Override
+    public boolean isClosed()
+    {
+        return state == STATE_CLOSED;
+    }
+
     protected int getSegmentId(final File file)
     {
         final FsLogSegment segment = new FsLogSegment(file.getAbsolutePath());

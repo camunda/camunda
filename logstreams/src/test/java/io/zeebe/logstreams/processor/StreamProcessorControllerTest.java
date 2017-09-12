@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.*;
+import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
@@ -68,7 +69,7 @@ public class StreamProcessorControllerTest
     @Mock
     private LogStreamReader mockTargetLogStreamReader;
 
-    @Mock
+    @FluentMock
     private LogStreamWriter mockLogStreamWriter;
 
     @Mock
@@ -144,9 +145,6 @@ public class StreamProcessorControllerTest
 
         when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
         when(mockTargetLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
-
-        when(mockLogStreamWriter.producerId(anyInt())).thenReturn(mockLogStreamWriter);
-        when(mockLogStreamWriter.sourceEvent(any(DirectBuffer.class), anyInt(), anyLong())).thenReturn(mockLogStreamWriter);
 
         controller = builder.build();
 
@@ -632,6 +630,30 @@ public class StreamProcessorControllerTest
         verify(mockSnapshotStorage).createSnapshot(STREAM_PROCESSOR_NAME, 5L);
         verify(mockSnapshotWriter).writeSnapshot(mockStateResource);
         verify(mockSnapshotWriter).commit();
+    }
+
+    @Test
+    public void shouldSetRaftTermIdOnWrittenEvent()
+    {
+        // given
+        final int raftTerm = 53;
+
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
+        when(mockTargetLogStream.getTerm()).thenReturn(raftTerm);
+
+        open();
+
+
+        // when
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        verify(mockLogStreamWriter).raftTermId(raftTerm);
     }
 
     @Test

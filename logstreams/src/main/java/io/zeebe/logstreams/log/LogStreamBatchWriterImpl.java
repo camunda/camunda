@@ -30,6 +30,7 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStrea
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamTopicNameLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
@@ -69,6 +70,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     private boolean positionAsKey;
     private long key;
 
+    private int raftTermId;
     private int producerId;
 
     private long sourceEventPosition;
@@ -110,6 +112,13 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     public LogStreamBatchWriter producerId(int producerId)
     {
         this.producerId = producerId;
+        return this;
+    }
+
+    @Override
+    public LogStreamBatchWriter raftTermId(int term)
+    {
+        this.raftTermId = term;
         return this;
     }
 
@@ -283,6 +292,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
             // write log entry header
             setPosition(writeBuffer, bufferOffset, position);
+            setRaftTerm(writeBuffer, bufferOffset, raftTermId);
             setProducerId(writeBuffer, bufferOffset, producerId);
             setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
             setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
@@ -320,6 +330,8 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
         sourceEventLogStreamTopicName.wrap(0, 0);
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
+
+        raftTermId = -1;
 
         producerId = -1;
 

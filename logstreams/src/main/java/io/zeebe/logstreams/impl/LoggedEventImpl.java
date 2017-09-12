@@ -91,6 +91,12 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     }
 
     @Override
+    public int getRaftTerm()
+    {
+        return LogEntryDescriptor.getRaftTerm(buffer, messageOffset);
+    }
+
+    @Override
     public long getKey()
     {
         return LogEntryDescriptor.getKey(buffer, messageOffset);

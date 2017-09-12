@@ -131,11 +131,8 @@ public class LogStreamUtil
                 }
                 else
                 {
+                    address = currentAddress;
                     hasNext = false;
-                    if (currentPosition >= position)
-                    {
-                        address = currentAddress;
-                    }
                 }
             }
             return address;

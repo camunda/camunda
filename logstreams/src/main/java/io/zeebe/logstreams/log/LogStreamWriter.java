@@ -27,6 +27,8 @@ public interface LogStreamWriter
 
     LogStreamWriter key(long key);
 
+    LogStreamWriter raftTermId(int termId);
+
     LogStreamWriter sourceEvent(DirectBuffer logStreamTopicName, int logStreamPartitionId, long position);
 
     LogStreamWriter producerId(int producerId);

@@ -40,6 +40,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -300,6 +301,20 @@ public class LogStreamWriterTest
         writer
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
+    }
+
+    @Test
+    public void shouldWriteEventRaftTerm()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
+
+        writer
+            .key(4L)
+            .raftTermId(5)
+            .value(new UnsafeBuffer(EVENT_VALUE))
+            .tryWrite();
+
+        assertThat(writeBuffer.getInt(LogEntryDescriptor.raftTermOffset(MESSAGE_OFFSET))).isEqualTo(5);
     }
 
     protected Answer<?> claimFragment(final long offset)

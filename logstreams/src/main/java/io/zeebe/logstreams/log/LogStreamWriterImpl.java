@@ -31,11 +31,13 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
     protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
+
     protected Dispatcher logWriteBuffer;
     protected int logId;
 
     protected boolean positionAsKey;
     protected long key;
+    protected int raftTermId;
 
     protected long sourceEventPosition = -1L;
     protected DirectBuffer sourceEventLogStreamTopicName = new UnsafeBuffer(0, 0);
@@ -71,6 +73,13 @@ public class LogStreamWriterImpl implements LogStreamWriter
     public LogStreamWriter positionAsKey()
     {
         positionAsKey = true;
+        return this;
+    }
+
+    @Override
+    public LogStreamWriter raftTermId(int termId)
+    {
+        raftTermId = termId;
         return this;
     }
 
@@ -147,6 +156,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
         producerId = -1;
+        raftTermId = -1;
 
         bufferWriterInstance.reset();
         metadataWriterInstance.reset();
@@ -181,6 +191,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
 
                 // write log entry header
                 setPosition(writeBuffer, bufferOffset, claimedPosition);
+                setRaftTerm(writeBuffer, bufferOffset, raftTermId); // TODO: consider setting this always to the current log's term
                 setProducerId(writeBuffer, bufferOffset, producerId);
                 setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
                 setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);

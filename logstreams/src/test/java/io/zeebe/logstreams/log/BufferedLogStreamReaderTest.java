@@ -84,6 +84,7 @@ public class BufferedLogStreamReaderTest
         mockLogStorage.add(newLogEntry()
                 .address(10)
                 .position(1)
+                .raftTerm(13)
                 .key(2)
                 .sourceEventLogStreamId(3)
                 .sourceEventPosition(4L)
@@ -101,6 +102,7 @@ public class BufferedLogStreamReaderTest
 
         assertThat(event).isNotNull();
         assertThat(event.getPosition()).isEqualTo(1L);
+        assertThat(event.getRaftTerm()).isEqualTo(13);
         assertThat(event.getKey()).isEqualTo(2L);
 
         assertThat(event.getSourceEventLogStreamPartitionId()).isEqualTo(3);

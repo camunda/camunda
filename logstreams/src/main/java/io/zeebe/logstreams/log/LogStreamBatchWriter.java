@@ -83,6 +83,8 @@ public interface LogStreamBatchWriter
      */
     void wrap(LogStream log);
 
+    LogStreamBatchWriter raftTermId(int term);
+
     /**
      * Set the source event for all log entries.
      */
