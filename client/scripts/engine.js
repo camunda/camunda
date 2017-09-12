@@ -39,7 +39,7 @@ function init(ports = c7ports) {
     .then(() => {
       console.log(chalk.blue(`Engine downloaded to ${tmpDir}!`));
 
-      utils.runInSequence(ports, startEngine, 1);
+      return utils.runInSequence(ports, startEngine, 1);
     });
 }
 
@@ -111,32 +111,18 @@ function startEngine(c7port) {
   }
 
   function startServer() {
-    return utils.isServerUp(engineUrl)
-      .then(running => {
-        const stopScript = utils.findPath(extractTarget, [
-          'server',
-          /tomcat/,
-          'bin',
-          utils.isWindows ? 'shutdown.bat' : 'shutdown.sh'
-        ]);
-        const startScript = path.resolve(
-          extractTarget,
-          utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
-        );
+    const startScript = utils.findPath(extractTarget, [
+      'server',
+      /tomcat/,
+      'bin',
+      utils.isWindows ? 'catalina.bat' : 'catalina.sh'
+    ]);
 
-        if (running) {
-          console.log(chalk.yellow('Previous instance of engine still running closing...'));
-          shell.exec(stopScript);
-        }
+    console.log(`Starting new instance of engine for ${c7port}...`);
 
-        console.log(`Starting new instance of engine for ${c7port}...`);
+    shell.exec(startScript + ' run', {async:true});
 
-        utils.runWithColor(startScript, `engine-${c7port}`, chalk.blue, {
-          cwd: extractTarget
-        });
-
-        return utils.waitForServer(engineUrl);
-      });
+    return utils.waitForServer(engineUrl);
   }
 
   function deployDefinitions() {

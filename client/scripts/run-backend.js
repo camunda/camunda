@@ -41,6 +41,24 @@ mvnCleanPackage.on('close', code => {
 
         console.log('Starting elastic search...');
 
+        const elasticSearchJvmOptions = utils.findPath(extractDir, [
+          'server',
+          /^elastic/,
+          'config',
+          'jvm.options'
+        ]);
+
+        utils.changeFile(elasticSearchJvmOptions, [
+          {
+            regexp: /-Xms2g/g,
+            replacement: '-Xms256m'
+          },
+          {
+            regexp: /-Xmx2g/g,
+            replacement: '-Xmx256m'
+          }
+        ]);
+
         const elasticSearch = utils.findPath(extractDir, [
           'server',
           /^elastic/,
