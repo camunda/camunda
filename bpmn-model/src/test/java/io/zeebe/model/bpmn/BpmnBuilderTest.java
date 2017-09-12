@@ -164,7 +164,7 @@ public class BpmnBuilderTest
 
         final String workflowAsString = Bpmn.convertToString(workflowDefinition);
 
-        final WorkflowDefinition deserializedWorkflowDefinition = Bpmn.readFromString(workflowAsString);
+        final WorkflowDefinition deserializedWorkflowDefinition = Bpmn.readFromXmlString(workflowAsString);
 
         final ValidationResult validationResult = Bpmn.validate(deserializedWorkflowDefinition);
         assertThat(validationResult.hasErrors()).isFalse();

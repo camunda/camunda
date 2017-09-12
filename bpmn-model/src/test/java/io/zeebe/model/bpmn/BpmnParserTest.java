@@ -37,7 +37,7 @@ public class BpmnParserTest
         final URL resource = getClass().getResource(BPMN_FILE);
         final File bpmnFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromFile(bpmnFile);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
 
         assertThat(workflowDefinition).isNotNull();
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
@@ -48,7 +48,7 @@ public class BpmnParserTest
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         assertThat(workflowDefinition).isNotNull();
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
@@ -61,7 +61,7 @@ public class BpmnParserTest
         final File bpmnFile = new File(resource.toURI());
         final String workflow = Files.contentOf(bpmnFile, UTF_8);
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromString(workflow);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlString(workflow);
 
         assertThat(workflowDefinition).isNotNull();
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
@@ -71,7 +71,7 @@ public class BpmnParserTest
     public void shouldTransformValidWorkflow() throws Exception
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         assertThat(workflowDefinition).isNotNull();
 
@@ -83,7 +83,7 @@ public class BpmnParserTest
     public void shouldTransformWorkflow() throws Exception
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         assertThat(workflowDefinition.getWorkflows()).hasSize(1);
 
@@ -96,7 +96,7 @@ public class BpmnParserTest
     public void shouldTransformStartEvent() throws Exception
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 
@@ -109,7 +109,7 @@ public class BpmnParserTest
     public void shouldTransformSequenceFlows() throws Exception
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
         final StartEvent initialStartEvent = workflow.getInitialStartEvent();
@@ -138,7 +138,7 @@ public class BpmnParserTest
     public void shouldTransformServiceTask() throws Exception
     {
         final InputStream stream = getClass().getResourceAsStream(BPMN_FILE);
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromStream(stream);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
 

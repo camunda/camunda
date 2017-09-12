@@ -32,7 +32,7 @@ public class BpmnValidationTest
         final URL resource = getClass().getResource("/invalid_process.bpmn");
         final File bpmnFile = new File(resource.toURI());
 
-        final WorkflowDefinition workflowDefinition = Bpmn.readFromFile(bpmnFile);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
 
         final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
 

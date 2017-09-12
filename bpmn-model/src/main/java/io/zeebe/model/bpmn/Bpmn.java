@@ -32,24 +32,24 @@ public class Bpmn
         return INSTANCE.createExecutableWorkflow(bpmnProcessId);
     }
 
-    public static WorkflowDefinition readFromFile(File file)
+    public static WorkflowDefinition readFromXmlFile(File file)
     {
-        return INSTANCE.readFromFile(file);
+        return INSTANCE.readFromXmlFile(file);
     }
 
-    public static WorkflowDefinition readFromStream(InputStream stream)
+    public static WorkflowDefinition readFromXmlStream(InputStream stream)
     {
-        return INSTANCE.readFromStream(stream);
+        return INSTANCE.readFromXmlStream(stream);
     }
 
-    public static WorkflowDefinition readFromBuffer(DirectBuffer buffer)
+    public static WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)
     {
-        return INSTANCE.readFromBuffer(buffer);
+        return INSTANCE.readFromXmlBuffer(buffer);
     }
 
-    public static WorkflowDefinition readFromString(String workflow)
+    public static WorkflowDefinition readFromXmlString(String workflow)
     {
-        return INSTANCE.readFromString(workflow);
+        return INSTANCE.readFromXmlString(workflow);
     }
 
     public static WorkflowDefinition readFromYamlFile(File file)
@@ -60,6 +60,16 @@ public class Bpmn
     public static WorkflowDefinition readFromYamlStream(InputStream stream)
     {
         return INSTANCE.readFromYamlStream(stream);
+    }
+
+    public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer)
+    {
+        return INSTANCE.readFromYamlBuffer(buffer);
+    }
+
+    public WorkflowDefinition readFromYamlString(String workflow)
+    {
+        return INSTANCE.readFromYamlString(workflow);
     }
 
     public static ValidationResult validate(WorkflowDefinition definition)

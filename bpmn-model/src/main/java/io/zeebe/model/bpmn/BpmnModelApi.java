@@ -15,6 +15,8 @@
  */
 package io.zeebe.model.bpmn;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.*;
 
 import io.zeebe.model.bpmn.builder.BpmnBuilder;
@@ -38,7 +40,7 @@ public class BpmnModelApi
         return builder.wrap(bpmnProcessId);
     }
 
-    public WorkflowDefinition readFromFile(File file)
+    public WorkflowDefinition readFromXmlFile(File file)
     {
         final DefinitionsImpl definitions = parser.readFromFile(file);
         final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
@@ -46,7 +48,7 @@ public class BpmnModelApi
         return workflowDefinition;
     }
 
-    public WorkflowDefinition readFromStream(InputStream stream)
+    public WorkflowDefinition readFromXmlStream(InputStream stream)
     {
         final DefinitionsImpl definitions = parser.readFromStream(stream);
         final WorkflowDefinition workflowDefinition = transformer.transform(definitions);
@@ -54,17 +56,17 @@ public class BpmnModelApi
         return workflowDefinition;
     }
 
-    public WorkflowDefinition readFromBuffer(DirectBuffer buffer)
+    public WorkflowDefinition readFromXmlBuffer(DirectBuffer buffer)
     {
         final byte[] bytes = new byte[buffer.capacity()];
         buffer.getBytes(0, bytes);
 
-        return readFromStream(new ByteArrayInputStream(bytes));
+        return readFromXmlStream(new ByteArrayInputStream(bytes));
     }
 
-    public WorkflowDefinition readFromString(String workflow)
+    public WorkflowDefinition readFromXmlString(String workflow)
     {
-        return readFromStream(new ByteArrayInputStream(workflow.getBytes()));
+        return readFromXmlStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
     }
 
     public WorkflowDefinition readFromYamlFile(File file)
@@ -75,6 +77,19 @@ public class BpmnModelApi
     public WorkflowDefinition readFromYamlStream(InputStream stream)
     {
         return yamlParser.readFromStream(stream);
+    }
+
+    public WorkflowDefinition readFromYamlBuffer(DirectBuffer buffer)
+    {
+        final byte[] bytes = new byte[buffer.capacity()];
+        buffer.getBytes(0, bytes);
+
+        return yamlParser.readFromStream(new ByteArrayInputStream(bytes));
+    }
+
+    public WorkflowDefinition readFromYamlString(String workflow)
+    {
+        return yamlParser.readFromStream(new ByteArrayInputStream(workflow.getBytes(UTF_8)));
     }
 
     public ValidationResult validate(WorkflowDefinition definition)
