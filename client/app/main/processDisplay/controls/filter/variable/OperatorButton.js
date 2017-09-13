@@ -12,8 +12,8 @@ export function OperatorButton({operator, implicitValue}) {
   </button>;
 
   function getAggregatedLabel() {
-    return {label:
-      `${labels[operator]} ${implicitValue !== undefined ? labels[implicitValue.toString()] : ''}`.trim()
+    return {
+      label: `${labels[operator]} ${implicitValue !== undefined ? labels[implicitValue.toString()] : ''}`.trim()
     };
   }
 

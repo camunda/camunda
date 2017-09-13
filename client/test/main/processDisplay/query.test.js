@@ -61,11 +61,11 @@ describe('getFilterQuery', () => {
 
     expect(response.executedFlowNodes).to.eql([
       {
-        operator: '=',
+        operator: 'in',
         values: ['d1', 'd2']
       },
       {
-        operator: '=',
+        operator: 'in',
         values: ['c1']
       }
     ]);

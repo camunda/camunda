@@ -4,5 +4,7 @@ export default {
   '<': 'Is Less Than',
   '>': 'Is Greater Than',
   'true': 'True',
-  'false': 'False'
+  'false': 'False',
+  'in': 'In',
+  'not in': 'Not In'
 };

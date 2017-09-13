@@ -37,15 +37,15 @@ describe('<OperatorSelection>', () => {
     expect(node.textContent).to.not.contain(OperatorButton.text);
   });
 
-  it('should have equals and non equals buttons for strings', () => {
+  it('should have in and not in buttons for strings', () => {
     update({
       variables,
       selectedIdx: 1
     });
 
     expect(node.textContent).to.contain(OperatorButton.text);
-    expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: '!='})).to.eql(true);
+    expect(OperatorButton.appliedWith({operator: 'in'})).to.eql(true);
+    expect(OperatorButton.appliedWith({operator: 'not in'})).to.eql(true);
   });
 
   it('should have buttons with implicit values for booleans', () => {
@@ -61,15 +61,15 @@ describe('<OperatorSelection>', () => {
     expect(OperatorButton.appliedWith({implicitValue: false})).to.eql(true);
   });
 
-  it('should have =, !=, < and > operators for all other types (numbers and dates)', () => {
+  it('should have in, not in, < and > operators for all other types (numbers and dates)', () => {
     update({
       variables,
       selectedIdx: 2
     });
 
     expect(node.textContent).to.contain(OperatorButton.text);
-    expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: '!='})).to.eql(true);
+    expect(OperatorButton.appliedWith({operator: 'in'})).to.eql(true);
+    expect(OperatorButton.appliedWith({operator: 'not in'})).to.eql(true);
     expect(OperatorButton.appliedWith({operator: '>'})).to.eql(true);
     expect(OperatorButton.appliedWith({operator: '<'})).to.eql(true);
   });

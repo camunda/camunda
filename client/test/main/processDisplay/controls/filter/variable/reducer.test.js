@@ -40,7 +40,7 @@ describe('variable reducer', () => {
       values: ['AAAAAAA']
     }, action);
 
-    expect(state.operator).to.eql('=');
+    expect(state.operator).to.eql('in');
     expect(state.values).to.eql([]);
   });
 
@@ -103,6 +103,6 @@ describe('variable reducer', () => {
     });
 
     expect(state.values).to.eql([]);
-    expect(state.operator).to.eql('=');
+    expect(state.operator).to.eql('in');
   });
 });

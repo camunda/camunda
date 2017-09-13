@@ -293,8 +293,8 @@ describe('Variable Filter service', () => {
 
   describe('operatorCanHaveMultipleValues', () => {
     it('should return true for equals and non-equals', () => {
-      expect(operatorCanHaveMultipleValues('=')).to.eql(true);
-      expect(operatorCanHaveMultipleValues('!=')).to.eql(true);
+      expect(operatorCanHaveMultipleValues('in')).to.eql(true);
+      expect(operatorCanHaveMultipleValues('not in')).to.eql(true);
     });
 
     it('should return false for every value other than equals and non-equals', () => {

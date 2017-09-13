@@ -42,7 +42,7 @@ export function loadVariables(definition) {
 }
 
 export function operatorCanHaveMultipleValues(operator) {
-  return operator === '=' || operator === '!=';
+  return operator === 'in' || operator === 'not in';
 }
 
 export function createVariableFilter(filter) {

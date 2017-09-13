@@ -8,12 +8,12 @@ export const SET_VALUE = 'SET_VALUE';
 export const ADD_VALUE = 'ADD_VALUE';
 export const REMOVE_VALUE = 'REMOVE_VALUE';
 
-export const reducer = addLoading((state = {operator: '=', values: []}, action) => {
+export const reducer = addLoading((state = {operator: 'in', values: []}, action) => {
   if (action.type === SELECT_VARIABLE_IDX) {
     return {
       ...state,
       selectedIdx: action.idx,
-      operator: '=',
+      operator: 'in',
       values: []
     };
   }
@@ -54,7 +54,7 @@ export const reducer = addLoading((state = {operator: '=', values: []}, action) 
   }
   if (action.type === CHANGE_ROUTE_ACTION && !action.route.params.definition) {
     return {
-      operator: '=',
+      operator: 'in',
       values: []
     };
   }

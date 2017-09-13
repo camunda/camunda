@@ -31,7 +31,7 @@ export function getFilterQuery(filter) {
       .filter(({type}) => type === executedNodeType)
       .map(({data}) => {
         return {
-          operator: '=',
+          operator: 'in',
           values: data.map(({id}) => id)
         };
       })
