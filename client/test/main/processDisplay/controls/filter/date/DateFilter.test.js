@@ -1,50 +1,49 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import {mount} from 'enzyme';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {DateFilter} from 'main/processDisplay/controls/filter/date/DateFilter';
+import {DateFilterReact} from 'main/processDisplay/controls/filter/date/DateFilter';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<DateFilter>', () => {
-  let node;
-  let update;
-  let state;
+  let wrapper;
   let callback;
+  let filter;
 
   const start = '2016-12-01T00:00:00';
   const end = '2016-12-31T23:59:59';
 
   beforeEach(() => {
-    state = {filter: {
+    filter = {
       start,
       end
-    }};
+    };
 
     callback = sinon.spy();
 
-    ({node, update} = mountTemplate(<DateFilter selector="filter" onDelete={callback}/>));
-
-    update(state);
+    wrapper = mount(<DateFilterReact filter={filter} onDelete={callback}/>);
   });
 
   it('contain the formatted start date', () => {
-    expect(node.textContent).to.contain('2016-12-01');
+    expect(wrapper).to.contain.text('2016-12-01');
   });
 
   it('should contain the formatted end date', () => {
-    expect(node.textContent).to.contain('2016-12-31');
+    expect(wrapper).to.contain.text('2016-12-31');
   });
 
   it('should strip any time information', () => {
-    expect(node.textContent).to.not.contain('00:00:00');
-    expect(node.textContent).to.not.contain('23:59:59');
+    expect(wrapper).to.not.contain.text('00:00:00');
+    expect(wrapper).to.not.contain.text('23:59:59');
   });
 
   it('should call the delete callback', () => {
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     expect(callback.calledOnce).to.eql(true);
   });

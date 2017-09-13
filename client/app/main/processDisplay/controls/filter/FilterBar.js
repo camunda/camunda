@@ -12,7 +12,9 @@ export function FilterBar({onFilterDeleted}) {
         <li className="list-group-item">
           <Match>
             <Case predicate={isType('startDate')}>
-              <DateFilter selector="data" onDelete={deleteFilter}/>
+              <Scope selector={({data}) => ({filter: data})}>
+                <DateFilter onDelete={deleteFilter}/>
+              </Scope>
             </Case>
             <Case predicate={isType('variable')}>
               <VariableFilter selector="data" onDelete={deleteFilter}/>

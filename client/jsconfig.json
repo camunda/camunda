@@ -1,0 +1,13 @@
+{
+  "include": [
+    "app/**/*",
+    "test/**/*",
+    "scripts/**/*"
+  ],
+  "exclude": [
+    "dist/**/*",
+    "target/**/*",
+    "node_modules/**/*",
+    "target/**/*"
+  ]
+}
