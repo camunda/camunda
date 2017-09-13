@@ -18,6 +18,7 @@
 package io.zeebe.broker.logstreams.processor;
 
 import java.util.EnumMap;
+import java.util.List;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
@@ -51,12 +52,14 @@ public class TypedStreamProcessor implements StreamProcessor
     protected DelegatingEventProcessor eventProcessorWrapper;
 
     private DeferredCommandContext cmdQueue;
+    protected final List<Runnable> closeOperations;
 
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
             ServerOutput output,
             EnumMap<EventType, EnumMap> eventProcessors,
-            EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry)
+            EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry,
+            List<Runnable> closeOperations)
     {
         this.snapshotSupport = snapshotSupport;
         this.output = output;
@@ -65,6 +68,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
         eventRegistry.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
         this.eventRegistry = eventRegistry;
+        this.closeOperations = closeOperations;
     }
 
     @Override
@@ -85,6 +89,7 @@ public class TypedStreamProcessor implements StreamProcessor
     @Override
     public void onClose()
     {
+        closeOperations.forEach(r -> r.run());
         cmdQueue = null;
     }
 

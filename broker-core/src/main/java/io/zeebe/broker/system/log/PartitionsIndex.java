@@ -53,6 +53,11 @@ public class PartitionsIndex
         return pendingPartitions;
     }
 
+    public void close()
+    {
+        pendingPartitions.close();
+    }
+
     public long getPartitionKey(DirectBuffer topicName, int partitionId)
     {
         final int nameLength = topicName.capacity();

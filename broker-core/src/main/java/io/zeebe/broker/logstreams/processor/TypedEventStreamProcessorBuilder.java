@@ -36,6 +36,8 @@ public class TypedEventStreamProcessorBuilder
 
     protected EnumMap<EventType, EnumMap> eventProcessors = new EnumMap<>(EventType.class);
 
+    protected List<Runnable> closeOperations = new ArrayList<>();
+
 
     public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment)
     {
@@ -53,6 +55,12 @@ public class TypedEventStreamProcessorBuilder
 
         processorsForType.put(state, processor);
 
+        return this;
+    }
+
+    public TypedEventStreamProcessorBuilder onClose(Runnable onClose)
+    {
+        this.closeOperations.add(onClose);
         return this;
     }
 
@@ -83,6 +91,7 @@ public class TypedEventStreamProcessorBuilder
                 snapshotSupport,
                 environment.getOutput(),
                 eventProcessors,
-                environment.getEventRegistry());
+                environment.getEventRegistry(),
+                closeOperations);
     }
 }

@@ -102,6 +102,8 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicsIndex, streamEnvironment.buildStreamReader()))
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
+            .onClose(() -> topicsIndex.close())
+            .onClose(() -> partitionsIndex.close())
             .build();
     }
 
