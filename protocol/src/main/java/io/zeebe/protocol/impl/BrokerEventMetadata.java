@@ -42,7 +42,6 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
     protected int requestStreamId;
     protected long requestId;
-    protected int raftTermId;
     protected long subscriberKey;
     protected int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
     protected EventType eventType = NULL_VAL;
@@ -61,7 +60,6 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         requestStreamId = decoder.requestStreamId();
         requestId = decoder.requestId();
-        raftTermId = decoder.raftTermId();
         subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
         eventType = decoder.eventType();
@@ -90,7 +88,6 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         encoder.requestId(requestId)
             .requestStreamId(requestStreamId)
-            .raftTermId(raftTermId)
             .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
             .eventType(eventType)
@@ -116,17 +113,6 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     public BrokerEventMetadata requestStreamId(int requestStreamId)
     {
         this.requestStreamId = requestStreamId;
-        return this;
-    }
-
-    public int getRaftTermId()
-    {
-        return raftTermId;
-    }
-
-    public BrokerEventMetadata raftTermId(int raftTermId)
-    {
-        this.raftTermId = raftTermId;
         return this;
     }
 
@@ -183,7 +169,6 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     {
         requestId = BrokerEventMetadataEncoder.requestIdNullValue();
         requestStreamId = BrokerEventMetadataEncoder.requestStreamIdNullValue();
-        raftTermId = BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriberKey = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Protocol.PROTOCOL_VERSION;
         eventType = NULL_VAL;
