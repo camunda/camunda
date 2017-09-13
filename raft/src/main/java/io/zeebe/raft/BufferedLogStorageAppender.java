@@ -82,10 +82,9 @@ public class BufferedLogStorageAppender
         if (reader.hasNext())
         {
             final LoggedEvent lastEvent = reader.next();
-            lastEvent.readMetadata(metadata);
 
             lastWrittenPosition = lastEvent.getPosition();
-            lastWrittenTerm = metadata.getRaftTermId();
+            lastWrittenTerm = lastEvent.getRaftTerm();
         }
         else
         {
@@ -147,7 +146,7 @@ public class BufferedLogStorageAppender
                 event.readMetadata(metadata);
 
                 lastBufferedPosition = event.getPosition();
-                lastBufferedTerm = metadata.getRaftTermId();
+                lastBufferedTerm = event.getRaftTerm();
 
                 if (metadata.getEventType() == EventType.RAFT_EVENT)
                 {
@@ -186,24 +185,20 @@ public class BufferedLogStorageAppender
         else if (reader.seek(previousEventPosition) && reader.hasNext())
         {
             final LoggedEvent writtenEvent = reader.next();
-            writtenEvent.readMetadata(metadata);
 
-            if (writtenEvent.getPosition() == previousEventPosition && metadata.getRaftTermId() == previousEventTerm)
+            if (writtenEvent.getPosition() == previousEventPosition && writtenEvent.getRaftTerm() == previousEventTerm)
             {
                 if (event != null)
                 {
                     if (reader.hasNext())
                     {
                         final LoggedEvent nextEvent = reader.next();
-                        nextEvent.readMetadata(metadata);
 
                         final long nextEventPosition = nextEvent.getPosition();
-                        final int nextEventTerm = metadata.getRaftTermId();
-
-                        event.readMetadata(metadata);
+                        final int nextEventTerm = nextEvent.getRaftTerm();
 
                         final long eventPosition = event.getPosition();
-                        final int eventTerm = metadata.getRaftTermId();
+                        final int eventTerm = event.getRaftTerm();
 
                         if (nextEventPosition == eventPosition && nextEventTerm == eventTerm)
                         {

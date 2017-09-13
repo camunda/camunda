@@ -16,9 +16,9 @@
 
 
   <properties>
-    <version.logstreams>0.2.0</version.logstreams>
+    <version.logstreams>0.3.0-SNAPSHOT</version.logstreams>
     <version.msgpack>0.2.0</version.msgpack>
-    <version.protocol>0.2.0</version.protocol>
+    <version.protocol>0.3.0-SNAPSHOT</version.protocol>
     <version.transport>0.2.0</version.transport>
     <version.util>0.2.0</version.util>
   </properties>

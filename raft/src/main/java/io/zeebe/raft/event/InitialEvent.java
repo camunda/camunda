@@ -45,11 +45,11 @@ public class InitialEvent
 
         metadata
             .reset()
-            .eventType(NOOP_EVENT)
-            .raftTermId(raft.getTerm());
+            .eventType(NOOP_EVENT);
 
         return logStreamWriter
             .positionAsKey()
+            .raftTermId(raft.getTerm())
             .metadataWriter(metadata)
             .value(EMPTY_OBJECT)
             .tryWrite();

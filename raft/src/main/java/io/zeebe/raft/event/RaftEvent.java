@@ -44,7 +44,7 @@ public class RaftEvent
 
         logStreamWriter.wrap(raft.getLogStream());
 
-        metadata.reset().eventType(EventType.RAFT_EVENT).raftTermId(raft.getTerm());
+        metadata.reset().eventType(EventType.RAFT_EVENT);
 
         configuration.reset();
 
@@ -61,6 +61,7 @@ public class RaftEvent
         return
             logStreamWriter
                 .positionAsKey()
+                .raftTermId(raft.getTerm())
                 .metadataWriter(metadata)
                 .valueWriter(configuration)
                 .tryWrite();

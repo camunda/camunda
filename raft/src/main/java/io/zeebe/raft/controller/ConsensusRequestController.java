@@ -21,16 +21,22 @@ import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.state.*;
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
+import io.zeebe.util.state.LimitedStateMachineAgent;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.StateMachineCommand;
+import io.zeebe.util.state.WaitState;
 
 public class ConsensusRequestController
 {
@@ -110,11 +116,8 @@ public class ConsensusRequestController
 
             if (lastEvent != null)
             {
-                final BrokerEventMetadata metadata = context.getMetadata();
-                lastEvent.readMetadata(metadata);
-
                 lastEventPosition = lastEvent.getPosition();
-                lastEventTerm = metadata.getRaftTermId();
+                lastEventTerm = lastEvent.getRaftTerm();
             }
             else
             {
@@ -269,7 +272,6 @@ public class ConsensusRequestController
 
         private final List<ClientRequest> clientRequests = new ArrayList<>();
 
-        private final BrokerEventMetadata metadata = new BrokerEventMetadata();
         private final ConsensusRequestHandler consensusRequestHandler;
 
         private int granted;
@@ -337,11 +339,6 @@ public class ConsensusRequestController
             {
                 return null;
             }
-        }
-
-        public BrokerEventMetadata getMetadata()
-        {
-            return metadata;
         }
 
         public void registerGranted()

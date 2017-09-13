@@ -23,13 +23,10 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.RemoteAddress;
 
 public class RaftMember
 {
-    private final BrokerEventMetadata metadata = new BrokerEventMetadata();
-
     private final RemoteAddress remoteAddress;
     private final LogStream logStream;
     private final BufferedLogStreamReader reader;
@@ -241,10 +238,8 @@ public class RaftMember
 
         if (previousEvent != null)
         {
-            previousEvent.readMetadata(metadata);
-
             previousPosition = previousEvent.getPosition();
-            previousTerm = metadata.getRaftTermId();
+            previousTerm = previousEvent.getRaftTerm();
         }
         else
         {

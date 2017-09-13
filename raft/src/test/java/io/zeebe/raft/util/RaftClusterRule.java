@@ -204,7 +204,7 @@ public class RaftClusterRule implements TestRule
                 }
             }
 
-            LOG.error("Event { position: {}, term: {}, type: {}, committed: {}{} }", next.getPosition(), metadata.getRaftTermId(), metadata.getEventType(), next.getPosition() <= commitPosition, message);
+            LOG.error("Event { position: {}, term: {}, type: {}, committed: {}{} }", next.getPosition(), next.getRaftTerm(), metadata.getEventType(), next.getPosition() <= commitPosition, message);
         }
     }
 

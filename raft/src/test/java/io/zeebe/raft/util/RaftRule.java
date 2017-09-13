@@ -20,8 +20,15 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -46,8 +53,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
 
 public class RaftRule extends ExternalResource
 {
@@ -58,10 +63,10 @@ public class RaftRule extends ExternalResource
     protected final SocketAddress socketAddress;
     protected final String topicName;
     protected final int partition;
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
     protected final RaftConfiguration configuration = new RaftConfiguration();
     protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
     protected final List<RaftRule> members;
+    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
     protected ClientTransport clientTransport;
     protected Dispatcher clientSendBuffer;
@@ -235,13 +240,9 @@ public class RaftRule extends ExternalResource
 
         writer.wrap(logStream);
 
-        metadata
-            .reset()
-            .raftTermId(term);
-
         final DirectBuffer value = wrapString(message);
 
-        TestUtil.doRepeatedly(() -> writer.positionAsKey().metadataWriter(metadata).value(value).tryWrite())
+        TestUtil.doRepeatedly(() -> writer.positionAsKey().raftTermId(term).metadataWriter(metadata.reset()).value(value).tryWrite())
                 .until(position ->
                 {
                     if (position != null && position >= 0)
@@ -282,10 +283,9 @@ public class RaftRule extends ExternalResource
         if (uncommittedReader.hasNext())
         {
             final LoggedEvent event = uncommittedReader.next();
-            event.readMetadata(metadata);
             final String value = bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-            return event.getPosition() == position && metadata.getRaftTermId() == term && message.equals(value);
+            return event.getPosition() == position && event.getRaftTerm() == term && message.equals(value);
         }
 
         return false;
@@ -340,11 +340,11 @@ public class RaftRule extends ExternalResource
             final LoggedEvent event = committedReader.next();
             event.readMetadata(metadata);
 
-            if (metadata.getRaftTermId() == term && metadata.getEventType() == eventType)
+            if (event.getRaftTerm() == term && metadata.getEventType() == eventType)
             {
                 return true;
             }
-            else if (metadata.getRaftTermId() > term)
+            else if (event.getRaftTerm() > term)
             {
                 // early abort which assumes that terms are always increasing
                 return false;
@@ -375,7 +375,7 @@ public class RaftRule extends ExternalResource
             final LoggedEvent event = committedReader.next();
             event.readMetadata(metadata);
 
-            if (metadata.getRaftTermId() == term && metadata.getEventType() == EventType.RAFT_EVENT)
+            if (event.getRaftTerm() == term && metadata.getEventType() == EventType.RAFT_EVENT)
             {
                 event.readValue(configuration);
 
@@ -394,7 +394,7 @@ public class RaftRule extends ExternalResource
                     return true;
                 }
             }
-            else if (metadata.getRaftTermId() > term)
+            else if (event.getRaftTerm() > term)
             {
                 // early abort which assumes that terms are always increasing
                 return false;
