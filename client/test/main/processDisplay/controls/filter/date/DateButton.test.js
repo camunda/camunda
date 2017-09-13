@@ -1,12 +1,17 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {DateButton, TODAY, YESTERDAY, LAST_MONTH, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateButton';
+import {DateButtonReact, TODAY, YESTERDAY, LAST_MONTH, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateButton';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
 
 describe('<DateButton>', () => {
-  let node;
-  let update;
+  let wrapper;
   let formatDate;
   let start;
   let end;
@@ -29,14 +34,9 @@ describe('<DateButton>', () => {
     start = {};
     end = {};
 
-    ({node, update} = mountTemplate(<DateButton dateLabel={TODAY} />));
-    update({start, end});
+    wrapper = mount(<DateButtonReact dateLabel={TODAY} start={start} end={end} />);
 
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
   });
 
   afterEach(() => {
@@ -47,7 +47,7 @@ describe('<DateButton>', () => {
   });
 
   it('should contain a button', () => {
-    expect(node.querySelector('button')).to.exist;
+    expect(wrapper.find('button')).to.be.present();
   });
 
   it('should set the value of start and end date fields', () => {
@@ -61,28 +61,18 @@ describe('<DateButton>', () => {
   it('should set the date value dependent on the date string', () => {
     const secondStart = {};
     const secondEnd = {};
-    const {node: secondNode, update: secondUpdate} = mountTemplate(<DateButton dateLabel={YESTERDAY} />);
+    const wrapper = mount(<DateButtonReact dateLabel={YESTERDAY} start={secondStart} end={secondEnd} />);
 
-    secondUpdate({start: secondStart, end: secondEnd});
-    triggerEvent({
-      node: secondNode,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     expect(datepickerFct.args[0][1]).to.not.eql(datepickerFct.args[2][1]);
     expect(datepickerFct.args[1][1]).to.not.eql(datepickerFct.args[3][1]);
   });
 
   it('should correctly set the last month and not overflow', () => {
-    ({node, update} = mountTemplate(<DateButton dateLabel={LAST_MONTH} />));
-    update({start, end});
+    wrapper = mount(<DateButtonReact dateLabel={LAST_MONTH} start={start} end={end} />);
 
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     const appliedStart = datepickerFct.args[2][1].toISOString().substr(0, 10);
     const appliedEnd = datepickerFct.args[3][1].toISOString().substr(0, 10);
