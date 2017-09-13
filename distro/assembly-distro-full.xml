@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly
+    xmlns="urn:maven:assembly:1.1.0-SNAPSHOT">
+
+  <id>full</id>
+
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>server/</outputDirectory>
+      <includes>
+        <include>org.elasticsearch.distribution.zip:elasticsearch:zip</include>
+      </includes>
+      <unpackOptions>
+        <excludes>
+          <exclude>**/bin/elasticsearch</exclude>
+          <exclude>**/bin/elasticsearch.bat</exclude>
+        </excludes>
+      </unpackOptions>
+      <unpack>true</unpack>
+    </dependencySet>
+  </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <directory>src/environment/</directory>
+      <excludes>
+        <exclude>
+          ${exclude.from.environment}
+        </exclude>
+      </excludes>
+      <outputDirectory>environment/</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <!--create empty plugin directory-->
+      <directory>src/</directory>
+      <outputDirectory>/plugin</outputDirectory>
+      <excludes>
+        <exclude>*/**</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+
+  <files>
+    <file>
+      <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>src/README.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>crlf</lineEnding>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>src/start-optimize.bat</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>src/curl.exe</source>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>src/start-optimize.sh</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>src/config/elasticsearch</source>
+      <outputDirectory>server/elasticsearch-${elasticsearch.version}/bin/</outputDirectory>
+    </file>
+    <file>
+      <source>src/config/elasticsearch.bat</source>
+      <outputDirectory>server/elasticsearch-${elasticsearch.version}/bin/</outputDirectory>
+    </file>
+  </files>
+</assembly>
