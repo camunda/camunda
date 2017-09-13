@@ -20,6 +20,8 @@ package io.zeebe.broker.topic;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
@@ -52,6 +54,7 @@ import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.broker.system.log.TopicsIndex;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
@@ -234,6 +237,46 @@ public class CreateTopicStreamProcessorTest
         // (because we cannot be sure the partition has not been created before yet)
         Thread.sleep(500L); // not explicity condition we can wait for
         assertThat(partitionManager.getPartitionRequests()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotSendResponseTwiceOnInterleavingPartitionCompletion()
+    {
+        // given
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+
+        // wait after partition CREATE events have been written
+        processorControl.blockAfterEvent(e ->
+            Events.isTopicEvent(e) &&
+            Events.asTopicEvent(e).getState() == TopicState.CREATE);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 2))
+            .write();
+
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATE).count() == 2);
+        final LoggedEvent secondCreateEvent = streams.events(STREAM_NAME)
+            .filter(e -> Events.isPartitionEvent(e))
+            .skip(1)
+            .findFirst()
+            .get();
+
+        // wait after create event has been processed (=> and added to partition index singalling a pending partition)
+        processorControl.blockAfterEvent(e -> e.getPosition() == secondCreateEvent.getPosition());
+        processorControl.unblock();
+        waitUntil(() -> processorControl.isBlocked());
+
+        // when both partitions become available at once
+        partitionManager.makePartitionAvailable("foo", 0);
+        partitionManager.makePartitionAvailable("foo", 1);
+        streamProcessor.runAsync(checkPartitionsCmd);
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATE_COMPLETE).findFirst().isPresent());
+
+        // then the topic created response is sent once
+        processorControl.unblock();
+        waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
+        verify(output, times(1)).sendResponse(any());
     }
 
     protected Stream<PartitionEvent> partitionEventsInState(PartitionState state)

@@ -27,12 +27,10 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 public class CompletePartitionProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
-    protected final TopicsIndex topics;
     protected final PartitionsIndex partitions;
 
-    public CompletePartitionProcessor(TopicsIndex topics, PartitionsIndex partitions)
+    public CompletePartitionProcessor(PartitionsIndex partitions)
     {
-        this.topics = topics;
         this.partitions = partitions;
     }
 
@@ -52,7 +50,6 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
         {
             value.setState(PartitionState.CREATE_COMPLETE_REJECTED);
         }
-
     }
 
     @Override
@@ -76,14 +73,6 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
 
         if (value.getState() == PartitionState.CREATED)
         {
-            topics.moveTo(topicName);
-            final int remainingPartitions = topics.getRemainingPartitions();
-
-            if (remainingPartitions > 0)
-            {
-                topics.putRemainingPartitions(topicName, remainingPartitions - 1);
-            }
-
             partitions.removePartitionKey(topicName, value.getId());
         }
 

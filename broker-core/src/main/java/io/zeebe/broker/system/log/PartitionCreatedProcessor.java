@@ -45,9 +45,8 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
 
         final DirectBuffer topicName = value.getTopicName();
         topics.moveTo(topicName);
-        // TODO: must decrement the number of created partitions here or we may send the response twice
-        // => https://github.com/zeebe-io/zeebe/issues/444
-        final boolean topicCreationComplete = topics.getRemainingPartitions() == 0;
+
+        final boolean topicCreationComplete = topics.getRemainingPartitions() == 1; // == 1 because this is the last partition
 
         if (topicCreationComplete)
         {
@@ -85,5 +84,14 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
     @Override
     public void updateState(TypedEvent<PartitionEvent> event)
     {
+        final DirectBuffer topicName = event.getValue().getTopicName();
+
+        topics.moveTo(topicName);
+        final int remainingPartitions = topics.getRemainingPartitions();
+
+        if (remainingPartitions > 0)
+        {
+            topics.putRemainingPartitions(topicName, remainingPartitions - 1);
+        }
     }
 }
