@@ -72,25 +72,25 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     //add static resources
     URL webappURL = this.getClass().getClassLoader().getResource("webapp");
     if (webappURL != null) {
-      ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
       context.setResourceBase(webappURL.toExternalForm());
-      holderPwd.setInitParameter("dirAllowed", "true");
-      context.addServlet(holderPwd, "/");
+    }
+    ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
+    holderPwd.setInitParameter("dirAllowed", "true");
+    context.addServlet(holderPwd, "/");
 
-      FilterHolder filterHolder = new FilterHolder();
-      filterHolder.setFilter(new LicenseFilter(this));
-      context.addFilter(
+    FilterHolder filterHolder = new FilterHolder();
+    filterHolder.setFilter(new LicenseFilter(this));
+    context.addFilter(
           filterHolder,
           "/*",
           EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
       );
 
-      NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
-      context.setErrorHandler(errorMapper);
+    NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
+    context.setErrorHandler(errorMapper);
 
-      initGzipFilterHolder(context);
-      initJSRewriteHandler(context);
-    }
+    initGzipFilterHolder(context);
+    initJSRewriteHandler(context);
   }
 
   private void initJSRewriteHandler(ServletContextHandler context) {

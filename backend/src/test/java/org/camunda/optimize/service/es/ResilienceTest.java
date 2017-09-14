@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es;
 
 
+import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
@@ -13,6 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.model.TestTimedOutException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -39,7 +42,8 @@ import static org.junit.Assert.assertThat;
 public class ResilienceTest {
 
   private File esFolder;
-  private File root;
+
+  public static final long TIMEOUT_CONNECTION_STATUS = 5_000;
 
   @After
   public void tearDown() throws IOException {
@@ -53,10 +57,10 @@ public class ResilienceTest {
 
   @Before
   public void setUp() {
-     root = new File(this.getClass().getClassLoader().getResource("").getPath());
-     esFolder = new File(root.getParentFile().getAbsolutePath() + "/embedded_elasticsearch_data");
-     esFolder.mkdir();
-     esFolder.deleteOnExit();
+    File root = new File(this.getClass().getClassLoader().getResource("").getPath());
+    esFolder = new File(root.getParentFile().getAbsolutePath() + "/embedded_elasticsearch_data");
+    esFolder.mkdir();
+    esFolder.deleteOnExit();
   }
 
   @Test
@@ -71,13 +75,30 @@ public class ResilienceTest {
     //given
     Node testNode = elasticSearchTestNode();
 
-    //give time to reconnect
-    Thread.sleep(1000);
-    //when + then
+    // when
+    waitUntilIsConnectedToElasticsearch(optimize);
+
+    // then
     verifyIndexServed(optimize);
 
     optimize.stopOptimize();
     testNode.close();
+  }
+
+  private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeRule optimize) throws TestTimedOutException {
+    ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
+    connectionStatusDto.setConnectedToElasticsearch(false);
+    long startTime, requestDuration;
+    startTime = System.currentTimeMillis();
+    while (!connectionStatusDto.isConnectedToElasticsearch()){
+      connectionStatusDto = optimize.target("status/connection")
+        .request()
+        .get(ConnectionStatusDto.class);
+      requestDuration = System.currentTimeMillis() - startTime;
+      if (requestDuration > TIMEOUT_CONNECTION_STATUS) {
+        throw new TestTimedOutException(TIMEOUT_CONNECTION_STATUS, TimeUnit.MILLISECONDS);
+      }
+    }
   }
 
   @Test
@@ -92,8 +113,7 @@ public class ResilienceTest {
 
     //when
     testNode.close();
-
-    Thread.sleep(5000);
+    waitUntilDisconnectionIsRecognized(optimize);
     //then
     verifyRedirectToError(optimize);
 
@@ -103,6 +123,22 @@ public class ResilienceTest {
 
     optimize.stopOptimize();
     stopElasticSearch(testNode);
+  }
+
+  private void waitUntilDisconnectionIsRecognized(EmbeddedOptimizeRule optimize) throws TestTimedOutException {
+    ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
+    connectionStatusDto.setConnectedToElasticsearch(true);
+    long startTime, requestDuration;
+    startTime = System.currentTimeMillis();
+    while (connectionStatusDto.isConnectedToElasticsearch()){
+      connectionStatusDto = optimize.target("status/connection")
+        .request()
+        .get(ConnectionStatusDto.class);
+      requestDuration = System.currentTimeMillis() - startTime;
+      if (requestDuration > TIMEOUT_CONNECTION_STATUS) {
+        throw new TestTimedOutException(TIMEOUT_CONNECTION_STATUS, TimeUnit.MILLISECONDS);
+      }
+    }
   }
 
   private void stopElasticSearch(Node testNode) throws IOException, InterruptedException {
@@ -133,7 +169,7 @@ public class ResilienceTest {
   }
 
   public Node elasticSearchTestNode() throws NodeValidationException, IOException, InterruptedException {
-    ArrayList classpathPlugins = new ArrayList();
+    ArrayList<Class<? extends Plugin>> classpathPlugins = new ArrayList<>();
     classpathPlugins.add(Netty4Plugin.class);
     Node node = new MyNode(
         Settings.builder()
@@ -163,21 +199,15 @@ public class ResilienceTest {
   }
 
   private void verifyRedirectToError(EmbeddedOptimizeRule optimize) {
-    //when
+    // when I want to go to start page
     Response response = optimize.rootTarget()
         .path("/index.html")
         .request()
         .get();
 
-    //then
+    // then I get redirected to error page
     assertThat(response.getStatus(), is(302));
     assertThat(response.getLocation().getPath(), is("/error.html"));
-
-    response = optimize.rootTarget()
-        .path(response.getLocation().getPath())
-        .request()
-        .get();
-    assertThat(response.getStatus(), is(200));
   }
 
 }
