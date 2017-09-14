@@ -430,9 +430,7 @@
     "variableImport": {
       /*
       Look in the given base package list for variable import adaption plugins.
-      If empty, the import is not influenced. The value can be single value or
-      a comma seperated list of base packages, e.g., org.mycompany.myproject1,
-      org.mycompany.myproject2
+      If empty, the import is not influenced. 
       */
       "basePackages": []
     }
