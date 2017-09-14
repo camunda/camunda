@@ -60,7 +60,7 @@
                 <descriptor>assembly-distro-full.xml</descriptor>
                 <descriptor>assembly-distro-standalone.xml</descriptor>
               </descriptors>
-              <attach>false</attach>
+              <attach>true</attach>
               <finalName>camunda-optimize-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
               <outputDirectory>target/</outputDirectory>
