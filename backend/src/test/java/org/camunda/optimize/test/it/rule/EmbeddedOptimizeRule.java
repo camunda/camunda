@@ -86,11 +86,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return TestEmbeddedCamundaOptimize.getInstance();
   }
 
-
-  private TestEmbeddedCamundaOptimize getOptimize(String location) {
-    return TestEmbeddedCamundaOptimize.getInstance(location);
-  }
-
   private ScheduleJobFactory getScheduleFactory() {
     return getOptimize().getImportScheduleFactory();
   }
@@ -132,12 +127,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void startOptimize() {
-    this.startOptimize(null);
-  }
-
-  public void startOptimize(String contextLocation) {
     try {
-      getOptimize(contextLocation).start();
+      getOptimize().start();
     } catch (Exception e) {
       logger.error("Failed to start Optimize", e);
     }
