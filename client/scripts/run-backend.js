@@ -11,16 +11,23 @@ const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
 
 const engineInitPromise = engine.init().catch(error => {
-  console.error(error);
+  console.error(chalk.red(JSON.stringify(error, null, 2)));
   shell.exit(0);
 });
 
 const mvnCwd = path.resolve(__dirname, '..', '..');
-const mvnCleanPackage = runWithColor('mvn clean package -DskipTests', 'maven', chalk.green, {
-  cwd: mvnCwd
-});
 
-mvnCleanPackage.on('close', code => {
+if (!process.env.FAST_BUILD) {
+  const mvnCleanPackage = runWithColor('mvn clean package -DskipTests', 'maven', chalk.green, {
+    cwd: mvnCwd
+  });
+
+  mvnCleanPackage.on('close', startBackend);
+} else {
+  startBackend(0);
+}
+
+function startBackend(code) {
   const distro = path.resolve(mvnCwd, 'distro', 'target');
   const extractDir = path.resolve(distro, 'distro');
   const archive = utils.findFile(distro, '.tar.gz');
@@ -113,4 +120,4 @@ mvnCleanPackage.on('close', code => {
           });
       });
   }
-});
+}

@@ -8,6 +8,7 @@ const chalk = require('chalk');
 const utils = require('./utils');
 let {c7ports} = require('./config');
 
+const maxConnections = 5;
 const communityUrl = 'https://camunda.org/release/camunda-bpm/tomcat/7.8/camunda-bpm-tomcat-7.8.0-alpha2.tar.gz';
 const tmpDir = path.resolve(__dirname, '..', 'tmp');
 // it can be configured, but it would pain in ass, so it is better
@@ -142,7 +143,8 @@ function startEngine(c7port) {
 
             return module;
           });
-      }
+      },
+      maxConnections
     );
   }
 
@@ -179,8 +181,10 @@ function startEngine(c7port) {
   }
 
   function startInstances(modules) {
-    return Promise.all(
-      modules.map(startModuleInstances)
+    return utils.runInSequence(
+      modules,
+      startModuleInstances,
+      maxConnections
     );
   }
 
@@ -201,15 +205,18 @@ function startEngine(c7port) {
 
           return Object.assign({taskIterationLimit}, instanceDefinition, instance);
         });
-      }
+      },
+      maxConnections
     ).then(instances => {
       return Object.assign({}, module, {instances});
     });
   }
 
   function completeTasks(modules) {
-    return Promise.all(
-      modules.map(completeModuleTasks)
+    return utils.runInSequence(
+      modules,
+      completeModuleTasks,
+      maxConnections
     );
   }
 
@@ -218,7 +225,8 @@ function startEngine(c7port) {
       instances,
       // it may look bit strange, but map passes index as second argument to called function
       // which is not desired here, hence this strange arrow function is needed
-      instance => completeInstanceTasks(instance)
+      instance => completeInstanceTasks(instance),
+      maxConnections
     );
   }
 
@@ -242,7 +250,8 @@ function startEngine(c7port) {
           skipped = true;
 
           return Promise.resolve();
-        }
+        },
+        maxConnections
       );
     })
     .then(() => taskService.count({processInstanceId: instance.id}))
@@ -252,6 +261,21 @@ function startEngine(c7port) {
       }
 
       console.log(chalk.green(`INSTANCE TASKS COMPLETED (${c7port})`), instance.id);
+    })
+    .catch(error => {
+      console.error(error);
+
+      if (instance.taskIterationLimit < iteration) {
+        console.log(`Skipping ${instance.id} ...`);
+
+        return;
+      }
+
+      console.log(`Retrying... (${instance.taskIterationLimit - iteration})`);
+
+      return utils
+        .delay(1000)
+        .then(() => completeInstanceTasks(instance, iteration + 1));
     });
   }
 

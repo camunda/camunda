@@ -21,6 +21,7 @@ exports.isWindows = /^win/.test(process.platform);
 exports.runInSequence = runInSequence;
 exports.changeFile = changeFile;
 exports.changeJsonFile = changeJsonFile;
+exports.delay = delay;
 
 function runWithColor(command, name, color, options = {}) {
   console.log(chalk.yellow(command), options);
