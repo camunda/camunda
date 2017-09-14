@@ -24,6 +24,12 @@
       <scope>provided</scope>
     </dependency>
 
+	<dependency>
+      <groupId>org.msgpack</groupId>
+	  <artifactId>jackson-dataformat-msgpack</artifactId>
+	  <scope>provided</scope>
+	</dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
