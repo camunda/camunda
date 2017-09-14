@@ -96,15 +96,16 @@ pipeline {
         sh 'mvn -s settings.xml -Pit,jenkins clean'
         startElasticsearch()
         sh 'mvn -s settings.xml -Pit,jenkins  -f ' + backendModuleName + '/pom.xml verify'
-        stopAllOptimizeComponents()
-        copySnapshots()
       }
       post {
         always {
+          stopAllOptimizeComponents()
+          copySnapshots()
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/_snapshots/*.gz', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
-          archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.out', onlyIfSuccessful: false
         }
       }
 

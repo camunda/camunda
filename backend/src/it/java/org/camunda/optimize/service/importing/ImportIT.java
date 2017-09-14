@@ -51,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ImportIT  {
@@ -104,7 +105,6 @@ public class ImportIT  {
     // when
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.updateImportIndex();
-
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
   }
