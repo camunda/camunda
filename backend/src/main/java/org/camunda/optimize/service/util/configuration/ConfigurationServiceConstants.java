@@ -18,7 +18,7 @@ public interface ConfigurationServiceConstants {
   String MAX_JOB_QUEUE_SIZE = "$.engine-commons.import.jobQueueMaxSize";
   String IMPORT_EXECUTOR_THREAD_COUNT = "$.engine-commons.import.executorThreadCount";
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.engine-commons.import.writer.numberOfRetries";
-  String PROCESS_DEFINITIONS_TO_IMPORT = "$.engine-commons.import.process-definition-list";
+  String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.engine-commons.import.process-definition-ids-to-import";
 
   String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.engine-commons.import.pageMaxSize";
   String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.engine-commons.import.process-definition.pageSize.max";

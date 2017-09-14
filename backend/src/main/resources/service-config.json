@@ -187,11 +187,10 @@
         }
       },
       /*
-      Restrict the import only for the given process definition ids.
+      Restrict the import to the given process definition ids.
       If empty, all the data is imported.
-      The value should be a comma seperated list of process definition ids
       */
-      "process-definition-list": "",
+      "process-definition-ids-to-import": [],
       "process-definition-xml": {
         "pageSize": {
           /*
@@ -435,7 +434,7 @@
       a comma seperated list of base packages, e.g., org.mycompany.myproject1,
       org.mycompany.myproject2
       */
-      "basePackages": ""
+      "basePackages": []
     }
   },
   "serialization": {

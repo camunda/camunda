@@ -200,7 +200,7 @@ public class ProcessDefinitionBaseImportIT {
   @Test
   public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
     //given
-    ArrayList ids = new ArrayList();
+    ArrayList<String> ids = new ArrayList<>();
 
     BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
     engineRule.deployAndStartProcess(simpleUserTaskProcess);
@@ -232,8 +232,8 @@ public class ProcessDefinitionBaseImportIT {
 
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      assertThat(idsResp.getHits().totalHits, is(Long.valueOf(ids.size())));
-      assertThat(searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
+      assertThat(idsResp.getHits().totalHits, is((long) ids.size()));
+      assertThat((String) searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
     }
   }
 
@@ -274,7 +274,9 @@ public class ProcessDefinitionBaseImportIT {
 
   private String createAndSetProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
     String processDefinitionId = createAndStartProcessDefinition(modelInstance);
-    configurationService.setProcessDefinitionsToImport(processDefinitionId);
+    List<String> processDefinitionIdsToImport = new ArrayList<>();
+    processDefinitionIdsToImport.add(processDefinitionId);
+    configurationService.setProcessDefinitionIdsToImport(processDefinitionIdsToImport);
     embeddedOptimizeRule.reloadConfiguration();
     return processDefinitionId;
   }
@@ -315,20 +317,9 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private void addProcessDefinitionIdToImportList(String processDefinitionId) {
-    String[] procDefsToImport = configurationService.getProcessDefinitionsToImportAsArray();
-    if(procDefsToImport.length == 0) {
-      configurationService.setProcessDefinitionsToImport(processDefinitionId);
-      embeddedOptimizeRule.reloadConfiguration();
-    } else {
-      StringBuilder commaSeparatedList = new StringBuilder();
-      String commaSeparator = ",";
-      for (String each : procDefsToImport) {
-          commaSeparatedList.append(each).append(commaSeparator);
-      }
-      commaSeparatedList.append(processDefinitionId);
-      configurationService.setProcessDefinitionsToImport(commaSeparatedList.toString());
-      embeddedOptimizeRule.reloadConfiguration();
-    }
+    List<String> procDefsToImport = configurationService.getProcessDefinitionIdsToImport();
+    procDefsToImport.add(processDefinitionId);
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   private void deployAndStartSimpleServiceTask() {

@@ -124,14 +124,14 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private List<DefinitionImportInformation> retrieveDefinitionsToImportFromConfigurationProvidedList() {
     List<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
-    List<String> configuredProcessDefinitions =
-        new ArrayList<>(Arrays.asList(configurationService.getProcessDefinitionsToImportAsArray()));
+    List<String> configuredProcessDefinitionIds =
+      configurationService.getProcessDefinitionIdsToImport();
 
-    for (String configuredProcessDefinition : configuredProcessDefinitions) {
+    for (String configuredProcessDefinitionId : configuredProcessDefinitionIds) {
       DefinitionImportInformation definitionImportInformation =
         new DefinitionImportInformation();
       definitionImportInformation.setDefinitionBasedImportIndex(0);
-      definitionImportInformation.setProcessDefinitionId(configuredProcessDefinition);
+      definitionImportInformation.setProcessDefinitionId(configuredProcessDefinitionId);
       processDefinitionsToImport.add(definitionImportInformation);
     }
     return processDefinitionsToImport;

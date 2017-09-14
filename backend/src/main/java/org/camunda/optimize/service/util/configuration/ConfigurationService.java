@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.util.StringUtil.splitStringByComma;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
 /**
@@ -85,7 +84,7 @@ public class ConfigurationService {
   private String hpiCountEndpoint;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
-  private String processDefinitionsToImport;
+  private List<String> processDefinitionIdsToImport;
   private String processDefinitionImportIndexType;
   private String esRefreshInterval;
   private Integer esNumberOfReplicas;
@@ -95,7 +94,7 @@ public class ConfigurationService {
   private String licenseType;
   private Long generalBackoff;
   private Long samplerInterval;
-  private String variableImportPluginBasePackages;
+  private List<String> variableImportPluginBasePackages;
   private String piIdTrackingType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
@@ -501,11 +500,13 @@ public class ConfigurationService {
     return engineImportVariableInstanceMaxPageSize;
   }
 
-  public String getProcessDefinitionsToImport() {
-    if (processDefinitionsToImport == null) {
-      processDefinitionsToImport = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITIONS_TO_IMPORT);
+  public List<String> getProcessDefinitionIdsToImport() {
+    if (processDefinitionIdsToImport == null) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      processDefinitionIdsToImport =
+        jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_IDS_TO_IMPORT, typeRef);
     }
-    return processDefinitionsToImport;
+    return processDefinitionIdsToImport;
   }
 
   public String getProcessDefinitionImportIndexType() {
@@ -572,9 +573,11 @@ public class ConfigurationService {
     return samplerInterval;
   }
 
-  public String getVariableImportPluginBasePackages() {
+  public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {
-      variableImportPluginBasePackages = jsonContext.read(ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES);
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      variableImportPluginBasePackages =
+        jsonContext.read(ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
     }
     return variableImportPluginBasePackages;
   }
@@ -742,27 +745,11 @@ public class ConfigurationService {
     return this.getConfiguredEngines().get(engineAlias);
   }
 
-  public String[] getVariableImportPluginBasePackagesAsArray() {
-    String[] basePackageArray = splitStringByComma(getVariableImportPluginBasePackages());
-    if(basePackageArray.length == 1 && basePackageArray[0].isEmpty()) {
-      return new String[]{};
-    }
-    return basePackageArray;
-  }
-
-  public String[] getProcessDefinitionsToImportAsArray() {
-    String[] processDefinitionArrayToImport = splitStringByComma(getProcessDefinitionsToImport());
-    if(processDefinitionArrayToImport.length == 1 && processDefinitionArrayToImport[0].isEmpty()) {
-      return new String[]{};
-    }
-    return processDefinitionArrayToImport;
-  }
-
   public boolean areProcessDefinitionsToImportDefined() {
-    return getProcessDefinitionsToImportAsArray().length > 0;
+    return getProcessDefinitionIdsToImport() != null && !getProcessDefinitionIdsToImport().isEmpty();
   }
 
-  public void setVariableImportPluginBasePackages(String variableImportPluginBasePackages) {
+  public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
     this.variableImportPluginBasePackages = variableImportPluginBasePackages;
   }
 
@@ -770,8 +757,8 @@ public class ConfigurationService {
     this.defaultUserCreationEnabled = defaultUserCreationEnabled;
   }
 
-  public void setProcessDefinitionsToImport(String processDefinitionsToImport) {
-    this.processDefinitionsToImport = processDefinitionsToImport;
+  public void setProcessDefinitionIdsToImport(List<String> processDefinitionIdsToImport) {
+    this.processDefinitionIdsToImport = processDefinitionIdsToImport;
   }
 
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {

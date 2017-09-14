@@ -40,7 +40,7 @@ public class ImportAdapterProvider {
     // Filter to include only classes that have a particular annotation.
     provider.addIncludeFilter(new AssignableTypeFilter(VariableImportAdapter.class));
     // Find classes in the given package (or subpackages)
-    String[] basePackages = configurationService.getVariableImportPluginBasePackagesAsArray();
+    List<String> basePackages = configurationService.getVariableImportPluginBasePackages();
     loadedBeans = new HashSet<>();
     for (String basePackage : basePackages) {
       loadedBeans.addAll(provider.findCandidateComponents(basePackage));

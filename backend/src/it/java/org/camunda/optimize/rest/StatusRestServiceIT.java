@@ -19,8 +19,9 @@ import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -144,7 +145,9 @@ public class StatusRestServiceIT {
     // given
     String errorMessage = "Error";
     Mockito.when(engineClientFactory.getInstance(ENGINE_ALIAS).target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
-    configurationService.setProcessDefinitionsToImport("test");
+    List<String> processDefinitionIdsToImport = new ArrayList<>();
+    processDefinitionIdsToImport.add("test");
+    configurationService.setProcessDefinitionIdsToImport(processDefinitionIdsToImport);
 
     // when
     Response response = embeddedOptimizeRule.target("status/import-progress")
