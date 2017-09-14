@@ -8,19 +8,20 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
 
   <properties>
-    <version.util>0.2.0</version.util>
+    <version.util>0.3.0-SNAPSHOT</version.util>
   </properties>
 
   <modules>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
     <module>json-path</module>
+    <module>json-el</module>
     <module>benchmark</module>
   </modules>
 
