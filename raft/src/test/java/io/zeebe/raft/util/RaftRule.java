@@ -145,7 +145,7 @@ public class RaftRule extends ExternalResource
 
         logStream.open();
 
-        persistentStorage = new InMemoryRaftPersistentStorage();
+        persistentStorage = new InMemoryRaftPersistentStorage(logStream);
 
         raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
 

@@ -139,7 +139,7 @@ public class RaftClusterRule implements TestRule
     public void awaitEventsCommittedOnAll(final String... messages)
     {
         awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventsCommitted(messages)), ALL_COMMITTED_RETRIES,
-            "Failed to wait for events {} to be commit on all rafts", Arrays.asList(messages));
+            "Failed to wait for events %s to be commit on all rafts", Arrays.asList(messages));
     }
 
     public void awaitEventAppendedOnAll(final long position, final int term, final String message)
