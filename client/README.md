@@ -24,7 +24,7 @@ Then in new terminal
 yarn run serve
 ```
 
-Backend also can be start without maven compilation step. It's possible only if there is already
+Backend also can be started without maven compilation step. It's possible only if there is already
 compiled version of optimize backend at ``camunda-optimize/distro/target``.
 To do that set ``FAST_BUILD`` environment on scope. For example:
 
@@ -51,24 +51,6 @@ yarn run test
 Watch:
 ```bash
 yarn run test-watch
-```
-
-## E2E Testing
-
-### Production mode (only for unix systems):
-
-1. Go to root directory of repository
-2. Run ``sh ./start-e2e.sh``
-
-### Development mode:
-
-1. Start development server.
-2. Run ``yarn run test-e2e``.
-
-Running tests in watch mode:
-
-```bash
-yarn run test-e2e-watch
 ```
 
 ## Contributing
