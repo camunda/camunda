@@ -106,7 +106,7 @@ public class SocketAddress implements Comparable<SocketAddress>
 
     public int hostLength()
     {
-        return getHostBuffer().capacity();
+        return hostBuffer.capacity();
     }
 
     public SocketAddress hostLength(final int hostLength)
@@ -211,7 +211,7 @@ public class SocketAddress implements Comparable<SocketAddress>
         return host() + ":" + port();
     }
 
-        /**
+     /**
      * Tries to parse a address string to create a new socket address.
      *
      * @param address the address string with format host:port
