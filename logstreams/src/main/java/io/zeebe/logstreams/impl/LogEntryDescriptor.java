@@ -153,9 +153,9 @@ public class LogEntryDescriptor
         return buffer.getInt(raftTermOffset(offset));
     }
 
-    public static void setRaftTerm(final MutableDirectBuffer buffer, final int offset, final long position)
+    public static void setRaftTerm(final MutableDirectBuffer buffer, final int offset, final int raftTerm)
     {
-        buffer.putLong(raftTermOffset(offset), position);
+        buffer.putInt(raftTermOffset(offset), raftTerm);
     }
 
 

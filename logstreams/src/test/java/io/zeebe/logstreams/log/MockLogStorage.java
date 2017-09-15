@@ -79,7 +79,7 @@ public class MockLogStorage
         private long nextAddress = 0;
 
         private long position = 0;
-        private long raftTerm = -1;
+        private int raftTerm = -1;
 
         private byte[] sourceEventLogStreamTopicName = null;
         private int sourceEventLogStreamPartitionId = 1;
