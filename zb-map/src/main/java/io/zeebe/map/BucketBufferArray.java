@@ -534,16 +534,17 @@ public class BucketBufferArray implements AutoCloseable
      */
     private int findNotFullBucketBuffer()
     {
-        int bucketBufferId = 0;
         final int bucketBufferCount = getBucketBufferCount();
-        boolean isBufferCountReached = false;
-        while (!isBufferCountReached &&
-                getBucketCount(bucketBufferId) == ALLOCATION_FACTOR)
+
+        for (int bucketBufferId = 0; bucketBufferId < bucketBufferCount; bucketBufferId++)
         {
-            bucketBufferId++;
-            isBufferCountReached = bucketBufferId == bucketBufferCount;
+            if (getBucketCount(bucketBufferId) != ALLOCATION_FACTOR)
+            {
+                return bucketBufferId;
+            }
         }
-        return isBufferCountReached ? bucketBufferId - 1 : bucketBufferId;
+
+        return bucketBufferCount - 1;
     }
 
     /**

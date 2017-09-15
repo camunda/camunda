@@ -255,11 +255,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         this.maxTableSize = ensureTableSizeIsPowerOfTwo(maxTableSize);
     }
 
-    public void setLoadFactorOverflowLimit(double loadFactorOverflowLimit)
-    {
-        this.loadFactorOverflowLimit = loadFactorOverflowLimit;
-    }
-
     public int bucketCount()
     {
         return bucketBufferArray.getBucketCount();
