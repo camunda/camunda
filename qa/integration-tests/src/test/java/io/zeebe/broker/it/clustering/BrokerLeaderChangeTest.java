@@ -124,7 +124,6 @@ public class BrokerLeaderChangeTest
         topologyObserver.waitForBroker(BROKER_1_CLIENT_ADDRESS);
 
         final RaftMemberObserver raftMemberObserver = new RaftMemberObserver();
-        raftMemberObserver.waitForRaftMember(BROKER_1_RAFT_ADDRESS);
 
         // start second broker
         startBroker(BROKER_2_CLIENT_ADDRESS, BROKER_2_TOML);
