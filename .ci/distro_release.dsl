@@ -1,6 +1,6 @@
 def jobName = 'zb-msgpack-json-path-DISTRO-maven-deploy'
 def repository = 'zb-msgpack-json-path'
-def gitBranch = '0.2.x'
+def gitBranch = 'master'
 
 def pom = 'pom.xml'
 def mvnGoals = 'clean license:check source:jar deploy -B'
