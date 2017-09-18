@@ -112,16 +112,26 @@ function startEngine(c7port) {
   }
 
   function startServer() {
-    const startScript = utils.findPath(extractTarget, [
+    const tomcatDir = utils.findPath(extractTarget, [
       'server',
-      /tomcat/,
+      /tomcat/
+    ]);
+    const startScript = utils.findPath(tomcatDir, [
       'bin',
       utils.isWindows ? 'catalina.bat' : 'catalina.sh'
     ]);
 
     console.log(`Starting new instance of engine for ${c7port}...`);
 
-    shell.exec(startScript + ' run', {async:true});
+    shell.exec(startScript + ' run', {
+      async:true,
+      env: Object.assign(
+        process.env,
+        {
+          CATALINA_HOME: tomcatDir,
+        }
+      )
+    });
 
     return utils.waitForServer(engineUrl);
   }
