@@ -1,38 +1,42 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent, triggerEvent, selectByText} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {createReactMock} from 'testHelpers';
 import sinon from 'sinon';
-import {createDateModal, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateModal';
+import {createDateModalReact, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateModal';
+import {mount} from 'enzyme';
 import {TODAY, YESTERDAY, PAST7, PAST30,
         LAST_WEEK, LAST_MONTH, LAST_YEAR,
         THIS_WEEK, THIS_MONTH, THIS_YEAR} from 'main/processDisplay/controls/filter/date/DateButton';
 
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
+
 describe('<DateModal>', () => {
-  let node;
-  let update;
+  let wrapper;
   let Modal;
-  let createModal;
-  let Socket;
   let createStartDateFilter;
   let onNextTick;
   let createCallback;
-  let $;
-  let datepickerFct;
   let DateButton;
+  let DatePicker;
   let DateModal;
 
   beforeEach(() => {
-    DateButton = createMockComponent('DateButton');
+    DatePicker = createReactMock('DatePicker');
+    __set__('DatePicker', DatePicker);
+
+    DateButton = createReactMock('DateButton');
     __set__('DateButton', DateButton);
 
-    Modal = createMockComponent('Modal', true);
-    Modal.open = sinon.spy();
-    Modal.close = sinon.spy();
-    createModal = sinon.stub().returns(Modal);
-    __set__('createModal', createModal);
+    Modal = createReactMock('Modal', true);
+    __set__('Modal', Modal);
 
-    Socket = createMockComponent('Socket', true);
-    __set__('Socket', Socket);
+    Modal.Header = createReactMock('Header', true);
+    Modal.Body = createReactMock('Body', true);
+    Modal.Footer = createReactMock('Body', true);
 
     createStartDateFilter = sinon.spy();
     __set__('createStartDateFilter', createStartDateFilter);
@@ -42,149 +46,105 @@ describe('<DateModal>', () => {
 
     createCallback = sinon.spy();
 
-    datepickerFct = sinon.spy();
-    $ = sinon.stub().returns({
-      datepicker: datepickerFct
-    });
-    __set__('$', $);
+    DateModal = createDateModalReact(createCallback);
 
-    DateModal = createDateModal(createCallback);
-
-    ({node, update} = mountTemplate(<DateModal />));
+    wrapper = mount(<DateModal />);
   });
 
   afterEach(() => {
+    __ResetDependency__('DatePicker');
     __ResetDependency__('DateButton');
-    __ResetDependency__('createModal');
-    __ResetDependency__('Socket');
+    __ResetDependency__('Modal');
     __ResetDependency__('createStartDateFilter');
     __ResetDependency__('onNextTick');
-    __ResetDependency__('$');
-  });
-
-  it('should initialize the datepicker', () => {
-    expect(datepickerFct.calledOnce).to.eql(true);
   });
 
   describe('Modal', () => {
-    it('should be included', () => {
-      expect(node.textContent).to.contain(Modal.text);
+    let modalWrapper;
+
+    beforeEach(() => {
+      modalWrapper = wrapper.find(Modal);
     });
 
-    describe('head socket', () => {
-      let headNode;
+    it('should be included', () => {
+      expect(wrapper).to.contain.text(Modal.text);
+    });
+
+    describe('head', () => {
+      let headWrapper;
 
       beforeEach(() => {
-        headNode = Socket.getChildrenNode({name: 'head'});
-      });
-
-      it('should be included', () => {
-        expect(
-          Modal.getChildTemplate({attributes: {name: 'head'}, text: 'Socket'})
-        ).to.exist;
+        headWrapper = wrapper.find(Modal.Header);
       });
 
       it('should contain button that closes modal', () => {
-        const button = headNode.querySelector('button.close');
+        const button = headWrapper.find('button.close');
 
         expect(button).to.exist;
 
-        triggerEvent({
-          node: button,
-          eventName: 'click'
-        });
+        button.simulate('click');
 
-        expect(Modal.close.calledOnce).to.eql(true);
+        expect(modalWrapper).to.have.prop('show', false);
       });
 
       it('should contain title', () => {
-        expect(headNode.querySelector('h4.modal-title')).to.exist;
+        expect(headWrapper.find('h4.modal-title')).to.exist;
       });
     });
 
     describe('body socket', () => {
-      let bodyNode;
-      let startDate;
-      let endDate;
+      let bodyWrapper;
 
       beforeEach(() => {
-        bodyNode = Socket.getChildrenNode({name: 'body'});
-        startDate = bodyNode.querySelector('input[type="text"].form-control.start');
-        endDate = bodyNode.querySelector('input[type="text"].form-control.end');
-
-        update({});
-      });
-
-      it('should be included', () => {
-        expect(
-          Modal.getChildTemplate({attributes: {name: 'body'}, text: 'Socket'})
-        ).to.exist;
+        bodyWrapper = wrapper.find(Modal.Body);
       });
 
       it('should contain start date field', () => {
-        expect(startDate).to.exist;
-      });
-
-      it('should contain end date field', () => {
-        expect(endDate).to.exist;
+        expect(bodyWrapper.find(DatePicker)).to.exist;
       });
 
       it('should contain date buttons', () => {
-        expect(bodyNode.textContent).to.include(DateButton.text);
-        expect(DateButton.appliedWith({dateLabel: TODAY})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: YESTERDAY})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: PAST7})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: PAST30})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: LAST_WEEK})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: LAST_MONTH})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: LAST_YEAR})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: THIS_WEEK})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: THIS_MONTH})).to.eql(true);
-        expect(DateButton.appliedWith({dateLabel: THIS_YEAR})).to.eql(true);
+        expect(bodyWrapper.find(DateButton)).to.exist;
+
+        [
+          TODAY, YESTERDAY, PAST7, PAST30,
+          LAST_WEEK, LAST_MONTH, LAST_YEAR,
+          THIS_WEEK, THIS_MONTH, THIS_YEAR
+        ].forEach(label => {
+          const call = DateButton.calls.find(([{dateLabel}]) => dateLabel === label);
+
+          expect(call).to.exist;
+        });
       });
     });
 
     describe('foot socket', () => {
-      let footNode;
+      let footWrapper;
 
       beforeEach(() => {
-        footNode = Socket.getChildrenNode({name: 'foot'});
-      });
-
-      it('should be included', () => {
-        expect(
-          Modal.getChildTemplate({attributes: {name: 'foot'}, text: 'Socket'})
-        ).to.exist;
+        footWrapper = wrapper.find(Modal.Footer);
       });
 
       it('should have close button that closes modal', () => {
-        const closeBtn = selectByText(
-          footNode.querySelectorAll('button'),
-          'Abort'
-        )[0];
+        const closeBtn = footWrapper
+          .find('button')
+          .filterWhere(btn => btn.text().indexOf('Abort') >= 0);
 
-        triggerEvent({
-          node: closeBtn,
-          eventName: 'click'
-        });
+        closeBtn.simulate('click');
 
         expect(closeBtn).to.exist;
-        expect(Modal.close.calledOnce).to.eql(true, 'expected modal to be closed');
+        expect(modalWrapper).to.have.prop('show', false);
       });
 
       it('should have create filter button that closes modal', () => {
-        const createBtn = selectByText(
-          footNode.querySelectorAll('button'),
-          'Create Filter'
-        )[0];
+        const createBtn = footWrapper
+          .find('button')
+          .filterWhere(btn => btn.text().indexOf('Create Filter') >= 0);
 
-        triggerEvent({
-          node: createBtn,
-          eventName: 'click'
-        });
+        createBtn.simulate('click');
 
         expect(createBtn).to.exist;
-        expect(Modal.close.calledOnce).to.eql(true, 'expected modal to be closed');
+        expect(modalWrapper).to.have.prop('show', false);
         expect(createStartDateFilter.calledOnce).to.eql(true, 'expected date filter to be created');
         expect(createCallback.calledOnce).to.eql(true, 'expected onFilterAdded callback to be called');
       });

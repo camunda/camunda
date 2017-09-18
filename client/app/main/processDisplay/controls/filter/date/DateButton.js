@@ -1,7 +1,4 @@
 import React from 'react';
-import {formatDate} from './service';
-import $ from 'jquery';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
 const jsx = React.createElement;
 
@@ -16,7 +13,7 @@ export const THIS_WEEK = 'This Week';
 export const THIS_MONTH = 'This Month';
 export const THIS_YEAR = 'This Year';
 
-export class DateButtonReact extends React.Component {
+export class DateButton extends React.Component {
   render() {
     return <button type="button" className="btn btn-default" onClick={this.setDate}>
       {this.props.dateLabel}
@@ -26,12 +23,12 @@ export class DateButtonReact extends React.Component {
   setDate = () => {
     const range = getDateRange(this.props.dateLabel);
 
-    $(this.props.start).datepicker('setDate', formatDate(range.start));
-    $(this.props.end).datepicker('setDate', formatDate(range.end));
+    this.props.setDates({
+      startDate: range.start.toISOString(),
+      endDate: range.end.toISOString()
+    });
   }
 }
-
-export const DateButton = createViewUtilsComponentFromReact('span', DateButtonReact);
 
 const DAY = 86400000;
 

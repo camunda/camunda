@@ -1,110 +1,127 @@
-import {jsx, OnEvent, Socket, createReferenceComponent, Scope} from 'view-utils';
-import {onNextTick} from 'utils';
+import React from 'react';
+import Modal from 'react-bootstrap/lib/Modal';
+import DatePicker from 'react-bootstrap-date-picker';
+import {onNextTick, withState} from 'utils';
 import {createStartDateFilter, formatDate} from './service';
-import {createModal} from 'widgets';
 import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
         LAST_WEEK, LAST_MONTH, LAST_YEAR,
         THIS_WEEK, THIS_MONTH, THIS_YEAR} from './DateButton';
-import $ from 'jquery';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
-function currentDate() {
-  return formatDate(new Date());
-}
+const jsx = React.createElement;
 
-export function createDateModal(createCallback) {
-  const Modal = createModal();
+export function createDateModalReact(createCallback) {
+  return withState(
+    {
+      isOpen: false
+    },
+    class extends React.PureComponent {
+      constructor(props) {
+        super(props);
 
-  const DateModal = () => {
-    return (parentNode, eventBus) => {
-      const nodes = {};
-      const Reference = createReferenceComponent(nodes);
+        this.state = {
+          startDate: new Date().toISOString(),
+          endDate: new Date().toISOString()
+        };
+      }
 
-      const template =
-        <Modal>
-          <Socket name="head">
-            <button type="button" className="close">
-              <OnEvent event="click" listener={Modal.close} />
+      render() {
+        return <Modal show={this.props.isOpen}>
+          <Modal.Header>
+            <button type="button" className="close" onClick={this.close}>
               <span>×</span>
             </button>
             <h4 className="modal-title">New Date Filter</h4>
-          </Socket>
-          <Socket name="body">
+          </Modal.Header>
+          <Modal.Body>
             <form>
               <span className="label">Start Date Filter:</span>
               <center>
                 <div className="input-group input-daterange">
-                  <Reference name="dateRange" />
-                  <input type="text" className="form-control start" value={currentDate()}>
-                    <Reference name="startDate" />
-                  </input>
+                  <DatePicker dateFormat="YYYY-MM-DD"
+                              onChange={this.getDateSetter('startDate')}
+                              value={this.state.startDate} />
                   <span className="input-group-addon">to</span>
-                  <input type="text" className="form-control end" value={currentDate()}>
-                    <Reference name="endDate" />
-                  </input>
+                  <DatePicker dateFormat="YYYY-MM-DD"
+                              onChange={this.getDateSetter('endDate')}
+                              value={this.state.endDate} />
                 </div>
               </center>
-              <Scope selector={getDateNodes}>
                 <div className="form-group">
                   <span className="label">Frequently Used:</span>
                   <p className="four-button-row">
-                    <DateButton dateLabel={TODAY} />
-                    <DateButton dateLabel={YESTERDAY} />
-                    <DateButton dateLabel={PAST7} />
-                    <DateButton dateLabel={PAST30} />
+                    {this.getDateButtons([TODAY, YESTERDAY, PAST7, PAST30])}
                   </p>
                   <p className="three-button-row">
-                    <DateButton dateLabel={LAST_WEEK} />
-                    <DateButton dateLabel={LAST_MONTH} />
-                    <DateButton dateLabel={LAST_YEAR} />
+                    {this.getDateButtons([LAST_WEEK, LAST_MONTH, LAST_YEAR])}
                   </p>
                   <p className="three-button-row">
-                    <DateButton dateLabel={THIS_WEEK} />
-                    <DateButton dateLabel={THIS_MONTH} />
-                    <DateButton dateLabel={THIS_YEAR} />
+                    {this.getDateButtons([THIS_WEEK, THIS_MONTH, THIS_YEAR])}
                   </p>
                 </div>
-              </Scope>
             </form>
-          </Socket>
-          <Socket name="foot">
-            <button type="button" className="btn btn-default">
-              <OnEvent event="click" listener={Modal.close} />
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-default" onClick={this.close}>
               Abort
             </button>
-            <button type="button" className="btn btn-primary">
-              <OnEvent event="click" listener={createFilter} />
+            <button type="button" className="btn btn-primary" onClick={this.createFilter}>
               Create Filter
             </button>
-          </Socket>
+          </Modal.Footer>
         </Modal>;
-      const templateUpdate = template(parentNode, eventBus);
+      }
 
-      $(nodes.dateRange).datepicker({weekStart: 1, format: 'yyyy-mm-dd'});
+      getDateButtons(labels) {
+        return labels.map(label =>
+          <DateButton dateLabel={label}
+                      key={label}
+                      setDates={this.setDates} />
+        );
+      }
 
-      return templateUpdate;
+      setDates = (dates) => {
+        this.setState(dates);
+      }
 
-      function getDateNodes() {
-        return {
-          start: nodes.startDate,
-          end: nodes.endDate
+      getDateSetter(name) {
+        return date => {
+          this.setState({
+            ...this.state,
+            [name]: date
+          });
         };
       }
 
-      function createFilter() {
+      createFilter = () => {
         createStartDateFilter(
-          nodes.startDate.value + 'T00:00:00',
-          nodes.endDate.value + 'T23:59:59'
+          formatDate(new Date(this.state.startDate)) + 'T00:00:00',
+          formatDate(new Date(this.state.endDate)) + 'T00:00:00'
         );
 
-        Modal.close();
+        this.close();
 
         onNextTick(createCallback);
       }
-    };
-  };
 
-  DateModal.open = Modal.open;
-  DateModal.close = Modal.close;
+      switchModal(isOpen) {
+        if (typeof this.props.setProperty === 'function') {
+          this.props.setProperty('isOpen', isOpen);
+        }
+      }
+
+      open = () => this.switchModal(true)
+      close = () => this.switchModal(false)
+    }
+  );
+}
+
+export function createDateModal(createCallback) {
+  const DateModalReact = createDateModalReact(createCallback);
+  const DateModal = createViewUtilsComponentFromReact('div', DateModalReact);
+
+  DateModal.open = () => DateModalReact.setProperty('isOpen', true);
+  DateModal.close = () => DateModalReact.setProperty('isOpen', false);
 
   return DateModal;
 }
