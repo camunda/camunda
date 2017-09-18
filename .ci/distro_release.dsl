@@ -2,7 +2,7 @@
 
 def jobName = 'zeebe-DISTRO-maven-deploy'
 def repository = 'zeebe'
-def gitBranch = 'master'
+def gitBranch = '0.2.x'
 
 def pom = 'pom.xml'
 def mvnGoals = 'clean license:check source:jar javadoc:javadoc deploy -B'
