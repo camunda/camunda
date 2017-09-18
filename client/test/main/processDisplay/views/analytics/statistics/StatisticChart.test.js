@@ -29,6 +29,7 @@ describe('<StatisticChart>', () => {
       ({node, update} = mountTemplate(<StatisticChart
         isLoading={isLoading}
         data={data}
+        chartConfig={{}}
       >some header text</StatisticChart>));
       update({});
     });
@@ -46,6 +47,7 @@ describe('<StatisticChart>', () => {
       ({node, update} = mountTemplate(<StatisticChart
         isLoading={isLoading}
         data={data}
+        chartConfig={{}}
       >some header text</StatisticChart>));
       update({});
     });

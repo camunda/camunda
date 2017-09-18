@@ -1,4 +1,4 @@
-import {jsx, Children, Match, Case} from 'view-utils';
+import {jsx, Children, Match, Case, Scope} from 'view-utils';
 import {LoadingIndicator, Chart} from 'widgets';
 
 export const StatisticChart = ({children, isLoading, data, chartConfig}) => {
@@ -15,7 +15,14 @@ export const StatisticChart = ({children, isLoading, data, chartConfig}) => {
             </div>
           </Case>
         </Match>
-        <Chart selector={data} config={chartConfig} />
+        <Scope selector={data}>
+          <Scope selector={data => {return {data};}}>
+            <Chart
+              absoluteScale={chartConfig.absoluteScale}
+              onHoverChange={chartConfig.onHoverChange}
+            />
+          </Scope>
+        </Scope>
       </div>
     </LoadingIndicator>
   </div>;

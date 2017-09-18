@@ -1,41 +1,56 @@
-import {withSelector, DESTROY_EVENT, noop} from 'view-utils';
+import React from 'react';
+import * as d3 from 'd3';
 import {
-  getChartDimensions, createScales, createAxes, createTooltip, createChartOn,
+  createScales, createAxes, createTooltip, getChartDimensions,
   createContainer, updateScales, updateAxes, collectBars, updateBars,
   createNewBars, removeOldBars
 } from 'utils/chart-utils';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
-export const Chart = withSelector(({config}) => {
-  return (parentNode, eventsBus) => {
-    const svg = createChartOn(parentNode);
-    const {margin, width, height} = getChartDimensions(svg, config);
+const jsx = React.createElement;
 
-    const container = createContainer(svg, margin);
+class ChartReact extends React.Component {
+  componentWillUnmount() {
+    this.tooltip.destroy();
+  }
 
-    const {x, y} = createScales(width, height);
-    const {xAxis, yAxis} = createAxes(container, height);
+  componentDidMount() {
+    this.container = createContainer(this.svg);
 
-    const tooltip = createTooltip(svg);
+    const {width, height} = getChartDimensions(this.svg);
 
-    eventsBus.on(DESTROY_EVENT, () => {
-      tooltip.destroy();
-    });
+    this.scale = createScales(width, height);
+    this.axis = createAxes(this.container, height);
 
-    return (data) => {
-      const {height} = getChartDimensions(svg, config);
+    this.tooltip = createTooltip(this.svg);
+  }
 
-      y.rangeRound([height, 0]);
-      xAxis.attr('transform', 'translate(0,' + height + ')');
-      svg.attr('viewBox', '0 0 600 ' + (height + margin.top + margin.bottom));
+  componentDidUpdate() {
+    const {height, width, margin} = getChartDimensions(this.svg);
 
-      updateScales({data, x, y});
-      updateAxes({xAxis, yAxis, x, y, scale: config.absoluteScale ? 'd' : '%', width});
+    const {x, y} = this.scale;
+    const {xAxis, yAxis} = this.axis;
+    const {data, absoluteScale, onHoverChange} = this.props;
 
-      const bars = collectBars({container, data});
+    y.rangeRound([height, 0]);
+    xAxis.attr('transform', 'translate(0,' + height + ')');
+    this.svg.attr('viewBox', '0 0 600 ' + (height + margin.top + margin.bottom));
 
-      updateBars({bars, x, y, height});
-      createNewBars({bars, x, y, height, tooltip, onHoverChange: config.onHoverChange || noop});
-      removeOldBars(bars);
-    };
-  };
-});
+    updateScales({data, x, y});
+    updateAxes({xAxis, yAxis, x, y, scale: absoluteScale ? 'd' : '%', width});
+
+    const bars = collectBars({container: this.container, data});
+
+    updateBars({bars, x, y, height});
+    createNewBars({bars, x, y, height, tooltip: this.tooltip, onHoverChange: onHoverChange || (() => {})});
+    removeOldBars(bars);
+  }
+
+  render() {
+    return (
+      <svg width="100%" height="100%" viewBox="0 0 600 300" preserveAspectRatio="none" ref={svg => {this.svg = d3.select(svg);}} />
+    );
+  }
+}
+
+export const Chart = createViewUtilsComponentFromReact('div', ChartReact);

@@ -37,18 +37,24 @@ export function createAxes(container, height) {
   };
 }
 
-export function getChartDimensions(svg, {marginTop, marginRight, marginBottom, marginLeft}) {
+export function getChartDimensions(svg) {
   const margin = {
-    top: marginTop || 20,
-    right: marginRight || 20,
-    bottom: marginBottom || 30,
-    left: marginLeft || 40
+    top: 20,
+    right: 20,
+    bottom: 30,
+    left: 40
   };
 
-  const width = svg.node().parentNode.clientWidth - margin.left - margin.right;
-  const height = svg.node().parentNode.clientHeight - margin.top - margin.bottom;
+  const parentContainer = getParentContainer(svg);
+
+  const width = parentContainer.clientWidth - margin.left - margin.right;
+  const height = parentContainer.clientHeight - margin.top - margin.bottom;
 
   return {margin, width, height};
+}
+
+function getParentContainer(svg) {
+  return svg.node().parentNode.parentNode;
 }
 
 export function updateScales({data, x, y}) {
@@ -100,7 +106,7 @@ export function removeOldBars(bars) {
   bars.exit().remove();
 }
 
-export function createChartOn(node) {
+export function createChart() {
   const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
   svgNode.setAttribute('width', '100%');
@@ -108,12 +114,10 @@ export function createChartOn(node) {
   svgNode.setAttribute('viewBox', '0 0 600 300');
   svgNode.setAttribute('preserveAspectRatio', 'none');
 
-  node.appendChild(svgNode);
-
   return d3.select(svgNode);
 }
 
-export function createContainer(svg, {left, top}) {
+export function createContainer(svg) {
   return svg.append('g')
-    .attr('transform', 'translate(' + left + ',' + top + ')');
+    .attr('transform', 'translate(40,20)');
 }
