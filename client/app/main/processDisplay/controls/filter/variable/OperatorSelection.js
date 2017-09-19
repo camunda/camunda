@@ -1,33 +1,55 @@
-import {jsx, Match, Case} from 'view-utils';
+import React from 'react';
 import {OperatorButton} from './OperatorButton';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
-export function OperatorSelection() {
-  return <div className="operators">
-    <Match>
-      <Case predicate={variableHasType('String')}>
-        <OperatorButton operator="in" />
-        <OperatorButton operator="not in" />
-      </Case>
-      <Case predicate={variableHasType('Boolean')}>
-        <OperatorButton operator="=" implicitValue={true} />
-        <OperatorButton operator="=" implicitValue={false} />
-      </Case>
-      <Case predicate={variableSelected}>
-        <OperatorButton operator="in" />
-        <OperatorButton operator="not in" />
-        <OperatorButton operator=">" />
-        <OperatorButton operator="<" />
-      </Case>
-    </Match>
-  </div>;
+const jsx = React.createElement;
 
-  function variableHasType(type) {
-    return ({variables: {data}, selectedIdx}) => {
-      return data && selectedIdx !== undefined && data[selectedIdx].type === type;
-    };
+export class OperatorSelectionReact extends React.PureComponent {
+  render() {
+    return <div className="operators">
+      {this.getOperators()}
+    </div>;
   }
 
-  function variableSelected({selectedIdx}) {
-    return selectedIdx !== undefined;
+  getOperators() {
+    const {operator, value} = this.props;
+
+    if (this.variableHasType('String')) {
+      return [
+        <OperatorButton key="in" operator="in" selectedOperator={operator} value={value} />,
+        <OperatorButton key="not in" operator="not in" selectedOperator={operator} value={value} />
+      ];
+    }
+
+    if (this.variableHasType('Boolean')) {
+      return [
+        <OperatorButton key="true" operator="=" implicitValue={true} selectedOperator={operator} value={value} />,
+        <OperatorButton key="false" operator="=" implicitValue={false} selectedOperator={operator} value={value} />
+      ];
+    }
+
+    if (this.variableSelected()) {
+      return [
+        <OperatorButton key="in" operator="in" selectedOperator={operator} value={value} />,
+        <OperatorButton key="not in" operator="not in" selectedOperator={operator} value={value} />,
+        <OperatorButton key=">" operator=">" selectedOperator={operator} value={value} />,
+        <OperatorButton key="<" operator="<" selectedOperator={operator} value={value} />
+      ];
+    }
+
+    return null;
+  }
+
+  variableHasType(type) {
+    const {variables, selectedIdx} = this.props;
+
+    return variables && variables.data && selectedIdx !== undefined && variables.data[selectedIdx].type === type;
+  }
+
+  variableSelected() {
+    return this.props.selectedIdx !== undefined;
   }
 }
+
+export const OperatorSelection = createViewUtilsComponentFromReact('span', OperatorSelectionReact);
+

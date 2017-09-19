@@ -1,11 +1,17 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
-import {expect} from 'chai';
-import {OperatorSelection, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/variable/OperatorSelection';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {createReactMock} from 'testHelpers';
+import {OperatorSelectionReact, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/variable/OperatorSelection';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
 
 describe('<OperatorSelection>', () => {
-  let node;
-  let update;
+  let wrapper;
   let OperatorButton;
   let variables;
 
@@ -18,10 +24,8 @@ describe('<OperatorSelection>', () => {
       ]
     };
 
-    OperatorButton = createMockComponent('OperatorButton');
+    OperatorButton = createReactMock('OperatorButton');
     __set__('OperatorButton', OperatorButton);
-
-    ({node, update} = mountTemplate(<OperatorSelection />));
   });
 
   afterEach(() => {
@@ -29,48 +33,34 @@ describe('<OperatorSelection>', () => {
   });
 
   it('should not display any operators if no variable is selected', () => {
-    update({
-      variables,
-      selectedIdx: undefined
-    });
+    wrapper = mount(<OperatorSelectionReact variables={variables} />);
 
-    expect(node.textContent).to.not.contain(OperatorButton.text);
+    expect(wrapper).to.not.contain.text(OperatorButton.text);
   });
 
   it('should have in and not in buttons for strings', () => {
-    update({
-      variables,
-      selectedIdx: 1
-    });
+    wrapper = mount(<OperatorSelectionReact variables={variables} selectedIdx={1} />);
 
-    expect(node.textContent).to.contain(OperatorButton.text);
-    expect(OperatorButton.appliedWith({operator: 'in'})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: 'not in'})).to.eql(true);
+    expect(wrapper).to.contain.text(OperatorButton.text);
+    expect(OperatorButton.calledWith({operator: 'in'})).to.eql(true);
+    expect(OperatorButton.calledWith({operator: 'not in'})).to.eql(true);
   });
 
   it('should have buttons with implicit values for booleans', () => {
-    update({
-      variables,
-      selectedIdx: 0
-    });
+    wrapper = mount(<OperatorSelectionReact variables={variables} selectedIdx={0} />);
 
-    expect(node.textContent).to.contain(OperatorButton.text);
-    expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({implicitValue: true})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: '='})).to.eql(true);
-    expect(OperatorButton.appliedWith({implicitValue: false})).to.eql(true);
+    expect(wrapper).to.contain.text(OperatorButton.text);
+    expect(OperatorButton.calledWith({implicitValue: false, operator: '='})).to.eql(true);
+    expect(OperatorButton.calledWith({implicitValue: true, operator: '='})).to.eql(true);
   });
 
   it('should have in, not in, < and > operators for all other types (numbers and dates)', () => {
-    update({
-      variables,
-      selectedIdx: 2
-    });
+    wrapper = mount(<OperatorSelectionReact variables={variables} selectedIdx={2} />);
 
-    expect(node.textContent).to.contain(OperatorButton.text);
-    expect(OperatorButton.appliedWith({operator: 'in'})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: 'not in'})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: '>'})).to.eql(true);
-    expect(OperatorButton.appliedWith({operator: '<'})).to.eql(true);
+    expect(wrapper).to.contain.text(OperatorButton.text);
+    expect(OperatorButton.calledWith({operator: 'in'})).to.eql(true, 'in');
+    expect(OperatorButton.calledWith({operator: 'not in'})).to.eql(true, 'not in');
+    expect(OperatorButton.calledWith({operator: '>'})).to.eql(true, '>');
+    expect(OperatorButton.calledWith({operator: '<'})).to.eql(true, '<');
   });
 });

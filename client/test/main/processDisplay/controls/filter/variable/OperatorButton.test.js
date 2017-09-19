@@ -1,12 +1,17 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import {OperatorButton, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/variable/OperatorButton';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
 
 describe('<OperatorButton>', () => {
-  let node;
-  let update;
+  let wrapper;
   let setOperator;
   let setValue;
   let labels;
@@ -32,76 +37,62 @@ describe('<OperatorButton>', () => {
   });
 
   it('should display the label of the supplied operator', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" />));
-    update({});
+    wrapper = mount(<OperatorButton operator="T" />);
 
-    expect(node.textContent).to.contain(labels.T);
+    expect(wrapper).to.contain.text(labels.T);
   });
 
   it('should call setOperator when clicked', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" />));
-    update({});
+    wrapper = mount(<OperatorButton operator="T" />);
 
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     expect(setOperator.calledWith('T')).to.eql(true);
   });
 
   it('should display label of the implicit value if provided', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue="V" />));
-    update({});
+    wrapper = mount(<OperatorButton operator="T" implicitValue="V" />);
 
-    expect(node.textContent).to.contain(labels.T + ' ' + labels.V);
+    expect(wrapper).to.contain.text(labels.T + ' ' + labels.V);
   });
 
   it('should call setValue if implicit value is provided', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue="V" />));
-    update({});
+    wrapper = mount(<OperatorButton operator="T" implicitValue="V" />);
 
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     expect(setValue.calledWith('V')).to.eql(true);
   });
 
   it('should call setValue if implicit value is provided but falsy', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue={false} />));
-    update({});
+    wrapper = mount(<OperatorButton operator="T" implicitValue={false} />);
 
-    triggerEvent({
-      node,
-      selector: 'button',
-      eventName: 'click'
-    });
+    wrapper.find('button').simulate('click');
 
     expect(setValue.calledWith(false)).to.eql(true);
   });
 
   it('should have the active class if operator is active', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" />));
-    update({operator: 'T'});
+    wrapper = mount(<OperatorButton operator="T" selectedOperator="T" />);
 
-    expect(node.querySelector('button').classList.contains('active')).to.eql(true);
+    expect(
+      wrapper.find('button')
+    ).to.have.className('active');
   });
 
   it('should not have the active class if implicit value does not match', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue="V" />));
-    update({operator: 'T'});
+    wrapper = mount(<OperatorButton operator="T" implicitValue="V" selectedOperator="T" />);
 
-    expect(node.querySelector('button').classList.contains('active')).to.eql(false);
+    expect(
+      wrapper.find('button')
+    ).not.to.have.className('active');
   });
 
   it('should have the active class if operator and implicit value match', () => {
-    ({node, update} = mountTemplate(<OperatorButton operator="T" implicitValue="V" />));
-    update({operator: 'T', value: 'V'});
+    wrapper = mount(<OperatorButton operator="T" implicitValue="V" selectedOperator="T" value="V" />);
 
-    expect(node.querySelector('button').classList.contains('active')).to.eql(true);
+    expect(
+      wrapper.find('button')
+    ).to.have.className('active');
   });
 });

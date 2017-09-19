@@ -1,32 +1,38 @@
-import {jsx, OnEvent, Class, Scope, Text} from 'view-utils';
+import React from 'react';
 import {setOperator, setValue} from './service';
 import labels from './labels';
 
-export function OperatorButton({operator, implicitValue}) {
-  return <button type="button" className="btn btn-default" style="width:22%;">
-    <OnEvent event="click" listener={applyOperator} />
-    <Class className="active" predicate={isSelectedOperator} />
-    <Scope selector={getAggregatedLabel}>
-      <Text property="label" />
-    </Scope>
-  </button>;
+const jsx = React.createElement;
 
-  function getAggregatedLabel() {
-    return {
-      label: `${labels[operator]} ${implicitValue !== undefined ? labels[implicitValue.toString()] : ''}`.trim()
-    };
+export class OperatorButton extends React.PureComponent {
+  render() {
+    return <button type="button" className={'btn btn-default' + (this.isSelectedOperator() ? ' active' : '')}
+                   style={{width: '22%'}}
+                   onClick={this.applyOperator}>
+      {this.getAggregatedLabel()}
+    </button>;
   }
 
-  function applyOperator() {
+  applyOperator = () => {
+    const {operator, implicitValue} = this.props;
+
     setOperator(operator);
+
     if (implicitValue !== undefined) {
       setValue(implicitValue);
     }
   }
 
-  function isSelectedOperator(state) {
-    const matchingOperator = state.operator === operator;
-    const matchingValue = implicitValue !== undefined ? state.value === implicitValue : true;
+  getAggregatedLabel() {
+    const {operator, implicitValue} = this.props;
+
+    return `${labels[operator]} ${implicitValue !== undefined ? labels[implicitValue.toString()] : ''}`.trim();
+  }
+
+  isSelectedOperator() {
+    const {operator, implicitValue, selectedOperator, value} = this.props;
+    const matchingOperator = selectedOperator === operator;
+    const matchingValue = implicitValue !== undefined ? value === implicitValue : true;
 
     return matchingOperator && matchingValue;
   }
