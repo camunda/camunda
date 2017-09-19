@@ -1,6 +1,6 @@
 import {
   addLoading, createLoadingActionFunction, createResultActionFunction,
-  createErrorActionFunction, changeData
+  createErrorActionFunction, createResetActionFunction, changeData
 } from 'utils';
 
 export const SET_VERSION = 'SET_VERSION';
@@ -82,3 +82,4 @@ export function createSetVersionXmlAction(previousId, version, xml) {
 export const createLoadProcessDefinitionsAction = createLoadingActionFunction(LOADING_PROPERTY);
 export const createLoadProcessDefinitionsResultAction = createResultActionFunction(LOADING_PROPERTY);
 export const createLoadProcessDefinitionsErrorAction = createErrorActionFunction(LOADING_PROPERTY);
+export const createResetProcessDefinitionsErrorAction = createResetActionFunction(LOADING_PROPERTY);

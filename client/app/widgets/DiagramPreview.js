@@ -27,6 +27,10 @@ export class DiagramPreview extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    this.viewer = null;
+  }
+
   render() {
     // <Icon icon="alert" />
     // Icon usage is left here so it can be found be search while changeing Icon component to use React
@@ -65,16 +69,10 @@ export class DiagramPreview extends React.Component {
       queue.addTask(done => {
         viewer.importXML(this.props.diagram, err => {
           if (err) {
-            this.props.onLoaded();
-            return this.setState({
-              error: true
-            });
+            return this.updateLoadingState(true);
           }
 
-          this.setState({
-            error: false
-          });
-          this.props.onLoaded();
+          this.updateLoadingState(false);
 
           try {
             resetZoom(viewer);
@@ -88,10 +86,14 @@ export class DiagramPreview extends React.Component {
         });
       });
     } else {
+      this.updateLoadingState(true);
+    }
+  }
+
+  updateLoadingState(error) {
+    if (this.viewer) {
       this.props.onLoaded();
-      this.setState({
-        error: true
-      });
+      this.setState({error});
     }
   }
 }

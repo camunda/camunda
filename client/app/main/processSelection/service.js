@@ -3,7 +3,7 @@ import {get} from 'request';
 import {
   createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
   createLoadProcessDefinitionsErrorAction, createSetVersionAction,
-  createSetVersionXmlAction
+  createSetVersionXmlAction, createResetProcessDefinitionsErrorAction
 } from './reducer';
 import {getRouter} from 'router';
 import {addNotification} from 'notifications';
@@ -90,4 +90,8 @@ export function setVersionForProcess(previousId, {id, key, version, bpmn20Xml}) 
   }
 
   dispatchAction(createSetVersionAction(previousId, version));
+}
+
+export function resetData() {
+  dispatchAction(createResetProcessDefinitionsErrorAction());
 }

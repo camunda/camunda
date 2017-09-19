@@ -1,6 +1,6 @@
 import React from 'react';
 import {LoadingIndicator} from 'widgets/LoadingIndicator.react';
-import {loadProcessDefinitions} from './service';
+import {loadProcessDefinitions, resetData} from './service';
 import {isLoaded} from 'utils';
 import {PreviewCard} from './PreviewCard';
 import {createViewUtilsComponentFromReact} from 'reactAdapter';
@@ -44,6 +44,10 @@ export class ProcessSelectionReact extends React.Component {
 
   componentWillMount() {
     loadProcessDefinitions();
+  }
+
+  componentWillUnmount() {
+    resetData();
   }
 }
 
