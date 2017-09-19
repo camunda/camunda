@@ -87,17 +87,19 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private void defineLogbackLoggingConfiguration() {
+    System.out.println("life sux");
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     loggerContext.reset();
     JoranConfigurator configurator = new JoranConfigurator();
     InputStream configStream = null;
     try {
-      configStream = new FileInputStream(getLogbackConfigurationFilePath());
+      configStream = getLogbackConfigurationFilePath();
       configurator.setContext(loggerContext);
       configurator.doConfigure(configStream); // loads logback file
       configStream.close();
     } catch (JoranException | IOException e) {
-      logger.warn("Can't read log configuration file. Using basic logback configuration instead!", e);
+      //since logging setup broke, print it in standard error stream
+      e.printStackTrace();
     } finally {
       if (configStream != null) {
         try {
@@ -109,20 +111,20 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
-  private String getLogbackConfigurationFilePath() {
-    URL url  = this.getClass().getClassLoader().getResource("environment-logback.xml");
-    if(url != null) {
-      return url.getFile();
+  private InputStream getLogbackConfigurationFilePath() {
+    InputStream stream  = this.getClass().getClassLoader().getResourceAsStream("environment-logback.xml");
+    if(stream != null) {
+      return stream;
     }
-    url = this.getClass().getClassLoader().getResource("logback-test.xml");
-    if(url != null) {
-      return url.getFile();
+    stream = this.getClass().getClassLoader().getResourceAsStream("logback-test.xml");
+    if(stream != null) {
+      return stream;
     }
-    url = this.getClass().getClassLoader().getResource("logback.xml");
-    if(url != null) {
-      return url.getFile();
+    stream = this.getClass().getClassLoader().getResourceAsStream("logback.xml");
+    if(stream != null) {
+      return stream;
     }
-    return "";
+    return null;
   }
 
 
