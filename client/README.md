@@ -29,7 +29,7 @@ compiled version of optimize backend at ``camunda-optimize/distro/target``.
 To do that set ``FAST_BUILD`` environment on scope. For example:
 
 ```bash
-export FAST_BUILD = 1
+export FAST_BUILD=1
 yarn run start-backend
 ```
 
