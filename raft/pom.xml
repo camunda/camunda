@@ -63,6 +63,7 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-test-util</artifactId>
       <version>${version.util}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
