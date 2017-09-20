@@ -20,8 +20,10 @@ package io.zeebe.broker.incident;
 import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.processor.WorkflowInstanceProcessingException;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorErrorHandler;
+import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -54,7 +56,9 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     @Override
     public boolean canHandle(Exception error)
     {
-        return error instanceof MappingException;
+        return error instanceof MappingException
+                || error instanceof WorkflowInstanceProcessingException
+                || error instanceof JsonConditionException;
     }
 
     @Override
@@ -64,13 +68,21 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
         if (error instanceof MappingException)
         {
-            success = handlePayloadException(failureEvent, ErrorType.IO_MAPPING_ERROR, error);
+            success = handleException(failureEvent, ErrorType.IO_MAPPING_ERROR, error);
+        }
+        else if (error instanceof WorkflowInstanceProcessingException)
+        {
+            success = handleException(failureEvent, ErrorType.CONDITION_ERROR, error);
+        }
+        else if (error instanceof JsonConditionException)
+        {
+            success = handleException(failureEvent, ErrorType.CONDITION_ERROR, error);
         }
 
         return success;
     }
 
-    private boolean handlePayloadException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
+    private boolean handleException(LoggedEvent failureEvent, ErrorType errorType, Exception error)
     {
         incidentEventMetadata.reset()
             .protocolVersion(Protocol.PROTOCOL_VERSION)

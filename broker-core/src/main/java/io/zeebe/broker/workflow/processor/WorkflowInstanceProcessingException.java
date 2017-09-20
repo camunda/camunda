@@ -15,15 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.incident.data;
+package io.zeebe.broker.workflow.processor;
 
-public enum ErrorType
+public class WorkflowInstanceProcessingException extends RuntimeException
 {
-    UNKNOWN,
+    private static final long serialVersionUID = 1L;
 
-    IO_MAPPING_ERROR,
-
-    TASK_NO_RETRIES,
-
-    CONDITION_ERROR,
+    public WorkflowInstanceProcessingException(String message)
+    {
+        super(message);
+    }
 }

@@ -22,8 +22,7 @@ import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.protocol.clientapi.EventType.WORKFLOW_INSTANCE_EVENT;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -39,7 +38,10 @@ import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.model.bpmn.BpmnAspect;
+import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
+import io.zeebe.msgpack.el.JsonConditionInterpreter;
 import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -76,6 +78,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new ActiveWorkflowInstanceProcessor(new TakeSequenceFlowAspectHandler()));
         aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ActiveWorkflowInstanceProcessor(new ConsumeTokenAspectHandler()));
+        aspectHandlers.put(BpmnAspect.EXCLUSIVE_SPLIT, new ActiveWorkflowInstanceProcessor(new ExclusiveSplitAspectHandler()));
     }
 
     // data //////////////////////////////////////////
@@ -108,6 +111,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected long eventPosition;
 
     protected final MappingProcessor payloadMappingProcessor;
+    protected final JsonConditionInterpreter conditionInterpreter = new JsonConditionInterpreter();
 
     protected LogStream targetStream;
 
@@ -520,6 +524,75 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             return writeWorkflowEvent(writer.positionAsKey());
         }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstanceIndex
+                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .setActivityKey(-1L)
+                .write();
+
+            activityInstanceMap.remove(eventKey);
+        }
+    }
+
+    private final class ExclusiveSplitAspectHandler implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            final ExclusiveGateway exclusiveGateway = (ExclusiveGateway) getCurrentActivity();
+
+            final SequenceFlow sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway);
+
+            if (sequenceFlow != null)
+            {
+                workflowInstanceEvent
+                    .setState(WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)
+                    .setActivityId(sequenceFlow.getIdAsBuffer());
+            }
+            else
+            {
+                // create incident event instead of throwing an exception - #311
+                throw new WorkflowInstanceProcessingException("All conditions evaluated to false and no default flow is set.");
+            }
+        }
+
+        private SequenceFlow getSequenceFlowWithFulfilledCondition(ExclusiveGateway exclusiveGateway)
+        {
+            final List<SequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+            for (int s = 0; s < sequenceFlows.size(); s++)
+            {
+                final SequenceFlow sequenceFlow = sequenceFlows.get(s);
+
+                final CompiledJsonCondition compiledCondition = sequenceFlow.getCondition();
+                final boolean isFulFilled = conditionInterpreter.eval(compiledCondition.getCondition(), workflowInstanceEvent.getPayload());
+
+                if (isFulFilled)
+                {
+                    return sequenceFlow;
+                }
+            }
+            return exclusiveGateway.getDefaultFlow();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.positionAsKey());
+        }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstanceIndex
+                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .setActivityKey(-1L)
+                .write();
+
+            activityInstanceMap.remove(eventKey);
+        }
     }
 
     private final class ConsumeTokenAspectHandler implements EventProcessor
@@ -570,7 +643,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceIndex
                     .setActiveTokenCount(activeTokenCount - 1)
+                    .setActivityKey(-1L)
                     .write();
+
+                activityInstanceMap.remove(eventKey);
             }
         }
     }
@@ -589,13 +665,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.END_EVENT_OCCURRED);
             }
-            else if (targetNode instanceof ServiceTask)
+            else if (targetNode instanceof ServiceTask || targetNode instanceof ExclusiveGatewayImpl)
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_READY);
             }
             else
             {
-                throw new RuntimeException("Currently not supported. A sequence flow must end in an end event or service task.");
+                throw new RuntimeException(String.format("Activity of type '%s' is not supported.", targetNode));
             }
         }
 
@@ -610,19 +686,21 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         private final DirectBuffer sourcePayload = new UnsafeBuffer(0, 0);
 
+        private boolean isServiceTask;
+
         @Override
         public void processEvent()
         {
-            final FlowElement activty = getCurrentActivity();
+            workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-            if (activty instanceof ServiceTask)
+            final FlowElement currentActivity = getCurrentActivity();
+            isServiceTask = currentActivity instanceof ServiceTask;
+
+            if (isServiceTask)
             {
-                final ServiceTask serviceTask = (ServiceTask) activty;
-
-                workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_ACTIVATED);
-
                 try
                 {
+                    final ServiceTask serviceTask = (ServiceTask) currentActivity;
                     setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
                 }
                 catch (Exception e)
@@ -632,10 +710,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     // re-throw the exception to create the incident
                     throw e;
                 }
-            }
-            else
-            {
-                throw new RuntimeException("Currently not supported. An activity must be of type service task.");
             }
         }
 
@@ -671,7 +745,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setTaskKey(-1L)
                 .write();
 
-            if (!isNilPayload(sourcePayload))
+            if (isServiceTask && !isNilPayload(sourcePayload))
             {
                 payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, sourcePayload);
             }
@@ -680,21 +754,37 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
+        private boolean isServiceTask;
+
         @Override
         public void processEvent()
         {
-            final ServiceTask serviceTask = getCurrentActivity();
-            final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+            final FlowElement currentActivity = getCurrentActivity();
 
-            taskEvent.reset();
+            isServiceTask = currentActivity instanceof ServiceTask;
+            if (isServiceTask)
+            {
+                final ServiceTask serviceTask = (ServiceTask) currentActivity;
+                final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
 
-            taskEvent
-                .setState(TaskState.CREATE)
-                .setType(taskDefinition.getTypeAsBuffer())
-                .setRetries(taskDefinition.getRetries())
-                .setPayload(workflowInstanceEvent.getPayload());
+                taskEvent.reset();
 
-            setTaskHeaders(serviceTask);
+                taskEvent
+                    .setState(TaskState.CREATE)
+                    .setType(taskDefinition.getTypeAsBuffer())
+                    .setRetries(taskDefinition.getRetries())
+                    .setPayload(workflowInstanceEvent.getPayload());
+
+                setTaskHeaders(serviceTask);
+            }
+            else if (currentActivity instanceof ExclusiveGateway)
+            {
+                workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETING);
+            }
+            else
+            {
+                throw new RuntimeException(String.format("Activity of type '%s' is not supported.", currentActivity));
+            }
         }
 
         private void setTaskHeaders(ServiceTask serviceTask)
@@ -717,7 +807,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeTaskEvent(writer.positionAsKey());
+            if (isServiceTask)
+            {
+                return writeTaskEvent(writer.positionAsKey());
+            }
+            else
+            {
+                return writeWorkflowEvent(writer.key(eventKey));
+            }
         }
     }
 
@@ -812,11 +909,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final ServiceTask serviceTask = getCurrentActivity();
-
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETED);
 
-            setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getOutputMappings());
+            final FlowElement currentActivity = getCurrentActivity();
+            if (currentActivity instanceof ServiceTask)
+            {
+                final ServiceTask serviceTask = (ServiceTask) currentActivity;
+                setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getOutputMappings());
+            }
         }
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
@@ -845,17 +945,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             return writeWorkflowEvent(writer.key(eventKey));
-        }
-
-        @Override
-        public void updateState()
-        {
-            workflowInstanceIndex
-                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityKey(-1L)
-                .write();
-
-            activityInstanceMap.remove(eventKey);
         }
     }
 
@@ -1006,8 +1095,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey()).getActivityInstanceKey();
 
-            // the map contains the activity when it is ready, activated or completing
-            // in this cases, the payload can be updated and it is taken for the next workflow instance event
+            // the payload can be updated if the activity is not completed yet
             WorkflowInstanceState workflowInstanceEventType = WorkflowInstanceState.UPDATE_PAYLOAD_REJECTED;
             if (currentActivityInstanceKey > 0 && currentActivityInstanceKey == eventKey)
             {

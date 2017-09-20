@@ -19,6 +19,7 @@ package io.zeebe.broker.incident;
 
 import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -451,6 +452,114 @@ public class IncidentTest
                                                  .containsEntry("activityId", "service")
                                                  .containsEntry("activityInstanceKey", followUpEvent.key())
                                                  .containsEntry("taskKey", -1);
+    }
+
+    @Test
+    public void shouldCreateIncidentIfExclusiveGatewayHasNoMatchingCondition()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
+                          .startEvent()
+                          .exclusiveGateway("xor")
+                          .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                              .endEvent()
+                          .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                              .endEvent()
+                              .done());
+
+        // when
+        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
+                                         .containsEntry("errorMessage", "All conditions evaluated to false and no default flow is set.")
+                                         .containsEntry("activityId", "xor");
+    }
+
+    @Test
+    public void shouldCreateIncidentIfConditionFailsToEvaluate()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
+                          .startEvent()
+                          .exclusiveGateway("xor")
+                          .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                              .endEvent()
+                          .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                              .endEvent()
+                              .done());
+
+        // when
+        testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+
+        // then incident is created
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event()).containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
+                                         .containsEntry("errorMessage", "Cannot compare values of different types: STRING and INTEGER")
+                                         .containsEntry("activityId", "xor");
+    }
+
+    @Test
+    public void shouldResolveIncidentForFailedCondition() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
+                          .startEvent()
+                          .exclusiveGateway("xor")
+                          .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                              .endEvent()
+                          .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                              .endEvent()
+                              .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+
+        // then incident is created
+        testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
+
+        // then
+        testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+    }
+
+    @Test
+    public void shouldResolveIncidentForExclusiveGatewayWithoutMatchingCondition() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
+                          .startEvent()
+                          .exclusiveGateway("xor")
+                          .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                              .endEvent()
+                          .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                              .endEvent()
+                              .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+
+        // then incident is created
+        testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
+
+        // then
+        testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
     }
 
     @Test

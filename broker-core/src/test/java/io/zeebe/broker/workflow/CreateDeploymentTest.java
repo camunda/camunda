@@ -209,6 +209,36 @@ public class CreateDeploymentTest
     }
 
     @Test
+    public void shouldRejectDeploymentIfConditionIsInvalid()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                                     .startEvent()
+                                     .exclusiveGateway()
+                                     .sequenceFlow(s -> s.condition("foobar"))
+                                         .endEvent()
+                                     .sequenceFlow(s -> s.defaultFlow())
+                                         .endEvent()
+                                         .done();
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put("resource", bpmnXml(workflowDefinition))
+                    .put("resourceType", ResourceType.BPMN_XML)
+                .done()
+                .sendAndAwait();
+
+        // then
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat((String) resp.getEvent().get("errorMessage")).contains("The condition 'foobar' is not valid");
+    }
+
+    @Test
     public void shouldCreateDeploymentWithYamlWorfklow() throws Exception
     {
         // given

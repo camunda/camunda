@@ -21,6 +21,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,6 +36,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.test.util.MsgPackUtil;
 import org.assertj.core.util.Files;
 import org.junit.*;
 import org.junit.rules.RuleChain;
@@ -311,7 +313,72 @@ public class WorkflowInstanceFunctionalTest
     }
 
     @Test
-    public void shouldCreateAndCompleteWorkflowInstance()
+    public void shouldSpitOnExclusiveGateway()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .endEvent("a")
+                .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                    .endEvent("b")
+                .sequenceFlow("s3", s -> s.defaultFlow())
+                    .endEvent("c")
+                .done();
+
+        testClient.deploy(workflowDefinition);
+
+        final long workflowInstance1 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+        final long workflowInstance2 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
+        final long workflowInstance3 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+
+        SubscribedEvent endEvent = testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED", workflowInstance1));
+        assertThat(endEvent.event()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "a");
+
+        endEvent = testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED", workflowInstance2));
+        assertThat(endEvent.event()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "b");
+
+        endEvent = testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED", workflowInstance3));
+        assertThat(endEvent.event()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "c");
+    }
+
+    @Test
+    public void shouldJoinOnExclusiveGateway()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("split")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .exclusiveGateway("join")
+                    .continueAt("split")
+                .sequenceFlow("s2", s -> s.defaultFlow())
+                    .joinWith("join")
+                .endEvent("end")
+                .done();
+
+        testClient.deploy(workflowDefinition);
+
+        final long workflowInstance1 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+        final long workflowInstance2 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
+
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED", workflowInstance1));
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED", workflowInstance2));
+
+        List<String> takenSequenceFlows = testClient.receiveEvents(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN", workflowInstance1))
+                .limit(3)
+                .map(s -> (String) s.event().get("activityId"))
+                .collect(Collectors.toList());
+        assertThat(takenSequenceFlows).contains("s1");
+
+        takenSequenceFlows = testClient.receiveEvents(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN", workflowInstance2))
+                .limit(3)
+                .map(s -> (String) s.event().get("activityId"))
+                .collect(Collectors.toList());
+        assertThat(takenSequenceFlows).contains("s2");
+    }
+
+    @Test
+    public void testWorkflowInstanceStatesWithServiceTask()
     {
         // given
         final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
@@ -326,6 +393,45 @@ public class WorkflowInstanceFunctionalTest
 
         // when
         testClient.completeTaskOfType("foo");
+
+        // then
+        final List<SubscribedEvent> workflowEvents = testClient
+                .receiveEvents(workflowInstanceEvents())
+                .limit(11)
+                .collect(Collectors.toList());
+
+        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_STATE)).containsExactly(
+
+                "CREATE_WORKFLOW_INSTANCE",
+                "WORKFLOW_INSTANCE_CREATED",
+                "START_EVENT_OCCURRED",
+                "SEQUENCE_FLOW_TAKEN",
+                "ACTIVITY_READY",
+                "ACTIVITY_ACTIVATED",
+                "ACTIVITY_COMPLETING",
+                "ACTIVITY_COMPLETED",
+                "SEQUENCE_FLOW_TAKEN",
+                "END_EVENT_OCCURRED",
+                "WORKFLOW_INSTANCE_COMPLETED");
+    }
+
+    @Test
+    public void testWorkflowInstanceStatesWithExclusiveGateway()
+    {
+        // given
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .endEvent("a")
+                .sequenceFlow("s2", s -> s.defaultFlow())
+                    .endEvent("b")
+                .done();
+
+        testClient.deploy(workflowDefinition);
+
+        // when
+        testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 4));
 
         // then
         final List<SubscribedEvent> workflowEvents = testClient
