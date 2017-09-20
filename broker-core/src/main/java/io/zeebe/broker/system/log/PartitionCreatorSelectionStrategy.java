@@ -15,20 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.management;
+package io.zeebe.broker.system.log;
 
-import java.util.Iterator;
-
-import org.agrona.DirectBuffer;
-
-import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.transport.SocketAddress;
 
-public interface PartitionManager
+public interface PartitionCreatorSelectionStrategy
 {
 
-    boolean createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId);
-
-    Iterator<Member> getKnownMembers();
-
+    /**
+     * @return may return null when there is no suitable broker available
+     */
+    SocketAddress selectBrokerForNewPartition();
 }

@@ -40,5 +40,10 @@
     <sbe:message name="InvitationResponse" id="1">
         <field name="term" id="1" type="uint16"/>
     </sbe:message>
-
+    
+    <!-- single message protocol -->
+    <sbe:message name="CreatePartitionMessage" id="2">
+      <field name="partitionId" id="0" type="uint16"/>
+      <data name="topicName" id="1" type="varDataEncoding" />
+    </sbe:message>
 </sbe:messageSchema>

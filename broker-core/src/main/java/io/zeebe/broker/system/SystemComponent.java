@@ -54,7 +54,8 @@ public class SystemComponent implements Component
         final SystemPartitionManager systemPartitionManager = new SystemPartitionManager();
         serviceContainer.createService(SystemServiceNames.SYSTEM_LOG_MANAGER, systemPartitionManager)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), systemPartitionManager.getClientApiTransportInjector())
-            .dependency(ClusterServiceNames.CLUSTER_MANAGER_SERVICE, systemPartitionManager.getClusterManagerInjector())
+            .dependency(ClusterServiceNames.PEER_LIST_SERVICE, systemPartitionManager.getPeerListInjector())
+            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), systemPartitionManager.getManagementClientInjector())
             .dependency(EXECUTOR_SERVICE, systemPartitionManager.getExecutorInjector())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, systemPartitionManager.getLogStreamsGroupReference())
             .install();

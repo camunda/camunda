@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering.management.handler;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.management.ClusterManager;
+import io.zeebe.clustering.management.CreatePartitionMessageDecoder;
 import io.zeebe.clustering.management.InvitationRequestEncoder;
 import io.zeebe.clustering.management.InvitationResponseDecoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
@@ -73,8 +74,30 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
     public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
             int length)
     {
-        // ignore; currently no single-message endpoint
-        return true;
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        final int schemaId = messageHeaderDecoder.schemaId();
+
+        if (CreatePartitionMessageDecoder.SCHEMA_ID == schemaId)
+        {
+            final int templateId = messageHeaderDecoder.templateId();
+            switch (templateId)
+            {
+                case CreatePartitionMessageDecoder.TEMPLATE_ID:
+                {
+                    return clusterManager.onCreatePartitionMessage(buffer, offset, length);
+                }
+                default:
+                {
+                    // TODO: send error response
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            return true;
+        }
     }
 
 }

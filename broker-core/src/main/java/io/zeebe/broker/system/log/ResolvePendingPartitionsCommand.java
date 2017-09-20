@@ -23,6 +23,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.management.Partition;
 import io.zeebe.broker.clustering.management.PartitionManager;
+import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 
 public class ResolvePendingPartitionsCommand implements Runnable
@@ -52,26 +53,36 @@ public class ResolvePendingPartitionsCommand implements Runnable
             return;
         }
 
-        final Iterator<Partition> currentPartitions = partitionManager.getKnownPartitions();
-        while (currentPartitions.hasNext())
+        final Iterator<Member> currentMembers = partitionManager.getKnownMembers();
+
+        while (currentMembers.hasNext())
         {
-            final Partition nextPartition = currentPartitions.next();
-            final DirectBuffer topicName = nextPartition.getTopicName();
-            final int partitionId = nextPartition.getPartitionId();
+            final Member currentMember = currentMembers.next();
 
-            final long key = partitions.getPartitionKey(topicName, partitionId);
+            final Iterator<Partition> partitionsLeadByMember = currentMember.getLeadingPartitions();
 
-            if (key >= 0)
+            while (partitionsLeadByMember.hasNext())
             {
-                partitionEvent.reset();
-                partitionEvent.setTopicName(topicName);
-                partitionEvent.setId(partitionId);
-                partitionEvent.setState(PartitionState.CREATE_COMPLETE);
+                final Partition currentPartition = partitionsLeadByMember.next();
 
-                // it is ok if writing fails,
-                // we will then try it again with the next command execution (there are no other side effects)
-                writer.writeFollowupEvent(key, partitionEvent);
+                final DirectBuffer topicName = currentPartition.getTopicName();
+                final int partitionId = currentPartition.getPartitionId();
+
+                final long key = partitions.getPartitionKey(topicName, partitionId);
+
+                if (key >= 0)
+                {
+                    partitionEvent.reset();
+                    partitionEvent.setTopicName(topicName);
+                    partitionEvent.setId(partitionId);
+                    partitionEvent.setState(PartitionState.CREATE_COMPLETE);
+
+                    // it is ok if writing fails,
+                    // we will then try it again with the next command execution (there are no other side effects)
+                    writer.writeFollowupEvent(key, partitionEvent);
+                }
             }
         }
+
     }
 }

@@ -22,16 +22,22 @@ import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.transport.SocketAddress;
 
 public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEvent>
 {
+
+    protected final PartitionCreatorSelectionStrategy creatorStrategy;
     protected final PartitionManager partitionManager;
     protected final PartitionsIndex partitions;
 
-    public CreatePartitionProcessor(PartitionManager partitionManager, PartitionsIndex partitions)
+    public CreatePartitionProcessor(
+            PartitionManager partitionManager,
+            PartitionsIndex partitions)
     {
         this.partitionManager = partitionManager;
         this.partitions = partitions;
+        this.creatorStrategy = new RoundRobinSelectionStrategy(partitionManager);
     }
 
     @Override
@@ -44,9 +50,16 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     public boolean executeSideEffects(TypedEvent<PartitionEvent> event, TypedResponseWriter responseWriter)
     {
         final PartitionEvent value = event.getValue();
-        partitionManager.createPartitionAsync(value.getTopicName(), value.getId());
+        final SocketAddress nextBroker = creatorStrategy.selectBrokerForNewPartition();
 
-        return true;
+        if (nextBroker == null)
+        {
+            return false;
+        }
+        else
+        {
+            return partitionManager.createPartitionRemote(nextBroker, value.getTopicName(), value.getId());
+        }
     }
 
     @Override

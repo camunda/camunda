@@ -25,23 +25,23 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
-import io.zeebe.broker.clustering.gossip.data.PeerList;
-import io.zeebe.broker.clustering.gossip.data.RaftMembership;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
+import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
 import io.zeebe.broker.clustering.management.message.InvitationResponse;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.clustering.gossip.RaftMembershipState;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
@@ -49,15 +49,18 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
 
-public class ClusterManager implements Actor, PartitionManager
+public class ClusterManager implements Actor
 {
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -73,6 +76,9 @@ public class ClusterManager implements Actor, PartitionManager
 
     private final InvitationRequest invitationRequest;
     private final InvitationResponse invitationResponse;
+    private final CreatePartitionMessage createPartitionMessage = new CreatePartitionMessage();
+
+    private final TransportMessage message = new TransportMessage();
 
     private ClusterManagementConfig config;
 
@@ -356,118 +362,16 @@ public class ClusterManager implements Actor, PartitionManager
         return output.sendResponse(response);
     }
 
-    /*
-     * There are some issues with how this connects the gossip state with the system partition processing.
-     *
-     * * not garbage-free
-     * * not thread-safe (peer list is shared state between multiple actors and therefore threads)
-     * * not efficient (the stream processor iterates all partitions when it looks for a specific
-     *   partition's leader)
-     *
-     * This code can be refactored in any way when we rewrite gossip.
-     * As a baseline, the system stream processor needs to know for a set of partitions
-     * if a partition leader becomes known. In that case, it must generate a command on the system log.
-     */
-    @Override
-    public Iterator<Partition> getKnownPartitions()
+    public boolean onCreatePartitionMessage(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length)
     {
-        final PeerList currentPeers = context.getPeers();
-        final PeerList copy = currentPeers.copy();
+        createPartitionMessage.wrap(buffer, offset, length);
 
-        final PartitionIterator iterator = new PartitionIterator();
-        iterator.wrap(copy);
+        createPartition(createPartitionMessage.getTopicName(), createPartitionMessage.getPartitionId());
 
-        return iterator;
+        return true;
     }
 
-    protected class PartitionIterator implements Iterator<Partition>
-    {
-        protected PeerList peerList;
-        protected PartitionImpl currentPartition = null;
-
-        protected Iterator<Peer> peerIterator;
-        protected Iterator<RaftMembership> raftMemberIterator;
-
-        public void wrap(PeerList peerList)
-        {
-            this.peerList = peerList;
-            this.peerIterator = peerList.iterator();
-            this.raftMemberIterator = null;
-            seekNextPartitionLeader();
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return currentPartition != null;
-        }
-
-        protected void seekNextPartitionLeader()
-        {
-            currentPartition = null;
-
-            while (currentPartition == null)
-            {
-                if (raftMemberIterator == null || !raftMemberIterator.hasNext())
-                {
-                    if (!peerIterator.hasNext())
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        raftMemberIterator = peerIterator.next().raftMemberships().iterator();
-                    }
-                }
-
-                if (raftMemberIterator.hasNext())
-                {
-                    final RaftMembership membership = raftMemberIterator.next();
-
-                    if (membership.state() == RaftMembershipState.LEADER)
-                    {
-                        currentPartition = new PartitionImpl(
-                                membership.topicNameBuffer(),
-                                0,
-                                membership.topicNameLength(),
-                                membership.partitionId());
-                    }
-                }
-            }
-        }
-
-        @Override
-        public Partition next()
-        {
-            final Partition partitionToReturn = currentPartition;
-            seekNextPartitionLeader();
-            return partitionToReturn;
-        }
-    }
-
-    protected class PartitionImpl implements Partition
-    {
-
-        protected UnsafeBuffer topicName = new UnsafeBuffer(0, 0);
-        protected int partitionId;
-
-        public PartitionImpl(DirectBuffer topicName, int offset, int length, int partitionId)
-        {
-            this.topicName.wrap(topicName, offset, length);
-            this.partitionId = partitionId;
-        }
-
-        @Override
-        public DirectBuffer getTopicName()
-        {
-            return topicName;
-        }
-
-        @Override
-        public int getPartitionId()
-        {
-            return partitionId;
-        }
-
-    }
 }
