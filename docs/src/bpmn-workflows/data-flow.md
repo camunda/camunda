@@ -1,25 +1,25 @@
 # Data Flow
 
-On creation of a workflow instance an corresponding workflow payload is created, which can contain variable data.
-The workflow payload is represented as a JSON document. On execution of the workflow instance
-the workflow payload is passed from one activity to another, this is called data flow.
+On creation of a workflow instance, a corresponding workflow payload is created, which can contain variable data.
+The workflow payload is represented as a JSON document. On execution of the workflow instance, 
+the workflow payload is passed from one activity to another. This is called data flow.
 
-It is possible that a task handler expect an other JSON document structure as the task handler before or as the
-current structure of the workflow payload is. In this cases mappings can be used to modify the current JSON document.
+It is possible that a task handler expects a different JSON document structure than the task handler before or than the
+current structure of the workflow payload. In these cases, mappings can be used to modify the current JSON document.
 We differentiate between input and output mappings.
-They are defined as extension elements on the corresponding task definition, see the following example.
+They are defined as extension elements on the corresponding task definition. See the following example.
 
 ## Mapping
 
-Lets see for example a clothing web shop and the following workflow defines there ordering process.
+For example, let's take a look at an online fashion retailer. The following workflow defines their ordering process:
 
 ![order-process](/bpmn-workflows/order-process.png)
 
-The first task orders the articles from the logistic center, the second debit the total price from the customers bank account.
-The third task will simply initiate the shipping of the articles to the customer.
+The first task orders the articles from the logistics center, the second debits the total price from the customers bank account.
+The third task simply initiates shipping of the articles to the customer.
 
-For example a customer ordered three black socks and a jeans.
-After the order is send by the customer a workflow instance is created, which contain
+For example, a customer orders three pairs of black socks and a pair of jeans.
+After the order is sent by the customer, a workflow instance is created, which contains
 the following workflow instance payload:
 
 ```java
@@ -52,10 +52,10 @@ the following workflow instance payload:
 ```
 
 Now we are interesseted in the data flow. The workflow instance payload contains all necessary data for all tasks in the workflow.
-But a single task is not really interessted in all the data and can also expected a different structure of the payload.
+However, a single task is not necesarrily interested in all the data and can also expect a different structure of the payload.
 
-For example the task to debit the total price from the customers bank account is only interessted in the total price of the order and the order id.
-So the JSON structure of the task payload, which is expected by the second task handler, would look like this:
+For example, the task to debit the total price from the customers bank account is only interested in the total price of the order and the order id.
+So, the JSON structure of the task payload, which is expected by the second task handler, would look like this:
 
 ```json
 {
@@ -64,7 +64,7 @@ So the JSON structure of the task payload, which is expected by the second task 
 }
 ```
 
-To extract the `orderId` and the `totalPrice` and rename it to `sum` the following JSON path based mapping can be used.
+To extract the `orderId` and the `totalPrice` and rename it to `sum`, the following JSON path based mapping can be used.
 
 ```xml
   <serviceTask id="debitTask">
@@ -78,10 +78,10 @@ To extract the `orderId` and the `totalPrice` and rename it to `sum` the followi
   </serviceTask>
 ```
 
-As you can see, also an output mapping is defined for the debit task, since the task is additionally willing to give feedback
-if the debit was successful. In that case we need the output mapping to map the result to the workflow instance payload.
+As you can see, an output mapping is also defined for the debit task, since the task is additionally willing to give feedback
+if the debit was successful. In that case, we need the output mapping to map the result to the workflow instance payload.
 
-The debit task needs to be completed with a new task payload, which contains the property `wasDebit`.
+The debit task needs to be completed with a new task payload which contains the property `wasDebit`.
 This property indicates whether the debit was successful or not. The completing task payload would look like this:
 
 ```json
@@ -123,26 +123,26 @@ The updated workflow instance payload would look like this:
 }
 ```
 
-Regarding to the result of the second task the third task can operate different.
-For example if the `successfulDebit` is false he can fail the execution. In the following section
-input and output mappings are explained in more detail.
+Depending on the result of the second task, the third task can operate in different ways.
+For example, if the `successfulDebit` is `false`, it can fail the execution. 
+In the following section input and output mappings are explained in more detail.
 
 ### Input and Output Mapping
 
-Input mappings are executed on task creation. Input mappings can extract payload of the
-workflow instance and map it into the task payload. Per default, if no input mapping is defined, the complete workflow payload is mapped
-into the task payload.
+Input mappings are executed on task creation. Input mappings can extract the payload of the
+workflow instance and map it to the task payload. By default, if no input mapping is defined, the entire 
+workflow payload is mapped to the task payload.
 
 Output mappings are executed on task completion. With output mappings it is possible to merge
-the task payload with the existing workflow instance payload. Per default, if no output mapping exist
-and the task was completed without payload, the workflow uses the same payload, which has used
-before the task creation. In that case, no changes on the payload happens.
+the task payload with the existing workflow instance payload. By default, if no output mappings exist
+and the task was completed without a payload, the workflow uses the same payload which was used
+before task creation. In that case, no changes on the payload occur.
 
 It is possible to define multiple input and output mappings as you can see in the example above.
-These mappings are executed in the defined order, this means a second mapping can overwrite the first one.
+These mappings are executed in the defined order. This means that a second mapping can overwrite the first one.
 
-There exists different cases regarding to defined input, output mapping and whether the task was completed
-with or without payload. Theses cases are summarized in the following table.
+There are different cases regarding the defined input and output mapping and whether the task was completed
+with or without a payload. These cases are summarized in the following table:
 
 <table>
 <tr>
@@ -182,19 +182,19 @@ with or without payload. Theses cases are summarized in the following table.
 </table>
 
 
-Since the payload is represented as JSON document the mappings are expressed as [JSON Path expressions](http://goessner.net/articles/JsonPath/).
-A mapping consist of a `source` and `target`. The `source` matches a JSON property
-in the source JSON document and the `target` defines the path in the target JSON document,
-on which the value of the matching source should be written to. In the following section we dscribe shortly the json path expressions.
+Since the payload is represented as a JSON document, the mappings are expressed as [JSON Path expressions](http://goessner.net/articles/JsonPath/).
+A mapping consists of a `source` and a `target`. The `source` matches a JSON property
+in the source JSON document and the `target` defines the path in the target JSON document onto which the value of the matching 
+source should be written. In the following section we briefly describe the JSON path expressions.
 
 #### JSON Path expression
 
 JSON Path expressions always refer to a JSON structure in the same way as XPath expression are used in combination with an XML document.
-JSON Path defines `$` as root, see the [JSON path documentation](http://goessner.net/articles/JsonPath/) for more information.
+JSON Path defines `$` as root. See the [JSON path documentation](http://goessner.net/articles/JsonPath/) for more information.
 
-The payload will be on root level always a JSON Object.
+On the root level, the payload will always be a JSON Object.
 JSON Path expressions can use the dot or bracket notation.
-For example `$.prop` or `$['prop']` will match in the following JSON document and return the value `123`.
+For example, `$.prop` or `$['prop']` will match in the following JSON document and return the value `123`.
 
 ```json
 {
@@ -207,11 +207,11 @@ For example `$.prop` or `$['prop']` will match in the following JSON document an
 }
 ```
 
-To match the `innerProp` we have to use one of the following expression `$.object.innerProp` or `$['object']['innerProp']`.
+To match the `innerProp`, we have to use one of the following expressions: `$.object.innerProp` or `$['object']['innerProp']`.
 
-Values in JSON Arrays can be accessed via square brackets and the corresponding index. Say we have the following expression `$.array[2]`
+Values in JSON Arrays can be accessed via square brackets and the corresponding index. Let;s say we have the following expression: `$.array[2]`
 or `$['array'][2]`.
-This will match and return the value `5`, if we have for example the following JSON document.
+For example, if we have the following JSON document, this will match and return the value `5`.
 
 ```json
 {
@@ -220,9 +220,9 @@ This will match and return the value `5`, if we have for example the following J
 ```
 
 **Note:**
-In the following examples we will prefer the dot notation, since it is more readable.
+In the following examples we prefer the dot notation, as it is more readable.
 
-The following table contains the JSON Path features/syntax, which is supported by Zeebe.
+The following table contains the JSON Path features/syntax which are supported by Zeebe:
 
 <table>
 <tr>
@@ -230,43 +230,43 @@ The following table contains the JSON Path features/syntax, which is supported b
 </tr>
 
 <tr>
-  <td>$</td> <td>the root object/element</td> <td>Yes</td>
+  <td>$</td> <td>The root object/element</td> <td>Yes</td>
 </tr>
 
 <tr>
-  <td>@</td> <td>the current object/element</td> <td>No</td>
+  <td>@</td> <td>The current object/element</td> <td>No</td>
 </tr>
 
 <tr>
-  <td>. or []</td> <td>child operator</td> <td>Yes</td>
+  <td>. or []</td> <td>Child operator</td> <td>Yes</td>
 </tr>
 
 <tr>
-  <td>..</td> <td>recursive descent</td> <td>No</td>
+  <td>..</td> <td>Recursive descent</td> <td>No</td>
 </tr>
 
 <tr>
-  <td>*</td> <td>wildcard. All objects/elements regardless their names.</td><td>Yes</td>
+  <td>*</td> <td>Wildcard, matches all objects/elements regardless of their names.</td><td>Yes</td>
 </tr>
 
 <tr>
-  <td>[]</td> <td>subscript operator</td> <td>Yes</td>
+  <td>[]</td> <td>Subscript operator</td> <td>Yes</td>
 </tr>
 
 <tr>
-  <td>[,]</td> <td>union operator</td> <td>No</td>
+  <td>[,]</td> <td>Union operator</td> <td>No</td>
 </tr>
 
 <tr>
-  <td>[start:end:step]</td> <td>array slice operator</td> <td>No</td>
+  <td>[start:end:step]</td> <td>Array slice operator</td> <td>No</td>
 </tr>
 
 <tr>
-  <td>?()</td> <td>applies a filter (script) expression</td> <td>No</td>
+  <td>?()</td> <td>Applies a filter (script) expression</td> <td>No</td>
 </tr>
 
 <tr>
-  <td>()</td> <td>script expression, using underlying script engine</td> <td>No</td>
+  <td>()</td> <td>Script expression, using underlying script engine</td> <td>No</td>
 </tr>
 
 </table>
@@ -275,10 +275,9 @@ The following table contains the JSON Path features/syntax, which is supported b
 
 Input mappings extract content and copy it to an empty target payload.
 
-In the following table some input mappings examples are listed, to give a overview of what is possible with the input mappings.
-The column workflow instance payload contains the outgoing payload, the input mapping the mapping which is executed to get
-the result which is listed in the task payload column. Each line has a description to clarify for what the
-mapping can be used.
+In the following table, some input mappings examples are listed to give a overview of what is possible with the input mappings.
+The 'Workflow Instance Payload' column contains the outgoing payload, the 'Input Mapping' column contains the mapping which is executed to get
+the result which is in turn listed in the 'Task Payload' column. Each line has a description to clarify what the mapping can be used for.
 
 <table>
 
@@ -291,7 +290,7 @@ mapping can be used.
 
   <tr>
     <td>
-    Copy hole payload
+    Copy entire payload
     </td>
     <td><pre>
 {
@@ -313,7 +312,7 @@ Target: $
 
   <tr>
     <td>
-    Move payload in new object
+    Move payload into new object
     </td>
     <td><pre>
 {
@@ -519,26 +518,26 @@ For more examples see the [extract mapping tests](https://github.com/zeebe-io/zb
 
 #### Output Mapping Example
 
-Output mappings extract content of a task payload and merge them with the workflow instance payload.
+Output mappings extract content of a task payload and merges it with the workflow instance payload.
 
-In the following table some output mappings examples are listed, to give a overview of what is possible with output mappings.
-The column task payload refer to the task payload with the task was completed. The workflow instance payload column contains
-the payload into which should be merged and the output mapping the mapping which will be executed to get the result which is listed
-in the result column. Each row has a description to identify the use case.
+In the following table, some output mappings examples are listed to give an overview of what is possible with output mappings.
+The 'Task Payload' column refers to the task payload when the task was completed. The 'Workflow Instance Payload' column contains
+the payload into which the merge should take place and the 'Output Mapping' column contains the mapping which will be executed to get the 
+result which is listed in the 'Result' column. Each row has a description to identify the use case.
 
 <table>
 
   <tr>
     <th>Description</th>
-    <th>Task payload</th>
-    <th>Workflow instance Payload</th>
-    <th>Output mapping</th>
+    <th>Task Payload</th>
+    <th>Workflow Instance Payload</th>
+    <th>Output Mapping</th>
     <th>Result</th>
   </tr>
 
 <!-- NEW ROW -->
   <tr>
-  <td>Replace with hole payload</td>
+  <td>Replace with entire payload</td>
   <td><pre>
 {
  "sum": 234.97
