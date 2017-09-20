@@ -63,7 +63,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     mockIndexHandlers(services, indexHandlerProvider);
 
     when(importServiceProvider.getPagedServices()).thenReturn(services);
-    when(importServiceProvider.getImportService(Mockito.any())).thenReturn(services.get(0));
+    when(importServiceProvider.getPaginatedImportService(Mockito.any())).thenReturn(services.get(0));
   }
 
 

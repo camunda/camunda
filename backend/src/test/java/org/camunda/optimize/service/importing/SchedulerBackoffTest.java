@@ -201,7 +201,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   @Test
   public void testBackoffNotExceedingMax() throws Exception {
     ImportScheduleJob toExecute = new PageBasedImportScheduleJob(0,0, 0, "test");
-    toExecute.setImportService(services.get(0));
+    toExecute.setElasticsearchType(services.get(0).getElasticsearchType());
 
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(1L));
     assertThat(backoffService.calculateJobBackoff(true, toExecute), is(BackoffService.STARTING_BACKOFF));

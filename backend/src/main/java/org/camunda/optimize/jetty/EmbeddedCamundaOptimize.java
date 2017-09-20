@@ -87,7 +87,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private void defineLogbackLoggingConfiguration() {
-    System.out.println("life sux");
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     loggerContext.reset();
     JoranConfigurator configurator = new JoranConfigurator();

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 /**
  * @author Askar Akhmerov
  */
-public class PageBasedImportScheduleJob extends ImportScheduleJob<PaginatedImportService> {
+public class PageBasedImportScheduleJob extends ImportScheduleJob {
 
   private int absoluteImportIndex;
   private int relativeImportIndex;
@@ -32,15 +32,6 @@ public class PageBasedImportScheduleJob extends ImportScheduleJob<PaginatedImpor
 
   public PageBasedImportScheduleJob(int absoluteImportIndex, int relativeImportIndex) {
     this(absoluteImportIndex,relativeImportIndex,null,null);
-  }
-
-  public ImportResult execute() throws OptimizeException {
-    if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
-      throw new BackoffException();
-    } else {
-      ImportResult executionResult = importService.executeImport(this);
-      return executionResult;
-    }
   }
 
   public int getAbsoluteImportIndex() {

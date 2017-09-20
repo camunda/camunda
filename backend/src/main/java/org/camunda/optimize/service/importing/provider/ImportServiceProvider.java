@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing.provider;
 
+import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionIdBasedImportService;
@@ -8,6 +9,7 @@ import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlIdBasedIm
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,18 +48,24 @@ public class ImportServiceProvider implements ConfigurationReloadable {
   @Autowired
   private ConfigurationService configurationService;
 
-  private Map<String,PaginatedImportService> services;
+  private Map<String, ImportService> allServices = new HashMap<>();
+  private Map<String, PaginatedImportService> paginatedServices = new HashMap<>();
 
   @PostConstruct
   public void init() {
-    services = new HashMap<>();
-    services.put(getProcessDefinitionImportService().getElasticsearchType(), getProcessDefinitionImportService());
-    services.put(getProcessDefinitionXmlImportService().getElasticsearchType(), getProcessDefinitionXmlImportService());
-    services.put(activityImportService.getElasticsearchType(),activityImportService);
+    paginatedServices.put(getProcessDefinitionImportService().getElasticsearchType(), getProcessDefinitionImportService());
+    paginatedServices.put(getProcessDefinitionXmlImportService().getElasticsearchType(), getProcessDefinitionXmlImportService());
+    paginatedServices.put(activityImportService.getElasticsearchType(), activityImportService);
+
+    allServices.put(getProcessDefinitionImportService().getElasticsearchType(), getProcessDefinitionImportService());
+    allServices.put(getProcessDefinitionXmlImportService().getElasticsearchType(), getProcessDefinitionXmlImportService());
+    allServices.put(activityImportService.getElasticsearchType(), activityImportService);
+    allServices.put(variableImportService.getElasticsearchType(), variableImportService);
+    allServices.put(processInstanceImportService.getElasticsearchType(), processInstanceImportService);
   }
 
   private PaginatedImportService getProcessDefinitionImportService() {
-    if( configurationService.areProcessDefinitionsToImportDefined()) {
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
       return processDefinitionIdBasedImportService;
     } else {
       return processDefinitionImportService;
@@ -65,7 +73,7 @@ public class ImportServiceProvider implements ConfigurationReloadable {
   }
 
   private PaginatedImportService getProcessDefinitionXmlImportService() {
-    if( configurationService.areProcessDefinitionsToImportDefined()) {
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
       return processDefinitionXmlIdBasedImportService;
     } else {
       return processDefinitionXmlImportService;
@@ -86,10 +94,14 @@ public class ImportServiceProvider implements ConfigurationReloadable {
   }
 
   public Collection<PaginatedImportService> getPagedServices() {
-    return services.values();
+    return paginatedServices.values();
   }
 
-  public PaginatedImportService getImportService(String elasticsearchType) {
-    return services.get(elasticsearchType);
+  public PaginatedImportService getPaginatedImportService(String elasticsearchType) {
+    return paginatedServices.get(elasticsearchType);
+  }
+
+  public ImportService getImportService(String elasticsearchType) {
+    return allServices.get(elasticsearchType);
   }
 }

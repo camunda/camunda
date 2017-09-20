@@ -40,7 +40,7 @@ public class BackoffService {
   }
 
   public void resetBackoff(PageBasedImportScheduleJob toExecute) {
-    this.setJobBackoff(toExecute.getImportService().getElasticsearchType(), STARTING_BACKOFF);
+    this.setJobBackoff(toExecute.getElasticsearchType(), STARTING_BACKOFF);
     this.generalBackoffCounter = STARTING_BACKOFF;
   }
 
@@ -50,11 +50,11 @@ public class BackoffService {
 
   public long calculateJobBackoff(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
     long result;
-    Long jobBackoff = getBackoffCounter(toExecute.getImportService().getElasticsearchType());
+    Long jobBackoff = getBackoffCounter(toExecute.getElasticsearchType());
     if (!engineHasStillNewData) {
       if (jobBackoff < configurationService.getMaximumBackoff()) {
         result = jobBackoff + 1;
-        this.setJobBackoff(toExecute.getImportService().getElasticsearchType(), result);
+        this.setJobBackoff(toExecute.getElasticsearchType(), result);
       } else {
         result = jobBackoff;
       }
@@ -113,7 +113,7 @@ public class BackoffService {
     if (toExecute != null) {
       logger.debug(
           "Cant schedule import of [{}], sleeping for [{}] ms",
-          toExecute.getImportService().getElasticsearchType(),
+          toExecute.getElasticsearchType(),
           sleepTime
       );
     } else {

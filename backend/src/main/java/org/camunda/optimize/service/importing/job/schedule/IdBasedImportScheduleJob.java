@@ -9,7 +9,7 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-public class IdBasedImportScheduleJob extends ImportScheduleJob<IdBasedImportService> {
+public class IdBasedImportScheduleJob extends ImportScheduleJob {
   private Set<String> idsToFetch;
 
   public Set<String> getIdsToFetch() {
@@ -20,10 +20,4 @@ public class IdBasedImportScheduleJob extends ImportScheduleJob<IdBasedImportSer
     this.idsToFetch = idsToFetch;
   }
 
-  public ImportResult execute() throws OptimizeException {
-    importService.setIdsForImport(getIdsToFetch());
-    ImportResult result = importService.executeImport(this);
-    importService.setIdsForImport(null);
-    return result;
-  }
 }

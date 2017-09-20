@@ -2,6 +2,8 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.exceptions.BackoffException;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
@@ -11,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +56,13 @@ public abstract class AbstractImportService
     }
 
     return result;
+  }
+
+  protected void performBackoffCheck(JOB executionContext) throws OptimizeException {
+    if (executionContext.getTimeToExecute() != null &&
+        LocalDateTime.now().isBefore(executionContext.getTimeToExecute())) {
+      throw new BackoffException();
+    }
   }
 
   protected void prepareDataForPostProcessing(ENG entry) {

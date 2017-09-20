@@ -20,28 +20,18 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
   @Autowired
   protected EngineEntityFetcherImpl engineEntityFetcher;
 
-  protected Set<String> idsForImport;
-
-  public Set<String> getIdsForImport() {
-    return idsForImport;
-  }
-
-  public void setIdsForImport(Set<String> idsForImport) {
-    this.idsForImport = idsForImport;
-  }
-
   @Override
   public ImportResult executeImport(IdBasedImportScheduleJob job) throws OptimizeException {
     ImportResult result = new ImportResult();
-    if (this.getIdsForImport() != null && !getIdsForImport().isEmpty()) {
+    if (job.getIdsToFetch() != null && !job.getIdsToFetch().isEmpty()) {
       boolean engineHasStillNewData = false;
       logger.debug(
           "Importing based on [{}] IDs from type [{}]",
-          this.getIdsForImport().size(),
+          job.getIdsToFetch().size(),
           getElasticsearchType()
       );
 
-      List<ENG> pageOfEngineEntities = this.queryEngineRestPoint(this.getIdsForImport(), job.getEngineAlias());
+      List<ENG> pageOfEngineEntities = this.queryEngineRestPoint(job.getIdsToFetch(), job.getEngineAlias());
       List<ENG> newEngineEntities =
           getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
       if (!newEngineEntities.isEmpty()) {

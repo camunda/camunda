@@ -1,39 +1,22 @@
 package org.camunda.optimize.service.importing.job.schedule;
 
-import org.camunda.optimize.service.exceptions.BackoffException;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.ImportService;
-
 import java.time.LocalDateTime;
 
 /**
+ * Context of the import execution performed at the current moment of time.
+ * Please note that neither this class nor it's inheritors should contain references
+ * to complex services.
+ *
+ * Main intention of this class is to represent current state of the import.
+ *
  * @author Askar Akhmerov
  */
-public abstract class ImportScheduleJob<S extends ImportService> {
+public abstract class ImportScheduleJob {
 
-  protected S importService;
   protected boolean pageBased = true;
   protected LocalDateTime timeToExecute;
   protected String engineAlias;
-
-  public ImportResult execute() throws OptimizeException {
-    ImportResult result;
-    if (timeToExecute != null && LocalDateTime.now().isBefore(timeToExecute)) {
-      throw new BackoffException();
-    } else {
-      result =  importService.executeImport(this);
-    }
-    return result;
-  }
-
-  public void setImportService(S importService) {
-    this.importService = importService;
-  }
-
-  public S getImportService() {
-    return importService;
-  }
+  protected String elasticsearchType;
 
   public boolean isPageBased() {
     return pageBased;
@@ -57,5 +40,13 @@ public abstract class ImportScheduleJob<S extends ImportService> {
 
   public void setEngineAlias(String engineAlias) {
     this.engineAlias = engineAlias;
+  }
+
+  public void setElasticsearchType(String elasticsearchType) {
+    this.elasticsearchType = elasticsearchType;
+  }
+
+  public String getElasticsearchType() {
+    return elasticsearchType;
   }
 }

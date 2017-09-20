@@ -32,7 +32,6 @@ public class ActivityImportService
   private EventsWriter eventsWriter;
   @Autowired
   private MissingActivityFinder missingActivityFinder;
-
   @Autowired
   private ActivityInstanceFetcher activityInstanceFetcher;
 

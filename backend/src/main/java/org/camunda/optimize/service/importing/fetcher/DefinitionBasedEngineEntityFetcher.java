@@ -42,9 +42,6 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired
-  private EngineClientFactory engineClientFactory;
-
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(int indexOfFirstResult,
                                                                                 int maxPageSize,
                                                                                 String processDefinitionId,
@@ -73,10 +70,6 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
     }
 
     return entries;
-  }
-
-  private Client getEngineClient(String engineAlias) {
-    return engineClientFactory.getInstance(engineAlias);
   }
 
   public Integer fetchHistoricActivityInstanceCount(List<String> processDefinitionIds, String engineAlias) throws OptimizeException {

@@ -28,6 +28,7 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
   @Override
   public ImportResult executeImport(PageBasedImportScheduleJob job) throws OptimizeException {
+    performBackoffCheck(job);
     ImportResult result = new ImportResult();
     int searchedSize;
 

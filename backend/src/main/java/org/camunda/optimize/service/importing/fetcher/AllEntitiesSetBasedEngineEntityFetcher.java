@@ -37,12 +37,6 @@ public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetche
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired
-  private ApplicationContext applicationContext;
-
-  @Autowired
-  private EngineClientFactory engineClientFactory;
-
 
   public Integer fetchProcessDefinitionCount(String engineAlias) throws OptimizeException {
     CountDto count;
@@ -56,10 +50,6 @@ public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetche
       throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
     }
     return count.getCount();
-  }
-
-  private Client getEngineClient(String engineAlias) {
-    return engineClientFactory.getInstance(engineAlias);
   }
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,

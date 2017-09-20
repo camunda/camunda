@@ -66,7 +66,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   private void executeIfJobsArePresent(ImportScheduler scheduler) throws OptimizeException {
     if (scheduler.hasStillJobsToExecute()) {
       ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
-      ImportResult result = nextToExecute.execute();
+      ImportResult result = getServiceProvider().getImportService(nextToExecute.getElasticsearchType()).executeImport(nextToExecute);
       result.setEngineHasStillNewData(scheduler.handleIndexes(result, nextToExecute));
       scheduler.postProcess(nextToExecute, result);
     }

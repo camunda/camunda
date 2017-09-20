@@ -61,9 +61,8 @@ public class ScheduleJobFactory {
           importIndexHandler.getRelativeImportIndex()
       );
     }
-
-    job.setImportService(service);
     job.setEngineAlias(engine);
+    job.setElasticsearchType(service.getElasticsearchType());
     return job;
   }
 
@@ -108,7 +107,7 @@ public class ScheduleJobFactory {
 
   private ImportScheduleJob createHistoricProcessInstanceScheduleJob(Set<String> idsToFetch, String engineAlias) {
     IdBasedImportScheduleJob job = new IdBasedImportScheduleJob();
-    job.setImportService(importServiceProvider.getProcessInstanceImportService());
+    job.setElasticsearchType(importServiceProvider.getProcessInstanceImportService().getElasticsearchType());
     job.setIdsToFetch(idsToFetch);
     job.setPageBased(false);
     job.setEngineAlias(engineAlias);
@@ -117,7 +116,7 @@ public class ScheduleJobFactory {
 
   private ImportScheduleJob createHistoricVariableInstanceScheduleJob(Set<String> idsToFetch, String engineAlias) {
     IdBasedImportScheduleJob job = new IdBasedImportScheduleJob();
-    job.setImportService(importServiceProvider.getVariableImportService());
+    job.setElasticsearchType(importServiceProvider.getVariableImportService().getElasticsearchType());
     job.setIdsToFetch(idsToFetch);
     job.setPageBased(false);
     job.setEngineAlias(engineAlias);
@@ -125,7 +124,7 @@ public class ScheduleJobFactory {
   }
 
   public ImportScheduleJob createPagedJob(String elasticsearchType, String engine) {
-    PaginatedImportService importService = importServiceProvider.getImportService(elasticsearchType);
+    PaginatedImportService importService = importServiceProvider.getPaginatedImportService(elasticsearchType);
     ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(elasticsearchType, importService.getIndexHandlerType(), engine);
     return constructJob(importService, indexHandler, engine);
   }

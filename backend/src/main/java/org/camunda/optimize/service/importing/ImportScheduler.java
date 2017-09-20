@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -135,7 +136,7 @@ public class ImportScheduler extends Thread {
     boolean engineHasStillNewData = false;
     try {
 
-      ImportResult importResult = toExecute.execute();
+      ImportResult importResult = getImportResult(toExecute);
       engineHasStillNewData = handleIndexes(importResult, toExecute);
       importResult.setEngineHasStillNewData(engineHasStillNewData);
       if (engineHasStillNewData) {
@@ -159,6 +160,23 @@ public class ImportScheduler extends Thread {
         logger.debug("error while executing import job", e);
       }
     }
+  }
+
+  private ImportResult getImportResult(ImportScheduleJob toExecute) throws OptimizeException {
+    ImportResult result;
+
+    if (!IdleImportScheduleJob.class.equals(toExecute.getClass())) {
+      ImportService importService = importServiceProvider.getImportService(toExecute.getElasticsearchType());
+      result = importService.executeImport(toExecute);
+    } else {
+      // be idle and do nothing
+      logger.warn("Scheduled an idle import schedule job, which should not happen in normal cases!");
+      result = new ImportResult();
+      result.setEngineHasStillNewData(false);
+      result.setIdsToFetch(new HashSet<>());
+      return new ImportResult();
+    }
+    return result;
   }
 
   public boolean handleIndexes(ImportResult importResult, ImportScheduleJob toExecute) {
@@ -185,7 +203,9 @@ public class ImportScheduler extends Thread {
    */
   public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
-      importScheduleJobs.addAll(scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch(), toExecute.getEngineAlias()));
+      importScheduleJobs.addAll(
+          scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch(), toExecute.getEngineAlias())
+      );
     }
 
     if (toExecute.isPageBased()) {
@@ -203,7 +223,7 @@ public class ImportScheduler extends Thread {
    */
   private void rescheduleBasedOnPages(boolean engineHasStillNewData, PageBasedImportScheduleJob toExecute) {
     if (engineHasStillNewData) {
-      String elasticsearchType = toExecute.getImportService().getElasticsearchType();
+      String elasticsearchType = toExecute.getElasticsearchType();
       logger.debug(
           "Processed a page during data import run of [{}], scheduling one more run",
           elasticsearchType

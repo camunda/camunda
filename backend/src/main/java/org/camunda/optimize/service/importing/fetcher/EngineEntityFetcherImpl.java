@@ -44,9 +44,6 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired
-  private EngineClientFactory engineClientFactory;
-
   public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
     List<HistoricProcessInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
@@ -68,10 +65,6 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
       throw new OptimizeException();
     }
     return entries;
-  }
-
-  private Client getEngineClient(String engineAlias) {
-    return engineClientFactory.getInstance(engineAlias);
   }
 
   public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
