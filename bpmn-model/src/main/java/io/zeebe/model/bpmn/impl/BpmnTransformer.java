@@ -19,12 +19,15 @@ import static io.zeebe.msgpack.mapping.Mapping.JSON_ROOT_PATH;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.impl.instance.*;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
 import io.zeebe.model.bpmn.impl.metadata.*;
 import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
+import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.Mapping;
@@ -67,9 +70,11 @@ public class BpmnTransformer
 
         setInitialStartEvent(process);
 
-        linkSequenceFlows(process, flowElementsById);
+        transformSequenceFlows(process.getSequenceFlows(), flowElementsById);
 
         transformServiceTasks(process.getServiceTasks());
+
+        transformExclusiveGateways(process.getExclusiveGateways());
 
         addBpmnAspects(process);
     }
@@ -81,6 +86,7 @@ public class BpmnTransformer
         flowElements.addAll(process.getEndEvents());
         flowElements.addAll(process.getSequenceFlows());
         flowElements.addAll(process.getServiceTasks());
+        flowElements.addAll(process.getExclusiveGateways());
         return flowElements;
     }
 
@@ -106,9 +112,8 @@ public class BpmnTransformer
         }
     }
 
-    private void linkSequenceFlows(final ProcessImpl process, final Map<DirectBuffer, FlowElementImpl> flowElementsById)
+    private void transformSequenceFlows(final List<SequenceFlowImpl> sequenceFlows, final Map<DirectBuffer, FlowElementImpl> flowElementsById)
     {
-        final List<SequenceFlowImpl> sequenceFlows = process.getSequenceFlows();
         for (int s = 0; s < sequenceFlows.size(); s++)
         {
             final SequenceFlowImpl sequenceFlow = sequenceFlows.get(s);
@@ -124,7 +129,19 @@ public class BpmnTransformer
             {
                 sequenceFlow.setTargetNode((FlowNodeImpl) targetElement);
             }
+
+            if (sequenceFlow.hasCondition())
+            {
+                createCondition(sequenceFlow.getConditionExpression());
+            }
         }
+    }
+
+    private void createCondition(ConditionExpressionImpl conditionExpression)
+    {
+        final CompiledJsonCondition condition = JsonConditionFactory.createCondition(conditionExpression.getText());
+
+        conditionExpression.setCondition(condition);
     }
 
     private void transformServiceTasks(List<ServiceTaskImpl> serviceTasks)
@@ -235,25 +252,43 @@ public class BpmnTransformer
         return new Mapping(query, wrapString(mapping.getTarget()));
     }
 
+    private void transformExclusiveGateways(List<ExclusiveGatewayImpl> exclusiveGateways)
+    {
+        for (int e = 0; e < exclusiveGateways.size(); e++)
+        {
+            final ExclusiveGatewayImpl exclusiveGateway = exclusiveGateways.get(e);
+
+            final List<SequenceFlow> sequenceFlowsWithConditions = exclusiveGateway.getOutgoing().stream()
+                    .filter(SequenceFlowImpl::hasCondition)
+                    .collect(Collectors.toList());
+
+            exclusiveGateway.setOutgoingSequenceFlowsWithConditions(sequenceFlowsWithConditions);
+        }
+    }
+
     private void addBpmnAspects(ProcessImpl process)
     {
         final List<FlowElement> flowElements = process.getFlowElements();
         for (int f = 0; f < flowElements.size(); f++)
         {
-            final FlowElement flowElement = flowElements.get(f);
+            final FlowElementImpl flowElement = (FlowElementImpl) flowElements.get(f);
 
-            if (flowElement instanceof FlowNodeImpl)
+            if (flowElement instanceof FlowNode)
             {
-                final FlowNodeImpl flowNode = (FlowNodeImpl) flowElement;
+                final FlowNode flowNode = (FlowNode) flowElement;
 
                 final List<SequenceFlow> outgoingSequenceFlows = flowNode.getOutgoingSequenceFlows();
                 if (outgoingSequenceFlows.isEmpty())
                 {
-                    flowNode.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
+                    flowElement.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
                 }
-                else if (outgoingSequenceFlows.size() == 1)
+                else if (outgoingSequenceFlows.size() == 1 && !outgoingSequenceFlows.get(0).hasCondition())
                 {
-                    flowNode.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+                    flowElement.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+                }
+                else if (flowElement instanceof ExclusiveGateway)
+                {
+                    flowElement.setBpmnAspect(BpmnAspect.EXCLUSIVE_SPLIT);
                 }
             }
         }

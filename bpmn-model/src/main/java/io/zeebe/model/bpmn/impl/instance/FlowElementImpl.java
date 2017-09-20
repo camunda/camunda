@@ -20,6 +20,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import javax.xml.bind.annotation.*;
 
+import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import org.agrona.DirectBuffer;
@@ -30,6 +31,8 @@ public class FlowElementImpl extends BaseElement implements FlowElement
     private DirectBuffer name;
 
     private ExtensionElementsImpl extensionElements;
+
+    private BpmnAspect bpmnAspect = BpmnAspect.NONE;
 
     @XmlID
     @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID, required = true)
@@ -74,6 +77,18 @@ public class FlowElementImpl extends BaseElement implements FlowElement
     public DirectBuffer getNameAsBuffer()
     {
         return name;
+    }
+
+    @Override
+    public BpmnAspect getBpmnAspect()
+    {
+        return bpmnAspect;
+    }
+
+    @XmlTransient
+    public void setBpmnAspect(BpmnAspect bpmnAspect)
+    {
+        this.bpmnAspect = bpmnAspect;
     }
 
     @Override

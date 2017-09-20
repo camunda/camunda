@@ -23,9 +23,9 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.ValidationResult;
+import io.zeebe.model.bpmn.*;
 import io.zeebe.model.bpmn.instance.*;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.mapping.Mapping;
 import org.agrona.DirectBuffer;
@@ -108,13 +108,20 @@ public class BpmnValidator
         {
             validateEndEvent(validationResult, (EndEvent) flowElement);
         }
+        else if (flowElement instanceof ExclusiveGateway)
+        {
+            validateExclusiveGateway(validationResult, (ExclusiveGateway) flowElement);
+        }
     }
 
     private void validateFlowNode(ValidationResultImpl validationResult, FlowNode flowNode)
     {
-        if (flowNode.getOutgoingSequenceFlows().size() > 1)
+        if (!(flowNode instanceof ExclusiveGateway))
         {
-            validationResult.addError(flowNode, "The flow element must not have more than one outgoing sequence flow.");
+            if (flowNode.getOutgoingSequenceFlows().size() > 1)
+            {
+                validationResult.addError(flowNode, "The flow element must not have more than one outgoing sequence flow.");
+            }
         }
     }
 
@@ -224,6 +231,54 @@ public class BpmnValidator
         if (!endEvent.getOutgoingSequenceFlows().isEmpty())
         {
             validationResult.addError(endEvent, "An end event must not have an outgoing sequence flow.");
+        }
+    }
+
+    private void validateExclusiveGateway(ValidationResultImpl validationResult, ExclusiveGateway exclusiveGateway)
+    {
+        if (exclusiveGateway.getBpmnAspect() == BpmnAspect.EXCLUSIVE_SPLIT)
+        {
+            final SequenceFlow defaultFlow = exclusiveGateway.getDefaultFlow();
+            if (defaultFlow != null)
+            {
+                if (defaultFlow.hasCondition())
+                {
+                    validationResult.addError(defaultFlow, "A default sequence flow must not have a condition.");
+                }
+
+                if (!exclusiveGateway.getOutgoingSequenceFlows().contains(defaultFlow))
+                {
+                    validationResult.addError(exclusiveGateway, "The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
+                }
+            }
+            else
+            {
+                validationResult.addWarning(exclusiveGateway, "An exclusive gateway should have a default sequence flow without condition.");
+            }
+
+            for (SequenceFlow sequenceFlow : exclusiveGateway.getOutgoingSequenceFlowsWithConditions())
+            {
+                final CompiledJsonCondition condition = sequenceFlow.getCondition();
+                if (!condition.isValid())
+                {
+                    validationResult.addError(sequenceFlow, String.format("The condition '%s' is not valid: %s", condition.getExpression(), condition.getErrorMessage()));
+                }
+            }
+
+            for (SequenceFlow sequenceFlow : exclusiveGateway.getOutgoingSequenceFlows())
+            {
+                if (!sequenceFlow.hasCondition() && !sequenceFlow.equals(defaultFlow))
+                {
+                    validationResult.addError(sequenceFlow, "A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+                }
+            }
+        }
+        else
+        {
+            if (exclusiveGateway.getOutgoingSequenceFlows().size() > 1)
+            {
+                validationResult.addError(exclusiveGateway, "An exclusive gateway with more than one outgoing sequence flow must have conditions on the sequence flows.");
+            }
         }
     }
 

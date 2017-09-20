@@ -15,11 +15,15 @@
  */
 package io.zeebe.model.bpmn;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.net.URL;
 
+import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
+import io.zeebe.model.bpmn.impl.instance.SequenceFlowImpl;
+import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.Test;
 
@@ -134,6 +138,102 @@ public class BpmnValidationTest
         assertThat(validationResult.hasErrors()).isTrue();
         assertThat(validationResult.toString()).contains("JSON path query 'foo' is not valid!");
         assertThat(validationResult.toString()).contains("JSON path query 'bar' is not valid!");
+    }
+
+    @Test
+    public void testMissingConditionOnSequenceFlow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlow("s1")
+                .endEvent()
+            .sequenceFlow("s2")
+                .endEvent()
+                .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString()).contains("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
+    }
+
+    @Test
+    public void testDefaultSequenceFlowWithCondtion()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .endEvent()
+                .sequenceFlow("s2", s -> s.defaultFlow().condition("$.foo >= 5"))
+                    .endEvent()
+                    .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString()).contains("A default sequence flow must not have a condition.");
+    }
+
+    @Test
+    public void testInvalidDefaultSequenceFlow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .sequenceFlow("s1")
+            .exclusiveGateway("xor")
+            .sequenceFlow("s2", s -> s.condition("$.foo < 5"))
+            .endEvent()
+            .done();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+        final SequenceFlowImpl incomingSequenceFlow = workflow.findFlowElementById(wrapString("s1"));
+        final ExclusiveGatewayImpl exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        exclusiveGateway.setDefaultFlow(incomingSequenceFlow);
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString()).contains("The default sequence flow must be an outgoing sequence flow of the exclusive gateway.");
+    }
+
+    @Test
+    public void testNoDefaultSequenceFlow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .endEvent()
+                .sequenceFlow("s2", s -> s.condition("$.foo >= 5"))
+                    .endEvent()
+                    .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isFalse();
+        assertThat(validationResult.hasWarnings()).isTrue();
+        assertThat(validationResult.toString()).contains("An exclusive gateway should have a default sequence flow without condition.");
+    }
+
+    @Test
+    public void testInvalidConditionOnSequenceFlow()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("foobar"))
+                    .endEvent()
+                .sequenceFlow("s2", s -> s.defaultFlow())
+                    .endEvent()
+                    .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString()).contains("The condition 'foobar' is not valid");
     }
 
 }

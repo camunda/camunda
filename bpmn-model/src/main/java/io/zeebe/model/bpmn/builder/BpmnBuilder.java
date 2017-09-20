@@ -15,6 +15,8 @@
  */
 package io.zeebe.model.bpmn.builder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -29,9 +31,12 @@ public class BpmnBuilder
 
     private final AtomicLong nextId = new AtomicLong();
 
+    private final List<FlowNodeImpl> flowNodes = new ArrayList<>();
+
     private ProcessImpl process;
     private FlowNodeImpl sourceNode;
     private SequenceFlowImpl sequenceFlow;
+    private ExclusiveGatewayImpl exclusiveGateway;
 
     public BpmnBuilder(BpmnTransformer transformer)
     {
@@ -48,6 +53,8 @@ public class BpmnBuilder
 
         sourceNode = null;
         sequenceFlow = null;
+        exclusiveGateway = null;
+        flowNodes.clear();
 
         return this;
     }
@@ -55,6 +62,11 @@ public class BpmnBuilder
     private String generateId(String prefix)
     {
         return prefix + "-" + nextId.getAndIncrement();
+    }
+
+    private void addFlowNode(FlowNodeImpl flowNode)
+    {
+        flowNodes.add(flowNode);
     }
 
     private void connectToSequenceFlow(final FlowNodeImpl targetNode)
@@ -83,6 +95,7 @@ public class BpmnBuilder
         startEvent.setId(id);
 
         process.getStartEvents().add(startEvent);
+        addFlowNode(startEvent);
 
         sourceNode = startEvent;
 
@@ -94,7 +107,17 @@ public class BpmnBuilder
         return sequenceFlow(generateId("sequence-flow"));
     }
 
+    public BpmnBuilder sequenceFlow(Consumer<BpmnSequenceFlowBuilder> builder)
+    {
+        return sequenceFlow(generateId("sequence-flow"), builder);
+    }
+
     public BpmnBuilder sequenceFlow(String id)
+    {
+        return sequenceFlow(id, c -> c.done());
+    }
+
+    public BpmnBuilder sequenceFlow(String id, Consumer<BpmnSequenceFlowBuilder> builder)
     {
         final SequenceFlowImpl sequenceFlow = new SequenceFlowImpl();
         sequenceFlow.setId(id);
@@ -103,6 +126,10 @@ public class BpmnBuilder
         sourceNode.getOutgoing().add(sequenceFlow);
 
         process.getSequenceFlows().add(sequenceFlow);
+
+        final BpmnSequenceFlowBuilder sequenceFlowBuilder = new BpmnSequenceFlowBuilder(this, sequenceFlow, sourceNode);
+        builder.accept(sequenceFlowBuilder);
+        sequenceFlowBuilder.done();
 
         this.sequenceFlow = sequenceFlow;
 
@@ -122,8 +149,9 @@ public class BpmnBuilder
         connectToSequenceFlow(endEvent);
 
         process.getEndEvents().add(endEvent);
+        addFlowNode(endEvent);
 
-        return this;
+        return endCurrentFlow();
     }
 
     public BpmnServiceTaskBuilder serviceTask()
@@ -139,6 +167,7 @@ public class BpmnBuilder
         connectToSequenceFlow(serviceTask);
 
         process.getServiceTasks().add(serviceTask);
+        addFlowNode(serviceTask);
 
         return new BpmnServiceTaskBuilder(this, serviceTask);
     }
@@ -148,6 +177,62 @@ public class BpmnBuilder
         final BpmnServiceTaskBuilder serviceTaskBuilder = serviceTask(id);
         builder.accept(serviceTaskBuilder);
         return serviceTaskBuilder.done();
+    }
+
+    public BpmnBuilder exclusiveGateway()
+    {
+        return exclusiveGateway(generateId("exclusive-gateway"));
+    }
+
+    public BpmnBuilder exclusiveGateway(String id)
+    {
+        final ExclusiveGatewayImpl exclusiveGateway = new ExclusiveGatewayImpl();
+        exclusiveGateway.setId(id);
+
+        connectToSequenceFlow(exclusiveGateway);
+
+        process.getExclusiveGateways().add(exclusiveGateway);
+        addFlowNode(exclusiveGateway);
+
+        this.exclusiveGateway = exclusiveGateway;
+
+        return this;
+    }
+
+    private FlowNodeImpl getFlowNode(String activityId)
+    {
+        return flowNodes.stream()
+                .filter(e -> e.getId().equals(activityId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No activity found with id: " + activityId));
+    }
+
+    public BpmnBuilder continueAt(String activityId)
+    {
+        this.sourceNode = getFlowNode(activityId);
+
+        return this;
+    }
+
+    public BpmnBuilder joinWith(String activityId)
+    {
+        final FlowNodeImpl flowNode = getFlowNode(activityId);
+
+        connectToSequenceFlow(flowNode);
+
+        this.sourceNode = flowNode;
+
+        return this;
+    }
+
+    private BpmnBuilder endCurrentFlow()
+    {
+        if (exclusiveGateway != null)
+        {
+            continueAt(exclusiveGateway.getId());
+        }
+
+        return this;
     }
 
     public WorkflowDefinition done()

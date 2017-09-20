@@ -21,19 +21,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 
 import io.zeebe.model.bpmn.instance.*;
 import org.junit.Test;
 
 public class BpmnYamlParserTest
 {
-    private static final String YAML_FILE = "/process.yaml";
-    private static final String INVALID_YAML_FILE = "/invalid_process.yaml";
+    private static final String INVALID_WORKFLOW = "/invalid_process.yaml";
+    private static final String WORKFLOW_WITH_TASK_SEQUENCE = "/process.yaml";
+    private static final String WORKFLOW_WITH_SPLIT = "/process-conditions.yaml";
 
     @Test
     public void shouldReadFromFile() throws Exception
     {
-        final URL resource = getClass().getResource(YAML_FILE);
+        final URL resource = getClass().getResource(WORKFLOW_WITH_TASK_SEQUENCE);
         final File file = new File(resource.toURI());
 
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(file);
@@ -48,7 +50,7 @@ public class BpmnYamlParserTest
     @Test
     public void shouldReadFromStream() throws Exception
     {
-        final InputStream stream = getClass().getResourceAsStream(YAML_FILE);
+        final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
 
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
@@ -62,7 +64,7 @@ public class BpmnYamlParserTest
     @Test
     public void shouldTransformTask() throws Exception
     {
-        final InputStream stream = getClass().getResourceAsStream(YAML_FILE);
+        final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
@@ -98,7 +100,7 @@ public class BpmnYamlParserTest
     @Test
     public void shouldTransformMultipleTasks() throws Exception
     {
-        final InputStream stream = getClass().getResourceAsStream(YAML_FILE);
+        final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_TASK_SEQUENCE);
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
 
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
@@ -122,9 +124,46 @@ public class BpmnYamlParserTest
     }
 
     @Test
+    public void shouldTransformExclusiveSplit() throws Exception
+    {
+        final InputStream stream = getClass().getResourceAsStream(WORKFLOW_WITH_SPLIT);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(stream);
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
+        assertThat(workflow).isNotNull();
+
+        final ServiceTask task1 = workflow.findFlowElementById(wrapString("task1"));
+        assertThat(task1).isNotNull();
+        assertThat(task1.getOutgoingSequenceFlows()).hasSize(1);
+
+        final SequenceFlow flowToGateway = task1.getOutgoingSequenceFlows().get(0);
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(flowToGateway.getTargetNode().getIdAsBuffer());
+        assertThat(exclusiveGateway).isNotNull();
+
+        final List<SequenceFlow> outgoingSequenceFlowsWithConditions = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+        assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
+        assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
+        assertThat(outgoingSequenceFlowsWithConditions)
+            .extracting(s -> s.getCondition().getExpression())
+            .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
+
+        final SequenceFlow defaultFlow = exclusiveGateway.getDefaultFlow();
+        assertThat(defaultFlow).isNotNull();
+        assertThat(defaultFlow.hasCondition()).isFalse();
+        assertThat(defaultFlow.getTargetNode().getIdAsBuffer()).isEqualTo(wrapString("task4"));
+
+        final ServiceTask task2 = workflow.findFlowElementById(wrapString("task2"));
+        assertThat(task2).isNotNull();
+        assertThat(task2.getOutgoingSequenceFlows()).hasSize(1);
+
+        final SequenceFlow flowAfterTask2 = task2.getOutgoingSequenceFlows().get(0);
+        assertThat(flowAfterTask2.getTargetNode().getIdAsBuffer()).isEqualTo(wrapString("task5"));
+    }
+
+    @Test
     public void shouldReadInvalidFile() throws Exception
     {
-        final URL resource = getClass().getResource(INVALID_YAML_FILE);
+        final URL resource = getClass().getResource(INVALID_WORKFLOW);
         final File bpmnFile = new File(resource.toURI());
 
         final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(bpmnFile);

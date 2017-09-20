@@ -1,0 +1,29 @@
+name: test
+
+tasks:
+    
+    - id: task1
+      type: foo
+      flows:
+          - condition: $.foo < 5
+            next: task2
+            
+          - condition: $.foo >= 5 && $.foo < 10
+            next: task3
+            
+      defaultFlow: task4
+                  
+                  
+    - id: task2
+      type: foo
+      next: task5
+
+    - id: task3
+      type: foo
+      
+    - id: task4
+      type: foo
+      
+    - id: task5
+      type: foo  
+      

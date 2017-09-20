@@ -31,6 +31,7 @@ public class ProcessImpl extends FlowElementImpl implements Workflow
     private List<StartEventImpl> startEvents = new ArrayList<>();
     private List<EndEventImpl> endEvents = new ArrayList<>();
     private List<ServiceTaskImpl> serviceTasks = new ArrayList<>();
+    private List<ExclusiveGatewayImpl> exclusiveGateways = new ArrayList<>();
 
     private StartEvent initialStartEvent;
     private final List<FlowElement> flowElements = new ArrayList<>();
@@ -90,6 +91,17 @@ public class ProcessImpl extends FlowElementImpl implements Workflow
     public List<ServiceTaskImpl> getServiceTasks()
     {
         return serviceTasks;
+    }
+
+    @XmlElement(name = BpmnConstants.BPMN_ELEMENT_EXCLUSIVE_GATEWAY, namespace = BpmnConstants.BPMN20_NS)
+    public void setExclusiveGateways(List<ExclusiveGatewayImpl> exclusiveGateways)
+    {
+        this.exclusiveGateways = exclusiveGateways;
+    }
+
+    public List<ExclusiveGatewayImpl> getExclusiveGateways()
+    {
+        return exclusiveGateways;
     }
 
     @Override

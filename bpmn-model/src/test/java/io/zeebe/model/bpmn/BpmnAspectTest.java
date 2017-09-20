@@ -25,7 +25,7 @@ public class BpmnAspectTest
 {
 
     @Test
-    public void shouldSetTakeSequenceFlowAspectIfOutgoingSequenceFlowExists()
+    public void testActivityWithOneOutgoingSequenceFlow()
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
@@ -43,7 +43,7 @@ public class BpmnAspectTest
     }
 
     @Test
-    public void shouldSetConsumeTokenAspectOnEndEvent()
+    public void testEndEvent()
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
@@ -57,7 +57,7 @@ public class BpmnAspectTest
     }
 
     @Test
-    public void shouldSetConsumeTokenAspectIfNoOutgoiningSequenceFlowExists()
+    public void testActivityWithoutOutgoiningSequenceFlow()
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
             .startEvent("start")
@@ -68,6 +68,53 @@ public class BpmnAspectTest
 
         final ServiceTask serviceTask = workflow.findFlowElementById(wrapString("task"));
         assertThat(serviceTask.getBpmnAspect()).isEqualTo(BpmnAspect.CONSUME_TOKEN);
+    }
+
+    @Test
+    public void testExclusiveGatewayWithConditionalFlows()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlow(s -> s.condition("$.foo < 3"))
+                .endEvent()
+            .sequenceFlow(s -> s.defaultFlow())
+                .endEvent()
+                .done();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        assertThat(exclusiveGateway.getBpmnAspect()).isEqualTo(BpmnAspect.EXCLUSIVE_SPLIT);
+    }
+
+    @Test
+    public void testExclusiveGatewayWithoutCondionalSequenceFlows()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .endEvent()
+            .done();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        assertThat(exclusiveGateway.getBpmnAspect()).isEqualTo(BpmnAspect.TAKE_SEQUENCE_FLOW);
+    }
+
+    @Test
+    public void testExclusiveGatewayWithoutOutgoingSequenceFlows()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+            .startEvent()
+            .exclusiveGateway("xor")
+            .done();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        assertThat(exclusiveGateway.getBpmnAspect()).isEqualTo(BpmnAspect.CONSUME_TOKEN);
     }
 
 }

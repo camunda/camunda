@@ -19,10 +19,12 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 
 import io.zeebe.model.bpmn.BpmnConstants;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
 import org.agrona.DirectBuffer;
 
 public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow
@@ -32,6 +34,8 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow
 
     private FlowNodeImpl sourceNode;
     private FlowNodeImpl targetNode;
+
+    private ConditionExpressionImpl conditionExpression;
 
     @XmlAttribute(name = BpmnConstants.BPMN_ELEMENT_SOURCE_REF)
     public void setSourceRef(String sourceRef)
@@ -87,6 +91,29 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow
         this.targetNode = targetElement;
     }
 
+    @XmlElement(name = BpmnConstants.BPMN_ELEMENT_CONDITION_EXPRESSION, namespace = BpmnConstants.BPMN20_NS)
+    public void setConditionExpression(ConditionExpressionImpl conditionExpression)
+    {
+        this.conditionExpression = conditionExpression;
+    }
+
+    public ConditionExpressionImpl getConditionExpression()
+    {
+        return conditionExpression;
+    }
+
+    @Override
+    public boolean hasCondition()
+    {
+        return conditionExpression != null;
+    }
+
+    @Override
+    public CompiledJsonCondition getCondition()
+    {
+        return hasCondition() ? conditionExpression.getCondition() : null;
+    }
+
     @Override
     public String toString()
     {
@@ -99,6 +126,8 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow
         builder.append(getSourceRef());
         builder.append(", targetRef=");
         builder.append(getTargetRef());
+        builder.append(", condition=");
+        builder.append(conditionExpression);
         builder.append("]");
         return builder.toString();
     }

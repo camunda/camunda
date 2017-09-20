@@ -15,11 +15,17 @@
  */
 package io.zeebe.model.bpmn.instance;
 
+import io.zeebe.msgpack.el.CompiledJsonCondition;
+
 public interface SequenceFlow extends FlowElement
 {
 
     FlowNode getSourceNode();
 
     FlowNode getTargetNode();
+
+    boolean hasCondition();
+
+    CompiledJsonCondition getCondition();
 
 }

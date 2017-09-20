@@ -18,6 +18,8 @@ package io.zeebe.model.bpmn;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import io.zeebe.model.bpmn.instance.*;
 import org.junit.Test;
 
@@ -145,6 +147,68 @@ public class BpmnBuilderTest
     }
 
     @Test
+    public void shouldBuildWorkflowWithExclusiveGateway()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .endEvent("a")
+                .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                    .endEvent("b")
+                .sequenceFlow("s3", s -> s.defaultFlow())
+                    .endEvent("c")
+                .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+        assertThat(validationResult.hasErrors()).isFalse();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        assertThat(exclusiveGateway).isNotNull();
+
+        final SequenceFlow defaultOutgoingSequenceFlow = exclusiveGateway.getDefaultFlow();
+        assertThat(defaultOutgoingSequenceFlow).isNotNull();
+        assertThat(defaultOutgoingSequenceFlow.hasCondition()).isFalse();
+
+        final List<SequenceFlow> outgoingSequenceFlowsWithConditions = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+        assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
+        assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
+        assertThat(outgoingSequenceFlowsWithConditions)
+            .extracting(s -> s.getCondition().getExpression())
+            .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
+    }
+
+    @Test
+    public void shouldBuildWorkflowWithJoiningExclusiveGateway()
+    {
+        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
+                .startEvent()
+                .exclusiveGateway("split")
+                .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                    .exclusiveGateway("join")
+                    .continueAt("split")
+                .sequenceFlow("s2", s -> s.defaultFlow())
+                    .joinWith("join")
+                .endEvent("end")
+                .done();
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+        assertThat(validationResult.hasErrors()).isFalse();
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("process"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("join"));
+        assertThat(exclusiveGateway).isNotNull();
+
+        final List<SequenceFlow> incomingSequenceFlows = exclusiveGateway.getIncomingSequenceFlows();
+        assertThat(incomingSequenceFlows).hasSize(2);
+        assertThat(incomingSequenceFlows.get(0).getIdAsBuffer()).isEqualTo(wrapString("s1"));
+        assertThat(incomingSequenceFlows.get(1).getIdAsBuffer()).isEqualTo(wrapString("s2"));
+    }
+
+    @Test
     public void shouldConvertWorkflowToString()
     {
         final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("process")
@@ -159,7 +223,7 @@ public class BpmnBuilderTest
                 .output("$.c", "$.d")
                 .done()
             .sequenceFlow("s2")
-            .endEvent("end")
+            .endEvent("end2")
             .done();
 
         final String workflowAsString = Bpmn.convertToString(workflowDefinition);

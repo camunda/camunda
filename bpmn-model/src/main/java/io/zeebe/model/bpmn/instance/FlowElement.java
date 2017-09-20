@@ -15,11 +15,14 @@
  */
 package io.zeebe.model.bpmn.instance;
 
+import io.zeebe.model.bpmn.BpmnAspect;
 import org.agrona.DirectBuffer;
 
 public interface FlowElement
 {
 
     DirectBuffer getIdAsBuffer();
+
+    BpmnAspect getBpmnAspect();
 
 }

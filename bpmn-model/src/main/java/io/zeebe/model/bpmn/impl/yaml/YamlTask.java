@@ -31,6 +31,10 @@ public class YamlTask
     private List<YamlMapping> inputs = new ArrayList<>();
     private List<YamlMapping> outputs = new ArrayList<>();
 
+    private String next;
+    private String defaultFlow;
+    private List<YamlFlow> flows = new ArrayList<>();
+
     public String getId()
     {
         return id;
@@ -89,6 +93,36 @@ public class YamlTask
     public void setOutputs(List<YamlMapping> outputs)
     {
         this.outputs = outputs;
+    }
+
+    public List<YamlFlow> getFlows()
+    {
+        return flows;
+    }
+
+    public void setFlows(List<YamlFlow> flows)
+    {
+        this.flows = flows;
+    }
+
+    public String getNext()
+    {
+        return next;
+    }
+
+    public void setNext(String next)
+    {
+        this.next = next;
+    }
+
+    public String getDefaultFlow()
+    {
+        return defaultFlow;
+    }
+
+    public void setDefaultFlow(String defaultFlow)
+    {
+        this.defaultFlow = defaultFlow;
     }
 
 }

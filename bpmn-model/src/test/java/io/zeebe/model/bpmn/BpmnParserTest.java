@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 
 import io.zeebe.model.bpmn.instance.*;
 import org.assertj.core.util.Files;
@@ -30,6 +31,7 @@ import org.junit.Test;
 public class BpmnParserTest
 {
     private static final String BPMN_FILE = "/process.bpmn";
+    private static final String BPMN_XOR_GATEWAY_FILE = "/process-xor-gateway.bpmn";
 
     @Test
     public void shouldReadFromFile() throws Exception
@@ -165,6 +167,32 @@ public class BpmnParserTest
         assertThat(inputOutputMapping.getOutputMappingsAsMap())
             .hasSize(1)
             .containsEntry("$.c", "$.d");
+    }
+
+    @Test
+    public void shouldTransformExclusiveGateway()
+    {
+        final InputStream stream = getClass().getResourceAsStream(BPMN_XOR_GATEWAY_FILE);
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlStream(stream);
+
+        final Workflow workflow = workflowDefinition.getWorkflow(wrapString("workflow"));
+
+        final ExclusiveGateway exclusiveGateway = workflow.findFlowElementById(wrapString("xor"));
+        assertThat(exclusiveGateway).isNotNull();
+
+        final List<SequenceFlow> outgoingSequenceFlows = exclusiveGateway.getOutgoingSequenceFlows();
+        assertThat(outgoingSequenceFlows).hasSize(3);
+
+        final SequenceFlow defaultOutgoingSequenceFlow = exclusiveGateway.getDefaultFlow();
+        assertThat(defaultOutgoingSequenceFlow).isNotNull();
+        assertThat(defaultOutgoingSequenceFlow.hasCondition()).isFalse();
+
+        final List<SequenceFlow> outgoingSequenceFlowsWithConditions = exclusiveGateway.getOutgoingSequenceFlowsWithConditions();
+        assertThat(outgoingSequenceFlowsWithConditions).hasSize(2);
+        assertThat(outgoingSequenceFlowsWithConditions).allMatch(SequenceFlow::hasCondition);
+        assertThat(outgoingSequenceFlowsWithConditions)
+            .extracting(s -> s.getCondition().getExpression())
+            .containsExactly("$.foo < 5", "$.foo >= 5 && $.foo < 10");
     }
 
 }

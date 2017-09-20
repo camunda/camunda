@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn;
+package io.zeebe.model.bpmn.instance;
 
-public enum BpmnAspect
+import java.util.List;
+
+public interface ExclusiveGateway extends FlowNode
 {
-    NONE,
 
-    // exactly one outgoing sequence flow
-    TAKE_SEQUENCE_FLOW,
+    List<SequenceFlow> getOutgoingSequenceFlowsWithConditions();
 
-    // end event, no outgoing sequence flow
-    CONSUME_TOKEN,
-
-    // xor-gateway
-    EXCLUSIVE_SPLIT,
-
-    // or-gateway
-    INCLUSIVE_SPLIT,
-
-    // and-gateway
-    PARALLEL_SPLIT,
-
-    // joining and-/or-gateway
-    MERGE,
+    SequenceFlow getDefaultFlow();
 
 }

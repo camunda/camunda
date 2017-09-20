@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn;
+package io.zeebe.model.bpmn.impl.yaml;
 
-public enum BpmnAspect
+public class YamlFlow
 {
-    NONE,
+    private String condition = "";
+    private String next = "";
 
-    // exactly one outgoing sequence flow
-    TAKE_SEQUENCE_FLOW,
+    public String getCondition()
+    {
+        return condition;
+    }
 
-    // end event, no outgoing sequence flow
-    CONSUME_TOKEN,
+    public void setCondition(String condition)
+    {
+        this.condition = condition;
+    }
 
-    // xor-gateway
-    EXCLUSIVE_SPLIT,
+    public String getNext()
+    {
+        return next;
+    }
 
-    // or-gateway
-    INCLUSIVE_SPLIT,
-
-    // and-gateway
-    PARALLEL_SPLIT,
-
-    // joining and-/or-gateway
-    MERGE,
+    public void setNext(String next)
+    {
+        this.next = next;
+    }
 
 }
