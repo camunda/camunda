@@ -496,7 +496,6 @@ public class TopicSubscriptionTest
         client.disconnect();
 
         broker.bindTransport();
-        client.connect();
 
         // when
         final TopicSubscription secondSubscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())

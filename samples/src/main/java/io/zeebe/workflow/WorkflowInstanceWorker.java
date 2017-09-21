@@ -40,10 +40,7 @@ public class WorkflowInstanceWorker
 
         final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
 
-        System.out.println(String.format("> Connecting to %s ...", brokerContactPoint));
-        zeebeClient.connect();
-
-        System.out.println("> Connected.");
+        System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 
         System.out.println(String.format("> Open task subscription for topic '%s', partition '%d' and type '%s'", topicName, partitionId, taskType));
 

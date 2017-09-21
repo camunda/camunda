@@ -68,8 +68,6 @@ public class ZeebeClientImpl implements ZeebeClient
     protected ActorReference topologyManagerActorReference;
     protected ActorReference commandManagerActorReference;
 
-    protected boolean connected = false;
-
     protected final MsgPackConverter msgPackConverter;
 
     public ZeebeClientImpl(final Properties properties)
@@ -138,46 +136,30 @@ public class ZeebeClientImpl implements ZeebeClient
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
         apiCommandManager = new RequestManager(transport, topologyManager, new DefaultPartitionStrategy(), objectMapper, maxRequests);
-    }
 
-    @Override
-    public void connect()
-    {
-        if (!connected)
-        {
-            commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
-            topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
+        commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
+        topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
 
-            subscriptionManager.start();
-
-            connected = true;
-        }
+        subscriptionManager.start();
     }
 
     @Override
     public void disconnect()
     {
-        if (connected)
-        {
-            subscriptionManager.closeAllSubscriptions();
-            subscriptionManager.stop();
-
-            topologyManagerActorReference.close();
-            topologyManagerActorReference = null;
-
-            commandManagerActorReference.close();
-            commandManagerActorReference = null;
-
-            transport.closeAllChannels().join();
-
-            connected = false;
-        }
+        subscriptionManager.closeAllSubscriptions();
+        transport.closeAllChannels().join();
     }
 
     @Override
     public void close()
     {
-        disconnect();
+        subscriptionManager.stop();
+
+        topologyManagerActorReference.close();
+        topologyManagerActorReference = null;
+
+        commandManagerActorReference.close();
+        commandManagerActorReference = null;
 
         subscriptionManager.close();
 

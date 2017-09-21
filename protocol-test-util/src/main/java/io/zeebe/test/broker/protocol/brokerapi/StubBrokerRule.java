@@ -151,6 +151,11 @@ public class StubBrokerRule extends ExternalResource
         }
     }
 
+    public ServerTransport getTransport()
+    {
+        return transport;
+    }
+
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(long key)
     {
         return onWorkflowRequestRespondWith(TEST_TOPIC_NAME, TEST_PARTITION_ID, key);

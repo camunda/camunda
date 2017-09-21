@@ -520,7 +520,6 @@ public class BrokerRestartTest
         onStop.run();
 
         brokerRule.startBroker();
-        clientRule.getClient().connect();
         eventRecorder.startRecordingEvents();
     }
 

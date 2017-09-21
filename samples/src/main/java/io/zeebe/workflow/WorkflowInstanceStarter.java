@@ -39,10 +39,7 @@ public class WorkflowInstanceStarter
 
         final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
 
-        System.out.println(String.format("> Connecting to %s ...", brokerContactPoint));
-        zeebeClient.connect();
-
-        System.out.println("> Connected.");
+        System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 
         System.out.println(String.format("> Deploying workflow to topic '%s' and partition '%d'", topicName, partitionId));
 

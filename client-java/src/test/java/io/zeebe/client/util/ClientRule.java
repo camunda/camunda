@@ -21,11 +21,12 @@ import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPI
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.client.TasksClient;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
-import org.junit.rules.ExternalResource;
+import io.zeebe.client.ZeebeClient;
 
 public class ClientRule extends ExternalResource
 {
@@ -49,7 +50,6 @@ public class ClientRule extends ExternalResource
     protected void before() throws Throwable
     {
         client = ZeebeClient.create(properties);
-        client.connect();
     }
 
     @Override

@@ -50,7 +50,6 @@ public abstract class FixedRateLatencyTest
         try
         {
             client = ZeebeClient.create(properties);
-            client.connect();
 
             executeSetup(properties, client);
             executeWarmup(properties, client);

@@ -50,7 +50,6 @@ public abstract class MaxRateThroughputTest
         try
         {
             client = ZeebeClient.create(properties);
-            client.connect();
 
             executeSetup(properties, client);
             executeWarmup(properties, client);

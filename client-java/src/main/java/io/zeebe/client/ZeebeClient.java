@@ -45,12 +45,9 @@ public interface ZeebeClient extends AutoCloseable
     Request<TopologyResponse> requestTopology();
 
     /**
-     * Connects the client to the configured broker. Not thread-safe.
-     */
-    void connect();
-
-    /**
-     * Disconnects the client from the configured broker. Not thread-safe.
+     * Gracefully closes all current connections to all brokers. This includes closing
+     * all open task and topic subscriptions. The client establishes new connections as soon as
+     * new requests are made.
      */
     void disconnect();
 

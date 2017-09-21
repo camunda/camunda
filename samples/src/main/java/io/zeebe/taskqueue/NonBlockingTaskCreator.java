@@ -56,8 +56,6 @@ public class NonBlockingTaskCreator
 
         try (ZeebeClient client = ZeebeClient.create(properties))
         {
-            client.connect();
-
             final TasksClient asyncTaskService = client.tasks();
 
             final String payload = "{}";

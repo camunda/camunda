@@ -63,7 +63,6 @@ public class TopicSubscriptionThroughputTest
         try
         {
             client = ZeebeClient.create(properties);
-            client.connect();
 
             executeSetup(properties, client);
             executeTest(properties, client);

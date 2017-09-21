@@ -36,10 +36,7 @@ public class EventLogger
 
         final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
 
-        System.out.println(String.format("> Connecting to %s ...", brokerContactPoint));
-        zeebeClient.connect();
-
-        System.out.println("> Connected.");
+        System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 
         final String topicName = "default-topic";
         final int partitionid = 0;
