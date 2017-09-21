@@ -2,6 +2,10 @@
 
 Zeebe uses visual workflows based on the BPMN modeling and visualization standard.
 
+![workflow](/bpmn-workflows/workflow.png)
+
+Read more about:
+
 * [BPMN Primer](bpmn-workflows/bpmn-primer.html)
 * [Events](bpmn-workflows/events.html)
 * [Activities](bpmn-workflows/activities.html)

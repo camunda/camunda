@@ -4,19 +4,22 @@ Zeebe provides a YAML format to define plain workflows. It's an alternative to B
 
 The targeting user group has a technical background and has no need for BPMN 2.0.
 
-A minimal example of a workflow with two tasks can look like this:
-
 ```yaml
-name: workflow-name
+name: order-process
 
 tasks:
-    - id: task1
-      type: foo
+    - id: collect-money
+      type: payment-service
 
-    - id: task2
-      type: bar
+    - id: fetch-items
+      type: inventory-service
+
+    - id: ship-parcel
+      type: shipment-service
 ```
 
 Read more about:
 
 * [Tasks](yaml-workflows/tasks.html)
+* [Data Flow](yaml-workflows/data-flow.html)
+* [Control Flow](yaml-workflows/control-flow.html)

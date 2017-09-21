@@ -23,6 +23,8 @@
     * [Data Flow](bpmn-workflows/data-flow.md)
 * [YAML Workflows](yaml-workflows/README.md)
     * [Tasks](yaml-workflows/tasks.md)
+    * [Data Flow](yaml-workflows/data-flow.md)
+    * [Control Flow](yaml-workflows/control-flow.md)
 * [Java Client](java-client/README.md)
     * [Setup](java-client/setup.md)
     * [Get Started](java-client/get-started.md)
