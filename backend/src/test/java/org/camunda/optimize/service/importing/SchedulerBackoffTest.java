@@ -2,10 +2,13 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
+import org.camunda.optimize.service.importing.impl.VariableImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +18,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -46,9 +50,22 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     backoffService.resetBackoffCounters();
     importScheduler.importScheduleJobs.clear();
 
-    services = mockImportServices();
+    services = mockPaginatedImportServices();
+    Map<String, ImportService> allServicesMap = getAllImportServiceMap(services);
+    when(importServiceProvider.getAllServices()).thenReturn(allServicesMap);
+
     mockIndexHandlers(services, indexHandlerProvider);
     when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getVariableImportService())
+        .thenReturn((VariableImportService) allServicesMap.get("variable"));
+    when(importServiceProvider.getProcessInstanceImportService())
+        .thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
+  }
+
+  @After
+  public void tearDown() {
+    Mockito.reset(importServiceProvider);
+    Mockito.reset(indexHandlerProvider);
   }
 
   @Test
@@ -69,7 +86,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   @Test
   public void testBackingOffIfNoImportPagesFound() throws Exception {
     //given
-    List<PaginatedImportService> services = mockImportServices();
+    List<PaginatedImportService> services = mockPaginatedImportServices();
     when(importServiceProvider.getPagedServices()).thenReturn(services);
 
     PaginatedImportService zeroPaginatedImportService = services.get(0);
@@ -212,5 +229,14 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(3L));
     importScheduler.executeNextJob();
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(3L));
+  }
+
+  protected List<PaginatedImportService> mockPaginatedImportServices() throws OptimizeException {
+    List<PaginatedImportService> services = super.mockPaginatedImportServices();
+
+    for (PaginatedImportService s : services) {
+      when(importServiceProvider.getImportService(s.getElasticsearchType())).thenReturn(s);
+    }
+    return services;
   }
 }

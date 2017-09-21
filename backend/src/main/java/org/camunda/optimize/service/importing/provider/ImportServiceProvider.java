@@ -102,6 +102,10 @@ public class ImportServiceProvider implements ConfigurationReloadable {
   }
 
   public ImportService getImportService(String elasticsearchType) {
-    return allServices.get(elasticsearchType);
+    return getAllServices().get(elasticsearchType);
+  }
+
+  public Map<String,ImportService> getAllServices() {
+    return allServices;
   }
 }

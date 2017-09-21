@@ -5,6 +5,8 @@ import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
+import org.camunda.optimize.service.importing.impl.VariableImportService;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.ImportIndexHandler;
@@ -12,6 +14,7 @@ import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +31,7 @@ public abstract class AbstractSchedulerTest {
   private static final String TEST_ENGINE = "1";
 
 
-  protected List<PaginatedImportService> mockImportServices() throws OptimizeException {
+  protected List<PaginatedImportService> mockPaginatedImportServices() throws OptimizeException {
     Map<String,PaginatedImportService> services = new HashMap<>();
 
     ActivityImportService activityImportService = mock(ActivityImportService.class);
@@ -53,6 +56,36 @@ public abstract class AbstractSchedulerTest {
       when(service.executeImport(any())).thenReturn(result);
     }
     return new ArrayList<>(services.values());
+  }
+
+  protected List<? extends ImportService> mockIdImportServices() throws OptimizeException {
+    Map<String,ImportService> services = new HashMap<>();
+
+    VariableImportService variableImportService = mock(VariableImportService.class);
+    when(variableImportService.getElasticsearchType()).thenReturn("variable");
+    services.put("variable", variableImportService);
+
+    ProcessInstanceImportService processInstanceImportService = mock(ProcessInstanceImportService.class);
+    when(processInstanceImportService.getElasticsearchType()).thenReturn("pi-is");
+    services.put("pi-is",processInstanceImportService);
+
+    for (ImportService service : services.values()) {
+      ImportResult result = new ImportResult();
+      result.setElasticSearchType(service.getElasticsearchType());
+      when(service.executeImport(any())).thenReturn(result);
+    }
+    return new ArrayList<>(services.values());
+  }
+
+  protected Map<String, ImportService> getAllImportServiceMap(List<PaginatedImportService> paginatedImportServices) throws OptimizeException {
+    List<ImportService> allServices = new ArrayList<>();
+    allServices.addAll(paginatedImportServices);
+    allServices.addAll(mockIdImportServices());
+    Map<String, ImportService> allServicesMap = new HashMap<>();
+    for (ImportService service : allServices ) {
+      allServicesMap.put(service.getElasticsearchType(), service);
+    }
+    return allServicesMap;
   }
 
   protected void mockIndexHandlers(List<PaginatedImportService> services, IndexHandlerProvider indexHandlerProvider) {
