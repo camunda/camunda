@@ -146,93 +146,6 @@
         "resource": "/history/variable-instance"
       }
     },
-    "import": {
-      "activity-instance": {
-        "pageSize": {
-          /*
-          Overwrites the maximum page size for historic activity instance
-          fetching.
-          */
-          "max": 10000,
-          /*
-          Overwrites the maximum page size for historic activity instance
-          fetching.
-          */
-          "min": 50
-        }
-      },
-      /*
-      Number of threads being used to process the import jobs in the import
-      job queue
-      */
-      "executorThreadCount": 2,
-      /*
-      Adjust the queue size of the import jobs created.
-      A too large value might cause memory problems.
-      */
-      "jobQueueMaxSize": 100,
-      /*
-      The data is fetched from the engine in pages. Define a default minimum
-      and maximum size or, to be precise, a range for the number of entities
-      that should be fetched at once for each import type.
-      */
-      "pageMaxSize": 1000,
-      "process-definition": {
-        "pageSize": {
-          "max": 1000,
-          /*
-          Overwrites the minimum page size for process definitions fetching.
-          */
-          "min": 10
-        }
-      },
-      /*
-      Restrict the import to the given process definition ids.
-      If empty, all the data is imported.
-      */
-      "process-definition-ids-to-import": [],
-      "process-definition-xml": {
-        "pageSize": {
-          /*
-          Overwrites the maximum page size for process definition xml model
-          fetching. Should be a low value, as large models will lead to
-          memory or timeout problems.
-          */
-          "max": 4,
-          /*
-          Overwrites the minimum page size for process definition xml
-          model fetching. Should be a low value, as large models will lead
-          to memory or timeout problems.
-          */
-          "min": 1
-        }
-      },
-      "process-instance": {
-        "pageSize": {
-          /*
-          Overwrites the maximum page size for historic process instance
-          fetching.
-          */
-          "max": 1000
-        }
-      },
-      "variable": {
-        "pageSize": {
-          /*
-          Overwrites the maximum page size for historic variable instance
-          fetching.
-          */
-          "max": 1000
-        }
-      },
-      "writer": {
-        /*
-        Number of retries when there is a version conflict in Elasticsearch
-        during the import.
-        */
-        "numberOfRetries": 5
-      }
-    },
     "procdef": {
       /*
       The engine endpoint to the process definition count.
@@ -263,6 +176,171 @@
       }
     }
   },
+  "import": {
+    "data" : {
+      "activity-instance": {
+        "pageSize": {
+          /*
+          Overwrites the maximum page size for historic activity instance
+          fetching.
+          */
+          "max": 10000,
+          /*
+          Overwrites the maximum page size for historic activity instance
+          fetching.
+          */
+          "min": 50
+        },
+        /*
+        The name of the event type.
+        */
+        "elasticsearchType": "event"
+      },
+      "process-definition": {
+        "pageSize": {
+          "max": 1000,
+          /*
+          Overwrites the minimum page size for process definitions fetching.
+          */
+          "min": 10
+        },
+        /*
+        The name of the import index type when a list of process definitions
+        to import is defined.
+        */
+        "indexType": "process-definition-import-index",
+        /*
+        The name of the process definition type.
+        */
+        "elasticsearchType": "process-definition"
+      },
+      "process-definition-xml": {
+        "pageSize": {
+          /*
+          Overwrites the maximum page size for process definition xml model
+          fetching. Should be a low value, as large models will lead to
+          memory or timeout problems.
+          */
+          "max": 4,
+          /*
+          Overwrites the minimum page size for process definition xml
+          model fetching. Should be a low value, as large models will lead
+          to memory or timeout problems.
+          */
+          "min": 1
+        },
+        /*
+        The name of the process definition xml type.
+        */
+        "elasticsearchType" : "process-definition-xml"
+      },
+      "process-instance": {
+        "pageSize": {
+          /*
+          Overwrites the maximum page size for historic process instance
+          fetching.
+          */
+          "max": 1000
+        },
+        /*
+        The name of the process instance (pi) tracking type that is used
+        to find pi’s that were already imported.
+        */
+        "idTrackingType": "process-instance-id-tracking",
+        /*
+        The name of the process instance type.
+        */
+        "elasticsearchType": "process-instance"
+      },
+      "variable": {
+        "pageSize": {
+          /*
+          Overwrites the maximum page size for historic variable instance
+          fetching.
+          */
+          "max": 1000
+        },
+        /*
+        The name of the variable type.
+        */
+        "elasticsearchType": "variable"
+      }
+    },
+
+    /*
+    Number of threads being used to process the import jobs in the import
+    job queue
+    */
+    "executorThreadCount": 2,
+    /*
+    Adjust the queue size of the import jobs created.
+    A too large value might cause memory problems.
+    */
+    "jobQueueMaxSize": 100,
+    /*
+    The data is fetched from the engine in pages. Define a default minimum
+    and maximum size or, to be precise, a range for the number of entities
+    that should be fetched at once for each import type.
+    */
+    "pageMaxSize": 1000,
+
+    /*
+    Restrict the import to the given process definition ids.
+    If empty, all the data is imported.
+    */
+    "process-definition-ids-to-import": [],
+
+    "handler": {
+      "backoff": {
+        /*
+        Interval which is used for the backoff time calculation.
+        */
+        "interval": 1000,
+        /*
+        If all jobs are backing off at the moment, this interval is used
+        to trigger general backoff
+        */
+        "value": 6000,
+        /*
+        Once all pages are consumed, the import scheduler component will
+        start scheduling fetching tasks in increasing periods of time,
+        controlled by "backoff" counter.
+        */
+        "max": 5
+      },
+      "pages": {
+        "resetInterval": {
+          /*
+          Chronological unit used to calculate index reset due date.
+          Possible values are:
+
+          Seconds, Minutes, Hours, HalfDays, Days, Weeks, Months
+
+          in case not supported value is provided 'Minutes' will be used
+          for interval calculation.
+          */
+          "unit": "Minutes",
+          /*
+          Interval the import is started all over again, meaning only missing
+          entities are fetched during the import restart. The data already
+          imported is kept.
+          */
+          "value": 30
+        }
+      }
+    },
+    /*
+    The name of the import index type.
+    */
+    "indexType": "import-index",
+    "writer": {
+      /*
+      Number of retries when there is a version conflict in Elasticsearch
+      during the import.
+      */
+      "numberOfRetries": 5
+    }
+  },
   "es": {
     "analyzer": {
       /*
@@ -285,12 +363,6 @@
       */
       "timeout": 10000
     },
-    "event": {
-      /*
-      The name of the event type.
-      */
-      "type": "event"
-    },
     "heatmap": {
       "duration": {
         /*
@@ -307,82 +379,12 @@
     A port number used by Elasticsearch to accept TCP connections.
     */
     "port": 9300,
-    "import": {
-      "handler": {
-        "backoff": {
-          /*
-          Interval which is used for the backoff time calculation.
-          */
-          "interval": 1000,
-          /*
-          If all jobs are backing off at the moment, this interval is used
-          to trigger general backoff
-          */
-          "value": 6000,
-          /*
-          Once all pages are consumed, the import scheduler component will
-          start scheduling fetching tasks in increasing periods of time,
-          controlled by "backoff" counter.
-          */
-          "max": 5
-        },
-        "pages": {
-          "resetInterval": {
-            /*
-            Chronological unit used to calculate index reset due date.
-            Possible values are:
-
-            Seconds, Minutes, Hours, HalfDays, Days, Weeks, Months
-
-            in case not supported value is provided 'Minutes' will be used
-            for interval calculation.
-            */
-            "unit": "Minutes",
-            /*
-            Interval the import is started all over again, meaning only missing
-            entities are fetched during the import restart. The data already
-            imported is kept.
-            */
-            "value": 30
-          }
-        }
-      },
-      /*
-      The name of the import index type.
-      */
-      "indexType": "import-index"
-    },
     /*
     An index name used to create all Camunda Optimize types, shards, etc.
     */
     "index": "optimize",
     "licenseType": "license",
-    "procdef": {
-      /*
-      The name of the import index type when a list of process definitions
-      to import is defined.
-      */
-      "indexType": "process-definition-import-index",
-      /*
-      The name of the process definition type.
-      */
-      "type": "process-definition",
-      /*
-      The name of the process definition xml type.
-      */
-      "xmlType": "process-definition-xml"
-    },
-    "processInstance": {
-      /*
-      The name of the process instance (pi) tracking type that is used
-      to find pi’s that were already imported.
-      */
-      "idTrackingType": "process-instance-id-tracking",
-      /*
-      The name of the process instance type.
-      */
-      "type": "process-instance"
-    },
+
     "sampler": {
       /*
       Connection sampler interval set to the client
@@ -418,19 +420,13 @@
       The name of the user type.
       */
       "type": "users"
-    },
-    "variable": {
-      /*
-      The name of the variable type.
-      */
-      "type": "variable"
     }
   },
   "plugin": {
     "variableImport": {
       /*
       Look in the given base package list for variable import adaption plugins.
-      If empty, the import is not influenced. 
+      If empty, the import is not influenced.
       */
       "basePackages": []
     }

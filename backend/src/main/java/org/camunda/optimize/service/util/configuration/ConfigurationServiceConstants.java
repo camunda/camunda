@@ -15,21 +15,21 @@ public interface ConfigurationServiceConstants {
   String CONFIGURED_ENGINES = "$.engines";
 
 
-  String MAX_JOB_QUEUE_SIZE = "$.engine-commons.import.jobQueueMaxSize";
-  String IMPORT_EXECUTOR_THREAD_COUNT = "$.engine-commons.import.executorThreadCount";
-  String NUMBER_OF_RETRIES_ON_CONFLICT = "$.engine-commons.import.writer.numberOfRetries";
-  String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.engine-commons.import.process-definition-ids-to-import";
+  String MAX_JOB_QUEUE_SIZE = "$.import.jobQueueMaxSize";
+  String IMPORT_EXECUTOR_THREAD_COUNT = "$.import.executorThreadCount";
+  String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
+  String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.import.process-definition-ids-to-import";
 
-  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.engine-commons.import.pageMaxSize";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.engine-commons.import.process-definition.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.engine-commons.import.process-definition-xml.pageSize.max";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.activity-instance.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.process-instance.pageSize.max";
-  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.engine-commons.import.variable.pageSize.max";
+  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.pageMaxSize";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.pageSize.max";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.pageSize.max";
+  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.pageSize.max";
+  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.pageSize.max";
+  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.pageSize.max";
 
-  String ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE = "$.engine-commons.import.process-definition.pageSize.min";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE = "$.engine-commons.import.process-definition-xml.pageSize.min";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE = "$.engine-commons.import.activity-instance.pageSize.min";
+  String ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE = "$.import.data.process-definition.pageSize.min";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE = "$.import.data.process-definition-xml.pageSize.min";
+  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE = "$.import.data.activity-instance.pageSize.min";
 
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
@@ -40,16 +40,16 @@ public interface ConfigurationServiceConstants {
   String SAMPLER_INTERVAL = "$.es.sampler.interval";
 
   String OPTIMIZE_INDEX = "$.es.index";
-  String EVENT_TYPE = "$.es.event.type";
-  String PROCESS_INSTANCE_TYPE = "$.es.processInstance.type";
-  String PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.es.processInstance.idTrackingType";
-  String VARIABLE_TYPE = "$.es.variable.type";
+  String EVENT_TYPE = "$.import.data.activity-instance.elasticsearchType";
+  String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
+  String PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.idTrackingType";
+  String VARIABLE_TYPE = "$.import.data.variable.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
-  String PROCESS_DEFINITION_TYPE = "$.es.procdef.type";
-  String PROCESS_DEFINITION_XML_TYPE = "$.es.procdef.xmlType";
+  String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
+  String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
   String ELASTIC_SEARCH_USERS_TYPE = "$.es.users.type";
-  String IMPORT_INDEX_TYPE = "$.es.import.indexType";
-  String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.es.procdef.indexType";
+  String IMPORT_INDEX_TYPE = "$.import.indexType";
+  String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.import.data.process-definition.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
@@ -69,14 +69,14 @@ public interface ConfigurationServiceConstants {
   String ANALYZER_NAME = "$.es.analyzer.name";
   String TOKENIZER = "$.es.analyzer.tokenizer";
   String TOKEN_FILTER = "$.es.analyzer.tokenfilter";
-  String IMPORT_HANDLER_INTERVAL = "$.es.import.handler.backoff.interval";
-  String IMPORT_REST_INTERVAL_MS = "$.es.import.handler.pages.resetInterval.value";
-  String IMPORT_RESET_INTERVAL_UNIT = "$.es.import.handler.pages.resetInterval.unit";
-  String MAXIMUM_BACK_OFF = "$.es.import.handler.backoff.max";
+  String IMPORT_HANDLER_INTERVAL = "$.import.handler.backoff.interval";
+  String IMPORT_REST_INTERVAL_MS = "$.import.handler.pages.resetInterval.value";
+  String IMPORT_RESET_INTERVAL_UNIT = "$.import.handler.pages.resetInterval.unit";
+  String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
-  String GENERAL_BACKOFF = "$.es.import.handler.backoff.value";
+  String GENERAL_BACKOFF = "$.import.handler.backoff.value";
 
   String DATE_FORMAT = "$.serialization.dateFormat";
   String MAX_VARIABLE_VALUE_LIST_SIZE = "$.variable.maxValueListSize";
