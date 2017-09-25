@@ -1,12 +1,18 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent, createMockComponent} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {Statistics, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/Statistics';
+import {createReactMock} from 'testHelpers';
+import {StatisticsReact, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/Statistics';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
 
 describe('<Statistics>', () => {
   let node;
-  let update;
   let leaveGatewayAnalysisMode;
   let unopenedState;
   let openedState;
@@ -20,7 +26,8 @@ describe('<Statistics>', () => {
   beforeEach(() => {
     unopenedState = {
       selection: {},
-      correlation: {}
+      correlation: {},
+      height: 0
     };
 
     openedState = {
@@ -35,11 +42,13 @@ describe('<Statistics>', () => {
             bar: 1
           }
         }
-      }
+      },
+      height: 350
     };
 
     viewer = {
       get: sinon.stub().returnsThis(),
+      businessObject: {},
       forEach: sinon.stub().callsArgWith(0, sequenceFlow),
       removeMarker: sinon.spy(),
       addMarker: sinon.spy()
@@ -49,16 +58,14 @@ describe('<Statistics>', () => {
     findSequenceFlowBetweenGatewayAndActivity = sinon.stub().returns(sequenceFlow);
     __set__('findSequenceFlowBetweenGatewayAndActivity', findSequenceFlowBetweenGatewayAndActivity);
 
-    StatisticChart = createMockComponent('StatisticChart');
+    StatisticChart = createReactMock('StatisticChart');
     __set__('StatisticChart', StatisticChart);
 
-    DragHandle = createMockComponent('DragHandle');
+    DragHandle = createReactMock('DragHandle');
     __set__('DragHandle', DragHandle);
 
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
-
-    ({node, update} = mountTemplate(<Statistics getBpmnViewer={getBpmnViewer} />));
   });
 
   afterEach(() => {
@@ -69,66 +76,62 @@ describe('<Statistics>', () => {
   });
 
   it('should not have the open class if gateway is not set', () => {
-    update(unopenedState);
+    node = mount(<StatisticsReact
+      getBpmnViewer={getBpmnViewer}
+      {...unopenedState}
+    />);
 
-    const container = node.querySelector('.statisticsContainer');
-
-    expect(Array.from(container.classList)).to.not.include('open');
+    expect(node.find('.statisticsContainer')).to.be.present();
+    expect(node.find('.statisticsContainer.open')).to.not.be.present();
   });
 
-  it('should have the open class when endEvent and gateway are set', () => {
-    update(openedState);
-
-    const container = node.querySelector('.statisticsContainer');
-
-    expect(container).to.have.class('open');
-  });
-
-  it('should leave gateway analysis mode when close button is clicked', () => {
-    update(openedState);
-
-    triggerEvent({
-      node: node,
-      selector: '.close',
-      eventName: 'click'
+  describe('opened state', () => {
+    beforeEach(() => {
+      node = mount(<StatisticsReact
+        getBpmnViewer={getBpmnViewer}
+        {...openedState}
+      />);
     });
 
-    expect(leaveGatewayAnalysisMode.called).to.eql(true);
-  });
+    it('should have the open class when endEvent and gateway are set', () => {
+      expect(node.find('.statisticsContainer.open')).to.be.present();
+    });
 
-  it('should contain StatisticCharts', () => {
-    update(openedState);
+    it('should leave gateway analysis mode when close button is clicked', () => {
+      node.find('.close').simulate('click');
 
-    expect(node.textContent).to.contain('StatisticChart');
-  });
+      expect(leaveGatewayAnalysisMode.called).to.eql(true);
+    });
 
-  it('should have a drag handle', () => {
-    update(openedState);
+    it('should contain StatisticCharts', () => {
+      expect(node).to.contain.text(StatisticChart.text);
+    });
 
-    expect(node.textContent).to.contain(DragHandle.text);
-  });
+    it('should have a drag handle', () => {
+      expect(node).to.contain.text(DragHandle.text);
+    });
 
-  it('should set its height based on the state', () => {
-    openedState.height = 1234;
+    it('should set its height based on the state', () => {
+      node.setProps({height: 1234});
+      expect(node.getDOMNode().style.height).to.eql('1234px');
+    });
 
-    update(openedState);
+    it('should highlight sequence flows on hover', () => {
+      node
+        .find(StatisticChart)
+        .first()
+        .prop('chartConfig')
+        .onHoverChange(true)({}, 0);
+      expect(viewer.addMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
+    });
 
-    expect(node.querySelector('.statisticsContainer').style.height).to.eql('1234px');
-  });
-
-  it('should highlight sequence flows on hover', () => {
-    update(openedState);
-
-    StatisticChart.getAttribute('chartConfig').onHoverChange(true)({}, 0);
-
-    expect(viewer.addMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
-  });
-
-  it('should clear all highlights on any hover action', () => {
-    update(openedState);
-
-    StatisticChart.getAttribute('chartConfig').onHoverChange(false)({}, 0);
-
-    expect(viewer.removeMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
+    it('should clear all highlights on any hover action', () => {
+      node
+        .find(StatisticChart)
+        .first()
+        .prop('chartConfig')
+        .onHoverChange(false)({}, 0);
+      expect(viewer.removeMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
+    });
   });
 });

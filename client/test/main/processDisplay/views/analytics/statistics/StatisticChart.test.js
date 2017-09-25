@@ -1,71 +1,83 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import {StatisticChart, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/StatisticChart';
+import React from 'react';
+import {mount} from 'enzyme';
+import {createReactMock} from 'testHelpers';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<StatisticChart>', () => {
   let node;
-  let update;
   let Chart;
-  let isLoading;
+  let isLoaded;
   let data;
 
   beforeEach(() => {
-    Chart = createMockComponent('Chart');
+    Chart = createReactMock('Chart');
     __set__('Chart', Chart);
+
+    isLoaded = sinon.stub();
+    __set__('isLoaded', isLoaded);
 
     data = sinon.stub().returns([]);
   });
 
   afterEach(() => {
     __ResetDependency__('Chart');
+    __ResetDependency__('isLoaded');
   });
 
   describe('loading', () => {
     beforeEach(() => {
-      isLoading = sinon.stub().returns(true);
+      isLoaded.returns(false);
 
-      ({node, update} = mountTemplate(<StatisticChart
-        isLoading={isLoading}
+      node = mount(<StatisticChart
         data={data}
         chartConfig={{}}
-      >some header text</StatisticChart>));
-      update({});
+        correlation={{}}
+        selection={{}}
+        height={{}}
+      >some header text</StatisticChart>);
     });
 
     it('should display a loading indicator if data is loading', () => {
-      expect(node.querySelector('.loading_indicator')).to.exist;
-      expect(node.querySelector('.chart')).to.not.exist;
+      expect(node.find('.loading_indicator')).to.be.present();
+      expect(node.find('.chart')).to.not.be.present();
     });
   });
 
   describe('loaded', () => {
     beforeEach(() => {
-      isLoading = sinon.stub().returns(false);
+      isLoaded.returns(true);
 
-      ({node, update} = mountTemplate(<StatisticChart
-        isLoading={isLoading}
+      node = mount(<StatisticChart
         data={data}
         chartConfig={{}}
-      >some header text</StatisticChart>));
-      update({});
+        correlation={{}}
+        selection={{}}
+        height={{}}
+      >some header text</StatisticChart>);
     });
 
     it('should contain a header', () => {
-      expect(node.querySelector('.chart-header')).to.exist;
+      expect(node.find('.chart-header')).to.be.present();
     });
 
     it('should contain the child content in the header text', () => {
-      expect(node.querySelector('.chart-header').textContent).to.eql('some header text');
+      expect(node.find('.chart-header')).to.contain.text('some header text');
     });
 
     it('should display a chart', () => {
-      expect(node.querySelector('.chart')).to.exist;
+      expect(node.find('.chart')).to.be.present();
     });
 
     it('should show a no data indicator if there is no data', () => {
-      expect(node.querySelector('.no-data-indicator')).to.exist;
+      expect(node.find('.no-data-indicator')).to.be.present();
     });
   });
 });

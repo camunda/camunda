@@ -1,55 +1,64 @@
 import React from 'react';
 import * as d3 from 'd3';
 import {
-  createScales, createAxes, createTooltip, getChartDimensions,
+  createScales, createAxes, createTooltip,
   createContainer, updateScales, updateAxes, collectBars, updateBars,
   createNewBars, removeOldBars
 } from 'utils/chart-utils';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
+import {noop} from 'view-utils';
 
 const jsx = React.createElement;
 
-class ChartReact extends React.Component {
+export const margin = {
+  horizontal: 60,
+  vertical: 50
+};
+
+export class Chart extends React.Component {
   componentWillUnmount() {
     this.tooltip.destroy();
-  }
-
-  getParentContainer() {
-    // We need to get the parent container for d3 to calculate the height of the y-axis
-    // The second parentNode is introduced by the createViewUtilsComponentFromReact wrapper
-    return this.svg.node().parentNode.parentNode;
   }
 
   componentDidMount() {
     this.container = createContainer(this.svg);
 
-    const {width, height} = getChartDimensions(this.getParentContainer());
+    const {width, height} = this.props;
+    const innerWidth = width - margin.horizontal;
+    const innerHeight = height - margin.vertical;
 
-    this.scale = createScales(width, height);
-    this.axis = createAxes(this.container, height);
+    this.scale = createScales(innerWidth, innerHeight);
+    this.axis = createAxes(this.container, innerHeight);
 
     this.tooltip = createTooltip(this.svg);
+
+    this.updateChart();
   }
 
-  componentDidUpdate() {
-    const {height, width, margin} = getChartDimensions(this.getParentContainer());
+  updateChart = () => {
+    const {height, width} = this.props;
+    const innerWidth = width - margin.horizontal;
+    const innerHeight = height - margin.vertical;
 
     const {x, y} = this.scale;
     const {xAxis, yAxis} = this.axis;
     const {data, absoluteScale, onHoverChange} = this.props;
 
-    y.rangeRound([height, 0]);
-    xAxis.attr('transform', 'translate(0,' + height + ')');
-    this.svg.attr('viewBox', '0 0 600 ' + (height + margin.top + margin.bottom));
+    y.rangeRound([innerHeight, 0]);
+    xAxis.attr('transform', 'translate(0,' + innerHeight + ')');
+    this.svg.attr('viewBox', '0 0 ' + width + ' ' + height);
 
     updateScales({data, x, y});
-    updateAxes({xAxis, yAxis, x, y, scale: absoluteScale ? 'd' : '%', width});
+    updateAxes({xAxis, yAxis, x, y, scale: absoluteScale ? 'd' : '%', width:innerWidth});
 
     const bars = collectBars({container: this.container, data});
 
-    updateBars({bars, x, y, height});
-    createNewBars({bars, x, y, height, tooltip: this.tooltip, onHoverChange: onHoverChange || (() => {})});
+    updateBars({bars, x, y, height: innerHeight});
+    createNewBars({bars, x, y, height: innerHeight, tooltip: this.tooltip, onHoverChange: onHoverChange || noop});
     removeOldBars(bars);
+  }
+
+  componentDidUpdate() {
+    this.updateChart();
   }
 
   storeSVGRef = svg => {
@@ -58,9 +67,7 @@ class ChartReact extends React.Component {
 
   render() {
     return (
-      <svg width="100%" height="100%" viewBox="0 0 600 300" preserveAspectRatio="none" ref={this.storeSVGRef} />
+      <svg width="100%" height="100%" preserveAspectRatio="none" ref={this.storeSVGRef} />
     );
   }
 }
-
-export const Chart = createViewUtilsComponentFromReact('div', ChartReact);

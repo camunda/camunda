@@ -1,42 +1,34 @@
-import {jsx, createReferenceComponent, $document} from 'view-utils';
 import {setHeight} from './service';
+import React from 'react';
 
-export function DragHandle() {
-  return (parentNode, eventsBus) => {
-    const Reference = createReferenceComponent();
+const jsx = React.createElement;
 
-    const template = <div className="drag-handle">
-      <Reference name="handle" />
-    </div>;
+export class DragHandle extends React.PureComponent {
+  mouseDown = evt => {
+    evt.preventDefault();
 
-    const templateUpdate = template(parentNode, eventsBus);
+    this.dragStart = evt.screenY;
+    this.startHeight = this.props.height;
 
-    const handle = Reference.getNode('handle');
+    document.addEventListener('mousemove', this.mouseMove);
+    document.addEventListener('mouseup', this.mouseUp);
+  }
 
-    let dragStart;
-    let startHeight;
+  mouseMove = evt => {
+    setHeight(this.startHeight - evt.screenY + this.dragStart);
+  }
 
-    const handleMouseUp = evt => {
-      $document.removeEventListener('mousemove', handleMouseMove);
-      $document.removeEventListener('mouseup', handleMouseUp);
+  mouseUp = evt => {
+    document.removeEventListener('mousemove', this.mouseMove);
+    document.removeEventListener('mouseup', this.mouseUp);
 
-      setHeight(startHeight - evt.screenY + dragStart);
-    };
+    setHeight(this.startHeight - evt.screenY + this.dragStart);
+  }
 
-    const handleMouseMove = evt => {
-      setHeight(startHeight - evt.screenY + dragStart);
-    };
-
-    handle.addEventListener('mousedown', evt => {
-      evt.preventDefault();
-
-      dragStart = evt.screenY;
-      startHeight = parentNode.clientHeight;
-
-      $document.addEventListener('mousemove', handleMouseMove);
-      $document.addEventListener('mouseup', handleMouseUp);
-    });
-
-    return templateUpdate;
-  };
+  render() {
+    return (
+      <div className="drag-handle"
+           onMouseDown={this.mouseDown} />
+    );
+  }
 }

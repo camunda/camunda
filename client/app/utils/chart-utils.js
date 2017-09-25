@@ -37,20 +37,6 @@ export function createAxes(container, height) {
   };
 }
 
-export function getChartDimensions(container) {
-  const margin = {
-    top: 20,
-    right: 20,
-    bottom: 30,
-    left: 40
-  };
-
-  const width = container.clientWidth - margin.left - margin.right;
-  const height = container.clientHeight - margin.top - margin.bottom;
-
-  return {margin, width, height};
-}
-
 export function updateScales({data, x, y}) {
   x.domain(data.map(function({key}) { return key; }));
   y.domain([0, d3.max(data, function({value}) { return value; })]);

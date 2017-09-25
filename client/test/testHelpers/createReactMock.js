@@ -12,7 +12,7 @@ export function createReactMock(text, applyChildren) {
   });
 
   Component.text = text;
-  Component.oldCalledWith = Comment.calledWith;
+  Component.oldCalledWith = Component.calledWith;
   Component.calledWith = (...args) => {
     if (args.length === 1 && typeof args[0] === 'object' && !Array.isArray(args[0])) {
       const predicate = buildPredicateFunction(args[0]);
