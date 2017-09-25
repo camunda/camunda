@@ -85,19 +85,16 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
             {
                 case CreatePartitionMessageDecoder.TEMPLATE_ID:
                 {
-                    return clusterManager.onCreatePartitionMessage(buffer, offset, length);
+                    clusterManager.onCreatePartitionMessage(buffer, offset, length);
+                    break;
                 }
                 default:
                 {
-                    // TODO: send error response
-                    return true;
+                    // ignore
                 }
             }
         }
-        else
-        {
-            return true;
-        }
+        return true;
     }
 
 }

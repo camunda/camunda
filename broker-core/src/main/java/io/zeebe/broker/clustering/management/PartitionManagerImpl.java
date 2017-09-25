@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
@@ -65,7 +66,7 @@ public class PartitionManagerImpl implements PartitionManager
         message.writer(messageWriter)
             .remoteAddress(remoteAddress);
 
-        System.out.println("Creating partition at " + remote.toString());
+        Loggers.SYSTEM_LOGGER.info("Creating partition {}/{} at {}", BufferUtil.bufferAsString(topicName), partitionId, remote);
 
         return transport.getOutput().sendMessage(message);
     }

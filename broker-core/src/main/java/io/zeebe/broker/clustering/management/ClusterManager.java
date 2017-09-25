@@ -362,7 +362,7 @@ public class ClusterManager implements Actor
         return output.sendResponse(response);
     }
 
-    public boolean onCreatePartitionMessage(
+    public void onCreatePartitionMessage(
             final DirectBuffer buffer,
             final int offset,
             final int length)
@@ -370,8 +370,6 @@ public class ClusterManager implements Actor
         createPartitionMessage.wrap(buffer, offset, length);
 
         createPartition(createPartitionMessage.getTopicName(), createPartitionMessage.getPartitionId());
-
-        return true;
     }
 
 }
