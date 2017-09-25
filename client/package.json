@@ -85,9 +85,10 @@
     "jquery": "2.2.4",
     "jsurl": "^0.1.5",
     "lodash.isequal": "^4.4.0",
+    "moment": "^2.18.1",
     "react": "^15.6.1",
     "react-bootstrap": "^0.31.3",
-    "react-bootstrap-date-picker": "^5.1.0",
+    "react-date-range": "^0.9.4",
     "react-dom": "^15.6.1",
     "redux": "^3.6.0",
     "serviceworker-webpack-plugin": "^0.2.3"

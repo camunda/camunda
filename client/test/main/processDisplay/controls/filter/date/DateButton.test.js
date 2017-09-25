@@ -4,6 +4,7 @@ import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import {DateButton, TODAY, LAST_MONTH} from 'main/processDisplay/controls/filter/date/DateButton';
 import {mount} from 'enzyme';
+import moment from 'moment';
 
 chai.use(chaiEnzyme());
 
@@ -37,16 +38,14 @@ describe('<DateButton>', () => {
   });
 
   it('should set dates on click', () => {
-    const today = new Date().toISOString();
+    const today = moment();
 
     wrapper.find('.btn').simulate('click');
 
-    expect(
-      setDates.calledWith({
-        startDate: today,
-        endDate: today
-      })
-    ).to.eql(true);
+    const [{startDate, endDate}] = setDates.lastCall.args;
+
+    expect(startDate.format('YYYY-MM-DD')).to.eql(today.format('YYYY-MM-DD'));
+    expect(endDate.format('YYYY-MM-DD')).to.eql(today.format('YYYY-MM-DD'));
   });
 
   it('should correctly set the last month and not overflow', () => {
@@ -54,14 +53,9 @@ describe('<DateButton>', () => {
 
     wrapper.find('button').simulate('click');
 
-    // This is a bit strange, I have no idea what is going one here
-    // although other than strange hour (which is ignored anyway) it's seems fine.
-    // So, I will leave it like that for now.
-    expect(
-      setDates.calledWith({
-        startDate: new Date('2017-02-01 2:00').toISOString(),
-        endDate: new Date('2017-02-28 2:00').toISOString()
-      })
-    ).to.eql(true);
+    const [{startDate, endDate}] = setDates.lastCall.args;
+
+    expect(startDate.format('YYYY-MM-DD')).to.eql('2017-02-01');
+    expect(endDate.format('YYYY-MM-DD')).to.eql('2017-02-28');
   });
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import moment from 'moment';
 
 const jsx = React.createElement;
 
@@ -24,8 +25,8 @@ export class DateButton extends React.Component {
     const range = getDateRange(this.props.dateLabel);
 
     this.props.setDates({
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString()
+      startDate: moment(range.start),
+      endDate: moment(range.end)
     });
   }
 }

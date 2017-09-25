@@ -1,10 +1,12 @@
 import 'es6-promise/auto';
 import './bootstrap';
-import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  runtime.register();
-}
+// For now service worker is disabled see: OPT-508
+// import runtime from 'serviceworker-webpack-plugin/lib/runtime';
+
+// if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+//   runtime.register();
+// }
 
 if (isPolyfillNeeded()) {
   require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
