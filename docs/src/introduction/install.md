@@ -1,6 +1,6 @@
 # Install
 
-This page guides you through the initial install of your Zeebe broker. In case you are looking for more detailed information on how to setup and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
+This page guides you through the initial installation of your Zeebe broker. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
 
 There are different ways to install Zeebe:
 
@@ -21,7 +21,7 @@ There are different ways to install Zeebe:
 
 You can always download the latest Zeebe release from the [Github release page](https://github.com/zeebe-io/zeebe/releases).
 
-Once you have downloaded a distribution, extract it into a folder of your choice. In order to extract the Zeebe distribution and start the broker, **Linux users** can type:
+Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
 $ tar -xzf zeebe-distribution-0.2.0.tar.gz -C zeebe/
@@ -29,7 +29,7 @@ $ cd zeebe/bin
 $ ./broker
 ```
 
-**Windows users** should probably download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate into the `bin`folder and start the broker by double-clicking on the `broker.bat` file.
+**Windows users** can download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate to the `bin` folder and start the broker by double-clicking on the `broker.bat` file.
 
 Once the Zeebe broker has started, it should produce the following output:
 
@@ -58,16 +58,16 @@ docker run -p 51015:51015 camunda/zeebe:0.2.0
 
 ### Volumes
 
-The default data volume is under `/usr/local/zeebe/bin/data` it contains
+The default data volume is under `/usr/local/zeebe/bin/data`. It contains
 all data which should be persisted.
 
 ### Configuration
 
-The Zeebe configuration is located under
+The Zeebe configuration is located at 
 `/usr/local/zeebe/conf/zeebe.cfg.toml`. The logging configuration is located
-under `/usr/local/zeebe/conf/log4j2.xml`.
+at `/usr/local/zeebe/conf/log4j2.xml`.
 
-The configuration of the docker image can be changed also using environment
+The configuration of the docker image can also be changed by using environment
 variables.
 
 Available environment variables:
@@ -78,15 +78,15 @@ Sets the log level of the Zeebe Logger (default: `info`).
 
  - `DEPLOY_ON_KUBERNETES`
 
-If set to `true` applies some configuration changes in order to run zeebe
-in a kubernetes environment. Please note that the recommended method to
-run zeebe on kubernetes is using the
+If set to `true`, it applies some configuration changes in order to run Zeebe
+in a Kubernetes environment. Please note that the recommended method to
+run Zeebe on Kubernetes is by using the
 [zeebe-operator](https://github.com/zeebe-io/zeebe-operator).
 
 ### Mac and Windows users
 
 **Note**: On systems which use a VM to run Docker containers like Mac and
-Windows the VM needs at least 4GB of memory otherwise Zeebe fails to start
+Windows, the VM needs at least 4GB of memory, otherwise Zeebe fails to start
 with an error similar to:
 
 ```
@@ -110,7 +110,7 @@ Exception in thread "actor-runner-service-container" java.lang.OutOfMemoryError:
 ```
 
 If you use a Docker setup with `docker-machine` and your `default` VM does
-not have 4GB of memory you can create a new one with the following command.
+not have 4GB of memory, you can create a new one with the following command:
 
 ```
 docker-machine create --driver virtualbox --virtualbox-memory 4000 zeebe
@@ -136,13 +136,13 @@ Then run Zeebe:
 docker run --rm -p 51015:51015 -p 51016:51016 -p 51017:51017 camunda/zeebe:latest
 ```
 
-To get ip of Zeebe:
+To get the ip of Zeebe:
 ```
 $ docker-machine ip zeebe
 192.168.99.100
 ```
 
-Verify you can connect to Zeebe:
+Verify that you can connect to Zeebe:
 ```
 $ telnet 192.168.99.100 51015
 ```

@@ -1,23 +1,23 @@
-# Json
+# JSON
 
-Zeebe uses Json for:
+Zeebe uses JSON for:
 
-* user-provided payload,
-* internal data,
-* API and protocol messages.
+* User-provided payload
+* Internal data
+* API and protocol messages
 
 
 
 ## Message Pack
 
-For performance reasons, Json is represented using message pack which is a binary representation of Json. Using message pack allows the broker to traverse a Json document on the binary level without interpreting it as a string and without needing to "parse" it.
+For performance reasons JSON is represented using MessagePack, which is a binary representation of JSON. Using MessagePack allows the broker to traverse a JSON document on the binary level without interpreting it as a string and without needing to "parse" it.
 
-As a user, you do not need to deal with message pack directly. The clients take care of converting between message pack and Json.
+As a user, you do not need to deal with MessagePack directly. The clients take care of converting between MessagePack and JSON.
 
 ## Conditions
 
-A condition is a boolean expression with a Javascript-like syntax.
-It allows to compare properties of the workflow instance payload with other properties or literals (e.g. numbers, strings etc.).
+A condition is a boolean expression with a JavaScript-like syntax.
+It allows to compare properties of the workflow instance payload with other properties or literals (e.g., numbers, strings, etc.).
 The payload properties are selected using JSON Path.
 
 ```
@@ -28,7 +28,7 @@ $.owner == "Paul"
 $.orderCount >= 5 && $.orderCount < 15
 ```
 
-Conditions can be used for exclusive gateways (i.e. conditional flows) to determine the following task.  
+Conditions can be used for exclusive gateways (i.e., conditional flows) to determine the following task.  
 
 ### Literals
 
@@ -64,8 +64,8 @@ Conditions can be used for exclusive gateways (i.e. conditional flows) to determ
   </tr>
 </table>
 
-A Null-Value can be used to check if a property is set (e.g. `$.owner == null`).
-If the property doesn't exist then the JSON Path evaluation fails.
+A Null-Value can be used to check if a property is set (e.g., `$.owner == null`).
+If the property doesn't exist, then the JSON Path evaluation fails.
 
 ### Comparison Operators
 
@@ -84,7 +84,7 @@ If the property doesn't exist then the JSON Path evaluation fails.
 
   <tr>
     <td>!=</td>
-    <td>not equal</td>
+    <td>not equal to</td>
     <td>$.owner != "Paul"</td>
   </tr>
 
@@ -115,7 +115,7 @@ If the property doesn't exist then the JSON Path evaluation fails.
 
 The operators `<`, `<=`, `>` and `>=` can only be used for numbers.
 
-If the values of an operator have different types then the evaluation fails.
+If the values of an operator have different types, then the evaluation fails.
 
 ### Logical Operators
 
@@ -139,4 +139,4 @@ If the values of an operator have different types then the evaluation fails.
   </tr>
 </table>
 
-It's also possible to use parentheses between the operators to change the precedence (e.g. `($.owner == "Paul" || $.owner == "Jonny") && $.totalPrice > 25`).
+It's also possible to use parentheses between the operators to change the precedence (e.g., `($.owner == "Paul" || $.owner == "Jonny") && $.totalPrice > 25`).

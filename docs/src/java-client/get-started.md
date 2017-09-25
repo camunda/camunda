@@ -1,10 +1,10 @@
 # Get Started with the Java client
 
-In this tutorial you will how to use the Java client in a Java application to interact with Zeebe.
+In this tutorial, you will learn to use the Java client in a Java application to interact with Zeebe.
 
 You will be guided through the following steps:
 
-* [Setup a project](#setup-a-project)
+* [Set up a project](#set-up-a-project)
 * [Model a workflow](#model-a-workflow)
 * [Deploy a workflow](#deploy-a-workflow)
 * [Create a workflow instance](#create-a-workflow-instance)
@@ -12,7 +12,7 @@ You will be guided through the following steps:
 * [Work on a task](#work-on-a-task)
 * [Work with data](#work-with-data)
 
-> You can find the complete source code including the BPMN diagrams on [GitHub](https://github.com/zeebe-io/zeebe-get-started-java-client).
+> You can find the complete source code, including the BPMN diagrams, on [GitHub](https://github.com/zeebe-io/zeebe-get-started-java-client).
 
 ## Prerequisites
 
@@ -21,18 +21,18 @@ You will be guided through the following steps:
 * [Camunda Modeler](https://docs.camunda.org/manual/installation/camunda-modeler/)
 * [Apache Maven](https://maven.apache.org/)
 
-Then, start the Zeebe broker.
+Start the Zeebe broker.
 
-## Setup a project
+## Set up a project
 
 First, we need a Maven project.
-Create a new project using your IDE or run the Maven command:
+Create a new project using your IDE, or run the Maven command:
 
 ```
 mvn archetype:generate -DgroupId=io.zeebe -DartifactId=zeebe-get-started-java-client -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 ```
 
-Then, add the Zeebe client library as dependency to the project's `pom.xml`:
+Add the Zeebe client library as dependency to the project's `pom.xml`:
 
 ```xml
 <dependency>
@@ -75,7 +75,7 @@ public class Application
 Run the program.
 If you use an IDE, you can just execute the main class.
 Otherwise, you must build an executable JAR file with Maven and execute it.
-(See the GitHub repository how to do this.)
+(See the GitHub repository on how to do this.)
 
 You should see the output:
 
@@ -87,7 +87,7 @@ Closed.
 
 ## Model a workflow
 
-Now, we need a first workflow which can be deployed afterwards.
+Now, we need a first workflow which can then be deployed.
 Later, we will extend the workflow with more functionality.
 
 Open the Camunda Modeler and create a new BPMN diagram.
@@ -101,7 +101,7 @@ Save the diagram in the project's source folder.
 ## Deploy a workflow
 
 Next, we want to deploy the modeled workflow to the broker.
-The broker stores the workflow under its BPMN process id and assign a version (i.e. the revision).
+The broker stores the workflow under its BPMN process id and assigns a version (i.e., the revision).
 
 Add the following deploy command to the main class:
 
@@ -140,8 +140,8 @@ Workflow deployed. Version: 1
 
 ## Create a workflow instance
 
-Finally, we are ready to create our first instance of the deployed workflow.
-A workflow instance is created of a specific version of the workflow which can be set on creation.
+Finally, we are ready to create a first instance of the deployed workflow.
+A workflow instance is created of a specific version of the workflow, which can be set on creation.
 
 Add the following create command to the main class:
 
@@ -181,10 +181,10 @@ Workflow instance created. Key: 4294986840
 
 You did it! You want to see how the workflow instance is executed?
 
-Unfortunately, we have no UI for Zeebe, yet.
+Unfortunately, we don't have a UI for Zeebe yet.
 
-But we can use a [topic subscription] for the monitoring of the workflow instance.
-When the topic subscription is open then we receive all events which are written while the execution of the workflow instance.
+But we can use a [topic subscription] to monitor the workflow instance.
+When the topic subscription is open, then we receive all events which are written during execution of the workflow instance.
 The given handler is invoked for each received event.
 
 Add the following lines to the main class to print all events:
@@ -275,9 +275,9 @@ Each of these events represents one step in the workflow instance life cycle.
 
 ## Work on a task
 
-Now, we want to do some work within your workflow.
-First, we add a few service tasks to the BPMN diagram and set the required attributes.
-Then, we extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
+Now we want to do some work within your workflow.
+First, add a few service tasks to the BPMN diagram and set the required attributes.
+Then extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
 
 Open the BPMN diagram in the Camunda Modeler.
 Insert a few service tasks between the start and the end event.
@@ -290,9 +290,9 @@ Switch to the XML view and add the Zeebe namespace to the root `definitions` ele
 <bpmn:definitions xmlns:zeebe="http://camunda.org/schema/zeebe/1.0">
 ```
 
-Then you need to set the type of each task which identifies the nature of the work to be performed.
+You need to set the type of each task, which identifies the nature of the work to be performed.
 
-Add a `zeebe:taskDefinition` element to the service task's extension elements.
+Add a `zeebe:taskDefinition` element to the service tasks extension elements.
 Optionally, you can define parameters of the task by adding a `zeebe:taskHeaders` element.
 
 ```xml
@@ -310,7 +310,7 @@ Optionally, you can define parameters of the task by adding a `zeebe:taskHeaders
 
 Save the BPMN diagram and switch back to the main class.
 
-Add the following lines to open a [task subscription] for the first task's type:
+Add the following lines to open a [task subscription] for the first tasks type:
 
 ```java
 package io.zeebe;
@@ -359,7 +359,7 @@ Run the program and verify that the task is processed. You should see the output
 Reserved order items for PT15M
 ```
 
-When you have a look at the topic subscription's output then you can see that the workflow instance moved from the first service task to the next one:
+When you have a look at the topic subscriptions output, then you can see that the workflow instance moved from the first service task to the next one:
 
 ```
 > WorkflowInstanceEvent [state=ACTIVITY_COMPLETED,
@@ -389,11 +389,11 @@ When you have a look at the topic subscription's output then you can see that th
 
 ## Work with data
 
-Usually, a workflow is more than just tasks, there is also a data flow.
-The tasks need data as input and produce data.
+Usually, a workflow is more than just tasks, there is also data flow.
+The tasks need data as input and in order to produce data.
 
 In Zeebe, the data is represented as a JSON document.
-When you create a workflow instance then you can pass the data as payload.
+When you create a workflow instance, then you can pass the data as payload.
 Within the workflow, you can use input and output mappings on tasks to control the data flow.
 
 In our example, we want to create a workflow instance with the following data:
@@ -430,7 +430,7 @@ Open the BPMN diagram and add to following input-output-mapping to the first tas
 Save the BPMN diagram and switch back to the main class.
 
 Modify the create command and pass the data as payload.
-Also, modify the task subscription to read the task's payload and complete the task with payload.
+Also, modify the task subscription to read the tasks payload and complete the task with payload.
 
 ```java
 package io.zeebe;
@@ -484,7 +484,7 @@ Run the program and verify that the payload is mapped into the task. You should 
 Reserved {"orderItems":[435,182,376]} for PT15M
 ```
 
-When we have a look at the topic subscription's output then we can see how the payload is mapped between the activities:
+When we have a look at the topic subscriptions output, then we can see how the payload is mapped between the activities:
 
 ```
 > WorkflowInstanceEvent [state=ACTIVITY_READY,
@@ -525,9 +525,9 @@ When we have a look at the topic subscription's output then we can see how the p
 Hurray! You finished this tutorial and learned the basic usage of the Java client.
 
 Next steps:
-* learn more about the [concepts behind Zeebe](/basics/README.html)
-* learn more about [BPMN workflows](/bpmn-workflows/README.html)
-* take a deeper look into the [Java client](java-client/README.html)
+* Learn more about the [concepts behind Zeebe](/basics/README.html)
+* Learn more about [BPMN workflows](/bpmn-workflows/README.html)
+* Take a deeper look into the [Java client](java-client/README.html)
 
 [topic subscription]: ../basics/topics-and-logs.html
 [task subscription]: ../basics/task-workers.html

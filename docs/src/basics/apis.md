@@ -17,7 +17,6 @@ The subscription protocols work in streaming mode: the broker pushes out tasks a
 
 ## Backpressure
 
-The subscription protocols embed a backpressure protocol to prevent the broker from overwhelming the clients with more tasks or evens then they can handle. The backpressure protocol is credit based.
+The subscription protocols embed a backpressure protocol to prevent the broker from overwhelming the clients with more tasks or events than they can handle. The backpressure protocol is credit based.
 
-The effect of backpressure is the system automatically adjusting flow rates to the available resources. For example, a fast consumer running on a powerful machine can process tasks at a very high rate while a slower consumer is automatically throtteled. This works without user configuration.
-
+The effect of backpressure is the system automatically adjusting flow rates to the available resources. For example, a fast consumer running on a powerful machine can process tasks at a very high rate, while a slower consumer is automatically throtteled. This works without user configuration.

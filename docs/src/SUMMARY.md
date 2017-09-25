@@ -7,7 +7,7 @@
 * [Basics](basics/README.md)
     * [Client / Server](basics/client-server.md)
     * [APIs & Protocols](basics/apis.md)
-    * [Json](basics/json.md)
+    * [JSON](basics/json.md)
     * [Workflows](basics/workflows.md)
     * [Task Workers](basics/task-workers.md)
     * [Event Consumers](basics/event-consumers.md)

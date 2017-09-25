@@ -6,7 +6,7 @@
 
 ## Usage in a Maven project
 
-In order to use the Java client library, declare the following Maven dependency in your project:
+To use the Java client library, declare the following Maven dependency in your project:
 
 ```xml
 <dependency>

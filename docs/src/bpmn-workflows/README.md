@@ -1,6 +1,6 @@
 # BPMN Workflows
 
-Zeebe uses visual workflows based on the BPMN modeling and visualization standard.
+Zeebe uses visual workflows based on the modeling and visualization standard BPMN 2.0.
 
 ![workflow](/bpmn-workflows/workflow.png)
 

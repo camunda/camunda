@@ -25,6 +25,6 @@ tasks:
 ```
 
 Each mapping has a source and a target property in form of a JSON path expression.
-The source property defines how the value is extracted and the target property how the value is inserted in the payload.
+The source property defines how the value is extracted and the target property defines how the value is inserted in the payload.
 
 Read more about [input and output mappings](bpmn-workflows/data-flow.html#input-and-output-mapping).

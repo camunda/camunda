@@ -4,7 +4,7 @@ This section contains the necessary information to understand the basic principl
 
 * [Client / Server](basics/client-server.html)
 * [APIs & Protocols](basics/apis.html)
-* [Json](basics/json.html)
+* [JSON](basics/json.html)
 * [Workflows](basics/workflows.html)
 * [Task Workers](basics/task-workers.html)
 * [Event Consumers](basics/event-consumers.html)

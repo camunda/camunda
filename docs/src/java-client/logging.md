@@ -1,6 +1,6 @@
 # Logging
 
-The client uses SLF4J for logging. It logs useful things like exception stack traces when a task handler fails execution. Using SLF4J, any SLF4J implementation can be used. The following uses Log4J 2.
+The client uses SLF4J for logging. It logs useful things, such as exception stack traces when a task handler fails execution. Using SLF4J, any SLF4J implementation can be used. The following uses Log4J 2.
 
 ## Maven dependencies
 
@@ -20,7 +20,7 @@ The client uses SLF4J for logging. It logs useful things like exception stack tr
 
 ## Configuration
 
-Add a file called `log4j2.xml` to the classpath of your application. Add the following contents:
+Add a file called `log4j2.xml` to the classpath of your application. Add the following content:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,4 +41,4 @@ Add a file called `log4j2.xml` to the classpath of your application. Add the fol
 </Configuration>
 ```
 
-This will log every log message to console.
+This will log every log message to the console.

@@ -51,7 +51,7 @@ the following workflow instance payload:
 }
 ```
 
-Now we are interesseted in the data flow. The workflow instance payload contains all necessary data for all tasks in the workflow.
+Now we are intereseted in the data flow. The workflow instance payload contains all necessary data for all tasks in the workflow.
 However, a single task is not necesarrily interested in all the data and can also expect a different structure of the payload.
 
 For example, the task to debit the total price from the customers bank account is only interested in the total price of the order and the order id.
