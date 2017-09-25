@@ -15,6 +15,7 @@ const jsx = React.createElement;
 describe('<ProcessSelection>', () => {
   let loadProcessDefinitions;
   let PreviewCard;
+  let resetData;
   let wrapper;
 
   beforeEach(() => {
@@ -23,11 +24,15 @@ describe('<ProcessSelection>', () => {
 
     loadProcessDefinitions = sinon.spy();
     __set__('loadProcessDefinitions', loadProcessDefinitions);
+
+    resetData = sinon.spy();
+    __set__('resetData', resetData);
   });
 
   afterEach(() => {
     __ResetDependency__('loadProcessDefinitions');
     __ResetDependency__('PreviewCard');
+    __ResetDependency__('resetData');
   });
 
   it('should display a hint when no process Definitions are present', () => {
@@ -89,5 +94,11 @@ describe('<ProcessSelection>', () => {
         engineCount
       })
     ).to.eql(true);
+  });
+
+  it('should reset data on unmount', () => {
+    wrapper.unmount();
+
+    expect(resetData.calledOnce).to.eql(true);
   });
 });

@@ -1,13 +1,14 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadProcessDefinitions, openDefinition, setVersionForProcess,
+import {loadProcessDefinitions, openDefinition, setVersionForProcess, resetData,
         __set__, __ResetDependency__} from 'main/processSelection/service';
 
 describe('ProcessSelection service', () => {
   const START_ACTION = 'START_ACTION';
   const STOP_ACTION = 'STOP_ACTION';
   const SET_ACTION = 'SET_ACTION';
+  const RESET_ACTION = 'RESET_ACTION';
 
   let router;
   let dispatchAction;
@@ -16,6 +17,7 @@ describe('ProcessSelection service', () => {
   let createLoadProcessDefinitionsResultAction;
   let createSetVersionAction;
   let processDefinitionResponse;
+  let createResetProcessDefinitionsErrorAction;
   let xmlResponse;
 
   setupPromiseMocking();
@@ -86,6 +88,9 @@ describe('ProcessSelection service', () => {
 
     createSetVersionAction = sinon.stub().returns(SET_ACTION);
     __set__('createSetVersionAction', createSetVersionAction);
+
+    createResetProcessDefinitionsErrorAction = sinon.stub().returns(RESET_ACTION);
+    __set__('createResetProcessDefinitionsErrorAction', createResetProcessDefinitionsErrorAction);
   });
 
   afterEach(() => {
@@ -95,6 +100,7 @@ describe('ProcessSelection service', () => {
     __ResetDependency__('createLoadProcessDefinitionsAction');
     __ResetDependency__('createLoadProcessDefinitionsResultAction');
     __ResetDependency__('createSetVersionAction');
+    __ResetDependency__('createResetProcessDefinitionsErrorAction');
   });
 
   describe('loadProcessDefinitions', () => {
@@ -217,6 +223,15 @@ describe('ProcessSelection service', () => {
     it('should dispatch the action', () => {
       setVersionForProcess('a', 1);
       expect(dispatchAction.calledWith(SET_ACTION));
+    });
+  });
+
+  describe('resetData', () => {
+    it('should dispatch reset action', () => {
+      resetData();
+
+      expect(createResetProcessDefinitionsErrorAction.calledOnce).to.eql(true);
+      expect(dispatchAction.calledWith(RESET_ACTION)).to.eql(true);
     });
   });
 });
