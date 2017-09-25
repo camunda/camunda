@@ -14,10 +14,16 @@ class ChartReact extends React.Component {
     this.tooltip.destroy();
   }
 
+  getParentContainer() {
+    // We need to get the parent container for d3 to calculate the height of the y-axis
+    // The second parentNode is introduced by the createViewUtilsComponentFromReact wrapper
+    return this.svg.node().parentNode.parentNode;
+  }
+
   componentDidMount() {
     this.container = createContainer(this.svg);
 
-    const {width, height} = getChartDimensions(this.svg);
+    const {width, height} = getChartDimensions(this.getParentContainer());
 
     this.scale = createScales(width, height);
     this.axis = createAxes(this.container, height);
@@ -26,7 +32,7 @@ class ChartReact extends React.Component {
   }
 
   componentDidUpdate() {
-    const {height, width, margin} = getChartDimensions(this.svg);
+    const {height, width, margin} = getChartDimensions(this.getParentContainer());
 
     const {x, y} = this.scale;
     const {xAxis, yAxis} = this.axis;
@@ -46,9 +52,13 @@ class ChartReact extends React.Component {
     removeOldBars(bars);
   }
 
+  storeSVGRef = svg => {
+    this.svg = d3.select(svg);
+  }
+
   render() {
     return (
-      <svg width="100%" height="100%" viewBox="0 0 600 300" preserveAspectRatio="none" ref={svg => {this.svg = d3.select(svg);}} />
+      <svg width="100%" height="100%" viewBox="0 0 600 300" preserveAspectRatio="none" ref={this.storeSVGRef} />
     );
   }
 }

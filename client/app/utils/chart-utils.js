@@ -37,7 +37,7 @@ export function createAxes(container, height) {
   };
 }
 
-export function getChartDimensions(svg) {
+export function getChartDimensions(container) {
   const margin = {
     top: 20,
     right: 20,
@@ -45,16 +45,10 @@ export function getChartDimensions(svg) {
     left: 40
   };
 
-  const parentContainer = getParentContainer(svg);
-
-  const width = parentContainer.clientWidth - margin.left - margin.right;
-  const height = parentContainer.clientHeight - margin.top - margin.bottom;
+  const width = container.clientWidth - margin.left - margin.right;
+  const height = container.clientHeight - margin.top - margin.bottom;
 
   return {margin, width, height};
-}
-
-function getParentContainer(svg) {
-  return svg.node().parentNode.parentNode;
 }
 
 export function updateScales({data, x, y}) {
