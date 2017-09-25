@@ -76,6 +76,15 @@ describe('<DateModal>', () => {
       expect(wrapper).to.contain.text(Modal.text);
     });
 
+    it('should close modal on hide', () => {
+      const onHide = Modal.getProperty('onHide');
+
+      Modal.reset();
+      onHide();
+
+      expect(Modal.calledWith({show: false})).to.eql(true);
+    });
+
     describe('head', () => {
       let headWrapper;
 

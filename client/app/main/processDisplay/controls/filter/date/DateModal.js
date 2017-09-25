@@ -28,7 +28,7 @@ export function createDateModalReact(createCallback) {
       }
 
       render() {
-        return <Modal show={this.props.isOpen}>
+        return <Modal show={this.props.isOpen} onHide={this.close}>
           <Modal.Header>
             <button type="button" className="close" onClick={this.close}>
               <span>×</span>
