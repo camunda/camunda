@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {getRouter, createUrlTestForRoute, createUrlConstructForRoute, __set__, __ResetDependency__} from 'router/service';
 
-describe.only('Router service', () => {
+describe('Router service', () => {
   describe('getRouter', () => {
     let $window;
     let $document;

@@ -51,6 +51,7 @@ export function createDateModalReact(createCallback) {
                              date={this.state.endDate} />
                 </div>
                 <DateRange
+                    format={FORMAT}
                     onDateChange={this.onDateChange}
                     startDate={this.state.startDate}
                     endDate={this.state.endDate} />
@@ -131,8 +132,13 @@ export function createDateModalReact(createCallback) {
 
       createFilter = () => {
         createStartDateFilter(
-          formatDate(this.state.startDate) + 'T00:00:00',
-          formatDate(this.state.endDate) + 'T23:59:59'
+          formatDate(this.state.startDate, {
+            withTime: true
+          }),
+          formatDate(this.state.endDate, {
+            withTime: true,
+            endOfDay: true
+          })
         );
 
         this.close();

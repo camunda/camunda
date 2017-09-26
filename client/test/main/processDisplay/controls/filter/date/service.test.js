@@ -48,6 +48,23 @@ describe('Date Filter service', () => {
 
       expect(formatted).to.eql('2017-02-15');
     });
+
+    it('should format date with time at start of the day', () => {
+      const formatted = formatDate(new Date('2017-02-15T12:00:00'), {
+        withTime: true
+      });
+
+      expect(formatted).to.eql('2017-02-15T00:00:00');
+    });
+
+    it('should format date with time at end of the day', () => {
+      const formatted = formatDate(new Date('2017-02-15T12:00:00'), {
+        withTime: true,
+        endOfDay: true
+      });
+
+      expect(formatted).to.eql('2017-02-15T23:59:59');
+    });
   });
 
   describe('sortDates', () => {

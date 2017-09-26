@@ -34,7 +34,7 @@ export class DateRange extends React.Component {
     };
 
     return <div>
-      <Calendar format="YYYY-MM-DD"
+      <Calendar format="this.props.format"
               link={this.state.startLink}
               linkCB={this.changeMonth('startLink')}
               range={range}
@@ -42,7 +42,7 @@ export class DateRange extends React.Component {
               firstDayOfWeek={1}
               onChange={this.getDateSetter('startDate')} />
 
-      <Calendar format="YYYY-MM-DD"
+      <Calendar format="this.props.format"
               link={this.state.endLink}
               linkCB={this.changeMonth('endLink')}
               theme={theme}
