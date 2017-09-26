@@ -17,7 +17,9 @@ export function Main() {
         <div className="page-wrap">
           <Match>
             <RouteView name="login">
-              <LoginForm selector="loginForm" />
+              <Scope selector="loginForm">
+                <LoginForm />
+              </Scope>
             </RouteView>
             <RouteView name="default">
               <Authenticated routeName="login">

@@ -1,17 +1,18 @@
-import {expect} from 'chai';
-import {jsx} from 'view-utils';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {mountTemplate, selectByText, triggerEvent} from 'testHelpers';
-import {LoginForm, __set__, __ResetDependency__} from  'main/loginForm/LoginForm';
+import {LoginFormReact, __set__, __ResetDependency__} from  'main/loginForm/LoginForm';
+import React from 'react';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<LoginForm>', () => {
-  const selector = 'loginForm';
-  let node;
-  let update;
+  let wrapper;
   let performLogin;
-  let passwordInput;
-  let userInput;
-  let loginButton;
   let router;
   let getLogin;
 
@@ -26,12 +27,6 @@ describe('<LoginForm>', () => {
 
     getLogin = sinon.stub();
     __set__('getLogin', getLogin);
-
-    ({node, update} = mountTemplate(<LoginForm selector={selector}/>));
-
-    passwordInput = getFieldByText('Password');
-    userInput = getFieldByText('User');
-    loginButton = node.querySelector('button[type="submit"]');
   });
 
   afterEach(() => {
@@ -40,150 +35,78 @@ describe('<LoginForm>', () => {
     __ResetDependency__('getLogin');
   });
 
-  it('should render form login element', () => {
-    expect(node.querySelector('form.form-signin')).to.exist;
-  });
-
-  it('should render user field', () => {
-    expect(userInput).to.exist;
-  });
-
-  it('should render password field', () => {
-    expect(passwordInput).to.exist;
-  });
-
-  it('should render submit button', () => {
-    expect(loginButton).to.exist;
-  });
-
-  it('should render "Login" as Button label', () => {
-    update({
-      [selector]: {
-        inProgress: false
-      }
+  describe('basic view', () => {
+    beforeEach(() => {
+      wrapper = mount(<LoginFormReact inProgress={false} error={false} />);
     });
 
-    expect(loginButton.innerText).to.eql('Login');
-  });
-
-  it('should render a loading indicator when login is in progress', () => {
-    update({
-      [selector]: {
-        inProgress: true
-      }
+    it('should have user input field', () => {
+      expect(wrapper.find('input[type="text"].user')).to.exist;
     });
 
-    expect(loginButton.querySelector('.glyphicon')).to.exist;
-  });
-
-  it('should not display error message by default', () => {
-    expect(node).not.to.contain.text('Login incorrect. Check username / password.');
-  });
-
-  it('should display error message when error is true on state', () => {
-    update({
-      [selector]: {
-        error: true
-      }
+    it('should have password input field', () => {
+      expect(wrapper.find('input[type="password"].password')).to.exist;
     });
 
-    expect(node).to.contain.text('Could not login. Check username / password.');
-  });
-
-  it('should performLogin with user and password on submit', () => {
-    const user = 'u1';
-    const password = 'p1';
-
-    userInput.value = user;
-    passwordInput.value = password;
-
-    triggerEvent({
-      node,
-      selector: 'form',
-      eventName: 'submit'
+    it('should have submit button', () => {
+      expect(wrapper.find('button[type="submit"]')).to.exist;
     });
 
-    expect(performLogin.calledWith(user, password)).to.eql(true);
-  });
-
-  it('should disable login button and inputs when login is in Progress', () => {
-    expect(loginButton.getAttribute('disabled')).to.eql(null, 'expected login button to not be disabled');
-    expect(userInput.getAttribute('disabled')).to.eql(null, 'expected user input to not be disabled');
-    expect(passwordInput.getAttribute('disabled')).to.eql(null, 'expected password input to not be disabled');
-
-    update({
-      [selector]: {
-        inProgress: true
-      }
+    it('should not have error', () => {
+      expect(wrapper.find('.text-danger')).not.to.exist;
     });
 
-    expect(loginButton.getAttribute('disabled')).to.eql('true', 'expected login button to be disabled');
-    expect(userInput.getAttribute('disabled')).to.eql('true', 'expected user input to be disabled');
-    expect(passwordInput.getAttribute('disabled')).to.eql('true', 'expected password input to be disabled');
-  });
-
-  it('should enable login button and inputs when login is no longer in Progress', () => {
-    update({
-      [selector]: {
-        inProgress: true
-      }
+    it('should not have spinner in login button', () => {
+      expect(wrapper.find('button[type="submit"] .spin')).not.to.exist;
     });
 
-    expect(loginButton.getAttribute('disabled')).to.eql('true', 'expected login button to be disabled');
-    expect(userInput.getAttribute('disabled')).to.eql('true', 'expected user input to be disabled');
-    expect(passwordInput.getAttribute('disabled')).to.eql('true', 'expected password input to be disabled');
+    it('should perform login action', () => {
+      wrapper.find('.user').simulate('change', {
+        target: {
+          value: 'user1'
+        }
+      });
+      wrapper.find('.password').simulate('change', {
+        target: {
+          value: 'pass1'
+        }
+      });
+      wrapper.find('form').simulate('submit');
 
-    update({
-      [selector]: {
-        inProgress: false
-      }
+      expect(performLogin.calledWith('user1', 'pass1')).to.eql(true);
     });
-
-    expect(loginButton.getAttribute('disabled')).to.eql(null, 'expected login button to not be disabled');
-    expect(userInput.getAttribute('disabled')).to.eql(null, 'expected user input to not be disabled');
-    expect(passwordInput.getAttribute('disabled')).to.eql(null, 'expected password input to not be disabled');
   });
 
-  it('should focus the password field when the login fails', () => {
-    update({
-      [selector]: {
-        error: true
-      }
+  describe('error view', () => {
+    beforeEach(() => {
+      wrapper = mount(<LoginFormReact inProgress={false} error={true} />);
     });
 
-    expect(document.activeElement).to.eql(passwordInput);
+    it('should display error message', () => {
+      expect(wrapper.find('.text-danger')).to.exist;
+      expect(wrapper).to.contain.text('Could not login. Check username / password.');
+    });
   });
 
-  it('should redirect to default view if user is logged in', () => {
-    getLogin.returns('something');
-
-    update({
-      [selector]: {
-        inProgress: false
-      }
+  describe('in progress view', () => {
+    beforeEach(() => {
+      wrapper = mount(<LoginFormReact inProgress={true} error={false} />);
     });
 
-    expect(router.goTo.calledWith('default')).to.eql(true);
-  });
-
-  it('should not redirect to default view if user is not logged in', () => {
-    getLogin.returns(false);
-
-    update({
-      [selector]: {
-        inProgress: false
-      }
+    it('should disable user field', () => {
+      expect(wrapper.find('.user')).to.be.disabled();
     });
 
-    expect(router.goTo.called).to.eql(false);
+    it('should disable password field', () => {
+      expect(wrapper.find('.password')).to.be.disabled();
+    });
+
+    it('should disable login button', () => {
+      expect(wrapper.find('button[type="submit"]')).to.be.disabled();
+    });
+
+    it('should add spinner to login button', () => {
+      expect(wrapper.find('button[type="submit"] .spin')).to.exist;
+    });
   });
-
-  function getFieldByText(text) {
-    const [section] = selectByText(
-      node.querySelectorAll('.form-group'),
-      text
-    );
-
-    return section.querySelector('input');
-  }
 });
