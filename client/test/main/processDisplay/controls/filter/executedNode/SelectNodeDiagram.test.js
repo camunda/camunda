@@ -1,27 +1,33 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {createSelectedNodeDiagram, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/executedNode/SelectNodeDiagram';
+import {createReactMock} from 'testHelpers';
+import {SelectNodeDiagram, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/executedNode/SelectNodeDiagram';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
 
 describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>', () => {
-  let resetZoom;
   let Loader;
+  let resetZoom;
   let onNextTick;
   let isBpmnType;
   let setElementVisibility;
   let ViewerCall;
   let viewer;
   let onSelectionChange;
-  let SelectNodeDiagram;
-  let node;
+  let wrapper;
 
   beforeEach(() => {
+    Loader = createReactMock('Loader');
+    __set__('Loader', Loader);
+
     resetZoom = sinon.spy();
     __set__('resetZoom', resetZoom);
-
-    Loader = createMockComponent('Loader', true);
-    __set__('Loader', Loader);
 
     onNextTick = sinon.stub().callsArg(0);
     __set__('onNextTick', onNextTick);
@@ -52,14 +58,12 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
 
     onSelectionChange = sinon.spy();
 
-    SelectNodeDiagram = createSelectedNodeDiagram();
-
-    ({node} = mountTemplate(<SelectNodeDiagram onSelectionChange={onSelectionChange} />));
+    wrapper = mount(<SelectNodeDiagram diagramVisible={false} onSelectionChange={onSelectionChange} />);
   });
 
   afterEach(() => {
-    __ResetDependency__('resetZoom');
     __ResetDependency__('Loader');
+    __ResetDependency__('resetZoom');
     __ResetDependency__('onNextTick');
     __ResetDependency__('isBpmnType');
     __ResetDependency__('setElementVisibility');
@@ -67,17 +71,11 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
   });
 
   it('should render the Loader', () => {
-    expect(node).to.contain.text(Loader.text);
+    expect(wrapper).to.contain.text(Loader.text);
   });
 
   it('should have diagram__holder node', () => {
-    expect(node).to.contain('.diagram__holder');
-  });
-
-  it('should construct Viewer with right container node', () => {
-    const container = ViewerCall.firstCall.args[0].container;
-
-    expect(container).to.eql(node.querySelector('.diagram__holder'));
+    expect(wrapper.find('.diagram__holder')).to.exist;
   });
 
   describe('on element.click', () => {
@@ -138,7 +136,7 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
     beforeEach(() => {
       xml = 'some bpmn xml';
 
-      SelectNodeDiagram.loadDiagram(xml);
+      wrapper = mount(<SelectNodeDiagram xml={xml} diagramVisible={true} onSelectionChange={onSelectionChange} />);
     });
 
     it('should load xml', () => {
@@ -146,15 +144,11 @@ describe('main/processDisplay/controls/filter/executedNode <SelectNodeDiagram>',
     });
 
     it('should load xml', () => {
-      SelectNodeDiagram.loadDiagram(xml);
-
       expect(viewer.importXML.calledOnce).to.eql(true);
     });
 
-    it('should hide Loader', () => {
-      const loaderNode = Loader.getChildrenNode();
-
-      expect(setElementVisibility.calledWith(loaderNode, false)).to.eql(true);
+    it('should hide loader', () => {
+      expect(Loader.calledWith({visible: false})).to.eql(true);
     });
 
     it('should add element-selectable marker to selectable elements', () => {

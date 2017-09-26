@@ -1,32 +1,40 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent, createMockComponent, selectByText} from 'testHelpers';
-import {expect} from 'chai';
+import React from 'react';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
-import {createExecutedNodeModal, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/executedNode/ExecutedNodeModal';
+import {createReactMock} from 'testHelpers';
+import {ExecutedNodeModal, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/executedNode/ExecutedNodeModal';
+import {mount} from 'enzyme';
 
-describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>', () => {
+chai.use(chaiEnzyme());
+
+const jsx = React.createElement;
+const {expect} = chai;
+
+describe.only('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>', () => {
   let Modal;
   let SelectNodeDiagram;
   let Socket;
-  let ExecutedNodeModal;
   let addFlowNodesFilter;
   let onFilterAdded;
   let getDiagramXML;
   let onNextTick;
-  let update;
   let filterType;
+  let wrapper;
 
   beforeEach(() => {
-    Modal = createMockComponent('Modal', true);
-    Modal.close = sinon.spy();
-    Modal.open = sinon.spy();
+    Modal = createReactMock('Modal', true);
     __set__('createModal', sinon.stub().returns(Modal));
 
-    SelectNodeDiagram = createMockComponent('SelectNodeDiagram');
+    Modal.Header = createReactMock('Modal.Header', true);
+    Modal.Body = createReactMock('Modal.Body', true);
+    Modal.Footer = createReactMock('Modal.Footer', true);
+
+    SelectNodeDiagram = createReactMock('SelectNodeDiagram');
     SelectNodeDiagram.loadDiagram = sinon.spy();
     __set__('createSelectedNodeDiagram', sinon.stub().returns(SelectNodeDiagram));
 
-    Socket = createMockComponent('Socket', true);
+    Socket = createReactMock('Socket', true);
     __set__('Socket', Socket);
 
     addFlowNodesFilter = sinon.spy();
@@ -41,9 +49,7 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
     filterType = 'filter-type';
     __set__('filterType', filterType);
 
-    ExecutedNodeModal = createExecutedNodeModal(onFilterAdded, getDiagramXML);
-
-    ({update} = mountTemplate(<ExecutedNodeModal />));
+    wrapper = mount(<ExecutedNodeModal isOpen={true} onFilterAdded={onFilterAdded} getDiagramXML={getDiagramXML} />);
   });
 
   afterEach(() => {
@@ -56,11 +62,11 @@ describe('main/processDisplay/controls/filter/executedNode <ExecutedNodeModal>',
   });
 
   it('should loadDiagram on Modal open', () => {
-    const open = Modal.getAttribute('onOpen');
+    const open = Modal.getProperty('onEntered');
 
     open();
 
-    expect(SelectNodeDiagram.loadDiagram.calledWith('diagram', [])).to.eql(true);
+    expect(SelectNodeDiagram.calledWith({diagramVisible: true})).to.eql(true);
     expect(getDiagramXML.calledOnce).to.eql(true);
   });
 

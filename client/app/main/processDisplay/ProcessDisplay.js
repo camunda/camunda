@@ -33,9 +33,11 @@ function Process() {
     }
 
     function getXML() {
-      const {views} = State.getState();
+      const {views} = State.getState() || {};
 
-      return getDiagramXML(views);
+      if (views) {
+        return getDiagramXML(views);
+      }
     }
 
     return template(node, eventsBus);

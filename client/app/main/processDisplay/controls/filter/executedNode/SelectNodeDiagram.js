@@ -1,6 +1,7 @@
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {jsx, createReferenceComponent, setElementVisibility, noop} from 'view-utils';
-import {resetZoom, Loader} from 'widgets';
+import React from 'react';
+import {resetZoom} from 'widgets';
+import {Loader} from 'widgets/Loader.react';
 import {onNextTick, isBpmnType} from 'utils';
 
 const EXCLUDED_TYPES = [
@@ -9,103 +10,119 @@ const EXCLUDED_TYPES = [
   'DataInputAssociation', 'DataOutputAssociation'
 ];
 const selectedMarker = 'highlight';
+const jsx = React.createElement;
 
-export const createSelectedNodeDiagram = () => {
-  const Reference = createReferenceComponent();
-  let viewer;
-  let canvas;
-  let elementRegistry;
-  let diagramLoaded = false;
+export class SelectNodeDiagram extends React.PureComponent {
+  constructor(props) {
+    super(props);
 
-  function SelectNodeDiagram({onSelectionChange = noop}) {
-    return (node, eventsBus) => {
-      const template = <div className="executed-node-diagram">
-        <Loader className="diagram-loading" style="position: absolute">
-          <Reference name="loader" />
-        </Loader>
-        <div className="diagram__holder">
-          <Reference name="container" />
-        </div>
-      </div>;
-      const update = template(node, eventsBus);
-
-      viewer = new Viewer({
-        container: Reference.getNode('container'),
-        canvas: {
-          deferUpdate: false
-        }
-      });
-      canvas = viewer.get('canvas');
-      elementRegistry = viewer.get('elementRegistry');
-
-      viewer.on('element.click', ({element}) => {
-        if (!isBpmnType(element, EXCLUDED_TYPES)) {
-          if (canvas.hasMarker(element.id, selectedMarker)) {
-            canvas.removeMarker(element.id, selectedMarker);
-          } else {
-            canvas.addMarker(element.id, selectedMarker);
-          }
-
-          onSelectionChange(
-            elementRegistry
-              .filter(element => {
-                return canvas.hasMarker(element.id, selectedMarker);
-              })
-              .map(({id, businessObject}) => {
-                return {
-                  id,
-                  name: businessObject && businessObject.name
-                };
-              })
-          );
-        }
-      });
-
-      diagramLoaded = false;
-
-      return [
-        update
-      ];
+    this.state = {
+      loading: true
     };
   }
 
-  function clearSelected() {
-    elementRegistry.forEach(element => {
-      canvas.removeMarker(element.id, selectedMarker);
-    });
+  render() {
+    const {loading} = this.state;
+
+    return <div className="executed-node-diagram">
+      <Loader className="diagram-loading" style={{position: 'absolute'}} visible={loading}>
+      </Loader>
+      <div className="diagram__holder" ref={this.saveContainer}>
+      </div>
+    </div>;
   }
 
-  SelectNodeDiagram.loadDiagram = (xml, selected) => {
-    if (diagramLoaded) {
-      resetZoom(viewer);
-      clearSelected();
+  saveContainer = node => this.container = node;
+
+  componentDidMount() {
+    const {onSelectionChange} = this.props;
+
+    this.viewer = new Viewer({
+      container: this.container
+    });
+
+    this.canvas = this.viewer.get('canvas');
+    this.elementRegistry = this.viewer.get('elementRegistry');
+
+    this.viewer.on('element.click', ({element}) => {
+      if (!isBpmnType(element, EXCLUDED_TYPES)) {
+        if (this.canvas.hasMarker(element.id, selectedMarker)) {
+          this.canvas.removeMarker(element.id, selectedMarker);
+        } else {
+          this.canvas.addMarker(element.id, selectedMarker);
+        }
+
+        onSelectionChange(
+          this.elementRegistry
+            .filter(element => {
+              return this.canvas.hasMarker(element.id, selectedMarker);
+            })
+            .map(({id, businessObject}) => {
+              return {
+                id,
+                name: businessObject && businessObject.name
+              };
+            })
+        );
+      }
+    });
+
+    if (this.props.diagramVisible) {
+      this.loadDiagram(this.props.xml);
+    }
+  }
+
+  componentWillReceiveProps({diagramVisible, xml}) {
+    if (diagramVisible) {
+      this.loadDiagram(xml);
+    }
+  }
+
+  loadDiagram(xml) {
+    if (!xml) {
+      return;
+    }
+
+    if (this.diagramLoaded) {
+      resetZoom(this.viewer);
+      this.clearSelected();
 
       return;
     }
 
-    viewer.importXML(xml, error => {
+    this.viewer.importXML(xml, error => {
       if (error) {
-        return;
+        return this.updateLoadingState();
       }
 
-      diagramLoaded = true;
-      const loaderNode = Reference.getNode('loader');
+      this.diagramLoaded = true;
+      this.updateLoadingState();
 
-      setElementVisibility(loaderNode, false);
-
-      resetZoom(viewer);
+      resetZoom(this.viewer);
 
       onNextTick(() => {
-        elementRegistry.forEach(element => {
+        this.elementRegistry.forEach(element => {
           if (!isBpmnType(element, EXCLUDED_TYPES)) {
-            canvas.addMarker(element.id, 'element-selectable');
+            this.canvas.addMarker(element.id, 'element-selectable');
           }
         });
 
-        clearSelected();
+        this.clearSelected();
       }, 20);
     });
-  };
+  }
 
-  return SelectNodeDiagram;
-};
+  clearSelected() {
+    this.elementRegistry.forEach(element => {
+      this.canvas.removeMarker(element.id, selectedMarker);
+    });
+  }
+
+  updateLoadingState() {
+    if (this.viewer) {
+      this.setState({
+        loading: false
+      });
+    }
+  }
+}
