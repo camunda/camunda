@@ -16,7 +16,6 @@ function createNewRouter() {
   let routes = [];
   let listeners = [];
   let listenersWaiting = false;
-  const history = $window.history;
   const router = {
     addRoutes,
     goTo,
@@ -70,6 +69,7 @@ function createNewRouter() {
   }
 
   function goTo(routeName, params, replace) {
+    const {history} = $window;
     const {defaults} = findRoute(routeName);
     const url = getUrl(routeName, params);
 

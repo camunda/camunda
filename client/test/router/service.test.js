@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {getRouter, createUrlTestForRoute, createUrlConstructForRoute, __set__, __ResetDependency__} from 'router/service';
 
-describe('Router service', () => {
+describe.only('Router service', () => {
   describe('getRouter', () => {
     let $window;
     let $document;
@@ -10,7 +10,7 @@ describe('Router service', () => {
     let createRouteAction;
     let router;
 
-    before(() => {
+    beforeEach(() => {
       $window = {
         history: {
           replaceState: sinon.spy(),
@@ -18,13 +18,7 @@ describe('Router service', () => {
         }
       };
       __set__('$window', $window);
-    });
 
-    after(() => {
-      __ResetDependency__('$window');
-    });
-
-    beforeEach(() => {
       $window.history.pushState.reset();
       $window.history.replaceState.reset();
 
@@ -42,6 +36,8 @@ describe('Router service', () => {
       createRouteAction = (name, params) => ({name, params});
       __set__('createRouteAction', createRouteAction);
 
+      __set__('router', null); // reset router for this test file
+
       router = getRouter();
 
       const route = {
@@ -53,9 +49,11 @@ describe('Router service', () => {
     });
 
     afterEach(() => {
+      __ResetDependency__('$window');
       __ResetDependency__('$document');
       __ResetDependency__('dispatchAction');
       __ResetDependency__('createRouteAction');
+      __ResetDependency__('router');
     });
 
     it('should create only one instance of router', () => {
