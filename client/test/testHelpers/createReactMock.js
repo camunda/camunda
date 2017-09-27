@@ -39,6 +39,10 @@ function withCall(getCalls, clientFn) {
     const index = args.length === conf.arity ? args[args.length - 1] : 0;
     const call = calls[index];
 
+    if (calls.length <= index) {
+      throw `Could not find call with index ${index}, calls length is ${calls.length}`;
+    }
+
     return clientFn(...clientArgs, call);
   });
 }

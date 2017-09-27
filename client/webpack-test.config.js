@@ -14,8 +14,9 @@ config.externals = {
   'react/lib/ReactContext': 'window'
 };
 
+config.devtool = 'inline-source-map';
+
 function deleteUnneededConfigEntries() {
-  delete config.devtool; // It is much quicker that way and source map do not work anyway
   delete config.entry;
   delete config.output;
   delete config.plugins;
@@ -29,7 +30,7 @@ function addTestRoot() {
 
 function addBabelRewirePlugin() {
   config.module.rules
-    .filter(function(loaderConf){
+    .filter(function(loaderConf) {
       return loaderConf.loader === 'babel-loader';
     })
     .forEach(function(loader) {
