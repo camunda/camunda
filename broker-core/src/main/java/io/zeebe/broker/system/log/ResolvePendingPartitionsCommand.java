@@ -25,17 +25,19 @@ import io.zeebe.broker.clustering.management.Partition;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
+import io.zeebe.util.time.ClockUtil;
 
 public class ResolvePendingPartitionsCommand implements Runnable
 {
-    protected final PartitionsIndex partitions;
+    protected final PendingPartitionsIndex partitions;
     protected final PartitionManager partitionManager;
 
     protected final TypedStreamWriter writer;
     protected final PartitionEvent partitionEvent = new PartitionEvent();
 
     public ResolvePendingPartitionsCommand(
-            PartitionsIndex partitions,
+            PendingPartitionsIndex partitions,
             PartitionManager partitionManager,
             TypedStreamWriter writer)
     {
@@ -53,6 +55,35 @@ public class ResolvePendingPartitionsCommand implements Runnable
             return;
         }
 
+        checkCompletedCreation();
+        checkExpiredCreation();
+    }
+
+    private void checkExpiredCreation()
+    {
+        final Iterator<PendingPartition> partitionIt = partitions.iterator();
+        final long now = ClockUtil.getCurrentTimeInMillis();
+
+        while (partitionIt.hasNext())
+        {
+            final PendingPartition partition = partitionIt.next();
+            if (partition.getCreationTimeout() < now)
+            {
+                partitionEvent.reset();
+                partitionEvent.setTopicName(partition.getTopicName());
+                partitionEvent.setId(partition.getPartitionId());
+                partitionEvent.setCreationTimeout(partition.getCreationTimeout());
+                partitionEvent.setState(PartitionState.CREATE_EXPIRE);
+
+                // it is ok if writing fails,
+                // we will then try it again with the next command execution (there are no other side effects of expiration)
+                writer.writeFollowupEvent(partition.getPartitionKey(), partitionEvent);
+            }
+        }
+    }
+
+    private void checkCompletedCreation()
+    {
         final Iterator<Member> currentMembers = partitionManager.getKnownMembers();
 
         while (currentMembers.hasNext())
@@ -68,9 +99,9 @@ public class ResolvePendingPartitionsCommand implements Runnable
                 final DirectBuffer topicName = currentPartition.getTopicName();
                 final int partitionId = currentPartition.getPartitionId();
 
-                final long key = partitions.getPartitionKey(topicName, partitionId);
+                final PendingPartition partition = partitions.get(topicName, partitionId);
 
-                if (key >= 0)
+                if (partition != null)
                 {
                     partitionEvent.reset();
                     partitionEvent.setTopicName(topicName);
@@ -78,11 +109,10 @@ public class ResolvePendingPartitionsCommand implements Runnable
                     partitionEvent.setState(PartitionState.CREATE_COMPLETE);
 
                     // it is ok if writing fails,
-                    // we will then try it again with the next command execution (there are no other side effects)
-                    writer.writeFollowupEvent(key, partitionEvent);
+                    // we will then try it again with the next command execution (there are no other side effects of completion)
+                    writer.writeFollowupEvent(partition.getPartitionKey(), partitionEvent);
                 }
             }
         }
-
     }
 }

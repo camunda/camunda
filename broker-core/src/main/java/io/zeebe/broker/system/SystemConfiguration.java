@@ -15,17 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.management.config;
+package io.zeebe.broker.system;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
-
-public class ClusterManagementConfig extends DirectoryConfiguration
+public class SystemConfiguration extends ComponentConfiguration
 {
+    public long partitionCreationTimeoutSeconds = 30;
 
-    @Override
-    protected String componentDirectoryName()
+    public long getPartitionCreationTimeoutSeconds()
     {
-        return "meta";
+        return partitionCreationTimeoutSeconds;
     }
-
 }

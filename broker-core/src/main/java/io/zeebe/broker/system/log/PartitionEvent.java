@@ -22,6 +22,7 @@ import org.agrona.DirectBuffer;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 
 public class PartitionEvent extends UnpackedObject
@@ -30,12 +31,16 @@ public class PartitionEvent extends UnpackedObject
     protected final StringProperty topicName = new StringProperty("topicName");
     protected final IntegerProperty id = new IntegerProperty("id");
 
+    // TODO: this property can be removed when we have timestamps in log entries
+    protected final LongProperty creationTimeout = new LongProperty("creationTimeout", -1L);
+
     public PartitionEvent()
     {
         this
             .declareProperty(state)
             .declareProperty(id)
-            .declareProperty(topicName);
+            .declareProperty(topicName)
+            .declareProperty(creationTimeout);
     }
 
     public void setState(PartitionState state)
@@ -66,5 +71,15 @@ public class PartitionEvent extends UnpackedObject
     public int getId()
     {
         return id.getValue();
+    }
+
+    public void setCreationTimeout(long timeout)
+    {
+        creationTimeout.setValue(timeout);
+    }
+
+    public long getCreationTimeout()
+    {
+        return creationTimeout.getValue();
     }
 }

@@ -47,7 +47,8 @@ public class TopicsIndex
 
     protected final Bytes2BytesZbMap topics;
 
-    protected MutableDirectBuffer value = new UnsafeBuffer(new byte[VALUE_LENGTH]);
+    protected MutableDirectBuffer inputValue = new UnsafeBuffer(new byte[VALUE_LENGTH]);
+    protected DirectBuffer currentValue;
 
     public TopicsIndex()
     {
@@ -66,32 +67,34 @@ public class TopicsIndex
 
     public boolean moveTo(DirectBuffer topicName)
     {
-        return topics.get(topicName, value);
+        currentValue = topics.get(topicName);
+        return currentValue != null;
     }
 
     public int getRemainingPartitions()
     {
-        return value.getInt(REMAINING_PARTITIONS_OFFSET, BYTE_ORDER);
-    }
-
-    public void put(DirectBuffer topicName, int remainingPartitions, long requestPosition)
-    {
-        value.putInt(REMAINING_PARTITIONS_OFFSET, remainingPartitions, BYTE_ORDER);
-        value.putLong(REQUEST_OFFSET, requestPosition, BYTE_ORDER);
-
-        topics.put(topicName, value);
-    }
-
-    public void putRemainingPartitions(DirectBuffer topicName, int partitions)
-    {
-        value.putInt(REMAINING_PARTITIONS_OFFSET, partitions, BYTE_ORDER);
-
-        topics.put(topicName, value);
+        return currentValue.getInt(REMAINING_PARTITIONS_OFFSET, BYTE_ORDER);
     }
 
     public long getRequestPosition()
     {
-        return value.getLong(REQUEST_OFFSET, BYTE_ORDER);
+        return currentValue.getLong(REQUEST_OFFSET, BYTE_ORDER);
     }
+
+    public void put(DirectBuffer topicName, int remainingPartitions, long requestPosition)
+    {
+        inputValue.putInt(REMAINING_PARTITIONS_OFFSET, remainingPartitions, BYTE_ORDER);
+        inputValue.putLong(REQUEST_OFFSET, requestPosition, BYTE_ORDER);
+
+        topics.put(topicName, inputValue);
+    }
+
+    public void putRemainingPartitions(DirectBuffer topicName, int partitions)
+    {
+        inputValue.putInt(REMAINING_PARTITIONS_OFFSET, partitions, BYTE_ORDER);
+
+        topics.put(topicName, inputValue);
+    }
+
 
 }

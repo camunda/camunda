@@ -27,6 +27,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
@@ -50,6 +51,8 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
     protected final Injector<ClientTransport> managementClientInjector = new Injector<>();
 
+    protected final SystemConfiguration systemConfiguration;
+
     protected ServerTransport clientApiTransport;
     protected PeerList peerList;
     protected ScheduledExecutor executor;
@@ -61,10 +64,15 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     private ScheduledCommand command;
 
+    public SystemPartitionManager(SystemConfiguration systemConfiguration)
+    {
+        this.systemConfiguration = systemConfiguration;
+    }
+
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
 
-        final PartitionsIndex partitionsIndex = new PartitionsIndex();
+        final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput())
@@ -76,7 +84,13 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         final ResolvePendingPartitionsCommand cmd =
                 new ResolvePendingPartitionsCommand(partitionsIndex, partitionManager, streamEnvironment.buildStreamWriter());
 
-        final TypedStreamProcessor streamProcessor = buildSystemStreamProcessor(streamEnvironment, partitionManager, topicsIndex, partitionsIndex);
+        final TypedStreamProcessor streamProcessor =
+                buildSystemStreamProcessor(
+                        streamEnvironment,
+                        partitionManager,
+                        topicsIndex,
+                        partitionsIndex,
+                        Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()));
         command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(cmd), Duration.ofMillis(100));
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
@@ -97,13 +111,15 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             TypedStreamEnvironment streamEnvironment,
             PartitionManager partitionManager,
             TopicsIndex topicsIndex,
-            PartitionsIndex partitionsIndex)
+            PendingPartitionsIndex partitionsIndex,
+            Duration creationExpiration)
     {
         return streamEnvironment.newStreamProcessor()
             .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex))
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(partitionManager, partitionsIndex))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(partitionManager, partitionsIndex, creationExpiration))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_COMPLETE, new CompletePartitionProcessor(partitionsIndex))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicsIndex, streamEnvironment.buildStreamReader()))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex))
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
             .onClose(() -> topicsIndex.close())

@@ -45,8 +45,7 @@ public class ActivityInstanceMap implements AutoCloseable
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
-    private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
     private final UnsafeBuffer activityIdBuffer = new UnsafeBuffer(new byte[SIZE_OF_ACTIVITY_ID]);
 
     private final Long2BytesZbMap map;
@@ -73,12 +72,18 @@ public class ActivityInstanceMap implements AutoCloseable
 
     public void remove(long activityInstanceKey)
     {
-        map.remove(activityInstanceKey, rawBuffer);
+        map.remove(activityInstanceKey);
     }
 
     public ActivityInstanceMap wrapActivityInstanceKey(long key)
     {
-        this.isRead = map.get(key, rawBuffer);
+        final DirectBuffer result = map.get(key);
+        if (result != null)
+        {
+            this.buffer.putBytes(0, result, 0, result.capacity());
+        }
+
+        this.isRead = result != null;
         this.key = key;
 
         return this;
@@ -114,7 +119,7 @@ public class ActivityInstanceMap implements AutoCloseable
     public void write()
     {
         ensureRead();
-        map.put(key, buffer.byteArray());
+        map.put(key, buffer);
     }
 
     public ActivityInstanceMap setActivityId(DirectBuffer activityId)

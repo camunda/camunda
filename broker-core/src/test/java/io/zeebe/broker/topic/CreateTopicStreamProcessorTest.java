@@ -24,6 +24,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -51,7 +54,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.PartitionState;
-import io.zeebe.broker.system.log.PartitionsIndex;
+import io.zeebe.broker.system.log.PendingPartitionsIndex;
 import io.zeebe.broker.system.log.ResolvePendingPartitionsCommand;
 import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.system.log.TopicEvent;
@@ -66,9 +69,12 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.time.ClockUtil;
 
 public class CreateTopicStreamProcessorTest
 {
+
+    public static final Duration CREATION_EXPIRATION = Duration.ofSeconds(60);
 
     public static final String STREAM_NAME = "stream";
     protected static final SocketAddress SOCKET_ADDRESS1 = new SocketAddress("saturn", 123);
@@ -104,7 +110,7 @@ public class CreateTopicStreamProcessorTest
         this.partitionManager = new PartitionManagerImpl();
 
         final TopicsIndex topicsIndex = new TopicsIndex();
-        final PartitionsIndex partitionsIndex = new PartitionsIndex();
+        final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(stream, output)
             .withEventType(EventType.TOPIC_EVENT, TopicEvent.class)
@@ -114,7 +120,18 @@ public class CreateTopicStreamProcessorTest
 
         checkPartitionsCmd = new ResolvePendingPartitionsCommand(partitionsIndex, partitionManager, streamEnvironment.buildStreamWriter());
 
-        streamProcessor = SystemPartitionManager.buildSystemStreamProcessor(streamEnvironment, partitionManager, topicsIndex, partitionsIndex);
+        streamProcessor = SystemPartitionManager.buildSystemStreamProcessor(
+                streamEnvironment,
+                partitionManager,
+                topicsIndex,
+                partitionsIndex,
+                CREATION_EXPIRATION);
+    }
+
+    @After
+    public void reset()
+    {
+        ClockUtil.reset();
     }
 
 
@@ -341,6 +358,202 @@ public class CreateTopicStreamProcessorTest
         final SocketAddress secondPartitionCreator = partitionManager.getPartitionRequests().get(1).endpoint;
         assertThat(secondPartitionCreator).isNotEqualTo(firstPartitionCreator);
 
+    }
+
+    @Test
+    public void shouldCreateNewPartitionOnExpiration()
+    {
+        // given
+        ClockUtil.pinCurrentTime();
+
+        partitionManager.addMember(SOCKET_ADDRESS1);
+        partitionManager.addMember(SOCKET_ADDRESS2);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 2))
+            .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
+
+        // when
+        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        streamProcessor.runAsync(checkPartitionsCmd);
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATE).count() == 4);
+
+        // then
+        assertThat(partitionEventsInState(PartitionState.CREATE).count()).isEqualTo(4);
+
+        final List<PartitionEvent> creationEvents = partitionEventsInState(PartitionState.CREATE).collect(Collectors.toList());
+        assertThat(creationEvents).extracting("id").doesNotHaveDuplicates();
+
+        final List<PartitionRequest> requests = partitionManager.getPartitionRequests();
+        assertThat(requests).extracting(r -> r.endpoint).containsOnly(
+                SOCKET_ADDRESS1, SOCKET_ADDRESS2, SOCKET_ADDRESS1, SOCKET_ADDRESS2);
+    }
+
+    @Test
+    public void shouldSetCreationExpirationTimeInEvent()
+    {
+        // given
+        ClockUtil.pinCurrentTime();
+
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        // when
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
+
+        // then
+        final PartitionEvent creatingEvent = partitionEventsInState(PartitionState.CREATING).findFirst().get();
+        final Instant expectedExpirationTime = ClockUtil.getCurrentTime().plus(CREATION_EXPIRATION);
+        assertThat(creatingEvent.getCreationTimeout()).isEqualTo(expectedExpirationTime.toEpochMilli());
+    }
+
+    @Test
+    public void shouldSendResponseAfterTheDefinedNumberOfPartitionsIsCreated()
+    {
+        // given
+        ClockUtil.pinCurrentTime();
+
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        // request for two partitions
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 2))
+            .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
+
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", 0);
+
+        // a partition with expired creation
+        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        streamProcessor.runAsync(checkPartitionsCmd);
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 3);
+
+        final PartitionEvent event = partitionEventsInState(PartitionState.CREATING).skip(2).findFirst().get();
+
+        // when
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", event.getId());
+        streamProcessor.runAsync(checkPartitionsCmd);
+        waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
+
+        // then topic is marked created after two out of three partitions have been created
+        assertThat(topicEventsInState(TopicState.CREATED).count()).isEqualTo(1);
+        verify(output, times(1)).sendResponse(any());
+    }
+
+    @Test
+    public void shouldTriggerExpirationOnlyOnce() throws InterruptedException
+    {
+        // given
+        ClockUtil.pinCurrentTime();
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
+
+        // creation expires
+        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        streamProcessor.runAsync(checkPartitionsCmd);
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
+
+        // when checking expiration again
+        streamProcessor.runAsync(checkPartitionsCmd);
+
+        // then this does not result in a third partition
+        Thread.sleep(500L);
+        assertThat(partitionEventsInState(PartitionState.CREATING).count()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldRejectSecondExpirationCommand()
+    {
+        // given
+        ClockUtil.pinCurrentTime();
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.blockAfterEvent(e ->
+            Events.isPartitionEvent(e) &&
+            Events.asPartitionEvent(e).getState() == PartitionState.CREATING);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
+
+        // creation expires once
+        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        streamProcessor.runAsync(checkPartitionsCmd);
+
+        // when the expiration check is run a second time before the stream processor handles the first command
+        streamProcessor.runAsync(checkPartitionsCmd);
+
+        // then there is only one expiration event and one new partition create event
+        processorControl.unblock();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
+
+        final List<PartitionEvent> partitionEvents = streams.events(STREAM_NAME)
+            .filter(Events::isPartitionEvent)
+            .map(Events::asPartitionEvent)
+            .collect(Collectors.toList());
+
+        assertThat(partitionEvents).extracting("state")
+            .containsExactly(
+                    PartitionState.CREATE,
+                    PartitionState.CREATING,
+                    PartitionState.CREATE_EXPIRE,
+                    PartitionState.CREATE_EXPIRE,
+                    PartitionState.CREATE_EXPIRED,
+                    PartitionState.CREATE,
+                    PartitionState.CREATE_EXPIRE_REJECTED,
+                    PartitionState.CREATING);
+    }
+
+    @Test
+    public void shouldRejectExpirationOnIntermittentCompletion()
+    {
+        ClockUtil.pinCurrentTime();
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.blockAfterEvent(e ->
+            Events.isPartitionEvent(e) &&
+            Events.asPartitionEvent(e).getState() == PartitionState.CREATING);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+        waitUntil(() -> processorControl.isBlocked());
+
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", 0);
+
+        // when creating a complete and expire command
+        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        streamProcessor.runAsync(checkPartitionsCmd);
+
+        // then
+        processorControl.unblock();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATE_EXPIRE_REJECTED).count() == 1);
+        assertThat(partitionEventsInState(PartitionState.CREATE_EXPIRED).count()).isEqualTo(0);
+        assertThat(partitionEventsInState(PartitionState.CREATED).count()).isEqualTo(1);
     }
 
     protected Stream<PartitionEvent> partitionEventsInState(PartitionState state)

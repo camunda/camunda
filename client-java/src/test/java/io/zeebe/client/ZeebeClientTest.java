@@ -102,8 +102,6 @@ public class ZeebeClientTest
                 ConnectionState.CONNECTED,
                 ConnectionState.CLOSED,
                 ConnectionState.CONNECTED);
-
-
     }
 
     protected TopicSubscription openSubscription()

@@ -51,7 +51,9 @@ public class SystemComponent implements Component
             .dependency(ACTOR_SCHEDULER_SERVICE, executorService.getActorSchedulerInjector())
             .install();
 
-        final SystemPartitionManager systemPartitionManager = new SystemPartitionManager();
+        final SystemConfiguration systemConfiguration = context.getConfigurationManager().readEntry("system", SystemConfiguration.class);
+
+        final SystemPartitionManager systemPartitionManager = new SystemPartitionManager(systemConfiguration);
         serviceContainer.createService(SystemServiceNames.SYSTEM_LOG_MANAGER, systemPartitionManager)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), systemPartitionManager.getClientApiTransportInjector())
             .dependency(ClusterServiceNames.PEER_LIST_SERVICE, systemPartitionManager.getPeerListInjector())

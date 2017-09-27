@@ -22,9 +22,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Maps <b>workflow instance key</b> to
@@ -43,8 +45,7 @@ public class WorkflowInstanceIndex implements AutoCloseable
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
-    private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
 
     private final Long2BytesZbMap map;
     private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
@@ -70,12 +71,18 @@ public class WorkflowInstanceIndex implements AutoCloseable
 
     public void remove(long workflowInstanceKey)
     {
-        map.remove(workflowInstanceKey, rawBuffer);
+        map.remove(workflowInstanceKey);
     }
 
     public WorkflowInstanceIndex wrapWorkflowInstanceKey(long key)
     {
-        this.isRead = map.get(key, rawBuffer);
+        final DirectBuffer result = map.get(key);
+        if (result != null)
+        {
+            buffer.putBytes(0, result, 0, result.capacity());
+        }
+
+        this.isRead = result != null;
         this.key = key;
 
         return this;
@@ -106,7 +113,7 @@ public class WorkflowInstanceIndex implements AutoCloseable
     public void write()
     {
         ensureRead();
-        map.put(key, buffer.byteArray());
+        map.put(key, buffer);
     }
 
     public WorkflowInstanceIndex setPosition(long position)

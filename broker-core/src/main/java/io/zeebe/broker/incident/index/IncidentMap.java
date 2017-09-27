@@ -24,6 +24,8 @@ import java.nio.ByteOrder;
 
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
+
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -43,8 +45,7 @@ public class IncidentMap
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final byte[] rawBuffer = new byte[INDEX_VALUE_SIZE];
-    private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
 
     private final Long2BytesZbMap map;
     private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
@@ -70,12 +71,18 @@ public class IncidentMap
 
     public void remove(long incidentKey)
     {
-        map.remove(incidentKey, rawBuffer);
+        map.remove(incidentKey);
     }
 
     public IncidentMap wrapIncidentKey(long key)
     {
-        this.isRead = map.get(key, rawBuffer);
+        final DirectBuffer result = map.get(key);
+
+        if (result != null)
+        {
+            buffer.putBytes(0, result, 0, result.capacity());
+        }
+        this.isRead = result != null;
         this.key = key;
 
         return this;
@@ -106,7 +113,7 @@ public class IncidentMap
     public void write()
     {
         ensureRead();
-        map.put(key, buffer.byteArray());
+        map.put(key, buffer);
     }
 
     public IncidentMap setState(short state)

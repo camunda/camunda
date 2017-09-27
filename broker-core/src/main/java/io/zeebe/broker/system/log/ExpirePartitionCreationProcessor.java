@@ -17,20 +17,22 @@
  */
 package io.zeebe.broker.system.log;
 
-import org.agrona.DirectBuffer;
-
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
+import scala.util.Random;
 
-public class CompletePartitionProcessor implements TypedEventProcessor<PartitionEvent>
+public class ExpirePartitionCreationProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
     protected final PendingPartitionsIndex partitions;
+    protected final PartitionEvent newEvent = new PartitionEvent();
+    protected final Random idGenerator = new Random();
 
-    public CompletePartitionProcessor(PendingPartitionsIndex partitions)
+    public ExpirePartitionCreationProcessor(PendingPartitionsIndex partitions)
     {
         this.partitions = partitions;
     }
@@ -40,17 +42,17 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
     {
         final PartitionEvent value = event.getValue();
 
-        final DirectBuffer topicName = value.getTopicName();
-        final PendingPartition partition = partitions.get(topicName, value.getId());
+        final PendingPartition partition = partitions.get(value.getTopicName(), value.getId());
 
         if (partition != null)
         {
-            value.setState(PartitionState.CREATED);
+            value.setState(PartitionState.CREATE_EXPIRED);
         }
         else
         {
-            value.setState(PartitionState.CREATE_COMPLETE_REJECTED);
+            value.setState(PartitionState.CREATE_EXPIRE_REJECTED);
         }
+
     }
 
     @Override
@@ -62,20 +64,34 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
     @Override
     public long writeEvent(TypedEvent<PartitionEvent> event, TypedStreamWriter writer)
     {
-        return writer.writeFollowupEvent(event.getKey(), event.getValue());
+        final PartitionEvent value = event.getValue();
+        final TypedBatchWriter batchWriter = writer.newBatch()
+            .addFollowUpEvent(event.getKey(), value);
+
+        if (value.getState() == PartitionState.CREATE_EXPIRED)
+        {
+            // create a new partition
+            newEvent.reset();
+            newEvent.setState(PartitionState.CREATE);
+
+            // TODO: random does not guarantee uniqueness => goes away with https://github.com/zeebe-io/zeebe/issues/414
+            newEvent.setId(idGenerator.nextInt() & 0xFF);
+            newEvent.setTopicName(value.getTopicName());
+            batchWriter.addNewEvent(newEvent);
+        }
+
+        return batchWriter.write();
     }
 
     @Override
     public void updateState(TypedEvent<PartitionEvent> event)
     {
         final PartitionEvent value = event.getValue();
-
-        final DirectBuffer topicName = value.getTopicName();
-
-        if (value.getState() == PartitionState.CREATED)
-        {
-            partitions.removePartitionKey(topicName, value.getId());
-        }
+        // removing the partition from the index to avoid expiration being triggered multiple times
+        // => should the partition become available after this point, then the system partition will
+        //    not recognize this and will not write a partition CREATED event. If this is required in the future,
+        //    we can include the partition state in the index.
+        partitions.removePartitionKey(value.getTopicName(), value.getId());
 
     }
 

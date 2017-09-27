@@ -17,33 +17,44 @@
  */
 package io.zeebe.broker.system.log;
 
+import java.time.Duration;
+
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.time.ClockUtil;
 
 public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
     protected final PartitionCreatorSelectionStrategy creatorStrategy;
     protected final PartitionManager partitionManager;
-    protected final PartitionsIndex partitions;
+    protected final PendingPartitionsIndex partitions;
+
+    protected final long creationTimeoutMillis;
 
     public CreatePartitionProcessor(
             PartitionManager partitionManager,
-            PartitionsIndex partitions)
+            PendingPartitionsIndex partitions,
+            Duration creationTimeout)
     {
         this.partitionManager = partitionManager;
         this.partitions = partitions;
         this.creatorStrategy = new RoundRobinSelectionStrategy(partitionManager);
+        this.creationTimeoutMillis = creationTimeout.toMillis();
     }
 
     @Override
     public void processEvent(TypedEvent<PartitionEvent> event)
     {
-        event.getValue().setState(PartitionState.CREATING);
+        final PartitionEvent value = event.getValue();
+        value.setState(PartitionState.CREATING);
+
+        final long now = ClockUtil.getCurrentTimeInMillis();
+        value.setCreationTimeout(now + creationTimeoutMillis);
     }
 
     @Override
@@ -76,7 +87,8 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
         partitions.putPartitionKey(
                 value.getTopicName(),
                 value.getId(),
-                event.getKey());
+                event.getKey(),
+                value.getCreationTimeout());
     }
 
 }

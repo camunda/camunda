@@ -44,8 +44,7 @@ public class TaskInstanceMap
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final byte[] rawBuffer = new byte[MAP_VALUE_SIZE];
-    private final UnsafeBuffer buffer = new UnsafeBuffer(rawBuffer);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_SIZE]);
     private final UnsafeBuffer lockOwnerBuffer = new UnsafeBuffer(0, 0);
 
     private final Long2BytesZbMap map;
@@ -72,12 +71,18 @@ public class TaskInstanceMap
 
     public void remove(long workflowInstanceKey)
     {
-        map.remove(workflowInstanceKey, rawBuffer);
+        map.remove(workflowInstanceKey);
     }
 
     public TaskInstanceMap wrapTaskInstanceKey(long key)
     {
-        this.isRead = map.get(key, rawBuffer);
+        final DirectBuffer result = map.get(key);
+        if (result != null)
+        {
+            buffer.putBytes(0, result, 0, result.capacity());
+        }
+
+        this.isRead = result != null;
         this.key = key;
 
         return this;
@@ -112,7 +117,7 @@ public class TaskInstanceMap
     public void write()
     {
         ensureRead();
-        map.put(key, buffer.byteArray());
+        map.put(key, buffer);
     }
 
     public TaskInstanceMap setState(short state)
