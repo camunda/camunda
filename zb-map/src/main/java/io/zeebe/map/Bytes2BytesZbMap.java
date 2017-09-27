@@ -15,58 +15,58 @@
  */
 package io.zeebe.map;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
+
+import io.zeebe.map.iterator.Bytes2BytesZbMapEntry;
 import io.zeebe.map.types.ByteArrayKeyHandler;
 import io.zeebe.map.types.ByteArrayValueHandler;
 
-public class Bytes2BytesZbMap extends ZbMap<ByteArrayKeyHandler, ByteArrayValueHandler>
+public class Bytes2BytesZbMap extends ZbMap<ByteArrayKeyHandler, ByteArrayValueHandler> implements Iterable<Bytes2BytesZbMapEntry>
 {
 
-    protected final int keyMaxLength;
-    protected final int valueMaxLength;
+    protected final ZbMapIterator<ByteArrayKeyHandler, ByteArrayValueHandler, Bytes2BytesZbMapEntry> iterator =
+            new ZbMapIterator<>(this, new Bytes2BytesZbMapEntry());
 
     public Bytes2BytesZbMap(int keyMaxLength, int valueMaxLength)
     {
         super(keyMaxLength, valueMaxLength);
-        this.keyMaxLength = keyMaxLength;
-        this.valueMaxLength = valueMaxLength;
     }
 
     public Bytes2BytesZbMap(int tableSize, int blocksPerBucket, int keyMaxLength, int valueMaxLength)
     {
         super(tableSize, blocksPerBucket, keyMaxLength, valueMaxLength);
-        this.keyMaxLength = keyMaxLength;
-        this.valueMaxLength = valueMaxLength;
     }
 
-    public boolean get(byte[] key, byte[] value)
+    /**
+     * Returns a view on the map value, i.e. direct modification should be avoided.
+     * This view may become invalid with the very next interaction with the map.
+     * For values shorter than valueMaxLength, the returned buffer contains padding 0s.
+     */
+    public DirectBuffer get(DirectBuffer key)
     {
-        ensureKeyMaxLength(key.length);
-        ensureValueMaxLength(value.length);
-
-        keyHandler.setKey(key);
-        valueHandler.setValue(value);
-        return get();
+        return get(key, 0, key.capacity());
     }
 
-    public boolean get(DirectBuffer key, MutableDirectBuffer value)
+    /**
+     * Only wraps the value in the supplied value buffer, does not copy
+     */
+    public DirectBuffer get(DirectBuffer key, int keyOffset, int keyLength)
     {
-        ensureKeyMaxLength(key.capacity());
-        ensureValueMaxLength(value.capacity());
-
-        keyHandler.setKey(key, 0, key.capacity());
-        valueHandler.setValue(value, 0, value.capacity());
-
-        return get();
+        keyHandler.setKey(key, keyOffset, keyLength);
+        if (get())
+        {
+            return valueHandler.getValue();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public boolean put(byte[] key, byte[] value)
     {
-        ensureKeyMaxLength(key.length);
-        ensureValueMaxLength(value.length);
-
         keyHandler.setKey(key);
         valueHandler.setValue(value);
         return put();
@@ -74,10 +74,12 @@ public class Bytes2BytesZbMap extends ZbMap<ByteArrayKeyHandler, ByteArrayValueH
 
     public boolean put(DirectBuffer key, DirectBuffer value)
     {
-        ensureKeyMaxLength(key.capacity());
-        ensureValueMaxLength(value.capacity());
+        return put(key, 0, key.capacity(), value);
+    }
 
-        keyHandler.setKey(key, 0, key.capacity());
+    public boolean put(DirectBuffer key, int keyOffset, int keyLength, DirectBuffer value)
+    {
+        keyHandler.setKey(key, keyOffset, keyLength);
         valueHandler.setValue(value, 0, value.capacity());
 
         return put();
@@ -85,33 +87,25 @@ public class Bytes2BytesZbMap extends ZbMap<ByteArrayKeyHandler, ByteArrayValueH
 
     public boolean remove(byte[] key)
     {
-        ensureKeyMaxLength(key.length);
-
         keyHandler.setKey(key);
         return remove();
     }
 
     public boolean remove(DirectBuffer key)
     {
-        ensureKeyMaxLength(key.capacity());
+        return remove(key, 0, key.capacity());
+    }
 
-        keyHandler.setKey(key, 0, key.capacity());
+    public boolean remove(DirectBuffer key, int offset, int length)
+    {
+        keyHandler.setKey(key, offset, length);
         return remove();
     }
 
-    private void ensureValueMaxLength(int valueLength)
+    @Override
+    public Iterator<Bytes2BytesZbMapEntry> iterator()
     {
-        if (valueLength > valueMaxLength)
-        {
-            throw new IllegalArgumentException(String.format("Value exceeds max value length. Max value length is %d, got %d", valueMaxLength, valueLength));
-        }
-    }
-
-    private void ensureKeyMaxLength(int keyLength)
-    {
-        if (keyLength > keyMaxLength)
-        {
-            throw new IllegalArgumentException(String.format("Value exceeds max value length. Max value length is %d, got %d", keyMaxLength, keyLength));
-        }
+        iterator.reset();
+        return iterator;
     }
 }

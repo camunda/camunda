@@ -19,6 +19,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
@@ -31,48 +33,51 @@ public class Long2BytesZbMap extends ZbMap<LongKeyHandler, ByteArrayValueHandler
 {
     private ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry> iterator;
 
-    private final int valueMaxLength;
-
     public Long2BytesZbMap(int valueMaxLength)
     {
         super(SIZE_OF_LONG, valueMaxLength);
-        this.valueMaxLength = valueMaxLength;
     }
 
     public Long2BytesZbMap(int tableSize, int blocksPerBucket, int valueMaxLength)
     {
         super(tableSize, blocksPerBucket, SIZE_OF_LONG, valueMaxLength);
-        this.valueMaxLength = valueMaxLength;
     }
 
-    public boolean get(long key, byte[] value)
+    /**
+     * Returns a view on the map value, i.e. direct modification should be avoided.
+     * This view may become invalid with the very next interaction with the map.
+     * For values shorter than valueMaxLength, the returned buffer contains padding 0s.
+     */
+    public DirectBuffer get(long key)
     {
         keyHandler.theKey = key;
-        valueHandler.setValue(value);
-        return get();
+        if (get())
+        {
+            return valueHandler.getValue();
+        }
+        else
+        {
+            return null;
+        }
     }
 
-    public boolean put(long key, byte[] value)
+    public boolean put(long key, DirectBuffer buffer)
     {
-        ensureValueMaxLength(value);
-
         keyHandler.theKey = key;
-        valueHandler.setValue(value);
+        valueHandler.setValue(buffer, 0, buffer.capacity());
         return put();
     }
 
-    public boolean remove(long key, byte[] value)
+    public DirectBuffer remove(long key)
     {
         keyHandler.theKey = key;
-        valueHandler.setValue(value);
-        return remove();
-    }
-
-    private void ensureValueMaxLength(byte[] value)
-    {
-        if (value.length > valueMaxLength)
+        if (remove())
         {
-            throw new IllegalArgumentException(String.format("Value exceeds max value length. Max value length is %d, got %d", valueMaxLength, value.length));
+            return valueHandler.getValue();
+        }
+        else
+        {
+            return null;
         }
     }
 

@@ -17,9 +17,12 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -27,14 +30,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import io.zeebe.map.iterator.Bytes2BytesZbMapEntry;
+
 public class Bytes2BytesZbMapTest
 {
 
-    byte[] key = new byte[64];
-    byte[] value = new byte[64];
+    private static final int KEY_LENGTH = 64;
+    private static final int VALUE_LENGTH = 64;
 
-    UnsafeBuffer keyBuffer;
-    UnsafeBuffer valueBuffer;
+    UnsafeBuffer key = new UnsafeBuffer(new byte[64]);
+    UnsafeBuffer value = new UnsafeBuffer(new byte[64]);
 
     Bytes2BytesZbMap map;
 
@@ -46,14 +51,11 @@ public class Bytes2BytesZbMapTest
     {
         final int tableSize = 32;
 
-        map = new Bytes2BytesZbMap(tableSize, 1, 64, 64);
+        map = new Bytes2BytesZbMap(tableSize, 1, KEY_LENGTH, VALUE_LENGTH);
 
         final Random r = new Random();
-        r.nextBytes(key);
-        r.nextBytes(value);
-
-        keyBuffer = new UnsafeBuffer(key);
-        valueBuffer = new UnsafeBuffer(value);
+        r.nextBytes(key.byteArray());
+        r.nextBytes(value.byteArray());
     }
 
     @After
@@ -67,13 +69,12 @@ public class Bytes2BytesZbMapTest
     {
         // given
         map.put(key, value);
-        final byte[] result = new byte[64];
 
         // when
-        final boolean found = map.get(key, result);
+        final DirectBuffer result = map.get(key);
 
         // then
-        assertThat(found).isTrue();
+        assertThat(result).isNotNull();
         assertThat(result).isEqualTo(value);
     }
 
@@ -81,15 +82,11 @@ public class Bytes2BytesZbMapTest
     @Test
     public void shouldNotGetMissingValue()
     {
-        // given
-        final byte[] result = Arrays.copyOf(value, value.length);
-
         // when
-        final boolean found = map.get(key, result);
+        final DirectBuffer result = map.get(key);
 
         // then
-        assertThat(found).isFalse();
-        assertThat(result).isEqualTo(value);
+        assertThat(result).isNull();
     }
 
     @Test
@@ -103,69 +100,89 @@ public class Bytes2BytesZbMapTest
 
         // then
         assertThat(removed).isTrue();
-        assertThat(map.get(key, value)).isFalse();
+        assertThat(map.get(key)).isNull();
     }
 
     @Test
-    public void shouldGetValueAsBuffer()
+    public void shouldGetValueWithKeyOffset()
     {
         // given
-        map.put(keyBuffer, valueBuffer);
-        final UnsafeBuffer result = new UnsafeBuffer(new byte[64]);
+        final int offset = 2;
+        final UnsafeBuffer offsetKey = new UnsafeBuffer(new byte[key.capacity() + offset]);
+        offsetKey.putBytes(offset, key, 0, key.capacity());
+        map.put(key, value);
 
         // when
-        final boolean found = map.get(keyBuffer, result);
+        final DirectBuffer result = map.get(offsetKey, offset, key.capacity());
 
         // then
-        assertThat(found).isTrue();
-        assertThat(result).isEqualTo(valueBuffer);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(value);
     }
+
+
+
+    @Test
+    public void shouldPutValueWithKeyOffset()
+    {
+        // given
+        final int offset = 2;
+        final UnsafeBuffer offsetKey = new UnsafeBuffer(new byte[key.capacity() + offset]);
+        offsetKey.putBytes(offset, key, 0, key.capacity());
+        map.put(offsetKey, offset, key.capacity(), value);
+
+        // when
+        final DirectBuffer result = map.get(key);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(value);
+    }
+
 
 
     @Test
     public void shouldNotGetMissingValueAsBuffer()
     {
         // given
-        final UnsafeBuffer result = new UnsafeBuffer(Arrays.copyOf(value, value.length));
+        final int offset = 2;
+        final UnsafeBuffer offsetKey = new UnsafeBuffer(new byte[key.capacity() + offset]);
 
         // when
-        final boolean found = map.get(keyBuffer, result);
+        final DirectBuffer result = map.get(offsetKey, offset, key.capacity());
 
         // then
-        assertThat(found).isFalse();
-        assertThat(result).isEqualTo(valueBuffer);
+        assertThat(result).isNull();
     }
 
     @Test
-    public void shouldRemoveValueAsBuffer()
+    public void shouldRemoveValueWithKeyOffset()
     {
         // given
-        map.put(keyBuffer, valueBuffer);
+        final int offset = 2;
+        final UnsafeBuffer offsetKey = new UnsafeBuffer(new byte[key.capacity() + offset]);
+        offsetKey.putBytes(offset, key, 0, key.capacity());
+        map.put(key, value);
 
         // when
-        final boolean removed = map.remove(keyBuffer);
+        final boolean removed = map.remove(offsetKey, offset, key.capacity());
 
         // then
         assertThat(removed).isTrue();
-        assertThat(map.get(keyBuffer, valueBuffer)).isFalse();
+        assertThat(map.get(key)).isNull();
     }
-
 
     @Test
     public void shouldFillShorterKeysWithZero()
     {
         // given
-        final byte[] key = new byte[64];
-        final byte[] shortenedKey = new byte[30];
-        System.arraycopy(key, 0, key, 0, 30);
-        System.arraycopy(key, 0, shortenedKey, 0, 30);
+        final UnsafeBuffer shortenedKey = new UnsafeBuffer(new byte[30]);
+        shortenedKey.putBytes(0, key, 0, shortenedKey.capacity());
 
-        map.put(key, value);
-
-        final byte[] result = new byte[64];
+        map.put(shortenedKey, value);
 
         // when
-        map.get(shortenedKey, result);
+        final DirectBuffer result = map.get(shortenedKey);
 
         // then
         assertThat(result).isEqualTo(value);
@@ -178,7 +195,7 @@ public class Bytes2BytesZbMapTest
         expection.expect(IllegalArgumentException.class);
 
         // when
-        map.get(new byte[65], value);
+        map.get(new UnsafeBuffer(new byte[65]));
     }
 
     @Test
@@ -188,7 +205,7 @@ public class Bytes2BytesZbMapTest
         expection.expect(IllegalArgumentException.class);
 
         // when
-        map.put(new byte[65], value);
+        map.put(new UnsafeBuffer(new byte[65]), value);
     }
 
     @Test
@@ -198,7 +215,7 @@ public class Bytes2BytesZbMapTest
         expection.expect(IllegalArgumentException.class);
 
         // when
-        map.put(key, new byte[65]);
+        map.put(key, new UnsafeBuffer(new byte[65]));
     }
 
     @Test
@@ -208,8 +225,41 @@ public class Bytes2BytesZbMapTest
         expection.expect(IllegalArgumentException.class);
 
         // when
-        map.remove(new byte[65]);
+        map.remove(new UnsafeBuffer(new byte[65]));
     }
 
+    @Test
+    public void shouldIterateOverMap()
+    {
+        // given
+        final Map<DirectBuffer, DirectBuffer> entries = new HashMap<>();
+
+        for (int i = 0; i < 16; i++)
+        {
+            final byte[] key = new byte[KEY_LENGTH];
+            final byte[] value = new byte[VALUE_LENGTH];
+
+            key[0] = (byte) i;
+            value[VALUE_LENGTH - 1] = (byte) i;
+
+            entries.put(new UnsafeBuffer(key), new UnsafeBuffer(value));
+            map.put(key, value);
+        }
+
+        // when then
+        final Iterator<Bytes2BytesZbMapEntry> iterator = map.iterator();
+        while (iterator.hasNext())
+        {
+            final Bytes2BytesZbMapEntry entry = iterator.next();
+
+            final DirectBuffer key = entry.getKey();
+            assertThat(entries).containsKey(key);
+
+            final DirectBuffer expectedValue = entries.remove(key);
+            assertThat(entry.getValue()).isEqualTo(expectedValue);
+        }
+
+        assertThat(entries).isEmpty();
+    }
 
 }

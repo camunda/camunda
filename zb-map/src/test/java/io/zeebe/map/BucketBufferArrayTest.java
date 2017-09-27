@@ -17,6 +17,7 @@ package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.*;
 import static io.zeebe.map.BucketBufferArrayDescriptor.*;
+import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +28,8 @@ import java.util.List;
 import io.zeebe.map.types.ByteArrayValueHandler;
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
+import io.zeebe.util.buffer.BufferUtil;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -330,6 +333,7 @@ public class BucketBufferArrayTest
         // given bucket array with 2 blocks
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+        valueHandler.setValueLength(MAX_VALUE_LEN);
 
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
 
@@ -387,6 +391,7 @@ public class BucketBufferArrayTest
         bucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+        valueHandler.setValueLength(MAX_VALUE_LEN);
 
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
 
@@ -425,10 +430,8 @@ public class BucketBufferArrayTest
         bucketBufferArray.readKey(keyHandler, newBucketAddress, oldBlockOffset);
         assertThat(keyHandler.theKey).isEqualTo(11);
 
-        final byte[] resultValue = new byte[5];
-        valueHandler.setValue(resultValue);
         bucketBufferArray.readValue(valueHandler, newBucketAddress, oldBlockOffset);
-        assertThat(resultValue).isEqualTo("hallo".getBytes());
+        assertThatBuffer(valueHandler.getValue()).hasBytes(BufferUtil.wrapString("hallo"));
     }
 
     @Test
@@ -438,6 +441,7 @@ public class BucketBufferArrayTest
         bucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
         final LongKeyHandler keyHandler = new LongKeyHandler();
         final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+        valueHandler.setValueLength(MAX_VALUE_LEN);
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
 
         keyHandler.theKey = 10;
@@ -475,10 +479,8 @@ public class BucketBufferArrayTest
         bucketBufferArray.readKey(keyHandler, newBucketAddress, oldBlockOffset);
         assertThat(keyHandler.theKey).isEqualTo(11);
 
-        final byte[] resultValue = new byte[3];
-        valueHandler.setValue(resultValue);
         bucketBufferArray.readValue(valueHandler, newBucketAddress, oldBlockOffset);
-        assertThat(resultValue).isEqualTo("old".getBytes());
+        assertThatBuffer(valueHandler.getValue()).hasBytes(BufferUtil.wrapString("old"));
     }
 
     @Test
@@ -487,27 +489,23 @@ public class BucketBufferArrayTest
         // given bucket array with 1 bucket and two blocks
         bucketBufferArray = new BucketBufferArray(MIN_BLOCK_COUNT, MAX_KEY_LEN, MAX_VALUE_LEN);
 
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-        final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
-
         final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
 
+        final LongKeyHandler keyHandler = new LongKeyHandler();
         keyHandler.theKey = 10;
-        byte[] value = "old".getBytes();
+
+        final ByteArrayValueHandler valueHandler = new ByteArrayValueHandler();
+        valueHandler.setValueLength(MAX_VALUE_LEN + 1);
+
+        final byte[] value = "old".getBytes();
         valueHandler.setValue(value);
-        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
 
-        keyHandler.theKey = 11;
-        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
-
+        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
         // expect
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("Value can't exceed the max value length of 8");
 
         // when
-        final int newBlockOffset = bucketBufferArray.getFirstBlockOffset();
-        value = "toLargeValue1234".getBytes();
-        valueHandler.setValue(value);
         bucketBufferArray.updateValue(valueHandler, newBucketAddress, newBlockOffset);
     }
 

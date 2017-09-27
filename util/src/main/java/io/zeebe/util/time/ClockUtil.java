@@ -32,6 +32,11 @@ public class ClockUtil
         ClockUtil.currentTime = currentTime.toEpochMilli();
     }
 
+    public static void pinCurrentTime()
+    {
+        setCurrentTime(getCurrentTime());
+    }
+
     public static void addTime(Duration durationToAdd)
     {
         if (!usesManipulatedTime())

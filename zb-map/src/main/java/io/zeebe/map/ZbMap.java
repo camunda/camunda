@@ -146,7 +146,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     {
         this.keyHandler = createKeyHandlerInstance(maxKeyLength);
         this.splitKeyHandler = createKeyHandlerInstance(maxKeyLength);
-        this.valueHandler = createInstance(VALUE_HANDLER_IDX);
+        this.valueHandler = createValueHandlerInstance(maxValueLength);
 
         this.maxTableSize = MAX_TABLE_SIZE;
         this.initialTableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
@@ -232,6 +232,13 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         final K keyHandler = createInstance(KEY_HANDLER_IDX);
         keyHandler.setKeyLength(maxKeyLength);
         return keyHandler;
+    }
+
+    private V createValueHandlerInstance(int maxValueHandlerLength)
+    {
+        final V valueHandler = createInstance(VALUE_HANDLER_IDX);
+        valueHandler.setValueLength(maxValueHandlerLength);
+        return valueHandler;
     }
 
     @SuppressWarnings("unchecked")

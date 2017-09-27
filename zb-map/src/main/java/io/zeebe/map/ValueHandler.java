@@ -17,6 +17,8 @@ package io.zeebe.map;
 
 public interface ValueHandler
 {
+    void setValueLength(int length);
+
     int getValueLength();
 
     void writeValue(long writeValueAddr);

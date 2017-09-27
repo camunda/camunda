@@ -28,6 +28,12 @@ public class LongValueHandler implements ValueHandler
     public long theValue;
 
     @Override
+    public void setValueLength(int length)
+    {
+        // ignore; length is static
+    }
+
+    @Override
     public int getValueLength()
     {
         return BitUtil.SIZE_OF_LONG;

@@ -15,26 +15,33 @@
  */
 package io.zeebe.map;
 
+import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import io.zeebe.map.iterator.Long2BytesZbMapEntry;
-import io.zeebe.util.buffer.BufferUtil;
-
-import org.junit.*;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 
 public class Long2BytesZbMapTest
 {
     protected static final int TABLE_SIZE = 16;
     protected static final int VALUE_LENGTH = 3 * SIZE_OF_BYTE;
 
-    private static final byte[] VALUE = "bar".getBytes();
-    private static final byte[] ANOTHER_VALUE = "plo".getBytes();
+    private static final DirectBuffer VALUE = new UnsafeBuffer("bar".getBytes());
+    private static final DirectBuffer ANOTHER_VALUE = new UnsafeBuffer("plo".getBytes());
 
     private Long2BytesZbMap map;
 
@@ -58,7 +65,7 @@ public class Long2BytesZbMapTest
     public void shouldReturnFalseForEmptyMap()
     {
         // given that the map is empty
-        assertThat(map.get(0, new byte[VALUE_LENGTH])).isFalse();
+        assertThat(map.get(0)).isNull();
     }
 
     @Test
@@ -68,7 +75,7 @@ public class Long2BytesZbMapTest
         map.put(1, VALUE);
 
         // then
-        assertThat(map.get(0, new byte[VALUE_LENGTH])).isFalse();
+        assertThat(map.get(0)).isNull();
     }
 
     @Test
@@ -78,8 +85,8 @@ public class Long2BytesZbMapTest
         map.put(1, VALUE);
 
         // if then
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.get(1, value)).isTrue();
+        final DirectBuffer value = map.get(1);
+        assertThat(value).isNotNull();
         assertThat(value).isEqualTo(VALUE);
     }
 
@@ -90,11 +97,11 @@ public class Long2BytesZbMapTest
         map.put(1, VALUE);
 
         // if then
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.remove(1, value)).isTrue();
+        final DirectBuffer value = map.remove(1);
+        assertThat(value).isNotNull();
         assertThat(value).isEqualTo(VALUE);
 
-        assertThat(map.get(1, value)).isFalse();
+        assertThat(map.get(1)).isNull();
     }
 
     @Test
@@ -105,15 +112,16 @@ public class Long2BytesZbMapTest
         map.put(2, ANOTHER_VALUE);
 
         // if
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.remove(1, value)).isTrue();
+        final DirectBuffer value = map.remove(1);
+        assertThat(value).isNotNull();
         assertThat(value).isEqualTo(VALUE);
 
         //then
-        assertThat(map.get(1, value)).isFalse();
+        assertThat(map.get(1)).isNull();
 
-        assertThat(map.get(2, value)).isTrue();
-        assertThat(value).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.remove(2);
+        assertThat(value2).isNotNull();
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -123,12 +131,13 @@ public class Long2BytesZbMapTest
         map.put(1, VALUE);
 
         // if
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.remove(0, value)).isFalse();
+        final DirectBuffer value = map.remove(0);
+        assertThat(value).isNull();
 
         //then
-        assertThat(map.get(1, value)).isTrue();
-        assertThat(value).isEqualTo(VALUE);
+        final DirectBuffer value2 = map.get(1);
+        assertThat(value2).isNotNull();
+        assertThat(value2).isEqualTo(VALUE);
     }
 
     @Test
@@ -143,12 +152,13 @@ public class Long2BytesZbMapTest
         // then
         assertThat(map.bucketCount()).isEqualTo(2);
 
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.get(0, value)).isTrue();
+        final DirectBuffer value = map.get(0);
+        assertThat(value).isNotNull();
         assertThat(value).isEqualTo(VALUE);
 
-        assertThat(map.get(1, value)).isTrue();
-        assertThat(value).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.get(1);
+        assertThat(value2).isNotNull();
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -164,12 +174,13 @@ public class Long2BytesZbMapTest
         // then
         assertThat(map.bucketCount()).isEqualTo(3);
 
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.get(1, value)).isTrue();
+        final DirectBuffer value = map.get(1);
+        assertThat(value).isNotNull();
         assertThat(value).isEqualTo(VALUE);
 
-        assertThat(map.get(3, value)).isTrue();
-        assertThat(value).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.get(3);
+        assertThat(value2).isNotNull();
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -185,10 +196,10 @@ public class Long2BytesZbMapTest
             map.put(i, ANOTHER_VALUE);
         }
 
-        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < 16; i++)
         {
-            assertThat(map.get(i, value)).isTrue();
+            final DirectBuffer value = map.get(i);
+            assertThat(value).isNotNull();
             assertThat(value).isEqualTo(i % 2 == 0 ? VALUE : ANOTHER_VALUE);
         }
 
@@ -203,10 +214,10 @@ public class Long2BytesZbMapTest
             map.put(i, i < 8 ? VALUE : ANOTHER_VALUE);
         }
 
-        final byte[] value = new byte[VALUE_LENGTH];
         for (int i = 0; i < 16; i++)
         {
-            assertThat(map.get(i, value)).isTrue();
+            final DirectBuffer value = map.get(i);
+            assertThat(value).isNotNull();
             assertThat(value).isEqualTo(i < 8 ? VALUE : ANOTHER_VALUE);
         }
 
@@ -246,12 +257,11 @@ public class Long2BytesZbMapTest
         assertThat(map.getBucketBufferArray().getBucketOverflowPointer(firstBucketAddress)).isGreaterThan(0);
 
         // get is possible
-        final byte[] bytes = new byte[VALUE_LENGTH];
-        map.get(0, bytes);
-        assertThat(bytes).isEqualTo(VALUE);
+        final DirectBuffer value = map.get(0);
+        assertThat(value).isEqualTo(VALUE);
 
-        map.get(16, bytes);
-        assertThat(bytes).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.get(16);
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
 
     }
 
@@ -267,11 +277,10 @@ public class Long2BytesZbMapTest
         // then resize
         assertThat(map.hashTable.getCapacity()).isEqualTo(16);
 
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.get(0L, value)).isTrue();
+        final DirectBuffer value = map.get(0L);
         assertThat(value).isEqualTo(VALUE);
-        assertThat(map.get(16L, value)).isTrue();
-        assertThat(value).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.get(16L);
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -289,11 +298,10 @@ public class Long2BytesZbMapTest
         // then resize
         assertThat(map.hashTable.getCapacity()).isEqualTo(32);
 
-        final byte[] value = new byte[VALUE_LENGTH];
-        assertThat(map.get(0L, value)).isTrue();
+        final DirectBuffer value = map.get(0);
         assertThat(value).isEqualTo(VALUE);
-        assertThat(map.get(16L, value)).isTrue();
-        assertThat(value).isEqualTo(ANOTHER_VALUE);
+        final DirectBuffer value2 = map.get(16);
+        assertThat(value2).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -303,7 +311,7 @@ public class Long2BytesZbMapTest
         thrown.expect(IllegalArgumentException.class);
 
         // when
-        map.put(0, new byte[65]);
+        map.put(0, new UnsafeBuffer(new byte[65]));
     }
 
     @Test
@@ -316,20 +324,20 @@ public class Long2BytesZbMapTest
         map.clear();
 
         // then
-        assertThat(map.get(0, new byte[VALUE_LENGTH])).isFalse();
+        assertThat(map.get(0)).isNull();
     }
 
     @Test
     public void shouldNotOverwriteValue()
     {
         // given
-        final byte[] originalAnotherValue = ANOTHER_VALUE.clone();
+        final UnsafeBuffer originalAnotherValue = new UnsafeBuffer(new byte[ANOTHER_VALUE.capacity()]);
+        originalAnotherValue.putBytes(0, ANOTHER_VALUE, 0, ANOTHER_VALUE.capacity());
         map.put(0, VALUE);
         map.put(1, ANOTHER_VALUE);
 
         // when
-        final byte[] value = new byte[VALUE_LENGTH];
-        map.get(0, value);
+        map.get(0);
 
         // then
         assertThat(ANOTHER_VALUE).isEqualTo(originalAnotherValue);
@@ -351,7 +359,7 @@ public class Long2BytesZbMapTest
         {
             final Long2BytesZbMapEntry entry = iterator.next();
 
-            assertThat(entry.getValue()).isEqualTo(BufferUtil.wrapArray(VALUE));
+            assertThat(entry.getValue()).isEqualTo(VALUE);
 
             foundKeys.add(entry.getKey());
         }
@@ -359,6 +367,26 @@ public class Long2BytesZbMapTest
         assertThat(foundKeys)
             .hasSameSizeAs(keys)
             .hasSameElementsAs(keys);
+    }
+
+    @Test
+    public void shouldReturnShorterValue()
+    {
+        // given
+        map.put(0, VALUE);
+
+        final UnsafeBuffer value = new UnsafeBuffer(new byte[VALUE_LENGTH - 1]);
+        value.setMemory(0, value.capacity(), (byte) 1);
+
+        map.put(0, value);
+
+        // when
+        final DirectBuffer result = map.get(0);
+
+        // then
+        assertThat(result.capacity()).isEqualTo(VALUE_LENGTH); // the map does not store the actual value length
+        assertThatBuffer(result).hasBytes(value, 0, value.capacity());
+        assertThat(result.getByte(VALUE_LENGTH - 1)).isEqualTo((byte) 0);
     }
 
 }
