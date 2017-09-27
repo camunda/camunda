@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -156,12 +157,12 @@
         <artifactId>hamcrest-library</artifactId>
         <version>${version.hamcrest}</version>
       </dependency>
-      
+
       <dependency>
-		<groupId>org.scala-lang.modules</groupId>
-		<artifactId>scala-parser-combinators_2.12</artifactId>
-		<version>${version.scala-parser}</version>
-	  </dependency>
+        <groupId>org.scala-lang.modules</groupId>
+        <artifactId>scala-parser-combinators_2.12</artifactId>
+        <version>${version.scala-parser}</version>
+      </dependency>
 
     </dependencies>
   </dependencyManagement>
@@ -203,9 +204,9 @@
             <execution>
               <id>add-license</id>
               <phase>compile</phase>
-                <goals>
-                    <goal>format</goal>
-                </goals>
+              <goals>
+                <goal>format</goal>
+              </goals>
             </execution>
           </executions>
         </plugin>
@@ -289,35 +290,36 @@
           <artifactId>maven-resources-plugin</artifactId>
           <version>${plugin.version.resources}</version>
         </plugin>
-        
+
         <!-- Scala Plugin -->
         <plugin>
-		  <groupId>net.alchim31.maven</groupId>
-		  <artifactId>scala-maven-plugin</artifactId>
-		  <version>${plugin.version.scala}</version>
-		  <executions>
-		    <execution>
-			<id>scala-compile-first</id>
-			<phase>process-resources</phase>
-			<goals>
-			  <goal>add-source</goal>
-			  <goal>compile</goal>
-		    </goals>
-			</execution>
-			<execution>
-			  <id>scala-test-compile</id>
-			  <phase>process-test-resources</phase>
-			  <goals>
-				<goal>testCompile</goal>
-			  </goals>
-			</execution>
-		  </executions>
-		  <configuration>
+          <groupId>net.alchim31.maven</groupId>
+          <artifactId>scala-maven-plugin</artifactId>
+          <version>${plugin.version.scala}</version>
+          <executions>
+            <execution>
+              <id>scala-compile-first</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>add-source</goal>
+                <goal>compile</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>scala-test-compile</id>
+              <phase>process-test-resources</phase>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
             <scalaVersion>${version.scala}</scalaVersion>
           </configuration>
-		</plugin>
+        </plugin>
 
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
+        <!--This plugin's configuration is used to store Eclipse m2e settings 
+          only. It has no influence on the Maven build itself. -->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
