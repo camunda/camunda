@@ -17,21 +17,18 @@ package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
 import static io.zeebe.map.BucketBufferArray.getBucketAddress;
-import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
-import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
-import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
+import static io.zeebe.map.BucketBufferArrayDescriptor.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.agrona.BitUtil;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import java.util.*;
 
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
+import org.agrona.BitUtil;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 public class ZbMapTest
 {
@@ -295,7 +292,8 @@ public class ZbMapTest
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         zbMap.setMaxTableSize(8);
         for (int i = 0; i < 4; i++)
         {
@@ -318,8 +316,8 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBuckets()
     {
         // given
-        zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         putValue(zbMap, 0, 0);
         // split, split, split -> overflow
         putValue(zbMap, 8, 8);
@@ -385,8 +383,8 @@ public class ZbMapTest
         // the last buckets get no values - so they will be always free
         // after adding 3 entries we have buckets = entries + 2 (the plus are the free one)
         // this means the load factor of 0.6 will be reached 4/6 = 0.666...
-        zbMap =
-            new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG) { };
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
         zbMap.setMaxTableSize(4);
         for (int i = 0; i < 3; i++)
         {
@@ -1102,6 +1100,43 @@ public class ZbMapTest
     }
 
     @Test
+    public void shouldMergeBucketsWhenEmpty()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 1, 1);
+        putValue(zbMap, 2, 2);
+        putValue(zbMap, 3, 3);
+
+        // split
+        putValue(zbMap, 5, 5);
+        putValue(zbMap, 7, 7);
+
+        // Bucket 0 [0, 2, _, _]
+        // Bucket 1 [1, 3, 5, 7]
+
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(2);
+
+        // when
+        removeValue(zbMap, 2);
+        removeValue(zbMap, 0);
+        // then bucket 0 is empty but merge should not happen since then bucket is again full
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(2);
+
+        // when remove one more entry
+        removeValue(zbMap, 7);
+        // then merge buckets together
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+
+        assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
+        assertThat(getValue(zbMap, 3, -1)).isEqualTo(3);
+        assertThat(getValue(zbMap, 5, -1)).isEqualTo(5);
+    }
+
+    @Test
     public void shouldMergeParentWithChildBucket()
     {
         // given
@@ -1435,6 +1470,44 @@ public class ZbMapTest
 
         // then Bucket 5 is empty - not merging 5 since bucket 1 is not half full
         assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(5);
+    }
+
+    @Ignore("more issues related to zeebe-io/zeebe#448")
+    @Test
+    public void shouldPutAndRemoveRandomValues()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        final Set<Long> values = new HashSet<>();
+
+        final Random random = new Random();
+
+        // 100_000 => JVM crash
+        while (values.size() < 10_000)
+        {
+            final long i = Math.abs(random.nextLong());
+
+            putValue(zbMap, i, i);
+
+            values.add(i);
+        }
+
+        int removedValues = 0;
+
+        for (Long value : values)
+        {
+            final boolean removed = removeValue(zbMap, value);
+
+            if (removed)
+            {
+                removedValues += 1;
+            }
+        }
+
+        // block count is equal to the missing values
+        assertThat(removedValues).isEqualTo(values.size());
     }
 
     private int maxRecordPerBlockForLong2Longmap()

@@ -377,6 +377,7 @@ final class ZbMapBucketMergeHelper
             bucketId = id;
             bucketAddress = hashTableRef.getBucketAddress(id);
             depth = bucketBufferArrayRef.getBucketDepth(bucketAddress);
+            newBucketFillCount = bucketBufferArrayRef.getBucketFillCount(bucketAddress);
         }
 
         return tryToMergeSplitBucketWithParent(parentBucketAddress, parentBucketDepth,
@@ -417,7 +418,7 @@ final class ZbMapBucketMergeHelper
             // 3. update hash table like on split
             hashTableRef.updateTable(depth, bucketId, parentBucketAddress);
             // 4. decrease parent bucket depth
-            bucketBufferArrayRef.setBucketDepth(parentBucketAddress, parentBucketDepth - 1);
+            bucketBufferArrayRef.setBucketDepth(parentBucketAddress, depth - 1);
         }
         return newLastBucketAddress;
     }
