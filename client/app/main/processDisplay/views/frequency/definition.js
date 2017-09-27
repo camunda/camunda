@@ -1,8 +1,8 @@
-import {jsx, Children} from 'view-utils';
+import {jsx, Children, Scope} from 'view-utils';
 import {createDiagram} from 'widgets';
 import {createHeatmapRendererFunction} from './Heatmap';
 import {ProcessInstanceCount} from '../ProcessInstanceCount';
-import {hasNoHeatmapData} from '../service';
+import {hasNoHeatmapData, getProcessInstanceCount} from '../service';
 
 const Diagram = createDiagram();
 
@@ -11,7 +11,9 @@ export const definition = {
   name: 'Frequency',
   Diagram: () => <Children>
     <Diagram createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
-    <ProcessInstanceCount />
+    <Scope selector={getProcessInstanceCount}>
+      <ProcessInstanceCount />
+    </Scope>
   </Children>,
   hasNoData: hasNoHeatmapData
 };

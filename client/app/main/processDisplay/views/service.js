@@ -1,5 +1,6 @@
 import {$document} from 'view-utils';
 import {isLoaded} from 'utils';
+import {getInstanceCount} from './selectors';
 
 export function hasNoHeatmapData({heatmap}) {
   const {data} = heatmap;
@@ -68,4 +69,8 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
     },
     html: overlayHtml
   });
+}
+
+export function getProcessInstanceCount(state) {
+  return {data: getInstanceCount(state)};
 }

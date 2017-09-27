@@ -1,9 +1,9 @@
-import {jsx, Children} from 'view-utils';
+import {jsx, Children, Scope} from 'view-utils';
 import {createDiagram} from 'widgets';
 import {createDelayedTimePrecisionElement} from 'utils';
 import {createHeatmapRendererFunction} from '../frequency';
 import {ProcessInstanceCount} from '../ProcessInstanceCount';
-import {hasNoHeatmapData} from '../service';
+import {hasNoHeatmapData, getProcessInstanceCount} from '../service';
 
 const Diagram = createDiagram();
 
@@ -12,7 +12,9 @@ export const definition = {
   name: 'Duration',
   Diagram: () => <Children>
     <Diagram createOverlaysRenderer={createHeatmapRendererFunction(formatDuration)} />
-    <ProcessInstanceCount />
+    <Scope selector={getProcessInstanceCount}>
+      <ProcessInstanceCount />
+    </Scope>
   </Children>,
   hasNoData: hasNoHeatmapData
 };

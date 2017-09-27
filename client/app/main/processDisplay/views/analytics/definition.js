@@ -1,8 +1,8 @@
-import {jsx, decorateWithSelector, Children} from 'view-utils';
+import {jsx, decorateWithSelector, Children, Scope} from 'view-utils';
 import {createAnalyticsComponents} from './createAnalyticsComponents';
 import {Statistics as InnerStatistics} from './statistics';
 import {ProcessInstanceCount} from '../ProcessInstanceCount';
-import {hasNoHeatmapData} from '../service';
+import {hasNoHeatmapData, getProcessInstanceCount} from '../service';
 
 const Statistics = decorateWithSelector(InnerStatistics, getStatisticsState);
 
@@ -13,7 +13,9 @@ export const definition = {
   name: 'Branch Analysis',
   Diagram: () => <Children>
     <AnalyticsDiagram />
-    <ProcessInstanceCount />
+    <Scope selector={getProcessInstanceCount}>
+      <ProcessInstanceCount />
+    </Scope>
   </Children>,
   Controls: decorateWithSelector(AnalysisSelection, 'analytics'),
   Additional: () => <Statistics getBpmnViewer={AnalyticsDiagram.getViewer} />,

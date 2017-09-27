@@ -1,18 +1,16 @@
-import {jsx, Scope, Text} from 'view-utils';
+import React from 'react';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 import {formatNumber} from 'utils';
-import {getInstanceCount} from './selectors';
 
-export const ProcessInstanceCount = () => {
-  return <div className="statistics">
-    <Scope selector={formatData}>
-      <div className="count"><Text property="data" /></div>
+const jsx = React.createElement;
+
+export function ProcessInstanceCountReact(props) {
+  return (
+    <div className="statistics">
+      <div className="count">{formatNumber(props.data)}</div>
       <div className="label">Instances</div>
-    </Scope>
-  </div>;
+    </div>
+  );
+}
 
-  function formatData(state) {
-    const instanceCount = getInstanceCount(state);
-
-    return {data: formatNumber(instanceCount)};
-  }
-};
+export const ProcessInstanceCount = createViewUtilsComponentFromReact('div', ProcessInstanceCountReact);
