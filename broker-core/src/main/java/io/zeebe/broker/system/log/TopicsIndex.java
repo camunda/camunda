@@ -55,11 +55,6 @@ public class TopicsIndex
         this.topics = new Bytes2BytesZbMap(MAX_TOPIC_NAME_LENGTH, VALUE_LENGTH);
     }
 
-    public void close()
-    {
-        topics.close();
-    }
-
     public Bytes2BytesZbMap getRawMap()
     {
         return topics;

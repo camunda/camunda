@@ -68,11 +68,6 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
         return pendingPartitions;
     }
 
-    public void close()
-    {
-        pendingPartitions.close();
-    }
-
     public PendingPartition get(DirectBuffer topicName, int partitionId)
     {
         final int nameLength = topicName.capacity();

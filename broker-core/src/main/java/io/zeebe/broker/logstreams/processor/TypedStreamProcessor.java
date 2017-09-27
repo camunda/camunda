@@ -130,6 +130,11 @@ public class TypedStreamProcessor implements StreamProcessor
         }
     }
 
+    public MetadataFilter buildTypeFilter()
+    {
+        return m -> eventProcessors.containsKey(m.getEventType());
+    }
+
     public void runAsync(Runnable runnable)
     {
         if (cmdQueue != null)

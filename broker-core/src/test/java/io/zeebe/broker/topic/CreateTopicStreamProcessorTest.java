@@ -62,7 +62,6 @@ import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.broker.system.log.TopicsIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.SocketAddress;
@@ -112,9 +111,7 @@ public class CreateTopicStreamProcessorTest
         final TopicsIndex topicsIndex = new TopicsIndex();
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
 
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(stream, output)
-            .withEventType(EventType.TOPIC_EVENT, TopicEvent.class)
-            .withEventType(EventType.PARTITION_EVENT, PartitionEvent.class);
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(stream, output);
 
         streamEnvironment.buildStreamWriter();
 

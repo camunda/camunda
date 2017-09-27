@@ -75,10 +75,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
 
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput())
-            .withEventType(EventType.TOPIC_EVENT, TopicEvent.class)
-            .withEventType(EventType.PARTITION_EVENT, PartitionEvent.class);
-
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
         final PartitionManager partitionManager = new PartitionManagerImpl(peerList, managementClient);
 
         final ResolvePendingPartitionsCommand cmd =
@@ -97,7 +94,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             "system",
             StreamProcessorIds.SYSTEM_PROCESSOR_ID,
             streamProcessor)
-            .eventFilter(streamEnvironment.buildFilterForRegisteredTypes());
+            .eventFilter(streamProcessor.buildTypeFilter());
 
         serviceContext.createService(SystemServiceNames.SYSTEM_PROCESSOR, streamProcessorService)
             .dependency(serviceName, streamProcessorService.getSourceStreamInjector())
@@ -122,8 +119,6 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex))
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
-            .onClose(() -> topicsIndex.close())
-            .onClose(() -> partitionsIndex.close())
             .build();
     }
 

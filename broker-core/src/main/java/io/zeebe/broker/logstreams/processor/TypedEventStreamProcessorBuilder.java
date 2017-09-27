@@ -67,6 +67,7 @@ public class TypedEventStreamProcessorBuilder
     public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map)
     {
         this.zbMaps.add(map);
+        onClose(() -> map.close());
         return this;
     }
 

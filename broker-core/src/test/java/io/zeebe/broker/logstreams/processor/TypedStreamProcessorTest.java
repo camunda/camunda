@@ -79,8 +79,7 @@ public class TypedStreamProcessorTest
     public void shouldWriteSourceEventAndProducerOnBatch()
     {
         // given
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output)
-            .withEventType(EventType.TOPIC_EVENT, TopicEvent.class);
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
 
         final TypedStreamProcessor streamProcessor = env.newStreamProcessor()
             .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new BatchProcessor())

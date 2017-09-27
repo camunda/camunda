@@ -19,6 +19,8 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.EnumMap;
 
+import io.zeebe.broker.system.log.PartitionEvent;
+import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
@@ -29,7 +31,12 @@ public class TypedStreamEnvironment
 
     protected final ServerOutput output;
     protected final LogStream stream;
-    protected final EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry = new EnumMap<>(EventType.class);
+    protected static final EnumMap<EventType, Class<? extends UnpackedObject>> EVENT_REGISTRY = new EnumMap<>(EventType.class);
+    static
+    {
+        EVENT_REGISTRY.put(EventType.TOPIC_EVENT, TopicEvent.class);
+        EVENT_REGISTRY.put(EventType.PARTITION_EVENT, PartitionEvent.class);
+    }
 
     public TypedStreamEnvironment(LogStream stream, ServerOutput output)
     {
@@ -37,15 +44,9 @@ public class TypedStreamEnvironment
         this.stream = stream;
     }
 
-    public TypedStreamEnvironment withEventType(EventType type, Class<? extends UnpackedObject> pojoClass)
-    {
-        eventRegistry.put(type, pojoClass);
-        return this;
-    }
-
     public EnumMap<EventType, Class<? extends UnpackedObject>> getEventRegistry()
     {
-        return eventRegistry;
+        return EVENT_REGISTRY;
     }
 
     public ServerOutput getOutput()
@@ -60,16 +61,11 @@ public class TypedStreamEnvironment
 
     public TypedStreamWriter buildStreamWriter()
     {
-        return new TypedStreamWriterImpl(stream, eventRegistry);
-    }
-
-    public MetadataFilter buildFilterForRegisteredTypes()
-    {
-        return m -> eventRegistry.containsKey(m.getEventType());
+        return new TypedStreamWriterImpl(stream, EVENT_REGISTRY);
     }
 
     public TypedStreamReader buildStreamReader()
     {
-        return new TypedStreamReaderImpl(stream, eventRegistry);
+        return new TypedStreamReaderImpl(stream, EVENT_REGISTRY);
     }
 }
