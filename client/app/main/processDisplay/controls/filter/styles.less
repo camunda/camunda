@@ -23,7 +23,17 @@
   }
 }
 
+.modal-backdrop {
+  /**
+  WARNING - BLACK MAGIC AHEAD:
 
+  Chrome has a weird bug with its repainting algorithms that causes the heatmap to be rendered on top of the modal backdrop overlay.
+  See https://app.camunda.com/jira/browse/OPT-588 for an example screenshot.
+
+  To fix this issue, we apply a 3D transformation, which causes the repaint of this backdrop to be separated from the rest of the page paint.
+  **/
+  transform: translateZ(0);
+}
 
 .filter {
   display: flex;
