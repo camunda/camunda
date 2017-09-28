@@ -15,6 +15,11 @@
  */
 package io.zeebe.msgpack.el;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import scala.util.parsing.combinator.Parsers.ParseResult;
 
 public class JsonConditionFactory
@@ -32,6 +37,9 @@ public class JsonConditionFactory
 
             if (errorMessage == null)
             {
+                // index is used by the interpreter for caching
+                indexJsonPathExpressions(condition);
+
                 return CompiledJsonCondition.success(expression, condition);
             }
             else
@@ -43,6 +51,33 @@ public class JsonConditionFactory
         {
             return CompiledJsonCondition.fail(expression, result.toString());
         }
+    }
+
+    private static void indexJsonPathExpressions(JsonCondition condition)
+    {
+        final List<JsonPath> pathExpressions = new ArrayList<>();
+
+        JsonConditionWalker.walk(condition, object ->
+        {
+            if (object instanceof JsonPath)
+            {
+                pathExpressions.add((JsonPath) object);
+            }
+        });
+
+        final AtomicInteger nextId = new AtomicInteger(1);
+
+        pathExpressions.stream()
+            .collect(Collectors.groupingBy(JsonPath::value))
+            .values()
+            .stream()
+            .filter(l -> l.size() > 1)
+            .forEach(l ->
+            {
+                final int id = nextId.getAndIncrement();
+
+                l.forEach(p -> p.id(id));
+            });
     }
 
 }

@@ -57,6 +57,14 @@ public class JsonConditionParserFailureMessageTest
 
                 { "($.foo < 3", "`)' expected but end of source found" },
 
+                { "$.foo.. < 3", "Unexpected json-path" },
+
+                { "$.foo < " + Double.NaN, "expected number or JSON path" },
+
+                { "$.foo < " + Double.POSITIVE_INFINITY, "expected number or JSON path" },
+
+                { "$.foo < " + Double.NEGATIVE_INFINITY, "expected number or JSON path" },
+
         });
     }
 

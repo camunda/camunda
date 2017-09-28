@@ -48,7 +48,7 @@ public class JsonConditionTest
     @Test
     public void shouldEvaluateConditionWithJsonPath()
     {
-        final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == $.bar");
+        final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == $.bar || $.foo > 2 || $.bar <= 2");
         assertThat(condition.isValid()).isTrue();
 
         boolean result = interpreter.eval(condition.getCondition(), asMsgPack(c -> c.put("foo", 2).put("bar", 2)));

@@ -28,14 +28,21 @@ public class JsonConditionInterpreter
 {
     private final MsgPackQueryExecutor visitor = new MsgPackQueryExecutor();
     private final MsgPackTraverser traverser = new MsgPackTraverser();
-    private MsgPackReader msgPackReader = new MsgPackReader();
+
+    private final MsgPackReader msgPackReader1 = new MsgPackReader();
+    private final MsgPackReader msgPackReader2 = new MsgPackReader();
 
     private final JsonPathCache cache = new JsonPathCache();
 
     public boolean eval(final JsonCondition condition, final DirectBuffer json)
     {
-        cache.reset();
+        cache.wrap(json);
 
+        return evalCondition(condition, json);
+    }
+
+    private boolean evalCondition(final JsonCondition condition, final DirectBuffer json)
+    {
         boolean isFulFilled = false;
 
         if (condition instanceof Comparison)
@@ -46,13 +53,13 @@ public class JsonConditionInterpreter
         {
             final Disjunction disjunction = (Disjunction) condition;
 
-            isFulFilled = eval(disjunction.x(), json) || eval(disjunction.y(), json);
+            isFulFilled = evalCondition(disjunction.x(), json) || evalCondition(disjunction.y(), json);
         }
         else if (condition instanceof Conjunction)
         {
             final Conjunction conjunction = (Conjunction) condition;
 
-            isFulFilled = eval(conjunction.x(), json) && eval(conjunction.y(), json);
+            isFulFilled = evalCondition(conjunction.x(), json) && evalCondition(conjunction.y(), json);
         }
         else
         {
@@ -64,8 +71,8 @@ public class JsonConditionInterpreter
 
     private boolean evalComparison(Comparison comparison, DirectBuffer json)
     {
-        final MsgPackToken x = getToken(comparison.x(), json);
-        final MsgPackToken y = getToken(comparison.y(), json);
+        final MsgPackToken x = getToken(comparison.x(), json, msgPackReader1);
+        final MsgPackToken y = getToken(comparison.y(), json, msgPackReader2);
 
         if (comparison instanceof Equal)
         {
@@ -97,7 +104,7 @@ public class JsonConditionInterpreter
         }
     }
 
-    private MsgPackToken getToken(JsonObject value, DirectBuffer json)
+    private MsgPackToken getToken(JsonObject value, DirectBuffer json, MsgPackReader msgPackReader)
     {
         if (value instanceof JsonConstant)
         {
@@ -107,19 +114,9 @@ public class JsonConditionInterpreter
         }
         else if (value instanceof JsonPath)
         {
-            final JsonPath path = (JsonPath) value;
-            final JsonPathQuery query = path.query();
+            final JsonPath jsonPath = (JsonPath) value;
 
-            MsgPackToken token = cache.get(query.getExpression());
-
-            if (token == null)
-            {
-                token = readToken(query, json);
-
-                cache.put(query.getExpression(), token);
-            }
-
-            return token;
+            return getPathResult(jsonPath, json, msgPackReader);
         }
         else
         {
@@ -127,7 +124,37 @@ public class JsonConditionInterpreter
         }
     }
 
-    private MsgPackToken readToken(JsonPathQuery query, DirectBuffer json)
+    private MsgPackToken getPathResult(final JsonPath path, DirectBuffer json, MsgPackReader msgPackReader)
+    {
+        final int pathId = path.id();
+        // id > 0 if the path is used more than once in the condition
+        final boolean cachable = pathId > 0;
+
+        final DirectBuffer resultBuffer = cachable ? cache.get(pathId) : null;
+
+        if (resultBuffer != null)
+        {
+            msgPackReader.wrap(resultBuffer, 0, resultBuffer.capacity());
+        }
+        else
+        {
+            readQueryResult(path.query(), json);
+
+            final int offset = visitor.currentResultPosition();
+            final int length = visitor.currentResultLength();
+
+            msgPackReader.wrap(json, offset, length);
+
+            if (cachable)
+            {
+                cache.put(pathId, offset, length);
+            }
+        }
+
+        return msgPackReader.readToken();
+    }
+
+    private void readQueryResult(JsonPathQuery query, DirectBuffer json)
     {
         visitor.init(query.getFilters(), query.getFilterInstances());
         traverser.wrap(json, 0, json.capacity());
@@ -145,19 +172,6 @@ public class JsonConditionInterpreter
         }
 
         visitor.moveToResult(0);
-
-        final int start = visitor.currentResultPosition();
-        final int length = visitor.currentResultLength();
-
-        if (cache.size() > 0)
-        {
-            // create a new instance because the token is reused
-            msgPackReader = new MsgPackReader();
-        }
-
-        msgPackReader.wrap(json, start, length);
-
-        return msgPackReader.readToken();
     }
 
     private boolean equals(MsgPackToken x, MsgPackToken y)
@@ -280,7 +294,7 @@ public class JsonConditionInterpreter
 
     private void ensureNumber(MsgPackToken x)
     {
-        if (x.getType() != MsgPackType.INTEGER || x.getType() == MsgPackType.FLOAT)
+        if (x.getType() != MsgPackType.INTEGER && x.getType() != MsgPackType.FLOAT)
         {
             throw new JsonConditionException(String.format("Cannot compare values. Expected number but found: %s", x.getType()));
         }

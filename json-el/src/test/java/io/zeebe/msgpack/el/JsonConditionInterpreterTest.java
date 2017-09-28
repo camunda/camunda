@@ -71,6 +71,10 @@ public class JsonConditionInterpreterTest
                 { "$.foo <= 5", asMsgPack("foo", 5), true },
                 { "$.foo <= 5", asMsgPack("foo", 6), false },
 
+                { "$.foo <= 5.0", asMsgPack("foo", 4.8), true },
+                { "$.foo <= 5.0", asMsgPack("foo", 5), true },
+                { "$.foo <= 5.0", asMsgPack("foo", 5.1), false },
+
                 { "$.foo > 5", asMsgPack("foo", 6), true },
                 { "$.foo > 5", asMsgPack("foo", 5), false },
 
@@ -103,6 +107,15 @@ public class JsonConditionInterpreterTest
                 { "($.foo == 1 || $.foo > 2) && $.foo > 3", asMsgPack("foo", 1), false },
                 { "($.foo == 1 || $.foo > 2) && $.foo > 3", asMsgPack("foo", 2), false },
                 { "($.foo == 1 || $.foo > 2) && $.foo > 3", asMsgPack("foo", 3), false },
+
+                { "$.foo < 5", asMsgPack("foo", Double.NaN), false },
+                { "$.foo > 5", asMsgPack("foo", Double.NaN), false },
+
+                { "$.foo < 5", asMsgPack("foo", Double.POSITIVE_INFINITY), false },
+                { "$.foo > 5", asMsgPack("foo", Double.POSITIVE_INFINITY), true },
+
+                { "$.foo < 5", asMsgPack("foo", Double.NEGATIVE_INFINITY), true },
+                { "$.foo > 5", asMsgPack("foo", Double.NEGATIVE_INFINITY), false },
         });
     }
 

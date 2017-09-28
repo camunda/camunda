@@ -69,14 +69,28 @@ object JsonConditionParser extends JavaTokenParsers {
 
   private lazy val numberOrJsonPath: Parser[JsonObject] = (number | jsonPath) withFailureMessage ("expected number or JSON path")
 
-  private lazy val jsonPath: Parser[JsonPath] = "\\$([a-zA-Z\\.]|\\[\\d\\])*".r ^^ JsonPath
+  /**
+   * Any JSON path expression which starts with '$' followed by non-space characters.
+   */
+  private lazy val jsonPath: Parser[JsonPath] = """\$([^\s])*""".r ^^ JsonPath
 
+  /**
+   * Double or single quotes enclosing a sequence of chars.
+   * 
+   * @see JavaTokenParser#stringLiteral
+   */
   private lazy val string: Parser[JsonString] = (
       stringLiteral ^^ (s => JsonString(wrapString(s.substring(1, s.length - 1))))
     | "'" ~> """([^'"\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""".r <~ "'" ^^ (s => JsonString(wrapString(s))))
 
-  private lazy val number: Parser[JsonObject] = (
+  /**  
+   * An integer or floating point number.
+   * 
+   * @see JavaTokenParser#floatingPointNumber
+   * @see JavaTokenParser#wholeNumber
+   */
+  private lazy val number: Parser[JsonObject] = (      
       """-?(\d+\.\d*|\d*\.\d+)([eE][+-]?\d+)?[fFdD]?""".r ^^ (n => JsonFloatingPointNumber(n.toDouble))
-    | """-?\d+""".r ^^ (n => JsonWholeNumber(n.toLong)))
+    | """-?\d+""".r ^^ (n => JsonWholeNumber(n.toLong)) )
 
 }

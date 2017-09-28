@@ -27,7 +27,7 @@ public class JsonConditionValidator
     {
         final List<String> errors = new ArrayList<>();
 
-        validateCondition(errors, condition);
+        validateCondition(condition, errors);
 
         if (errors.isEmpty())
         {
@@ -35,55 +35,42 @@ public class JsonConditionValidator
         }
         else
         {
-            final StringBuilder builder = new StringBuilder();
+            return formatErrorMessage(errors);
+        }
+    }
 
-            for (String error : errors)
+    private static void validateCondition(JsonCondition condition, final List<String> errors)
+    {
+        JsonConditionWalker.walk(condition, object ->
+        {
+            if (object instanceof JsonPath)
             {
-                builder.append(error);
-                builder.append("\n");
+                final JsonPath path = (JsonPath) object;
+                final JsonPathQuery query = path.query();
+
+                if (!query.isValid())
+                {
+                    errors.add(query.getErrorReason());
+                }
             }
-
-            return builder.toString();
-        }
+        });
     }
 
-    private static void validateCondition(List<String> errors, JsonCondition condition)
+    private static String formatErrorMessage(final List<String> errors)
     {
-        if (condition instanceof Comparison)
-        {
-            validateComparison(errors, (Comparison) condition);
-        }
-        else if (condition instanceof Operator)
-        {
-            final Operator operator = (Operator) condition;
+        final StringBuilder builder = new StringBuilder();
 
-            validateCondition(errors, operator.x());
-            validateCondition(errors, operator.y());
-        }
-        else
+        builder.append(errors.get(0));
+
+        for (int i = 1; i < errors.size(); i++)
         {
-            errors.add(String.format("Illegal condition: %s", condition));
+            final String error = errors.get(i);
+
+            builder.append("\n");
+            builder.append(error);
         }
-    }
 
-    private static void validateComparison(List<String> errors, Comparison comparison)
-    {
-        validateObject(errors, comparison.x());
-        validateObject(errors, comparison.y());
-    }
-
-    private static void validateObject(List<String> errors, JsonObject object)
-    {
-        if (object instanceof JsonPath)
-        {
-            final JsonPath path = (JsonPath) object;
-            final JsonPathQuery query = path.query();
-
-            if (!query.isValid())
-            {
-                errors.add(query.getErrorReason());
-            }
-        }
+        return builder.toString();
     }
 
 }
