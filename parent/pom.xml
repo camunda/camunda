@@ -45,7 +45,7 @@
     <version.model>7.7.0</version.model>
     <version.hamcrest>1.3</version.hamcrest>
     <version.scala>2.12.2</version.scala>
-    <version.scala-parser>1.0.4</version.scala-parser>
+    <version.scala-parser>1.0.6</version.scala-parser>
 
     <!-- maven plugins -->
     <plugin.version.compiler>3.5.1</plugin.version.compiler>
