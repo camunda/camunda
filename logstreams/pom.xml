@@ -16,8 +16,8 @@
 
 
   <properties>
-    <version.dispatcher>0.2.0</version.dispatcher>
-    <version.util>0.2.0</version.util>
+    <version.dispatcher>0.3.0-SNAPSHOT</version.dispatcher>
+    <version.util>0.3.0-SNAPSHOT</version.util>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
   </properties>
 
