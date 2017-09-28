@@ -232,12 +232,14 @@ final class ZbMapBucketMergeHelper
                 }
             }
 
+            /* disable recursive merging till https://github.com/zeebe-io/zeebe/issues/466 is fixed
             // recursion to try merging more buckets
             if (newLastBucketAddress > 0)
             {
                 final int bucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
                 tryMergingBuckets(newLastBucketAddress, bucketFillCount);
             }
+            */
         }
     }
 
