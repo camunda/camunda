@@ -90,7 +90,8 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     {
         forAllDoConsume(managedSubscriptions, s ->
         {
-            if (s.getEventSource().equals(remoteAddress))
+            // s.getEventSource is null if the subscription is not yet opened
+            if (remoteAddress.equals(s.getEventSource()))
             {
                 s.reopenAsync();
             }
@@ -98,7 +99,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
         forAllDoConsume(pollableSubscriptions, s ->
         {
-            if (s.getEventSource().equals(remoteAddress))
+            if (remoteAddress.equals(s.getEventSource()))
             {
                 s.reopenAsync();
             }

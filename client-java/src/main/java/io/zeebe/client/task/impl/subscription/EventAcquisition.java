@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import io.zeebe.client.event.EventMetadata;
 import io.zeebe.client.event.impl.GeneralEventImpl;
 import io.zeebe.client.impl.Loggers;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 
@@ -86,6 +87,11 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         {
             subscriptions.add(subscription);
         });
+    }
+
+    public void reopenSubscriptionsForRemoteAsync(RemoteAddress remoteAddress)
+    {
+        asyncContext.runAsync(() -> subscriptions.reopenSubscriptionsForRemote(remoteAddress));
     }
 
 }

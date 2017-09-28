@@ -187,8 +187,11 @@ public class SubscriptionManager implements TransportListener, Actor
     @Override
     public void onConnectionClosed(RemoteAddress remoteAddress)
     {
-        taskSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
-        topicSubscriptions.reopenSubscriptionsForRemote(remoteAddress);
+        // doing this async in the context of the acquisition agent. This actor owns
+        // the subscriptions and can reliably determine those that are connected
+        // to the given remote address
+        taskAcquisition.reopenSubscriptionsForRemoteAsync(remoteAddress);
+        topicSubscriptionAcquisition.reopenSubscriptionsForRemoteAsync(remoteAddress);
     }
 
     @Override

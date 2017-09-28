@@ -480,6 +480,25 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    public void shouldCloseSubscriptionOnClientClose()
+    {
+        // given
+        broker.stubTopicSubscriptionApi(123L);
+
+        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
+            .startAtHeadOfTopic()
+            .handler(DO_NOTHING)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        client.close();
+
+        // then
+        assertThat(subscription.isClosed()).isTrue();
+    }
+
+    @Test
     public void shouldAllowReopeningSubscriptionAfterChannelClose() throws InterruptedException
     {
         // given

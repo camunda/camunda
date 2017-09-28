@@ -60,24 +60,22 @@ public class ZeebeClientTest
     {
         // given
         final ClientTransport clientTransport = client.getTransport();
-        final LoggingChannelListener channelListener = new LoggingChannelListener();
-        clientTransport.registerChannelListener(channelListener);
 
         final TopicSubscription subscription = openSubscription();
+        final LoggingChannelListener channelListener = new LoggingChannelListener();
+        clientTransport.registerChannelListener(channelListener);
 
         // when
         client.disconnect();
 
         // then
         assertThat(subscription.isClosed()).isTrue();
-        waitUntil(() -> channelListener.connectionState.size() == 2); // listener invocation on close is asynchronous
-        assertThat(channelListener.connectionState).containsExactly(ConnectionState.CONNECTED, ConnectionState.CLOSED);
+        waitUntil(() -> channelListener.connectionState.size() == 1); // listener invocation on close is asynchronous
+        assertThat(channelListener.connectionState).containsExactly(ConnectionState.CLOSED);
 
-        // and there is no reconnect attempt within the next second
+        // and the subscription is not reopened
         Thread.sleep(1000L);
-
         assertThat(subscription.isClosed()).isTrue();
-        assertThat(channelListener.connectionState).containsExactly(ConnectionState.CONNECTED, ConnectionState.CLOSED);
     }
 
     @Test
@@ -85,10 +83,11 @@ public class ZeebeClientTest
     {
         // given
         final ClientTransport clientTransport = client.getTransport();
-        final LoggingChannelListener channelListener = new LoggingChannelListener();
-        clientTransport.registerChannelListener(channelListener);
 
         openSubscription();
+
+        final LoggingChannelListener channelListener = new LoggingChannelListener();
+        clientTransport.registerChannelListener(channelListener);
 
         // when
         client.disconnect();
@@ -97,9 +96,8 @@ public class ZeebeClientTest
         final TopicSubscription newSubscription = openSubscription();
 
         assertThat(newSubscription.isOpen()).isTrue();
-        waitUntil(() -> channelListener.connectionState.size() == 3); // listener invocation is asynchronous
+        waitUntil(() -> channelListener.connectionState.size() == 2); // listener invocation is asynchronous
         assertThat(channelListener.connectionState).containsExactly(
-                ConnectionState.CONNECTED,
                 ConnectionState.CLOSED,
                 ConnectionState.CONNECTED);
     }

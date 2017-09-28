@@ -153,6 +153,7 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public void close()
     {
+        disconnect();
         subscriptionManager.stop();
 
         topologyManagerActorReference.close();
