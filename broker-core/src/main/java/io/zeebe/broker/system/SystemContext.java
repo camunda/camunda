@@ -46,7 +46,7 @@ public class SystemContext implements AutoCloseable
 
     protected final List<CompletableFuture<?>> requiredStartActions = new ArrayList<>();
 
-    protected SystemContext(ConfigurationManager configurationManager)
+    public SystemContext(ConfigurationManager configurationManager)
     {
         this.serviceContainer = new ServiceContainerImpl();
         this.configurationManager = configurationManager;
