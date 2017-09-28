@@ -70,6 +70,8 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected final MsgPackConverter msgPackConverter;
 
+    protected boolean isClosed;
+
     public ZeebeClientImpl(final Properties properties)
     {
         ClientProperties.setDefaults(properties);
@@ -153,6 +155,13 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public void close()
     {
+        if (isClosed)
+        {
+            return;
+        }
+
+        isClosed = true;
+
         disconnect();
         subscriptionManager.stop();
 

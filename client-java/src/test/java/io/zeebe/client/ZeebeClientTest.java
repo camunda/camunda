@@ -102,6 +102,19 @@ public class ZeebeClientTest
                 ConnectionState.CONNECTED);
     }
 
+    @Test
+    public void shouldCloseIdempotently()
+    {
+        // given
+        client.close();
+
+        // when
+        client.close();
+
+        // then
+        assertThat("this code has been reached, i.e. the second close does not block infinitely").isNotNull();
+    }
+
     protected TopicSubscription openSubscription()
     {
         return client.topics().newSubscription(ClientApiRule.DEFAULT_TOPIC_NAME)
