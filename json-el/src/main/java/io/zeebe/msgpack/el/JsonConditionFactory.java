@@ -27,6 +27,11 @@ public class JsonConditionFactory
 
     public static CompiledJsonCondition createCondition(String expression)
     {
+        if (expression == null || expression.isEmpty())
+        {
+            return CompiledJsonCondition.fail(expression, "expression is empty");
+        }
+
         final ParseResult<JsonCondition> result = JsonConditionParser.parse(expression);
 
         if (result.successful())

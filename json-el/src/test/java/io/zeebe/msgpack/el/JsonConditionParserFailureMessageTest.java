@@ -33,7 +33,9 @@ public class JsonConditionParserFailureMessageTest
     {
         return Arrays.asList(new Object[][]
         {
-                { "", "expected comparison, disjunction or conjunction." },
+                { "", "expression is empty" },
+
+                { "foo", "expected comparison, disjunction or conjunction." },
 
                 { "$.foo", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')" },
 
