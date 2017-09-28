@@ -9,12 +9,28 @@ export const chartWidth = 600;
 export const chartHeaderHeight = 50;
 
 export class StatisticChart extends React.Component {
-  hasNoData() {
-    return this.props.data(this.props).filter(({value}) => value > 0).length === 0;
+  constructor(props) {
+    super(props);
+
+    this.processData(props);
   }
 
+  processData(props) {
+    if (props.correlation) {
+      this.hasData = !props.correlation || props.data(props).filter(({value}) => value > 0).length > 0;
+      this.data = props.data(props);
+      this.loading = !isLoaded(props.correlation);
+    } else {
+      this.hasData = false;
+      this.data = [];
+      this.loading = true;
+    }
+  }
+
+  componentWillReceiveProps = this.processData;
+
   render() {
-    const {correlation, children, data, chartConfig, height} = this.props;
+    const {correlation, children, chartConfig, height} = this.props;
 
     if (!correlation) {
       return null;
@@ -22,7 +38,7 @@ export class StatisticChart extends React.Component {
 
     return (
       <div className="chart-container">
-        <LoadingIndicator loading={!isLoaded(correlation)}>
+        <LoadingIndicator loading={this.loading}>
           <div>
             <div className="chart-header" style={{
               height: chartHeaderHeight + 'px',
@@ -31,17 +47,17 @@ export class StatisticChart extends React.Component {
               {children}
             </div>
             <div className="chart" style={{
-              height: 'calc(100% - ' + chartHeaderHeight + 'px)'
+              height: `calc(100% - ${chartHeaderHeight}px)`
             }}>
               {
-                this.hasNoData() && (
+                !this.hasData && (
                 <div className="no-data-indicator">
                   <div>No Data</div>
                 </div>
                 )
               }
               <Chart
-                data={data(this.props)}
+                data={this.data}
                 absoluteScale={chartConfig.absoluteScale}
                 onHoverChange={chartConfig.onHoverChange}
                 height={height - chartHeaderHeight}
