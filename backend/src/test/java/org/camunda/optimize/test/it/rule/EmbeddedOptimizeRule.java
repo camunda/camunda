@@ -94,7 +94,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getImportServiceProvider();
   }
 
-  private ImportJobExecutor getJobExecutor() {
+  public ImportJobExecutor getJobExecutor() {
     return getOptimize().getImportJobExecutor();
   }
 

@@ -57,7 +57,7 @@ public class ImportPerformanceTest {
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
   }
 
-    @Test
+  @Test
   public void importPerformanceTest() throws Exception {
     //given
     LocalDateTime pointOne = LocalDateTime.now();
@@ -71,12 +71,15 @@ public class ImportPerformanceTest {
     logger.info("Starting import of engine data to Optimize...");
     engineRule.waitForAllProcessesToFinish();
     embeddedOptimizeRule.startImportScheduler();
+    embeddedOptimizeRule.getJobExecutor().startExecutingImportJobs();
     //give importing time to warm up
     Thread.sleep(TEN_SECONDS);
     while (embeddedOptimizeRule.isImporting() || embeddedOptimizeRule.getProgressValue() < 99) {
       Thread.sleep(TEN_SECONDS);
       logger.info("current import progress [" + embeddedOptimizeRule.getProgressValue() + "%]");
     }
+
+    embeddedOptimizeRule.getJobExecutor().stopExecutingImportJobs();
 
     LocalDateTime pointThree = LocalDateTime.now();
 

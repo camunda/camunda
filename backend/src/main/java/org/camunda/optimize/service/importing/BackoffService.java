@@ -84,18 +84,14 @@ public class BackoffService {
     this.generalBackoffCounter = STARTING_BACKOFF;
   }
 
-  public void handleSleep(boolean engineHasStillNewData, ImportScheduleJob toExecute) {
-    long sleepTime = calculateSleepTime(engineHasStillNewData, toExecute);
-    if (sleepTime > 0 && readyToSetTime(toExecute)) {
-      logDebugSleepInformation(sleepTime, toExecute);
-      toExecute.setTimeToExecute(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
-    } else if (toExecute.getTimeToExecute() == null || sleepTime <= 0) {
-      toExecute.setTimeToExecute(null);
+  public void handleSleep(boolean engineHasStillNewData, ImportScheduleJob importScheduleJob) {
+    long sleepTime = calculateSleepTime(engineHasStillNewData, importScheduleJob);
+    if (!engineHasStillNewData && importScheduleJob.isReadyToBeExecuted()) {
+      logDebugSleepInformation(sleepTime, importScheduleJob);
+      importScheduleJob.setDateUntilExecutionIsBlocked(LocalDateTime.now().plus(sleepTime, ChronoUnit.MILLIS));
+    } else if (engineHasStillNewData) {
+      importScheduleJob.makeImportScheduleJobExecutable();
     }
-  }
-
-  private boolean readyToSetTime(ImportScheduleJob toExecute) {
-    return toExecute.getTimeToExecute() == null || ( toExecute.getTimeToExecute() != null && LocalDateTime.now().isAfter(toExecute.getTimeToExecute()));
   }
 
   /**

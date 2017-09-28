@@ -59,8 +59,7 @@ public abstract class AbstractImportService
   }
 
   protected void performBackoffCheck(JOB executionContext) throws OptimizeException {
-    if (executionContext.getTimeToExecute() != null &&
-        LocalDateTime.now().isBefore(executionContext.getTimeToExecute())) {
+    if (!executionContext.isReadyToBeExecuted()) {
       throw new BackoffException();
     }
   }

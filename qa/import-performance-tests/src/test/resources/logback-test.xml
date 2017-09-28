@@ -8,8 +8,7 @@
     </encoder>
   </appender>
 
-  <!--<logger name="org.glassfish.jersey.tracing" level="ALL" />-->
-  <!--<logger name="org.camunda.optimize" level="info" />-->
+  <logger name="org.camunda.optimize" level="info" />
 
   <root level="info">
     <appender-ref ref="STDOUT" />

@@ -17,6 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -148,6 +151,22 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
     //then the backoff is actually performed the seconds time
     assertThat(backoffService.getGeneralBackoffCounter(), is(1L));
+  }
+
+  @Test
+  public void doNotBackoffWhenExecutableJobExists() throws Exception {
+    // given
+    assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
+
+    // when
+    PageBasedImportScheduleJob pageBasedImportScheduleJob = new PageBasedImportScheduleJob(0,0, 0, "test");
+    pageBasedImportScheduleJob.setDateUntilExecutionIsBlocked(LocalDateTime.now().minus(1L, ChronoUnit.MINUTES));
+    importScheduler.importScheduleJobs.add(pageBasedImportScheduleJob);
+    importScheduler.scheduleNewImportRound();
+
+    // then
+    assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
+
   }
 
   @Test

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public abstract class ImportScheduleJob {
 
   protected boolean pageBased = true;
-  protected LocalDateTime timeToExecute;
+  protected LocalDateTime dateUntilExecutionIsBlocked;
   protected String engineAlias;
   protected String elasticsearchType;
 
@@ -26,12 +26,20 @@ public abstract class ImportScheduleJob {
     this.pageBased = pageBased;
   }
 
-  public LocalDateTime getTimeToExecute() {
-    return timeToExecute;
+  public LocalDateTime getDateUntilExecutionIsBlocked() {
+    return dateUntilExecutionIsBlocked;
   }
 
-  public void setTimeToExecute(LocalDateTime timeToExecute) {
-    this.timeToExecute = timeToExecute;
+  public boolean isReadyToBeExecuted() {
+    return dateUntilExecutionIsBlocked == null || LocalDateTime.now().isAfter(dateUntilExecutionIsBlocked);
+  }
+
+  public void makeImportScheduleJobExecutable() {
+    dateUntilExecutionIsBlocked = null;
+  }
+
+  public void setDateUntilExecutionIsBlocked(LocalDateTime dateUntilExecutionIsBlocked) {
+    this.dateUntilExecutionIsBlocked = dateUntilExecutionIsBlocked;
   }
 
   public String getEngineAlias() {

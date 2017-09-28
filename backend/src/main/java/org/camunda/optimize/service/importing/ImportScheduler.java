@@ -174,7 +174,6 @@ public class ImportScheduler extends Thread {
       result = new ImportResult();
       result.setEngineHasStillNewData(false);
       result.setIdsToFetch(new HashSet<>());
-      return new ImportResult();
     }
     return result;
   }
@@ -260,7 +259,7 @@ public class ImportScheduler extends Thread {
   private boolean allJobsAreBackingOff() {
     boolean result = true;
     for (ImportScheduleJob job : this.importScheduleJobs) {
-      if (job.getTimeToExecute() == null) {
+      if (job.isReadyToBeExecuted()) {
         result = false;
         break;
       }
