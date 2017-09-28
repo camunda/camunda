@@ -16,17 +16,16 @@
 package io.zeebe.client.task.impl;
 
 import io.zeebe.client.impl.RequestManager;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public class CreateTaskSubscriptionCommandImpl extends ControlMessageRequest<TaskSubscription>
 {
     protected TaskSubscription subscription;
 
-    public CreateTaskSubscriptionCommandImpl(RequestManager client, Partition target)
+    public CreateTaskSubscriptionCommandImpl(RequestManager client, String topic, int partition)
     {
-        super(client, ControlMessageType.ADD_TASK_SUBSCRIPTION, target, TaskSubscription.class);
-        this.subscription = new TaskSubscription(target.getTopicName(), target.getPartitionId());
+        super(client, ControlMessageType.ADD_TASK_SUBSCRIPTION, topic, partition, TaskSubscription.class);
+        this.subscription = new TaskSubscription(topic, partition);
     }
 
     public CreateTaskSubscriptionCommandImpl lockOwner(final String lockOwner)

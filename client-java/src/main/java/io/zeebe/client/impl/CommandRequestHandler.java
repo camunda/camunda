@@ -27,7 +27,6 @@ import org.agrona.io.ExpandableDirectBufferOutputStream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.EventMetadata;
@@ -38,7 +37,6 @@ import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.transport.RemoteAddress;
 
 public class CommandRequestHandler implements RequestResponseHandler
 {
@@ -179,11 +177,29 @@ public class CommandRequestHandler implements RequestResponseHandler
     }
 
     @Override
-    public RemoteAddress getTarget(ClientTopologyManager currentTopology)
+    public String getTargetTopic()
     {
         final EventMetadata metadata = event.getMetadata();
+        return metadata.getTopicName();
+    }
 
-        return currentTopology.getLeaderForTopic(new Partition(metadata.getTopicName(), metadata.getPartitionId()));
+    @Override
+    public int getTargetPartition()
+    {
+        if (event.hasValidPartitionId())
+        {
+            return event.getMetadata().getPartitionId();
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    @Override
+    public void onSelectedPartition(int partitionId)
+    {
+        encoder.partitionId(partitionId);
     }
 
     @Override
@@ -191,8 +207,8 @@ public class CommandRequestHandler implements RequestResponseHandler
     {
         final EventMetadata eventMetadata = event.getMetadata();
         return "[ topic = " + eventMetadata.getTopicName() +
-                ", partition = " + eventMetadata.getPartitionId() +
-                ", event type = " + eventMetadata.getType().name() + "]";
+                ", partition = " + (event.hasValidPartitionId() ? eventMetadata.getPartitionId() : "any") +
+                ", event type = " + eventMetadata.getType().name() + " ]";
     }
 
 }

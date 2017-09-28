@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.event.Event;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.protocol.Protocol;
@@ -62,7 +60,12 @@ public class RequestManager implements Actor
 
         for (int i = 0; i < capacity; i++)
         {
-            final RequestController controller = new RequestController(transport, topologyManager, objectMapper, ctrl -> pooledCmds.add(ctrl));
+            final RequestController controller = new RequestController(
+                transport,
+                topologyManager,
+                objectMapper,
+                dispatchStrategy,
+                ctrl -> pooledCmds.add(ctrl));
             this.commandControllers[i] = controller;
             this.pooledCmds.add(controller);
         }
@@ -84,8 +87,6 @@ public class RequestManager implements Actor
 
     public <E extends Event> CompletableFuture<E> executeAsync(final CommandImpl<E> command)
     {
-        ensureValidTarget(command);
-
         final CompletableFuture<E> future = new CompletableFuture<>();
 
         try
@@ -99,17 +100,6 @@ public class RequestManager implements Actor
         }
 
         return future;
-    }
-
-    private <E extends Event> void ensureValidTarget(final CommandImpl<E> command)
-    {
-        final EventImpl event = command.getEvent();
-        if (!event.hasValidPartitionId())
-        {
-            final EventMetadata metadata = event.getMetadata();
-            final int targetPartition = dispatchStrategy.determinePartition(metadata.getTopicName(), metadata.getType(), event.getState());
-            event.setPartitionId(targetPartition);
-        }
     }
 
     public String getSystemTopic()

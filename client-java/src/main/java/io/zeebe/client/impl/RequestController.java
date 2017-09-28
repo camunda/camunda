@@ -55,14 +55,20 @@ public class RequestController implements BufferReader
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_FAILED = 1;
     protected static final int TRANSITION_REFRESH_TOPOLOGY = 2;
+    protected static final int TRANSITION_DETERMINE_PARTITION = 3;
 
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
     protected final StateMachine<Context> stateMachine;
+    protected final DeterminePartitionState determinePartitionState = new DeterminePartitionState();
+    protected final RefreshTopologyState refreshTopologyForPartitionState = new RefreshTopologyState();
+    protected final AwaitTopologyRefreshState awaitTopologyForPartitionSate = new AwaitTopologyRefreshState();
+
     protected final DetermineRemoteState determineRemoteState = new DetermineRemoteState();
-    protected final RefreshTopologyState refreshTopologyState = new RefreshTopologyState();
-    protected final AwaitTopologyRefreshState awaitTopologyRefreshState = new AwaitTopologyRefreshState();
+    protected final RefreshTopologyState refreshTopologyForRemoteState = new RefreshTopologyState();
+    protected final AwaitTopologyRefreshState awaitTopologyForRemoteState = new AwaitTopologyRefreshState();
+
     protected final ExecuteRequestState executeRequestState = new ExecuteRequestState();
     protected final HandleResponseState handleResponseState = new HandleResponseState();
     protected final FinishedState finishedState = new FinishedState();
@@ -83,10 +89,13 @@ public class RequestController implements BufferReader
     protected RequestResponseHandler currentRequestHandler;
     protected ControlMessageRequestHandler controlMessageHandler;
 
+    protected final RequestDispatchStrategy requestDispatchStrategy;
+
     public RequestController(
             final ClientTransport transport,
             final ClientTopologyManager topologyManager,
             final ObjectMapper objectMapper,
+            RequestDispatchStrategy requestDispatchStrategy,
             Consumer<RequestController> closeConsumer)
     {
         this.transport = transport;
@@ -94,22 +103,34 @@ public class RequestController implements BufferReader
         this.closeConsumer = closeConsumer;
         this.commandRequestHandler = new CommandRequestHandler(objectMapper);
         this.controlMessageHandler = new ControlMessageRequestHandler(objectMapper);
+        this.requestDispatchStrategy = requestDispatchStrategy;
 
         stateMachine = StateMachine.<Context>builder(Context::new)
             .initialState(closedState)
             .from(closedState).take(TRANSITION_DEFAULT).to(determineRemoteState)
+            .from(closedState).take(TRANSITION_DETERMINE_PARTITION).to(determinePartitionState)
+            .from(closedState).take(TRANSITION_FAILED).to(failedState)
+
+            .from(determinePartitionState).take(TRANSITION_DEFAULT).to(determineRemoteState)
+            .from(determinePartitionState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForPartitionState)
+            .from(determinePartitionState).take(TRANSITION_FAILED).to(failedState)
+            .from(refreshTopologyForPartitionState).take(TRANSITION_DEFAULT).to(awaitTopologyForPartitionSate)
+            .from(awaitTopologyForPartitionSate).take(TRANSITION_DEFAULT).to(determinePartitionState)
+            .from(awaitTopologyForPartitionSate).take(TRANSITION_FAILED).to(determinePartitionState)
+
             .from(determineRemoteState).take(TRANSITION_DEFAULT).to(executeRequestState)
-            .from(determineRemoteState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyState)
+            .from(determineRemoteState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForRemoteState)
             .from(determineRemoteState).take(TRANSITION_FAILED).to(failedState)
-            .from(refreshTopologyState).take(TRANSITION_DEFAULT).to(awaitTopologyRefreshState)
-            .from(awaitTopologyRefreshState).take(TRANSITION_DEFAULT).to(determineRemoteState)
-            .from(awaitTopologyRefreshState).take(TRANSITION_FAILED).to(determineRemoteState)
+            .from(refreshTopologyForRemoteState).take(TRANSITION_DEFAULT).to(awaitTopologyForRemoteState)
+            .from(awaitTopologyForRemoteState).take(TRANSITION_DEFAULT).to(determineRemoteState)
+            .from(awaitTopologyForRemoteState).take(TRANSITION_FAILED).to(determineRemoteState)
+
             .from(executeRequestState).take(TRANSITION_DEFAULT).to(handleResponseState)
-            .from(executeRequestState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyState)
+            .from(executeRequestState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForRemoteState)
             .from(executeRequestState).take(TRANSITION_FAILED).to(failedState)
             .from(handleResponseState).take(TRANSITION_DEFAULT).to(finishedState)
             .from(handleResponseState).take(TRANSITION_FAILED).to(failedState)
-            .from(handleResponseState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyState)
+            .from(handleResponseState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForRemoteState)
             .from(finishedState).take(TRANSITION_DEFAULT).to(closedState)
             .from(failedState).take(TRANSITION_DEFAULT).to(closedState)
             .build();
@@ -188,6 +209,38 @@ public class RequestController implements BufferReader
 
     }
 
+    private class DeterminePartitionState implements State<Context>
+    {
+
+        @Override
+        public int doWork(Context context) throws Exception
+        {
+            final String targetTopic = currentRequestHandler.getTargetTopic();
+
+            final int targetPartition = requestDispatchStrategy.determinePartition(targetTopic);
+
+            if (context.isRequestTimedOut())
+            {
+                context.exception = new ClientException(
+                        "Cannot determine target partition for request (timeout). " +
+                            "Request was: " + currentRequestHandler.describeRequest(), context.exception);
+                context.take(TRANSITION_FAILED);
+            }
+
+            if (targetPartition < 0) // there is no suitable partition
+            {
+                context.take(TRANSITION_REFRESH_TOPOLOGY);
+            }
+            else
+            {
+                currentRequestHandler.onSelectedPartition(targetPartition);
+                context.target = new Partition(targetTopic, targetPartition);
+                context.take(TRANSITION_DEFAULT);
+            }
+            return 1;
+        }
+    }
+
     private class DetermineRemoteState implements State<Context>
     {
         @Override
@@ -195,10 +248,9 @@ public class RequestController implements BufferReader
         {
             ++context.attempts;
 
-            final RemoteAddress target = currentRequestHandler.getTarget(topologyManager);
-            final long now = ClockUtil.getCurrentTimeInMillis();
+            final RemoteAddress remote = topologyManager.getLeaderForTopic(context.target);
 
-            if (now > context.timeout)
+            if (context.isRequestTimedOut())
             {
                 context.exception = new ClientException(
                         "Cannot execute request (timeout). " +
@@ -208,17 +260,9 @@ public class RequestController implements BufferReader
                 return 0;
             }
 
-            if (target != null)
+            if (remote != null)
             {
-                final ClientRequest request = transport.getOutput().sendRequest(target, currentRequestHandler);
-
-                if (request != null)
-                {
-                    context.receiver = target;
-                    context.contactedBrokers.add(target);
-                    context.request = request;
-                    context.take(TRANSITION_DEFAULT);
-                }
+                makeRequest(context, remote);
             }
             else
             {
@@ -228,7 +272,20 @@ public class RequestController implements BufferReader
             return 1;
         }
 
+        private void makeRequest(final Context context, final RemoteAddress remote)
+        {
+            final ClientRequest request = transport.getOutput().sendRequest(remote, currentRequestHandler);
+
+            if (request != null)
+            {
+                context.receiver = remote;
+                context.contactedBrokers.add(remote);
+                context.request = request;
+                context.take(TRANSITION_DEFAULT);
+            }
+        }
     }
+
     private class RefreshTopologyState implements State<Context>
     {
 
@@ -262,7 +319,6 @@ public class RequestController implements BufferReader
                     context.exception = e;
                     context.take(TRANSITION_FAILED);
                 }
-
 
                 workCount += 1;
             }
@@ -413,8 +469,30 @@ public class RequestController implements BufferReader
             {
                 context.reset();
                 context.timeout = ClockUtil.getCurrentTimeInMillis() + CMD_TIMEOUT;
+
+                final String targetTopic = currentRequestHandler.getTargetTopic();
+
+                if (targetTopic != null)
+                {
+                    final int targetPartition = currentRequestHandler.getTargetPartition();
+
+                    if (targetPartition < 0)
+                    {
+                        context.take(TRANSITION_DETERMINE_PARTITION);
+                    }
+                    else
+                    {
+                        context.target = new Partition(targetTopic, targetPartition);
+                        context.take(TRANSITION_DEFAULT);
+                    }
+                }
+                else
+                {
+                    context.target = null;
+                    context.take(TRANSITION_DEFAULT);
+                }
+
                 isConfigured = false;
-                context.take(TRANSITION_DEFAULT);
             }
         }
     }
@@ -433,6 +511,7 @@ public class RequestController implements BufferReader
         Exception exception;
         long timeout;
         RemoteAddress receiver;
+        Partition target;
 
         Context(final StateMachine<?> stateMachine)
         {
@@ -449,9 +528,14 @@ public class RequestController implements BufferReader
             errorBuffer = null;
             exception = null;
             contactedBrokers.clear();
+            target = null;
         }
 
+        public boolean isRequestTimedOut()
+        {
+            final long now = ClockUtil.getCurrentTimeInMillis();
+            return now > timeout;
+        }
     }
-
 
 }

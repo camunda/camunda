@@ -16,7 +16,6 @@
 package io.zeebe.client.event.impl;
 
 import io.zeebe.client.impl.RequestManager;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
@@ -29,7 +28,8 @@ public class CloseTopicSubscriptionCommandImpl extends ControlMessageRequest<Voi
     {
         super(commandManager,
                 ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION,
-                new Partition(topicName, partitionId),
+                topicName,
+                partitionId,
                 Void.class);
         this.request.setTopicName(topicName);
         this.request.setPartitionId(partitionId);

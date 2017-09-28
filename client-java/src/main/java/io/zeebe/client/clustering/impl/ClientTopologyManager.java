@@ -115,6 +115,20 @@ public class ClientTopologyManager implements Actor
         });
     }
 
+    public Partition getPartitionForTopic(String topic, int offset)
+    {
+        final List<Partition> partitions = topology.getPartitionsOfTopic(topic);
+
+        if (partitions != null && !partitions.isEmpty())
+        {
+            return partitions.get(offset % partitions.size());
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     protected boolean shouldRefreshTopology()
     {
         return nextRequestTimestamp < ClockUtil.getCurrentTimeInMillis() || !refreshFutures.isEmpty();

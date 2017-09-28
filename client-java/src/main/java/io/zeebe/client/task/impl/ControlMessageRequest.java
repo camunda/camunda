@@ -19,25 +19,27 @@ import java.util.concurrent.Future;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.cmd.Request;
-import io.zeebe.client.impl.Partition;
+import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public abstract class ControlMessageRequest<R> implements Request<R>
 {
 
     protected final ControlMessageType type;
-    protected final Partition target;
+    protected final String targetTopic;
+    protected final int targetPartition;
     protected final Class<R> responseClass;
 
     protected final RequestManager client;
 
-    public ControlMessageRequest(RequestManager client, ControlMessageType type, Partition target, Class<R> responseClass)
+    public ControlMessageRequest(RequestManager client, ControlMessageType type,
+            String targetTopic, int targetPartition, Class<R> responseClass)
     {
         this.client = client;
         this.type = type;
-        this.target = target;
+        this.targetTopic = targetTopic;
+        this.targetPartition = targetPartition;
         this.responseClass = responseClass;
     }
 
@@ -48,9 +50,15 @@ public abstract class ControlMessageRequest<R> implements Request<R>
     }
 
     @JsonIgnore
-    public Partition getTarget()
+    public String getTargetTopic()
     {
-        return target;
+        return targetTopic;
+    }
+
+    @JsonIgnore
+    public int getTargetPartition()
+    {
+        return targetPartition;
     }
 
     @JsonIgnore

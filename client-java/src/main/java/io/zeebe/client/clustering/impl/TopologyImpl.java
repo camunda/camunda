@@ -20,6 +20,7 @@ import java.util.*;
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.*;
+import io.zeebe.util.CollectionUtil;
 
 
 public class TopologyImpl implements Topology
@@ -27,6 +28,7 @@ public class TopologyImpl implements Topology
     protected Map<Partition, RemoteAddress> topicLeaders;
     protected List<RemoteAddress> brokers;
     protected final Random randomBroker = new Random();
+    protected Map<String, List<Partition>> partitionsByTopic = new HashMap<>();
 
     public TopologyImpl()
     {
@@ -67,6 +69,12 @@ public class TopologyImpl implements Topology
     }
 
     @Override
+    public List<Partition> getPartitionsOfTopic(String topic)
+    {
+        return partitionsByTopic.get(topic);
+    }
+
+    @Override
     public String toString()
     {
         return "Topology{" +
@@ -84,8 +92,11 @@ public class TopologyImpl implements Topology
 
         for (TopicLeader leader : topologyDto.getTopicLeaders())
         {
-            topicLeaders.put(leader.getTopic(), transport.registerRemoteAddress(leader.getSocketAddress()));
+            final Partition partition = leader.getTopic();
+            topicLeaders.put(partition, transport.registerRemoteAddress(leader.getSocketAddress()));
+            CollectionUtil.addToMapOfLists(partitionsByTopic, partition.getTopicName(), partition);
         }
+
     }
 
 }

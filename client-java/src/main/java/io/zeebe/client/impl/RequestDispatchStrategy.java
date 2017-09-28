@@ -15,10 +15,8 @@
  */
 package io.zeebe.client.impl;
 
-import io.zeebe.client.event.TopicEventType;
-
 public interface RequestDispatchStrategy
 {
 
-    int determinePartition(String topic, TopicEventType eventType, String state);
+    int determinePartition(String topic);
 }

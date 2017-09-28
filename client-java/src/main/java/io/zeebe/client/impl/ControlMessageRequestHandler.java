@@ -23,14 +23,12 @@ import org.agrona.io.ExpandableDirectBufferOutputStream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.transport.RemoteAddress;
 
 @SuppressWarnings("rawtypes")
 public class ControlMessageRequestHandler implements RequestResponseHandler
@@ -135,23 +133,37 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
     }
 
     @Override
-    public RemoteAddress getTarget(ClientTopologyManager currentTopology)
+    public int getTargetPartition()
     {
-        return currentTopology.getLeaderForTopic(message.getTarget());
+        return message.getTargetPartition();
+    }
+
+    @Override
+    public void onSelectedPartition(int partitionId)
+    {
+        // no need to change the request
+    }
+
+    @Override
+    public String getTargetTopic()
+    {
+        return message.getTargetTopic();
     }
 
     @Override
     public String describeRequest()
     {
         final StringBuilder sb = new StringBuilder();
-        sb.append("[ target = ");
-        if (message.getTarget() != null)
+        sb.append("[ target topic = ");
+        sb.append(message.getTargetTopic());
+        sb.append(", target partition = ");
+        if (message.getTargetPartition() >= 0)
         {
-            sb.append(message.getTarget());
+            sb.append(message.getTargetPartition());
         }
         else
         {
-            sb.append("random broker");
+            sb.append("unspecified");
         }
         sb.append(", type = ");
         sb.append(message.getType().name());

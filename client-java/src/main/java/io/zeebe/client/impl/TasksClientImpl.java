@@ -79,20 +79,17 @@ public class TasksClientImpl implements TasksClient
 
     public CreateTaskSubscriptionCommandImpl createTaskSubscription(String topic, int partitionId)
     {
-        final Partition partition = new Partition(topic, partitionId);
-        return new CreateTaskSubscriptionCommandImpl(client.getCommandManager(), partition);
+        return new CreateTaskSubscriptionCommandImpl(client.getCommandManager(), topic, partitionId);
     }
 
     public CloseTaskSubscriptionCommandImpl closeTaskSubscription(String topicName, int partitionId, long subscriberKey)
     {
-        final Partition partition = new Partition(topicName, partitionId);
-        return new CloseTaskSubscriptionCommandImpl(client.getCommandManager(), partition, subscriberKey);
+        return new CloseTaskSubscriptionCommandImpl(client.getCommandManager(), topicName, partitionId, subscriberKey);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl increaseSubscriptionCredits(String topic, int partitionId)
     {
-        final Partition partition = new Partition(topic, partitionId);
-        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), partition);
+        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCommandManager(), topic, partitionId);
     }
 
 }

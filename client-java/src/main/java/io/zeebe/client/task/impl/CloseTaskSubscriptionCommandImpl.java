@@ -16,17 +16,16 @@
 package io.zeebe.client.task.impl;
 
 import io.zeebe.client.impl.RequestManager;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public class CloseTaskSubscriptionCommandImpl extends ControlMessageRequest<Void>
 {
     protected final TaskSubscription subscription;
 
-    public CloseTaskSubscriptionCommandImpl(final RequestManager commandManager, Partition target, long subscriberKey)
+    public CloseTaskSubscriptionCommandImpl(final RequestManager commandManager, String topic, int partition, long subscriberKey)
     {
-        super(commandManager, ControlMessageType.REMOVE_TASK_SUBSCRIPTION, target, Void.class);
-        this.subscription = new TaskSubscription(target.getTopicName(), target.getPartitionId());
+        super(commandManager, ControlMessageType.REMOVE_TASK_SUBSCRIPTION, topic, partition, Void.class);
+        this.subscription = new TaskSubscription(topic, partition);
         this.subscription.setSubscriberKey(subscriberKey);
     }
 

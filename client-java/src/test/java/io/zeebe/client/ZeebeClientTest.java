@@ -18,6 +18,7 @@ package io.zeebe.client;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,9 +27,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.transport.ClientTransport;
@@ -39,6 +45,9 @@ public class ZeebeClientTest
 {
     @Rule
     public StubBrokerRule broker = new StubBrokerRule();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     protected ZeebeClientImpl client;
 
@@ -115,6 +124,51 @@ public class ZeebeClientTest
         assertThat("this code has been reached, i.e. the second close does not block infinitely").isNotNull();
     }
 
+    @Test
+    public void shouldDistributeNewEntitiesRoundRobin()
+    {
+        // given
+        final String topic = "foo";
+
+        broker.clearTopology();
+        broker.addSystemTopic();
+        broker.addTopic(topic, 0);
+        broker.addTopic(topic, 1);
+
+        stubTaskResponse();
+
+        // when
+        final TaskEvent task1 = client.tasks().create(topic, "bar").execute();
+        final TaskEvent task2 = client.tasks().create(topic, "bar").execute();
+        final TaskEvent task3 = client.tasks().create(topic, "bar").execute();
+        final TaskEvent task4 = client.tasks().create(topic, "bar").execute();
+
+        // then
+        assertThat(Arrays.asList(task1, task2, task3, task4))
+            .extracting("metadata.partitionId")
+            .containsExactlyInAnyOrder(0, 1, 0, 1);
+    }
+
+    @Test
+    public void shouldFailRequestToNonExistingTopic()
+    {
+        // given
+        final String topic = "foo";
+
+        broker.clearTopology();
+        broker.addSystemTopic();
+
+        stubTaskResponse();
+
+        // then
+        exception.expect(ClientException.class);
+        exception.expectMessage("Cannot determine target partition for request (timeout). " +
+                "Request was: [ topic = foo, partition = any, event type = TASK ]");
+
+        // when
+        client.tasks().create(topic, "bar").execute();
+    }
+
     protected TopicSubscription openSubscription()
     {
         return client.topics().newSubscription(ClientApiRule.DEFAULT_TOPIC_NAME)
@@ -142,6 +196,22 @@ public class ZeebeClientTest
         {
             connectionState.add(ConnectionState.CLOSED);
         }
+    }
+
+    protected void stubTaskResponse()
+    {
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+            .respondWith()
+            .topicName(r -> r.topicName())
+            .partitionId(r -> r.partitionId())
+            .key(123)
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "CREATED")
+              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
+              .put("lockOwner", "")
+              .done()
+            .register();
     }
 
     protected enum ConnectionState

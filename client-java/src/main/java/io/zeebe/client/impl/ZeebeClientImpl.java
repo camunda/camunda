@@ -137,7 +137,7 @@ public class ZeebeClientImpl implements ZeebeClient
         transport.registerChannelListener(subscriptionManager);
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
-        apiCommandManager = new RequestManager(transport, topologyManager, new DefaultPartitionStrategy(), objectMapper, maxRequests);
+        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests);
 
         commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
         topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);

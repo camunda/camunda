@@ -254,9 +254,19 @@ public class StubBrokerRule extends ExternalResource
         currentTopology.set(newTopology);
     }
 
+    public void addSystemTopic()
+    {
+        addTopic(Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
+    }
+
     public void setCurrentTopology(Topology currentTopology)
     {
         this.currentTopology.set(currentTopology);
+    }
+
+    public void clearTopology()
+    {
+        currentTopology.set(new Topology());
     }
 
     public void stubTopicSubscriptionApi(long initialSubscriberKey)

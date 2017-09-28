@@ -15,12 +15,16 @@
  */
 package io.zeebe.client.clustering;
 
+import java.util.List;
+
 import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.RemoteAddress;
 
 public interface Topology
 {
-    RemoteAddress getLeaderForTopic(Partition topic);
+    RemoteAddress getLeaderForTopic(Partition partition);
 
     RemoteAddress getRandomBroker();
+
+    List<Partition> getPartitionsOfTopic(String topic);
 }

@@ -50,7 +50,7 @@ public class TaskQueueTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public Timeout testTimeout = Timeout.seconds(10);
+    public Timeout testTimeout = Timeout.seconds(15);
 
 
     @Test
@@ -75,9 +75,8 @@ public class TaskQueueTest
         final ZeebeClient client = clientRule.getClient();
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot execute request (timeout). " +
-                "Request was: [ topic = unknown-topic, partition = 0, event type = TASK]. " +
-                "Contacted brokers: []");
+        thrown.expectMessage("Cannot determine target partition for request (timeout). " +
+                "Request was: [ topic = unknown-topic, partition = any, event type = TASK ]");
 
         client.tasks().create("unknown-topic", "foo")
             .addCustomHeader("k1", "a")

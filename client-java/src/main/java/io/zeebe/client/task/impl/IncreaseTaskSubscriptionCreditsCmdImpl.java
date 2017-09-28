@@ -16,17 +16,16 @@
 package io.zeebe.client.task.impl;
 
 import io.zeebe.client.impl.RequestManager;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
 public class IncreaseTaskSubscriptionCreditsCmdImpl extends ControlMessageRequest<Void>
 {
     protected final TaskSubscription subscription;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final RequestManager commandManager, final Partition partition)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final RequestManager commandManager, String topic, int partition)
     {
-        super(commandManager, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS, partition, Void.class);
-        this.subscription = new TaskSubscription(partition.getTopicName(), partition.getPartitionId());
+        super(commandManager, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS, topic, partition, Void.class);
+        this.subscription = new TaskSubscription(topic, partition);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl subscriberKey(long subscriberKey)
