@@ -17,6 +17,7 @@ package io.zeebe.model.bpmn.impl.yaml;
 
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.model.bpmn.instance.TaskDefinition;
 
 public class YamlTask
@@ -31,9 +32,16 @@ public class YamlTask
     private List<YamlMapping> inputs = new ArrayList<>();
     private List<YamlMapping> outputs = new ArrayList<>();
 
+    private boolean end = false;
+
+    @JsonProperty("goto")
     private String next;
-    private String defaultFlow;
-    private List<YamlFlow> flows = new ArrayList<>();
+
+    @JsonProperty("switch")
+    private List<YamlCase> cases = new ArrayList<>();
+
+    @JsonProperty("default")
+    private String defaultCase;
 
     public String getId()
     {
@@ -95,14 +103,15 @@ public class YamlTask
         this.outputs = outputs;
     }
 
-    public List<YamlFlow> getFlows()
+
+    public List<YamlCase> getCases()
     {
-        return flows;
+        return cases;
     }
 
-    public void setFlows(List<YamlFlow> flows)
+    public void setCases(List<YamlCase> cases)
     {
-        this.flows = flows;
+        this.cases = cases;
     }
 
     public String getNext()
@@ -115,14 +124,24 @@ public class YamlTask
         this.next = next;
     }
 
-    public String getDefaultFlow()
+    public String getDefaultCase()
     {
-        return defaultFlow;
+        return defaultCase;
     }
 
-    public void setDefaultFlow(String defaultFlow)
+    public void setDefaultCase(String defaultCase)
     {
-        this.defaultFlow = defaultFlow;
+        this.defaultCase = defaultCase;
+    }
+
+    public boolean isEnd()
+    {
+        return end;
+    }
+
+    public void setEnd(boolean end)
+    {
+        this.end = end;
     }
 
 }

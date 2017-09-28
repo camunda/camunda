@@ -15,9 +15,14 @@
  */
 package io.zeebe.model.bpmn.impl.yaml;
 
-public class YamlFlow
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class YamlCase
 {
+    @JsonProperty("case")
     private String condition = "";
+
+    @JsonProperty("goto")
     private String next = "";
 
     public String getCondition()

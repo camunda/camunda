@@ -18,8 +18,6 @@ package io.zeebe.model.bpmn.impl.yaml;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -32,6 +30,10 @@ public class BpmnYamlParser
     private final BpmnBuilder bpmnBuilder;
 
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+    private YamlDefinitionImpl definition;
+    private final Map<String, YamlTask> tasksById = new HashMap<>();
+    private final List<String> createdTasks = new ArrayList<>();
 
     public BpmnYamlParser(BpmnBuilder bpmnBuilder)
     {
@@ -67,33 +69,102 @@ public class BpmnYamlParser
 
     private WorkflowDefinition createWorkflow(final YamlDefinitionImpl definition)
     {
+        this.definition = definition;
+
+        createdTasks.clear();
+
+        tasksById.clear();
+        for (YamlTask task : definition.getTasks())
+        {
+            tasksById.put(task.getId(), task);
+        }
+
         final BpmnBuilder builder = bpmnBuilder.wrap(definition.getName()).startEvent();
 
-        if (isTaskSequence(definition))
-        {
-            buildTaskSequence(builder, definition);
-        }
-        else
-        {
-            buildFlow(builder, definition);
-        }
+        final YamlTask initialTask = definition.getTasks().get(0);
+
+        addTask(builder, initialTask.getId());
 
         return builder.done();
     }
 
-    private boolean isTaskSequence(final YamlDefinitionImpl definition)
+    private void addTask(final BpmnBuilder builder, final String taskId)
     {
-        return definition.getTasks().stream().allMatch(t -> t.getFlows().isEmpty());
+        if (createdTasks.contains(taskId))
+        {
+            builder.joinWith(taskId);
+        }
+        else
+        {
+            final YamlTask task = tasksById.get(taskId);
+            if (task == null)
+            {
+                throw new RuntimeException("No task with id: " + taskId);
+            }
+
+            addServiceTask(builder, task);
+            createdTasks.add(taskId);
+
+            addFlowFromTask(builder, task);
+        }
     }
 
-    private void buildTaskSequence(final BpmnBuilder builder, final YamlDefinitionImpl definition)
+    private void addFlowFromTask(final BpmnBuilder builder, final YamlTask task)
     {
-        for (YamlTask task : definition.getTasks())
+        if (!task.getCases().isEmpty())
         {
-            addServiceTask(builder, task);
-        }
+            final String gatewayId = "split-" + task.getId();
 
-        builder.endEvent();
+            builder.exclusiveGateway(gatewayId);
+
+            for (YamlCase flow : task.getCases())
+            {
+                builder.continueAt(gatewayId);
+                builder.sequenceFlow(s -> s.condition(flow.getCondition()));
+
+                addTask(bpmnBuilder, flow.getNext());
+            }
+
+            if (task.getDefaultCase() != null)
+            {
+                builder.continueAt(gatewayId);
+                builder.sequenceFlow(s -> s.defaultFlow());
+
+                addTask(bpmnBuilder, task.getDefaultCase());
+            }
+        }
+        else if (task.getNext() != null)
+        {
+            addTask(bpmnBuilder, task.getNext());
+        }
+        else
+        {
+            final YamlTask nextTask = getNextTask(task);
+
+            if (!task.isEnd() && nextTask != null)
+            {
+                addTask(bpmnBuilder, nextTask.getId());
+            }
+            else
+            {
+                bpmnBuilder.endEvent();
+            }
+        }
+    }
+
+    private YamlTask getNextTask(YamlTask task)
+    {
+        final List<YamlTask> tasks = definition.getTasks();
+        final int index = tasks.indexOf(task);
+
+        if (index + 1 < tasks.size())
+        {
+            return tasks.get(index + 1);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     private void addServiceTask(final BpmnBuilder builder, YamlTask task)
@@ -120,70 +191,6 @@ public class BpmnYamlParser
         }
 
         serviceTaskBuilder.done();
-    }
-
-    private void buildFlow(final BpmnBuilder builder, final YamlDefinitionImpl definition)
-    {
-        final YamlTask initialTask = definition.getTasks().get(0);
-
-        final Map<String, YamlTask> tasksById = definition.getTasks().stream()
-                .collect(Collectors.toMap(YamlTask::getId, Function.identity()));
-
-        addTask(builder, tasksById, new ArrayList<String>(), initialTask.getId());
-    }
-
-    private void addTask(final BpmnBuilder builder, final Map<String, YamlTask> tasksById, List<String> createdTasks, final String taskId)
-    {
-        if (createdTasks.contains(taskId))
-        {
-            builder.joinWith(taskId);
-        }
-        else
-        {
-            final YamlTask task = tasksById.get(taskId);
-            if (task == null)
-            {
-                throw new RuntimeException("No task with id: " + taskId);
-            }
-
-            addServiceTask(builder, task);
-            createdTasks.add(taskId);
-
-            addFlowFromTask(builder, tasksById, createdTasks, task);
-        }
-    }
-
-    private void addFlowFromTask(final BpmnBuilder builder, final Map<String, YamlTask> tasksById, List<String> createdTasks, final YamlTask task)
-    {
-        final List<YamlFlow> flows = task.getFlows();
-        if (!flows.isEmpty())
-        {
-            builder.exclusiveGateway();
-
-            for (YamlFlow flow : flows)
-            {
-                builder.sequenceFlow(s -> s.condition(flow.getCondition()));
-
-                addTask(builder, tasksById, createdTasks, flow.getNext());
-            }
-
-            if (task.getDefaultFlow() != null)
-            {
-                builder.sequenceFlow(s -> s.defaultFlow());
-
-                addTask(builder, tasksById, createdTasks, task.getDefaultFlow());
-            }
-        }
-        else if (task.getNext() != null)
-        {
-            builder.sequenceFlow();
-
-            addTask(builder, tasksById, createdTasks, task.getNext());
-        }
-        else
-        {
-            builder.endEvent();
-        }
     }
 
 }

@@ -4,26 +4,27 @@ tasks:
     
     - id: task1
       type: foo
-      flows:
-          - condition: $.foo < 5
-            next: task2
+      switch:
+          - case: $.foo < 5
+            goto: task2
             
-          - condition: $.foo >= 5 && $.foo < 10
-            next: task3
+          - case: $.foo >= 5 && $.foo < 10
+            goto: task3
             
-      defaultFlow: task4
+      default: task4
                   
                   
     - id: task2
       type: foo
-      next: task5
+      goto: task5
 
     - id: task3
       type: foo
       
     - id: task4
       type: foo
+      end: true
       
     - id: task5
       type: foo  
-      
+            
