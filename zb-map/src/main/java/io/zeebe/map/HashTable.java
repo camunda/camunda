@@ -84,11 +84,13 @@ public class HashTable implements Closeable
             // same corresponding buckets like there counter-part
             UNSAFE.copyMemory(realAddress, realAddress + oldLength, length - oldLength);
         }
+        /* do not shrink hash table until https://github.com/zeebe-io/zeebe/issues/464 is fixed
         else if (newLength < length)
         {
             length = newLength;
             realAddress = UNSAFE.reallocateMemory(realAddress, length);
         }
+        */
     }
 
     public void updateTable(int stepPower, int startIdx, long newBucketAddress)
