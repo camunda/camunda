@@ -15,24 +15,27 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import io.zeebe.map.Bytes2LongZbMap;
-import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.map.Long2LongZbMap;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
+import static io.zeebe.map.ZbMap.DEFAULT_TABLE_SIZE;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
-import static io.zeebe.map.ZbMap.OPTIMAL_TABLE_SIZE;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.Long2LongZbMap;
+import org.agrona.DirectBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 public class ComposedZbMapSnapshotTest
 {
@@ -57,13 +60,13 @@ public class ComposedZbMapSnapshotTest
     @Before
     public void init() throws IOException
     {
-        long2LongMap = new Long2LongZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT);
+        long2LongMap = new Long2LongZbMap(DEFAULT_TABLE_SIZE, DEFAULT_BLOCK_COUNT);
         long2LongMap.put(15, 15);
 
-        long2BytesMap = new Long2BytesZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT, 16);
-        long2BytesMap.put(16, "16".getBytes());
+        long2BytesMap = new Long2BytesZbMap(DEFAULT_TABLE_SIZE, DEFAULT_BLOCK_COUNT, 16);
+        long2BytesMap.put(16, wrapString("16"));
 
-        bytes2LongMap = new Bytes2LongZbMap(OPTIMAL_TABLE_SIZE, OPTIMAL_BLOCK_COUNT, 16);
+        bytes2LongMap = new Bytes2LongZbMap(DEFAULT_TABLE_SIZE, DEFAULT_BLOCK_COUNT, 16);
         bytes2LongMap.put("17".getBytes(), 17);
 
         long2bytesSnapshotSupport = new ZbMapSnapshotSupport<>(long2BytesMap);
@@ -85,7 +88,7 @@ public class ComposedZbMapSnapshotTest
     public void shouldWriteAndRecoverLargeSnapshot() throws Exception
     {
         // given
-        final Long2LongZbMap largeIndex = new Long2LongZbMap(IDX_ENTRY_COUNT / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
+        final Long2LongZbMap largeIndex = new Long2LongZbMap(IDX_ENTRY_COUNT / DEFAULT_BLOCK_COUNT, DEFAULT_BLOCK_COUNT);
         final ZbMapSnapshotSupport<Long2LongZbMap> long2LongSnapshotSupport = new ZbMapSnapshotSupport<>(largeIndex);
         final ComposedZbMapSnapshot composedSnapshot = new ComposedZbMapSnapshot(long2LongSnapshotSupport);
 
@@ -136,9 +139,8 @@ public class ComposedZbMapSnapshotTest
 
         assertThat(long2LongMap.get(15, -1)).isEqualTo(15);
 
-        final byte bytes[] = new byte[2];
-        assertThat(long2BytesMap.get(16, bytes)).isTrue();
-        assertThat(bytes).isEqualTo("16".getBytes());
+        final DirectBuffer buffer = long2BytesMap.get(16);
+        assertThat(bufferAsString(buffer, 0, 2)).isEqualTo("16");
 
         assertThat(bytes2LongMap.get("17".getBytes(), -1)).isEqualTo(17);
     }
