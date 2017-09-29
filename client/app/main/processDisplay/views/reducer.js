@@ -2,20 +2,24 @@ import {reducer as analyticsReducer} from './analytics';
 import {reducer as targetValueReducer} from './targetValueDisplay';
 import {addLoading, createLoadingActionFunction, createResultActionFunction, createErrorActionFunction} from 'utils';
 
+export const xmlProperty = 'bpmnXml';
+export const heatmapProperty = 'heatmap';
+export const targetValueProperty = 'targetValue';
+
 export const reducer = addLoading((state = {}, action) => {
   return {
     ...state,
     analytics: analyticsReducer(state.analytics, action),
     targetValue: targetValueReducer(state.targetValue, action)
   };
-}, 'bpmnXml', 'heatmap', 'targetValue');
+}, xmlProperty, heatmapProperty, targetValueProperty);
 
-export const createLoadingDiagramAction = createLoadingActionFunction('bpmnXml');
-export const createLoadingDiagramResultAction = createResultActionFunction('bpmnXml');
-export const createLoadingDiagramErrorAction = createErrorActionFunction('bpmnXml');
-export const createLoadingHeatmapAction = createLoadingActionFunction('heatmap');
-export const createLoadingHeatmapResultAction = createResultActionFunction('heatmap');
-export const createLoadingHeatmapErrorAction = createErrorActionFunction('heatmap');
-export const createLoadingTargetValueAction = createLoadingActionFunction('targetValue');
-export const createLoadingTargetValueResultAction = createResultActionFunction('targetValue');
-export const createLoadingTargetValueErrorAction = createErrorActionFunction('targetValue');
+export const createLoadingDiagramAction = createLoadingActionFunction(xmlProperty);
+export const createLoadingDiagramResultAction = createResultActionFunction(xmlProperty);
+export const createLoadingDiagramErrorAction = createErrorActionFunction(xmlProperty);
+export const createLoadingHeatmapAction = createLoadingActionFunction(heatmapProperty);
+export const createLoadingHeatmapResultAction = createResultActionFunction(heatmapProperty);
+export const createLoadingHeatmapErrorAction = createErrorActionFunction(heatmapProperty);
+export const createLoadingTargetValueAction = createLoadingActionFunction(targetValueProperty);
+export const createLoadingTargetValueResultAction = createResultActionFunction(targetValueProperty);
+export const createLoadingTargetValueErrorAction = createErrorActionFunction(targetValueProperty);

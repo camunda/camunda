@@ -1,8 +1,14 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {createReactDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
 import sinon from 'sinon';
-import {createDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
+import React from 'react';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';
@@ -15,7 +21,7 @@ describe('<Diagram>', () => {
   let canvas;
   let zoomScroll;
   let eventBus;
-  let update;
+  let isLoaded;
   let renderOverlays;
   let createOverlaysRenderer;
   let Diagram;
@@ -76,18 +82,22 @@ describe('<Diagram>', () => {
     };
     __set__('Viewer', Viewer);
 
+    isLoaded = sinon.stub().returns(true);
+    __set__('isLoaded', isLoaded);
+
     renderOverlays = sinon.spy();
     createOverlaysRenderer = sinon.stub().returns(renderOverlays);
 
-    Diagram = createDiagram();
+    Diagram = createReactDiagram();
 
-    ({update, node} = mountTemplate(
-      <Diagram createOverlaysRenderer={createOverlaysRenderer} />
-    ));
+    node = mount(
+      <Diagram createOverlaysRenderer={createOverlaysRenderer} {...initialState} />
+    );
   });
 
   afterEach(() => {
     __ResetDependency__('Viewer');
+    __ResetDependency__('isLoaded');
   });
 
   it('should provide access to the bpmn-viewer instance', () => {
@@ -96,60 +106,46 @@ describe('<Diagram>', () => {
   });
 
   it('should display the loader', () => {
-    expect(node).to.contain('.diagram-loading');
-    expect(node.querySelector('.diagram-loading').style.display).to.eql('');
+    expect(node.find('.diagram-loading')).to.be.present();
   });
 
   it('should hide the loader after diagram is loaded', () => {
-    update(loadedDiagramState);
+    node.setState({loaded: true});
 
-    expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+    expect(node.find('.diagram-loading')).to.not.be.present();
   });
 
   it('should have a button to zoom in', () => {
-    triggerEvent({
-      node,
-      selector: '.zoom-in.btn',
-      eventName: 'click'
-    });
+    node.find('.zoom-in.btn').simulate('click');
 
     expect(zoomScroll.zoom.calledOnce).to.eql(true);
     expect(zoomScroll.zoom.getCall(0).args[0]).to.be.above(0);
   });
 
   it('should have a button to zoom out', () => {
-    triggerEvent({
-      node,
-      selector: '.zoom-out.btn',
-      eventName: 'click'
-    });
+    node.find('.zoom-out.btn').simulate('click');
 
     expect(zoomScroll.zoom.calledOnce).to.eql(true);
     expect(zoomScroll.zoom.getCall(0).args[0]).to.be.below(0);
   });
 
   it('should have a button to reset zoom', () => {
-    triggerEvent({
-      node,
-      selector: '.reset-zoom.btn',
-      eventName: 'click'
-    });
+    node.find('.reset-zoom.btn').simulate('click');
 
     expect(canvas.zoom.calledOnce).to.eql(true);
     expect(canvas.zoom.calledWith('fit-viewport', 'auto')).to.eql(true);
   });
 
   describe('overlays', () => {
-    it('should create overlays renderer with viewer, node and eventsBus', () => {
+    it('should create overlays renderer with viewer and node', () => {
       const options = createOverlaysRenderer.lastCall.args[0];
 
       expect(options.viewer).to.equal(viewer);
       expect(options.node).to.equal(diagramNode);
-      expect(options).to.contain.key('eventsBus');
     });
 
     it('should call renderOverlays on update', () => {
-      update(loadedDiagramState);
+      node.setProps({...loadedDiagramState});
 
       expect(renderOverlays.calledWith({
         state: loadedDiagramState,
@@ -163,13 +159,13 @@ describe('<Diagram>', () => {
       const renderOverlays2 = sinon.spy();
       const createOverlaysRenderer2 = sinon.stub().returns(renderOverlays2);
 
-      const Diagram = createDiagram();
+      const Diagram = createReactDiagram();
 
-      ({update} = mountTemplate(
-        <Diagram createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} />
-      ));
+      node = mount(
+        <Diagram createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} {...initialState} />
+      );
 
-      update(loadedDiagramState);
+      node.setProps({...loadedDiagramState});
 
       expect(createOverlaysRenderer1.called).to.eql(true);
       expect(createOverlaysRenderer2.called).to.eql(true);
@@ -179,18 +175,14 @@ describe('<Diagram>', () => {
   });
 
   describe('initial state', () => {
-    beforeEach(() => {
-      update(initialState);
-    });
-
-    it('should pass diagram__holder node to Viewer constructor', () => {
-      expect(diagramNode).to.have.class('diagram__holder');
+    it('should render diagram within diagram__holder node', () => {
+      expect(diagramNode.parentNode).to.have.class('diagram__holder');
     });
   });
 
   describe('loaded state', () => {
     beforeEach(() => {
-      update(loadedDiagramState);
+      node.setProps({...loadedDiagramState});
     });
 
     it('should import xml on update', () => {

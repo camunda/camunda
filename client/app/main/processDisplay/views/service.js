@@ -43,7 +43,9 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
 
   // react to changes in the overlay content and reposition it
   const observer = new MutationObserver(() => {
-    overlayHtml.parentNode.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
+    if (overlayHtml.parentNode) {
+      overlayHtml.parentNode.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
+    }
   });
 
   observer.observe(tooltipContentNode, {childList: true, subtree: true});

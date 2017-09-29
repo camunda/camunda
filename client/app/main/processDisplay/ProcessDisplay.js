@@ -1,7 +1,8 @@
-import {jsx, withSelector, createStateComponent} from 'view-utils';
+import {jsx, withSelector, createStateComponent, dispatchAction} from 'view-utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected, Controls} from './controls';
-import {resetStatisticData, ViewsDiagramArea, ViewsArea, getDiagramXML} from './views';
+import {resetStatisticData, ViewsDiagramArea, ViewsArea, getDiagramXML, xmlProperty} from './views';
+import {addDestroyEventCleanUp} from 'utils';
 
 export const ProcessDisplay = withSelector(Process);
 
@@ -39,6 +40,8 @@ function Process() {
         return getDiagramXML(views);
       }
     }
+
+    addDestroyEventCleanUp(eventsBus, dispatchAction, xmlProperty);
 
     return template(node, eventsBus);
   };

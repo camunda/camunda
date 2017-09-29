@@ -3,7 +3,8 @@ export {
   createLoadingDiagramErrorAction, createLoadingHeatmapAction,
   createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction,
   createLoadingTargetValueAction, createLoadingTargetValueResultAction,
-  createLoadingTargetValueErrorAction
+  createLoadingTargetValueErrorAction,
+  xmlProperty, heatmapProperty, targetValueProperty
 } from './reducer';
 export {resetStatisticData} from './analytics';
 export {ViewsDiagramArea} from './ViewsDiagramArea';
