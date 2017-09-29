@@ -1,6 +1,6 @@
 // vim: set filetype=groovy:
 
-def jobName = 'zeebe-docs'
+def jobName = 'zeebe-docs-stage'
 def repository = 'zeebe'
 def gitBranch = 'master'
 
@@ -15,20 +15,27 @@ freeStyleJob(jobName)
                 github 'zeebe-io/' + repository, 'ssh'
                 credentials 'camunda-jenkins-github-ssh'
             }
-            branch '$RELEASE_VERSION'
+            branch gitBranch
+            extensions
+            {
+                localBranch gitBranch
+                pathRestriction {
+                    includedRegions 'docs/.*'
+                    excludedRegions ''
+                }
+            }
         }
     }
-
-    parameters
+    triggers
     {
-        stringParam('RELEASE_VERSION', 'master', 'Git commit/tag to publish')
+        githubPush()
     }
 
     label 'master'
 
     steps
     {
-        shell readFileFromWorkspace('.ci/release_docs.sh')
+        shell readFileFromWorkspace('.ci/stage_docs.sh')
     }
 
     wrappers

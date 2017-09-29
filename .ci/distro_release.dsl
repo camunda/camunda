@@ -167,7 +167,7 @@ mavenJob(jobName)
             {
                 downstreamParameterized
                 {
-                    trigger('zeebe-DISTRO-docker')
+                    trigger('zeebe-DISTRO-docker, zeebe-docs')
                     {
                         condition('SUCCESS')
                         parameters {
