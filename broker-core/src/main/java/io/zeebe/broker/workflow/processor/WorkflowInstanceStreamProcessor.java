@@ -38,7 +38,6 @@ import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.model.bpmn.BpmnAspect;
-import io.zeebe.model.bpmn.impl.instance.ExclusiveGatewayImpl;
 import io.zeebe.model.bpmn.instance.*;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -62,7 +61,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
     protected final CancelWorkflowInstanceProcessor cancelWorkflowInstanceProcessor = new CancelWorkflowInstanceProcessor();
 
-    protected final UpdatePayloadProcessor updatePayloadProcessor = new UpdatePayloadProcessor();
+    protected final EventProcessor updatePayloadProcessor = new UpdatePayloadProcessor();
 
     protected final EventProcessor sequenceFlowTakenEventProcessor = new ActiveWorkflowInstanceProcessor(new SequenceFlowTakenEventProcessor());
     protected final EventProcessor activityReadyEventProcessor = new ActiveWorkflowInstanceProcessor(new ActivityReadyEventProcessor());
@@ -259,6 +258,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             case START_EVENT_OCCURRED:
             case END_EVENT_OCCURRED:
+            case GATEWAY_ACTIVATED:
             case ACTIVITY_COMPLETED:
             {
                 final FlowNode currentActivity = getCurrentActivity();
@@ -524,17 +524,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             return writeWorkflowEvent(writer.positionAsKey());
         }
-
-        @Override
-        public void updateState()
-        {
-            workflowInstanceIndex
-                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityKey(-1L)
-                .write();
-
-            activityInstanceMap.remove(eventKey);
-        }
     }
 
     private final class ExclusiveSplitAspectHandler implements EventProcessor
@@ -582,17 +571,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             return writeWorkflowEvent(writer.positionAsKey());
         }
-
-        @Override
-        public void updateState()
-        {
-            workflowInstanceIndex
-                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityKey(-1L)
-                .write();
-
-            activityInstanceMap.remove(eventKey);
-        }
     }
 
     private final class ConsumeTokenAspectHandler implements EventProcessor
@@ -639,15 +617,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 workflowInstanceIndex.remove(workflowInstanceEvent.getWorkflowInstanceKey());
                 payloadCache.remove(workflowInstanceEvent.getWorkflowInstanceKey());
             }
-            else
-            {
-                workflowInstanceIndex
-                    .setActiveTokenCount(activeTokenCount - 1)
-                    .setActivityKey(-1L)
-                    .write();
-
-                activityInstanceMap.remove(eventKey);
-            }
         }
     }
 
@@ -665,13 +634,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.END_EVENT_OCCURRED);
             }
-            else if (targetNode instanceof ServiceTask || targetNode instanceof ExclusiveGatewayImpl)
+            else if (targetNode instanceof ServiceTask)
             {
                 workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_READY);
             }
+            else if (targetNode instanceof ExclusiveGateway)
+            {
+                workflowInstanceEvent.setState(WorkflowInstanceState.GATEWAY_ACTIVATED);
+            }
             else
             {
-                throw new RuntimeException(String.format("Activity of type '%s' is not supported.", targetNode));
+                throw new RuntimeException(String.format("Flow node of type '%s' is not supported.", targetNode));
             }
         }
 
@@ -686,30 +659,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         private final DirectBuffer sourcePayload = new UnsafeBuffer(0, 0);
 
-        private boolean isServiceTask;
-
         @Override
         public void processEvent()
         {
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
-            final FlowElement currentActivity = getCurrentActivity();
-            isServiceTask = currentActivity instanceof ServiceTask;
-
-            if (isServiceTask)
+            final ServiceTask serviceTask = getCurrentActivity();
+            try
             {
-                try
-                {
-                    final ServiceTask serviceTask = (ServiceTask) currentActivity;
-                    setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
-                }
-                catch (Exception e)
-                {
-                    // update the map in any case because further processors based on it (#311 should improve behavior)
-                    updateState();
-                    // re-throw the exception to create the incident
-                    throw e;
-                }
+                setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
+            }
+            catch (Exception e)
+            {
+                // update the map in any case because further processors based on it (#311 should improve behavior)
+                updateState();
+                // re-throw the exception to create the incident
+                throw e;
             }
         }
 
@@ -745,7 +710,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setTaskKey(-1L)
                 .write();
 
-            if (isServiceTask && !isNilPayload(sourcePayload))
+            if (!isNilPayload(sourcePayload))
             {
                 payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, sourcePayload);
             }
@@ -754,37 +719,21 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
-        private boolean isServiceTask;
-
         @Override
         public void processEvent()
         {
-            final FlowElement currentActivity = getCurrentActivity();
+            final ServiceTask serviceTask = getCurrentActivity();
+            final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
 
-            isServiceTask = currentActivity instanceof ServiceTask;
-            if (isServiceTask)
-            {
-                final ServiceTask serviceTask = (ServiceTask) currentActivity;
-                final TaskDefinition taskDefinition = serviceTask.getTaskDefinition();
+            taskEvent.reset();
 
-                taskEvent.reset();
+            taskEvent
+                .setState(TaskState.CREATE)
+                .setType(taskDefinition.getTypeAsBuffer())
+                .setRetries(taskDefinition.getRetries())
+                .setPayload(workflowInstanceEvent.getPayload());
 
-                taskEvent
-                    .setState(TaskState.CREATE)
-                    .setType(taskDefinition.getTypeAsBuffer())
-                    .setRetries(taskDefinition.getRetries())
-                    .setPayload(workflowInstanceEvent.getPayload());
-
-                setTaskHeaders(serviceTask);
-            }
-            else if (currentActivity instanceof ExclusiveGateway)
-            {
-                workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETING);
-            }
-            else
-            {
-                throw new RuntimeException(String.format("Activity of type '%s' is not supported.", currentActivity));
-            }
+            setTaskHeaders(serviceTask);
         }
 
         private void setTaskHeaders(ServiceTask serviceTask)
@@ -807,14 +756,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            if (isServiceTask)
-            {
-                return writeTaskEvent(writer.positionAsKey());
-            }
-            else
-            {
-                return writeWorkflowEvent(writer.key(eventKey));
-            }
+            return writeTaskEvent(writer.positionAsKey());
         }
     }
 
@@ -911,12 +853,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETED);
 
-            final FlowElement currentActivity = getCurrentActivity();
-            if (currentActivity instanceof ServiceTask)
-            {
-                final ServiceTask serviceTask = (ServiceTask) currentActivity;
-                setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getOutputMappings());
-            }
+            final ServiceTask serviceTask = getCurrentActivity();
+            setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getOutputMappings());
         }
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
@@ -945,6 +883,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             return writeWorkflowEvent(writer.key(eventKey));
+        }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstanceIndex
+                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .setActivityKey(-1L)
+                .write();
+
+            activityInstanceMap.remove(eventKey);
         }
     }
 
@@ -1093,18 +1042,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             isUpdated = false;
 
-            final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey()).getActivityInstanceKey();
+            final boolean isActive = workflowInstanceIndex
+                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .getTokenCount() > 0;
 
-            // the payload can be updated if the activity is not completed yet
             WorkflowInstanceState workflowInstanceEventType = WorkflowInstanceState.UPDATE_PAYLOAD_REJECTED;
-            if (currentActivityInstanceKey > 0 && currentActivityInstanceKey == eventKey)
+            if (isActive && isValidPayload(workflowInstanceEvent.getPayload()))
             {
-                final DirectBuffer payload = workflowInstanceEvent.getPayload();
-                if (isValidPayload(payload))
-                {
-                    workflowInstanceEventType = WorkflowInstanceState.PAYLOAD_UPDATED;
-                    isUpdated = true;
-                }
+                workflowInstanceEventType = WorkflowInstanceState.PAYLOAD_UPDATED;
+                isUpdated = true;
             }
             workflowInstanceEvent.setState(workflowInstanceEventType);
         }

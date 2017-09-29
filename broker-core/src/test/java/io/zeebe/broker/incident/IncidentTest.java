@@ -523,7 +523,7 @@ public class IncidentTest
         // then incident is created
         testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
-        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
@@ -552,7 +552,7 @@ public class IncidentTest
         // then incident is created
         testClient.receiveSingleEvent(incidentEvents("CREATED"));
 
-        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());

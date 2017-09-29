@@ -17,18 +17,14 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentState;
+import io.zeebe.broker.incident.data.*;
 import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
@@ -192,6 +188,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
             case ACTIVITY_ACTIVATED:
             case ACTIVITY_COMPLETED:
+            case GATEWAY_ACTIVATED:
                 return activityIncidentResolvedProcessor;
 
             case ACTIVITY_TERMINATED:

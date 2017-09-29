@@ -28,6 +28,8 @@ public enum WorkflowInstanceState
 
     SEQUENCE_FLOW_TAKEN,
 
+    GATEWAY_ACTIVATED,
+
     ACTIVITY_READY,
     ACTIVITY_ACTIVATED,
     ACTIVITY_COMPLETING,

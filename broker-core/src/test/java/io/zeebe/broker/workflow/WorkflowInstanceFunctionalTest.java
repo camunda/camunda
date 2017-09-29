@@ -436,7 +436,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final List<SubscribedEvent> workflowEvents = testClient
                 .receiveEvents(workflowInstanceEvents())
-                .limit(11)
+                .limit(8)
                 .collect(Collectors.toList());
 
         assertThat(workflowEvents).extracting(e -> e.event().get(PROP_STATE)).containsExactly(
@@ -445,10 +445,7 @@ public class WorkflowInstanceFunctionalTest
                 "WORKFLOW_INSTANCE_CREATED",
                 "START_EVENT_OCCURRED",
                 "SEQUENCE_FLOW_TAKEN",
-                "ACTIVITY_READY",
-                "ACTIVITY_ACTIVATED",
-                "ACTIVITY_COMPLETING",
-                "ACTIVITY_COMPLETED",
+                "GATEWAY_ACTIVATED",
                 "SEQUENCE_FLOW_TAKEN",
                 "END_EVENT_OCCURRED",
                 "WORKFLOW_INSTANCE_COMPLETED");

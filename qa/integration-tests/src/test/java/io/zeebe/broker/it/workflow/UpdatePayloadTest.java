@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskType;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,7 +25,6 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -43,7 +41,6 @@ public class UpdatePayloadTest
             .startEvent("start")
             .serviceTask("task-1", t -> t.taskType("task-1")
                          .output("$.result", "$.result"))
-            .serviceTask("task-2", t -> t.taskType("task-2"))
             .endEvent("end")
             .done();
 
@@ -95,14 +92,14 @@ public class UpdatePayloadTest
             .handler((c, t) -> c.complete(t).payload("{\"result\": \"ok\"}").execute())
             .open();
 
-        waitUntil(() -> eventRecorder.hasTaskEvent(taskType("task-2")));
+        waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")));
 
-        final TaskEvent task2 = eventRecorder.getTaskEvents(taskType("task-2")).get(0);
-        assertThat(task2.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
+        final WorkflowInstanceEvent wfEvent = eventRecorder.getWorkflowInstanceEvents(wfInstanceEvent("WORKFLOW_INSTANCE_COMPLETED")).get(0);
+        assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":\"bar\",\"result\":\"ok\"}");
     }
 
     @Test
-    public void shouldFailUpdatePayloadIfActivityIsCompleted()
+    public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted()
     {
         // given
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -118,7 +115,7 @@ public class UpdatePayloadTest
 
         waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED")));
 
-        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_COMPLETED"));
+        final WorkflowInstanceEvent activityInstance = eventRecorder.getSingleWorkflowInstanceEvent(wfInstanceEvent("ACTIVITY_ACTIVATED"));
 
         // then
         thrown.expect(ClientCommandRejectedException.class);

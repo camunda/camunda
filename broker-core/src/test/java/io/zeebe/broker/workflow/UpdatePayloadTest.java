@@ -133,27 +133,6 @@ public class UpdatePayloadTest
     }
 
     @Test
-    public void shouldRejectUpdateForCompletedActivity() throws Exception
-    {
-        // given
-        testClient.deploy(WORKFLOW);
-
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
-
-        testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
-
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
-
-        // when
-        final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSGPACK_PAYLOAD);
-
-        // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
-
-        testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
-    }
-
-    @Test
     public void shouldRejectUpdateForNonExistingWorkflowInstance() throws Exception
     {
         // when
