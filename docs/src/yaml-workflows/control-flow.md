@@ -48,7 +48,7 @@ tasks:
           - case: $.totalPrice > 100
             goto: ship-parcel-with-insurance
 
-      default: ship-parcel
+          - default: ship-parcel
 
     - id: ship-parcel-with-insurance
       type: shipment-service-premium
