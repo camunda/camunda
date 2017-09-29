@@ -50,7 +50,7 @@ As an alternative to BPMN 2.0, Zeebe supports a YAML format for workflows. It of
 
 Zeebe provides a Modeler for BPMN. The modeler is a standalone desktop application based on the [https://bpmn.io](https://bpmn.io "bpmn.io") open source project.
 
-The modeler can be downloaded from [camunda.org](https://camunda.org/bpmn/tool/).
+The modeler can be downloaded from [github.com/zeebe-io/zeebe-modeler](https://github.com/zeebe-io/zeebe-modeler/releases).
 
 ## Deploying a Workflow
 
