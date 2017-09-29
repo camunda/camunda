@@ -40,9 +40,6 @@ public class YamlTask
     @JsonProperty("switch")
     private List<YamlCase> cases = new ArrayList<>();
 
-    @JsonProperty("default")
-    private String defaultCase;
-
     public String getId()
     {
         return id;
@@ -122,16 +119,6 @@ public class YamlTask
     public void setNext(String next)
     {
         this.next = next;
-    }
-
-    public String getDefaultCase()
-    {
-        return defaultCase;
-    }
-
-    public void setDefaultCase(String defaultCase)
-    {
-        this.defaultCase = defaultCase;
     }
 
     public boolean isEnd()

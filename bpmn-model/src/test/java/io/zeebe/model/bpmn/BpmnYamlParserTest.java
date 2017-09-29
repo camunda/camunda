@@ -34,6 +34,7 @@ public class BpmnYamlParserTest
     private static final String INVALID_WORKFLOW = "/invalid_process.yaml";
     private static final String WORKFLOW_WITH_TASK_SEQUENCE = "/process.yaml";
     private static final String WORKFLOW_WITH_SPLIT = "/process-conditions.yaml";
+    private static final String INVALID_WORKFLOW_WITH_SPLIT = "/invalid_process-conditions.yaml";
 
     @Test
     public void shouldReadFromFile() throws Exception
@@ -180,6 +181,20 @@ public class BpmnYamlParserTest
         assertThat(validationResult.toString())
             .contains("BPMN process id is required.")
             .contains("A task definition must contain a 'type' attribute which specifies the type of the task.");
+    }
+
+    @Test
+    public void shouldReadWorkflowWithInvalidExclusiveSplit() throws Exception
+    {
+        final URL resource = getClass().getResource(INVALID_WORKFLOW_WITH_SPLIT);
+        final File yamlFile = new File(resource.toURI());
+
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromYamlFile(yamlFile);
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString())
+                .contains("A sequence flow on an exclusive gateway must have a condition, if it is not the default flow.");
     }
 
     private WorkflowDefinition parseWorkflow(String path)

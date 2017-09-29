@@ -25,6 +25,9 @@ public class YamlCase
     @JsonProperty("goto")
     private String next = "";
 
+    @JsonProperty("default")
+    private String defaultCase;
+
     public String getCondition()
     {
         return condition;
@@ -45,4 +48,13 @@ public class YamlCase
         this.next = next;
     }
 
+    public String getDefaultCase()
+    {
+        return defaultCase;
+    }
+
+    public void setDefaultCase(String defaultCase)
+    {
+        this.defaultCase = defaultCase;
+    }
 }

@@ -119,18 +119,20 @@ public class BpmnYamlParser
 
             for (YamlCase flow : task.getCases())
             {
-                builder.continueAt(gatewayId);
-                builder.sequenceFlow(s -> s.condition(flow.getCondition()));
+                if (flow.getDefaultCase() != null)
+                {
+                    builder.continueAt(gatewayId);
+                    builder.sequenceFlow(s -> s.defaultFlow());
 
-                addTask(bpmnBuilder, flow.getNext());
-            }
+                    addTask(bpmnBuilder, flow.getDefaultCase());
+                }
+                else
+                {
+                    builder.continueAt(gatewayId);
+                    builder.sequenceFlow(s -> s.condition(flow.getCondition()));
 
-            if (task.getDefaultCase() != null)
-            {
-                builder.continueAt(gatewayId);
-                builder.sequenceFlow(s -> s.defaultFlow());
-
-                addTask(bpmnBuilder, task.getDefaultCase());
+                    addTask(bpmnBuilder, flow.getNext());
+                }
             }
         }
         else if (task.getNext() != null)

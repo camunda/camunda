@@ -1,29 +1,31 @@
 name: test
 
 tasks:
-    
+
     - id: task1
       type: foo
       switch:
           - case: $.foo < 5
             goto: task2
-            
+
           - case: $.foo >= 5 && $.foo < 10
             goto: task3
-            
+
           - default: task4
-                  
-                  
+
+          - default: task2
+
+
     - id: task2
       type: foo
       goto: task5
 
     - id: task3
       type: foo
-      
+
     - id: task4
       type: foo
       end: true
-      
+
     - id: task5
-      type: foo  
+      type: foo
