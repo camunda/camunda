@@ -23,10 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -92,7 +90,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     JoranConfigurator configurator = new JoranConfigurator();
     InputStream configStream = null;
     try {
-      configStream = getLogbackConfigurationFilePath();
+      configStream = getLogbackConfigurationFileStream();
       configurator.setContext(loggerContext);
       configurator.doConfigure(configStream); // loads logback file
       configStream.close();
@@ -110,7 +108,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
-  private InputStream getLogbackConfigurationFilePath() {
+  private InputStream getLogbackConfigurationFileStream() {
     InputStream stream  = this.getClass().getClassLoader().getResourceAsStream("environment-logback.xml");
     if(stream != null) {
       return stream;
