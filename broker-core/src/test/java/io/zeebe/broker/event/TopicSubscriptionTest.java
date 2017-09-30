@@ -23,6 +23,7 @@ import static io.zeebe.test.util.BufferAssert.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -526,7 +527,7 @@ public class TopicSubscriptionTest
                 .openTopicSubscription("foo", 0)
                 .await();
         })
-            .until((r) -> r != null);
+            .until(Objects::nonNull, 50, "Failed to reopen topic subscription");
 
         final long secondSubscriberKey = subscriptionResponse.key();
 
