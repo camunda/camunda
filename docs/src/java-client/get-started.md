@@ -61,7 +61,6 @@ public class Application
 
         final ZeebeClient client = ZeebeClient.create(clientProperties);
 
-        client.connect();
         System.out.println("Connected.");
 
         // ...
