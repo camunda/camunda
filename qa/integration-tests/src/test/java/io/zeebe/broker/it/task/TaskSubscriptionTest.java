@@ -387,7 +387,7 @@ public class TaskSubscriptionTest
                 .handler(taskHandler)
                 .open();
 
-        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty(), 50, "Failed to open task subscription after reconnect");
 
         assertThat(taskHandler.getHandledTasks()).hasSize(1);
     }
