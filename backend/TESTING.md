@@ -110,7 +110,11 @@ Note, that there are two kind of integration tests:
 * Backend end to end test: Data is added to the engine, imported to Optimize and a query executed. Therefore, all three rules are needed.
 * Rest service tests: The idea is just to test the rest endpoint. Data is added to elasticsearch manually, a rest request is performed against Optimize and the result validated. Therefore, only the *EmbeddedOptimizeRule* and the *ElasticSearchIntegrationTestRule* are needed here. Also use the application context */rest/restTestApplicationContext.xml* for this kind of tests.
 
-### Performance testing
+### Working with snapshots 
+
+While executing integration tests it might be useful snapshots of data from elasticsearch. Please refer to [wiki](https://github.com/camunda/camunda-optimize/wiki/Using-ES-snapshots) for more information. 
+
+## Performance testing
 
 There are two kinds of performance tests:
 
