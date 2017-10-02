@@ -12,8 +12,8 @@
       "enabled": true
     }
   },
-  "engine": {
-    "import": {
+  "import": {
+    "data" : {
       "process-definition-xml": {
         "pageSize": {
           "max": 30
