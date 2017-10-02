@@ -89,6 +89,9 @@ test-topic-subscription-throughput:
 clean: undeploy-broker
 	scripts/clean.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
 
+clean-data:
+	rm -rf data/*
+
 build:
 	cd ../.. && mvn clean package -U -B -DskipTests
 

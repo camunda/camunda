@@ -177,7 +177,7 @@ static String makeStep(String target) {
 
 cd qa/perf-tests/
 export BROKER_HOST=192.168.0.21
-make -e clean build
+make -e clean clean-data build
 make -e deploy-broker
 make -e ${target}
 make -e save-log
