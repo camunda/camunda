@@ -47,6 +47,36 @@ git config --global user.email "ci@camunda.com"
 git config --global user.name "camunda-jenkins"
 '''
 
+def githubRelease = '''\
+#!/bin/bash
+
+cd dist/target
+
+# create checksum files
+sha1sum zeebe-distribution-${RELEASE_VERSION}.tar.gz > zeebe-distribution-${RELEASE_VERSION}.tar.gz.sha1sum
+sha1sum zeebe-distribution-${RELEASE_VERSION}.zip > zeebe-distribution-${RELEASE_VERSION}.zip.sha1sum
+
+# do github release
+curl -sL https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2 | tar xjvf - --strip 3
+
+./github-release release \
+    --user zeebe-io \
+    --repo zeebe \
+    --tag ${RELEASE_VERSION} \
+    --name "Zeebe ${RELEASE_VERSION}" \
+    --description "\\# CHANGELOG" \
+    --pre-release
+
+for f in zeebe-distribution-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
+    ./github-release upload \
+        --user zeebe-io \
+        --repo zeebe \
+        --tag ${RELEASE_VERSION} \
+        --name "${f}" \
+        --file "${f}"
+done
+'''
+
 // properties used by the release build
 def releaseProperties =
 [
@@ -127,6 +157,8 @@ mavenJob(jobName)
           string('GPG_PASSPHRASE', 'password_maven_central_gpg_signing_key')
           file('MVN_CENTRAL_GPG_KEY_SEC', 'maven_central_gpg_signing_key')
           file('MVN_CENTRAL_GPG_KEY_PUB', 'maven_central_gpg_signing_key_pub')
+          // github token for release upload
+          string('GITHUB_TOKEN', 'github-camunda-jenkins-token')
         }
 
         release
@@ -160,6 +192,8 @@ mavenJob(jobName)
                     properties releaseProperties
                     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
                 }
+
+                shell githubRelease
 
             }
 
