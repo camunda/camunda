@@ -115,7 +115,7 @@ public class ErrorResponseWriter implements BufferWriter
         if (!isWritten)
         {
             LOG.error("Failed to write error response. Error code: '{}', error message: '{}'",
-                errorCode.name(),
+                errorCode != null ? errorCode.name() : ErrorCode.NULL_VAL.name(),
                 new String(errorMessage, StandardCharsets.UTF_8)
             );
         }
