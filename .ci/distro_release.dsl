@@ -59,21 +59,10 @@ sha1sum zeebe-distribution-${RELEASE_VERSION}.zip > zeebe-distribution-${RELEASE
 # do github release
 curl -sL https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2 | tar xjvf - --strip 3
 
-./github-release release \
-    --user zeebe-io \
-    --repo zeebe \
-    --tag ${RELEASE_VERSION} \
-    --name "Zeebe ${RELEASE_VERSION}" \
-    --description "\\# CHANGELOG" \
-    --pre-release
+./github-release release --user zeebe-io --repo zeebe --tag ${RELEASE_VERSION} --name "Zeebe ${RELEASE_VERSION}" --description "\\# CHANGELOG" --pre-release
 
 for f in zeebe-distribution-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
-    ./github-release upload \
-        --user zeebe-io \
-        --repo zeebe \
-        --tag ${RELEASE_VERSION} \
-        --name "${f}" \
-        --file "${f}"
+    ./github-release upload --user zeebe-io --repo zeebe --tag ${RELEASE_VERSION} --name "${f}" --file "${f}"
 done
 '''
 
