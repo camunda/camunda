@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
@@ -36,6 +37,17 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 public class BrokerTest
 {
 
+    protected Broker broker;
+
+    @After
+    public void tearDown()
+    {
+        if (broker != null)
+        {
+            broker.close();
+        }
+    }
+
     /**
      * This tests the constructor that takes a {@link ConfigurationManager} instance.
      * This is used in the Spring integration.
@@ -47,7 +59,7 @@ public class BrokerTest
         final ConfigurationManager configurationManager = new ConfigurationManagerImpl(configStream);
 
         // when
-        final Broker broker = new Broker(configurationManager);
+        broker = new Broker(configurationManager);
 
         // then I can register a dependency to a broker service successfully
         final CompletableFuture<Void> future = broker.getBrokerContext().getServiceContainer()
