@@ -33,7 +33,7 @@ public class BpmnValidationTest
     @Test
     public void shouldValidateBpmnFile() throws Exception
     {
-        final URL resource = getClass().getResource("/invalid_process.bpmn");
+        final URL resource = getClass().getResource("/invalid_process-activity-id.bpmn");
         final File bpmnFile = new File(resource.toURI());
 
         final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
@@ -100,6 +100,22 @@ public class BpmnValidationTest
 
         assertThat(validationResult.hasErrors()).isTrue();
         assertThat(validationResult.toString()).contains("A task definition must contain a 'type' attribute which specifies the type of the task.");
+    }
+
+    @Test
+    public void testInvalidElement() throws Exception
+    {
+        final URL resource = getClass().getResource("/invalid_process-task-type.bpmn");
+        final File bpmnFile = new File(resource.toURI());
+
+        final WorkflowDefinition workflowDefinition = Bpmn.readFromXmlFile(bpmnFile);
+
+        final ValidationResult validationResult = Bpmn.validate(workflowDefinition);
+
+        assertThat(validationResult.hasErrors()).isTrue();
+        assertThat(validationResult.toString())
+            .contains("Cannot find target of sequence flow.")
+            .contains("Cannot find source of sequence flow.");
     }
 
     @Test

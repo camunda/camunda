@@ -123,6 +123,16 @@ public class BpmnValidator
                 validationResult.addError(flowNode, "The flow element must not have more than one outgoing sequence flow.");
             }
         }
+
+        flowNode.getIncomingSequenceFlows().stream().filter(s -> s.getSourceNode() == null).forEach(s ->
+        {
+            validationResult.addError(s, "Cannot find source of sequence flow.");
+        });
+
+        flowNode.getOutgoingSequenceFlows().stream().filter(s -> s.getTargetNode() == null).forEach(s ->
+        {
+            validationResult.addError(s, "Cannot find target of sequence flow.");
+        });
     }
 
     private void validateServiceTask(ValidationResultImpl validationResult, ServiceTask serviceTask)

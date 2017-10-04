@@ -105,8 +105,6 @@ public class BpmnYamlParserTest
     {
         final WorkflowDefinition workflowDefinition = parseWorkflow(WORKFLOW_WITH_TASK_SEQUENCE);
 
-        System.out.println(Bpmn.convertToString(workflowDefinition));
-
         final Workflow workflow = workflowDefinition.getWorkflow(wrapString("test"));
         assertThat(workflow).isNotNull();
 
