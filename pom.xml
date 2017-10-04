@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Root</name>
   <artifactId>zeebe-root</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -54,7 +54,7 @@
     <url>https://github.com/zeebe-io/zeebe</url>
     <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
-    <tag>0.3.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
