@@ -56,7 +56,6 @@ public class SubscribedEventWriterTest
             .eventType(EventType.RAFT_EVENT)
             .key(123L)
             .position(546L)
-            .topicName(wrapString("test-topic"))
             .partitionId(876)
             .subscriberKey(4L)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
@@ -73,7 +72,6 @@ public class SubscribedEventWriterTest
         assertThat(bodyDecoder.eventType()).isEqualTo(EventType.RAFT_EVENT);
         assertThat(bodyDecoder.key()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
-        assertThat(bodyDecoder.topicName()).isEqualTo("test-topic");
         assertThat(bodyDecoder.partitionId()).isEqualTo(876);
         assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
 

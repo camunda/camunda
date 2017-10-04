@@ -64,8 +64,7 @@ public class LockExpirationTest
         final long lockTime = 1000L;
 
         apiRule.openTaskSubscription(
-                ClientApiRule.DEFAULT_TOPIC_NAME,
-                ClientApiRule.DEFAULT_PARTITION_ID,
+                apiRule.getDefaultPartitionId(),
                 taskType,
                 lockTime);
 
@@ -91,8 +90,6 @@ public class LockExpirationTest
     protected long createTask(String type)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")

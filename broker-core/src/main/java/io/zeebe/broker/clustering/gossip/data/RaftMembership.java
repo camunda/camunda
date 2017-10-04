@@ -269,6 +269,7 @@ public class RaftMembership
         return topicNameBuffer() != null ? topicNameBuffer().equals(that.topicNameBuffer()) : that.topicNameBuffer() == null;
     }
 
+
     @Override
     public int hashCode()
     {

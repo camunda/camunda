@@ -26,8 +26,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
-import io.zeebe.map.Bytes2BytesZbMap;
-import io.zeebe.map.iterator.Bytes2BytesZbMapEntry;
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 
 /**
  * Maps
@@ -40,44 +40,36 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
 {
 
     protected static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
-    protected static final int KEY_LENGTH = TopicsIndex.MAX_TOPIC_NAME_LENGTH + BitUtil.SIZE_OF_INT;
-    protected static final int KEY_PARTITION_ID_OFFSET = 0;
-    protected static final int KEY_TOPIC_NAME_LENGTH_OFFSET = BitUtil.SIZE_OF_INT;
-    protected static final int KEY_TOPIC_NAME_OFFSET = KEY_TOPIC_NAME_LENGTH_OFFSET + BitUtil.SIZE_OF_INT;
 
     protected static final int VALUE_LENGTH = 2 * BitUtil.SIZE_OF_LONG;
-    protected static final int VALUE_KEY_OFFSET = 0;
+    protected static final int VALUE_POSITION_OFFSET = 0;
     protected static final int VALUE_TIME_OFFSET = BitUtil.SIZE_OF_LONG;
 
-    protected final Bytes2BytesZbMap pendingPartitions;
+    protected final Long2BytesZbMap pendingPartitions;
 
     protected PendingPartitionImpl partition = new PendingPartitionImpl();
 
-    protected final MutableDirectBuffer indexKey = new UnsafeBuffer(new byte[KEY_LENGTH]);
     protected final MutableDirectBuffer indexValue = new UnsafeBuffer(new byte[VALUE_LENGTH]);
 
     protected PendingPartitionIterator iterator = new PendingPartitionIterator();
 
     public PendingPartitionsIndex()
     {
-        this.pendingPartitions = new Bytes2BytesZbMap(KEY_LENGTH, VALUE_LENGTH);
+        this.pendingPartitions = new Long2BytesZbMap(VALUE_LENGTH);
     }
 
-    public Bytes2BytesZbMap getRawMap()
+    public Long2BytesZbMap getRawMap()
     {
         return pendingPartitions;
     }
 
-    public PendingPartition get(DirectBuffer topicName, int partitionId)
+    public PendingPartition get(int partitionId)
     {
-        final int nameLength = topicName.capacity();
-        initIndexKey(topicName, 0, nameLength, partitionId);
-
-        final DirectBuffer currentValue = pendingPartitions.get(indexKey, 0, BitUtil.SIZE_OF_INT + nameLength);
+        final DirectBuffer currentValue = pendingPartitions.get(partitionId);
 
         if (currentValue != null)
         {
-            partition.wrap(indexKey, currentValue);
+            partition.wrap(partitionId, currentValue);
             return partition;
         }
         else
@@ -86,27 +78,17 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
         }
     }
 
-    public void putPartitionKey(DirectBuffer topicName, int partitionId, long partitionKey, long creationTimeout)
+    public void putPartition(int partitionId, long position, long creationTimeout)
     {
-        initIndexKey(topicName, 0, topicName.capacity(), partitionId);
-        indexValue.putLong(VALUE_KEY_OFFSET, partitionKey, BYTE_ORDER);
+        indexValue.putLong(VALUE_POSITION_OFFSET, position, BYTE_ORDER);
         indexValue.putLong(VALUE_TIME_OFFSET, creationTimeout, BYTE_ORDER);
 
-        pendingPartitions.put(indexKey, 0, BitUtil.SIZE_OF_INT + topicName.capacity(), indexValue);
+        pendingPartitions.put(partitionId, indexValue);
     }
 
-    public void removePartitionKey(DirectBuffer topicName, int partitionId)
+    public void removePartitionKey(int partitionId)
     {
-        initIndexKey(topicName, 0, topicName.capacity(), partitionId);
-
-        pendingPartitions.remove(indexKey, 0, BitUtil.SIZE_OF_INT + topicName.capacity());
-    }
-
-    private void initIndexKey(DirectBuffer topicName, int offset, int length, int partitionId)
-    {
-        indexKey.putInt(KEY_PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
-        indexKey.putInt(KEY_TOPIC_NAME_LENGTH_OFFSET, length);
-        indexKey.putBytes(KEY_TOPIC_NAME_OFFSET, topicName, offset, length);
+        pendingPartitions.remove(partitionId);
     }
 
     public boolean isEmpty()
@@ -125,8 +107,8 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
     protected class PendingPartitionIterator implements Iterator<PendingPartition>
     {
 
-        protected Iterator<Bytes2BytesZbMapEntry> iterator;
-        protected DirectBuffer currentKey;
+        protected Iterator<Long2BytesZbMapEntry> iterator;
+        protected long currentKey;
         protected DirectBuffer currentValue;
         protected PendingPartitionImpl partition = new PendingPartitionImpl();
 
@@ -144,53 +126,42 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
         @Override
         public PendingPartition next()
         {
-            final Bytes2BytesZbMapEntry entry = iterator.next();
-            partition.wrap(entry.getKey(), entry.getValue());
+            final Long2BytesZbMapEntry entry = iterator.next();
+            partition.wrap((int) entry.getKey(), entry.getValue());
             return partition;
         }
     }
 
     public interface PendingPartition
     {
-        DirectBuffer getTopicName();
-
         int getPartitionId();
 
-        long getPartitionKey();
+        long getPosition();
 
         long getCreationTimeout();
     }
 
     protected class PendingPartitionImpl implements PendingPartition
     {
-        protected DirectBuffer currentKey;
-        protected DirectBuffer currentTopicName = new UnsafeBuffer(0, 0);
+        protected int partitionId;
         protected DirectBuffer currentValue;
 
-        public void wrap(DirectBuffer currentKey, DirectBuffer currentValue)
+        public void wrap(int partitionId, DirectBuffer currentValue)
         {
-            this.currentKey = currentKey;
+            this.partitionId = partitionId;
             this.currentValue = currentValue;
-        }
-
-        @Override
-        public DirectBuffer getTopicName()
-        {
-            final int topicNameLength = currentKey.getInt(KEY_TOPIC_NAME_LENGTH_OFFSET, BYTE_ORDER);
-            currentTopicName.wrap(currentKey, KEY_TOPIC_NAME_OFFSET, topicNameLength);
-            return currentTopicName;
         }
 
         @Override
         public int getPartitionId()
         {
-            return currentKey.getInt(KEY_PARTITION_ID_OFFSET, BYTE_ORDER);
+            return partitionId;
         }
 
         @Override
-        public long getPartitionKey()
+        public long getPosition()
         {
-            return currentValue.getLong(VALUE_KEY_OFFSET, BYTE_ORDER);
+            return currentValue.getLong(VALUE_POSITION_OFFSET, BYTE_ORDER);
         }
 
         @Override

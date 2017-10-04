@@ -45,22 +45,19 @@ public class TestTopicClient
     public static final String PROP_WORKFLOW_KEY = "workflowKey";
 
     private final ClientApiRule apiRule;
-    private final String topicName;
     private final int partitionId;
 
     private boolean isTopicSubscriptionOpen = false;
 
-    public TestTopicClient(final ClientApiRule apiRule, final String topicName, final int partitionId)
+    public TestTopicClient(final ClientApiRule apiRule, final int partitionId)
     {
         this.apiRule = apiRule;
-        this.topicName = topicName;
         this.partitionId = partitionId;
     }
 
     public long deploy(final WorkflowDefinition workflow)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .topicName(topicName)
                 .partitionId(partitionId)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
@@ -80,7 +77,6 @@ public class TestTopicClient
     public ExecuteCommandResponse createWorkflowInstanceWithResponse(String bpmnProcessId)
     {
         return apiRule.createCmdRequest()
-                      .topicName(topicName)
                       .partitionId(partitionId)
                       .eventTypeWorkflow()
                       .command()
@@ -93,7 +89,6 @@ public class TestTopicClient
     public long createWorkflowInstance(String bpmnProcessId)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .topicName(topicName)
                 .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
@@ -116,7 +111,6 @@ public class TestTopicClient
     public long createWorkflowInstance(String bpmnProcessId, byte[] payload)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .topicName(topicName)
                 .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
@@ -154,7 +148,7 @@ public class TestTopicClient
 
     public void completeTask(String taskType, byte[] payload, Predicate<SubscribedEvent> taskEventFilter)
     {
-        apiRule.openTaskSubscription(topicName, partitionId, taskType, 1000L).await();
+        apiRule.openTaskSubscription(partitionId, taskType, 1000L).await();
 
         final SubscribedEvent taskEvent = apiRule
             .subscribedEvents()
@@ -163,7 +157,6 @@ public class TestTopicClient
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
         final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
-                                                                           .topicName(topicName)
                                                                            .partitionId(partitionId)
                                                                            .key(taskEvent.key())
                                                                            .eventTypeTask()
@@ -209,7 +202,7 @@ public class TestTopicClient
     {
         if (!isTopicSubscriptionOpen)
         {
-            final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicName, partitionId, "test", 0).await();
+            final ExecuteCommandResponse response = apiRule.openTopicSubscription(partitionId, "test", 0).await();
             assertThat(response.key()).isGreaterThanOrEqualTo(0);
 
             isTopicSubscriptionOpen = true;

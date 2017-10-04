@@ -22,8 +22,6 @@ import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
 import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -41,35 +39,25 @@ public class LogStreamsManager
 {
     protected LogStreamsCfg logStreamsCfg;
     protected ActorScheduler actorScheduler;
-    protected Map<DirectBuffer, Int2ObjectHashMap<LogStream>> logStreams;
+    protected Int2ObjectHashMap<LogStream> logStreams;
 
     public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final ActorScheduler actorScheduler)
     {
         this.logStreamsCfg = logStreamsCfg;
         this.actorScheduler = actorScheduler;
-        this.logStreams = new HashMap<>();
+        this.logStreams = new Int2ObjectHashMap<>();
     }
 
     public void forEachLogStream(Consumer<LogStream> consumer)
     {
         // TODO(menski): probably not garbage free
-        logStreams.forEach((topicName, partitions) ->
-            partitions.forEach((partitionId, logStream) ->
-                consumer.accept(logStream))
-        );
+        logStreams.forEach((partitionId, partition) -> consumer.accept(partition));
     }
 
 
-    public LogStream getLogStream(final DirectBuffer topicName, final int partitionId)
+    public LogStream getLogStream(final long partitionId)
     {
-        final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreams.get(topicName);
-
-        if (logStreamPartitions != null)
-        {
-            return logStreamPartitions.get(partitionId);
-        }
-
-        return null;
+        return logStreams.get(partitionId);
     }
 
     /**
@@ -135,8 +123,6 @@ public class LogStreamsManager
 
     private void addLogStream(final LogStream logStream)
     {
-        logStreams
-            .computeIfAbsent(logStream.getTopicName(), k -> new Int2ObjectHashMap<>())
-            .put(logStream.getPartitionId(), logStream);
+        logStreams.put(logStream.getPartitionId(), logStream);
     }
 }

@@ -218,7 +218,6 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     public boolean executeSideEffects()
     {
         return responseWriter
-                .topicName(logStreamTopicName)
                 .partitionId(logStreamPartitionId)
                 .position(eventPosition)
                 .key(eventKey)

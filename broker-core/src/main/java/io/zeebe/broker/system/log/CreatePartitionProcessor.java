@@ -84,10 +84,11 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     {
         final PartitionEvent value = event.getValue();
 
-        partitions.putPartitionKey(
-                value.getTopicName(),
+        // adds the position of the CREATE event to the index. This is not the latest event
+        // (which is CREATING), but this should be ok since these events are the same apart from the state.
+        partitions.putPartition(
                 value.getId(),
-                event.getKey(),
+                event.getPosition(),
                 value.getCreationTimeout());
     }
 

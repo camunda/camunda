@@ -23,18 +23,19 @@ import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
-import scala.util.Random;
 
 public class ExpirePartitionCreationProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
     protected final PendingPartitionsIndex partitions;
-    protected final PartitionEvent newEvent = new PartitionEvent();
-    protected final Random idGenerator = new Random();
+    protected final PartitionIdGenerator idGenerator;
 
-    public ExpirePartitionCreationProcessor(PendingPartitionsIndex partitions)
+    protected final PartitionEvent newEvent = new PartitionEvent();
+
+    public ExpirePartitionCreationProcessor(PendingPartitionsIndex partitions, PartitionIdGenerator idGenerator)
     {
         this.partitions = partitions;
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -42,7 +43,7 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
     {
         final PartitionEvent value = event.getValue();
 
-        final PendingPartition partition = partitions.get(value.getTopicName(), value.getId());
+        final PendingPartition partition = partitions.get(value.getId());
 
         if (partition != null)
         {
@@ -73,10 +74,9 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
             // create a new partition
             newEvent.reset();
             newEvent.setState(PartitionState.CREATE);
-
-            // TODO: random does not guarantee uniqueness => goes away with https://github.com/zeebe-io/zeebe/issues/414
-            newEvent.setId(idGenerator.nextInt() & 0xFF);
             newEvent.setTopicName(value.getTopicName());
+            newEvent.setId(idGenerator.currentId());
+
             batchWriter.addNewEvent(newEvent);
         }
 
@@ -91,7 +91,9 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
         // => should the partition become available after this point, then the system partition will
         //    not recognize this and will not write a partition CREATED event. If this is required in the future,
         //    we can include the partition state in the index.
-        partitions.removePartitionKey(value.getTopicName(), value.getId());
+        partitions.removePartitionKey(value.getId());
+
+        idGenerator.moveToNextId();
 
     }
 

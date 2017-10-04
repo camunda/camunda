@@ -17,7 +17,6 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
-import static io.zeebe.util.StringUtil.getBytes;
 
 import java.util.Map;
 
@@ -26,7 +25,6 @@ import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
@@ -43,7 +41,6 @@ public class ExecuteCommandRequest implements BufferWriter
     protected final ClientOutput output;
     protected final RemoteAddress target;
 
-    protected String topicName;
     protected int partitionId = partitionIdNullValue();
     protected long key = keyNullValue();
     protected EventType eventType = EventType.NULL_VAL;
@@ -57,12 +54,6 @@ public class ExecuteCommandRequest implements BufferWriter
         this.output = output;
         this.target = target;
         this.msgPackHelper = msgPackHelper;
-    }
-
-    public ExecuteCommandRequest topicName(final String topicName)
-    {
-        this.topicName = topicName;
-        return this;
     }
 
     public ExecuteCommandRequest partitionId(final int partitionId)
@@ -120,8 +111,6 @@ public class ExecuteCommandRequest implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandRequestEncoder.BLOCK_LENGTH +
-                ExecuteCommandResponseEncoder.topicNameHeaderLength() +
-                getBytes(topicName).length +
                 ExecuteCommandRequestEncoder.commandHeaderLength() +
                 encodedCmd.length;
     }
@@ -139,7 +128,6 @@ public class ExecuteCommandRequest implements BufferWriter
             .partitionId(partitionId)
             .key(key)
             .eventType(eventType)
-            .topicName(topicName)
             .putCommand(encodedCmd, 0, encodedCmd.length);
     }
 

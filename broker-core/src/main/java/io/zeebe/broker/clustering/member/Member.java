@@ -17,15 +17,13 @@
  */
 package io.zeebe.broker.clustering.member;
 
-import java.util.Iterator;
-
-import io.zeebe.broker.clustering.management.Partition;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.collection.IntIterator;
 
 public interface Member
 {
 
     SocketAddress getManagementAddress();
 
-    Iterator<Partition> getLeadingPartitions();
+    IntIterator getLeadingPartitions();
 }

@@ -50,7 +50,7 @@ public class ErrorResponseWriterTest
     public void shouldWriteResponse()
     {
         responseWriter
-            .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+            .errorCode(ErrorCode.PARTITION_NOT_FOUND)
             .errorMessage("error message")
             .failedRequest(REQUEST_BUFFER, 0, REQUEST_BUFFER.capacity());
         final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
@@ -69,7 +69,7 @@ public class ErrorResponseWriterTest
         offset += messageHeaderDecoder.encodedLength();
 
         responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-        assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
+        assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
         assertThat(responseDecoder.errorData()).isEqualTo("error message");
 
         final byte[] failureRequestBuffer = readBytes(responseDecoder::getFailedRequest, responseDecoder::failedRequestLength);

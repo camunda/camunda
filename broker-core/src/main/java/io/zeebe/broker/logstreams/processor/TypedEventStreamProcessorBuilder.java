@@ -21,10 +21,13 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
-import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import io.zeebe.logstreams.snapshot.UnpackedObjectSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
+import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.ZbMap;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -32,7 +35,7 @@ public class TypedEventStreamProcessorBuilder
 {
     protected final TypedStreamEnvironment environment;
 
-    protected List<ZbMap<?, ?>> zbMaps = new ArrayList<>();
+    protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
     protected EnumMap<EventType, EnumMap> eventProcessors = new EnumMap<>(EventType.class);
 
@@ -66,8 +69,14 @@ public class TypedEventStreamProcessorBuilder
 
     public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map)
     {
-        this.zbMaps.add(map);
+        this.stateResources.add(new ZbMapSnapshotSupport<>(map));
         onClose(() -> map.close());
+        return this;
+    }
+
+    public TypedEventStreamProcessorBuilder withStateResource(UnpackedObject object)
+    {
+        this.stateResources.add(new UnpackedObjectSnapshotSupport(object));
         return this;
     }
 
@@ -75,13 +84,10 @@ public class TypedEventStreamProcessorBuilder
     {
 
         final SnapshotSupport snapshotSupport;
-        if (!zbMaps.isEmpty())
+        if (!stateResources.isEmpty())
         {
-            final ZbMapSnapshotSupport[] mapSupport = zbMaps
-                    .stream()
-                    .map(m -> new ZbMapSnapshotSupport<>(m))
-                    .toArray(n -> new ZbMapSnapshotSupport[n]);
-            snapshotSupport = new ComposedZbMapSnapshot(mapSupport);
+            snapshotSupport = new ComposedSnapshot(
+                    stateResources.toArray(new ComposableSnapshotSupport[stateResources.size()]));
         }
         else
         {

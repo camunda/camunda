@@ -37,7 +37,6 @@ public class ExecuteCommandRequest implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
-    protected String topicName;
     protected Map<String, Object> command;
     protected RemoteAddress source;
 
@@ -50,11 +49,6 @@ public class ExecuteCommandRequest implements BufferReader
     public long key()
     {
         return bodyDecoder.key();
-    }
-
-    public String topicName()
-    {
-        return topicName;
     }
 
     public int partitionId()
@@ -88,8 +82,6 @@ public class ExecuteCommandRequest implements BufferReader
         headerDecoder.wrap(buffer, offset);
 
         bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
-
-        topicName = bodyDecoder.topicName();
 
         final int commandLength = bodyDecoder.commandLength();
         final int commandOffset = bodyDecoder.limit() + commandHeaderLength();

@@ -17,9 +17,16 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.*;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.subscriberKeyNullValue;
 
 import java.util.Objects;
+
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -30,16 +37,12 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class SubscribedEventWriter implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final SubscribedEventEncoder bodyEncoder = new SubscribedEventEncoder();
 
-    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
     protected long key = keyNullValue();
@@ -55,12 +58,6 @@ public class SubscribedEventWriter implements BufferWriter
     public SubscribedEventWriter(final ServerOutput output)
     {
         this.output = output;
-    }
-
-    public SubscribedEventWriter topicName(final DirectBuffer topicName)
-    {
-        this.topicName.wrap(topicName);
-        return this;
     }
 
     public SubscribedEventWriter partitionId(final int partitionId)
@@ -117,8 +114,6 @@ public class SubscribedEventWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedEventEncoder.BLOCK_LENGTH +
-                topicNameHeaderLength() +
-                topicName.capacity() +
                 eventHeaderLength() +
                 eventWriter.getLength();
     }
@@ -138,14 +133,13 @@ public class SubscribedEventWriter implements BufferWriter
         bodyEncoder
             .wrap(buffer, offset)
             .partitionId(partitionId)
-            .putTopicName(topicName, 0, topicName.capacity())
             .position(position)
             .key(key)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .eventType(eventType);
 
-        offset += SubscribedEventEncoder.BLOCK_LENGTH + topicNameHeaderLength() + topicName.capacity();
+        offset += SubscribedEventEncoder.BLOCK_LENGTH;
 
         final int eventLength = eventWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
@@ -175,7 +169,6 @@ public class SubscribedEventWriter implements BufferWriter
     protected void reset()
     {
         this.partitionId = partitionIdNullValue();
-        this.topicName.wrap(0, 0);
         this.position = positionNullValue();
         this.key = keyNullValue();
         this.subscriberKey = subscriberKeyNullValue();

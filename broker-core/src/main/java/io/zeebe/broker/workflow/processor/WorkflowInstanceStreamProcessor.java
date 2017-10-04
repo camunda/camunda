@@ -37,7 +37,7 @@ import io.zeebe.broker.workflow.map.DeployedWorkflow;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.processor.*;
-import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.instance.*;
@@ -99,7 +99,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowDeploymentCache workflowDeploymentCache;
     protected final PayloadCache payloadCache;
 
-    protected final ComposedZbMapSnapshot composedSnapshot;
+    protected final ComposedSnapshot composedSnapshot;
 
     protected LogStreamReader logStreamReader;
     protected LogStreamBatchWriter logStreamBatchWriter;
@@ -132,7 +132,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.payloadMappingProcessor = new MappingProcessor(4096);
 
-        this.composedSnapshot = new ComposedZbMapSnapshot(
+        this.composedSnapshot = new ComposedSnapshot(
             workflowInstanceIndex.getSnapshotSupport(),
             activityInstanceMap.getSnapshotSupport(),
             workflowDeploymentCache.getSnapshotSupport(),
@@ -378,7 +378,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected boolean sendWorkflowInstanceResponse()
     {
         return responseWriter
-                .topicName(logStreamTopicName)
                 .partitionId(logStreamPartitionId)
                 .position(eventPosition)
                 .key(eventKey)

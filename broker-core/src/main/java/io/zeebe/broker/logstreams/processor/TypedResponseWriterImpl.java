@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
@@ -27,13 +24,11 @@ import io.zeebe.transport.ServerOutput;
 public class TypedResponseWriterImpl implements TypedResponseWriter
 {
     protected CommandResponseWriter writer;
-    protected UnsafeBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId;
 
-    public TypedResponseWriterImpl(ServerOutput output, DirectBuffer topicName, int partitionId)
+    public TypedResponseWriterImpl(ServerOutput output, int partitionId)
     {
         this.writer = new CommandResponseWriter(output);
-        this.topicName.wrap(topicName, 0, topicName.capacity());
         this.partitionId = partitionId;
     }
 
@@ -43,7 +38,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
         final BrokerEventMetadata metadata = event.getMetadata();
 
         return writer
-            .topicName(topicName)
             .partitionId(partitionId)
             .position(0) // TODO: this depends on the value of written event => https://github.com/zeebe-io/zeebe/issues/374
             .key(event.getKey())

@@ -131,7 +131,7 @@ public class ClientApiMessageHandlerTest
     public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -162,7 +162,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, clientProtocolVersion, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, EventType.TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -184,7 +184,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -242,7 +242,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageIfTopicNotFound()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, wrapString("unknown-topic"), LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, EventType.TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -255,8 +255,8 @@ public class ClientApiMessageHandlerTest
 
         final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
-        assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Topic with name 'unknown-topic' and partition id '1' not found");
+        assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
+        assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Partition with id '99' not found");
     }
 
     @Test
@@ -287,7 +287,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, EventType.TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -307,7 +307,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnInvalidRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, EventType.WORKFLOW_INSTANCE_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.WORKFLOW_INSTANCE_EVENT);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -329,7 +329,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnUnsupportedRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, EventType.SBE_UNKNOWN);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.SBE_UNKNOWN);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -345,7 +345,7 @@ public class ClientApiMessageHandlerTest
         assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Invalid event type 'NULL_VAL'.");
     }
 
-    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId, Short protocolVersion, EventType eventType)
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int partitionId, Short protocolVersion, EventType eventType)
     {
         int offset = 0;
 
@@ -365,7 +365,6 @@ public class ClientApiMessageHandlerTest
         commandRequestEncoder
             .partitionId(partitionId)
             .eventType(eventTypeToWrite)
-            .putTopicName(topicName, 0, topicName.capacity())
             .putCommand(TASK_EVENT, 0, TASK_EVENT.length);
 
         return headerEncoder.encodedLength() +

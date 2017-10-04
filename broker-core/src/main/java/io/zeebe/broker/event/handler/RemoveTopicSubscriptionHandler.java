@@ -60,7 +60,6 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
         request.wrap(buffer);
 
         final CompletableFuture<Void> future = subscriptionService.closeSubscriptionAsync(
-            request.getTopicName(),
             request.getPartitionId(),
             request.getSubscriberKey()
         );

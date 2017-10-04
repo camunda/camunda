@@ -30,11 +30,13 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
 {
 
     protected final TopicsIndex topics;
+    protected final PartitionIdGenerator idGenerator;
     protected final PartitionEvent partitionEvent = new PartitionEvent();
 
-    public CreateTopicProcessor(TopicsIndex topics)
+    public CreateTopicProcessor(TopicsIndex topics, PartitionIdGenerator idGenerator)
     {
         this.topics = topics;
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -87,7 +89,7 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
                 partitionEvent.reset();
                 partitionEvent.setState(PartitionState.CREATE);
                 partitionEvent.setTopicName(value.getName());
-                partitionEvent.setId(i);
+                partitionEvent.setId(idGenerator.currentId(i));
 
                 batchWriter.addNewEvent(partitionEvent);
             }
@@ -103,6 +105,7 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
         if (value.getState() != TopicState.CREATE_REJECTED)
         {
             topics.put(value.getName(), value.getPartitions(), event.getPosition());
+            idGenerator.moveToNextIds(value.getPartitions());
         }
     }
 }

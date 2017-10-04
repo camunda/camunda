@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.system.log;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -39,9 +37,7 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
     public void processEvent(TypedEvent<PartitionEvent> event)
     {
         final PartitionEvent value = event.getValue();
-
-        final DirectBuffer topicName = value.getTopicName();
-        final PendingPartition partition = partitions.get(topicName, value.getId());
+        final PendingPartition partition = partitions.get(value.getId());
 
         if (partition != null)
         {
@@ -70,11 +66,9 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
     {
         final PartitionEvent value = event.getValue();
 
-        final DirectBuffer topicName = value.getTopicName();
-
         if (value.getState() == PartitionState.CREATED)
         {
-            partitions.removePartitionKey(topicName, value.getId());
+            partitions.removePartitionKey(value.getId());
         }
 
     }

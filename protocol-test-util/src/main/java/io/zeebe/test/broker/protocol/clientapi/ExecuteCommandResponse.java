@@ -36,7 +36,6 @@ public class ExecuteCommandResponse implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
-    protected String topicName;
     protected Map<String, Object> event;
 
     public ExecuteCommandResponse(MsgPackHelper msgPackHelper)
@@ -58,11 +57,6 @@ public class ExecuteCommandResponse implements BufferReader
     public long key()
     {
         return responseDecoder.key();
-    }
-
-    public String getTopicName()
-    {
-        return topicName;
     }
 
     public int partitionId()
@@ -90,8 +84,6 @@ public class ExecuteCommandResponse implements BufferReader
         }
 
         responseDecoder.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-        topicName = responseDecoder.topicName();
 
         final int eventLength = responseDecoder.eventLength();
         final int eventOffset = responseDecoder.limit() + eventHeaderLength();

@@ -40,23 +40,10 @@ public class ExecuteCommandResponseBuilder
         this.activationFunction = activationFunction;
     }
 
-    public ExecuteCommandResponseBuilder topicName(final String topicName)
-    {
-        return topicName((r) -> topicName);
-    }
-
-
-    public ExecuteCommandResponseBuilder topicName(Function<ExecuteCommandRequest, String> topicNameFunction)
-    {
-        commandResponseWriter.setTopicNameFunction(topicNameFunction);
-        return this;
-    }
-
     public ExecuteCommandResponseBuilder partitionId(final int partitionId)
     {
         return partitionId((r) -> partitionId);
     }
-
 
     public ExecuteCommandResponseBuilder partitionId(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
     {

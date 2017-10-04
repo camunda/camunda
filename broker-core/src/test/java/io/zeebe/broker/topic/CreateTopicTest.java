@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 
@@ -46,7 +45,7 @@ public class CreateTopicTest
         final String topicName = "newTopic";
 
         // when
-        final ExecuteCommandResponse response = createTopic(topicName, 2);
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
         // then
         assertThat(response.getEvent())
@@ -61,7 +60,7 @@ public class CreateTopicTest
     public void shouldNotCreateSystemTopic()
     {
         // when
-        final ExecuteCommandResponse response = createTopic(Protocol.SYSTEM_TOPIC, 2);
+        final ExecuteCommandResponse response = apiRule.createTopic(Protocol.SYSTEM_TOPIC, 2);
 
         // then
         assertThat(response.getEvent())
@@ -77,10 +76,10 @@ public class CreateTopicTest
     {
         // given
         final String topicName = "newTopic";
-        createTopic(topicName, 2);
+        apiRule.createTopic(topicName, 2);
 
         // when
-        final ExecuteCommandResponse response = createTopic(topicName, 2);
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
         // then
         assertThat(response.getEvent())
@@ -99,7 +98,7 @@ public class CreateTopicTest
         final int numberOfPartitions = 0;
 
         // when
-        final ExecuteCommandResponse response = createTopic(topicName, numberOfPartitions);
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
         // then
         assertThat(response.getEvent())
@@ -118,7 +117,7 @@ public class CreateTopicTest
         final int numberOfPartitions = -100;
 
         // when
-        final ExecuteCommandResponse response = createTopic(topicName, numberOfPartitions);
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
         // then
         assertThat(response.getEvent())
@@ -135,10 +134,10 @@ public class CreateTopicTest
 
         // given a rejected creation request
         final String topicName = "newTopic";
-        createTopic(topicName, 0);
+        apiRule.createTopic(topicName, 0);
 
         // when I send a valid creation request for the same topic
-        final ExecuteCommandResponse response = createTopic(topicName, 1);
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1);
 
         // then this is successful
         assertThat(response.getEvent())
@@ -148,19 +147,5 @@ public class CreateTopicTest
                 entry("partitions", 1)
             );
 
-    }
-
-    protected ExecuteCommandResponse createTopic(String name, int partitions)
-    {
-        return apiRule.createCmdRequest()
-            .topicName(Protocol.SYSTEM_TOPIC)
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.TOPIC_EVENT)
-            .command()
-                .put("state", "CREATE")
-                .put("name", name)
-                .put("partitions", partitions)
-                .done()
-            .sendAndAwait();
     }
 }

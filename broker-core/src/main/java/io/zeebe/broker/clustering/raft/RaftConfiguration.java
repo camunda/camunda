@@ -24,6 +24,9 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -31,8 +34,6 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.transport.SocketAddress;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class RaftConfiguration extends UnpackedObject
 {

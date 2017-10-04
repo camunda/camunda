@@ -165,7 +165,6 @@ public class StubBrokerRule extends ExternalResource
     {
         final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_INSTANCE_EVENT)
             .respondWith()
-            .topicName(topicName)
             .partitionId(partitionId)
             .key(key)
             .event()
@@ -192,13 +191,11 @@ public class StubBrokerRule extends ExternalResource
     }
 
     public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(
-            String topic,
             int partitionId,
             EventType eventType,
             String eventStatus)
     {
         return onExecuteCommandRequest(ecr ->
-            topic.equals(ecr.topicName()) &&
             ecr.partitionId() == partitionId &&
             ecr.eventType() == eventType &&
             eventStatus.equals(ecr.getCommand().get("state")));
@@ -277,7 +274,6 @@ public class StubBrokerRule extends ExternalResource
         onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
             .respondWith()
             .key((r) -> subscriberKeyProvider.getAndIncrement())
-            .topicName((r) -> r.topicName())
             .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
@@ -295,7 +291,6 @@ public class StubBrokerRule extends ExternalResource
         onExecuteCommandRequest(EventType.SUBSCRIPTION_EVENT, "ACKNOWLEDGE")
             .respondWith()
             .key((r) -> subscriptionKeyProvider.getAndIncrement())
-            .topicName((r) -> r.topicName())
             .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
@@ -339,7 +334,6 @@ public class StubBrokerRule extends ExternalResource
     public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, EventType eventType)
     {
         newSubscribedEvent()
-            .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(DEFAULT_PARTITION_ID)
             .key(key)
             .position(position)
@@ -354,7 +348,6 @@ public class StubBrokerRule extends ExternalResource
     public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String taskType)
     {
         newSubscribedEvent()
-            .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(DEFAULT_PARTITION_ID)
             .key(key)
             .position(position)

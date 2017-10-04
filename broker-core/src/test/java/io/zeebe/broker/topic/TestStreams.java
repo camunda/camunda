@@ -159,7 +159,7 @@ public class TestStreams
         return control;
     }
 
-    protected static class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable
+    protected class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable
     {
 
         protected final SuspendableStreamProcessor streamProcessor;
@@ -169,6 +169,12 @@ public class TestStreams
         {
             this.streamProcessor = streamProcessor;
             this.controller = controller;
+        }
+
+        @Override
+        public void purgeSnapshot()
+        {
+            snapshotStorage.purgeSnapshot(controller.name());
         }
 
 
@@ -193,13 +199,16 @@ public class TestStreams
         @Override
         public void close()
         {
-            try
+            if (!controller.isClosed())
             {
-                controller.closeAsync().get();
-            }
-            catch (InterruptedException | ExecutionException e)
-            {
-                throw new RuntimeException(e);
+                try
+                {
+                    controller.closeAsync().get();
+                }
+                catch (InterruptedException | ExecutionException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -214,9 +223,7 @@ public class TestStreams
             {
                 throw new RuntimeException(e);
             }
-
         }
-
     }
 
     public static class SuspendableStreamProcessor implements StreamProcessor

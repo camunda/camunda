@@ -181,7 +181,7 @@ public class TypedStreamProcessor implements StreamProcessor
             this.streamProcessorId = streamProcessorId;
             this.sourceStream = sourceLog;
             this.writer =  new TypedStreamWriterImpl(targetLog, eventRegistry);
-            this.responseWriter = new TypedResponseWriterImpl(output, sourceLog.getTopicName(), sourceLog.getPartitionId());
+            this.responseWriter = new TypedResponseWriterImpl(output, sourceLog.getPartitionId());
         }
 
         public void wrap(TypedEventProcessor eventProcessor, TypedEventImpl event)

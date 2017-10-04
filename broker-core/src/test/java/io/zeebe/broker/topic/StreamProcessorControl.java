@@ -28,6 +28,8 @@ public interface StreamProcessorControl
 
     void blockAfterEvent(Predicate<LoggedEvent> test);
 
+    void purgeSnapshot();
+
     /**
      * @return true if the event to block on has been processed and the stream processor won't handle
      *   any more events until {@link #unblock()} is called.

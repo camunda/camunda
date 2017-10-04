@@ -797,8 +797,6 @@ public class IncidentTest
         final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("LOCKED"));
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
@@ -816,8 +814,6 @@ public class IncidentTest
     private void createStandaloneTask()
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -834,8 +830,6 @@ public class IncidentTest
         final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
@@ -853,8 +847,6 @@ public class IncidentTest
     private void updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventType(EventType.WORKFLOW_INSTANCE_EVENT)
             .key(activityInstanceKey)
             .command()
@@ -876,8 +868,6 @@ public class IncidentTest
     private void cancelWorkflowInstance(final long workflowInstanceKey)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .key(workflowInstanceKey)
             .eventTypeWorkflow()
             .command()

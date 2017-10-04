@@ -18,16 +18,16 @@
 package io.zeebe.broker.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.Map;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 
 public class CreateTaskTest
@@ -44,8 +44,6 @@ public class CreateTaskTest
     {
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(0)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -56,8 +54,7 @@ public class CreateTaskTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(0);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
 
         final Map<String, Object> event = resp.getEvent();
         assertThat(event).containsEntry("state", "CREATED");

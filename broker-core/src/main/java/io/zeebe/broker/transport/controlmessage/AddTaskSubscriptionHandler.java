@@ -60,7 +60,7 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
         final long requestId = eventMetada.getRequestId();
         final int requestStreamId = eventMetada.getRequestStreamId();
 
-        final TaskSubscription taskSubscription = new TaskSubscription(request.getTopicName(), request.getPartitionId(), request.getLockTaskType(),
+        final TaskSubscription taskSubscription = new TaskSubscription(request.getPartitionId(), request.getLockTaskType(),
                 request.getLockDuration(), request.getLockOwner(), requestStreamId);
         taskSubscription.setCredits(request.getCredits());
 

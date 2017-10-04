@@ -25,7 +25,6 @@ public class TaskSubscriptionRequest extends UnpackedObject
 {
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
 
-    protected StringProperty topicNameProp = new StringProperty("topicName");
     protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     protected StringProperty taskTypeProp = new StringProperty("taskType", "");
 
@@ -37,7 +36,6 @@ public class TaskSubscriptionRequest extends UnpackedObject
     public TaskSubscriptionRequest()
     {
         this.declareProperty(subscriberKeyProp)
-            .declareProperty(topicNameProp)
             .declareProperty(partitionIdProp)
             .declareProperty(taskTypeProp)
             .declareProperty(lockDurationProp)
@@ -48,12 +46,6 @@ public class TaskSubscriptionRequest extends UnpackedObject
     public TaskSubscriptionRequest setSubscriberKey(long subscriberKey)
     {
         this.subscriberKeyProp.setValue(subscriberKey);
-        return this;
-    }
-
-    public TaskSubscriptionRequest setTopicName(final DirectBuffer topicName)
-    {
-        this.topicNameProp.setValue(topicName);
         return this;
     }
 
@@ -105,11 +97,6 @@ public class TaskSubscriptionRequest extends UnpackedObject
     public int getCredits()
     {
         return creditsProp.getValue();
-    }
-
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
     }
 
     public int getPartitionId()

@@ -17,12 +17,8 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import org.agrona.DirectBuffer;
-
 public interface Partition
 {
-
-    DirectBuffer getTopicName();
 
     int getPartitionId();
 }

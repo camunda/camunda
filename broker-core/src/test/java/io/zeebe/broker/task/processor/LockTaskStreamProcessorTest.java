@@ -90,11 +90,11 @@ public class LockTaskStreamProcessorTest
 
         streamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
 
-        subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner-1"), 11);
+        subscription = new TaskSubscription(0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner-1"), 11);
         subscription.setSubscriberKey(1L);
         subscription.setCredits(3);
 
-        anotherSubscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(10).toMillis(), wrapString("owner-2"), 12);
+        anotherSubscription = new TaskSubscription(0, TASK_TYPE_BUFFER, Duration.ofMinutes(10).toMillis(), wrapString("owner-2"), 12);
         anotherSubscription.setSubscriberKey(2L);
         anotherSubscription.setCredits(2);
 
@@ -441,7 +441,7 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfEmptyLockOwner()
     {
-        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString(""),
+        final TaskSubscription subscription = new TaskSubscription(0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString(""),
                 11);
 
         thrown.expect(RuntimeException.class);
@@ -454,7 +454,7 @@ public class LockTaskStreamProcessorTest
     public void shouldFailToAddSubscriptionIfLockOwnerTooLong()
     {
         final String lockOwner = IntStream.range(0, TaskSubscription.LOCK_OWNER_MAX_LENGTH + 1).mapToObj(i -> "a").collect(Collectors.joining());
-        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
+        final TaskSubscription subscription = new TaskSubscription(0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
                 wrapString(lockOwner), 11);
 
         thrown.expect(RuntimeException.class);
@@ -466,7 +466,7 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfWrongType()
     {
-        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, ANOTHER_TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
+        final TaskSubscription subscription = new TaskSubscription(0, ANOTHER_TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(),
                 wrapString("owner-1"), 11);
         subscription.setCredits(5);
 
@@ -479,7 +479,7 @@ public class LockTaskStreamProcessorTest
     @Test
     public void shouldFailToAddSubscriptionIfZeroLockDuration()
     {
-        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, 0, wrapString("owner-1"), 11);
+        final TaskSubscription subscription = new TaskSubscription(0, TASK_TYPE_BUFFER, 0, wrapString("owner-1"), 11);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("lock duration must be greater than 0");

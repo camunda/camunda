@@ -59,7 +59,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final SnapshotSupport snapshotResource;
 
     protected LogStream targetStream;
-    protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
     protected final ServiceName<LogStream> streamServiceName;
 
@@ -104,7 +103,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.cmdContext = context.getStreamProcessorCmdQueue();
 
         final LogStream sourceStream = context.getSourceStream();
-        this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
 
         targetStream = context.getTargetStream();
@@ -342,7 +340,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             if (metadata.getRequestId() >= 0)
             {
                 return responseWriter
-                        .topicName(logStreamTopicName)
                         .partitionId(logStreamPartitionId)
                         .eventWriter(subscriptionEvent)
                         .key(currentEvent.getKey())
@@ -374,7 +371,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         {
 
             final boolean responseWritten = responseWriter
-                    .topicName(logStreamTopicName)
                     .partitionId(logStreamPartitionId)
                     .eventWriter(subscriberEvent)
                     .position(currentEvent.getPosition())

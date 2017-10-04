@@ -193,7 +193,6 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(MSGPACK_PAYLOAD.length)
             .hasBytes(MSGPACK_PAYLOAD);
 
-        verify(mockResponseWriter).topicName(TOPIC_NAME);
         verify(mockResponseWriter).partitionId(PARTITION_ID);
         verify(mockResponseWriter).key(2L);
         verify(mockResponseWriter).tryWriteResponse(anyInt(), anyLong());
@@ -525,7 +524,7 @@ public class TaskStreamProcessorIntegrationTest
 
     private TaskSubscription createTaskSubscription()
     {
-        final TaskSubscription subscription = new TaskSubscription(wrapString("topic"), 0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner"), 11);
+        final TaskSubscription subscription = new TaskSubscription(0, TASK_TYPE_BUFFER, Duration.ofMinutes(5).toMillis(), wrapString("owner"), 11);
         subscription.setSubscriberKey(1L);
         subscription.setCredits(10);
 

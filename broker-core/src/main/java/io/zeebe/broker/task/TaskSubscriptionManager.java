@@ -25,16 +25,22 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
+
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
-import io.zeebe.util.collection.CompactList;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.ServiceName;
@@ -45,9 +51,7 @@ import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
+import io.zeebe.util.collection.CompactList;
 
 public class TaskSubscriptionManager implements Actor, TransportListener
 {
@@ -57,7 +61,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
     protected final ServiceStartContext serviceContext;
     protected final Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorSupplier;
 
-    protected final Map<DirectBuffer, Int2ObjectHashMap<LogStreamBucket>> logStreamBuckets = new HashMap<>();
+    protected final Int2ObjectHashMap<LogStreamBucket> logStreamBuckets = new Int2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
     protected final DeferredCommandContext asyncContext = new DeferredCommandContext(NUM_CONCURRENT_REQUESTS);
@@ -142,13 +146,12 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
             ensureNotNull("lock task type", taskType);
 
-            final DirectBuffer topicName = subscription.getTopicName();
             final int partitionId = subscription.getPartitionId();
 
-            final LogStreamBucket logStreamBucket = getLogStreamBucket(topicName, partitionId);
+            final LogStreamBucket logStreamBucket = logStreamBuckets.get(partitionId);
             if (logStreamBucket == null)
             {
-                final String errorMessage = String.format("Topic with name '%s' and partition id '%d' not found.", bufferAsString(topicName), partitionId);
+                final String errorMessage = String.format("Partition with id '%d' not found.", partitionId);
                 throw new RuntimeException(errorMessage);
             }
 
@@ -233,7 +236,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     protected CompletionStage<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
     {
-        final LogStreamBucket logStreamBucket = getLogStreamBucket(streamProcessor.getLogStreamTopicName(), streamProcessor.getLogStreamPartitionId());
+        final LogStreamBucket logStreamBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
 
         logStreamBucket.removeStreamProcessor(streamProcessor);
 
@@ -300,44 +303,26 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
     {
-        asyncContext.runAsync(future ->
-        {
-            logStreamBuckets
-                .computeIfAbsent(logStream.getTopicName(), k -> new Int2ObjectHashMap<>())
-                .put(logStream.getPartitionId(), new LogStreamBucket(logStream, logStreamServiceName));
-        });
+        asyncContext.runAsync(() -> logStreamBuckets.put(logStream.getPartitionId(), new LogStreamBucket(logStream, logStreamServiceName)));
     }
 
     public void removeStream(LogStream logStream)
     {
         asyncContext.runAsync(future ->
         {
-            final DirectBuffer topicName = logStream.getTopicName();
             final int partitionId = logStream.getPartitionId();
-
-            final Int2ObjectHashMap<LogStreamBucket> partitions = logStreamBuckets.get(topicName);
-
-            if (partitions != null)
-            {
-                partitions.remove(partitionId);
-
-                if (partitions.isEmpty())
-                {
-                    logStreamBuckets.remove(topicName);
-                }
-            }
-
-            removeSubscriptionsForLogStream(topicName, partitionId);
+            logStreamBuckets.remove(partitionId);
+            removeSubscriptionsForLogStream(partitionId);
         });
     }
 
-    protected void removeSubscriptionsForLogStream(DirectBuffer topicName, final int partitionId)
+    protected void removeSubscriptionsForLogStream(final long partitionId)
     {
         final Set<Entry<Long, LockTaskStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
         for (Entry<Long, LockTaskStreamProcessor> entry : entrySet)
         {
             final LockTaskStreamProcessor streamProcessor = entry.getValue();
-            if (topicName.equals(streamProcessor.getLogStreamTopicName()) && partitionId == streamProcessor.getLogStreamPartitionId())
+            if (partitionId == streamProcessor.getLogStreamPartitionId())
             {
                 entrySet.remove(entry);
             }
@@ -362,18 +347,6 @@ public class TaskSubscriptionManager implements Actor, TransportListener
     public int getCreditRequestCapacityUpperBound()
     {
         return creditRequestBuffer.getCapacityUpperBound();
-    }
-
-    protected LogStreamBucket getLogStreamBucket(final DirectBuffer topicName, final int partitionId)
-    {
-        final Int2ObjectHashMap<LogStreamBucket> partitions = logStreamBuckets.get(topicName);
-
-        if (partitions != null)
-        {
-            return partitions.get(partitionId);
-        }
-
-        return null;
     }
 
     static class LogStreamBucket

@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
 import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
 
 import java.util.Objects;
+
+import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -28,16 +32,12 @@ import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandResponseWriter implements BufferWriter
 {
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
 
-    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
     protected long key = keyNullValue();
@@ -49,12 +49,6 @@ public class CommandResponseWriter implements BufferWriter
     public CommandResponseWriter(final ServerOutput output)
     {
         this.output = output;
-    }
-
-    public CommandResponseWriter topicName(final DirectBuffer topicName)
-    {
-        this.topicName.wrap(topicName);
-        return this;
     }
 
     public CommandResponseWriter partitionId(final int partitionId)
@@ -116,7 +110,6 @@ public class CommandResponseWriter implements BufferWriter
         // protocol message
         responseEncoder
             .wrap(buffer, offset)
-            .putTopicName(topicName, 0, topicName.capacity())
             .partitionId(partitionId)
             .position(position)
             .key(key);
@@ -135,15 +128,12 @@ public class CommandResponseWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                topicNameHeaderLength() +
-                topicName.capacity() +
                 eventHeaderLength() +
                 eventWriter.getLength();
     }
 
     protected void reset()
     {
-        topicName.wrap(0, 0);
         partitionId = partitionIdNullValue();
         key = keyNullValue();
         eventWriter = null;

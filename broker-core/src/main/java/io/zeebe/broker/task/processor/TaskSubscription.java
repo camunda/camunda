@@ -25,7 +25,6 @@ public class TaskSubscription
 {
     public static final int LOCK_OWNER_MAX_LENGTH = 64;
 
-    private final DirectBuffer topicName;
     private final int partitionId;
 
     private final DirectBuffer lockTaskType;
@@ -39,9 +38,8 @@ public class TaskSubscription
 
     private int credits;
 
-    public TaskSubscription(DirectBuffer topicName, int partitionId, DirectBuffer lockTaskType, long lockDuration, DirectBuffer lockOwner, int streamId)
+    public TaskSubscription(int partitionId, DirectBuffer lockTaskType, long lockDuration, DirectBuffer lockOwner, int streamId)
     {
-        this.topicName = cloneBuffer(topicName);
         this.partitionId = partitionId;
         this.lockTaskType = cloneBuffer(lockTaskType);
         this.lockDuration = lockDuration;
@@ -87,11 +85,6 @@ public class TaskSubscription
     public void setSubscriberKey(long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
-    }
-
-    public DirectBuffer getTopicName()
-    {
-        return topicName;
     }
 
     public int getPartitionId()

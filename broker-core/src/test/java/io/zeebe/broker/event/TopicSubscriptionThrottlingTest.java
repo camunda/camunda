@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.event;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -44,8 +43,6 @@ public class TopicSubscriptionThrottlingTest
     public void openSubscription(int prefetchCapacity)
     {
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(0)
             .eventTypeSubscriber()
             .command()
                 .put("startPosition", 0)
@@ -95,8 +92,6 @@ public class TopicSubscriptionThrottlingTest
 
         // when
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(0)
             .eventTypeSubscription()
             .command()
                 .put("name", SUBSCRIPTION_NAME)
@@ -141,8 +136,6 @@ public class TopicSubscriptionThrottlingTest
         for (int i = 0; i < nrOfTasks; i++)
         {
             apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(0)
                 .eventTypeTask()
                 .command()
                     .put("state", "CREATE")

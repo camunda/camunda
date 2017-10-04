@@ -177,7 +177,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected boolean writeResponse()
     {
         return responseWriter
-            .topicName(logStreamTopicName)
             .partitionId(logStreamPartitionId)
             .position(eventPosition)
             .key(eventKey)
@@ -267,7 +266,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             if (isLocked)
             {
                 success = subscribedEventWriter
-                        .topicName(logStreamTopicName)
                         .partitionId(logStreamPartitionId)
                         .position(eventPosition)
                         .key(eventKey)

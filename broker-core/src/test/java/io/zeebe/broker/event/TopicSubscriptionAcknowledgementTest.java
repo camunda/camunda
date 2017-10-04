@@ -18,12 +18,15 @@
 package io.zeebe.broker.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -31,10 +34,6 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class TopicSubscriptionAcknowledgementTest
 {
@@ -68,8 +67,7 @@ public class TopicSubscriptionAcknowledgementTest
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -81,8 +79,6 @@ public class TopicSubscriptionAcknowledgementTest
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("state", "ACKNOWLEDGE")
@@ -108,8 +104,6 @@ public class TopicSubscriptionAcknowledgementTest
 
         apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("state", "ACKNOWLEDGE")
@@ -139,8 +133,6 @@ public class TopicSubscriptionAcknowledgementTest
         // given
         apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("state", "ACKNOWLEDGE")
@@ -157,8 +149,6 @@ public class TopicSubscriptionAcknowledgementTest
 
         // and
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -208,8 +198,6 @@ public class TopicSubscriptionAcknowledgementTest
     private ExecuteCommandResponse createTask()
     {
         return apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")

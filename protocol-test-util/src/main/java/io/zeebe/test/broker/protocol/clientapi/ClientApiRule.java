@@ -15,25 +15,34 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ClientTransportBuilder;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
-    public static final int DEFAULT_PARTITION_ID = 0;
     public static final long DEFAULT_LOCK_DURATION = 1000L;
 
     protected ClientTransport transport;
@@ -46,6 +55,8 @@ public class ClientApiRule extends ExternalResource
     protected RawMessageCollector incomingMessageCollector;
 
     private ActorScheduler scheduler;
+
+    protected int defaultPartitionId;
 
     public ClientApiRule()
     {
@@ -79,6 +90,9 @@ public class ClientApiRule extends ExternalResource
 
         msgPackHelper = new MsgPackHelper();
         streamAddress = transport.registerRemoteAddress(brokerAddress);
+
+        createTopic(DEFAULT_TOPIC_NAME, 1);
+        defaultPartitionId = getSinglePartitionId(DEFAULT_TOPIC_NAME);
     }
 
     @Override
@@ -101,9 +115,13 @@ public class ClientApiRule extends ExternalResource
         }
     }
 
+    /**
+     * targets the default partition by default
+     */
     public ExecuteCommandRequestBuilder createCmdRequest()
     {
-        return new ExecuteCommandRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper);
+        return new ExecuteCommandRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper)
+                .partitionId(defaultPartitionId);
     }
 
     public ControlMessageRequestBuilder createControlMessageRequest()
@@ -130,23 +148,22 @@ public class ClientApiRule extends ExternalResource
 
     public TestTopicClient topic()
     {
-        return topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+        return topic(defaultPartitionId);
     }
 
-    public TestTopicClient topic(final String topicName, final int partitionId)
+    public TestTopicClient topic(final int partitionId)
     {
-        return new TestTopicClient(this, topicName, partitionId);
+        return new TestTopicClient(this, partitionId);
     }
 
     public ExecuteCommandRequest openTopicSubscription(final String name, final long startPosition)
     {
-        return openTopicSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, name, startPosition);
+        return openTopicSubscription(defaultPartitionId, name, startPosition);
     }
 
-    public ExecuteCommandRequest openTopicSubscription(final String topicName, final int partitionId, final String name, final long startPosition)
+    public ExecuteCommandRequest openTopicSubscription(final int partitionId, final String name, final long startPosition)
     {
         return createCmdRequest()
-            .topicName(topicName)
             .partitionId(partitionId)
             .eventTypeSubscriber()
             .command()
@@ -163,7 +180,7 @@ public class ClientApiRule extends ExternalResource
                 .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
                 .data()
                 .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", defaultPartitionId)
                 .put("subscriberKey", subscriberKey)
                 .done()
                 .send();
@@ -171,11 +188,10 @@ public class ClientApiRule extends ExternalResource
 
     public ControlMessageRequest openTaskSubscription(final String type)
     {
-        return openTaskSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, type, DEFAULT_LOCK_DURATION);
+        return openTaskSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
     }
 
     public ControlMessageRequest openTaskSubscription(
-            final String topicName,
             final int partitionId,
             final String type,
             long lockDuration)
@@ -183,7 +199,6 @@ public class ClientApiRule extends ExternalResource
         return createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .data()
-                .put("topicName", topicName)
                 .put("partitionId", partitionId)
                 .put("taskType", type)
                 .put("lockDuration", lockDuration)
@@ -248,5 +263,57 @@ public class ClientApiRule extends ExternalResource
         headerDecoder.wrap(message, 0);
 
         return headerDecoder.templateId() == type;
+    }
+
+    public ExecuteCommandResponse createTopic(String name, int partitions)
+    {
+        return createCmdRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
+            .eventType(EventType.TOPIC_EVENT)
+            .command()
+                .put("state", "CREATE")
+                .put("name", name)
+                .put("partitions", partitions)
+                .done()
+            .sendAndAwait();
+    }
+
+    public List<Integer> getPartitionIds(String topicName)
+    {
+        final ControlMessageResponse response = createControlMessageRequest()
+            .messageType(ControlMessageType.REQUEST_TOPOLOGY)
+            .data().done()
+            .sendAndAwait();
+
+        final Map<String, Object> topology = response.getData();
+        final List<Map<String, Object>> leaders = (List<Map<String, Object>>) topology.get("topicLeaders");
+
+        final List<Integer> partitionIds = new ArrayList<>();
+        for (Map<String, Object> leader : leaders)
+        {
+            if (topicName.equals(leader.get("topicName")))
+            {
+                partitionIds.add((int) leader.get("partitionId"));
+            }
+        }
+        return partitionIds;
+    }
+
+    public int getSinglePartitionId(String topicName)
+    {
+        final List<Integer> partitionIds = getPartitionIds(topicName);
+        if (partitionIds.size() != 1)
+        {
+            throw new RuntimeException("There are " + partitionIds.size() + " partitions of topic " + topicName);
+        }
+        else
+        {
+            return partitionIds.get(0);
+        }
+    }
+
+    public int getDefaultPartitionId()
+    {
+        return defaultPartitionId;
     }
 }

@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
@@ -35,6 +36,8 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.TopicLeader;
+import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.*;
 import io.zeebe.model.bpmn.Bpmn;
@@ -503,6 +506,26 @@ public class BrokerRestartTest
 
         // when
         client.topics().create(topicName, 2).execute();
+    }
+
+    @Test
+    public void shouldCreateUniquePartitionIdsAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        client.topics().create("foo", 2).execute();
+
+        restartBroker();
+
+        // when
+        client.topics().create("bar", 2).execute();
+
+        // then
+        final TopologyResponse topology = client.requestTopology().execute();
+        final List<TopicLeader> leaders = topology.getTopicLeaders();
+        assertThat(leaders).hasSize(6); // default partition + system partition + 4 partitions we create here
+        assertThat(leaders).extracting("partitionId").doesNotHaveDuplicates();
     }
 
     protected void restartBroker()

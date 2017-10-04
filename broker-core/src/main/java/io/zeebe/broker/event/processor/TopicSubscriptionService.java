@@ -19,14 +19,10 @@ package io.zeebe.broker.event.processor;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
@@ -63,7 +59,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
     protected ActorScheduler actorScheduler;
     protected ServiceStartContext serviceContext;
-    protected Map<DirectBuffer, Int2ObjectHashMap<TopicSubscriptionManagementProcessor>> managersByLog = new HashMap<>();
+    protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
     protected ServerOutput serverOutput;
 
     protected ActorReference actorRef;
@@ -143,9 +139,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
                     ackProcessor,
                     TopicSubscriptionManagementProcessor.filter())
                 .thenAccept((v) ->
-                    managersByLog
-                        .computeIfAbsent(logStream.getTopicName(), k -> new Int2ObjectHashMap<>())
-                        .put(logStream.getPartitionId(), ackProcessor)
+                    managersByLog.put(logStream.getPartitionId(), ackProcessor)
                 );
         });
     }
@@ -174,23 +168,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     public void onStreamRemoved(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
     {
 
-        asyncContext.runAsync(() ->
-        {
-            final DirectBuffer topicName = logStream.getTopicName();
-            final int partitionId = logStream.getPartitionId();
-
-            final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = managersByLog.get(topicName);
-
-            if (managersByPartition != null)
-            {
-                managersByPartition.remove(partitionId);
-
-                if (managersByPartition.isEmpty())
-                {
-                    managersByLog.remove(topicName);
-                }
-            }
-        });
+        asyncContext.runAsync(() -> managersByLog.remove(logStream.getPartitionId()));
     }
 
     public void onClientChannelCloseAsync(int channelId)
@@ -198,11 +176,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         asyncContext.runAsync(() ->
         {
             // TODO(menski): probably not garbage free
-            managersByLog.forEach((topicName, partitions) ->
-                partitions.forEach((partitionId, manager) ->
-                    manager.onClientChannelCloseAsync(channelId)
-                )
-            );
+            managersByLog.forEach((partitionId, manager) -> manager.onClientChannelCloseAsync(channelId));
         });
     }
 
@@ -224,9 +198,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         return "subscription-service";
     }
 
-    public CompletableFuture<Void> closeSubscriptionAsync(final DirectBuffer topicName, final int partitionId, final long subscriberKey)
+    public CompletableFuture<Void> closeSubscriptionAsync(final int partitionId, final long subscriberKey)
     {
-        final TopicSubscriptionManagementProcessor managementProcessor = getManager(topicName, partitionId);
+        final TopicSubscriptionManagementProcessor managementProcessor = getManager(partitionId);
 
         if (managementProcessor != null)
         {
@@ -237,8 +211,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
             final CompletableFuture<Void> future = new CompletableFuture<>();
             future.completeExceptionally(
                 new RuntimeException(
-                    String.format("No subscription management processor registered for topic '%s' and partition '%d'",
-                        bufferAsString(topicName), partitionId)
+                    String.format("No subscription management processor registered for partition '%d'", partitionId)
                 )
             );
             return future;
@@ -246,16 +219,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
     }
 
-    private TopicSubscriptionManagementProcessor getManager(final DirectBuffer topicName, final int partitionId)
+    private TopicSubscriptionManagementProcessor getManager(final int partitionId)
     {
-        final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = managersByLog.get(topicName);
-
-        if (managersByPartition != null)
-        {
-            return managersByPartition.get(partitionId);
-        }
-
-        return null;
+        return managersByLog.get(partitionId);
     }
 
     @Override

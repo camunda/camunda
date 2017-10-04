@@ -35,7 +35,6 @@ public class SubscribedEvent implements BufferReader
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
 
-    protected String topicName;
     protected Map<String, Object> event;
 
     protected MsgPackHelper msgPackHelper = new MsgPackHelper();
@@ -45,11 +44,6 @@ public class SubscribedEvent implements BufferReader
         this.rawMessage = rawMessage;
         final DirectBuffer buffer = rawMessage.getMessage();
         wrap(buffer, 0, buffer.capacity());
-    }
-
-    public String topicName()
-    {
-        return topicName;
     }
 
     public int partitionId()
@@ -103,8 +97,6 @@ public class SubscribedEvent implements BufferReader
         }
 
         bodyDecoder.wrap(responseBuffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
-
-        topicName = bodyDecoder.topicName();
 
         final int eventLength = bodyDecoder.eventLength();
         final int eventOffset = bodyDecoder.limit() + eventHeaderLength();

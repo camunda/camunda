@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.task;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,8 +60,7 @@ public class TaskSubscriptionTest
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "foo")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "bar")
@@ -168,8 +165,7 @@ public class TaskSubscriptionTest
             .data()
                 .put("subscriberKey", 1)
                 .put("credits", 0)
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .done()
             .send().awaitError();
 
@@ -188,8 +184,7 @@ public class TaskSubscriptionTest
             .data()
                 .put("subscriberKey", 1)
                 .put("credits", -10)
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .done()
             .send().awaitError();
 
@@ -206,8 +201,7 @@ public class TaskSubscriptionTest
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "foo")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "owner1")
@@ -219,8 +213,7 @@ public class TaskSubscriptionTest
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "bar")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "owner2")
@@ -251,8 +244,6 @@ public class TaskSubscriptionTest
     private ExecuteCommandResponse createTask(String type)
     {
         return apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeTask()
                 .command()
                     .put("state", "CREATE")

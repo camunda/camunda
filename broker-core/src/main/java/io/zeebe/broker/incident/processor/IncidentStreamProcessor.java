@@ -25,7 +25,7 @@ import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.*;
-import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Long2LongZbMap;
@@ -82,7 +82,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         this.failedTaskMap = new Long2LongZbMap();
         this.incidentMap = new IncidentMap();
 
-        this.indexSnapshot = new ComposedZbMapSnapshot(
+        this.indexSnapshot = new ComposedSnapshot(
             new ZbMapSnapshotSupport<>(activityInstanceMap),
             new ZbMapSnapshotSupport<>(failedTaskMap),
             incidentMap.getSnapshotSupport());

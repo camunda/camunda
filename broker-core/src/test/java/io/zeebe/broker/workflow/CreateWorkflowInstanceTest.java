@@ -17,19 +17,21 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,15 +39,21 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.assertj.core.util.Files;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.*;
-import org.assertj.core.util.Files;
-import org.junit.*;
-import org.junit.rules.RuleChain;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 
 
 public class CreateWorkflowInstanceTest
@@ -69,8 +77,6 @@ public class CreateWorkflowInstanceTest
     {
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -81,8 +87,7 @@ public class CreateWorkflowInstanceTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, "WORKFLOW_INSTANCE_REJECTED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
@@ -100,8 +105,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -114,8 +117,7 @@ public class CreateWorkflowInstanceTest
         final long workflowKey = workflowEvent.key();
 
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -140,8 +142,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -183,8 +183,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -232,8 +230,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -243,8 +239,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -275,8 +270,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -286,8 +279,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -307,8 +299,6 @@ public class CreateWorkflowInstanceTest
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -319,8 +309,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -342,8 +331,6 @@ public class CreateWorkflowInstanceTest
         final byte[] invalidPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
 
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(DEFAULT_PARTITION_ID)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
@@ -354,8 +341,7 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, "WORKFLOW_INSTANCE_REJECTED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
@@ -443,8 +429,6 @@ public class CreateWorkflowInstanceTest
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
         final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
-                .topicName(DEFAULT_TOPIC_NAME)
-                .partitionId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")

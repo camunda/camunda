@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.test;
 
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_LOG_NAME;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
@@ -32,7 +29,6 @@ import org.slf4j.Logger;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
@@ -121,16 +117,13 @@ public class EmbeddedBrokerRule extends ExternalResource
 
         final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
-
         try
         {
             // Hack: block until default task queue log has been installed
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
-                .dependency(TopicSubscriptionServiceNames.subscriptionManagementServiceName(DEFAULT_LOG_NAME))
                 .dependency(SystemServiceNames.SYSTEM_PROCESSOR)
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
-                .dependency(taskQueueInstanceStreamProcessorServiceName(DEFAULT_LOG_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);
         }

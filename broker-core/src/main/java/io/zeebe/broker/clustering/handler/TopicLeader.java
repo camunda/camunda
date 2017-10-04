@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.clustering.handler;
 
-import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 
@@ -73,7 +73,7 @@ public class TopicLeader extends UnpackedObject
         return this;
     }
 
-    public int getPartitionId()
+    public long getPartitionId()
     {
         return partitionIdProp.getValue();
     }

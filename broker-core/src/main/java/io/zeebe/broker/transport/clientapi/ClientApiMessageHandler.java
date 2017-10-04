@@ -17,19 +17,13 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
@@ -64,12 +58,10 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
     protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
 
-    protected final DirectBuffer topicName = new UnsafeBuffer(0, 0);
-
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
 
-    protected final Map<DirectBuffer, Int2ObjectHashMap<LogStream>> logStreamsByTopic = new HashMap<>();
+    protected final Int2ObjectHashMap<LogStream> logStreams = new Int2ObjectHashMap<>();
     protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
     protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
 
@@ -107,21 +99,16 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     {
         executeCommandRequestDecoder.wrap(buffer, messageOffset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-        final int topicNameOffset = executeCommandRequestDecoder.limit() + topicNameHeaderLength();
-        final int topicNameLength = executeCommandRequestDecoder.topicNameLength();
-        topicName.wrap(buffer, topicNameOffset, topicNameLength);
-        executeCommandRequestDecoder.limit(topicNameOffset + topicNameLength);
-
         final int partitionId = executeCommandRequestDecoder.partitionId();
         final long key = executeCommandRequestDecoder.key();
 
-        final LogStream logStream = getLogStream(topicName, partitionId);
+        final LogStream logStream = logStreams.get(partitionId);
 
         if (logStream == null)
         {
             return errorResponseWriter
-                .errorCode(ErrorCode.TOPIC_NOT_FOUND)
-                .errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", bufferAsString(topicName), partitionId)
+                .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+                .errorMessage("Cannot execute command. Partition with id '%d' not found", partitionId)
                 .failedRequest(buffer, messageOffset, messageLength)
                 .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
@@ -196,18 +183,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         return sb.toString();
     }
 
-    private LogStream getLogStream(final DirectBuffer topicName, final int partitionId)
-    {
-        final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreamsByTopic.get(topicName);
-
-        if (logStreamPartitions != null)
-        {
-            return logStreamPartitions.get(partitionId);
-        }
-
-        return null;
-    }
-
     private boolean handleControlMessageRequest(
             final BrokerEventMetadata eventMetadata,
             final DirectBuffer buffer,
@@ -247,32 +222,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
     public void addStream(final LogStream logStream)
     {
-        cmdQueue.add(() ->
-            logStreamsByTopic
-                .computeIfAbsent(logStream.getTopicName(), topicName -> new Int2ObjectHashMap<>())
-                .put(logStream.getPartitionId(), logStream)
-        );
+        cmdQueue.add(() -> logStreams.put(logStream.getPartitionId(), logStream));
     }
 
     public void removeStream(final LogStream logStream)
     {
-        cmdQueue.add(() ->
-        {
-            final DirectBuffer topicName = logStream.getTopicName();
-            final int partitionId = logStream.getPartitionId();
-
-            final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreamsByTopic.get(topicName);
-
-            if (logStreamPartitions != null)
-            {
-                logStreamPartitions.remove(partitionId);
-
-                if (logStreamPartitions.isEmpty())
-                {
-                    logStreamsByTopic.remove(topicName);
-                }
-            }
-        });
+        cmdQueue.add(() -> logStreams.remove(logStream.getPartitionId()));
     }
 
     @Override

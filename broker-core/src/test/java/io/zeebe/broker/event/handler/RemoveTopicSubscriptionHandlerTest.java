@@ -17,14 +17,11 @@
  */
 package io.zeebe.broker.event.handler;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -34,12 +31,13 @@ import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.test.util.FluentMock;
 
@@ -67,7 +65,7 @@ public class RemoveTopicSubscriptionHandlerTest
         output = new BufferingServerOutput();
 
         futurePool = new FuturePool();
-        when(subscriptionService.closeSubscriptionAsync(any(DirectBuffer.class), anyInt(), anyLong())).thenAnswer((invocation) -> futurePool.next());
+        when(subscriptionService.closeSubscriptionAsync(anyInt(), anyLong())).thenAnswer((invocation) -> futurePool.next());
     }
 
     @Test
@@ -81,7 +79,6 @@ public class RemoveTopicSubscriptionHandlerTest
 
         final DirectBuffer request = encode(new CloseSubscriptionRequest()
                 .setSubscriberKey(5L)
-                .setTopicName(DEFAULT_TOPIC_NAME_BUFFER)
                 .setPartitionId(0));
         handler.handle(request, metadata);
 

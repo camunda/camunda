@@ -43,12 +43,6 @@ public class ExecuteCommandRequestBuilder
         return request.send();
     }
 
-    public ExecuteCommandRequestBuilder topicName(String topicName)
-    {
-        request.topicName(topicName);
-        return this;
-    }
-
     public ExecuteCommandRequestBuilder partitionId(int partitionId)
     {
         request.partitionId(partitionId);

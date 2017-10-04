@@ -18,9 +18,12 @@
 package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import io.zeebe.broker.test.MockStreamProcessorController;
 import io.zeebe.logstreams.log.LogStream;
@@ -31,10 +34,9 @@ import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.util.actor.ActorScheduler;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import io.zeebe.util.buffer.BufferUtil;
 
 public class StreamProcessorServiceTest
 {
@@ -178,7 +180,7 @@ public class StreamProcessorServiceTest
         streamProcessorService.getActorSchedulerInjector().inject(actorScheduler);
 
         final LogStream logStream = mock(LogStream.class);
-        when(logStream.getTopicName()).thenReturn(DEFAULT_TOPIC_NAME_BUFFER);
+        when(logStream.getTopicName()).thenReturn(BufferUtil.wrapString(ClientApiRule.DEFAULT_TOPIC_NAME));
         when(logStream.getPartitionId()).thenReturn(0);
         streamProcessorService.getSourceStreamInjector().inject(logStream);
         streamProcessorService.getTargetStreamInjector().inject(logStream);

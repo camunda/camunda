@@ -142,7 +142,7 @@ public class ClusterManager implements Actor
                 final DirectBuffer topicName = storage.getTopicName();
                 final int partitionId = storage.getPartitionId();
 
-                LogStream logStream = logStreamManager.getLogStream(topicName, partitionId);
+                LogStream logStream = logStreamManager.getLogStream(partitionId);
 
                 if (logStream == null)
                 {
@@ -161,7 +161,6 @@ public class ClusterManager implements Actor
             if (isBootstrappingBroker)
             {
                 createPartition(Protocol.SYSTEM_TOPIC_BUF, Protocol.SYSTEM_PARTITION);
-                createPartition(LogStream.DEFAULT_TOPIC_NAME_BUFFER, LogStream.DEFAULT_PARTITION_ID);
             }
         }
     }
@@ -254,8 +253,7 @@ public class ClusterManager implements Actor
     public void removeRaft(final Raft raft)
     {
         final LogStream logStream = raft.getLogStream();
-        final DirectBuffer topicName = logStream.getTopicName();
-        final int partitionId = logStream.getPartitionId();
+        final long partitionId = logStream.getPartitionId();
 
         commandQueue.runAsync(() ->
         {
@@ -263,7 +261,7 @@ public class ClusterManager implements Actor
             {
                 final Raft r = rafts.get(i);
                 final LogStream stream = r.getLogStream();
-                if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
+                if (partitionId == stream.getPartitionId())
                 {
                     context.getLocalPeer().removeRaft(raft);
                     rafts.remove(i);
@@ -275,7 +273,7 @@ public class ClusterManager implements Actor
             {
                 final Raft r = startLogStreamServiceControllers.get(i).getRaft();
                 final LogStream stream = r.getLogStream();
-                if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
+                if (partitionId == stream.getPartitionId())
                 {
                     startLogStreamServiceControllers.remove(i);
                     break;

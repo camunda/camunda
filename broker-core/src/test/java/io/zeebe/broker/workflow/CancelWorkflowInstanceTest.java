@@ -187,8 +187,6 @@ public class CancelWorkflowInstanceTest
     private ExecuteCommandResponse cancelWorkflowInstance(final long workflowInstanceKey)
     {
         return apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeWorkflow()
             .key(workflowInstanceKey)
             .command()

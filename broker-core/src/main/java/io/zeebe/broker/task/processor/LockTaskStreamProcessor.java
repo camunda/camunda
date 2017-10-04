@@ -63,7 +63,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     protected final DirectBuffer subscribedTaskType;
 
-    protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
     protected LogStream targetStream;
@@ -104,11 +103,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return subscribedTaskType;
     }
 
-    public DirectBuffer getLogStreamTopicName()
-    {
-        return logStreamTopicName;
-    }
-
     public int getLogStreamPartitionId()
     {
         return logStreamPartitionId;
@@ -120,7 +114,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         cmdQueue = context.getStreamProcessorCmdQueue();
 
         final LogStream sourceStream = context.getSourceStream();
-        logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
 
         targetStream = context.getTargetStream();

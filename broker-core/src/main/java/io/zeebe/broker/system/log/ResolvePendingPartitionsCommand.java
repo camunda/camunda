@@ -19,13 +19,13 @@ package io.zeebe.broker.system.log;
 
 import java.util.Iterator;
 
-import org.agrona.DirectBuffer;
-
-import io.zeebe.broker.clustering.management.Partition;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
+import io.zeebe.util.collection.IntIterator;
 import io.zeebe.util.time.ClockUtil;
 
 public class ResolvePendingPartitionsCommand implements Runnable
@@ -34,15 +34,17 @@ public class ResolvePendingPartitionsCommand implements Runnable
     protected final PartitionManager partitionManager;
 
     protected final TypedStreamWriter writer;
-    protected final PartitionEvent partitionEvent = new PartitionEvent();
+    protected final TypedStreamReader reader;
 
     public ResolvePendingPartitionsCommand(
             PendingPartitionsIndex partitions,
             PartitionManager partitionManager,
+            TypedStreamReader reader,
             TypedStreamWriter writer)
     {
         this.partitions = partitions;
         this.partitionManager = partitionManager;
+        this.reader = reader;
         this.writer = writer;
     }
 
@@ -69,15 +71,14 @@ public class ResolvePendingPartitionsCommand implements Runnable
             final PendingPartition partition = partitionIt.next();
             if (partition.getCreationTimeout() < now)
             {
-                partitionEvent.reset();
-                partitionEvent.setTopicName(partition.getTopicName());
-                partitionEvent.setId(partition.getPartitionId());
-                partitionEvent.setCreationTimeout(partition.getCreationTimeout());
-                partitionEvent.setState(PartitionState.CREATE_EXPIRE);
+                final TypedEvent<PartitionEvent> event =
+                        reader.readValue(partition.getPosition(), PartitionEvent.class);
+
+                event.getValue().setState(PartitionState.CREATE_EXPIRE);
 
                 // it is ok if writing fails,
                 // we will then try it again with the next command execution (there are no other side effects of expiration)
-                writer.writeFollowupEvent(partition.getPartitionKey(), partitionEvent);
+                writer.writeFollowupEvent(event.getKey(), event.getValue());
             }
         }
     }
@@ -90,27 +91,24 @@ public class ResolvePendingPartitionsCommand implements Runnable
         {
             final Member currentMember = currentMembers.next();
 
-            final Iterator<Partition> partitionsLeadByMember = currentMember.getLeadingPartitions();
+            final IntIterator partitionsLeadByMember = currentMember.getLeadingPartitions();
 
             while (partitionsLeadByMember.hasNext())
             {
-                final Partition currentPartition = partitionsLeadByMember.next();
+                final int currentPartition = partitionsLeadByMember.nextInt();
 
-                final DirectBuffer topicName = currentPartition.getTopicName();
-                final int partitionId = currentPartition.getPartitionId();
-
-                final PendingPartition partition = partitions.get(topicName, partitionId);
+                final PendingPartition partition = partitions.get(currentPartition);
 
                 if (partition != null)
                 {
-                    partitionEvent.reset();
-                    partitionEvent.setTopicName(topicName);
-                    partitionEvent.setId(partitionId);
-                    partitionEvent.setState(PartitionState.CREATE_COMPLETE);
+                    final TypedEvent<PartitionEvent> event =
+                            reader.readValue(partition.getPosition(), PartitionEvent.class);
+
+                    event.getValue().setState(PartitionState.CREATE_COMPLETE);
 
                     // it is ok if writing fails,
                     // we will then try it again with the next command execution (there are no other side effects of completion)
-                    writer.writeFollowupEvent(partition.getPartitionKey(), partitionEvent);
+                    writer.writeFollowupEvent(event.getKey(), event.getValue());
                 }
             }
         }

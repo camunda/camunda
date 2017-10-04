@@ -20,7 +20,6 @@ package io.zeebe.broker.clustering.management;
 import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
@@ -35,6 +34,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.collection.IntIterator;
 
 public class PartitionManagerImpl implements PartitionManager
 {
@@ -91,11 +91,9 @@ public class PartitionManagerImpl implements PartitionManager
         return memberIterator;
     }
 
-    protected static class PartitionIterator implements Iterator<Partition>
+    protected static class PartitionIterator implements IntIterator
     {
-        protected PartitionImpl partition1 = new PartitionImpl();
-        protected PartitionImpl partition2 = new PartitionImpl();
-        protected PartitionImpl nextPartition = null;
+        protected int nextPartition = -1;
 
         protected Iterator<Peer> peerIterator;
         protected Iterator<RaftMembership> raftMemberIterator;
@@ -111,7 +109,7 @@ public class PartitionManagerImpl implements PartitionManager
         @Override
         public boolean hasNext()
         {
-            return nextPartition != null;
+            return nextPartition >= 0;
         }
 
         protected void seekNextPartitionLeader()
@@ -122,53 +120,27 @@ public class PartitionManagerImpl implements PartitionManager
 
                 if (membership.state() == RaftMembershipState.LEADER)
                 {
-                    nextPartition = nextPartition == partition1 ? partition2 : partition1;
-                    nextPartition.wrap(
-                            membership.topicNameBuffer(),
-                            0,
-                            membership.topicNameLength(),
-                            membership.partitionId());
-
+                    nextPartition = membership.partitionId();
                     return;
                 }
             }
 
-            nextPartition = null;
+            nextPartition = -1;
         }
 
         @Override
-        public Partition next()
+        public int nextInt()
         {
-            final Partition partitionToReturn = nextPartition;
+            final int partitionToReturn = nextPartition;
             seekNextPartitionLeader();
             return partitionToReturn;
         }
-    }
-
-    protected static class PartitionImpl implements Partition
-    {
-
-        protected UnsafeBuffer topicName = new UnsafeBuffer(0, 0);
-        protected int partitionId;
-
-        public void wrap(DirectBuffer topicName, int offset, int length, int partitionId)
-        {
-            this.topicName.wrap(topicName, offset, length);
-            this.partitionId = partitionId;
-        }
 
         @Override
-        public DirectBuffer getTopicName()
+        public Integer next()
         {
-            return topicName;
+            return nextInt();
         }
-
-        @Override
-        public int getPartitionId()
-        {
-            return partitionId;
-        }
-
     }
 
     protected static class MemberIterator implements Iterator<Member>
@@ -200,13 +172,11 @@ public class PartitionManagerImpl implements PartitionManager
         protected SocketAddress socketAddress;
         protected PartitionIterator partitionIterator = new PartitionIterator();
 
-
         public void wrap(Peer peer)
         {
             this.socketAddress = peer.managementEndpoint();
             this.partitionIterator.wrap(peer.raftMemberships().iterator());
         }
-
 
         @Override
         public SocketAddress getManagementAddress()
@@ -214,9 +184,8 @@ public class PartitionManagerImpl implements PartitionManager
             return socketAddress;
         }
 
-
         @Override
-        public Iterator<Partition> getLeadingPartitions()
+        public IntIterator getLeadingPartitions()
         {
             return partitionIterator;
         }

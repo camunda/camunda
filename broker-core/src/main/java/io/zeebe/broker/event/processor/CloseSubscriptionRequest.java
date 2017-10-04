@@ -18,23 +18,18 @@
 package io.zeebe.broker.event.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.StringProperty;
 
 public class CloseSubscriptionRequest extends UnpackedObject
 {
 
-    protected StringProperty topicNameProp = new StringProperty("topicName");
     protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
 
     public CloseSubscriptionRequest()
     {
         this.declareProperty(subscriberKeyProp)
-            .declareProperty(topicNameProp)
             .declareProperty(partitionIdProp);
     }
 
@@ -49,18 +44,7 @@ public class CloseSubscriptionRequest extends UnpackedObject
         return this;
     }
 
-    public DirectBuffer getTopicName()
-    {
-        return topicNameProp.getValue();
-    }
-
-    public CloseSubscriptionRequest setTopicName(final DirectBuffer topicName)
-    {
-        this.topicNameProp.setValue(topicName);
-        return this;
-    }
-
-    public int getPartitionId()
+    public long getPartitionId()
     {
         return partitionIdProp.getValue();
     }

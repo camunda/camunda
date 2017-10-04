@@ -173,8 +173,6 @@ public class UpdatePayloadTest
     private ExecuteCommandResponse updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) throws Exception
     {
         return apiRule.createCmdRequest()
-            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
-            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
             .eventTypeWorkflow()
             .key(activityInstanceKey)
             .command()

@@ -16,8 +16,6 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.topicNameHeaderLength;
-import static io.zeebe.util.StringUtil.getBytes;
 
 import java.util.Map;
 
@@ -43,7 +41,6 @@ public class SubscribedEventBuilder implements BufferWriter
     protected final MsgPackHelper msgPackHelper;
     protected final ServerTransport transport;
 
-    protected String topicName;
     protected int partitionId;
     protected long position;
     protected long key;
@@ -56,12 +53,6 @@ public class SubscribedEventBuilder implements BufferWriter
     {
         this.msgPackHelper = msgPackHelper;
         this.transport = transport;
-    }
-
-    public SubscribedEventBuilder topicName(final String topicName)
-    {
-        this.topicName = topicName;
-        return this;
     }
 
     public SubscribedEventBuilder partitionId(int partitionId)
@@ -130,8 +121,6 @@ public class SubscribedEventBuilder implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedEventEncoder.BLOCK_LENGTH +
-                topicNameHeaderLength() +
-                getBytes(topicName).length +
                 eventHeaderLength() +
                 event.length;
     }
@@ -152,7 +141,6 @@ public class SubscribedEventBuilder implements BufferWriter
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .partitionId(partitionId)
-            .topicName(topicName)
             .putEvent(event, 0, event.length);
     }
 

@@ -50,7 +50,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected long startPosition;
     protected final DirectBuffer name;
     protected final String nameString;
-    protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
@@ -90,7 +89,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         final LogStreamReader logReader = context.getSourceLogStreamReader();
 
         final LogStream sourceStream = context.getSourceStream();
-        this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
 
         setToStartPosition(logReader);
@@ -147,7 +145,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         event.readMetadata(metadata);
 
         final boolean success = channelWriter
-            .topicName(logStreamTopicName)
             .partitionId(logStreamPartitionId)
             .eventType(metadata.getEventType())
             .key(event.getKey())

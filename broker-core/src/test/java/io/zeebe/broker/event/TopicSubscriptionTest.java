@@ -83,8 +83,7 @@ public class TopicSubscriptionTest
         final ControlMessageResponse removeResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -92,8 +91,7 @@ public class TopicSubscriptionTest
         // then
         assertThat(removeResponse.getData()).containsOnly(
             entry("subscriberKey", subscriberKey),
-            entry("topicName", DEFAULT_TOPIC_NAME),
-            entry("partitionId", DEFAULT_PARTITION_ID)
+            entry("partitionId", apiRule.getDefaultPartitionId())
         );
     }
 
@@ -110,8 +108,7 @@ public class TopicSubscriptionTest
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -120,8 +117,6 @@ public class TopicSubscriptionTest
 
         // when creating a task
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -139,8 +134,6 @@ public class TopicSubscriptionTest
     {
         // given
         final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -168,16 +161,14 @@ public class TopicSubscriptionTest
         assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
         assertThat(taskEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvent.position()).isEqualTo(taskKey);
-        assertThat(taskEvent.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(taskEvent.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(taskEvent.event()).contains(entry("state", "CREATE"));
 
         taskEvent = taskEvents.get(1);
         assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
         assertThat(taskEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvent.position()).isGreaterThan(taskKey);
-        assertThat(taskEvent.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(taskEvent.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(taskEvent.event()).contains(entry("state", "CREATED"));
     }
 
@@ -186,8 +177,6 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -212,64 +201,21 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldNotOpenSubscriptionForNonExistingTopic()
-    {
-        // given
-        final ExecuteCommandRequest request = apiRule.openTopicSubscription("unknown-topic", DEFAULT_PARTITION_ID, "foo", 0);
-
-        // when
-        final ErrorResponse errorResponse = request.awaitError();
-
-        // then
-        final String expectedMessage = String.format(
-            "Cannot execute command. Topic with name '%s' and partition id '%d' not found", "unknown-topic", DEFAULT_PARTITION_ID);
-
-        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
-        assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-        assertThatBuffer(errorResponse.getFailedRequestBuffer()).hasBytes(request);
-    }
-
-    @Test
     public void shouldNotOpenSubscriptionForNonExistingPartition()
     {
         // given
-        final ExecuteCommandRequest request = apiRule.openTopicSubscription(DEFAULT_TOPIC_NAME, 999, "foo", 0);
+        final ExecuteCommandRequest request = apiRule.openTopicSubscription(999, "foo", 0);
 
         // when
         final ErrorResponse errorResponse = request.awaitError();
 
         // then
         final String expectedMessage = String.format(
-            "Cannot execute command. Topic with name '%s' and partition id '%d' not found", DEFAULT_TOPIC_NAME, 999);
+            "Cannot execute command. Partition with id '%d' not found", 999);
 
-        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
         assertThatBuffer(errorResponse.getFailedRequestBuffer()).hasBytes(request);
-    }
-
-    @Test
-    public void shouldNotCloseSubscriptionForNonExistingTopic()
-    {
-        // when
-        final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicName", "unknown-topic")
-                .put("partitionId", DEFAULT_PARTITION_ID)
-                .put("subscriberKey", 0L)
-                .done()
-            .send().awaitError();
-
-        // then
-        final String expectedMessage = String.format("Cannot close topic subscription. No subscription management " +
-            "processor registered for topic '%s' and partition '%d'", "unknown-topic", DEFAULT_PARTITION_ID);
-
-        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-
-        assertThat(errorResponse.getFailedRequest())
-            .containsEntry("topicName", "unknown-topic")
-            .containsEntry("partitionId", DEFAULT_PARTITION_ID);
     }
 
     @Test
@@ -279,7 +225,6 @@ public class TopicSubscriptionTest
         final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
                 .put("partitionId", 999)
                 .put("subscriberKey", 0L)
                 .done()
@@ -287,13 +232,12 @@ public class TopicSubscriptionTest
 
         // then
         final String expectedMessage = String.format("Cannot close topic subscription. No subscription management " +
-            "processor registered for topic '%s' and partition '%d'", DEFAULT_TOPIC_NAME, 999);
+            "processor registered for partition '%d'", 999);
 
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
 
         assertThat(errorResponse.getFailedRequest())
-            .containsEntry("topicName", DEFAULT_TOPIC_NAME)
             .containsEntry("partitionId", 999);
     }
 
@@ -305,8 +249,7 @@ public class TopicSubscriptionTest
         final ControlMessageResponse removeResponse = apiRule.createControlMessageRequest()
                 .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
                 .data()
-                    .put("topicName", DEFAULT_TOPIC_NAME)
-                    .put("partitionId", DEFAULT_PARTITION_ID)
+                    .put("partitionId", apiRule.getDefaultPartitionId())
                     .put("subscriberKey", Long.MAX_VALUE)
                     .done()
                 .sendAndAwait();
@@ -315,8 +258,7 @@ public class TopicSubscriptionTest
         assertThat(removeResponse.getData())
             .containsOnly(
                 entry("subscriberKey", Long.MAX_VALUE),
-                entry("topicName", DEFAULT_TOPIC_NAME),
-                entry("partitionId", DEFAULT_PARTITION_ID)
+                entry("partitionId", apiRule.getDefaultPartitionId())
             );
     }
 
@@ -361,8 +303,6 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -380,8 +320,6 @@ public class TopicSubscriptionTest
 
         apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", "foo")
                 .put("state", "ACKNOWLEDGE")
@@ -392,8 +330,7 @@ public class TopicSubscriptionTest
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -402,8 +339,6 @@ public class TopicSubscriptionTest
 
         // when
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeSubscriber()
             .command()
                 .put("startPosition", taskEvents.get(0))
@@ -434,8 +369,6 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
@@ -454,8 +387,7 @@ public class TopicSubscriptionTest
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -487,7 +419,7 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         // and the subscription service has abnormally closed
-        final String name = "log.log." + DEFAULT_LOG_NAME +  ".subscription.push.foo";
+        final String name = "log.log." + ClientApiRule.DEFAULT_TOPIC_NAME + "." + apiRule.getDefaultPartitionId() + ".subscription.push.foo"; // TODO: ist das der richtige Name?
         final ServiceName<Object> subscriptionServiceName = ServiceName.newServiceName(name, Object.class);
         brokerRule.removeService(subscriptionServiceName);
 
@@ -495,8 +427,7 @@ public class TopicSubscriptionTest
         final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicName", DEFAULT_TOPIC_NAME)
-                .put("partitionId", DEFAULT_PARTITION_ID)
+                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .send().awaitError();
@@ -539,8 +470,6 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("state", "CREATE")
