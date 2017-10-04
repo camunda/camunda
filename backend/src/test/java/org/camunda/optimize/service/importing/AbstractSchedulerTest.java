@@ -101,5 +101,6 @@ public abstract class AbstractSchedulerTest {
     }
 
     when(indexHandlerProvider.getAllHandlers()).thenReturn(allMocks);
+    when(indexHandlerProvider.getAllHandlers(Mockito.any())).thenReturn(allMocks);
   }
 }

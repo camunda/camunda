@@ -19,7 +19,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +40,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   private IndexHandlerProvider indexHandlerProvider;
 
   @Autowired
-  private ImportScheduler importScheduler;
+  private ImportSchedulerFactory importSchedulerFactory;
 
   @Autowired
   private BackoffService backoffService;
@@ -51,18 +50,22 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   @Before
   public void setUp() throws OptimizeException {
     backoffService.resetBackoffCounters();
-    importScheduler.importScheduleJobs.clear();
+    getImportScheduler().importScheduleJobs.clear();
 
     services = mockPaginatedImportServices();
     Map<String, ImportService> allServicesMap = getAllImportServiceMap(services);
-    when(importServiceProvider.getAllServices()).thenReturn(allServicesMap);
+    when(importServiceProvider.getAllEngineServices(Mockito.any())).thenReturn(allServicesMap);
 
     mockIndexHandlers(services, indexHandlerProvider);
-    when(importServiceProvider.getPagedServices()).thenReturn(services);
-    when(importServiceProvider.getVariableImportService())
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
+    when(importServiceProvider.getVariableImportService(Mockito.any()))
         .thenReturn((VariableImportService) allServicesMap.get("variable"));
-    when(importServiceProvider.getProcessInstanceImportService())
+    when(importServiceProvider.getProcessInstanceImportService(Mockito.any()))
         .thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
+  }
+
+  private ImportScheduler getImportScheduler() {
+    return importSchedulerFactory.getInstances().values().iterator().next();
   }
 
   @After
@@ -77,10 +80,10 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     ImportResult result = new ImportResult();
     result.setEngineHasStillNewData(true);
     when(services.get(0).executeImport(Mockito.any())).thenReturn(result);
-    importScheduler.scheduleNewImportRound();
+    getImportScheduler().scheduleNewImportRound();
 
     //when
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
 
     assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
@@ -90,7 +93,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   public void testBackingOffIfNoImportPagesFound() throws Exception {
     //given
     List<PaginatedImportService> services = mockPaginatedImportServices();
-    when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
 
     PaginatedImportService zeroPaginatedImportService = services.get(0);
     ImportResult zeroResult = new ImportResult();
@@ -108,11 +111,11 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
 
     when(singlePaginatedImportService.executeImport(Mockito.any())).thenReturn(singleResult);
 
-    importScheduler.scheduleNewImportRound();
+    getImportScheduler().scheduleNewImportRound();
 
     //when
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
 
     assertThat(backoffService.getBackoffCounter(zeroPaginatedImportService.getElasticsearchType()), is(1L));
     assertThat(backoffService.getBackoffCounter(singlePaginatedImportService.getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
@@ -122,10 +125,10 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   public void testGeneralBackoffIncreaseWithoutJobs() throws Exception {
     // given
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
-    importScheduler.setSkipBackoffToCheckForNewDataInEngine(false);
+    getImportScheduler().setSkipBackoffToCheckForNewDataInEngine(false);
 
     //when
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
 
     //then
     assertThat(backoffService.getGeneralBackoffCounter(), is(1L));
@@ -135,19 +138,19 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   public void everySecondsImportRoundBackoffIsSkipped() throws Exception {
     // given
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
-    importScheduler.setSkipBackoffToCheckForNewDataInEngine(true);
+    getImportScheduler().setSkipBackoffToCheckForNewDataInEngine(true);
 
     //when
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
 
     // then the backoff is skipped the first time
     assertThat(backoffService.getGeneralBackoffCounter(), is(0L));
 
     // when I finish all jobs and there is another try for backoff
-    while (importScheduler.hasStillJobsToExecute()) {
-      importScheduler.getNextToExecute();
+    while (getImportScheduler().hasStillJobsToExecute()) {
+      getImportScheduler().getNextToExecute();
     }
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
 
     //then the backoff is actually performed the seconds time
     assertThat(backoffService.getGeneralBackoffCounter(), is(1L));
@@ -161,8 +164,8 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     // when
     PageBasedImportScheduleJob pageBasedImportScheduleJob = new PageBasedImportScheduleJob(0,0, 0, "test");
     pageBasedImportScheduleJob.setDateUntilExecutionIsBlocked(LocalDateTime.now().minus(1L, ChronoUnit.MINUTES));
-    importScheduler.importScheduleJobs.add(pageBasedImportScheduleJob);
-    importScheduler.scheduleNewImportRound();
+    getImportScheduler().importScheduleJobs.add(pageBasedImportScheduleJob);
+    getImportScheduler().scheduleNewImportRound();
 
     // then
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
@@ -174,15 +177,15 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
 
     //when
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     //since in reality executeNextJob will be invoked by sleeping thread, let it sleep properly
     Thread.sleep(1000);
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     Thread.sleep(1000);
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
 
     //then
     assertThat(backoffService.getGeneralBackoffCounter(), is(3L));
@@ -193,19 +196,19 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
   public void testBackoffResetAfterPage() throws OptimizeException {
     //given
     //right after instantiation backoff is 0
-    importScheduler.scheduleNewImportRound();
+    getImportScheduler().scheduleNewImportRound();
     assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
     assertThat(backoffService.getBackoffCounter(services.get(1).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
     assertThat(backoffService.getBackoffCounter(services.get(2).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
 
 
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     //initial execution increases backoff and schedules jobs
     assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(1L));
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
     //there were still no pages returned -> backoff is 2
     assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(2L));
 
@@ -222,13 +225,13 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     }
 
     //when
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
     assertThat(backoffService.getGeneralBackoffCounter(), is(BackoffService.STARTING_BACKOFF));
 
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
+    getImportScheduler().executeNextJob();
 
     //then
     assertThat(backoffService.getBackoffCounter(services.get(0).getElasticsearchType()), is(BackoffService.STARTING_BACKOFF));
@@ -242,11 +245,11 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(1L));
     assertThat(backoffService.calculateJobBackoff(true, toExecute), is(BackoffService.STARTING_BACKOFF));
     //does not increase after 2
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(2L));
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(3L));
-    importScheduler.executeNextJob();
+    getImportScheduler().executeNextJob();
     assertThat(backoffService.calculateJobBackoff(false, toExecute), is(3L));
   }
 
@@ -254,7 +257,7 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     List<PaginatedImportService> services = super.mockPaginatedImportServices();
 
     for (PaginatedImportService s : services) {
-      when(importServiceProvider.getImportService(s.getElasticsearchType())).thenReturn(s);
+      when(importServiceProvider.getImportService(Mockito.eq(s.getElasticsearchType()), Mockito.any())).thenReturn(s);
     }
     return services;
   }

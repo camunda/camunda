@@ -48,10 +48,15 @@ public class ImportScheduler extends Thread {
   private boolean skipBackoffToCheckForNewDataInEngine = true;
 
   private LocalDateTime lastReset = LocalDateTime.now();
+  private String engineAlias;
+
+  public ImportScheduler(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
 
   public void scheduleNewImportRound() {
     logger.debug("Scheduling import of all paginated types");
-    this.importScheduleJobs.addAll(scheduleJobFactory.createPagedJobs());
+    this.importScheduleJobs.addAll(scheduleJobFactory.createPagedJobs(this.engineAlias));
   }
 
   @Override
@@ -62,6 +67,14 @@ public class ImportScheduler extends Thread {
       executeNextJob();
       logger.debug("Finished import round");
     }
+  }
+
+  @Override
+  public void start() {
+    logger.info("starting import scheduler thread");
+    this.scheduleNewImportRound();
+    super.start();
+    this.setName(SCHEDULER_NAME + "-" + this.getEngineName());
   }
 
   protected void checkAndResetImportIndexing() {
@@ -76,8 +89,9 @@ public class ImportScheduler extends Thread {
         //nothing to do - fall back to default value
       }
       LocalDateTime resetDueDate = lastReset.plus(configurationService.getImportResetIntervalValue(), unit);
-      if (LocalDateTime.now().isAfter(resetDueDate)) { logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
-        for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+      if (LocalDateTime.now().isAfter(resetDueDate)) {
+        logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
+        for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers(this.engineAlias)) {
           importIndexHandler.resetImportIndex();
         }
         lastReset = LocalDateTime.now();
@@ -86,14 +100,6 @@ public class ImportScheduler extends Thread {
         this.scheduleNewImportRound();
       }
     }
-  }
-
-  @Override
-  public void start() {
-    logger.info("starting import scheduler thread");
-    this.scheduleNewImportRound();
-    super.start();
-    this.setName(SCHEDULER_NAME);
   }
 
   protected void executeNextJob() {
@@ -106,14 +112,14 @@ public class ImportScheduler extends Thread {
   }
 
   private void backoffIfPossibleAndScheduleNewRound() {
-    if(skipBackoffToCheckForNewDataInEngine) {
+    if(isSkipBackoffToCheckForNewDataInEngine()) {
       for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
         importIndexHandler.restartImportCycle();
       }
-      skipBackoffToCheckForNewDataInEngine = false;
+      setSkipBackoffToCheckForNewDataInEngine(false);
     } else {
       backoffService.backoffAndSleep();
-      skipBackoffToCheckForNewDataInEngine = true;
+      setSkipBackoffToCheckForNewDataInEngine(true);
     }
     this.scheduleNewImportRound();
   }
@@ -128,6 +134,7 @@ public class ImportScheduler extends Thread {
       toExecute = importScheduleJobs.poll();
     } else {
       toExecute = new IdleImportScheduleJob();
+      toExecute.setEngineAlias(this.engineAlias);
     }
     return toExecute;
   }
@@ -166,7 +173,10 @@ public class ImportScheduler extends Thread {
     ImportResult result;
 
     if (!IdleImportScheduleJob.class.equals(toExecute.getClass())) {
-      ImportService importService = importServiceProvider.getImportService(toExecute.getElasticsearchType());
+      ImportService importService = importServiceProvider.getImportService(
+          toExecute.getElasticsearchType(),
+          toExecute.getEngineAlias()
+      );
       result = importService.executeImport(toExecute);
     } else {
       // be idle and do nothing
@@ -182,7 +192,9 @@ public class ImportScheduler extends Thread {
     boolean engineHasStillNewData = importResult.getEngineHasStillNewData();
     if (toExecute.isPageBased()) {
       ImportIndexHandler importIndexHandler = indexHandlerProvider.getIndexHandler(
-          importResult.getElasticSearchType(), importResult.getIndexHandlerType(), toExecute.getEngineAlias()
+          importResult.getElasticSearchType(),
+          importResult.getIndexHandlerType(),
+          toExecute.getEngineAlias()
       );
 
       if (!engineHasStillNewData) {
@@ -203,7 +215,10 @@ public class ImportScheduler extends Thread {
   public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
       importScheduleJobs.addAll(
-          scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch(), toExecute.getEngineAlias())
+          scheduleJobFactory.createIndexedScheduleJobs(
+              importResult.getIdsToFetch(),
+              toExecute.getEngineAlias()
+          )
       );
     }
 
@@ -228,7 +243,9 @@ public class ImportScheduler extends Thread {
           elasticsearchType
       );
       backoffService.resetBackoff(toExecute);
-      importScheduleJobs.add(scheduleJobFactory.createPagedJob(elasticsearchType, toExecute.getEngineAlias()));
+      importScheduleJobs.add(
+          scheduleJobFactory.createPagedJob(elasticsearchType, toExecute.getEngineAlias())
+      );
     }
   }
 
@@ -288,5 +305,9 @@ public class ImportScheduler extends Thread {
 
   public void clearQueue() {
     this.importScheduleJobs.clear();
+  }
+
+  public String getEngineName() {
+    return this.engineAlias;
   }
 }

@@ -10,20 +10,20 @@ import org.camunda.optimize.service.importing.job.importing.ProcessInstanceImpor
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
 
-@Component
 public class ProcessInstanceImportService extends IdBasedImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessInstanceImportService.class);
 
-  @Autowired
   private ProcessInstanceWriter processInstanceWriter;
-  @Autowired
   private MissingProcessInstanceFinder missingProcessInstanceFinder;
+
+  public ProcessInstanceImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   protected MissingEntitiesFinder<HistoricProcessInstanceDto> getMissingEntitiesFinder() {
@@ -64,5 +64,15 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessInstanceType();
+  }
+
+  @Autowired
+  public void setProcessInstanceWriter(ProcessInstanceWriter processInstanceWriter) {
+    this.processInstanceWriter = processInstanceWriter;
+  }
+
+  @Autowired
+  public void setMissingProcessInstanceFinder(MissingProcessInstanceFinder missingProcessInstanceFinder) {
+    this.missingProcessInstanceFinder = missingProcessInstanceFinder;
   }
 }

@@ -13,23 +13,20 @@ import org.camunda.optimize.service.importing.job.schedule.PageBasedImportSchedu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class ProcessDefinitionXmlIdBasedImportService
     extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportIndexHandler> {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlIdBasedImportService.class);
 
-  @Autowired
   private ProcessDefinitionWriter procDefWriter;
-
-  @Autowired
   private MissingProcessDefinitionXmlFinder xmlFinder;
-
-  @Autowired
   private IdBasedProcessDefinitionXmlFetcher idBasedProcessDefinitionXmlFetcher;
+
+  public ProcessDefinitionXmlIdBasedImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
 
   @Override
@@ -45,16 +42,16 @@ public class ProcessDefinitionXmlIdBasedImportService
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher.fetchProcessDefinitionXmls(
-      job.getCurrentDefinitionBasedImportIndex(),
-      job.getCurrentProcessDefinitionId(),
-      job.getEngineAlias()
+        job.getCurrentDefinitionBasedImportIndex(),
+        job.getCurrentProcessDefinitionId(),
+        job.getEngineAlias()
     );
   }
 
   @Override
   public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
     return idBasedProcessDefinitionXmlFetcher
-      .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
+        .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
   @Override
@@ -90,5 +87,20 @@ public class ProcessDefinitionXmlIdBasedImportService
   @Override
   public boolean isProcessDefinitionBased() {
     return true;
+  }
+
+  @Autowired
+  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
+    this.procDefWriter = procDefWriter;
+  }
+
+  @Autowired
+  public void setXmlFinder(MissingProcessDefinitionXmlFinder xmlFinder) {
+    this.xmlFinder = xmlFinder;
+  }
+
+  @Autowired
+  public void setIdBasedProcessDefinitionXmlFetcher(IdBasedProcessDefinitionXmlFetcher idBasedProcessDefinitionXmlFetcher) {
+    this.idBasedProcessDefinitionXmlFetcher = idBasedProcessDefinitionXmlFetcher;
   }
 }

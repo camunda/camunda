@@ -30,9 +30,18 @@ public class ScheduleJobFactory {
   protected IndexHandlerProvider indexHandlerProvider;
 
   public Collection<? extends ImportScheduleJob> createPagedJobs() {
-    List<ImportScheduleJob> result = new ArrayList<>();
+    List<ImportScheduleJob> result = null;
     for (String engine : configurationService.getConfiguredEngines().keySet()) {
-      for (PaginatedImportService service : importServiceProvider.getPagedServices()) {
+      result = createPagedJobs(engine);
+    }
+    return result;
+  }
+
+  public List<ImportScheduleJob> createPagedJobs(String engine) {
+    List<ImportScheduleJob> result;
+    result = new ArrayList<>();
+    if (importServiceProvider.getPagedServices(engine) != null) {
+      for (PaginatedImportService service : importServiceProvider.getPagedServices(engine)) {
         ImportIndexHandler importIndexHandler =
             indexHandlerProvider.getIndexHandler(service.getElasticsearchType(), service.getIndexHandlerType(), engine);
 
@@ -107,7 +116,7 @@ public class ScheduleJobFactory {
 
   private ImportScheduleJob createHistoricProcessInstanceScheduleJob(Set<String> idsToFetch, String engineAlias) {
     IdBasedImportScheduleJob job = new IdBasedImportScheduleJob();
-    job.setElasticsearchType(importServiceProvider.getProcessInstanceImportService().getElasticsearchType());
+    job.setElasticsearchType(importServiceProvider.getProcessInstanceImportService(engineAlias).getElasticsearchType());
     job.setIdsToFetch(idsToFetch);
     job.setPageBased(false);
     job.setEngineAlias(engineAlias);
@@ -116,7 +125,7 @@ public class ScheduleJobFactory {
 
   private ImportScheduleJob createHistoricVariableInstanceScheduleJob(Set<String> idsToFetch, String engineAlias) {
     IdBasedImportScheduleJob job = new IdBasedImportScheduleJob();
-    job.setElasticsearchType(importServiceProvider.getVariableImportService().getElasticsearchType());
+    job.setElasticsearchType(importServiceProvider.getVariableImportService(engineAlias).getElasticsearchType());
     job.setIdsToFetch(idsToFetch);
     job.setPageBased(false);
     job.setEngineAlias(engineAlias);
@@ -124,7 +133,7 @@ public class ScheduleJobFactory {
   }
 
   public ImportScheduleJob createPagedJob(String elasticsearchType, String engine) {
-    PaginatedImportService importService = importServiceProvider.getPaginatedImportService(elasticsearchType);
+    PaginatedImportService importService = importServiceProvider.getPaginatedImportService(elasticsearchType, engine);
     ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(elasticsearchType, importService.getIndexHandlerType(), engine);
     return constructJob(importService, indexHandler, engine);
   }

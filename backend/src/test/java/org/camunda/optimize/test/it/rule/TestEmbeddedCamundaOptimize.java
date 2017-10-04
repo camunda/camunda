@@ -214,11 +214,4 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return client;
   }
 
-  public void startImportScheduler() {
-    getImportScheduler().start();
-  }
-
-  private ImportScheduler getImportScheduler() {
-    return getApplicationContext().getBean(ImportScheduler.class);
-  }
 }

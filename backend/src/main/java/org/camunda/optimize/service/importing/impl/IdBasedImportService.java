@@ -17,8 +17,12 @@ import java.util.Set;
 public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends OptimizeDto>
     extends AbstractImportService<ENG, OPT, IdBasedImportScheduleJob> {
 
-  @Autowired
+  protected final String engineAlias;
   protected EngineEntityFetcherImpl engineEntityFetcher;
+
+  public IdBasedImportService(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
 
   @Override
   public ImportResult executeImport(IdBasedImportScheduleJob job) throws OptimizeException {
@@ -54,4 +58,12 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
    */
   protected abstract List<ENG> queryEngineRestPoint(Set<String> ids, String engineAlias) throws OptimizeException;
 
+  public String getEngineName() {
+    return this.engineAlias;
+  }
+
+  @Autowired
+  public void setEngineEntityFetcher(EngineEntityFetcherImpl engineEntityFetcher) {
+    this.engineEntityFetcher = engineEntityFetcher;
+  }
 }

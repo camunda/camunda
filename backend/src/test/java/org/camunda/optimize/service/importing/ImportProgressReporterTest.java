@@ -108,7 +108,7 @@ public class ImportProgressReporterTest {
     mockstatusCheckingService();
     Mockito.when(indexHandlerProvider.getAllHandlersForAliases(any())).thenReturn(list);
     Mockito.when(activityImportService.getEngineEntityCount(indexHandler, TEST_ENGINE)).thenReturn(totalEngineEntityCount);
-    Mockito.when(importServiceProvider.getPagedServices()).thenReturn(Collections.singletonList(activityImportService));
+    Mockito.when(importServiceProvider.getPagedServices(TEST_ENGINE)).thenReturn(Collections.singletonList(activityImportService));
     Mockito.when(indexHandler.getAbsoluteImportIndex()).thenReturn(optimizeImportCount);
 
     Mockito.when(configurationService.getConfiguredEngines()).thenReturn(engineConfigsToReturn());

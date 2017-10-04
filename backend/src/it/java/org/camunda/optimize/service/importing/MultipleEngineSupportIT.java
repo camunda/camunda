@@ -69,6 +69,7 @@ public class MultipleEngineSupportIT {
   public void reset() {
     configurationService.getConfiguredEngines().get(ENGINE_ALIAS).getAuthentication().setAccessGroup("");
     configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   @Test
@@ -446,6 +447,7 @@ public class MultipleEngineSupportIT {
 
   private void addSecondEngineToConfiguration() {
     addEngineToConfiguration("anotherEngine");
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   private void addNonExistingSecondEngineToConfiguration() {

@@ -56,13 +56,19 @@ public class IndexHandlerProvider {
   public Collection<ImportIndexHandler> getAllHandlersForAliases(List<String> engineAliases) {
     List<ImportIndexHandler> allHandlers = new ArrayList<>();
     for (String engineAlias : engineAliases) {
-      Map<String, ImportIndexHandler> typeToIndexHandler = initializedHandlers.get(engineAlias);
-      allHandlers.addAll(typeToIndexHandler.values());
+      allHandlers.addAll(getAllHandlers(engineAlias));
     }
     return allHandlers;
   }
 
   public void unregisterHandlers() {
     initializedHandlers = new HashMap<>();
+  }
+
+  public List<ImportIndexHandler> getAllHandlers(String engineAlias) {
+    List<ImportIndexHandler> allHandlers = new ArrayList<>();
+    Map<String, ImportIndexHandler> typeToIndexHandler = initializedHandlers.get(engineAlias);
+    allHandlers.addAll(typeToIndexHandler.values());
+    return allHandlers;
   }
 }

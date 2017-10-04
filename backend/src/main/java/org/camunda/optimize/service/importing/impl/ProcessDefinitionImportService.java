@@ -13,24 +13,22 @@ import org.camunda.optimize.service.importing.job.schedule.PageBasedImportSchedu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class ProcessDefinitionImportService
     extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, AllEntitiesBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionImportService.class);
 
-  @Autowired
   private ProcessDefinitionWriter procDefWriter;
-
-  @Autowired
   private MissingProcessDefinitionFinder processDefinitionFinder;
+  private AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher;
 
   @Autowired
-  private AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher;
+  public ProcessDefinitionImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   protected MissingEntitiesFinder<ProcessDefinitionEngineDto> getMissingEntitiesFinder() {
@@ -85,5 +83,20 @@ public class ProcessDefinitionImportService
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessDefinitionType();
+  }
+
+  @Autowired
+  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
+    this.procDefWriter = procDefWriter;
+  }
+
+  @Autowired
+  public void setProcessDefinitionFinder(MissingProcessDefinitionFinder processDefinitionFinder) {
+    this.processDefinitionFinder = processDefinitionFinder;
+  }
+
+  @Autowired
+  public void setProcessDefinitionFetcher(AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher) {
+    this.processDefinitionFetcher = processDefinitionFetcher;
   }
 }

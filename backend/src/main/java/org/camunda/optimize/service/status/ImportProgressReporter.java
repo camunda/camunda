@@ -93,7 +93,7 @@ public class ImportProgressReporter {
 
   private double getTotalEngineCount(String engineAlias) throws OptimizeException {
     double engineCount = 0;
-    for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
+    for (PaginatedImportService importService : importServiceProvider.getPagedServices(engineAlias)) {
       ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(
           importService.getElasticsearchType(),
           importService.getIndexHandlerType(),

@@ -12,7 +12,7 @@ public interface CamundaOptimize {
 
   ImportServiceProvider getImportServiceProvider();
 
-  void startImportScheduler();
+  void startImportSchedulers();
 
-  void disableImportScheduler();
+  void disableImportSchedulers();
 }

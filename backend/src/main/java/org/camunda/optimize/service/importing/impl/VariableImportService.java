@@ -13,7 +13,6 @@ import org.camunda.optimize.service.importing.job.importing.VariableImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,18 +20,17 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-@Component
 public class VariableImportService extends IdBasedImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
 
-  @Autowired
   private VariableWriter variableWriter;
-  @Autowired
   private MissingVariablesFinder missingVariablesFinder;
-
-  @Autowired
   private ImportAdapterProvider importServiceProvider;
+
+  public VariableImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
@@ -146,5 +144,20 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   @Override
   public String getElasticsearchType() {
     return configurationService.getVariableType();
+  }
+
+  @Autowired
+  public void setVariableWriter(VariableWriter variableWriter) {
+    this.variableWriter = variableWriter;
+  }
+
+  @Autowired
+  public void setMissingVariablesFinder(MissingVariablesFinder missingVariablesFinder) {
+    this.missingVariablesFinder = missingVariablesFinder;
+  }
+
+  @Autowired
+  public void setImportServiceProvider(ImportAdapterProvider importServiceProvider) {
+    this.importServiceProvider = importServiceProvider;
   }
 }

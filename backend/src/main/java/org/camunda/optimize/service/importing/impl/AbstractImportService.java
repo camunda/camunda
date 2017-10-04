@@ -12,6 +12,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,14 +23,13 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AbstractImportService
     <ENG extends EngineDto, OPT extends OptimizeDto, JOB extends ImportScheduleJob> implements ImportService <JOB> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
   protected ConfigurationService configurationService;
-  @Autowired
   protected ImportJobExecutor importJobExecutor;
 
   /**
@@ -83,5 +84,15 @@ public abstract class AbstractImportService
    */
   protected Set<String> getIdsForPostProcessing() {
     return null;
+  }
+
+  @Autowired
+  public void setConfigurationService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
+
+  @Autowired
+  public void setImportJobExecutor(ImportJobExecutor importJobExecutor) {
+    this.importJobExecutor = importJobExecutor;
   }
 }

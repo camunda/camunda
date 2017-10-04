@@ -13,7 +13,6 @@ import org.camunda.optimize.service.importing.job.schedule.PageBasedImportSchedu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.List;
@@ -22,18 +21,19 @@ import java.util.Set;
 /**
  * @author Askar Akhmerov
  */
-@Component
 public class ActivityImportService
     extends PaginatedImportService<HistoricActivityInstanceEngineDto, EventDto, DefinitionBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(ActivityImportService.class);
 
-  @Autowired
   private EventsWriter eventsWriter;
-  @Autowired
   private MissingActivityFinder missingActivityFinder;
-  @Autowired
   private ActivityInstanceFetcher activityInstanceFetcher;
+
+  @Autowired
+  public ActivityImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
@@ -48,16 +48,16 @@ public class ActivityImportService
   @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) {
     return activityInstanceFetcher.fetchHistoricActivityInstances(
-      job.getCurrentDefinitionBasedImportIndex(),
-      job.getCurrentProcessDefinitionId(),
-      job.getEngineAlias()
+        job.getCurrentDefinitionBasedImportIndex(),
+        job.getCurrentProcessDefinitionId(),
+        job.getEngineAlias()
     );
   }
 
   @Override
   public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
     return activityInstanceFetcher
-      .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
+        .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
   @Override
@@ -116,5 +116,25 @@ public class ActivityImportService
   @Override
   public boolean isProcessDefinitionBased() {
     return true;
+  }
+
+  @Override
+  public String getEngineName() {
+    return this.engineAlias;
+  }
+
+  @Autowired
+  public void setEventsWriter(EventsWriter eventsWriter) {
+    this.eventsWriter = eventsWriter;
+  }
+
+  @Autowired
+  public void setMissingActivityFinder(MissingActivityFinder missingActivityFinder) {
+    this.missingActivityFinder = missingActivityFinder;
+  }
+
+  @Autowired
+  public void setActivityInstanceFetcher(ActivityInstanceFetcher activityInstanceFetcher) {
+    this.activityInstanceFetcher = activityInstanceFetcher;
   }
 }

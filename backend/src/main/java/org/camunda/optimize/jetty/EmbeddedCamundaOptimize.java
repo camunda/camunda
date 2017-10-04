@@ -6,6 +6,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduler;
+import org.camunda.optimize.service.importing.ImportSchedulerFactory;
 import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -211,18 +212,21 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jerseyCamundaOptimize.getApplicationContext().getBean(ImportServiceProvider.class);
   }
 
-  @Override
-  public void startImportScheduler() {
-    getImportScheduler().start();
+  public void startImportSchedulers() {
+    for (ImportScheduler scheduler : getImportSchedulerFactory ().getInstances().values()) {
+      scheduler.start();
+    }
   }
 
-  private ImportScheduler getImportScheduler() {
-    return jerseyCamundaOptimize.getApplicationContext().getBean(ImportScheduler.class);
+  private ImportSchedulerFactory getImportSchedulerFactory() {
+    return getOptimizeApplicationContext().getBean(ImportSchedulerFactory.class);
   }
 
   @Override
-  public void disableImportScheduler() {
-    getImportScheduler().disable();
+  public void disableImportSchedulers() {
+    for (ImportScheduler scheduler : getImportSchedulerFactory ().getInstances().values()) {
+      scheduler.disable();
+    }
   }
 
   protected ApplicationContext getOptimizeApplicationContext() {

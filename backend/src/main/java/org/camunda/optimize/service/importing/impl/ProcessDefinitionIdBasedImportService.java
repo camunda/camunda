@@ -13,24 +13,21 @@ import org.camunda.optimize.service.importing.job.schedule.PageBasedImportSchedu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class ProcessDefinitionIdBasedImportService
     extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, DefinitionBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionIdBasedImportService.class);
 
-  @Autowired
   private ProcessDefinitionWriter procDefWriter;
-
-  @Autowired
   private MissingProcessDefinitionFinder processDefinitionFinder;
-
-  @Autowired
   private IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher;
+
+  public ProcessDefinitionIdBasedImportService(String engineAlias) {
+    super(engineAlias);
+  }
 
 
   @Override
@@ -93,5 +90,20 @@ public class ProcessDefinitionIdBasedImportService
   @Override
   public boolean isProcessDefinitionBased() {
     return true;
+  }
+
+  @Autowired
+  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
+    this.procDefWriter = procDefWriter;
+  }
+
+  @Autowired
+  public void setProcessDefinitionFinder(MissingProcessDefinitionFinder processDefinitionFinder) {
+    this.processDefinitionFinder = processDefinitionFinder;
+  }
+
+  @Autowired
+  public void setIdBasedProcessDefinitionFetcher(IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher) {
+    this.idBasedProcessDefinitionFetcher = idBasedProcessDefinitionFetcher;
   }
 }

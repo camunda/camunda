@@ -34,7 +34,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.TRUE;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
 
   private Logger logger = LoggerFactory.getLogger(DefinitionBasedEngineEntityFetcher.class);

@@ -17,6 +17,12 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
   extends AbstractImportService <ENG, OPT, PageBasedImportScheduleJob> {
 
   protected Set<String> idsForPostProcessing;
+  protected final String engineAlias;
+
+  protected PaginatedImportService(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
 
   public abstract Class<IH> getIndexHandlerType();
 
@@ -69,5 +75,9 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
 
   public boolean isProcessDefinitionBased() {
     return false;
+  }
+
+  public String getEngineName() {
+    return this.engineAlias;
   }
 }

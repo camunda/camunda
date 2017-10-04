@@ -21,9 +21,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +30,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +39,8 @@ import static org.mockito.Mockito.when;
 public class ImportSchedulerTest extends AbstractSchedulerTest {
 
   public static final String TEST_ID = "testId";
+  private static final String TEST_ENGINE = "test-engine";
+  private static final String TEST_ENGINE_1 = "1";
   @Autowired
   private ImportServiceProvider importServiceProvider;
 
@@ -50,7 +48,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
   private IndexHandlerProvider indexHandlerProvider;
 
   @Autowired
-  private ImportScheduler importScheduler;
+  private ImportSchedulerFactory importSchedulerFactory;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -63,19 +61,21 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
   @Before
   public void setUp() throws OptimizeException {
-    importScheduler.importScheduleJobs.clear();
+    for (ImportScheduler scheduler : importSchedulerFactory.getInstances().values()) {
+      scheduler.clearQueue();
+    }
 
     paginatedImportServices = mockPaginatedImportServices();
 
     Map<String, ImportService> allServicesMap = getAllImportServiceMap(paginatedImportServices);
-    when(importServiceProvider.getAllServices()).thenReturn(allServicesMap);
+    when(importServiceProvider.getAllEngineServices(Mockito.any())).thenReturn(allServicesMap);
 
     mockIndexHandlers(paginatedImportServices, indexHandlerProvider);
 
-    when(importServiceProvider.getPagedServices()).thenReturn(paginatedImportServices);
-    when(importServiceProvider.getPaginatedImportService(Mockito.any())).thenReturn(paginatedImportServices.get(0));
-    when(importServiceProvider.getVariableImportService()).thenReturn((VariableImportService) allServicesMap.get("variable"));
-    when(importServiceProvider.getProcessInstanceImportService()).thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(paginatedImportServices);
+    when(importServiceProvider.getPaginatedImportService(Mockito.any(), Mockito.any())).thenReturn(paginatedImportServices.get(0));
+    when(importServiceProvider.getVariableImportService(Mockito.any())).thenReturn((VariableImportService) allServicesMap.get("variable"));
+    when(importServiceProvider.getProcessInstanceImportService(Mockito.any())).thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
   }
 
 
@@ -87,8 +87,25 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
   @Test
   public void testJobsScheduled () {
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
     importScheduler.scheduleNewImportRound();
-    assertThat(importScheduler.importScheduleJobs.size(),is(importServiceProvider.getPagedServices().size()));
+    assertThat(importScheduler.importScheduleJobs.size(),
+        is(importServiceProvider.getPagedServices(TEST_ENGINE).size())
+    );
+  }
+
+  @Test
+  public void testOnlyJobsOfOneEngineAreInQueue() throws InterruptedException, OptimizeException {
+    List<PaginatedImportService> services = mockPaginatedImportServices();
+    when(importServiceProvider.getPagedServices(TEST_ENGINE_1)).thenReturn(services);
+
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
+    importScheduler.scheduleNewImportRound();
+    assertThat(importScheduler.getEngineName(), is(TEST_ENGINE_1));
+
+    for (ImportScheduleJob job : importScheduler.importScheduleJobs) {
+      assertThat(job.getEngineAlias(), is(TEST_ENGINE_1));
+    }
   }
 
   @Test
@@ -96,7 +113,9 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
 
     // given
     List<PaginatedImportService> services = mockPaginatedImportServices();
-    when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
+
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
     importScheduler.scheduleNewImportRound();
 
     // when
@@ -117,6 +136,8 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     ImportResult result = getConstructResult(paginatedImportService);
 
     when(paginatedImportService.executeImport(Mockito.any())).thenReturn(result);
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
+
     importScheduler.scheduleNewImportRound();
 
     //when
@@ -147,11 +168,12 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
   public void testResetAfterPeriod () throws Exception {
     // given
     List<PaginatedImportService> services = mockPaginatedImportServices();
-    when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
 
     ChronoUnit unit = ChronoUnit.valueOf(configurationService.getImportResetIntervalUnit().toUpperCase());
     LocalDateTime expectedReset = LocalDateTime.now().plus(configurationService.getImportResetIntervalValue(), unit);
     long toSleep = LocalDateTime.now().until(expectedReset, unit);
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
     
     //when
     Thread.currentThread().sleep(Math.max(toSleep,1000L));
@@ -175,8 +197,9 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
   public void testResetIfEntitiesWereMissedDuringImport () throws Exception {
     // given
     List<PaginatedImportService> services = mockPaginatedImportServices();
-    when(importServiceProvider.getPagedServices()).thenReturn(services);
+    when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
     when(importProgressReporter.allEntitiesAreImported()).thenReturn(true);
+    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
 
     //when
     importScheduler.checkAndResetImportIndexing();
@@ -200,7 +223,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     List<PaginatedImportService> services = super.mockPaginatedImportServices();
 
     for (PaginatedImportService s : services) {
-      when(importServiceProvider.getImportService(s.getElasticsearchType())).thenReturn(s);
+      when(importServiceProvider.getImportService(Mockito.eq(s.getElasticsearchType()), Mockito.any())).thenReturn(s);
     }
     return services;
   }

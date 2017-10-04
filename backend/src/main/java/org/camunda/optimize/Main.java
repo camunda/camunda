@@ -13,6 +13,7 @@ public class Main {
     jettyCamundaOptimize = new EmbeddedCamundaOptimize();
     try {
       jettyCamundaOptimize.startOptimize();
+      jettyCamundaOptimize.startImportSchedulers();
       jettyCamundaOptimize.join();
     } finally {
       jettyCamundaOptimize.destroyOptimize();

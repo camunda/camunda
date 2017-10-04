@@ -29,7 +29,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_ID;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AllEntitiesSetBasedEngineEntityFetcher extends AbstractEntityFetcher {
 
   private Logger logger = LoggerFactory.getLogger(AllEntitiesSetBasedEngineEntityFetcher.class);
