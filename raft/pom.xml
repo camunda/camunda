@@ -9,18 +9,18 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.2.0</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
 
 
   <properties>
-    <version.logstreams>0.3.0-SNAPSHOT</version.logstreams>
-    <version.msgpack>0.3.0-SNAPSHOT</version.msgpack>
-    <version.protocol>0.3.0-SNAPSHOT</version.protocol>
-    <version.transport>0.3.0-SNAPSHOT</version.transport>
-    <version.util>0.3.0-SNAPSHOT</version.util>
+    <version.logstreams>0.3.0</version.logstreams>
+    <version.msgpack>0.3.0</version.msgpack>
+    <version.protocol>0.3.0</version.protocol>
+    <version.transport>0.3.0</version.transport>
+    <version.util>0.3.0</version.util>
   </properties>
 
   <dependencies>
