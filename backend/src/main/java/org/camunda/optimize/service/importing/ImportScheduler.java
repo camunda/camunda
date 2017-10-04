@@ -246,8 +246,7 @@ public class ImportScheduler extends Thread {
         backoffService.backoffAndSleep();
       }
     }
-
-    //just in case someone manually added a job
+    
     if (!hasStillJobsToExecute()) {
       this.scheduleNewImportRound();
     }
