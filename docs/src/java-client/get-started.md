@@ -8,20 +8,21 @@ You will be guided through the following steps:
 * [Model a workflow](#model-a-workflow)
 * [Deploy a workflow](#deploy-a-workflow)
 * [Create a workflow instance](#create-a-workflow-instance)
-* [Open a topic subscription](#open-a-topic-subscription)
 * [Work on a task](#work-on-a-task)
 * [Work with data](#work-with-data)
+* [Open a topic subscription](#open-a-topic-subscription)
 
 > You can find the complete source code, including the BPMN diagrams, on [GitHub](https://github.com/zeebe-io/zeebe-get-started-java-client).
 
 ## Prerequisites
 
 * Java 8
-* [Zeebe distribution](../introduction/install.html)
-* [Camunda Modeler](https://docs.camunda.org/manual/installation/camunda-modeler/)
 * [Apache Maven](https://maven.apache.org/)
+* [Zeebe distribution](../introduction/install.html)
+* [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
+* [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
-Start the Zeebe broker.
+Now, start the Zeebe broker.
 
 ## Set up a project
 
@@ -29,7 +30,11 @@ First, we need a Maven project.
 Create a new project using your IDE, or run the Maven command:
 
 ```
-mvn archetype:generate -DgroupId=io.zeebe -DartifactId=zeebe-get-started-java-client -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+mvn archetype:generate
+    -DgroupId=io.zeebe
+    -DartifactId=zeebe-get-started-java-client
+    -DarchetypeArtifactId=maven-archetype-quickstart
+    -DinteractiveMode=false
 ```
 
 Add the Zeebe client library as dependency to the project's `pom.xml`:
@@ -89,7 +94,7 @@ Closed.
 Now, we need a first workflow which can then be deployed.
 Later, we will extend the workflow with more functionality.
 
-Open the Camunda Modeler and create a new BPMN diagram.
+Open the Zeebe Modeler and create a new BPMN diagram.
 Add a start event and an end event to the diagram and connect the events.
 
 ![model-workflow-step-1](/java-client/order-process-simple.png)
@@ -173,20 +178,188 @@ public class Application
 Run the program and verify that the workflow instance is created. You should see the output:
 
 ```
-Workflow instance created. Key: 4294986840
+Workflow instance created. Key: 4294974008
 ```
-
-## Open a topic subscription
 
 You did it! You want to see how the workflow instance is executed?
 
-Unfortunately, we don't have a UI for Zeebe yet.
+Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
 
-But we can use a [topic subscription] to monitor the workflow instance.
+Open a web browser and go to <http://localhost:8080/>.
+
+Connect to the broker and switch to the workflow instances view.
+Here, you see the current state of the workflow instance which includes active tasks, completed activities, the payload and open incidents.  
+
+![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
+
+## Work on a task
+
+Now we want to do some work within your workflow.
+First, add a few service tasks to the BPMN diagram and set the required attributes.
+Then extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
+
+Open the BPMN diagram in the Zeebe Modeler.
+Insert a few service tasks between the start and the end event.
+
+![model-workflow-step-2](/java-client/order-process.png)
+
+You need to set the type of each task, which identifies the nature of the work to be performed.
+Set the type of the first task to 'payment-service'.
+
+Optionally, you can define parameters of the task by adding headers.
+Add the header `method = VISA` to the first task.
+
+Save the BPMN diagram and switch back to the main class.
+
+Add the following lines to open a [task subscription] for the first tasks type:
+
+```java
+package io.zeebe;
+
+import io.zeebe.client.task.TaskSubscription;
+
+public class Application
+{
+    public static void main(String[] args)
+    {
+        // after the workflow instance is created
+
+        final TaskSubscription taskSubscription = client.tasks()
+            .newTaskSubscription(TOPIC)
+            .taskType("payment-service")
+            .lockOwner("sample-app")
+            .lockTime(Duration.ofMinutes(5))
+            .handler((tasksClient, task) ->
+            {
+                final Map<String, Object> headers = task.getCustomHeaders();
+                final String method = (String) headers.get("method");
+
+                System.out.println("Collect money using payment method: " + method);
+
+                // ...
+
+                tasksClient
+                    .complete(task)
+                    .withoutPayload()
+                    .execute();
+            })
+            .open();
+
+        // waiting for the tasks
+
+        taskSubscription.close();
+
+        // ...
+    }
+}
+```
+
+Run the program and verify that the task is processed. You should see the output:
+
+```
+Collect money using payment method: VISA
+```
+
+When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
+
+![zeebe-monitor-step-2](/java-client/zeebe-monitor-2.png)
+
+## Work with data
+
+Usually, a workflow is more than just tasks, there is also data flow.
+The tasks need data as input and in order to produce data.
+
+In Zeebe, the data is represented as a JSON document.
+When you create a workflow instance, then you can pass the data as payload.
+Within the workflow, you can use input and output mappings on tasks to control the data flow.
+
+In our example, we want to create a workflow instance with the following data:
+
+```json
+{
+  "orderId": 31243,
+  "orderItems": [435, 182, 376]
+}
+```
+
+The first task should take `orderId` as input and return `totalPrice` as result.
+
+Open the BPMN diagram and switch to the input-output-mappings of the first task.
+Add the input mapping `$.orderId : $.orderId` and the output mapping `$.totalPrice : $.totalPrice`.
+
+Save the BPMN diagram and go back to the main class.
+
+Modify the create command and pass the data as payload.
+Also, modify the task subscription to read the tasks payload and complete the task with payload.
+
+```java
+package io.zeebe;
+
+public class Application
+{
+    public static void main(String[] args)
+    {
+        // after the workflow is deployed
+
+        final WorkflowInstanceEvent wfInstance = client.workflows()
+            .create(TOPIC)
+            .bpmnProcessId("order-process")
+            .latestVersion()
+            .payload(data)
+            .execute();
+
+        // ...
+
+        final TaskSubscription taskSubscription = client.tasks()
+            .newTaskSubscription(TOPIC)
+            .taskType("payment-service")
+            .lockOwner("sample-app")
+            .lockTime(Duration.ofMinutes(5))
+            .handler((tasksClient, task) ->
+            {
+                final Map<String, Object> headers = task.getCustomHeaders();
+                final String method = (String) headers.get("method");
+
+                final String orderId = task.getPayload();
+
+                System.out.println("Process order: " + orderId);
+                System.out.println("Collect money using payment method: " + method);
+
+                // ...
+
+                tasksClient
+                     .complete(task)
+                     .payload("{ \"totalPrice\": 46.50 }")
+                     .execute();
+            })
+            .open();
+
+        // ...
+    }
+}
+```
+
+Run the program and verify that the payload is mapped into the task. You should see the output:
+
+```
+Process order: {"orderId":31243}
+Collect money using payment method: VISA
+```
+
+When we have a look at the Zeebe Monitor, then we can see how the payload is modified after the activity:
+
+![zeebe-monitor-step-3](/java-client/zeebe-monitor-3.png)
+
+## Open a topic subscription
+
+The Zeebe Monitor consume the events of the broker to build the monitoring.
+You can see all received events in the log view.
+In order to build something similar for our application, we open a [topic subscription] and print all workflow instance events.
+
 When the topic subscription is open, then we receive all events which are written during execution of the workflow instance.
 The given handler is invoked for each received event.
 
-Add the following lines to the main class to print all events:
+Add the following lines to the main class:
 
 ```java
 package io.zeebe;
@@ -242,281 +415,10 @@ Run the program. You should see the output:
     workflowKey=4294972072,
     bpmnProcessId=order-process,
     version=1,
-    activityId=new-order-received,
+    activityId=order-placed,
     payload=null]
 
-> WorkflowInstanceEvent [state=SEQUENCE_FLOW_TAKEN,
-    workflowInstanceKey=4294986840,
-    workflowKey=4294972072,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=SequenceFlow_05suiqb,
-    payload=null]
-
-> WorkflowInstanceEvent [state=END_EVENT_OCCURRED,
-    workflowInstanceKey=4294986840,
-    workflowKey=4294972072,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=order-shipped,
-    payload=null]
-
-> WorkflowInstanceEvent [state=WORKFLOW_INSTANCE_COMPLETED,
-    workflowInstanceKey=4294986840,
-    workflowKey=4294972072,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=,
-    payload=null]
-```
-
-Each of these events represents one step in the workflow instance life cycle.
-
-## Work on a task
-
-Now we want to do some work within your workflow.
-First, add a few service tasks to the BPMN diagram and set the required attributes.
-Then extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
-
-Open the BPMN diagram in the Camunda Modeler.
-Insert a few service tasks between the start and the end event.
-
-![model-workflow-step-2](/java-client/order-process.png)
-
-Switch to the XML view and add the Zeebe namespace to the root `definitions` element:
-
-```xml
-<bpmn:definitions xmlns:zeebe="http://camunda.org/schema/zeebe/1.0">
-```
-
-You need to set the type of each task, which identifies the nature of the work to be performed.
-
-Add a `zeebe:taskDefinition` element to the service tasks extension elements.
-Optionally, you can define parameters of the task by adding a `zeebe:taskHeaders` element.
-
-```xml
-<bpmn:serviceTask id="reserve-order-items" name="Reserve Order Items">
-  <bpmn:extensionElements>
-    <zeebe:taskDefinition type="reserveOrderItems" />
-  	<zeebe:taskHeaders>
-      <zeebe:header key="reservationTime" value="PT15M" />
-    </zeebe:taskHeaders>
-  </bpmn:extensionElements>
-  <bpmn:incoming>SequenceFlow_05suiqb</bpmn:incoming>
-  <bpmn:outgoing>SequenceFlow_17kmq07</bpmn:outgoing>
-</bpmn:serviceTask>
-```
-
-Save the BPMN diagram and switch back to the main class.
-
-Add the following lines to open a [task subscription] for the first tasks type:
-
-```java
-package io.zeebe;
-
-import io.zeebe.client.task.TaskSubscription;
-
-public class Application
-{
-    public static void main(String[] args)
-    {
-        // after the workflow instance is created
-
-        final TaskSubscription taskSubscription = client.tasks()
-            .newTaskSubscription(TOPIC)
-            .taskType("reserveOrderItems")
-            .lockOwner("stocker")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((tasksClient, task) ->
-            {
-                final Map<String, Object> headers = task.getCustomHeaders();
-                final String reservationTime = (String) headers.get("reservationTime");
-
-                System.out.println("Reserved order items for " + reservationTime);
-
-                // ...
-
-                tasksClient
-                    .complete(task)
-                    .withoutPayload()
-                    .execute();
-            })
-            .open();
-
-        // waiting for the tasks
-
-        taskSubscription.close();
-
-        // ...
-    }
-}
-```
-
-Run the program and verify that the task is processed. You should see the output:
-
-```
-Reserved order items for PT15M
-```
-
-When you have a look at the topic subscriptions output, then you can see that the workflow instance moved from the first service task to the next one:
-
-```
-> WorkflowInstanceEvent [state=ACTIVITY_COMPLETED,
-    workflowInstanceKey=4294986352,
-    workflowKey=4294980048,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=reserve-order-items,
-    payload=null]
-
-> WorkflowInstanceEvent [state=SEQUENCE_FLOW_TAKEN,
-    workflowInstanceKey=4294986352,
-    workflowKey=4294980048,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=SequenceFlow_17kmq07,
-    payload=null]
-
-> WorkflowInstanceEvent [state=ACTIVITY_READY,
-    workflowInstanceKey=4294986352,
-    workflowKey=4294980048,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=process-payment,
-    payload=null]
-```
-
-## Work with data
-
-Usually, a workflow is more than just tasks, there is also data flow.
-The tasks need data as input and in order to produce data.
-
-In Zeebe, the data is represented as a JSON document.
-When you create a workflow instance, then you can pass the data as payload.
-Within the workflow, you can use input and output mappings on tasks to control the data flow.
-
-In our example, we want to create a workflow instance with the following data:
-
-```json
-{
-  "orderId": 31243,
-  "orderStatus": "NEW",
-  "orderItems": [435, 182, 376]
-}
-```
-
-The first task should take `orderItems` as input and modify the `orderStatus` as result.
-
-Open the BPMN diagram and add to following input-output-mapping to the first task:
-
-```xml
-<bpmn:serviceTask id="reserve-order-items" name="Reserve Order Items">
-  <bpmn:extensionElements>
-    <zeebe:taskDefinition type="reserveOrderItems" />
-  	<zeebe:taskHeaders>
-      <zeebe:header key="reservationTime" value="PT15M" />
-    </zeebe:taskHeaders>
-    <zeebe:ioMapping>
-      <zeebe:input source="$.orderItems" target="$.orderItems" />
-      <zeebe:output source="$.orderStatus" target="$.orderStatus" />
-    </zeebe:ioMapping>
-  </bpmn:extensionElements>
-  <bpmn:incoming>SequenceFlow_05suiqb</bpmn:incoming>
-  <bpmn:outgoing>SequenceFlow_17kmq07</bpmn:outgoing>
-</bpmn:serviceTask>
-```
-
-Save the BPMN diagram and switch back to the main class.
-
-Modify the create command and pass the data as payload.
-Also, modify the task subscription to read the tasks payload and complete the task with payload.
-
-```java
-package io.zeebe;
-
-public class Application
-{
-    public static void main(String[] args)
-    {
-        // after the workflow is deployed
-
-        final WorkflowInstanceEvent wfInstance = client.workflows()
-            .create(TOPIC)
-            .bpmnProcessId("order-process")
-            .latestVersion()
-            .payload(data)
-            .execute();
-
-        // ...
-
-        final TaskSubscription taskSubscription = client.tasks()
-            .newTaskSubscription(TOPIC)
-            .taskType("reserveOrderItems")
-            .lockOwner("stocker")
-            .lockTime(Duration.ofMinutes(5))
-            .handler((tasksClient, task) ->
-            {
-                final Map<String, Object> headers = task.getCustomHeaders();
-                final String reservationTime = (String) headers.get("reservationTime");
-
-                final String orderItems = task.getPayload();
-
-                System.out.println("Reserved " + orderItems + "for" + reservationTime);
-
-                // ...
-
-                tasksClient
-                     .complete(task)
-                     .payload("{ \"orderStatus\": \"RESERVED\" }")
-                     .execute();
-            })
-            .open();
-
-        // ...
-    }
-}
-```
-
-Run the program and verify that the payload is mapped into the task. You should see the output:
-
-```
-Reserved {"orderItems":[435,182,376]} for PT15M
-```
-
-When we have a look at the topic subscriptions output, then we can see how the payload is mapped between the activities:
-
-```
-> WorkflowInstanceEvent [state=ACTIVITY_READY,
-    workflowInstanceKey=4294986992,
-    workflowKey=4294980472,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=reserve-order-items,
-    payload={"orderId":31243,"orderStatus":"NEW","orderItems":[435,182,376]}]
-
-> WorkflowInstanceEvent [state=ACTIVITY_ACTIVATED,
-    workflowInstanceKey=4294986992,
-    workflowKey=4294980472,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=reserve-order-items,
-    payload={"orderItems":[435,182,376]}]
-
-> WorkflowInstanceEvent [state=ACTIVITY_COMPLETING,
-    workflowInstanceKey=4294986992,
-    workflowKey=4294980472,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=reserve-order-items,
-    payload={"orderStatus":"RESERVED"}]
-
-> WorkflowInstanceEvent [state=ACTIVITY_COMPLETED,
-    workflowInstanceKey=4294986992,
-    workflowKey=4294980472,
-    bpmnProcessId=order-process,
-    version=1,
-    activityId=reserve-order-items,
-    payload={"orderId":31243,"orderItems":[435,182,376],"orderStatus":"RESERVED"}]
+...
 ```
 
 ## What's next?

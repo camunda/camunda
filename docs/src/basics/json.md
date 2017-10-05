@@ -16,6 +16,8 @@ As a user, you do not need to deal with MessagePack directly. The clients take c
 
 ## Conditions
 
+Conditions can be used for exclusive gateways (i.e., conditional flows) to determine the following task.  
+
 A condition is a boolean expression with a JavaScript-like syntax.
 It allows to compare properties of the workflow instance payload with other properties or literals (e.g., numbers, strings, etc.).
 The payload properties are selected using JSON Path.
@@ -27,8 +29,6 @@ $.owner == "Paul"
 
 $.orderCount >= 5 && $.orderCount < 15
 ```
-
-Conditions can be used for exclusive gateways (i.e., conditional flows) to determine the following task.  
 
 ### Literals
 
