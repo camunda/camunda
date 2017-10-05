@@ -21,14 +21,13 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import io.zeebe.map.Bytes2LongZbMap;
-import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.map.Long2LongZbMap;
 import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +36,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class ComposedZbMapSnapshotTest
+import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.Long2LongZbMap;
+import io.zeebe.map.ZbMap;
+
+public class ComposedSnapshotTest
 {
     public static final int IDX_ENTRY_COUNT = 1_000_000;
     private Long2LongZbMap long2LongMap;
@@ -90,7 +94,7 @@ public class ComposedZbMapSnapshotTest
         // given
         final Long2LongZbMap largeIndex = new Long2LongZbMap(IDX_ENTRY_COUNT / DEFAULT_BLOCK_COUNT, DEFAULT_BLOCK_COUNT);
         final ZbMapSnapshotSupport<Long2LongZbMap> long2LongSnapshotSupport = new ZbMapSnapshotSupport<>(largeIndex);
-        final ComposedZbMapSnapshot composedSnapshot = new ComposedZbMapSnapshot(long2LongSnapshotSupport);
+        final ComposedSnapshot composedSnapshot = new ComposedSnapshot(long2LongSnapshotSupport);
 
         for (long idx = 0; idx < IDX_ENTRY_COUNT; idx++)
         {
@@ -120,8 +124,8 @@ public class ComposedZbMapSnapshotTest
     public void shouldRecoverParts() throws Exception
     {
         // given
-        final ComposedZbMapSnapshot composedSnapshot =
-            new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
+        final ComposedSnapshot composedSnapshot =
+            new ComposedSnapshot(long2bytesSnapshotSupport,
                                           long2LongSnapshotSupport,
                                           bytes2LongSnapshotSupport);
         composedSnapshot.writeSnapshot(new FileOutputStream(snapshotFile));
@@ -150,31 +154,90 @@ public class ComposedZbMapSnapshotTest
     {
         thrown.expect(IllegalArgumentException.class);
 
-        new ComposedZbMapSnapshot();
+        new ComposedSnapshot();
     }
 
     @Test
     public void shouldFailToRecoverIfPartsAreLessThanSnapshot() throws Exception
     {
-        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
+        new ComposedSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport,
             bytes2LongSnapshotSupport).writeSnapshot(new FileOutputStream(snapshotFile));
 
         thrown.expect(IllegalStateException.class);
 
-        new ComposedZbMapSnapshot(long2bytesSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
+        new ComposedSnapshot(long2bytesSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
     }
 
     @Test
     public void shouldFailToRecoverIfPartsAreMoreThanSnapshot() throws Exception
     {
-        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
+        new ComposedSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport).writeSnapshot(new FileOutputStream(snapshotFile));
 
         thrown.expect(IllegalStateException.class);
 
-        new ComposedZbMapSnapshot(long2bytesSnapshotSupport,
+        new ComposedSnapshot(long2bytesSnapshotSupport,
             long2LongSnapshotSupport, bytes2LongSnapshotSupport).recoverFromSnapshot(new FileInputStream(snapshotFile));
+    }
+
+    @Test
+    public void shouldRecoverComposedUnpackedObjects() throws Exception
+    {
+        // given
+        final FooObject obj1 = new FooObject();
+        obj1.setProp1(42);
+        obj1.setProp2("bar");
+        final UnpackedObjectSnapshotSupport snapshotSupport1 = new UnpackedObjectSnapshotSupport(obj1);
+
+        final FooObject obj2 = new FooObject();
+        obj2.setProp1(99);
+        obj2.setProp2("baz");
+        final UnpackedObjectSnapshotSupport snapshotSupport2 = new UnpackedObjectSnapshotSupport(obj2);
+
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ComposedSnapshot snapshot = new ComposedSnapshot(snapshotSupport1, snapshotSupport2);
+
+        snapshot.writeSnapshot(outStream);
+
+        obj1.reset();
+        obj2.reset();
+
+        // when
+        snapshot.recoverFromSnapshot(new ByteArrayInputStream(outStream.toByteArray()));
+
+        // then
+        assertThat(obj1.getProp1()).isEqualTo(42);
+        assertThat(obj1.getProp2()).isEqualTo("bar");
+        assertThat(obj2.getProp1()).isEqualTo(99);
+        assertThat(obj2.getProp2()).isEqualTo("baz");
+    }
+
+    @Test
+    public void shouldRecoverComposedUnpackedObjectAndZbMap() throws Exception
+    {
+        // given
+        final FooObject obj = new FooObject();
+        obj.setProp1(42);
+        obj.setProp2("bar");
+        final UnpackedObjectSnapshotSupport snapshotSupport1 = new UnpackedObjectSnapshotSupport(obj);
+        final ZbMapSnapshotSupport<ZbMap<?, ?>> snapshotSupport2 = new ZbMapSnapshotSupport<>(long2LongMap);
+
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ComposedSnapshot snapshot = new ComposedSnapshot(snapshotSupport1, snapshotSupport2);
+
+        snapshot.writeSnapshot(outStream);
+
+        obj.reset();
+        long2LongMap.clear();
+
+        // when
+        snapshot.recoverFromSnapshot(new ByteArrayInputStream(outStream.toByteArray()));
+
+        // then
+        assertThat(obj.getProp1()).isEqualTo(42);
+        assertThat(obj.getProp2()).isEqualTo("bar");
+        assertThat(long2LongMap.get(15, -1)).isEqualTo(15);
     }
 
 }

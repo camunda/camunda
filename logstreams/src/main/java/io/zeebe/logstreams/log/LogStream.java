@@ -15,11 +15,10 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogBlockIndexController;
 import io.zeebe.logstreams.impl.LogStreamController;
@@ -47,11 +46,6 @@ public interface LogStream extends AutoCloseable
 {
     int DEFAULT_WRITE_BUFFER_SIZE = 1024 * 1024 * 16;
     int DEFAULT_MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 4;
-
-    String DEFAULT_TOPIC_NAME = "default-topic";
-    DirectBuffer DEFAULT_TOPIC_NAME_BUFFER = wrapString(DEFAULT_TOPIC_NAME);
-    int DEFAULT_PARTITION_ID = 0;
-    String DEFAULT_LOG_NAME = String.format("%s.%d", DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
     int MAX_TOPIC_NAME_LENGTH = 128;
 

@@ -15,14 +15,14 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.map.ZbMap;
-import io.zeebe.map.ZbMapSerializer;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements SnapshotSupport
+import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
+import io.zeebe.map.ZbMap;
+import io.zeebe.map.ZbMapSerializer;
+
+public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements ComposableSnapshotSupport
 {
     private final T zbMap;
 

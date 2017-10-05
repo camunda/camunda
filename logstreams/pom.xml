@@ -16,8 +16,9 @@
 
 
   <properties>
-    <version.dispatcher>0.3.0</version.dispatcher>
-    <version.util>0.3.0</version.util>
+    <version.dispatcher>0.4.0-SNAPSHOT</version.dispatcher>
+    <version.util>0.4.0-SNAPSHOT</version.util>
+    <version.msgpack>0.4.0-SNAPSHOT</version.msgpack>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
   </properties>
 
@@ -38,6 +39,12 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-map</artifactId>
       <version>${version.util}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-value</artifactId>
+      <version>${version.msgpack}</version>
     </dependency>
 
     <dependency>

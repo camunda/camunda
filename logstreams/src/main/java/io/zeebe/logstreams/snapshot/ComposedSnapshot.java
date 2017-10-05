@@ -15,27 +15,28 @@
  */
 package io.zeebe.logstreams.snapshot;
 
-import io.zeebe.logstreams.spi.SnapshotSupport;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import static io.zeebe.util.StreamUtil.readLong;
 import static io.zeebe.util.StreamUtil.writeLong;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+
 /**
  * A composition of one or more snapshots which are combined to a single snapshot.
  */
-public class ComposedZbMapSnapshot implements SnapshotSupport
+public class ComposedSnapshot implements SnapshotSupport
 {
-    protected final ZbMapSnapshotSupport[] parts;
+    protected final ComposableSnapshotSupport[] parts;
     protected final byte count;
     protected long processedBytes;
 
-    public ComposedZbMapSnapshot(ZbMapSnapshotSupport... parts)
+    public ComposedSnapshot(ComposableSnapshotSupport... parts)
     {
         this.parts = parts;
         this.count = (byte) parts.length;
@@ -64,7 +65,7 @@ public class ComposedZbMapSnapshot implements SnapshotSupport
 
         for (byte i = 0; i < count; i++)
         {
-            final ZbMapSnapshotSupport part = parts[i];
+            final ComposableSnapshotSupport part = parts[i];
             final long mapSize = part.snapshotSize();
             writeLong(outputStream, mapSize);
             writtenBytes += SIZE_OF_LONG;
