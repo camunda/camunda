@@ -19,7 +19,7 @@
 
     <enum name="errorCode" encodingType="uint8" semanticType="String" description="The error code of an error">
       <validValue name="MESSAGE_NOT_SUPPORTED">0</validValue>
-      <validValue name="TOPIC_NOT_FOUND">1</validValue>
+      <validValue name="PARTITION_NOT_FOUND">1</validValue>
       <validValue name="REQUEST_WRITE_FAILURE">2</validValue>
       <validValue name="INVALID_CLIENT_VERSION">3</validValue>
       <validValue name="REQUEST_TIMEOUT">4</validValue>
@@ -66,7 +66,8 @@
 
   <sbe:message name="ControlMessageRequest" id="10">
     <field name="messageType" id="1" type="ControlMessageType" />
-    <data name="data" id="2" type="varDataEncoding" />
+    <field name="partitionId" id="2" type="uint16" presence="optional" /> <!-- Optional: Needs only be set if request addresses a specific partition -->
+    <data name="data" id="3" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ControlMessageResponse" id="11">
@@ -78,7 +79,6 @@
     <field name="position" id="2" type="uint64" presence="optional" /> <!-- Optional: There are requests that do not reference an existing event -->
     <field name="key" id="3" type="uint64" />
     <field name="eventType" id="4" type="EventType" />
-    <data name="topicName" id="5" type="varDataEncoding" />
     <data name="command" id="6" type="varDataEncoding" />
   </sbe:message>
 
@@ -86,7 +86,6 @@
     <field name="partitionId" id="1" type="uint16" />
     <field name="position" id="2" type="uint64" />
     <field name="key" id="3" type="uint64" />
-    <data name="topicName" id="4" type="varDataEncoding" />
     <data name="event" id="5" type="varDataEncoding" />
   </sbe:message>
 
@@ -97,7 +96,6 @@
     <field name="subscriberKey" id="4" type="uint64" />
     <field name="subscriptionType" id="5" type="SubscriptionType" />
     <field name="eventType" id="6" type="EventType" />
-    <data name="topicName" id="7" type="varDataEncoding" />
     <data name="event" id="8" type="varDataEncoding" />
   </sbe:message>
 
