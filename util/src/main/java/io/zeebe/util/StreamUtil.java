@@ -18,11 +18,20 @@ package io.zeebe.util;
 import static io.zeebe.util.StringUtil.fromBytes;
 import static io.zeebe.util.StringUtil.getBytes;
 
-import java.io.*;
-import java.security.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class StreamUtil
@@ -160,6 +169,33 @@ public class StreamUtil
     public static int read(final InputStream input, final byte[] dst) throws IOException
     {
         return read(input, dst, 0);
+    }
+
+    public static int read(final InputStream input, final MutableDirectBuffer buffer, final int offset) throws IOException
+    {
+        int bytesRead;
+
+        if (buffer.byteArray() == null)
+        {
+            throw new RuntimeException("Cannot be used with direct byte buffers");
+        }
+
+        int writeOffset = offset;
+
+        do
+        {
+            buffer.checkLimit(offset + DEFAULT_BUFFER_SIZE); // for expandable buffers, this triggers expansion
+            bytesRead = input.read(buffer.byteArray(), offset, DEFAULT_BUFFER_SIZE);
+
+            if (bytesRead > 0)
+            {
+                writeOffset += bytesRead;
+            }
+
+        }
+        while (bytesRead >= 0);
+
+        return writeOffset - offset;
     }
 
     public static int read(final InputStream input, final byte[] dst, final int offset) throws IOException
