@@ -52,7 +52,7 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
         subscription.reset();
 

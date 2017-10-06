@@ -54,13 +54,13 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata)
+    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
         request.reset();
         request.wrap(buffer);
 
         final CompletableFuture<Void> future = subscriptionService.closeSubscriptionAsync(
-            request.getPartitionId(),
+            partitionId,
             request.getSubscriberKey()
         );
 

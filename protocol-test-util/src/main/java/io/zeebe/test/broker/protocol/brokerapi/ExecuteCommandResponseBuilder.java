@@ -38,6 +38,7 @@ public class ExecuteCommandResponseBuilder
         this.registrationFunction = registrationFunction;
         this.commandResponseWriter = new ExecuteCommandResponseWriter(msgPackConverter);
         this.activationFunction = activationFunction;
+        partitionId(r -> r.partitionId()); // default
     }
 
     public ExecuteCommandResponseBuilder partitionId(final int partitionId)

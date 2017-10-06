@@ -20,6 +20,7 @@ import org.assertj.core.util.Maps;
 import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.util.time.ClockUtil;
 
@@ -34,7 +35,7 @@ public class Events
         baseEvent.setKey(79);
         baseEvent.setLockOwner("foo");
         baseEvent.setLockTime(ClockUtil.getCurrentTimeInMillis());
-        baseEvent.setPartitionId(ClientApiRule.DEFAULT_PARTITION_ID);
+        baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
         baseEvent.setPayload("{\"key\":\"val\"}");
         baseEvent.setRetries(123);
         baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
@@ -51,7 +52,7 @@ public class Events
         baseEvent.setBpmnProcessId("some_proceess");
         baseEvent.setKey(89);
         baseEvent.setPayloadAsJson("{\"key\":\"val\"}");
-        baseEvent.setPartitionId(ClientApiRule.DEFAULT_PARTITION_ID);
+        baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
         baseEvent.setTopicName(ClientApiRule.DEFAULT_TOPIC_NAME);
         baseEvent.setVersion(123);
         baseEvent.setWorkflowInstanceKey(456L);

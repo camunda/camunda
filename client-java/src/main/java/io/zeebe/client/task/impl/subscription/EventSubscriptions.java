@@ -15,9 +15,7 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
@@ -33,8 +31,8 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
-    // topicName => partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
-    protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> activeSubscriptions = new HashMap<>();
+    // partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
+    protected Int2ObjectHashMap<Long2ObjectHashMap<T>> activeSubscriptions = new Int2ObjectHashMap<>();
 
     protected final List<T> pollableSubscriptions = new CopyOnWriteArrayList<>();
     protected final List<T> managedSubscriptions = new CopyOnWriteArrayList<>();
@@ -120,26 +118,16 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     public void remove(final T subscription)
     {
-        final String topicName = subscription.getTopicName();
         final int partitionId = subscription.getPartitionId();
 
-        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = activeSubscriptions.get(topicName);
-        if (subscriptionsForTopic != null)
+        final Long2ObjectHashMap<T> subscriptionsForPartition = activeSubscriptions.get(partitionId);
+        if (subscriptionsForPartition != null)
         {
-            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
-            if (subscriptionsForPartition != null)
+            subscriptionsForPartition.remove(subscription.getSubscriberKey());
+
+            if (subscriptionsForPartition.isEmpty())
             {
-                subscriptionsForPartition.remove(subscription.getSubscriberKey());
-
-                if (subscriptionsForPartition.isEmpty())
-                {
-                    subscriptionsForTopic.remove(partitionId);
-                }
-
-                if (subscriptionsForTopic.isEmpty())
-                {
-                    activeSubscriptions.remove(topicName);
-                }
+                activeSubscriptions.remove(partitionId);
             }
         }
 
@@ -147,19 +135,13 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         managedSubscriptions.remove(subscription);
     }
 
-    public T getSubscription(final String topicName, final int partitionId, final long subscriberKey)
+    public T getSubscription(final int partitionId, final long subscriberKey)
     {
-        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = activeSubscriptions.get(topicName);
+        final Long2ObjectHashMap<T> subscriptionsForPartition = activeSubscriptions.get(partitionId);
 
-        if (subscriptionsForTopic != null)
+        if (subscriptionsForPartition != null)
         {
-            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
-
-            if (subscriptionsForPartition != null)
-            {
-                return subscriptionsForPartition.get(subscriberKey);
-            }
-
+            return subscriptionsForPartition.get(subscriberKey);
         }
 
         return null;
@@ -168,7 +150,6 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     public void activate(T subscription)
     {
         this.activeSubscriptions
-            .computeIfAbsent(subscription.getTopicName(), topicName -> new Int2ObjectHashMap<>())
             .computeIfAbsent(subscription.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
             .put(subscription.getSubscriberKey(), subscription);
     }

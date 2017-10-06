@@ -99,4 +99,11 @@ public class TopicSubscriberEvent extends EventImpl implements EventSubscription
     {
         return metadata.getKey();
     }
+
+    @Override
+    @JsonIgnore
+    public int getPartitionId()
+    {
+        return metadata.getPartitionId();
+    }
 }

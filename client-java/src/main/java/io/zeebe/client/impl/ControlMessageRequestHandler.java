@@ -70,6 +70,7 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
         encoder.wrap(serializedMessage, offset);
 
         encoder.messageType(message.getType());
+        encoder.partitionId(message.getTargetPartition());
 
         offset = encoder.limit();
         final int messageHeaderOffset = offset;
@@ -122,14 +123,18 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
                 decoder.limit() + ControlMessageRequestDecoder.dataHeaderLength(),
                 dataLength);
 
+        final Object response;
         try
         {
-            return objectMapper.readValue(inStream, message.getResponseClass());
+            response = objectMapper.readValue(inStream, message.getResponseClass());
         }
         catch (Exception e)
         {
             throw new RuntimeException("Cannot deserialize event in response", e);
         }
+        message.onResponse(response);
+
+        return response;
     }
 
     @Override
@@ -141,7 +146,8 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
     @Override
     public void onSelectedPartition(int partitionId)
     {
-        // no need to change the request
+        message.setTargetPartition(partitionId);
+        encoder.partitionId(partitionId);
     }
 
     @Override

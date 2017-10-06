@@ -22,10 +22,10 @@ public class CloseTaskSubscriptionCommandImpl extends ControlMessageRequest<Void
 {
     protected final TaskSubscription subscription;
 
-    public CloseTaskSubscriptionCommandImpl(final RequestManager commandManager, String topic, int partition, long subscriberKey)
+    public CloseTaskSubscriptionCommandImpl(final RequestManager commandManager, int partition, long subscriberKey)
     {
-        super(commandManager, ControlMessageType.REMOVE_TASK_SUBSCRIPTION, topic, partition, Void.class);
-        this.subscription = new TaskSubscription(topic, partition);
+        super(commandManager, ControlMessageType.REMOVE_TASK_SUBSCRIPTION, partition, Void.class);
+        this.subscription = new TaskSubscription();
         this.subscription.setSubscriberKey(subscriberKey);
     }
 

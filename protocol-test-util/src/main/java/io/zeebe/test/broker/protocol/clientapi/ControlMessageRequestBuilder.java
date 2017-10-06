@@ -48,6 +48,12 @@ public class ControlMessageRequestBuilder
         return this;
     }
 
+    public ControlMessageRequestBuilder partitionId(int partitionId)
+    {
+        request.partitionId(partitionId);
+        return this;
+    }
+
     public ControlMessageRequestBuilder data(Map<String, Object> data)
     {
         request.data(data);

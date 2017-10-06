@@ -202,8 +202,6 @@ public class ZeebeClientTest
     {
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
-            .topicName(r -> r.topicName())
-            .partitionId(r -> r.partitionId())
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())

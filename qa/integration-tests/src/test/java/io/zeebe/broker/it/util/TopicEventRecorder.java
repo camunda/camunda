@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.util;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -51,13 +49,12 @@ public class TopicEventRecorder extends ExternalResource
 
     public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents)
     {
-        this(clientRule, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, autoRecordEvents);
+        this(clientRule, clientRule.getDefaultTopic(), autoRecordEvents);
     }
 
     public TopicEventRecorder(
             final ClientRule clientRule,
             final String topicName,
-            final int partitionId,
             boolean autoRecordEvents)
     {
         this.clientRule = clientRule;

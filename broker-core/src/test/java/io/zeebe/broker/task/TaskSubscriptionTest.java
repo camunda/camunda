@@ -59,8 +59,8 @@ public class TaskSubscriptionTest
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "foo")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "bar")
@@ -200,8 +200,8 @@ public class TaskSubscriptionTest
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "foo")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "owner1")
@@ -212,8 +212,8 @@ public class TaskSubscriptionTest
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("taskType", "bar")
                 .put("lockDuration", 1000L)
                 .put("lockOwner", "owner2")

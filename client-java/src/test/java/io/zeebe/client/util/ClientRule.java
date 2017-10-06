@@ -15,9 +15,6 @@
  */
 package io.zeebe.client.util;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-
 import java.util.Properties;
 import java.util.function.Supplier;
 
@@ -27,6 +24,7 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
 public class ClientRule extends ExternalResource
 {
@@ -80,12 +78,12 @@ public class ClientRule extends ExternalResource
 
     public String getDefaultTopicName()
     {
-        return DEFAULT_TOPIC_NAME;
+        return StubBrokerRule.TEST_TOPIC_NAME;
     }
 
     public int getDefaultPartitionId()
     {
-        return DEFAULT_PARTITION_ID;
+        return StubBrokerRule.TEST_PARTITION_ID;
     }
 
 }

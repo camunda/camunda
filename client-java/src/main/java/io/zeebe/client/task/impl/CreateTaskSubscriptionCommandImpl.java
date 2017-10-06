@@ -22,10 +22,18 @@ public class CreateTaskSubscriptionCommandImpl extends ControlMessageRequest<Tas
 {
     protected TaskSubscription subscription;
 
-    public CreateTaskSubscriptionCommandImpl(RequestManager client, String topic, int partition)
+    public CreateTaskSubscriptionCommandImpl(RequestManager client, int partition)
     {
-        super(client, ControlMessageType.ADD_TASK_SUBSCRIPTION, topic, partition, TaskSubscription.class);
-        this.subscription = new TaskSubscription(topic, partition);
+        super(client, ControlMessageType.ADD_TASK_SUBSCRIPTION, partition, TaskSubscription.class);
+        this.subscription = new TaskSubscription();
+        this.subscription.setPartitionId(partition);
+    }
+
+    public CreateTaskSubscriptionCommandImpl(RequestManager client, String topic)
+    {
+        super(client, ControlMessageType.ADD_TASK_SUBSCRIPTION, topic, TaskSubscription.class);
+        this.subscription = new TaskSubscription();
+        this.subscription.setPartitionId(-1);
     }
 
     public CreateTaskSubscriptionCommandImpl lockOwner(final String lockOwner)
@@ -50,6 +58,19 @@ public class CreateTaskSubscriptionCommandImpl extends ControlMessageRequest<Tas
     {
         this.subscription.setTaskType(taskType);
         return this;
+    }
+
+    @Override
+    public void setTargetPartition(int targetPartition)
+    {
+        super.setTargetPartition(targetPartition);
+        subscription.setPartitionId(targetPartition);
+    }
+
+    @Override
+    public void onResponse(TaskSubscription response)
+    {
+        response.setPartitionId(targetPartition);
     }
 
     @Override

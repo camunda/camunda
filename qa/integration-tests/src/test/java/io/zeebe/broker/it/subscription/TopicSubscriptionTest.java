@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.subscription;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,12 +41,12 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.GeneralEvent;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.GeneralEvent;
-import io.zeebe.client.event.UniversalEventHandler;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.UniversalEventHandler;
 import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionTest
@@ -571,8 +569,8 @@ public class TopicSubscriptionTest
             .map((re) -> re.getMetadata().getPartitionId())
             .collect(Collectors.toSet());
 
-        assertThat(receivedTopicNamesSubscription).containsExactly(DEFAULT_TOPIC_NAME);
-        assertThat(receivedPartitionIdsSubscription).containsExactly(DEFAULT_PARTITION_ID);
+        assertThat(receivedTopicNamesSubscription).containsExactly(clientRule.getDefaultTopic());
+        assertThat(receivedPartitionIdsSubscription).containsExactly(clientRule.getDefaultPartition());
 
         receivedTopicNamesSubscription = anotherRecordingHandler.getRecordedEvents().stream()
             .filter((re) -> re.getMetadata().getType() == TopicEventType.TASK)

@@ -35,17 +35,7 @@ public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     public int determinePartition(String topic)
     {
         final Integer offset = topicOffsets.getOrDefault(topic, 0);
-        final Partition partition = topologyManager.getPartitionForTopic(topic, offset);
-
-        if (partition != null)
-        {
-            topicOffsets.put(topic, offset + 1);
-            return partition.getPartitionId();
-        }
-        else
-        {
-            return -1;
-        }
+        topicOffsets.put(topic, offset + 1);
+        return topologyManager.getPartitionForTopic(topic, offset);
     }
-
 }

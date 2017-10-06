@@ -52,7 +52,7 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
         request.reset();
         request.wrap(buffer);
@@ -60,7 +60,7 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
         final long requestId = eventMetada.getRequestId();
         final int requestStreamId = eventMetada.getRequestStreamId();
 
-        final TaskSubscription taskSubscription = new TaskSubscription(request.getPartitionId(), request.getLockTaskType(),
+        final TaskSubscription taskSubscription = new TaskSubscription(partitionId, request.getLockTaskType(),
                 request.getLockDuration(), request.getLockOwner(), requestStreamId);
         taskSubscription.setCredits(request.getCredits());
 

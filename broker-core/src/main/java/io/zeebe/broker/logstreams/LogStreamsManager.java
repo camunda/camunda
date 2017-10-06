@@ -55,7 +55,7 @@ public class LogStreamsManager
     }
 
 
-    public LogStream getLogStream(final long partitionId)
+    public LogStream getLogStream(final int partitionId)
     {
         return logStreams.get(partitionId);
     }

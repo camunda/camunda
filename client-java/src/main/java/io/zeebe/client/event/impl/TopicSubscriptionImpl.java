@@ -155,7 +155,7 @@ public class TopicSubscriptionImpl
     {
         acknowledgeLastProcessedEvent();
 
-        client.closeTopicSubscription(topic, partitionId, subscriberKey).execute();
+        client.closeTopicSubscription(partitionId, subscriberKey).execute();
     }
 
     @Override

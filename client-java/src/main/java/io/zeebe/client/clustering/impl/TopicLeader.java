@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.clustering.impl;
 
-import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.SocketAddress;
 
 
@@ -50,11 +49,15 @@ public class TopicLeader
         return this;
     }
 
-    public Partition getTopic()
+    public int getPartitionId()
     {
-        return new Partition(topicName, partitionId);
+        return partitionId;
     }
 
+    public String getTopicName()
+    {
+        return topicName;
+    }
 
     public SocketAddress getSocketAddress()
     {

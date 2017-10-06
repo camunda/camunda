@@ -38,6 +38,7 @@ public class ControlMessageRequest implements BufferWriter
     protected final RemoteAddress target;
 
     protected ControlMessageType messageType = ControlMessageType.NULL_VAL;
+    protected int partitionId = ControlMessageRequestEncoder.partitionIdNullValue();
     protected byte[] encodedData;
 
     protected ClientRequest request;
@@ -52,6 +53,12 @@ public class ControlMessageRequest implements BufferWriter
     public ControlMessageRequest messageType(ControlMessageType messageType)
     {
         this.messageType = messageType;
+        return this;
+    }
+
+    public ControlMessageRequest partitionId(int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -105,6 +112,7 @@ public class ControlMessageRequest implements BufferWriter
 
         requestEncoder.wrap(buffer, offset + messageHeaderEncoder.encodedLength())
             .messageType(messageType)
+            .partitionId(partitionId)
             .putData(encodedData, 0, encodedData.length);
     }
 

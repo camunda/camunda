@@ -18,19 +18,16 @@
 package io.zeebe.broker.event.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 
 public class CloseSubscriptionRequest extends UnpackedObject
 {
 
-    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
 
     public CloseSubscriptionRequest()
     {
-        this.declareProperty(subscriberKeyProp)
-            .declareProperty(partitionIdProp);
+        this.declareProperty(subscriberKeyProp);
     }
 
     public long getSubscriberKey()
@@ -44,14 +41,4 @@ public class CloseSubscriptionRequest extends UnpackedObject
         return this;
     }
 
-    public long getPartitionId()
-    {
-        return partitionIdProp.getValue();
-    }
-
-    public CloseSubscriptionRequest setPartitionId(int partitionId)
-    {
-        this.partitionIdProp.setValue(partitionId);
-        return this;
-    }
 }

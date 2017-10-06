@@ -58,10 +58,11 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     public boolean onEvent(long subscriberKey, GeneralEventImpl event)
     {
         final EventMetadata eventMetadata = event.getMetadata();
-        final T subscription = subscriptions.getSubscription(eventMetadata.getTopicName(), eventMetadata.getPartitionId(), subscriberKey);
+        final T subscription = subscriptions.getSubscription(eventMetadata.getPartitionId(), subscriberKey);
 
         if (subscription != null && subscription.isOpen())
         {
+            event.setTopicName(subscription.getTopicName());
             return subscription.addEvent(event);
         }
         else

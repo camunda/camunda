@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.event.impl;
 
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
@@ -26,12 +27,12 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
 
     public PollableTopicSubscriptionBuilderImpl(
             TopicClientImpl client,
+            ClientTopologyManager topologyManager,
             String topic,
-            int partition,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
             int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, topic, partition, acquisition, prefetchCapacity);
+        implBuilder = new TopicSubscriptionImplBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
     }
 
     @Override
@@ -42,6 +43,13 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
         final TopicSubscriptionImpl subscription = implBuilder.build();
         subscription.open();
         return subscription;
+    }
+
+    @Override
+    public PollableTopicSubscriptionBuilder partitionId(int partition)
+    {
+        implBuilder.partitionId(partition);
+        return this;
     }
 
     @Override

@@ -24,6 +24,7 @@ import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.task.impl.CreateTaskSubscriptionCommandImpl;
 
 public class TaskSubscriptionImpl
     extends EventSubscription<TaskSubscriptionImpl>
@@ -125,7 +126,7 @@ public class TaskSubscriptionImpl
     @Override
     protected void requestEventSourceReplenishment(int eventsProcessed)
     {
-        taskClient.increaseSubscriptionCredits(topic, partitionId)
+        taskClient.increaseSubscriptionCredits(partitionId)
             .subscriberKey(subscriberKey)
             .credits(eventsProcessed)
             .execute();
@@ -134,8 +135,17 @@ public class TaskSubscriptionImpl
     @Override
     public EventSubscriptionCreationResult requestNewSubscription()
     {
-        return taskClient.createTaskSubscription(topic, partitionId)
-                .taskType(taskType)
+        final CreateTaskSubscriptionCommandImpl cmd;
+        if (partitionId >= 0)
+        {
+            cmd = taskClient.createTaskSubscription(partitionId);
+        }
+        else
+        {
+            cmd = taskClient.createTaskSubscription(topic);
+        }
+
+        return cmd.taskType(taskType)
                 .lockDuration(lockTime)
                 .lockOwner(lockOwner)
                 .initialCredits(capacity)
@@ -145,7 +155,7 @@ public class TaskSubscriptionImpl
     @Override
     public void requestSubscriptionClose()
     {
-        taskClient.closeTaskSubscription(topic, partitionId, subscriberKey).execute();
+        taskClient.closeTaskSubscription(partitionId, subscriberKey).execute();
     }
 
     @Override

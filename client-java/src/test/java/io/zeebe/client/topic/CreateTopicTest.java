@@ -50,7 +50,7 @@ public class CreateTopicTest
     public void shouldCreateTopic()
     {
         // given
-        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION, EventType.TOPIC_EVENT, "CREATE")
+        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, EventType.TOPIC_EVENT, "CREATE")
             .respondWith()
             .key(123)
             .position(456)
@@ -66,7 +66,6 @@ public class CreateTopicTest
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(request.eventType()).isEqualTo(EventType.TOPIC_EVENT);
-        assertThat(request.topicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
         assertThat(request.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(request.position()).isEqualTo(ExecuteCommandRequestEncoder.positionNullValue());
 

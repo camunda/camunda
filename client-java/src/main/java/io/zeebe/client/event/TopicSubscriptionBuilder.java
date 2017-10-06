@@ -150,6 +150,13 @@ public interface TopicSubscriptionBuilder
      */
     TopicSubscriptionBuilder name(String name);
 
+    /**
+     * TEMPORARY: Defines the partition to subscribe to.
+     * If no partition id is set, opens a subscription to the single existing partition. An exception
+     * is thrown if there is no such partition.
+     */
+    TopicSubscriptionBuilder partitionId(int partition);
+
 
     /**
      * Opens a new topic subscription with the defined parameters.

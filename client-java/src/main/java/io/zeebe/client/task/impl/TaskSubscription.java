@@ -15,8 +15,7 @@
  */
 package io.zeebe.client.task.impl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
 import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
@@ -24,9 +23,6 @@ import io.zeebe.transport.RemoteAddress;
 
 public class TaskSubscription implements EventSubscriptionCreationResult, ReceiverAwareResponseResult
 {
-    private final String topicName;
-    private final int partitionId;
-
     private long subscriberKey;
 
     private String taskType;
@@ -36,25 +32,7 @@ public class TaskSubscription implements EventSubscriptionCreationResult, Receiv
     private int credits;
 
     protected RemoteAddress receiver;
-
-    @JsonCreator
-    public TaskSubscription(@JsonProperty("topicName") String topicName, @JsonProperty("partitionId") int partitionId)
-    {
-        this.topicName = topicName;
-        this.partitionId = partitionId;
-    }
-
-    public TaskSubscription(TaskSubscription other)
-    {
-        this.subscriberKey = other.subscriberKey;
-        this.topicName = other.topicName;
-        this.partitionId = other.partitionId;
-        this.taskType = other.taskType;
-        this.lockDuration = other.lockDuration;
-        this.lockOwner = other.lockOwner;
-        this.credits = other.credits;
-        this.receiver = other.receiver;
-    }
+    protected int partitionId;
 
     public long getSubscriberKey()
     {
@@ -64,16 +42,6 @@ public class TaskSubscription implements EventSubscriptionCreationResult, Receiv
     public void setSubscriberKey(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
-    }
-
-    public String getTopicName()
-    {
-        return topicName;
-    }
-
-    public int getPartitionId()
-    {
-        return partitionId;
     }
 
     public String getTaskType()
@@ -123,9 +91,22 @@ public class TaskSubscription implements EventSubscriptionCreationResult, Receiv
     }
 
     @Override
+    @JsonIgnore
     public RemoteAddress getEventPublisher()
     {
         return receiver;
+    }
+
+    public void setPartitionId(int partitionId)
+    {
+        this.partitionId = partitionId;
+    }
+
+    @Override
+    @JsonIgnore
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
 }

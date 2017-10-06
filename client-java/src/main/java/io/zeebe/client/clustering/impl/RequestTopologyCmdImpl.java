@@ -27,7 +27,7 @@ public class RequestTopologyCmdImpl extends ControlMessageRequest<TopologyRespon
 
     public RequestTopologyCmdImpl(RequestManager commandManager)
     {
-        super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, null, -1, TopologyResponse.class);
+        super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, TopologyResponse.class);
     }
 
     @Override

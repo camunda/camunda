@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.task;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -59,8 +57,6 @@ public class UpdateTaskRetriesTest
 
         brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "UPDATE_RETRIES")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())
@@ -77,8 +73,7 @@ public class UpdateTaskRetriesTest
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
-        assertThat(request.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(request.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(request.partitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
 
         assertThat(request.getCommand()).containsOnly(
                 entry("state", "UPDATE_RETRIES"),
@@ -91,8 +86,8 @@ public class UpdateTaskRetriesTest
                 entry("payload", baseEvent.getPayloadMsgPack()));
 
         assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
 
         assertThat(taskEvent.getState()).isEqualTo("RETRIES_UPDATED");
         assertThat(taskEvent.getHeaders()).isEqualTo(baseEvent.getHeaders());
@@ -111,8 +106,6 @@ public class UpdateTaskRetriesTest
 
         brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "UPDATE_RETRIES")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .key(r -> r.key())
             .event()
               .allOf((r) -> r.getCommand())

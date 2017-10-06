@@ -198,8 +198,8 @@ public class ClientApiRule extends ExternalResource
     {
         return createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(partitionId)
             .data()
-                .put("partitionId", partitionId)
                 .put("taskType", type)
                 .put("lockDuration", lockDuration)
                 .put("lockOwner", "test")

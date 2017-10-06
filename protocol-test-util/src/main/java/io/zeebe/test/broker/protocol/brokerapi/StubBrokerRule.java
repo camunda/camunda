@@ -16,7 +16,6 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
@@ -49,7 +48,7 @@ public class StubBrokerRule extends ExternalResource
 {
 
     public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC_NAME;
-    public static final int TEST_PARTITION_ID = DEFAULT_PARTITION_ID;
+    public static final int TEST_PARTITION_ID = 99;
 
 
     protected final String host;
@@ -274,7 +273,6 @@ public class StubBrokerRule extends ExternalResource
         onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
             .respondWith()
             .key((r) -> subscriberKeyProvider.getAndIncrement())
-            .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
                 .put("state", "SUBSCRIBED")
@@ -334,7 +332,7 @@ public class StubBrokerRule extends ExternalResource
     public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, EventType eventType)
     {
         newSubscribedEvent()
-            .partitionId(DEFAULT_PARTITION_ID)
+            .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
             .eventType(eventType)
@@ -348,7 +346,7 @@ public class StubBrokerRule extends ExternalResource
     public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String taskType)
     {
         newSubscribedEvent()
-            .partitionId(DEFAULT_PARTITION_ID)
+            .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
             .eventType(EventType.TASK_EVENT)

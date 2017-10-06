@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.clustering.Topology;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
@@ -94,16 +93,14 @@ public class ClientTopologyManager implements Actor
         return topology;
     }
 
-    public RemoteAddress getLeaderForTopic(final Partition topic)
+    public RemoteAddress getLeaderForPartition(final int partition)
     {
-        if (topic != null)
-        {
-            return topology.getLeaderForTopic(topic);
-        }
-        else
-        {
-            return topology.getRandomBroker();
-        }
+        return topology.getLeaderForPartition(partition);
+    }
+
+    public RemoteAddress getArbitraryBroker()
+    {
+        return topology.getRandomBroker();
     }
 
     public CompletableFuture<Void> refreshNow()
@@ -115,9 +112,9 @@ public class ClientTopologyManager implements Actor
         });
     }
 
-    public Partition getPartitionForTopic(String topic, int offset)
+    public int getPartitionForTopic(String topic, int offset)
     {
-        final List<Partition> partitions = topology.getPartitionsOfTopic(topic);
+        final List<Integer> partitions = topology.getPartitionsOfTopic(topic);
 
         if (partitions != null && !partitions.isEmpty())
         {
@@ -125,7 +122,7 @@ public class ClientTopologyManager implements Actor
         }
         else
         {
-            return null;
+            return -1;
         }
     }
 

@@ -169,7 +169,7 @@ public class RequestController implements BufferReader
 
     protected boolean shouldRetryRequestOnError(ErrorCode errorCode)
     {
-        return ErrorCode.TOPIC_NOT_FOUND == errorCode || ErrorCode.REQUEST_TIMEOUT == errorCode;
+        return ErrorCode.PARTITION_NOT_FOUND == errorCode || ErrorCode.REQUEST_TIMEOUT == errorCode;
     }
 
     @Override
@@ -234,7 +234,6 @@ public class RequestController implements BufferReader
             else
             {
                 currentRequestHandler.onSelectedPartition(targetPartition);
-                context.target = new Partition(targetTopic, targetPartition);
                 context.take(TRANSITION_DEFAULT);
             }
             return 1;
@@ -248,7 +247,15 @@ public class RequestController implements BufferReader
         {
             ++context.attempts;
 
-            final RemoteAddress remote = topologyManager.getLeaderForTopic(context.target);
+            final RemoteAddress remote;
+            if (context.requestType == RequestType.ARBITRARY_BROKER)
+            {
+                remote = topologyManager.getArbitraryBroker();
+            }
+            else
+            {
+                remote = topologyManager.getLeaderForPartition(currentRequestHandler.getTargetPartition());
+            }
 
             if (context.isRequestTimedOut())
             {
@@ -382,13 +389,13 @@ public class RequestController implements BufferReader
                 // request was successful
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (errorCode == ErrorCode.TOPIC_NOT_FOUND)
+            else if (errorCode == ErrorCode.PARTITION_NOT_FOUND)
             {
                 // reset error context
                 context.errorCode = ErrorCode.NULL_VAL;
                 context.errorBuffer = null;
 
-                // topic not found -> refresh topology -> retry request
+                // partition not found -> refresh topology -> retry request
                 context.take(TRANSITION_REFRESH_TOPOLOGY);
             }
             else
@@ -470,25 +477,26 @@ public class RequestController implements BufferReader
                 context.reset();
                 context.timeout = ClockUtil.getCurrentTimeInMillis() + CMD_TIMEOUT;
 
-                final String targetTopic = currentRequestHandler.getTargetTopic();
+                final int targetPartition = currentRequestHandler.getTargetPartition();
 
-                if (targetTopic != null)
+                if (targetPartition < 0)
                 {
-                    final int targetPartition = currentRequestHandler.getTargetPartition();
 
-                    if (targetPartition < 0)
+                    final String targetTopic = currentRequestHandler.getTargetTopic();
+                    if (targetTopic == null)
                     {
-                        context.take(TRANSITION_DETERMINE_PARTITION);
+                        context.requestType = RequestType.ARBITRARY_BROKER;
+                        context.take(TRANSITION_DEFAULT);
                     }
                     else
                     {
-                        context.target = new Partition(targetTopic, targetPartition);
-                        context.take(TRANSITION_DEFAULT);
+                        context.requestType = RequestType.SPECIFIC_TOPIC;
+                        context.take(TRANSITION_DETERMINE_PARTITION);
                     }
                 }
                 else
                 {
-                    context.target = null;
+                    context.requestType = RequestType.SPECIFIC_PARTITION;
                     context.take(TRANSITION_DEFAULT);
                 }
 
@@ -511,7 +519,8 @@ public class RequestController implements BufferReader
         Exception exception;
         long timeout;
         RemoteAddress receiver;
-        Partition target;
+
+        RequestType requestType;
 
         Context(final StateMachine<?> stateMachine)
         {
@@ -528,7 +537,7 @@ public class RequestController implements BufferReader
             errorBuffer = null;
             exception = null;
             contactedBrokers.clear();
-            target = null;
+            requestType = RequestType.ARBITRARY_BROKER;
         }
 
         public boolean isRequestTimedOut()
@@ -536,6 +545,13 @@ public class RequestController implements BufferReader
             final long now = ClockUtil.getCurrentTimeInMillis();
             return now > timeout;
         }
+    }
+
+    enum RequestType
+    {
+        ARBITRARY_BROKER,
+        SPECIFIC_TOPIC,
+        SPECIFIC_PARTITION
     }
 
 }

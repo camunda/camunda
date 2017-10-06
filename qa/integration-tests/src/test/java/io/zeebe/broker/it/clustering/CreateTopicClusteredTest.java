@@ -36,7 +36,7 @@ public class CreateTopicClusteredTest
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
-    public ClientRule clientRule = new ClientRule();
+    public ClientRule clientRule = new ClientRule(false);
 
     @Rule
     public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);

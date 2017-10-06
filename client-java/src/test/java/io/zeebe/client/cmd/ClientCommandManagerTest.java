@@ -16,8 +16,6 @@
 package io.zeebe.client.cmd;
 
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -138,7 +136,7 @@ public class ClientCommandManagerTest
     public void testTopicNotFoundResponse()
     {
         // given
-        stubTopicNotFoundResponse();
+        stubPartitionNotFoundResponse();
 
         // then
         exception.expect(RuntimeException.class);
@@ -151,7 +149,7 @@ public class ClientCommandManagerTest
 
     protected CreateTaskCommand createTaskCmd()
     {
-        return createTaskCmd(DEFAULT_TOPIC_NAME);
+        return createTaskCmd(clientRule.getDefaultTopicName());
     }
 
     protected CreateTaskCommand createTaskCmd(final String topicName)
@@ -163,8 +161,7 @@ public class ClientCommandManagerTest
     {
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
+            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())
@@ -185,11 +182,11 @@ public class ClientCommandManagerTest
               .register();
     }
 
-    protected void stubTopicNotFoundResponse()
+    protected void stubPartitionNotFoundResponse()
     {
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
               .respondWithError()
-                  .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+                  .errorCode(ErrorCode.PARTITION_NOT_FOUND)
                   .errorData("")
               .register();
     }
@@ -257,8 +254,8 @@ public class ClientCommandManagerTest
         public FailingEvent(@JsonProperty("state") String state)
         {
             super(TopicEventType.TASK, state);
-            this.setTopicName(DEFAULT_TOPIC_NAME);
-            this.setPartitionId(DEFAULT_PARTITION_ID);
+            this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
+            this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
         }
 
         public String getFailingProp()

@@ -17,6 +17,7 @@ package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
 
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.TaskHandler;
@@ -37,20 +38,29 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final MsgPackMapper msgPackMapper;
     protected final String topic;
-    protected final int partition;
+    protected final ClientTopologyManager topologyManager;
+    protected int partition;
 
     public TaskSubscriptionBuilderImpl(
             TasksClientImpl client,
+            ClientTopologyManager topologyManager,
             String topic,
-            int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             MsgPackMapper msgPackMapper)
     {
         this.client = client;
         this.topic = topic;
-        this.partition = partition;
+        this.partition = -1;
         this.taskAcquisition = taskAcquisition;
         this.msgPackMapper = msgPackMapper;
+        this.topologyManager = topologyManager;
+    }
+
+    @Override
+    public TaskSubscriptionBuilder partitionId(int partition)
+    {
+        this.partition = partition;
+        return this;
     }
 
     @Override

@@ -56,9 +56,9 @@ public class TopicClientImpl implements TopicsClient
         return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), topicName, partitionId);
     }
 
-    public CloseTopicSubscriptionCommandImpl closeTopicSubscription(String topicName, int partitionId, long subscriberKey)
+    public CloseTopicSubscriptionCommandImpl closeTopicSubscription(int partitionId, long subscriberKey)
     {
-        return new CloseTopicSubscriptionCommandImpl(client.getCommandManager(), topicName, partitionId, subscriberKey);
+        return new CloseTopicSubscriptionCommandImpl(client.getCommandManager(), partitionId, subscriberKey);
     }
 
     public AcknowledgeSubscribedEventCommandImpl acknowledgeEvent(String topicName, int partitionId)

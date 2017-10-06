@@ -66,8 +66,8 @@ public class TopicSubscriptionAcknowledgementTest
     {
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();

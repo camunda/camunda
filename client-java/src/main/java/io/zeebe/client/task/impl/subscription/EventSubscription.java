@@ -83,7 +83,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected RemoteAddress eventSource;
     protected final String topic;
-    protected final int partitionId;
+    protected int partitionId;
 
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
     protected final AtomicInteger eventsProcessedSinceLastReplenishment = new AtomicInteger(0);
@@ -136,6 +136,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             }
 
             subscriberKey = result.getSubscriberKey();
+            partitionId = result.getPartitionId();
             eventSource = result.getEventPublisher();
             resetProcessingState();
             acquisition.activateSubscription(thisSubscription());

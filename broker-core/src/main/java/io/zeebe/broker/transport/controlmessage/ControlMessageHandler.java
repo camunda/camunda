@@ -38,6 +38,8 @@ public interface ControlMessageHandler
      * Handle the given control message asynchronously. An implementation may
      * copy the buffer if the data is used beyond the invocation.
      *
+     * @param partitionId
+     *         < 0 if no specific partition is addressed
      * @param buffer
      *            the buffer which contains the control message as MsgPack-JSON
      * @param metadata
@@ -46,5 +48,5 @@ public interface ControlMessageHandler
      * @return a future which indicates when the control message is handled
      *         completely
      */
-    CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata);
+    CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
 }

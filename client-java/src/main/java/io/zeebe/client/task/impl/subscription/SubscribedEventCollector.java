@@ -94,11 +94,9 @@ public class SubscribedEventCollector implements ClientMessageHandler
                 final long subscriberKey = subscribedEventDecoder.subscriberKey();
                 final long position = subscribedEventDecoder.position();
                 final int partitionId = subscribedEventDecoder.partitionId();
-                final String topicName = subscribedEventDecoder.topicName();
                 final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
 
                 final GeneralEventImpl event = new GeneralEventImpl(
-                        topicName,
                         partitionId,
                         key,
                         position,

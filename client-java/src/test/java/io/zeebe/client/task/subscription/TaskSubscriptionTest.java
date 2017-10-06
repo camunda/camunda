@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.task.subscription;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -121,10 +119,9 @@ public class TaskSubscriptionTest
 
         final ControlMessageRequest subscriptionRequest = getSubscribeRequests().findFirst().get();
         assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.ADD_TASK_SUBSCRIPTION);
+        assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
 
         assertThat(subscriptionRequest.getData()).contains(
-                entry("topicName", clientRule.getDefaultTopicName()),
-                entry("partitionId", 0),
                 entry("lockOwner", "foo"),
                 entry("lockDuration", 10000),
                 entry("taskType", "bar"),
@@ -155,10 +152,8 @@ public class TaskSubscriptionTest
         final ControlMessageRequest subscriptionRequest = getUnsubscribeRequests().findFirst().get();
         assertThat(subscriptionRequest.messageType()).isEqualByComparingTo(ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
 
-        assertThat(subscriptionRequest.getData()).contains(
-                entry("subscriberKey", 123),
-                entry("topicName", clientRule.getDefaultTopicName()),
-                entry("partitionId", clientRule.getDefaultPartitionId()));
+        assertThat(subscriptionRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
+        assertThat(subscriptionRequest.getData()).contains(entry("subscriberKey", 123));
     }
 
     @Test
@@ -330,7 +325,7 @@ public class TaskSubscriptionTest
         // given
         broker.onControlMessageRequest(r -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .respondWithError()
-            .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+            .errorCode(ErrorCode.PARTITION_NOT_FOUND)
             .errorData("does not compute")
             .register();
 
@@ -374,8 +369,7 @@ public class TaskSubscriptionTest
 
         // when
         broker.newSubscribedEvent()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
+            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
             .key(4L)
             .position(5L)
             .eventType(EventType.TASK_EVENT)
@@ -541,7 +535,6 @@ public class TaskSubscriptionTest
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(taskRequest.key()).isEqualTo(4L);
         assertThat(taskRequest.getCommand())
@@ -577,7 +570,6 @@ public class TaskSubscriptionTest
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(taskRequest.key()).isEqualTo(4L);
         assertThat(taskRequest.getCommand())
@@ -613,7 +605,6 @@ public class TaskSubscriptionTest
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(taskRequest.key()).isEqualTo(4L);
         assertThat(taskRequest.getCommand())
@@ -658,7 +649,6 @@ public class TaskSubscriptionTest
             .until(r -> r.isPresent())
             .get();
 
-        assertThat(taskRequest.topicName()).isEqualTo(clientRule.getDefaultTopicName());
         assertThat(taskRequest.partitionId()).isEqualTo(clientRule.getDefaultPartitionId());
         assertThat(taskRequest.key()).isEqualTo(4L);
         assertThat(taskRequest.getCommand())
@@ -711,8 +701,6 @@ public class TaskSubscriptionTest
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
             .respondWith()
             .key((r) -> r.key())
-            .topicName((r) -> r.topicName())
-            .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
                 .put("state", "COMPLETED")
@@ -839,7 +827,7 @@ public class TaskSubscriptionTest
         final TasksClientImpl taskClient = (TasksClientImpl) clientRule.tasks();
 
         // when
-        taskClient.increaseSubscriptionCredits(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID)
+        taskClient.increaseSubscriptionCredits(StubBrokerRule.TEST_PARTITION_ID)
             .credits(123)
             .subscriberKey(456L)
             .execute();

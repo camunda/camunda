@@ -119,7 +119,8 @@ public class EmbeddedBrokerRule extends ExternalResource
 
         try
         {
-            // Hack: block until default task queue log has been installed
+            // Hack: block until the system stream processor is available
+            // this is required in the broker-test suite, because the client rule does not perform request retries
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
                 .dependency(SystemServiceNames.SYSTEM_PROCESSOR)

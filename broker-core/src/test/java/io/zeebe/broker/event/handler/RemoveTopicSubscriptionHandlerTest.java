@@ -77,10 +77,8 @@ public class RemoveTopicSubscriptionHandlerTest
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.requestStreamId(14);
 
-        final DirectBuffer request = encode(new CloseSubscriptionRequest()
-                .setSubscriberKey(5L)
-                .setPartitionId(0));
-        handler.handle(request, metadata);
+        final DirectBuffer request = encode(new CloseSubscriptionRequest().setSubscriberKey(5L));
+        handler.handle(0, request, metadata);
 
         // when
         futurePool.at(0).completeExceptionally(new RuntimeException("foo"));

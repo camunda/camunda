@@ -15,23 +15,27 @@
  */
 package io.zeebe.broker.it;
 
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_LOG_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.util.allocation.DirectBufferAllocator;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
+
+import io.zeebe.broker.Broker;
+import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
+import io.zeebe.util.allocation.DirectBufferAllocator;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
@@ -100,9 +104,7 @@ public class EmbeddedBrokerRule extends ExternalResource
             // Hack: block until default task queue log has been installed
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
-                .dependency(TopicSubscriptionServiceNames.subscriptionManagementServiceName(DEFAULT_LOG_NAME))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
-                .dependency(taskQueueInstanceStreamProcessorServiceName(DEFAULT_LOG_NAME))
                 .install()
                 .get(10, TimeUnit.SECONDS);
         }

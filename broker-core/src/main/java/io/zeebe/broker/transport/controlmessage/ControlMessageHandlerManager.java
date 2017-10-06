@@ -247,13 +247,15 @@ public class ControlMessageHandlerManager implements Actor
             final ControlMessageType messageType = requestDecoder.messageType();
             context.lastRequestMessageType(messageType);
 
+            final int partitionId = requestDecoder.partitionId();
+
             ensureBufferCapacity(requestDecoder.dataLength());
             requestDecoder.getData(requestBuffer, 0, requestDecoder.dataLength());
 
             final ControlMessageHandler handler = handlersByTypeId.get(messageType.value());
             if (handler != null)
             {
-                final CompletableFuture<Void> future = handler.handle(requestBuffer, eventMetada);
+                final CompletableFuture<Void> future = handler.handle(partitionId, requestBuffer, eventMetada);
                 final long startTime = ClockUtil.getCurrentTimeInMillis();
 
                 context.scheduledProcessing(future, startTime);

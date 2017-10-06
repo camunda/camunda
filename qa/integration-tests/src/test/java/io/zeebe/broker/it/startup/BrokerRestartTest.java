@@ -15,9 +15,9 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.*;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +30,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -39,7 +46,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.*;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -49,8 +58,6 @@ import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
-import org.junit.*;
-import org.junit.rules.*;
 
 public class BrokerRestartTest
 {
@@ -454,7 +461,7 @@ public class BrokerRestartTest
         // given
         final int testTerm = 8;
 
-        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(DEFAULT_TOPIC_NAME + "." + DEFAULT_PARTITION_ID);
+        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(clientRule.getDefaultTopic() + "." + clientRule.getDefaultPartition());
 
         Raft raft = brokerRule.getService(serviceName).get();
         waitUntil(raft::isInitialEventCommitted);

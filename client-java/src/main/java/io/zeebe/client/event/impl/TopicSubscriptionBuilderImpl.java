@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.event.impl;
 
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.event.*;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
@@ -35,14 +36,21 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 
     public TopicSubscriptionBuilderImpl(
             TopicClientImpl client,
+            ClientTopologyManager topologyManager,
             String topic,
-            int partition,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
             MsgPackMapper msgPackMapper,
             int prefetchCapacity)
     {
-        builder = new TopicSubscriptionImplBuilder(client, topic, partition, acquisition, prefetchCapacity);
+        builder = new TopicSubscriptionImplBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
         this.msgPackMapper = msgPackMapper;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder partitionId(int partition)
+    {
+        builder.partitionId(partition);
+        return this;
     }
 
     @Override

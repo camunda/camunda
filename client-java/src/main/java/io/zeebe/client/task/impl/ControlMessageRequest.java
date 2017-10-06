@@ -28,12 +28,38 @@ public abstract class ControlMessageRequest<R> implements Request<R>
 
     protected final ControlMessageType type;
     protected final String targetTopic;
-    protected final int targetPartition;
+    protected int targetPartition;
     protected final Class<R> responseClass;
 
     protected final RequestManager client;
 
+    /**
+     * Constructor for requests addressing a specific partition
+     */
     public ControlMessageRequest(RequestManager client, ControlMessageType type,
+            int targetPartition, Class<R> responseClass)
+    {
+        this(client, type, null, targetPartition, responseClass);
+    }
+
+    /**
+     * Constructor for requests addressing a specific topic, but unspecified partition
+     */
+    public ControlMessageRequest(RequestManager client, ControlMessageType type,
+            String targetTopic, Class<R> responseClass)
+    {
+        this(client, type, targetTopic, -1, responseClass);
+    }
+
+    /**
+     * Constructor for requests addressing any broker
+     */
+    public ControlMessageRequest(RequestManager client, ControlMessageType type, Class<R> responseClass)
+    {
+        this(client, type, null, -1, responseClass);
+    }
+
+    private ControlMessageRequest(RequestManager client, ControlMessageType type,
             String targetTopic, int targetPartition, Class<R> responseClass)
     {
         this.client = client;
@@ -61,10 +87,19 @@ public abstract class ControlMessageRequest<R> implements Request<R>
         return targetPartition;
     }
 
+    public void setTargetPartition(int targetPartition)
+    {
+        this.targetPartition = targetPartition;
+    }
+
     @JsonIgnore
     public Class<R> getResponseClass()
     {
         return responseClass;
+    }
+
+    public void onResponse(R response)
+    {
     }
 
     public abstract Object getRequest();

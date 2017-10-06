@@ -57,7 +57,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata eventMetadata)
+    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
     {
         subscription.reset();
 

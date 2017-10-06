@@ -26,7 +26,6 @@ public class GeneralEventImpl extends EventImpl implements GeneralEvent
     protected final MsgPackField content;
 
     public GeneralEventImpl(
-            final String topicName,
             final int partitionId,
             final long key,
             final long position,
@@ -37,7 +36,6 @@ public class GeneralEventImpl extends EventImpl implements GeneralEvent
         super(eventType, null);
         this.setKey(key);
         this.setEventPosition(position);
-        this.setTopicName(topicName);
         this.setPartitionId(partitionId);
         this.content = new MsgPackField(msgPackConverter);
         this.content.setMsgPack(rawContent);

@@ -21,6 +21,7 @@ import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -42,7 +43,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
@@ -52,6 +52,7 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.time.ClockUtil;
@@ -209,7 +210,7 @@ public class ControlMessageHandlerManagerTest
         final ArgumentCaptor<DirectBuffer> bufferCaptor = ArgumentCaptor.forClass(DirectBuffer.class);
         final ArgumentCaptor<BrokerEventMetadata> metadataCaptor = ArgumentCaptor.forClass(BrokerEventMetadata.class);
 
-        verify(mockControlMessageHandler).handle(bufferCaptor.capture(), metadataCaptor.capture());
+        verify(mockControlMessageHandler).handle(anyInt(), bufferCaptor.capture(), metadataCaptor.capture());
 
         assertThatBuffer(bufferCaptor.getValue()).hasBytes(CONTROL_MESSAGE_DATA);
 
@@ -227,7 +228,7 @@ public class ControlMessageHandlerManagerTest
         when(mockSubscription.poll(any(FragmentHandler.class), eq(1))).thenAnswer(pollControlMessage(CONTROL_MESSAGE_TYPE));
 
         final CompletableFuture<Void> spyFuture = spy(new CompletableFuture<Void>());
-        when(mockControlMessageHandler.handle(any(DirectBuffer.class), any(BrokerEventMetadata.class))).thenReturn(spyFuture);
+        when(mockControlMessageHandler.handle(anyInt(), any(DirectBuffer.class), any(BrokerEventMetadata.class))).thenReturn(spyFuture);
 
         manager.doWork();
 
@@ -259,7 +260,7 @@ public class ControlMessageHandlerManagerTest
         when(mockSubscription.poll(any(FragmentHandler.class), eq(1))).thenAnswer(pollControlMessage(CONTROL_MESSAGE_TYPE));
 
         final CompletableFuture<Void> spyFuture = spy(new CompletableFuture<Void>());
-        when(mockControlMessageHandler.handle(any(DirectBuffer.class), any(BrokerEventMetadata.class))).thenReturn(spyFuture);
+        when(mockControlMessageHandler.handle(anyInt(), any(DirectBuffer.class), any(BrokerEventMetadata.class))).thenReturn(spyFuture);
 
         manager.doWork();
 

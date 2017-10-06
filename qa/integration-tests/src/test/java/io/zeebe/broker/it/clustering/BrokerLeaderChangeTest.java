@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
-import static io.zeebe.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,8 +67,6 @@ public class BrokerLeaderChangeTest
     // TODO: remove logging after test becomes stable
     public static final Logger LOG = LoggerFactory.getLogger(BrokerLeaderChangeTest.class);
 
-    public static final Partition DEFAULT_TOPIC = new Partition(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
-
     public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
     public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("localhost", 51015);
     public static final SocketAddress BROKER_1_RAFT_ADDRESS = new SocketAddress("localhost", 51017);
@@ -88,6 +84,8 @@ public class BrokerLeaderChangeTest
     @Rule
     public ClientRule clientRule = new ClientRule();
 
+    protected Partition defaultPartition;
+
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
     protected ZeebeClient client;
@@ -103,6 +101,7 @@ public class BrokerLeaderChangeTest
         client = clientRule.getClient();
         topicClient = clientRule.topics();
         taskClient = clientRule.tasks();
+        defaultPartition = new Partition(clientRule.getDefaultTopic(), clientRule.getDefaultPartition());
     }
 
     @After
@@ -139,7 +138,7 @@ public class BrokerLeaderChangeTest
         refreshTopologyNow();
 
         // wait for topic leader
-        SocketAddress leader = topologyObserver.waitForLeader(DEFAULT_TOPIC, brokers.keySet());
+        SocketAddress leader = topologyObserver.waitForLeader(defaultPartition, brokers.keySet());
 
         // create task on leader
         LOG.info("Creating task for type {}", TASK_TYPE);
@@ -157,7 +156,7 @@ public class BrokerLeaderChangeTest
         LOG.info("Leader {} is shutdown", leader);
 
         // wait for other broker become leader
-        leader = topologyObserver.waitForLeader(DEFAULT_TOPIC, brokers.keySet());
+        leader = topologyObserver.waitForLeader(defaultPartition, brokers.keySet());
         LOG.info("Leader changed to {}", leader);
 
         // complete task and wait for completed event
@@ -279,7 +278,7 @@ public class BrokerLeaderChangeTest
         {
             for (TopicLeader leader : resp.getTopicLeaders())
             {
-                if (topic.equals(leader.getTopic()))
+                if (topic.getPartitionId() == leader.getPartitionId())
                 {
                     return leader.getSocketAddress();
                 }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
 import io.zeebe.client.event.impl.PollableTopicSubscriptionBuilderImpl;
@@ -40,6 +41,7 @@ public class SubscriptionManager implements TransportListener, Actor
     protected final EventAcquisition<TopicSubscriptionImpl> topicSubscriptionAcquisition;
     protected final ClientInputMessageSubscription messageSubscription;
     protected final MsgPackMapper msgPackMapper;
+    protected final ClientTopologyManager topologyManager;
 
     protected final ActorScheduler executorActorScheduler;
     protected final ActorScheduler acquisitionActorScheduler;
@@ -79,6 +81,7 @@ public class SubscriptionManager implements TransportListener, Actor
         this.msgPackMapper = new MsgPackMapper(client.getObjectMapper());
 
         this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
+        this.topologyManager = client.getTopologyManager();
 
         this.acquisitionActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("acquisition");
         this.executorActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("executors", numExecutionThreads);
@@ -156,26 +159,22 @@ public class SubscriptionManager implements TransportListener, Actor
 
     public TaskSubscriptionBuilder newTaskSubscription(TasksClientImpl client, String topic)
     {
-        final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new TaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, msgPackMapper);
+        return new TaskSubscriptionBuilderImpl(client, topologyManager, topic, taskAcquisition, msgPackMapper);
     }
 
     public PollableTaskSubscriptionBuilder newPollableTaskSubscription(TasksClientImpl client, String topic)
     {
-        final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new PollableTaskSubscriptionBuilderImpl(client, topic, partitionId, taskAcquisition, msgPackMapper);
+        return new PollableTaskSubscriptionBuilderImpl(client, topologyManager, topic, taskAcquisition, msgPackMapper);
     }
 
     public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client, String topic)
     {
-        final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new TopicSubscriptionBuilderImpl(client, topic, partitionId, topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
+        return new TopicSubscriptionBuilderImpl(client, topologyManager, topic, topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
     public PollableTopicSubscriptionBuilder newPollableTopicSubscription(TopicClientImpl client, String topic)
     {
-        final int partitionId = 0; // TODO: will be based on cluster topology and assignment in the future
-        return new PollableTopicSubscriptionBuilderImpl(client, topic, partitionId, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
+        return new PollableTopicSubscriptionBuilderImpl(client, topologyManager, topic, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
     }
 
     @Override

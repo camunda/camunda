@@ -22,10 +22,10 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends ControlMessageReques
 {
     protected final TaskSubscription subscription;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(final RequestManager commandManager, String topic, int partition)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final RequestManager commandManager, int partition)
     {
-        super(commandManager, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS, topic, partition, Void.class);
-        this.subscription = new TaskSubscription(topic, partition);
+        super(commandManager, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS, partition, Void.class);
+        this.subscription = new TaskSubscription();
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl subscriberKey(long subscriberKey)

@@ -82,16 +82,15 @@ public class TopicSubscriptionTest
         // when
         final ControlMessageResponse removeResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
 
         // then
         assertThat(removeResponse.getData()).containsOnly(
-            entry("subscriberKey", subscriberKey),
-            entry("partitionId", apiRule.getDefaultPartitionId())
+            entry("subscriberKey", subscriberKey)
         );
     }
 
@@ -107,8 +106,8 @@ public class TopicSubscriptionTest
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -224,8 +223,8 @@ public class TopicSubscriptionTest
         // when
         final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(999)
             .data()
-                .put("partitionId", 999)
                 .put("subscriberKey", 0L)
                 .done()
             .send().awaitError();
@@ -236,9 +235,6 @@ public class TopicSubscriptionTest
 
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-
-        assertThat(errorResponse.getFailedRequest())
-            .containsEntry("partitionId", 999);
     }
 
 
@@ -248,8 +244,8 @@ public class TopicSubscriptionTest
         // when
         final ControlMessageResponse removeResponse = apiRule.createControlMessageRequest()
                 .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+                .partitionId(apiRule.getDefaultPartitionId())
                 .data()
-                    .put("partitionId", apiRule.getDefaultPartitionId())
                     .put("subscriberKey", Long.MAX_VALUE)
                     .done()
                 .sendAndAwait();
@@ -257,8 +253,7 @@ public class TopicSubscriptionTest
         // then
         assertThat(removeResponse.getData())
             .containsOnly(
-                entry("subscriberKey", Long.MAX_VALUE),
-                entry("partitionId", apiRule.getDefaultPartitionId())
+                entry("subscriberKey", Long.MAX_VALUE)
             );
     }
 
@@ -329,8 +324,8 @@ public class TopicSubscriptionTest
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -386,8 +381,8 @@ public class TopicSubscriptionTest
 
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -426,8 +421,8 @@ public class TopicSubscriptionTest
         // when
         final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
             .data()
-                .put("partitionId", apiRule.getDefaultPartitionId())
                 .put("subscriberKey", subscriberKey)
                 .done()
             .send().awaitError();

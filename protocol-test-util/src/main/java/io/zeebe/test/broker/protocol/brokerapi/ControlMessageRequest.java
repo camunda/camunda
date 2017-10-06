@@ -54,6 +54,11 @@ public class ControlMessageRequest implements BufferReader
         return bodyDecoder.messageType();
     }
 
+    public int partitionId()
+    {
+        return bodyDecoder.partitionId();
+    }
+
     public Map<String, Object> getData()
     {
         return data;

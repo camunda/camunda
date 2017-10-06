@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule.TEST_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule.TEST_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Before;
@@ -70,8 +68,6 @@ public class UpdatePayloadTest
         event.setWorkflowInstanceKey(1L);
 
         brokerRule.onExecuteCommandRequest().respondWith()
-            .topicName(TEST_TOPIC_NAME)
-            .partitionId(TEST_PARTITION_ID)
             .key(r -> r.key())
             .event()
                 .put("state", "PAYLOAD_UPDATED")
@@ -104,8 +100,6 @@ public class UpdatePayloadTest
         event.setWorkflowInstanceKey(1L);
 
         brokerRule.onExecuteCommandRequest().respondWith()
-            .topicName(TEST_TOPIC_NAME)
-            .partitionId(TEST_PARTITION_ID)
             .key(r -> r.key())
             .event()
                 .allOf(r -> r.getCommand())

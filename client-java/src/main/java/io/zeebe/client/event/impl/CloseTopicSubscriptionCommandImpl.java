@@ -24,14 +24,12 @@ public class CloseTopicSubscriptionCommandImpl extends ControlMessageRequest<Voi
 
     protected CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
-    public CloseTopicSubscriptionCommandImpl(final RequestManager commandManager, String topicName, int partitionId, long subscriberKey)
+    public CloseTopicSubscriptionCommandImpl(final RequestManager commandManager, int partitionId, long subscriberKey)
     {
         super(commandManager,
                 ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION,
-                topicName,
                 partitionId,
                 Void.class);
-        this.request.setTopicName(topicName);
         this.request.setPartitionId(partitionId);
         this.request.setSubscriberKey(subscriberKey);
     }

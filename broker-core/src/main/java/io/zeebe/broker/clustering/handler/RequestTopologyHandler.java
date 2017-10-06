@@ -51,7 +51,7 @@ public class RequestTopologyHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public CompletableFuture<Void> handle(int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
         return gossip.getTopology()
             .handle((topology, failure) ->

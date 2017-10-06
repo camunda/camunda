@@ -17,6 +17,7 @@ package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
 
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.PollableTaskSubscription;
@@ -32,23 +33,32 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected String lockOwner;
 
     protected final String topic;
-    protected final int partition;
+    protected int partition;
     protected final TasksClientImpl taskClient;
+    protected final ClientTopologyManager topologyManager;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final MsgPackMapper msgPackMapper;
 
     public PollableTaskSubscriptionBuilderImpl(
             TasksClientImpl taskClient,
+            ClientTopologyManager topologyManager,
             String topic,
-            int partition,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             MsgPackMapper msgPackMapper)
     {
         this.topic = topic;
-        this.partition = partition;
+        this.partition = -1;
         this.taskClient = taskClient;
         this.taskAcquisition = taskAcquisition;
         this.msgPackMapper = msgPackMapper;
+        this.topologyManager = topologyManager;
+    }
+
+    @Override
+    public PollableTaskSubscriptionBuilder partitionId(int partition)
+    {
+        this.partition = partition;
+        return this;
     }
 
     @Override

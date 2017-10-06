@@ -27,6 +27,9 @@ public interface RequestResponseHandler extends BufferWriter
 
     Object getResult(DirectBuffer buffer, int offset, int blockLength, int version);
 
+    /**
+     * @return null for unspecified topic
+     */
     String getTargetTopic();
 
     /**

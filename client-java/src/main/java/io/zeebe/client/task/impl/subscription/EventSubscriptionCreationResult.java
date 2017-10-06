@@ -22,4 +22,6 @@ public interface EventSubscriptionCreationResult
     RemoteAddress getEventPublisher();
 
     long getSubscriberKey();
+
+    int getPartitionId();
 }

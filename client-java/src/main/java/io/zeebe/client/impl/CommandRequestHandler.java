@@ -95,7 +95,6 @@ public class CommandRequestHandler implements RequestResponseHandler
         encoder
             .partitionId(metadata.getPartitionId())
             .eventType(EventTypeMapping.mapEventType(metadata.getType()))
-            .topicName(metadata.getTopicName())
             .position(metadata.getPosition());
 
         offset = encoder.limit();
@@ -144,7 +143,6 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         final long key = decoder.key();
         final int partitionId = decoder.partitionId();
-        final String topicName = decoder.topicName();
         final long position = decoder.position();
 
         final int eventLength = decoder.eventLength();
@@ -165,7 +163,7 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         result.setKey(key);
         result.setPartitionId(partitionId);
-        result.setTopicName(topicName);
+        result.setTopicName(event.getMetadata().getTopicName());
         result.setEventPosition(position);
 
         if (expectedState != null && !expectedState.equals(result.getState()))
@@ -199,6 +197,7 @@ public class CommandRequestHandler implements RequestResponseHandler
     @Override
     public void onSelectedPartition(int partitionId)
     {
+        event.setPartitionId(partitionId);
         encoder.partitionId(partitionId);
     }
 

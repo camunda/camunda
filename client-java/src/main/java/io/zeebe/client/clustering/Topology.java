@@ -17,14 +17,13 @@ package io.zeebe.client.clustering;
 
 import java.util.List;
 
-import io.zeebe.client.impl.Partition;
 import io.zeebe.transport.RemoteAddress;
 
 public interface Topology
 {
-    RemoteAddress getLeaderForTopic(Partition partition);
+    RemoteAddress getLeaderForPartition(int partition);
 
     RemoteAddress getRandomBroker();
 
-    List<Partition> getPartitionsOfTopic(String topic);
+    List<Integer> getPartitionsOfTopic(String topic);
 }

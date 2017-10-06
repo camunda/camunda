@@ -130,13 +130,14 @@ public class ZeebeClientImpl implements ZeebeClient
 
         final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
 
+        topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
+
         subscriptionManager = new SubscriptionManager(
                 this,
                 numExecutionThreads,
                 prefetchCapacity);
         transport.registerChannelListener(subscriptionManager);
 
-        topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
         apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests);
 
         commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);

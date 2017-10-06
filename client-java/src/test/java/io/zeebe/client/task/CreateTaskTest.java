@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.task;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -72,8 +70,6 @@ public class CreateTaskTest
         // given
         brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .key(123)
             .position(456)
             .event()
@@ -97,8 +93,7 @@ public class CreateTaskTest
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
-        assertThat(request.topicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(request.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(request.partitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(request.position()).isEqualTo(ExecuteCommandRequestEncoder.positionNullValue());
 
         assertThat(request.getCommand()).containsOnly(
@@ -111,8 +106,8 @@ public class CreateTaskTest
                 entry("payload", converter.convertToMsgPack(payload)));
 
         assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(taskEvent.getMetadata().getPosition()).isEqualTo(456);
 
         assertThat(taskEvent.getState()).isEqualTo("CREATED");
@@ -131,8 +126,6 @@ public class CreateTaskTest
         // given
         brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())
@@ -149,8 +142,8 @@ public class CreateTaskTest
 
         // then
         assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
-        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
+        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
 
         assertThat(taskEvent.getRetries()).isEqualTo(CreateTaskCommand.DEFAULT_RETRIES);
         assertThat(taskEvent.getHeaders()).isEmpty();
@@ -163,8 +156,6 @@ public class CreateTaskTest
         // given
         brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
-            .topicName(DEFAULT_TOPIC_NAME)
-            .partitionId(DEFAULT_PARTITION_ID)
             .key(123)
             .event()
               .allOf((r) -> r.getCommand())

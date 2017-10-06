@@ -36,7 +36,7 @@ public class MultipleClientTest
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule client1 = new ClientRule();
-    public ClientRule client2 = new ClientRule();
+    public ClientRule client2 = new ClientRule(false);
 
     @Rule
     public RuleChain ruleChain = RuleChain
