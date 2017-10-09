@@ -21,11 +21,8 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.*;
 
-import io.zeebe.broker.incident.IncidentStreamProcessorErrorHandler;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
@@ -35,18 +32,11 @@ import io.zeebe.broker.workflow.processor.DeploymentStreamProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.*;
 
 public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Actor
 {
@@ -113,8 +103,6 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
-        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream);
-
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,
                 workflowCfg.deploymentCacheSize,
@@ -124,8 +112,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 streamProcessorName,
                 StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID,
                 workflowInstanceStreamProcessor)
-                .eventFilter(WorkflowInstanceStreamProcessor.eventFilter())
-                .errorHandler(errorHandler);
+                .eventFilter(WorkflowInstanceStreamProcessor.eventFilter());
 
         serviceContext.createService(streamProcessorServiceName, workflowStreamProcessorService)
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getSourceStreamInjector())

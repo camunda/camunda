@@ -24,6 +24,8 @@ import static io.zeebe.protocol.clientapi.EventType.WORKFLOW_INSTANCE_EVENT;
 
 import java.util.*;
 
+import io.zeebe.broker.incident.IncidentEventWriter;
+import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
@@ -39,8 +41,7 @@ import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.model.bpmn.BpmnAspect;
 import io.zeebe.model.bpmn.instance.*;
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import io.zeebe.msgpack.el.JsonConditionInterpreter;
+import io.zeebe.msgpack.el.*;
 import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -102,6 +103,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected LogStreamReader logStreamReader;
     protected LogStreamBatchWriter logStreamBatchWriter;
+    protected IncidentEventWriter incidentEventWriter;
 
     protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
@@ -160,6 +162,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.logStreamReader.wrap(sourceStream);
         this.logStreamBatchWriter = new LogStreamBatchWriterImpl(context.getTargetStream());
+        this.incidentEventWriter = new IncidentEventWriter(sourceEventMetadata, workflowInstanceEvent);
 
         this.targetStream = context.getTargetStream();
     }
@@ -528,23 +531,43 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ExclusiveSplitAspectHandler implements EventProcessor
     {
+        private boolean hasIncident;
+
         @Override
         public void processEvent()
         {
+            hasIncident = false;
+
             final ExclusiveGateway exclusiveGateway = (ExclusiveGateway) getCurrentActivity();
 
-            final SequenceFlow sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway);
+            try
+            {
+                final SequenceFlow sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway);
 
-            if (sequenceFlow != null)
-            {
-                workflowInstanceEvent
-                    .setState(WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)
-                    .setActivityId(sequenceFlow.getIdAsBuffer());
+                if (sequenceFlow != null)
+                {
+                    workflowInstanceEvent
+                        .setState(WorkflowInstanceState.SEQUENCE_FLOW_TAKEN)
+                        .setActivityId(sequenceFlow.getIdAsBuffer());
+                }
+                else
+                {
+                    incidentEventWriter
+                        .reset()
+                        .errorType(ErrorType.CONDITION_ERROR)
+                        .errorMessage("All conditions evaluated to false and no default flow is set.");
+
+                    hasIncident = true;
+                }
             }
-            else
+            catch (JsonConditionException e)
             {
-                // create incident event instead of throwing an exception - #311
-                throw new WorkflowInstanceProcessingException("All conditions evaluated to false and no default flow is set.");
+                incidentEventWriter
+                    .reset()
+                    .errorType(ErrorType.CONDITION_ERROR)
+                    .errorMessage(e.getMessage());
+
+                hasIncident = true;
             }
         }
 
@@ -569,7 +592,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeWorkflowEvent(writer.positionAsKey());
+            if (!hasIncident)
+            {
+                return writeWorkflowEvent(writer.positionAsKey());
+            }
+            else
+            {
+                return incidentEventWriter
+                            .failureEventPosition(eventPosition)
+                            .activityInstanceKey(eventKey)
+                            .tryWrite(writer);
+            }
         }
     }
 
@@ -659,23 +692,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     {
         private final DirectBuffer sourcePayload = new UnsafeBuffer(0, 0);
 
+        private boolean hasIncident;
+
         @Override
         public void processEvent()
         {
+            hasIncident = false;
+
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_ACTIVATED);
 
             final ServiceTask serviceTask = getCurrentActivity();
-            try
-            {
-                setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
-            }
-            catch (Exception e)
-            {
-                // update the map in any case because further processors based on it (#311 should improve behavior)
-                updateState();
-                // re-throw the exception to create the incident
-                throw e;
-            }
+            setWorkflowInstancePayload(serviceTask.getInputOutputMapping().getInputMappings());
         }
 
         private void setWorkflowInstancePayload(Mapping[] mappings)
@@ -684,16 +711,38 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             // only if we have no default mapping we have to use the mapping processor
             if (mappings.length > 0)
             {
-                final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
-                final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-                workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+                try
+                {
+                    final int resultLen = payloadMappingProcessor.extract(sourcePayload, mappings);
+                    final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+                    workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+                }
+                catch (MappingException e)
+                {
+                    incidentEventWriter
+                        .reset()
+                        .errorType(ErrorType.IO_MAPPING_ERROR)
+                        .errorMessage(e.getMessage());
+
+                    hasIncident = true;
+                }
             }
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeWorkflowEvent(writer.key(eventKey));
+            if (!hasIncident)
+            {
+                return writeWorkflowEvent(writer.key(eventKey));
+            }
+            else
+            {
+                return incidentEventWriter
+                        .failureEventPosition(eventPosition)
+                        .activityInstanceKey(eventKey)
+                        .tryWrite(writer);
+            }
         }
 
         @Override
@@ -710,7 +759,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setTaskKey(-1L)
                 .write();
 
-            if (!isNilPayload(sourcePayload))
+            if (!hasIncident && !isNilPayload(sourcePayload))
             {
                 payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), eventPosition, sourcePayload);
             }
@@ -846,11 +895,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityCompletingEventProcessor implements EventProcessor
     {
-        public static final String INCIDENT_ERROR_MSG_MISSING_TASK_PAYLOAD_ON_OUT_MAPPING = "Task was completed without an payload - processing of output mapping failed!";
+        private boolean hasIncident;
 
         @Override
         public void processEvent()
         {
+            hasIncident = false;
+
             workflowInstanceEvent.setState(WorkflowInstanceState.ACTIVITY_COMPLETED);
 
             final ServiceTask serviceTask = getCurrentActivity();
@@ -862,15 +913,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final DirectBuffer workflowInstancePayload = payloadCache.getPayload(workflowInstanceEvent.getWorkflowInstanceKey());
             final DirectBuffer taskPayload = workflowInstanceEvent.getPayload();
             final boolean isNilPayload = isNilPayload(taskPayload);
+
             if (mappings.length > 0)
             {
                 if (isNilPayload)
                 {
-                    throw new MappingException(INCIDENT_ERROR_MSG_MISSING_TASK_PAYLOAD_ON_OUT_MAPPING);
+                    incidentEventWriter
+                        .reset()
+                        .errorType(ErrorType.IO_MAPPING_ERROR)
+                        .errorMessage("Task was completed without an payload - processing of output mapping failed!");
+
+                    hasIncident = true;
                 }
-                final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, mappings);
-                final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
-                workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+                else
+                {
+                    mergePayload(mappings, workflowInstancePayload, taskPayload);
+                }
             }
             else if (isNilPayload)
             {
@@ -879,21 +937,53 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
 
+        private void mergePayload(Mapping[] mappings, final DirectBuffer workflowInstancePayload, final DirectBuffer taskPayload)
+        {
+            try
+            {
+                final int resultLen = payloadMappingProcessor.merge(taskPayload, workflowInstancePayload, mappings);
+                final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+                workflowInstanceEvent.setPayload(buffer, 0, resultLen);
+            }
+            catch (MappingException e)
+            {
+                incidentEventWriter
+                    .reset()
+                    .errorType(ErrorType.IO_MAPPING_ERROR)
+                    .errorMessage(e.getMessage());
+
+                hasIncident = true;
+            }
+        }
+
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeWorkflowEvent(writer.key(eventKey));
+            if (!hasIncident)
+            {
+                return writeWorkflowEvent(writer.key(eventKey));
+            }
+            else
+            {
+                return incidentEventWriter
+                        .failureEventPosition(eventPosition)
+                        .activityInstanceKey(eventKey)
+                        .tryWrite(writer);
+            }
         }
 
         @Override
         public void updateState()
         {
-            workflowInstanceIndex
-                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityKey(-1L)
-                .write();
+            if (!hasIncident)
+            {
+                workflowInstanceIndex
+                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .setActivityKey(-1L)
+                    .write();
 
-            activityInstanceMap.remove(eventKey);
+                activityInstanceMap.remove(eventKey);
+            }
         }
     }
 
