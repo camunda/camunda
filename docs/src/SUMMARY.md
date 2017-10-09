@@ -29,6 +29,8 @@
     * [Setup](java-client/setup.md)
     * [Get Started](java-client/get-started.md)
     * [Logging](java-client/logging.md)
+* [Go Client](go-client/README.md)
+    * [Get Started](go-client/get-started.md)
 * [Operations](operations/README.md)
     * [The zeebe.cfg.toml file](operations/the-zeebecfgtoml-file.md)
     * [Setting up a cluster](operations/setting-up-a-cluster.md)
