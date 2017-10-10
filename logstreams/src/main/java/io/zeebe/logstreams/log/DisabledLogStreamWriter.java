@@ -45,7 +45,7 @@ public class DisabledLogStreamWriter implements LogStreamWriter
     }
 
     @Override
-    public LogStreamWriter sourceEvent(final DirectBuffer logStreamTopicName, int logStreamPartitionId, long position)
+    public LogStreamWriter sourceEvent(int logStreamPartitionId, long position)
     {
         return this;
     }

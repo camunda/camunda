@@ -88,7 +88,7 @@ public interface LogStreamBatchWriter
     /**
      * Set the source event for all log entries.
      */
-    LogStreamBatchWriter sourceEvent(DirectBuffer logStreamTopicName, int logStreamPartitionId, long position);
+    LogStreamBatchWriter sourceEvent(int logStreamPartitionId, long position);
 
     /**
      * Set the producer id for all log entries.

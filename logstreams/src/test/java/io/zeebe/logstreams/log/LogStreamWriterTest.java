@@ -15,7 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.keyOffset;
@@ -23,12 +22,11 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.producerIdOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamPartitionIdOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameLengthOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -37,11 +35,6 @@ import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,6 +42,12 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.util.buffer.BufferWriter;
 
 public class LogStreamWriterTest
 {
@@ -107,7 +106,7 @@ public class LogStreamWriterTest
         assertThat(writeBuffer.getLong(positionOffset(MESSAGE_OFFSET))).isEqualTo(position);
 
         final byte[] valueBuffer = new byte[EVENT_VALUE.length];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(EVENT_VALUE);
     }
 
@@ -122,7 +121,7 @@ public class LogStreamWriterTest
             .tryWrite();
 
         final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_VALUE[1], EVENT_VALUE[2]});
     }
 
@@ -136,7 +135,7 @@ public class LogStreamWriterTest
             .valueWriter(mockBufferWriter)
             .tryWrite();
 
-        final int valueOffset = valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0);
+        final int valueOffset = valueOffset(MESSAGE_OFFSET, (short) 0);
         verify(mockBufferWriter).write(any(), eq(valueOffset));
     }
 
@@ -152,7 +151,7 @@ public class LogStreamWriterTest
             .tryWrite();
 
         final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
+        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_METADATA[3], EVENT_METADATA[4]});
     }
 
@@ -168,7 +167,7 @@ public class LogStreamWriterTest
             .valueWriter(mockBufferWriter)
             .tryWrite();
 
-        final int valueOffset = metadataOffset(MESSAGE_OFFSET, (short) 0);
+        final int valueOffset = metadataOffset(MESSAGE_OFFSET);
         verify(mockMetadataWriter).write(any(), eq(valueOffset));
     }
 
@@ -206,17 +205,11 @@ public class LogStreamWriterTest
         writer
             .positionAsKey()
             .value(new UnsafeBuffer(EVENT_VALUE))
-            .sourceEvent(TOPIC_NAME, PARTITION_ID, 3L)
+            .sourceEvent(PARTITION_ID, 3L)
             .tryWrite();
 
         assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(MESSAGE_OFFSET))).isEqualTo(PARTITION_ID);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
-
-        final short topicNameLength = writeBuffer.getShort(sourceEventLogStreamTopicNameLengthOffset(MESSAGE_OFFSET));
-        assertThat(topicNameLength).isEqualTo((short) TOPIC_NAME.capacity());
-
-        final DirectBuffer topicName = new UnsafeBuffer(writeBuffer, sourceEventLogStreamTopicNameOffset(MESSAGE_OFFSET), topicNameLength);
-        assertThat(topicName).isEqualTo(TOPIC_NAME);
     }
 
     @Test

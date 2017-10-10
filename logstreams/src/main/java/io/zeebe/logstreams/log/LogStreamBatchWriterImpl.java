@@ -15,8 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
@@ -26,21 +24,21 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamPartitionId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamTopicNameLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamTopicNameOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamPartitionId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
@@ -74,7 +72,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     private int producerId;
 
     private long sourceEventPosition;
-    private final DirectBuffer sourceEventLogStreamTopicName = new UnsafeBuffer(0, 0);
     private int sourceEventLogStreamPartitionId;
 
     private BufferWriter metadataWriter;
@@ -100,9 +97,8 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     }
 
     @Override
-    public LogStreamBatchWriter sourceEvent(final DirectBuffer logStreamTopicName, int logStreamPartitionId, long position)
+    public LogStreamBatchWriter sourceEvent(int logStreamPartitionId, long position)
     {
-        this.sourceEventLogStreamTopicName.wrap(logStreamTopicName);
         this.sourceEventLogStreamPartitionId = logStreamPartitionId;
         this.sourceEventPosition = position;
         return this;
@@ -251,8 +247,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
     private long claimBatchForEvents()
     {
-        final int topicNameLength = sourceEventLogStreamTopicName.capacity();
-        final int batchLength = eventLength + eventCount * (HEADER_BLOCK_LENGTH + topicNameLength);
+        final int batchLength = eventLength + (eventCount * HEADER_BLOCK_LENGTH);
 
         long claimedPosition = -1;
         do
@@ -280,8 +275,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
             final int valueLength = eventBuffer.getInt(eventBufferOffset);
             eventBufferOffset += SIZE_OF_INT;
 
-            final int topicNameLength = sourceEventLogStreamTopicName.capacity();
-            final int fragmentLength = headerLength(topicNameLength, metadataLength) + valueLength;
+            final int fragmentLength = headerLength(metadataLength) + valueLength;
 
             // allocate fragment for log entry
             final long nextFragmentPosition = claimedBatch.nextFragment(fragmentLength, logId);
@@ -297,22 +291,16 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
             setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
             setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
             setKey(writeBuffer, bufferOffset, keyToWrite);
-            setSourceEventLogStreamTopicNameLength(writeBuffer, bufferOffset, (short) topicNameLength);
             setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
-
-            if (topicNameLength > 0)
-            {
-                writeBuffer.putBytes(sourceEventLogStreamTopicNameOffset(bufferOffset), sourceEventLogStreamTopicName, 0, topicNameLength);
-            }
 
             if (metadataLength > 0)
             {
-                writeBuffer.putBytes(metadataOffset(bufferOffset, topicNameLength), eventBuffer, eventBufferOffset, metadataLength);
+                writeBuffer.putBytes(metadataOffset(bufferOffset), eventBuffer, eventBufferOffset, metadataLength);
                 eventBufferOffset += metadataLength;
             }
 
             // write log entry value
-            writeBuffer.putBytes(valueOffset(bufferOffset, topicNameLength, metadataLength), eventBuffer, eventBufferOffset, valueLength);
+            writeBuffer.putBytes(valueOffset(bufferOffset, metadataLength), eventBuffer, eventBufferOffset, valueLength);
             eventBufferOffset += valueLength;
 
             lastEventPosition = position;
@@ -327,7 +315,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
         eventLength = 0;
         eventCount = 0;
 
-        sourceEventLogStreamTopicName.wrap(0, 0);
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
 

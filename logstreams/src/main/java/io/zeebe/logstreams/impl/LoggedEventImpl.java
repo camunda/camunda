@@ -103,30 +103,6 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     }
 
     @Override
-    public int getSourceEventLogStreamTopicNameOffset()
-    {
-        return LogEntryDescriptor.sourceEventLogStreamTopicNameOffset(messageOffset);
-    }
-
-    @Override
-    public short getSourceEventLogStreamTopicNameLength()
-    {
-        return LogEntryDescriptor.getSourceEventLogStreamTopicNameLength(buffer, messageOffset);
-    }
-
-    @Override
-    public DirectBuffer getSourceEventLogStreamTopicName()
-    {
-        return buffer;
-    }
-
-    @Override
-    public void readSourceEventLogStreamTopicName(final BufferReader reader)
-    {
-        reader.wrap(buffer, getSourceEventLogStreamTopicNameOffset(), getSourceEventLogStreamTopicNameLength());
-    }
-
-    @Override
     public DirectBuffer getMetadata()
     {
         return buffer;
@@ -141,8 +117,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     @Override
     public int getMetadataOffset()
     {
-        final short topicNameLength = getSourceEventLogStreamTopicNameLength();
-        return LogEntryDescriptor.metadataOffset(messageOffset, topicNameLength);
+        return LogEntryDescriptor.metadataOffset(messageOffset);
     }
 
     @Override
@@ -154,18 +129,16 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     @Override
     public int getValueOffset()
     {
-        final short topicNameLength = getSourceEventLogStreamTopicNameLength();
         final short metadataLength = getMetadataLength();
-        return LogEntryDescriptor.valueOffset(messageOffset, topicNameLength, metadataLength);
+        return LogEntryDescriptor.valueOffset(messageOffset, metadataLength);
     }
 
     @Override
     public int getValueLength()
     {
-        final short topicNameLength = getSourceEventLogStreamTopicNameLength();
         final short metadataLength = getMetadataLength();
 
-        return getMessageLength() - headerLength(topicNameLength, metadataLength);
+        return getMessageLength() - headerLength(metadataLength);
     }
 
     @Override

@@ -34,31 +34,6 @@ public interface LoggedEvent
     int getRaftTerm();
 
     /**
-     * @return the offset of the log stream topic name of the event which caused this event
-     */
-    int getSourceEventLogStreamTopicNameOffset();
-
-    /**
-     * @return the length the log stream topic name of the event which caused this event
-     */
-    short getSourceEventLogStreamTopicNameLength();
-
-    /**
-     * @return a buffer containing the log stream topic name of the event which caused this event
-     *          at offset {@link #getSourceEventLogStreamTopicNameOffset()}
-     *          and with length {@link #getSourceEventLogStreamTopicNameLength()}.
-     */
-    DirectBuffer getSourceEventLogStreamTopicName();
-
-    /**
-     * Wraps the given buffer to read the log stream topic name of the event which caused this event
-     *
-     * @param reader
-     *          the reader to read into
-     */
-    void readSourceEventLogStreamTopicName(BufferReader reader);
-
-    /**
      * @return the log stream topic partition id of the event which causes this event. Returns a
      *         negative value if no such an event exists.
      */

@@ -29,7 +29,7 @@ public interface LogStreamWriter
 
     LogStreamWriter raftTermId(int termId);
 
-    LogStreamWriter sourceEvent(DirectBuffer logStreamTopicName, int logStreamPartitionId, long position);
+    LogStreamWriter sourceEvent(int logStreamPartitionId, long position);
 
     LogStreamWriter producerId(int producerId);
 

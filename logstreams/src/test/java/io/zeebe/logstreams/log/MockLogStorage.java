@@ -15,12 +15,25 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamPartitionId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.log.LogStreamUtil.MAX_READ_EVENT_SIZE;
-import static io.zeebe.util.StringUtil.getBytes;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,9 +41,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
-import io.zeebe.logstreams.spi.LogStorage;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.mockito.invocation.InvocationOnMock;
+
+import io.zeebe.logstreams.spi.LogStorage;
 
 public class MockLogStorage
 {
@@ -81,7 +95,6 @@ public class MockLogStorage
         private long position = 0;
         private int raftTerm = -1;
 
-        private byte[] sourceEventLogStreamTopicName = null;
         private int sourceEventLogStreamPartitionId = 1;
         private long sourceEventPosition = -1L;
 
@@ -94,7 +107,6 @@ public class MockLogStorage
 
         private byte[] metadata = null;
         private short metadataLength = 0;
-        private short topicNameLength = 0;
 
         private final int amount;
         private boolean partlyRead;
@@ -122,12 +134,6 @@ public class MockLogStorage
         public MockLogEntryBuilder maxPosition(long position)
         {
             this.maxPosition = position;
-            return this;
-        }
-
-        public MockLogEntryBuilder sourceEventLogStreamTopicName(String topicName)
-        {
-            this.sourceEventLogStreamTopicName = getBytes(topicName);
             return this;
         }
 
@@ -207,9 +213,8 @@ public class MockLogStorage
 
         private void preBuild()
         {
-            topicNameLength = (short) (sourceEventLogStreamTopicName != null ? sourceEventLogStreamTopicName.length : 0);
             metadataLength = (short) (metadata != null ? metadata.length : 0);
-            final int headerLength = headerLength(topicNameLength, metadataLength);
+            final int headerLength = headerLength(metadataLength);
 
             // min. message length
             messageLength = Math.max(messageLength, headerLength);
@@ -278,7 +283,6 @@ public class MockLogStorage
             setSourceEventLogStreamPartitionId(buffer, offset, sourceEventLogStreamPartitionId);
             setSourceEventPosition(buffer, offset, sourceEventPosition);
             setKey(buffer, offset, key);
-            setSourceEventLogStreamTopicNameLength(buffer, offset, topicNameLength);
             setMetadataLength(buffer, offset, metadataLength);
 
             byteBuffer.position(byteBuffer.limit());
@@ -295,21 +299,16 @@ public class MockLogStorage
 
             if (offset < byteBuffer.limit())
             {
-                if (sourceEventLogStreamTopicNameOffset(offset) < byteBuffer.limit())
+                if (metadataOffset(offset) < byteBuffer.limit())
                 {
-                    if (sourceEventLogStreamTopicName != null)
-                    {
-                        buffer.putBytes(sourceEventLogStreamTopicNameOffset(offset), sourceEventLogStreamTopicName);
-                    }
-
                     if (metadata != null)
                     {
-                        buffer.putBytes(metadataOffset(offset, topicNameLength), metadata);
+                        buffer.putBytes(metadataOffset(offset), metadata);
                     }
 
                     if (value != null)
                     {
-                        final int valueOffset = valueOffset(offset, topicNameLength, metadataLength);
+                        final int valueOffset = valueOffset(offset, metadataLength);
                         final byte[] valueToWrite = Arrays.copyOf(value, Math.min(value.length, byteBuffer.limit() - valueOffset));
                         buffer.putBytes(valueOffset, valueToWrite);
                     }
@@ -343,22 +342,16 @@ public class MockLogStorage
                     if (keyOffset(messageOffset) < byteBuffer.limit())
                     {
                         setKey(buffer, messageOffset, key + i);
-                        setSourceEventLogStreamTopicNameLength(buffer, messageOffset, topicNameLength);
                         setMetadataLength(buffer, messageOffset, metadataLength);
-
-                        if (sourceEventLogStreamTopicName != null)
-                        {
-                            buffer.putBytes(sourceEventLogStreamTopicNameOffset(messageOffset), sourceEventLogStreamTopicName);
-                        }
 
                         if (metadata != null)
                         {
-                            buffer.putBytes(metadataOffset(messageOffset, topicNameLength), metadata);
+                            buffer.putBytes(metadataOffset(messageOffset), metadata);
                         }
 
                         if (value != null)
                         {
-                            final int valueOffset = valueOffset(messageOffset, topicNameLength, metadataLength);
+                            final int valueOffset = valueOffset(messageOffset, metadataLength);
                             final byte[] valueToWrite = Arrays.copyOf(value, Math.min(value.length, byteBuffer.limit() - valueOffset));
                             buffer.putBytes(valueOffset, valueToWrite);
                         }

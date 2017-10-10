@@ -767,7 +767,7 @@ public class StreamProcessorIntegrationTest
                 {
                     return batchWriter
                         .producerId(STREAM_PROCESSOR_ID)
-                        .sourceEvent(sourceLogStream.getTopicName(), sourceLogStream.getPartitionId(), event.getPosition())
+                        .sourceEvent(sourceLogStream.getPartitionId(), event.getPosition())
                         .event()
                             .key(1L)
                             .value(wrapString("event-1"))

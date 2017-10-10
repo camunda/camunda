@@ -600,7 +600,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        verify(mockLogStreamWriter).sourceEvent(SOURCE_LOG_STREAM_TOPIC_NAME, SOURCE_LOG_STREAM_PARTITION_ID, 4L);
+        verify(mockLogStreamWriter).sourceEvent(SOURCE_LOG_STREAM_PARTITION_ID, 4L);
     }
 
     @Test

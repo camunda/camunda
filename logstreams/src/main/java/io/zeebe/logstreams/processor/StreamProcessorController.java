@@ -343,7 +343,7 @@ public class StreamProcessorController implements Actor
             logStreamWriter
                 .producerId(streamProcessorContext.getId())
                 .raftTermId(targetStream.getTerm())
-                .sourceEvent(sourceStream.getTopicName(), sourceStream.getPartitionId(), context.getEvent().getPosition());
+                .sourceEvent(sourceStream.getPartitionId(), context.getEvent().getPosition());
 
             eventPosition = eventProcessor.writeEvent(logStreamWriter);
             return eventPosition >= 0;

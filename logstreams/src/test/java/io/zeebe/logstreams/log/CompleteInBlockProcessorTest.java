@@ -41,7 +41,7 @@ public class CompleteInBlockProcessorTest
 {
     private static final int SEGMENT_SIZE = 1024 * 16;
 
-    protected static final int LENGTH = headerLength(0, 0);
+    protected static final int LENGTH = headerLength(0);
     protected static final int ALIGNED_LEN = alignedLength(LENGTH);
 
     @Rule
@@ -82,7 +82,7 @@ public class CompleteInBlockProcessorTest
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(idx, headerLength(0, 256)); // aligned size: 48
+        directBuffer.putInt(idx, headerLength(256)); // aligned size: 48
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         fsLogStorage.open();
@@ -214,7 +214,7 @@ public class CompleteInBlockProcessorTest
     public void shouldTruncateBufferOnHalfBufferWasRead()
     {
         // given buffer
-        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(0, 256)));
+        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(256)));
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);

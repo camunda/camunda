@@ -15,10 +15,15 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static org.agrona.BitUtil.*;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
-import org.agrona.*;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  *  * <pre>
@@ -42,9 +47,7 @@ import org.agrona.*;
  *  |                               KEY                             |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |        TOPIC NAME LENGTH       |       METADATA LENGTH        |
- *  +---------------------------------------------------------------+
- *  |              ...SOURCE EVENT STREAM TOPIC NAME...             |
+ *  |        METADATA LENGTH         |       unused                 |
  *  +---------------------------------------------------------------+
  *  |                         ...METADATA...                        |
  *  +---------------------------------------------------------------+
@@ -71,13 +74,11 @@ public class LogEntryDescriptor
 
     public static final int KEY_OFFSET;
 
-    public static final int SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET;
-
     public static final int METADATA_LENGTH_OFFSET;
 
     public static final int HEADER_BLOCK_LENGTH;
 
-    public static final int SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET;
+    public static final int METADATA_OFFSET;
 
     static
     {
@@ -107,15 +108,13 @@ public class LogEntryDescriptor
         KEY_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
-        SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_SHORT;
-
         METADATA_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_SHORT;
         offset += SIZE_OF_SHORT;
 
         HEADER_BLOCK_LENGTH = offset;
 
-        SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET = offset;
+        METADATA_OFFSET = offset;
     }
 
     public static int getFragmentLength(final DirectBuffer buffer, final int offset)
@@ -123,9 +122,9 @@ public class LogEntryDescriptor
         return alignedLength(buffer.getInt(lengthOffset(offset)));
     }
 
-    public static int headerLength(final int topicNameLength, final int metadataLength)
+    public static int headerLength(final int metadataLength)
     {
-        return HEADER_BLOCK_LENGTH + topicNameLength + metadataLength;
+        return HEADER_BLOCK_LENGTH + metadataLength;
     }
 
     public static int positionOffset(final int offset)
@@ -219,21 +218,6 @@ public class LogEntryDescriptor
         buffer.putLong(keyOffset(offset), key);
     }
 
-    public static int sourceEventLogStreamTopicNameLengthOffset(final int offset)
-    {
-        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET + offset;
-    }
-
-    public static short getSourceEventLogStreamTopicNameLength(final DirectBuffer buffer, final int offset)
-    {
-        return buffer.getShort(sourceEventLogStreamTopicNameLengthOffset(offset));
-    }
-
-    public static void setSourceEventLogStreamTopicNameLength(final MutableDirectBuffer buffer, final int offset, final short sourceEventLogStreamTopicNameLength)
-    {
-        buffer.putShort(sourceEventLogStreamTopicNameLengthOffset(offset), sourceEventLogStreamTopicNameLength);
-    }
-
     public static int metadataLengthOffset(final int offset)
     {
         return METADATA_LENGTH_OFFSET + offset;
@@ -249,19 +233,14 @@ public class LogEntryDescriptor
         buffer.putShort(metadataLengthOffset(offset), metadataLength);
     }
 
-    public static int sourceEventLogStreamTopicNameOffset(final int offset)
+    public static int metadataOffset(final int offset)
     {
-        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + offset;
+        return METADATA_OFFSET + offset;
     }
 
-    public static int metadataOffset(final int offset, final int sourceEventLogStreamTopicNameLength)
+    public static int valueOffset(final int offset, final int metadataLength)
     {
-        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + sourceEventLogStreamTopicNameLength + offset;
-    }
-
-    public static int valueOffset(final int offset, final int sourceEventLogStreamTopicNameLength, final int metadataLength)
-    {
-        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + sourceEventLogStreamTopicNameLength + metadataLength + offset;
+        return METADATA_OFFSET + metadataLength + offset;
     }
 
 }

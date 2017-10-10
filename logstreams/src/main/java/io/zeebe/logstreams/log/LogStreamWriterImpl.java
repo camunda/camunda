@@ -15,16 +15,29 @@
  */
 package io.zeebe.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamPartitionId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import org.agrona.*;
-import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.*;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.MutableDirectBuffer;
+
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.buffer.*;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class LogStreamWriterImpl implements LogStreamWriter
 {
@@ -40,7 +53,6 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected int raftTermId;
 
     protected long sourceEventPosition = -1L;
-    protected DirectBuffer sourceEventLogStreamTopicName = new UnsafeBuffer(0, 0);
     protected int sourceEventLogStreamPartitionId = -1;
 
     protected int producerId = -1;
@@ -91,9 +103,8 @@ public class LogStreamWriterImpl implements LogStreamWriter
     }
 
     @Override
-    public LogStreamWriter sourceEvent(final DirectBuffer logStreamTopicName, int logStreamPartitionId, long position)
+    public LogStreamWriter sourceEvent(int logStreamPartitionId, long position)
     {
-        this.sourceEventLogStreamTopicName.wrap(logStreamTopicName);
         this.sourceEventLogStreamPartitionId = logStreamPartitionId;
         this.sourceEventPosition = position;
         return this;
@@ -152,7 +163,6 @@ public class LogStreamWriterImpl implements LogStreamWriter
         key = -1L;
         metadataWriter = metadataWriterInstance;
         valueWriter = null;
-        sourceEventLogStreamTopicName.wrap(0, 0);
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
         producerId = -1;
@@ -174,11 +184,10 @@ public class LogStreamWriterImpl implements LogStreamWriter
         long result = -1;
 
         final int valueLength = valueWriter.getLength();
-        final int topicNameLength = sourceEventLogStreamTopicName.capacity();
         final int metadataLength = metadataWriter.getLength();
 
         // claim fragment in log write buffer
-        final long claimedPosition = claimLogEntry(valueLength, topicNameLength, metadataLength);
+        final long claimedPosition = claimLogEntry(valueLength, metadataLength);
 
         if (claimedPosition >= 0)
         {
@@ -196,21 +205,15 @@ public class LogStreamWriterImpl implements LogStreamWriter
                 setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
                 setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
                 setKey(writeBuffer, bufferOffset, keyToWrite);
-                setSourceEventLogStreamTopicNameLength(writeBuffer, bufferOffset, (short) topicNameLength);
                 setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
-
-                if (topicNameLength > 0)
-                {
-                    writeBuffer.putBytes(sourceEventLogStreamTopicNameOffset(bufferOffset), sourceEventLogStreamTopicName, 0, topicNameLength);
-                }
 
                 if (metadataLength > 0)
                 {
-                    metadataWriter.write(writeBuffer, metadataOffset(bufferOffset, topicNameLength));
+                    metadataWriter.write(writeBuffer, metadataOffset(bufferOffset));
                 }
 
                 // write log entry
-                valueWriter.write(writeBuffer, valueOffset(bufferOffset, topicNameLength, metadataLength));
+                valueWriter.write(writeBuffer, valueOffset(bufferOffset, metadataLength));
 
                 result = claimedPosition;
                 claimedFragment.commit();
@@ -229,9 +232,9 @@ public class LogStreamWriterImpl implements LogStreamWriter
         return result;
     }
 
-    private long claimLogEntry(final int valueLength, final int topicNameLength, final int metadataLength)
+    private long claimLogEntry(final int valueLength, final int metadataLength)
     {
-        final int framedLength = valueLength + headerLength(topicNameLength, metadataLength);
+        final int framedLength = valueLength + headerLength(metadataLength);
 
         long claimedPosition = -1;
 
