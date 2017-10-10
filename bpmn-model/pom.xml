@@ -16,8 +16,8 @@
 
 
   <properties>
-    <version.util>0.3.0</version.util>
-    <version.msgpack>0.3.0</version.msgpack>
+    <version.util>0.4.0-SNAPSHOT</version.util>
+    <version.msgpack>0.4.0-SNAPSHOT</version.msgpack>
   </properties>
 
   <dependencies>
