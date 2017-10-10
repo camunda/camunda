@@ -17,11 +17,8 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -101,8 +98,6 @@ public class TypedStreamProcessorTest
         // then
         assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
 
-        assertThatBuffer(writtenEvent.getSourceEventLogStreamTopicName())
-            .hasBytes(STREAM_NAME.getBytes(StandardCharsets.UTF_8), writtenEvent.getSourceEventLogStreamTopicNameOffset());
         assertThat(writtenEvent.getSourceEventLogStreamPartitionId()).isEqualTo(stream.getPartitionId());
         assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
     }

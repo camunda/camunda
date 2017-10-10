@@ -20,8 +20,6 @@ package io.zeebe.broker.logstreams.processor;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
@@ -44,7 +42,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     protected LogStreamBatchWriter batchWriter;
 
     protected int producerId;
-    protected DirectBuffer sourceTopicName;
     protected int sourcePartitionId;
     protected long sourcePosition;
 
@@ -60,10 +57,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         eventRegistry.forEach((e, c) -> typeRegistry.put(c, e));
     }
 
-    public void configureSourceContext(int producerId, DirectBuffer sourceTopicName, int sourcePartitionId, long sourcePosition)
+    public void configureSourceContext(int producerId, int sourcePartitionId, long sourcePosition)
     {
         this.producerId = producerId;
-        this.sourceTopicName = sourceTopicName;
         this.sourcePartitionId = sourcePartitionId;
         this.sourcePosition = sourcePosition;
     }
@@ -75,9 +71,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         writer.raftTermId(stream.getTerm());
         writer.producerId(producerId);
 
-        if (sourceTopicName != null)
+        if (sourcePartitionId >= 0)
         {
-            writer.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+            writer.sourceEvent(sourcePartitionId, sourcePosition);
         }
 
         initMetadata(event);
@@ -156,9 +152,9 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         batchWriter.producerId(producerId);
         batchWriter.raftTermId(stream.getTerm());
 
-        if (sourceTopicName != null)
+        if (sourcePartitionId >= 0)
         {
-            batchWriter.sourceEvent(sourceTopicName, sourcePartitionId, sourcePosition);
+            batchWriter.sourceEvent(sourcePartitionId, sourcePosition);
         }
 
         return this;

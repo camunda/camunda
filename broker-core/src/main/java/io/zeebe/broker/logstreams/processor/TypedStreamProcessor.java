@@ -203,7 +203,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
         public long writeEvent(LogStreamWriter writer)
         {
-            this.writer.configureSourceContext(streamProcessorId, sourceStream.getTopicName(), sourceStream.getPartitionId(), event.getPosition());
+            this.writer.configureSourceContext(streamProcessorId, sourceStream.getPartitionId(), event.getPosition());
             return eventProcessor.writeEvent(event, this.writer);
         }
 

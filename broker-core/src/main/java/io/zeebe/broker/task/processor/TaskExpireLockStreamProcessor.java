@@ -23,10 +23,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import io.zeebe.protocol.Protocol;
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
@@ -39,7 +35,9 @@ import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.time.ClockUtil;
 
@@ -63,7 +61,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected LogStreamWriter targetLogStreamWriter;
 
     protected LogStream targetStream;
-    protected DirectBuffer targetLogStreamTopicName;
     protected int targetLogStreamPartitionId;
     protected int streamProcessorId;
 
@@ -89,7 +86,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         targetLogStreamWriter = context.getLogStreamWriter();
 
         targetStream = context.getTargetStream();
-        targetLogStreamTopicName = targetStream.getTopicName();
         targetLogStreamPartitionId = targetStream.getPartitionId();
 
         // restore map from snapshot
@@ -250,7 +246,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
             final long position = targetLogStreamWriter
                     .producerId(streamProcessorId)
-                    .sourceEvent(targetLogStreamTopicName, targetLogStreamPartitionId, lockedEvent.getPosition())
+                    .sourceEvent(targetLogStreamPartitionId, lockedEvent.getPosition())
                     .key(eventKey)
                     .metadataWriter(targetEventMetadata)
                     .valueWriter(taskEvent)

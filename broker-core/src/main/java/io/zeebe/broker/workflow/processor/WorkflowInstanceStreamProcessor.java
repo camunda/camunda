@@ -105,7 +105,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected LogStreamBatchWriter logStreamBatchWriter;
     protected IncidentEventWriter incidentEventWriter;
 
-    protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
     protected int streamProcessorId;
     protected long eventKey;
@@ -156,7 +155,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     public void onOpen(StreamProcessorContext context)
     {
         final LogStream sourceStream = context.getSourceStream();
-        this.logStreamTopicName = sourceStream.getTopicName();
         this.logStreamPartitionId = sourceStream.getPartitionId();
         this.streamProcessorId = context.getId();
 
@@ -1026,7 +1024,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             logStreamBatchWriter
                 .producerId(streamProcessorId)
                 .raftTermId(targetStream.getTerm())
-                .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
+                .sourceEvent(logStreamPartitionId, eventPosition);
 
             if (taskKey > 0)
             {

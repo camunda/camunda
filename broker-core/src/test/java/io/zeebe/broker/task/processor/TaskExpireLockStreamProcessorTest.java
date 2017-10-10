@@ -148,7 +148,7 @@ public class TaskExpireLockStreamProcessorTest
 
         verify(mockLogStreamWriter).key(2L);
         verify(mockLogStreamWriter).producerId(STREAM_PROCESSOR_ID);
-        verify(mockLogStreamWriter).sourceEvent(TARGET_LOG_STREAM_TOPIC_NAME, TARGET_LOG_STREAM_PARTITION_ID, INITIAL_POSITION);
+        verify(mockLogStreamWriter).sourceEvent(TARGET_LOG_STREAM_PARTITION_ID, INITIAL_POSITION);
     }
 
     @Test

@@ -60,7 +60,6 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
 
     protected final ArrayList<DeployedWorkflow> deployedWorkflows = new ArrayList<>();
 
-    protected DirectBuffer logStreamTopicName;
     protected int logStreamPartitionId;
 
     protected LogStream targetStream;
@@ -88,7 +87,6 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
     public void onOpen(StreamProcessorContext context)
     {
         final LogStream sourceStream = context.getSourceStream();
-        logStreamTopicName = sourceStream.getTopicName();
         logStreamPartitionId = sourceStream.getPartitionId();
 
         streamProcessorId = context.getId();
@@ -231,7 +229,7 @@ public class DeploymentStreamProcessor implements StreamProcessor, EventProcesso
         logStreamBatchWriter
             .raftTermId(targetStream.getTerm())
             .producerId(streamProcessorId)
-            .sourceEvent(logStreamTopicName, logStreamPartitionId, eventPosition);
+            .sourceEvent(logStreamPartitionId, eventPosition);
 
         // write deployment event
         targetEventMetadata.reset();
