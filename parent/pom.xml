@@ -376,7 +376,7 @@
     <url>https://github.com/zeebe-io/zb-parent</url>
     <connection>scm:git:git@github.com:zeebe-io/zb-parent.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zb-parent.git</developerConnection>
-    <tag>0.1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
