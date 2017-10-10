@@ -1,8 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import moment from 'moment';
 import {
-  createStartDateFilter, formatDate, sortDates,
+  createStartDateFilter, formatDate,
   __set__, __ResetDependency__
 } from 'main/processDisplay/controls/filter/date/service';
 
@@ -64,28 +63,6 @@ describe('Date Filter service', () => {
       });
 
       expect(formatted).to.eql('2017-02-15T23:59:59');
-    });
-  });
-
-  describe('sortDates', () => {
-    it('should not change order of start and end dates if those are in correct order', () => {
-      const {start, end} = sortDates({
-        start: moment([2015, 3, 12]), // just reminder 0 is January
-        end: moment([2017, 8, 9])
-      });
-
-      expect(start.format('YYYY-MM-DD')).to.eql('2015-04-12');
-      expect(end.format('YYYY-MM-DD')).to.eql('2017-09-09');
-    });
-
-    it('should change order of start and end dates if those are not in correct order', () => {
-      const {start, end} = sortDates({
-        start: moment([2017, 8, 9]),
-        end: moment([2015, 3, 12])
-      });
-
-      expect(start.format('YYYY-MM-DD')).to.eql('2015-04-12');
-      expect(end.format('YYYY-MM-DD')).to.eql('2017-09-09');
     });
   });
 });

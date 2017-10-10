@@ -1,6 +1,5 @@
 import React from 'react';
 import {Calendar} from 'react-date-range';
-import {sortDates} from './service';
 
 const jsx = React.createElement;
 
@@ -14,6 +13,9 @@ const theme = {
   },
   DaySelected: {
     background: '#871020'
+  },
+  DayPassive: {
+    cursor: 'default'
   }
 };
 
@@ -21,7 +23,7 @@ export class DateRange extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = this.sortRange({
+    this.state = this.adjustRange({
       startLink: this.props.startDate.clone(),
       endLink: this.props.endDate.clone()
     });
@@ -36,65 +38,87 @@ export class DateRange extends React.Component {
     return <div>
       <Calendar format="this.props.format"
               link={this.state.startLink}
-              linkCB={this.changeMonth('startLink')}
+              linkCB={this.changeStartMonth}
               range={range}
               theme={theme}
+              minDate={this.props.minDate}
+              maxDate={this.props.maxDate}
               firstDayOfWeek={1}
-              onChange={this.getDateSetter('startDate')} />
+              onChange={this.props.onDateChange}
+              classNames={this.getClassesForCalendar(true)} />
 
       <Calendar format="this.props.format"
               link={this.state.endLink}
-              linkCB={this.changeMonth('endLink')}
+              linkCB={this.changeEndMonth}
               theme={theme}
               range={range}
+              minDate={this.props.minDate}
+              maxDate={this.props.maxDate}
               firstDayOfWeek={1}
-              onChange={this.getDateSetter('endDate')} />
+              onChange={this.props.onDateChange}
+              classNames={this.getClassesForCalendar(false)} />
     </div>;
   }
 
-  getDateSetter = name => date => this.props.onDateChange(name, date)
+  getClassesForCalendar(first) {
+    if (first && this.state.innerArrowsDisabled) {
+      return {
+        nextButton: 'hidden'
+      };
+    }
+
+    if (!first && this.state.innerArrowsDisabled) {
+      return {
+        prevButton: 'hidden'
+      };
+    }
+  }
 
   componentWillReceiveProps(newProps) {
     this.setState(
-      this.sortRange({
+      this.adjustRange({
         startLink: newProps.startDate.clone(),
         endLink: newProps.endDate.clone()
       })
     );
   }
 
-  sortRange({startLink, endLink, startDate, endDate}) {
-    const {start: newStartLink, end: newEndLink} = sortDates({
-      start: startLink,
-      end: endLink
-    });
+  adjustRange({startLink, endLink}) {
+    if (startLink.startOf('month').isSame(endLink.startOf('month'))) {
+      endLink.add(1, 'months');
+    }
 
     return {
-      startLink: newStartLink,
-      endLink: newEndLink
+      startLink: startLink,
+      endLink: endLink,
+      innerArrowsDisabled: this.shouldDisableInnerArrows(startLink, endLink)
     };
   }
 
-  changeMonth = name => {
-    return direction => {
-      const newLink = this.state[name]
-        .clone()
-        .add(direction, 'months');
-      const beforeStart = name === 'endLink' && newLink.isBefore(this.state.startLink);
-      const afterEnd = name === 'startLink' && newLink.isAfter(this.state.endLink);
+  changeStartMonth = direction => this.changeMonth('startLink', direction);
 
-      if (beforeStart || afterEnd) {
-        return this.setState({
-          ...this.state,
-          'startLink': newLink,
-          'endLink': newLink
-        });
-      }
+  changeEndMonth = direction => this.changeMonth('endLink', direction);
 
-      this.setState({
+  changeMonth = (name, direction) => {
+    const newLink = this.state[name]
+      .clone()
+      .add(direction, 'months');
+
+    this.setState(
+      this.adjustRange({
         ...this.state,
         [name]: newLink
-      });
-    };
+      })
+    );
+  }
+
+  shouldDisableInnerArrows(startLink, endLink) {
+    return startLink
+      .clone()
+      .add(1, 'months')
+      .startOf('month')
+      .isSame(
+        endLink.startOf('month')
+      );
   }
 }

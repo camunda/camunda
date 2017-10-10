@@ -1,14 +1,16 @@
 import React from 'react';
 import {observeFunction} from './observeFunction';
 
-const jsx = React.createElement;
-
-export function createReactMock(text, applyChildren) {
+export function createReactMock(text, applyChildren, element = 'div') {
   const Component = observeFunction(({children}) => {
-    return <div className={text}>
-      {text}
-      {applyChildren ? children : null}
-    </div>;
+    return React.createElement(
+      element,
+      {
+        className: text
+      },
+      text,
+      applyChildren ? children : null
+    );
   });
 
   Component.text = text;

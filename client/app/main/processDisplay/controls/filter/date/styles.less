@@ -1,11 +1,3 @@
-.error {
-  border-color: red;
-
-  &:focus {
-    border-color: red;
-  }
-}
-
 .start {
   border-right-width: 0;
 }
@@ -20,5 +12,85 @@
   button {
     flex: auto;
     margin: 0 1px;
+  }
+}
+
+.date-fields {
+  position: relative;
+}
+
+.date-fields-range {
+  position: absolute;
+  left: 0;
+  top: 50px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: white;
+  padding: 5px 0;
+
+  &::before {
+    content: ' ';
+    display: block;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    transform: rotate(45deg);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background-color: white;
+    top: -10px
+  }
+
+  &::after {
+    content: ' ';
+    display: block;
+    width: 50px;
+    height: 22px;
+    position: absolute;
+    background-color: white;
+    top: 0;
+  }
+
+  &.left-side {
+    &::before {
+      left: 20px;
+    }
+
+    &::after {
+      left: 0;
+    }
+  }
+
+  &.right-side {
+    &::before {
+      right: 20px;
+    }
+
+    &::after {
+      right: 0;
+    }
+  }
+}
+
+@date-highlight-color: rgb(0, 145, 255);
+
+.date-field-highlight {
+  border-color: @date-highlight-color;
+  background-color: fade(@date-highlight-color, 10%);
+
+  &:hover, &:focus {
+    border-color: @date-highlight-color;
+  }
+}
+
+.error {
+  border-color: red;
+
+  &:focus {
+    border-color: red;
+  }
+
+  &.date-field-highlight {
+    border-color: red;
   }
 }

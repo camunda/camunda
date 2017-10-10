@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import {onNextTick} from 'utils';
 
 const jsx = React.createElement;
 
@@ -13,14 +14,14 @@ export class DateInput extends React.PureComponent {
     };
   }
 
-  componentWillReceiveProps(newProps) {
-    const newStringDate = newProps.date.format(this.props.format);
+  componentWillReceiveProps({date, format}) {
+    const newStringDate = date.format(format);
 
     // prevents unnecessary state change
     if (this.state.stringDate !== newStringDate) {
       this.setState({
-        ...this.state,
-        stringDate: newStringDate
+        stringDate: newStringDate,
+        error: false
       });
     }
   }
@@ -29,7 +30,15 @@ export class DateInput extends React.PureComponent {
     return <input type="text"
                   className={this.props.className + (this.state.error ? ' error' : '')}
                   value={this.state.stringDate}
+                  onClick={this.onClick}
                   onChange={this.onInputChange} />;
+  }
+
+  onClick = event => {
+    // onClick property is optional, so there need to be safeguard
+    if (typeof this.props.onClick === 'function') {
+      this.props.onClick(event);
+    }
   }
 
   onInputChange = event => {
@@ -37,13 +46,13 @@ export class DateInput extends React.PureComponent {
     const date = moment(value, this.props.format);
     const isValid = date.isValid() && date.format(this.props.format) === value;
 
-    if (!date.isSame(this.props.date) && isValid) {
-      this.props.onDateChange(date);
-    }
-
     this.setState({
       stringDate: value,
       error: !isValid
     });
+
+    if (!date.isSame(this.props.date) && isValid) {
+      onNextTick(() => this.props.onDateChange(date));
+    }
   }
 }

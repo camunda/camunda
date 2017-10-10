@@ -3,7 +3,7 @@ import chai from 'chai';
 import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import moment from 'moment';
-import {DateInput} from 'main/processDisplay/controls/filter/date/DateInput';
+import {DateInput, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/date/DateInput';
 import {mount} from 'enzyme';
 
 chai.use(chaiEnzyme());
@@ -15,12 +15,21 @@ describe('main/processDisplay/controls/filter/date <DateInput>', () => {
   const format = 'YYYY-MM-DD';
   let date;
   let onDateChange;
+  let onNextTick;
   let wrapper;
 
   beforeEach(() => {
     date = moment('2015-03-25', format);
     onDateChange = sinon.spy();
+
+    onNextTick = sinon.stub().callsArg(0);
+    __set__('onNextTick', onNextTick);
+
     wrapper = mount(<DateInput date={date} onDateChange={onDateChange} format={format} />);
+  });
+
+  afterEach(() => {
+    __ResetDependency__('onNextTick');
   });
 
   it('should create text input field', () => {

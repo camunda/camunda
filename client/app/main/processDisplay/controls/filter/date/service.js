@@ -23,14 +23,3 @@ export function formatDate(dateObj, {endOfDay, withTime} = {}) {
     return date.format(FORMAT);
   }
 }
-
-export function sortDates({start, end}) {
-  if (start.isBefore(end)) {
-    return {start, end};
-  }
-
-  return {
-    start: end,
-    end: start
-  };
-}

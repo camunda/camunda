@@ -3,12 +3,11 @@ import Modal from 'react-bootstrap/lib/Modal';
 import {onNextTick, withState} from 'utils';
 import moment from 'moment';
 import {createViewUtilsComponentFromReact} from 'reactAdapter';
-import {createStartDateFilter, sortDates, formatDate, FORMAT} from './service';
+import {createStartDateFilter, formatDate, FORMAT} from './service';
 import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
         LAST_WEEK, LAST_MONTH, LAST_YEAR,
         THIS_WEEK, THIS_MONTH, THIS_YEAR} from './DateButton';
-import {DateRange} from './DateRange';
-import {DateInput} from './DateInput';
+import {DateFields} from './DateFields';
 
 const jsx = React.createElement;
 
@@ -33,41 +32,27 @@ export function createDateModalReact(createCallback) {
             <button type="button" className="close" onClick={this.close}>
               <span>×</span>
             </button>
-            <h4 className="modal-title">New Date Filter</h4>
+            <h4 className="modal-title">Start Date Filter</h4>
           </Modal.Header>
           <Modal.Body>
             <form>
-              <span className="label">Start Date Filter:</span>
-              <center>
-                <div className="input-group input-daterange">
-                  <DateInput className="form-control start"
-                             format={FORMAT}
-                             onDateChange={this.getDateSetter('startDate')}
-                             date={this.state.startDate} />
-                  <span className="input-group-addon">to</span>
-                  <DateInput className="form-control end"
-                             format={FORMAT}
-                             onDateChange={this.getDateSetter('endDate')}
-                             date={this.state.endDate} />
-                </div>
-                <DateRange
-                    format={FORMAT}
-                    onDateChange={this.onDateChange}
-                    startDate={this.state.startDate}
-                    endDate={this.state.endDate} />
-              </center>
-                <div className="form-group">
-                  <span className="label">Frequently Used:</span>
-                  <p className="button-row">
-                    {this.getDateButtons([TODAY, YESTERDAY, PAST7, PAST30])}
-                  </p>
-                  <p className="button-row">
-                    {this.getDateButtons([LAST_WEEK, LAST_MONTH, LAST_YEAR])}
-                  </p>
-                  <p className="button-row">
-                    {this.getDateButtons([THIS_WEEK, THIS_MONTH, THIS_YEAR])}
-                  </p>
-                </div>
+              <span>Select beginning and end dates for filter</span>
+              <DateFields format={FORMAT}
+                          onDateChange={this.onDateChange}
+                          startDate={this.state.startDate}
+                          endDate={this.state.endDate} />
+              <div className="form-group">
+                <span className="label">Frequently Used:</span>
+                <p className="button-row">
+                  {this.getDateButtons([TODAY, YESTERDAY, PAST7, PAST30])}
+                </p>
+                <p className="button-row">
+                  {this.getDateButtons([LAST_WEEK, LAST_MONTH, LAST_YEAR])}
+                </p>
+                <p className="button-row">
+                  {this.getDateButtons([THIS_WEEK, THIS_MONTH, THIS_YEAR])}
+                </p>
+              </div>
             </form>
           </Modal.Body>
           <Modal.Footer>
@@ -80,19 +65,6 @@ export function createDateModalReact(createCallback) {
           </Modal.Footer>
         </Modal>;
       }
-
-      sortDates({startDate, endDate}) {
-        const {start, end} = sortDates({
-          start: startDate,
-          end: endDate
-        });
-
-        return {
-          startDate: start,
-          endDate: end
-        };
-      }
-
       getDateButtons(labels) {
         return labels.map(label =>
           <DateButton dateLabel={label}
@@ -102,32 +74,21 @@ export function createDateModalReact(createCallback) {
       }
 
       setDates = (dates) => {
-        this.setState(
-          this.sortDates(dates)
-        );
+        this.setState(dates);
       }
 
       onDateChange = (name, date) => {
-        let correctName = name;
-
-        if (name === 'startDate' && date.isAfter(this.state.endDate)) {
-          correctName = 'endDate';
+        if (name === 'startDate' && date.isAfter(this.state.endDate) ||
+            name === 'endDate' && date.isBefore(this.state.startDate)) {
+          return this.setState({
+            startDate: date,
+            endDate: date.clone()
+          });
         }
 
-        if (name === 'endDate' && date.isBefore(this.state.startDate)) {
-          correctName = 'startDate';
-        }
-
-        const range = this.sortDates({
-          ...this.state,
-          [correctName]: date
+        this.setState({
+          [name]: date
         });
-
-        this.setState(range);
-      }
-
-      getDateSetter(name) {
-        return this.onDateChange.bind(this, name);
       }
 
       createFilter = () => {

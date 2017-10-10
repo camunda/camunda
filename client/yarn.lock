@@ -1478,6 +1478,10 @@ classnames@^2.2.1, classnames@^2.2.5:
   version "2.2.5"
   resolved "https://registry.yarnpkg.com/classnames/-/classnames-2.2.5.tgz#fb3801d453467649ef3603c7d61a02bd129bde6d"
 
+classwrap@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/classwrap/-/classwrap-1.1.0.tgz#a2595094b948d20f4b3845820bf3004807b6ea37"
+
 clean-css@4.0.x:
   version "4.0.8"
   resolved "https://registry.yarnpkg.com/clean-css/-/clean-css-4.0.8.tgz#063dfd593404d3a3d1db494d4b6d0f378b0781b6"

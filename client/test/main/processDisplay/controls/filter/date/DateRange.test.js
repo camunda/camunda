@@ -14,6 +14,8 @@ const {expect} = chai;
 
 describe('main/processDisplay/controls/filter/date <DateRange>', () => {
   const format = 'YYYY-MM-DD';
+  const minDate = 'min-date';
+  const maxDate = 'max-date';
   let startDate;
   let endDate;
   let onDateChange;
@@ -35,11 +37,18 @@ describe('main/processDisplay/controls/filter/date <DateRange>', () => {
 
   describe('with different dates', () => {
     beforeEach(() => {
-      wrapper = mount(<DateRange startDate={startDate} endDate={endDate} onDateChange={onDateChange} />);
+      wrapper = mount(
+        <DateRange
+          minDate={minDate}
+          maxDate={maxDate}
+          startDate={startDate}
+          endDate={endDate}
+          onDateChange={onDateChange} />
+      );
     });
 
     it('should display two Calendars', () => {
-      expect(wrapper.find('.Calendar').length).to.eql(2);
+      expect(wrapper.find(Calendar).length).to.eql(2);
     });
 
     it('should add Calender with range from startDate to endDate', () => {
@@ -51,10 +60,19 @@ describe('main/processDisplay/controls/filter/date <DateRange>', () => {
 
     it('should call onDateChange property when date changes', () => {
       const onChange = Calendar.getProperty('onChange');
+      const newDate = 'new date';
 
-      onChange('new date');
+      onChange(newDate);
 
-      expect(onDateChange.calledWith('startDate', 'new date')).to.eql(true);
+      expect(onDateChange.calledWith(newDate)).to.eql(true);
+    });
+
+    it('should not disable inner arrows', () => {
+      expect(wrapper).to.have.state('innerArrowsDisabled', false);
+    });
+
+    it('should pass max and min dates properties to Calendars', () => {
+      expect(Calendar.calledWith({minDate, maxDate})).to.eql(true);
     });
 
     describe('changing month', () => {
@@ -68,15 +86,15 @@ describe('main/processDisplay/controls/filter/date <DateRange>', () => {
         it('should change start link by one month forward when direction is 1', () => {
           linkCB(1);
 
-          expect(wrapper.state('startLink').format(format)).to.have.eql('2013-01-15');
-          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-05-02');
+          expect(wrapper.state('startLink').format(format)).to.have.eql('2013-01-01');
+          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-05-01');
         });
 
         it('should change start link by one month backward when direction is -1', () => {
           linkCB(-1);
 
-          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-11-15');
-          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-05-02');
+          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-11-01');
+          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-05-01');
         });
       });
 
@@ -88,42 +106,27 @@ describe('main/processDisplay/controls/filter/date <DateRange>', () => {
         it('should change end link by one month forward when direction is 1', () => {
           linkCB(1);
 
-          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-06-02');
-          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-12-15');
+          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-06-01');
+          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-12-01');
         });
 
         it('should change end link by one month backward when direction is -11', () => {
           linkCB(-1);
 
-          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-04-02');
-          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-12-15');
+          expect(wrapper.state('endLink').format(format)).to.have.eql('2018-04-01');
+          expect(wrapper.state('startLink').format(format)).to.have.eql('2012-12-01');
         });
       });
     });
   });
 
   describe('with same dates', () => {
-    let startLinkCB;
-    let endLinkCB;
-
     beforeEach(() => {
       wrapper = mount(<DateRange startDate={startDate} endDate={startDate} onDateChange={onDateChange} />);
-      startLinkCB = Calendar.getProperty('linkCB', 0);
-      endLinkCB = Calendar.getProperty('linkCB', 1);
     });
 
-    it('start link change should move both calendars by 1 if links are the same', () => {
-      startLinkCB(1);
-
-      expect(wrapper.state('startLink').format(format)).to.have.eql('2013-01-15');
-      expect(wrapper.state('endLink').format(format)).to.have.eql('2013-01-15');
-    });
-
-    it('end link change should move both calendars by -1 if links are the same', () => {
-      endLinkCB(-1);
-
-      expect(wrapper.state('startLink').format(format)).to.have.eql('2012-11-15');
-      expect(wrapper.state('endLink').format(format)).to.have.eql('2012-11-15');
+    it('should disable inner arrows', () => {
+      expect(wrapper).to.have.state('innerArrowsDisabled', true);
     });
   });
 });

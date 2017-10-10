@@ -22,15 +22,14 @@ describe('<DateModal>', () => {
   let onNextTick;
   let createCallback;
   let DateButton;
-  let DateInput;
-  let DateRange;
+  let DateFields;
   let DateModal;
 
   beforeEach(() => {
-    DateInput = createReactMock('DateInput');
-    __set__('DateInput', DateInput);
+    DateFields = createReactMock('DateFields');
+    __set__('DateFields', DateFields);
 
-    DateButton = createReactMock('DateButton');
+    DateButton = createReactMock('DateButton', false, 'span');
     __set__('DateButton', DateButton);
 
     Modal = createReactMock('Modal', true);
@@ -39,9 +38,6 @@ describe('<DateModal>', () => {
     Modal.Header = createReactMock('Header', true);
     Modal.Body = createReactMock('Body', true);
     Modal.Footer = createReactMock('Body', true);
-
-    DateRange = createReactMock('DateRange');
-    __set__('DateRange', DateRange);
 
     createStartDateFilter = sinon.spy();
     __set__('createStartDateFilter', createStartDateFilter);
@@ -57,10 +53,9 @@ describe('<DateModal>', () => {
   });
 
   afterEach(() => {
-    __ResetDependency__('DateInput');
+    __ResetDependency__('DateFields');
     __ResetDependency__('DateButton');
     __ResetDependency__('Modal');
-    __ResetDependency__('DateRange');
     __ResetDependency__('createStartDateFilter');
     __ResetDependency__('onNextTick');
   });
@@ -114,35 +109,20 @@ describe('<DateModal>', () => {
         bodyWrapper = wrapper.find(Modal.Body);
       });
 
-      it('should contain start date field', () => {
-        expect(bodyWrapper.find(DateInput)).to.exist;
+      it('should contain date fields', () => {
+        expect(bodyWrapper.find(DateFields)).to.exist;
       });
 
-      it('should first DateInput field should change start date', () => {
-        const onDateChange = DateInput.getProperty('onDateChange');
+      it('should pass onDateChange function to DateFields', () => {
+        const onDateChange = DateFields.getProperty('onDateChange');
 
-        DateInput.reset();
-        onDateChange(moment([2014, 8, 12]));
+        DateFields.reset();
+        onDateChange('startDate', moment([2014, 8, 12]));
 
         // once again stupid js 0 = january and so on
         expect(
-          DateInput.getProperty('date').format('YYYY-MM-DD')
+          DateFields.getProperty('startDate').format('YYYY-MM-DD')
         ).to.eql('2014-09-12');
-      });
-
-      it('should contain calendars', () => {
-        expect(bodyWrapper.find(DateRange)).to.exist;
-      });
-
-      it('should be possible to change endDate with onDateChange callback', () => {
-        const onDateChange = DateRange.getProperty('onDateChange');
-
-        DateRange.reset();
-        onDateChange('endDate', moment([2028, 9, 1]));
-
-        expect(
-          DateRange.getProperty('endDate').format('YYYY-MM-DD')
-        ).to.eql('2028-10-01');
       });
 
       it('should contain date buttons', () => {
