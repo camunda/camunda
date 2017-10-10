@@ -18,7 +18,6 @@ package io.zeebe.client.event.impl;
 public class CloseSubscriptionRequest
 {
 
-    protected int partitionId;
     protected long subscriberKey;
 
     public long getSubscriberKey()
@@ -31,19 +30,8 @@ public class CloseSubscriptionRequest
         this.subscriberKey = subscriberKey;
     }
 
-    public int getPartitionId()
-    {
-        return partitionId;
-    }
-
-    public void setPartitionId(final int partitionId)
-    {
-        this.partitionId = partitionId;
-    }
-
     public void reset()
     {
         this.subscriberKey = -1L;
-        this.partitionId = -1;
     }
 }

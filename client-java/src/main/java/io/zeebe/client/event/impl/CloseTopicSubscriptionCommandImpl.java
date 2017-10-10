@@ -30,7 +30,6 @@ public class CloseTopicSubscriptionCommandImpl extends ControlMessageRequest<Voi
                 ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION,
                 partitionId,
                 Void.class);
-        this.request.setPartitionId(partitionId);
         this.request.setSubscriberKey(subscriberKey);
     }
 
