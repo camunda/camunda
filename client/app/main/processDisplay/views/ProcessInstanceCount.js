@@ -1,10 +1,9 @@
 import React from 'react';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 import {formatNumber} from 'utils';
 
 const jsx = React.createElement;
 
-export function ProcessInstanceCountReact(props) {
+export function ProcessInstanceCount(props) {
   return (
     <div className="statistics">
       <div className="count">{formatNumber(props.data)}</div>
@@ -12,5 +11,3 @@ export function ProcessInstanceCountReact(props) {
     </div>
   );
 }
-
-export const ProcessInstanceCount = createViewUtilsComponentFromReact('div', ProcessInstanceCountReact);

@@ -1,25 +1,32 @@
-import {jsx} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import {TargetValueInput} from 'main/processDisplay/views/targetValueDisplay/TargetValueInput';
+import React from 'react';
+import {mount} from 'enzyme';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<TargetValueInput>', () => {
   it('should contain an input field', () => {
-    const {node, update} = mountTemplate(<TargetValueInput unit="d" />);
+    const node = mount(<TargetValueInput unit="d" />);
 
-    update();
-
-    expect(node.querySelector('input')).to.exist;
+    expect(node.find('input')).to.exist;
   });
 
   it('should set the max attribute based on the passed unit', () => {
-    const case1 = mountTemplate(<TargetValueInput unit="d" />);
-    const case2 = mountTemplate(<TargetValueInput unit="s" />);
+    const node1 = mount(<TargetValueInput unit="d" />);
+    const node2 = mount(<TargetValueInput unit="s" />);
 
-    case1.update();
-    case2.update();
-
-    expect(case1.node.querySelector('input').getAttribute('max')).to.eql('6');
-    expect(case2.node.querySelector('input').getAttribute('max')).to.eql('59');
+    expect(node1
+      .find('input')
+      .getDOMNode()
+      .getAttribute('max')).to.eql('6');
+    expect(node2
+      .find('input')
+      .getDOMNode()
+      .getAttribute('max')).to.eql('59');
   });
 });

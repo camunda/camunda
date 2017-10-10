@@ -1,4 +1,6 @@
-import {jsx, withSelector} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {createDiagram} from 'widgets';
 import {createAnalysisSelection} from './AnalysisSelection';
 import {createCreateAnalyticsRendererFunction} from './Analytics';
@@ -10,7 +12,7 @@ export function createAnalyticsComponents() {
     getNameForElement.bind(null, Diagram)
   );
   const createAnalyticsRenderer = createCreateAnalyticsRendererFunction();
-  const AnalyticsDiagram = withSelector(() => <Diagram createOverlaysRenderer={createAnalyticsRenderer} />);
+  const AnalyticsDiagram = props => <Diagram {...props} createOverlaysRenderer={createAnalyticsRenderer} />;
 
   AnalyticsDiagram.getViewer = Diagram.getViewer;
 

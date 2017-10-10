@@ -1,68 +1,47 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent, triggerEvent} from 'testHelpers';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {TargetValueModal, __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/TargetValueModal';
+import React from 'react';
+import {mount} from 'enzyme';
 import sinon from 'sinon';
-import {createTargetValueModal, __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/TargetValueModal';
+import {createReactMock} from 'testHelpers';
+import {noop} from 'view-utils';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<TargetValueModal>', () => {
   let node;
-  let update;
-  let TargetValueModal;
-  let State;
-  let setTargetDurationToForm;
-  let getTargetDurationFromForm;
   let setTargetValue;
   let TargetValueInput;
   let Modal;
-  let createModal;
-  let Socket;
-  let getTargetValue;
   let onNextTick;
   let saveTargetValues;
-  let getViewer;
-  let addMarkerFct;
-  let removeMarkerFct;
+  let getDefinitionId;
 
   let element;
 
-  const getProcessDefinition = () => 'asdf';
   const ELEMENT_NAME = 'ELEMENT_NAME';
-  const TARGET_VALUE = 400;
 
   beforeEach(() => {
-    State = {
-      getState: sinon.stub().returns({targetValue: {data: {}}})
-    };
-
     element = {
       businessObject: {
         name: ELEMENT_NAME
       }
     };
 
-    Modal = createMockComponent('Modal', true);
-    Modal.open = sinon.spy();
-    Modal.close = sinon.spy();
-
-    createModal = sinon.stub().returns(Modal);
-    __set__('createModal', createModal);
-
-    Socket = createMockComponent('Socket', true);
-    __set__('Socket', Socket);
-
-    setTargetDurationToForm = sinon.spy();
-    __set__('setTargetDurationToForm', setTargetDurationToForm);
-
-    getTargetDurationFromForm = sinon.stub().returns(TARGET_VALUE);
-    __set__('getTargetDurationFromForm', getTargetDurationFromForm);
-
-    getTargetValue = sinon.stub().returns(TARGET_VALUE);
-    __set__('getTargetValue', getTargetValue);
+    Modal = createReactMock('Modal', true);
+    Modal.Header = createReactMock('ModalHeader', true);
+    Modal.Body = createReactMock('ModalBody', true);
+    Modal.Footer = createReactMock('ModalFooter', true);
+    __set__('Modal', Modal);
 
     setTargetValue = sinon.spy();
     __set__('setTargetValue', setTargetValue);
 
-    TargetValueInput = createMockComponent('TargetValueInput');
+    TargetValueInput = createReactMock('TargetValueInput');
     __set__('TargetValueInput', TargetValueInput);
 
     onNextTick = sinon.stub().callsArg(0);
@@ -71,97 +50,53 @@ describe('<TargetValueModal>', () => {
     saveTargetValues = sinon.spy();
     __set__('saveTargetValues', saveTargetValues);
 
-    addMarkerFct = sinon.spy();
-    removeMarkerFct = sinon.spy();
-
-    getViewer = sinon.stub().returns({
-      get: sinon.stub().returns({
-        addMarker: addMarkerFct,
-        removeMarker: removeMarkerFct
-      })
-    });
-
-    TargetValueModal = createTargetValueModal(State, getProcessDefinition, getViewer);
-
-    ({node, update} = mountTemplate(<TargetValueModal />));
-    update();
-
-    TargetValueModal.open(element);
+    getDefinitionId = sinon.spy();
+    __set__('getDefinitionId', getDefinitionId);
   });
 
   afterEach(() => {
-    __ResetDependency__('setTargetDurationToForm');
-    __ResetDependency__('getTargetDurationFromForm');
     __ResetDependency__('setTargetValue');
     __ResetDependency__('TargetValueInput');
-    __ResetDependency__('createModal');
-    __ResetDependency__('getTargetValue');
-    __ResetDependency__('Socket');
+    __ResetDependency__('Modal');
     __ResetDependency__('onNextTick');
     __ResetDependency__('saveTargetValues');
-  });
-
-  it('should have an open function', () => {
-    expect(TargetValueModal.open).to.be.a('function');
-  });
-
-  it('should not highlight the diagram element if a target value already has been set', () => {
-    expect(removeMarkerFct.called).to.eql(false);
-  });
-
-  it('should highlight the diagram element if it has no target value', () => {
-    getTargetValue.returns(0);
-
-    TargetValueModal.open(element);
-
-    expect(addMarkerFct.calledWith(element, 'hover-highlight')).to.eql(true);
-  });
-
-  it('should remove the highlight when the modal is closed', () => {
-    Modal.calls[0][0].onClose();
-
-    expect(removeMarkerFct.calledWith(element, 'hover-highlight')).to.eql(true);
-  });
-
-  it('should set the target duration to the form from the element', () => {
-    expect(setTargetDurationToForm.calledWith(node.querySelector('.form-group'), TARGET_VALUE)).to.eql(true);
+    __ResetDependency__('getDefinitionId');
   });
 
   it('should set the name of the element it is opened for in the modal title', () => {
-    expect(node.querySelector('.modal-title').textContent).to.contain(ELEMENT_NAME);
+    node = mount(<TargetValueModal element={element} />);
+    expect(node.find('.modal-title')).to.contain.text(ELEMENT_NAME);
   });
 
   it('should have input fields for the duration', () => {
-    expect(node.textContent).to.include(TargetValueInput.text);
+    node = mount(<TargetValueModal element={element} />);
+    expect(node).to.contain.text(TargetValueInput.text);
   });
 
   it('should set the targetValue when confirming the change', () => {
-    triggerEvent({
-      node,
-      selector: '.btn-primary',
-      eventName: 'click'
-    });
+    node = mount(<TargetValueModal close={noop} element={element} />);
+    node.setState({s: 1});
 
-    expect(setTargetValue.calledWith(element, TARGET_VALUE)).to.eql(true);
+    node.find('.btn-primary').simulate('click');
+
+    expect(setTargetValue.calledWith(element, 1000)).to.eql(true);
   });
 
   it('should close the Modal when confirming the change', () => {
-    triggerEvent({
-      node,
-      selector: '.btn-primary',
-      eventName: 'click'
-    });
+    const onClose = sinon.spy();
 
-    expect(Modal.close.calledOnce).to.eql(true);
+    node = mount(<TargetValueModal close={onClose} />);
+
+    node.find('.btn-primary').simulate('click');
+
+    expect(onClose.calledOnce).to.eql(true);
   });
 
   it('should have a button to set the form to 0', () => {
-    triggerEvent({
-      node,
-      selector: '.form-group .btn',
-      eventName: 'click'
-    });
+    node = mount(<TargetValueModal />);
 
-    expect(setTargetDurationToForm.calledWith(node.querySelector('.form-group'), 0)).to.eql(true);
+    node.find('.form-group .btn').simulate('click');
+
+    expect(node.state().s).to.eql(0);
   });
 });

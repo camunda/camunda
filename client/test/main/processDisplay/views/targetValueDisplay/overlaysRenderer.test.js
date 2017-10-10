@@ -17,7 +17,6 @@ describe('target value overlays renderer', () => {
   let diagramNode;
   let removeOverlays;
   let update;
-  let StateComponent;
   let ModalComponent;
   let prepareFlowNodes;
   let isBpmnType;
@@ -108,12 +107,11 @@ describe('target value overlays renderer', () => {
       }
     };
 
-    StateComponent = {};
     ModalComponent = {
       open: sinon.spy()
     };
 
-    update = createOverlaysRenderer(StateComponent, ModalComponent)({viewer});
+    update = createOverlaysRenderer(ModalComponent.open)({viewer});
   });
 
   afterEach(() => {

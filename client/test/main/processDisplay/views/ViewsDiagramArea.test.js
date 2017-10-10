@@ -1,8 +1,16 @@
-import {jsx, isTruthy, isFalsy, Case} from 'view-utils';
-import {expect} from 'chai';
+import {isTruthy, isFalsy} from 'view-utils';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {ViewsDiagramAreaReact, __set__, __ResetDependency__} from 'main/processDisplay/views/ViewsDiagramArea';
+import React from 'react';
+import {mount} from 'enzyme';
 import sinon from 'sinon';
-import {mountTemplate, createMockComponent} from 'testHelpers';
-import {ViewsDiagramArea, __set__, __ResetDependency__} from 'main/processDisplay/views/ViewsDiagramArea';
+import {createReactMock} from 'testHelpers';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<ViewsDiagramArea>', () => {
   let LoadingIndicator;
@@ -14,14 +22,13 @@ describe('<ViewsDiagramArea>', () => {
   let isViewSelected;
   let getView;
   let definitions;
-  let update;
   let node;
 
   beforeEach(() => {
-    LoadingIndicator = createMockComponent('LoadingIndicator', true);
+    LoadingIndicator = createReactMock('LoadingIndicator', true);
     __set__('LoadingIndicator', LoadingIndicator);
 
-    Diagram = createMockComponent('Diagram');
+    Diagram = createReactMock('Diagram');
     createDiagram = sinon.stub().returns(Diagram);
     __set__('createDiagram', createDiagram);
 
@@ -31,7 +38,7 @@ describe('<ViewsDiagramArea>', () => {
     isLoaded = isTruthy;
     __set__('isLoaded', isLoaded);
 
-    createDefinitionCases = sinon.stub().returns(<Case predicate={isFalsy} />);
+    createDefinitionCases = sinon.stub().returns(<div></div>);
     __set__('createDefinitionCases', createDefinitionCases);
 
     isViewSelected = sinon.stub().returns(true);
@@ -42,11 +49,12 @@ describe('<ViewsDiagramArea>', () => {
     definitions = {
       view: {
         hasNoData: ({data}) => !data
-      }
+      },
+      data: true
     };
     __set__('definitions', definitions);
 
-    ({node, update} = mountTemplate(<ViewsDiagramArea isViewSelected={isViewSelected}/>));
+    node = mount(<ViewsDiagramAreaReact views={definitions} isViewSelected={isViewSelected}/>);
   });
 
   afterEach(() => {
@@ -60,26 +68,17 @@ describe('<ViewsDiagramArea>', () => {
   });
 
   it('should create cases for definitions diagrams', () => {
-    expect(createDefinitionCases.calledWith('Diagram', isViewSelected)).to.eql(true);
+    expect(createDefinitionCases.calledWith('Diagram', isViewSelected, definitions)).to.eql(true);
   });
 
   it('should display no data indidactor when heatmap is loaded and it has no data', () => {
-    const state = {
-      data: false
-    };
-
-    update(state);
+    definitions.data = false;
+    node.setProps({views: definitions});
 
     expect(node).to.contain.text('No Data');
   });
 
   it('should not display no data indicator when heatmap is loaded and has data', () => {
-    const state = {
-      data: true
-    };
-
-    update(state);
-
     expect(node).not.to.contain.text('No Data');
   });
 });

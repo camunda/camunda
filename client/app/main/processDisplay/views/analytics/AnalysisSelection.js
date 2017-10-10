@@ -1,26 +1,29 @@
-import {jsx, Children} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {AnalysisInput} from './AnalysisInput';
 
 export function createAnalysisSelection(getNameForElement) {
-  const AnalysisSelection = () => {
-    return <Children>
-      <AnalysisInput name="End Event" selector={formatSelection('EndEvent')} />
-      <AnalysisInput name="Gateway" selector={formatSelection('Gateway')} />
-    </Children>;
+  return class AnalysisSelection extends React.Component {
+    render() {
+      return <div>
+        <AnalysisInput name="End Event" selection={this.formatEndEvent(this.props)} />
+        <AnalysisInput name="Gateway" selection={this.formatGateway(this.props)} />
+      </div>;
+    }
 
-    function formatSelection(type) {
-      return ({selection, hover}) => {
-        return {
-          type: capitalize(type),
-          label: capitalize(type.replace(/[A-Z]/g, ' $&')),
-          name: getNameForElement(selection[type]),
-          hovered: hover[type]
-        };
+    formatSelection = type => ({selection, hover}) => {
+      return selection && hover && {
+        type: capitalize(type),
+        label: capitalize(type.replace(/[A-Z]/g, ' $&')),
+        name: getNameForElement(selection[type]),
+        hovered: hover[type]
       };
     }
-  };
 
-  return AnalysisSelection;
+    formatEndEvent = this.formatSelection('EndEvent');
+    formatGateway = this.formatSelection('Gateway');
+  };
 }
 
 function capitalize(string) {

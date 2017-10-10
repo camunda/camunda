@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiEnzyme from 'chai-enzyme';
-import {createReactDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
+import {createDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
 import sinon from 'sinon';
 import React from 'react';
 import {mount} from 'enzyme';
@@ -82,13 +82,13 @@ describe('<Diagram>', () => {
     };
     __set__('Viewer', Viewer);
 
-    isLoaded = sinon.stub().returns(true);
+    isLoaded = sinon.stub().returns(false);
     __set__('isLoaded', isLoaded);
 
     renderOverlays = sinon.spy();
     createOverlaysRenderer = sinon.stub().returns(renderOverlays);
 
-    Diagram = createReactDiagram();
+    Diagram = createDiagram();
 
     node = mount(
       <Diagram createOverlaysRenderer={createOverlaysRenderer} {...initialState} />
@@ -159,7 +159,7 @@ describe('<Diagram>', () => {
       const renderOverlays2 = sinon.spy();
       const createOverlaysRenderer2 = sinon.stub().returns(renderOverlays2);
 
-      const Diagram = createReactDiagram();
+      const Diagram = createDiagram();
 
       node = mount(
         <Diagram createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} {...initialState} />
@@ -182,6 +182,7 @@ describe('<Diagram>', () => {
 
   describe('loaded state', () => {
     beforeEach(() => {
+      isLoaded.returns(true);
       node.setProps({...loadedDiagramState});
     });
 

@@ -1,65 +1,53 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
-import {expect} from 'chai';
-import sinon from 'sinon';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
 import {TargetValueDisplay, __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/TargetValueDisplay';
+import React from 'react';
+import {mount} from 'enzyme';
+import sinon from 'sinon';
+import {createReactMock} from 'testHelpers';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<TargetValueDisplay>', () => {
   let node;
-  let update;
   let createOverlaysRenderer;
-  let createTargetValueModal;
-  let targetValueModal;
-  let stateComponent;
-  let createStateComponent;
+  let TargetValueModal;
   let Diagram;
-  const getProcessDefinition = () => 'asdf';
 
   beforeEach(() => {
     createOverlaysRenderer = sinon.spy();
     __set__('createOverlaysRenderer', createOverlaysRenderer);
 
-    Diagram = createMockComponent('Diagram');
+    Diagram = createReactMock('Diagram');
     Diagram.getViewer = sinon.spy();
     __set__('Diagram', Diagram);
 
-    stateComponent = createMockComponent('State', true);
-    createStateComponent = sinon.stub().returns(stateComponent);
-    __set__('createStateComponent', createStateComponent);
+    TargetValueModal = createReactMock('TargetValueModal');
+    __set__('TargetValueModal', TargetValueModal);
 
-    targetValueModal = createMockComponent('TargetValueModal');
-    createTargetValueModal = sinon.stub().returns(targetValueModal);
-    __set__('createTargetValueModal', createTargetValueModal);
-
-    __set__('getDefinitionId', getProcessDefinition);
-
-    ({node, update} = mountTemplate(<TargetValueDisplay />));
-    update();
+    node = mount(<TargetValueDisplay targetValue={{}} />);
   });
 
   afterEach(() => {
     __ResetDependency__('createOverlaysRenderer');
-    __ResetDependency__('createTargetValueModal');
+    __ResetDependency__('TargetValueModal');
     __ResetDependency__('createStateComponent');
     __ResetDependency__('Diagram');
     __ResetDependency__('getDefinitionId');
   });
 
-  it('should create a targetValueModal with State component, process definition and getViewer function', () => {
-    expect(
-      createTargetValueModal.calledWith(stateComponent, getProcessDefinition, Diagram.getViewer)
-    ).to.eql(true);
-  });
-
-  it('should create an overlay renderer with the state component and the target value modal component', () => {
-    expect(createOverlaysRenderer.calledWith(stateComponent, targetValueModal));
+  it('should create an overlay renderer', () => {
+    expect(createOverlaysRenderer.called).to.eql(true);
   });
 
   it('should contain the passed Diagram component', () => {
-    expect(node.textContent).to.contain(Diagram.text);
+    expect(node).to.contain.text(Diagram.text);
   });
 
-  it('should contain the targetValueModal', () => {
-    expect(node.textContent).to.contain(targetValueModal.text);
+  it('should contain the TargetValueModal', () => {
+    expect(node).to.contain.text(TargetValueModal.text);
   });
 });

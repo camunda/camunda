@@ -1,4 +1,6 @@
-import {jsx, Children, Scope} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {createDiagram} from 'widgets';
 import {createHeatmapRendererFunction} from './Heatmap';
 import {ProcessInstanceCount} from '../ProcessInstanceCount';
@@ -9,11 +11,11 @@ const Diagram = createDiagram();
 export const definition = {
   id: 'frequency',
   name: 'Frequency',
-  Diagram: () => <Children>
-    <Diagram createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
-    <Scope selector={getProcessInstanceCount}>
-      <ProcessInstanceCount />
-    </Scope>
-  </Children>,
+  Diagram: props => {
+    return (<div>
+      <Diagram createOverlaysRenderer={createHeatmapRendererFunction(x => x)} {...props} />
+      <ProcessInstanceCount {...getProcessInstanceCount(props)} />
+    </div>);
+  },
   hasNoData: hasNoHeatmapData
 };

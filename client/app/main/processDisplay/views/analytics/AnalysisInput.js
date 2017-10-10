@@ -1,45 +1,51 @@
-import {jsx, OnEvent, Match, Case, Default, Text, withSelector, Class} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {removeHighlights, addHighlight, unsetElement} from './service';
-import {ControlsElement} from 'main/processDisplay/controls';
 
-export const AnalysisInput = withSelector(({name}) => {
-  return <ControlsElement name={name}>
-    <ul className="list-group">
-      <li className="list-group-item" style="padding: 6px; cursor: default;">
-        <OnEvent event="mouseover" listener={hover} />
-        <OnEvent event="mouseout" listener={unhover} />
-        <Match>
-          <Case predicate={isSelected}>
-            <span>
-              <Text property="name" />
-              <button type="button" className="btn btn-link btn-xs" style="padding-top: 0; padding-bottom: 0;">
-                <OnEvent event="click" listener={unset} />
-                ×
-              </button>
-            </span>
-          </Case>
-          <Default>
-            <span>Please Select <Text property="label" /></span>
-          </Default>
-        </Match>
-        <Class className="btn-highlight" selector="hovered" />
-      </li>
-    </ul>
-  </ControlsElement>;
+export class AnalysisInput extends React.Component {
+  render() {
+    const {name, selection} = this.props;
 
-  function isSelected({name}) {
-    return name;
+    if (!selection) {
+      return null;
+    }
+
+    //TODO: use the reactified ControlsElement component
+    return (
+      <div className="controls-element">
+        <div className="controls-element-name">{name}</div>
+        <div className="controls-element-body">
+          <ul className="list-group">
+            <li className={'list-group-item' + (selection.hovered ? ' btn-highlight' : '')} onMouseOver={this.hover} onMouseOut={this.unhover} style={{padding: '6px', cursor: 'default'}}>
+              {
+                selection.name && (
+                <span>
+                  {selection.name}
+                  <button type="button" className="btn btn-link btn-xs" style={{paddingTop: '0', paddingBottom: '0'}} onClick={this.unset}>
+                    ×
+                  </button>
+                </span>
+                ) || (
+                  <span>Please Select {selection.label}</span>
+                )
+              }
+            </li>
+          </ul>
+        </div>
+      </div>
+    );
   }
 
-  function unset({state:{type}}) {
-    unsetElement(type);
+  unset = evt => {
+    unsetElement(this.props.selection.type);
   }
 
-  function hover({state: {type}}) {
-    addHighlight(type);
+  hover = () => {
+    addHighlight(this.props.selection.type);
   }
 
-  function unhover() {
+  unhover = () => {
     removeHighlights();
   }
-});
+}

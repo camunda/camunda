@@ -4,9 +4,8 @@ const jsx = React.createElement;
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
 import {Loader} from './Loader.react';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
-export function createReactDiagram() {
+export function createDiagram() {
   const BpmnViewer = createBpmnViewer();
 
   class Diagram extends React.Component {
@@ -23,6 +22,7 @@ export function createReactDiagram() {
     }
 
     render() {
+      console.log('rendering diagram', this.state.loaded);
       return (
         <div>
           <Loader visible={!this.state.loaded} className="diagram-loading" style={{position: 'absolute'}} />
@@ -40,15 +40,6 @@ export function createReactDiagram() {
   Diagram.getViewer = BpmnViewer.getViewer;
 
   return Diagram;
-}
-
-export function createDiagram() {
-  const Diagram = createReactDiagram();
-  const WrappedDiagram = createViewUtilsComponentFromReact('div', Diagram);
-
-  WrappedDiagram.getViewer = Diagram.getViewer;
-
-  return WrappedDiagram;
 }
 
 function ZoomButton({name, listener, icon}) {
@@ -97,9 +88,11 @@ function createBpmnViewer() {
         node: this.container
       }));
       this.diagramRendered = false;
+
+      this.renderDiagramIfLoaded();
     }
 
-    componentDidUpdate() {
+    renderDiagramIfLoaded() {
       const {diagram} = this.props;
 
       if (isLoaded(diagram.bpmnXml)) {
@@ -112,6 +105,10 @@ function createBpmnViewer() {
         state: diagram,
         diagramRendered: this.diagramRendered
       }));
+    }
+
+    componentDidUpdate() {
+      this.renderDiagramIfLoaded();
     }
 
     renderDiagram(diagram) {

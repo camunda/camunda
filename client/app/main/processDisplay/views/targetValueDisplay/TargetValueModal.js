@@ -1,112 +1,118 @@
-import {jsx, createReferenceComponent, Socket, OnEvent} from 'view-utils';
-import {createModal} from 'widgets';
+import React from 'react';
+const jsx = React.createElement;
+
+import Modal from 'react-bootstrap/lib/Modal';
+
 import {onNextTick} from 'utils';
-import {setTargetValue, saveTargetValues, getTargetValue, getTargetDurationFromForm, setTargetDurationToForm} from './service';
+import {getDefinitionId} from 'main/processDisplay/service';
+import {setTargetValue, saveTargetValues} from './service';
 import {TargetValueInput} from './TargetValueInput';
+import * as timeUtil from 'utils/formatTime';
 
-export function createTargetValueModal(State, getProcessDefinition, getViewer) {
-  const Modal = createModal();
-  const Reference = createReferenceComponent();
+const timeUnits = ['w', 'd', 'h', 'm', 's', 'ms'];
 
-  let element;
+function createDefaultTimeObject() {
+  return timeUnits.reduce((obj, unit) => {
+    obj[unit] = 0;
+    return obj;
+  }, {});
+}
 
-  const TargetValueModal = () => {
-    return (parentNode, eventsBus) => {
-      const template = <Modal onClose={clearHighlight}>
-        <Socket name="head">
-          <h4 className="modal-title">Set Target Value for {'"'}
-            <span>
-              <Reference name="elementName" />
-            </span>
-            {'"'}
-          </h4>
-        </Socket>
-        <Socket name="body">
-          <div className="form-group">
-            <Reference name="durationForm" />
-            <label>Duration</label>
-            <table style="text-align: center;">
-              <tr>
-                <TargetValueInput unit="w" />
-                <TargetValueInput unit="d" />
-                <TargetValueInput unit="h" />
-                <TargetValueInput unit="m" />
-                <TargetValueInput unit="s" />
-                <TargetValueInput unit="ms" />
-                <td>
-                  <button type="button" className="btn btn-default">
-                    <OnEvent event="click" listener={resetForm} />
-                    <span className="glyphicon glyphicon-remove" aria-hidden="true" />
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>Weeks</td>
-                <td>Days</td>
-                <td>Hours</td>
-                <td>Minutes</td>
-                <td>Seconds</td>
-                <td>Milliseconds</td>
-                <td />
-              </tr>
-            </table>
-          </div>
-        </Socket>
-        <Socket name="foot">
-          <button type="button" className="btn btn-default">
-            <OnEvent event="click" listener={Modal.close} />
-            Abort
-          </button>
-          <button type="button" className="btn btn-primary">
-            <OnEvent event="click" listener={storeTargetValue} />
-            Set Target Value
-          </button>
-        </Socket>
-      </Modal>;
+export class TargetValueModal extends React.Component {
+  constructor(props) {
+    super(props);
 
-      return template(parentNode, eventsBus);
+    this.state = createDefaultTimeObject();
 
-      function resetForm() {
-        setTargetDurationToForm(Reference.getNode('durationForm'), 0);
-      }
-
-      function storeTargetValue() {
-        const form = Reference.getNode('durationForm');
-        const targetDuration = getTargetDurationFromForm(form);
-
-        setTargetValue(element, targetDuration);
-        Modal.close();
-
-        // wait for redux update to finish, then send up to date data to backend
-        onNextTick(() => {
-          saveTargetValues(getProcessDefinition(), State.getState().targetValue.data);
-        });
-      }
-    };
-  };
-
-  function clearHighlight() {
-    getViewer()
-      .get('canvas')
-      .removeMarker(element, 'hover-highlight');
+    this.setValue = timeUnits.reduce((obj, unit) => {
+      obj[unit] = this.setValueFor(unit);
+      return obj;
+    }, {});
   }
 
-  TargetValueModal.open = function(targetValueElement) {
-    element = targetValueElement;
-    Reference.getNode('elementName').textContent = element.businessObject.name;
+  setValueFor = unit => evt => {
+    this.setState({
+      [unit]: parseInt(evt.target.value, 10)
+    });
+  }
 
-    const targetValue = getTargetValue(State, element);
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.isOpen && !this.props.isOpen) {
+      // set the current state to the target value of the element
+      const {element, targetValues} = nextProps;
 
-    setTargetDurationToForm(Reference.getNode('durationForm'), targetValue);
-
-    if (!targetValue) {
-      getViewer()
-        .get('canvas')
-        .addMarker(element, 'hover-highlight');
+      this.setState(timeUtil
+        .formatTime(targetValues[element.businessObject.id], {returnRaw: true})
+        .reduce((obj, {name, howMuch}) => {
+          obj[name] = howMuch;
+          return obj;
+        }, createDefaultTimeObject())
+      );
     }
+  }
 
-    Modal.open();
-  };
+  render() {
+    const {isOpen, element, close} = this.props;
+    const elementName = element && element.businessObject.name;
 
-  return TargetValueModal;
+    return (
+      <Modal show={isOpen} onHide={close}>
+        <Modal.Header>
+          <h4 className="modal-title">Set Target Value for "{elementName}"</h4>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="form-group">
+            <label>Duration</label>
+            <table style={{textAlign: 'center'}}>
+              <tbody>
+                <tr>
+                  {timeUnits.map(unit => <TargetValueInput key={unit} val={this.state[unit]} onChange={this.setValue[unit]} />)}
+                  <td>
+                    <button type="button" className="btn btn-default" onClick={this.resetForm}>
+                      <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Weeks</td>
+                  <td>Days</td>
+                  <td>Hours</td>
+                  <td>Minutes</td>
+                  <td>Seconds</td>
+                  <td>Milliseconds</td>
+                  <td />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+            <button type="button" className="btn btn-default" onClick={close}>
+              Abort
+            </button>
+            <button type="button" className="btn btn-primary" onClick={this.storeTargetValue}>
+              Set Target Value
+            </button>
+          </Modal.Footer>
+      </Modal>
+    );
+  }
+
+  resetForm = () => {
+    this.setState(createDefaultTimeObject());
+  }
+
+  storeTargetValue = () => {
+    const targetDurationInMillis = timeUnits
+      .map(unit => this.state[unit] * timeUtil[unit])
+      .reduce((prev, curr) => prev + curr, 0);
+
+    setTargetValue(this.props.element, targetDurationInMillis);
+    this.props.close();
+
+    // wait for redux update to finish, then send up to date data to backend
+    onNextTick(() => {
+      saveTargetValues(getDefinitionId(), this.props.targetValues);
+    });
+  }
 }

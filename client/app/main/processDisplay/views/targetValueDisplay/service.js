@@ -14,26 +14,8 @@ export function setTargetValue(element, value) {
   dispatchAction(createSetTargetValueAction(element, value));
 }
 
-export function getTargetValue(State, {businessObject:{id}}) {
-  return State.getState().targetValue.data[id];
-}
-
-export function getTargetDurationFromForm(form) {
-  return ['ms', 's', 'm', 'h', 'd', 'w']
-    .map(unit => parseInt(form.querySelector('[for="'+unit+'"]').value, 10) * timeUtil[unit])
-    .reduce((prev, curr) => prev + curr, 0);
-}
-
-export function setTargetDurationToForm(form, targetValue) {
-  const timeParts = formatTime(targetValue, {returnRaw: true});
-  const fields = form.querySelectorAll('input');
-
-  for (let i = 0; i < fields.length; i++) {
-    const field = fields[i];
-    const preset = timeParts.filter(el => el.name === field.getAttribute('for'))[0];
-
-    field.value = preset && preset.howMuch || 0;
-  }
+export function getTargetValue(data, {businessObject:{id}}) {
+  return data[id];
 }
 
 export function saveTargetValues(processDefinitionId, targetValues) {

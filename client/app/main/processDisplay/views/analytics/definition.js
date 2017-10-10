@@ -1,24 +1,26 @@
-import {jsx, decorateWithSelector, Children, Scope} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {createAnalyticsComponents} from './createAnalyticsComponents';
-import {Statistics as InnerStatistics} from './statistics';
+import {Statistics} from './statistics';
 import {ProcessInstanceCount} from '../ProcessInstanceCount';
 import {hasNoHeatmapData, getProcessInstanceCount} from '../service';
-
-const Statistics = decorateWithSelector(InnerStatistics, getStatisticsState);
 
 const {AnalyticsDiagram, AnalysisSelection} = createAnalyticsComponents();
 
 export const definition = {
   id: 'branch_analysis',
   name: 'Branch Analysis',
-  Diagram: () => <Children>
-    <AnalyticsDiagram />
-    <Scope selector={getProcessInstanceCount}>
-      <ProcessInstanceCount />
-    </Scope>
-  </Children>,
-  Controls: decorateWithSelector(AnalysisSelection, 'analytics'),
-  Additional: () => <Statistics getBpmnViewer={AnalyticsDiagram.getViewer} />,
+  Diagram: props => {
+    return (<div>
+      <AnalyticsDiagram {...props} />
+      <ProcessInstanceCount {...getProcessInstanceCount(props)} />
+    </div>);
+  },
+  Controls: props => <AnalysisSelection {...props.analytics} />,
+  Additional: props => {
+    return props.analytics && <Statistics {...getStatisticsState(props)} getBpmnViewer={AnalyticsDiagram.getViewer} /> || null;
+  },
   hasNoData: hasNoHeatmapData
 };
 

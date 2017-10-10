@@ -1,8 +1,14 @@
-import {jsx, Default} from 'view-utils';
-import {expect} from 'chai';
+import chai from 'chai';
+import chaiEnzyme from 'chai-enzyme';
+import {ViewsAreaReact, __set__, __ResetDependency__} from 'main/processDisplay/views/ViewsArea';
+import React from 'react';
+import {mount} from 'enzyme';
 import sinon from 'sinon';
-import {mountTemplate} from 'testHelpers';
-import {ViewsArea, __set__, __ResetDependency__} from 'main/processDisplay/views/ViewsArea';
+
+chai.use(chaiEnzyme());
+
+const {expect} = chai;
+const jsx = React.createElement;
 
 describe('<ViewsArea>', () => {
   let isViewSelected;
@@ -13,10 +19,10 @@ describe('<ViewsArea>', () => {
     isViewSelected = sinon.spy();
     areaComponent = 'Component1';
 
-    createDefinitionCases = sinon.stub().returns(<Default />);
+    createDefinitionCases = sinon.stub().returns(<div></div>);
     __set__('createDefinitionCases', createDefinitionCases);
 
-    mountTemplate(<ViewsArea isViewSelected={isViewSelected} areaComponent={areaComponent} />);
+    mount(<ViewsAreaReact isViewSelected={isViewSelected} areaComponent={areaComponent} />);
   });
 
   afterEach(() => {

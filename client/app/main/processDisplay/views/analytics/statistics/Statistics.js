@@ -4,11 +4,10 @@ import {leaveGatewayAnalysisMode} from '../';
 import {loadStatisticData, resetStatisticData, findSequenceFlowBetweenGatewayAndActivity} from './service';
 import {DragHandle} from './DragHandle';
 import {isInitial} from 'utils';
-import {createViewUtilsComponentFromReact} from 'reactAdapter';
 
 const jsx = React.createElement;
 
-export class StatisticsReact extends React.Component {
+export class Statistics extends React.Component {
   isSelectionComplete = selection => {
     return selection && selection.EndEvent && selection.Gateway;
   }
@@ -158,5 +157,3 @@ export class StatisticsReact extends React.Component {
     }
   }
 }
-
-export const Statistics = createViewUtilsComponentFromReact('div', StatisticsReact);

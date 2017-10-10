@@ -1,10 +1,8 @@
-import {jsx, Match, withSelector} from 'view-utils';
+import {createViewUtilsComponentFromReact} from 'reactAdapter';
 import {createDefinitionCases} from './createDefinitionCases';
 
-export const ViewsArea = withSelector(({isViewSelected, areaComponent}) => {
-  return <Match>
-  {
-    createDefinitionCases(areaComponent, isViewSelected)
-  }
-  </Match>;
-});
+export const ViewsAreaReact = ({isViewSelected, areaComponent, views}) => {
+  return createDefinitionCases(areaComponent, isViewSelected, views);
+};
+
+export const ViewsArea = createViewUtilsComponentFromReact('div', ViewsAreaReact);

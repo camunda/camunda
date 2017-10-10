@@ -2,7 +2,7 @@ import {isBpmnType, removeOverlays} from 'utils';
 import {prepareFlowNodes, addTargetValueBadge, addTargetValueTooltip, getTargetValue} from './service';
 import {getHeatmap} from 'main/processDisplay/views/frequency';
 
-export function createOverlaysRenderer(State, TargetValueModal) {
+export function createOverlaysRenderer(onClick) {
   return ({viewer}) => {
     const canvas = viewer.get('canvas');
     const elementRegistry = viewer.get('elementRegistry');
@@ -10,12 +10,13 @@ export function createOverlaysRenderer(State, TargetValueModal) {
 
     let heatmap;
     let flowNodeData;
+    let targetValueData;
     let currentlyHovered = false;
     let displayedTooltip;
 
     eventBus.on('element.click', ({element}) => {
       if (isValidElement(element)) {
-        TargetValueModal.open(element);
+        onClick(element);
       }
     });
 
@@ -27,8 +28,8 @@ export function createOverlaysRenderer(State, TargetValueModal) {
           viewer.get('overlays').remove(displayedTooltip);
         }
 
-        if (getTargetValue(State, element)) {
-          displayedTooltip = addTargetValueTooltip(viewer, element, flowNodeData[element.businessObject.id], getTargetValue(State, element));
+        if (getTargetValue(targetValueData, element)) {
+          displayedTooltip = addTargetValueTooltip(viewer, element, flowNodeData[element.businessObject.id], getTargetValue(targetValueData, element));
         }
       }
     });
@@ -57,6 +58,7 @@ export function createOverlaysRenderer(State, TargetValueModal) {
 
     return ({state:{heatmap:{data:{flowNodes}}, targetValue:{data}}, diagramRendered}) => {
       flowNodeData = flowNodes;
+      targetValueData = data;
 
       if (diagramRendered) {
         removeOverlays(viewer);
@@ -65,10 +67,10 @@ export function createOverlaysRenderer(State, TargetValueModal) {
           removeHighlight(element);
           if (isValidElement(element)) {
             markAsClickable(element);
-            if (!getTargetValue(State, element)) {
+            if (!getTargetValue(data, element)) {
               highlight(element);
             } else {
-              addTargetValueBadge(viewer, element, getTargetValue(State, element), TargetValueModal.open);
+              addTargetValueBadge(viewer, element, getTargetValue(data, element), onClick);
             }
           }
         });

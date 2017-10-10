@@ -3,7 +3,7 @@ import chai from 'chai';
 import chaiEnzyme from 'chai-enzyme';
 import sinon from 'sinon';
 import {createReactMock} from 'testHelpers';
-import {StatisticsReact, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/Statistics';
+import {Statistics, __set__, __ResetDependency__} from 'main/processDisplay/views/analytics/statistics/Statistics';
 import {mount} from 'enzyme';
 
 chai.use(chaiEnzyme());
@@ -76,7 +76,7 @@ describe('<Statistics>', () => {
   });
 
   it('should not have the open class if gateway is not set', () => {
-    node = mount(<StatisticsReact
+    node = mount(<Statistics
       getBpmnViewer={getBpmnViewer}
       {...unopenedState}
     />);
@@ -87,7 +87,7 @@ describe('<Statistics>', () => {
 
   describe('opened state', () => {
     beforeEach(() => {
-      node = mount(<StatisticsReact
+      node = mount(<Statistics
         getBpmnViewer={getBpmnViewer}
         {...openedState}
       />);

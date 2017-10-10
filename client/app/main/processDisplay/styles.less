@@ -11,6 +11,12 @@
   padding-left: 15px;
   padding-right: 15px;
 
+  // please delete this after the ViewsArea Components are no longer Reactwrapped
+  >div:nth-child(2), .controls>div:nth-child(3), .controls [data-reactroot] {
+    flex: 1 1 auto;
+    display: flex;
+  }
+
   .controls {
     flex: 0 1 auto;
 

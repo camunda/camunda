@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking, triggerEvent} from 'testHelpers';
-import {setTargetValue, getTargetValue, getTargetDurationFromForm, setTargetDurationToForm, saveTargetValues, addTargetValueBadge, addTargetValueTooltip, prepareFlowNodes,
+import {setTargetValue, getTargetValue, saveTargetValues, addTargetValueBadge, addTargetValueTooltip, prepareFlowNodes,
         __set__, __ResetDependency__} from 'main/processDisplay/views/targetValueDisplay/service';
 
 describe('TargetValue service', () => {
@@ -49,42 +49,10 @@ describe('TargetValue service', () => {
         }
       };
       const State = {
-        getState: sinon.stub().returns({
-          targetValue: {
-            data: {
-              ELEMENT_ID: TARGET_VALUE
-            }
-          }
-        })
+        ELEMENT_ID: TARGET_VALUE
       };
 
       expect(getTargetValue(State, element)).to.eql(TARGET_VALUE);
-    });
-  });
-
-  describe('getTargetDurationFromForm', () => {
-    it('should parse a duration form', () => {
-      const form = document.createElement('form');
-
-      form.innerHTML = `<input for="ms" value="0" />
-        <input for="s" value="0" />
-        <input for="m" value="0" />
-        <input for="h" value="0" />
-        <input for="d" value="1" />
-        <input for="w" value="0" />`;
-
-      expect(getTargetDurationFromForm(form)).to.eql(864e5);
-    });
-  });
-
-  describe('setTargetDurationToForm', () => {
-    it('should set values to form', () => {
-      const form = document.createElement('form');
-
-      form.innerHTML = '<input for="s" />';
-
-      setTargetDurationToForm(form, 4000);
-      expect(form.querySelector('input').value).to.eql('4');
     });
   });
 

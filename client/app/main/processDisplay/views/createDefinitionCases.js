@@ -1,7 +1,10 @@
-import {jsx, Case, isTruthy} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
+import {isTruthy} from 'view-utils';
 import {definitions} from './viewDefinitions';
 
-export function createDefinitionCases(componentProperty, isViewSelected) {
+export function createDefinitionCases(componentProperty, isViewSelected, props) {
   return definitions
     .map(definition => {
       const {[componentProperty]: Component, id} = definition;
@@ -10,11 +13,9 @@ export function createDefinitionCases(componentProperty, isViewSelected) {
         return null;
       }
 
-      return <Case predicate={shouldDisplay(id)}>
-        <Component />
-      </Case>;
+      return shouldDisplay(id)() && <Component {...props} />;
     })
-    .filter(isTruthy);
+    .find(isTruthy) || null;
 
   function shouldDisplay(view) {
     return () => isViewSelected(view);

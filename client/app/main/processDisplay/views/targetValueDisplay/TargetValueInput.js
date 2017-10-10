@@ -1,4 +1,5 @@
-import {jsx} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
 
 const maxValues = {
   d: 6,
@@ -12,8 +13,8 @@ function getMaxValue(unit) {
   return maxValues[unit];
 }
 
-export function TargetValueInput({unit}) {
-  return <td className="target-duration-input-cell">
-    <input type="number" for={unit} className="form-control" value="0" min="0" max={getMaxValue(unit)} />
-  </td>;
+export function TargetValueInput({unit, val, onChange}) {
+  return (<td className="target-duration-input-cell">
+    <input type="number" htmlFor={unit} className="form-control" value={val} min="0" max={getMaxValue(unit)} onChange={onChange} />
+  </td>);
 }

@@ -1,21 +1,41 @@
-import {jsx, createStateComponent} from 'view-utils';
+import React from 'react';
+const jsx = React.createElement;
+
 import {createDiagram} from 'widgets';
-import {getDefinitionId} from 'main/processDisplay/service';
 import {createOverlaysRenderer} from './overlaysRenderer';
-import {createTargetValueModal} from './TargetValueModal';
+import {TargetValueModal} from './TargetValueModal';
 
 const Diagram = createDiagram();
 
-export const TargetValueDisplay = () => {
-  return (parentNode, eventsBus) => {
-    const State = createStateComponent();
-    const TargetValueModal = createTargetValueModal(State, getDefinitionId, Diagram.getViewer);
+export class TargetValueDisplay extends React.Component {
+  constructor(props) {
+    super(props);
 
-    const template = <State>
-      <Diagram createOverlaysRenderer={createOverlaysRenderer(State, TargetValueModal)} />
-      <TargetValueModal />
-    </State>;
+    this.state = {
+      modalOpen: false,
+      selectedElement: null
+    };
+  }
 
-    return template(parentNode, eventsBus);
-  };
-};
+  closeModal = () => {
+    this.setState({
+      modalOpen: false
+    });
+  }
+
+  openModalFor = element => {
+    this.setState({
+      modalOpen: true,
+      selectedElement: element
+    });
+  }
+
+  render() {
+    const {selectedElement, modalOpen} = this.state;
+
+    return (<div>
+      <Diagram {...this.props} createOverlaysRenderer={createOverlaysRenderer(this.openModalFor)} />
+      <TargetValueModal targetValues={this.props.targetValue.data} isOpen={modalOpen} element={selectedElement} close={this.closeModal} />
+    </div>);
+  }
+}
