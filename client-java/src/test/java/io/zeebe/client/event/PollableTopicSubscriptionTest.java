@@ -130,8 +130,8 @@ public class PollableTopicSubscriptionTest
         catch (Exception e)
         {
             // then
-            assertThat(e).isInstanceOf(RuntimeException.class);
-            assertThat(e).hasMessageContaining("Exception during handling of event");
+            assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).hasMessageContaining("Exception during handling of event");
         }
 
         assertThat(subscription.isOpen()).isTrue();
