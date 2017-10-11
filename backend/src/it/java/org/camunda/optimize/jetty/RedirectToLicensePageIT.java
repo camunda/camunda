@@ -109,7 +109,6 @@ public class RedirectToLicensePageIT {
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the license page
-    assertThat(response.getStatus(), is(302));
     assertThat(response.getLocation().getPath(), is("/license.html"));
 
     // when I now redirect to root page

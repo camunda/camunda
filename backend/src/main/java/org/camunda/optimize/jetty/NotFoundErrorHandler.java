@@ -1,6 +1,7 @@
 package org.camunda.optimize.jetty;
 
 import org.apache.http.HttpStatus;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
@@ -24,20 +25,32 @@ public class NotFoundErrorHandler extends ErrorHandler {
   @Override
   public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-    if (
-        !request.getServletPath().startsWith(API_PATH) &&
-            HttpServletResponse.SC_NOT_FOUND == response.getStatus()
-        ) {
+    response.setHeader(HttpHeader.CONTENT_ENCODING.toString(), null);
+
+    boolean notApiOrPage = !request.getServletPath().startsWith(API_PATH) &&
+        (request.getServletPath().endsWith(".html") || request.getServletPath().split("\\.").length == 1);
+
+    if (notApiOrPage && HttpServletResponse.SC_NOT_FOUND == response.getStatus()) {
       response.setStatus(HttpStatus.SC_OK);
       response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
       Dispatcher dispatcher = (Dispatcher) request.getServletContext().getRequestDispatcher(INDEX_PAGE);
+      
       try {
         dispatcher.forward(request, response);
       } catch (ServletException e) {
         logger.debug(e);
       }
-
+    } else {
+      return;
     }
+  }
+
+  private boolean indexExists() {
+    boolean result = false;
+    if (this.getClass().getClassLoader().getResourceAsStream("webapp/" + INDEX_PAGE) != null) {
+      result = true;
+    }
+    return result;
   }
 
 }
