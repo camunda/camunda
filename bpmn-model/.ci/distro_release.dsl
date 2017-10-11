@@ -131,7 +131,7 @@ mavenJob(jobName) {
         maven {
           mavenInstallation mavenVersion
           providedSettings mavenSettingsId
-          goals 'release:prepare release:perform -Dgpg.passphrase="${GPG_PASSPHRASE}" -B'
+          goals 'release:prepare release:perform -Dgpg.passphrase="${GPG_PASSPHRASE}" -DignoreSnapshots -B'
           properties releaseProperties
           localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
         }
