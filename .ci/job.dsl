@@ -96,7 +96,7 @@ mavenJob(jobName) {
         custom('Jenkins CI GitHub SSH Private Key') {
             targetLocation '/home/camunda/.ssh/id_rsa'
         }
-        // nexus settings xml
+            // nexus settings xml
         mavenSettings(mavenSettingsId) {
             variable('NEXUS_SETTINGS')
         }
