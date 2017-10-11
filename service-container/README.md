@@ -1,3 +1,5 @@
+# Zeebe Service Container
+
 Simple service container for managing dynamic services in an infrastructure system.
 Attempts to solve the problem of managing a potentially large number of components that depend on each other
 and are started / stopped dynamically in the simplest possible way.
@@ -12,10 +14,14 @@ Heavily inspired by [jboss-msc](https://github.com/jboss-msc).
 **Note**: This API is not designed to be used in a business application. You may find the API to be somewhat verbose to program to.
 This is the result of a trade off. This micro library targets infrastructure systems like the camunda broker and is designed to have
 a very low buy-in.
-In infrastructure systems, we accept a certain level of verbosity to keep things simple and to stay in control. We cannot use 
+In infrastructure systems, we accept a certain level of verbosity to keep things simple and to stay in control. We cannot use
 black magic like classpath scanning, proxies, AOP, byte code generation and other things that we tend to find useful
 in business applications. These things usually introduce a prohibitive amount of complexity that make them unusable
 for our purposes.
+
+## DISCLAIMER
+
+This project is work in progress and currently NOT meant for production use!
 
 # Implementing a Service
 
@@ -51,7 +57,7 @@ public class CountServiceImpl implements Service<Counter>, Counter
     {
         return this;
     }
-    
+
     public long increment()
     {
         return counter.incrementAndGet();
@@ -79,7 +85,7 @@ of handled requests:
 public class RequestHandlerImpl implements Service<RequestHandler>, RequestHandler
 {
     protected final Injector<Counter> requestCounterInjector = new Injector<Counter>();
-    
+
     protected Counter requestCounter;
 
     @Override
@@ -99,13 +105,13 @@ public class RequestHandlerImpl implements Service<RequestHandler>, RequestHandl
     {
         return this;
     }
-    
+
     public void onRequest(Requset req)
     {
         requestCounter.increment();
         // ... handle the request ...
     }
-    
+
     public Injector<Counter> getRequestCounterInjector()
     {
         return requestCounterInjector;
@@ -142,7 +148,7 @@ class implementing the `Service` interface. Rather, you are encouraged to sepera
 public class RequestHandlerService implements Service<RequestHandler>
 {
     protected final Injector<Counter> requestCounterInjector = new Injector<Counter>();
-    
+
     protected RequestHandler requestHandler;
 
     @Override
@@ -162,7 +168,7 @@ public class RequestHandlerService implements Service<RequestHandler>
     {
         return requesthandler
     }
-    
+
     public Injector<Counter> getRequestCounterInjector()
     {
         return requestCounterInjector;
@@ -180,9 +186,9 @@ public void shouldIncrementCountOnRequest()
 {
     Counter counterMock = mock(Counter.class);
     RequestHandler requestHandler = new RequestHandlerIml(counterMock);
-    
+
     requestHandler.handleRequest(new Request());
-    
+
     verify(counterMock, times(1)).increment();
 }
 ```
@@ -218,7 +224,7 @@ public class ConfigurationService implements Service<Configuration>
             // throwing exception keeps service from starting.
         });
     }
-    
+
     ...
 }
 ```
@@ -257,16 +263,16 @@ public class ConfigurationService implements Service<Configuration>
                 catch (Throwable t)
                 {
                     startFuture.completeExceptionally(t);
-                } 
+                }
             })
             .start();
         }
         catch (Throwable t)
         {
             startFuture.completeExceptionally(t);
-        } 
-        
-    }    
+        }
+
+    }
     ...
 }
 ```
@@ -286,7 +292,24 @@ public class ConfigurationService implements Service<Configuration>
     {
         ctx.async(asyncApi.doAsync());
     }
-    
+
     ...
 }
 ```
+
+## Code of Conduct
+
+This project adheres to the Contributor Covenant [Code of
+Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
+this code. Please report unacceptable behavior to code-of-conduct@zeebe.io.
+
+## License
+
+Most Zeebe source files are made available under the [Apache License, Version
+2.0](/LICENSE) except for the [broker-core][] component. The [broker-core][]
+source files are made available under the terms of the [GNU Affero General
+Public License (GNU AGPLv3)][agpl]. See individual source files for
+details.
+
+[broker-core]: https://github.com/zeebe-io/zeebe/tree/master/broker-core
+[agpl]: https://github.com/zeebe-io/zeebe/blob/master/GNU-AGPL-3.0
