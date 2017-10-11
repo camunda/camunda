@@ -18,11 +18,14 @@ package io.zeebe.raft.protocol;
 import static io.zeebe.test.util.BufferWriterUtil.writeAndRead;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.util.ActorSchedulerRule;
 import io.zeebe.raft.util.RaftRule;
+
+import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.BeforeClass;
@@ -183,8 +186,11 @@ public class RaftProtocolMessageTest
     public void shouldReadAndWriteAppendRequestWithEvent()
     {
         // given
-        final MutableDirectBuffer data = new UnsafeBuffer(new byte[16]);
-        data.putLong(4, 123L);
+        final int msgLength = BitUtil.SIZE_OF_LONG;
+
+        final MutableDirectBuffer data = new UnsafeBuffer(new byte[DataFrameDescriptor.alignedFramedLength(msgLength)]);
+        data.putInt(DataFrameDescriptor.lengthOffset(0), DataFrameDescriptor.framedLength(msgLength));
+        data.putLong(DataFrameDescriptor.messageOffset(0), 123L);
 
         final LoggedEventImpl event = new LoggedEventImpl();
         event.wrap(data, 0);
