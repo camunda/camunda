@@ -14,15 +14,22 @@
     <relativePath />
   </parent>
 
-  <properties>
-    <version.util>0.4.0-SNAPSHOT</version.util>
-  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-bom</artifactId>
+        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
-      <version>${version.util}</version>
     </dependency>
 
     <dependency>
