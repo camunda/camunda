@@ -18,6 +18,7 @@
   </parent>
 
   <properties>
+    <!-- zeebe projects -->
     <version.zeebe>${project.version}</version.zeebe>
     <version.zb-bpmn-model>${project.version}</version.zb-bpmn-model>
     <version.zb-dispatcher>${project.version}</version.zb-dispatcher>
@@ -28,6 +29,10 @@
     <version.zb-service-container>${project.version}</version.zb-service-container>
     <version.zb-transport>${project.version}</version.zb-transport>
     <version.zb-util>${project.version}</version.zb-util>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
   </properties>
 
   <dependencyManagement>
@@ -129,32 +134,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <scm>
     <url>https://github.com/zeebe-io/zb-bom</url>
