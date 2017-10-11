@@ -90,14 +90,14 @@ public class BlockPeek implements Iterable<DirectBuffer>
         int fragmentOffset = 0;
         while (fragmentOffset < blockLength)
         {
-            int fragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset));
+            int framedFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset));
 
-            if (fragmentLength < 0)
+            if (framedFragmentLength < 0)
             {
-                fragmentLength = -fragmentLength;
+                framedFragmentLength = -framedFragmentLength;
             }
 
-            final int frameLength = DataFrameDescriptor.alignedLength(fragmentLength);
+            final int frameLength = DataFrameDescriptor.alignedLength(framedFragmentLength);
             final int flagsOffset = DataFrameDescriptor.flagsOffset(fragmentOffset);
             final byte flags = byteBuffer.get(flagsOffset);
 
@@ -170,12 +170,13 @@ public class BlockPeek implements Iterable<DirectBuffer>
         @Override
         public DirectBuffer next()
         {
-            final int dataFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(iterationOffset));
+            final int framedFragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(iterationOffset));
+            final int fragmentLength = DataFrameDescriptor.messageLength(framedFragmentLength);
             final int messageOffset = DataFrameDescriptor.messageOffset(iterationOffset);
 
-            buffer.wrap(bufferView, messageOffset, dataFragmentLength);
+            buffer.wrap(bufferView, messageOffset, fragmentLength);
 
-            iterationOffset += DataFrameDescriptor.alignedLength(dataFragmentLength);
+            iterationOffset += DataFrameDescriptor.alignedLength(framedFragmentLength);
 
             return buffer;
         }

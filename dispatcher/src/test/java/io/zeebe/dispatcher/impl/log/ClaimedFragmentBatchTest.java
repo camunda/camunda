@@ -61,10 +61,10 @@ public class ClaimedFragmentBatchTest
         claimedBatch.getBuffer().putBytes(fragmentOffset, MESSAGE);
 
         // then
-        assertThat(position).isEqualTo(position(PARTITION_ID, PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH)));
+        assertThat(position).isEqualTo(position(PARTITION_ID, PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH)));
         assertThat(fragmentOffset).isEqualTo(HEADER_LENGTH);
 
-        assertThat(underlyingBuffer.getInt(lengthOffset(PARTITION_OFFSET))).isEqualTo(-MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(PARTITION_OFFSET))).isEqualTo(-framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(PARTITION_OFFSET))).isEqualTo(TYPE_MESSAGE);
         assertThat(underlyingBuffer.getInt(streamIdOffset(PARTITION_OFFSET))).isEqualTo(1);
 
@@ -86,11 +86,11 @@ public class ClaimedFragmentBatchTest
         final int fragmentOffset = claimedBatch.getFragmentOffset();
 
         // then
-        assertThat(position).isEqualTo(position(PARTITION_ID, PARTITION_OFFSET + 2 * alignedLength(MESSAGE_LENGTH)));
-        assertThat(fragmentOffset).isEqualTo(HEADER_LENGTH + alignedLength(MESSAGE_LENGTH));
+        assertThat(position).isEqualTo(position(PARTITION_ID, PARTITION_OFFSET + 2 * alignedFramedLength(MESSAGE_LENGTH)));
+        assertThat(fragmentOffset).isEqualTo(HEADER_LENGTH + alignedFramedLength(MESSAGE_LENGTH));
 
-        final int bufferOffset = PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(-MESSAGE_LENGTH);
+        final int bufferOffset = PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(-framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_MESSAGE);
         assertThat(underlyingBuffer.getInt(streamIdOffset(bufferOffset))).isEqualTo(2);
     }
@@ -109,12 +109,12 @@ public class ClaimedFragmentBatchTest
 
         // then
         int bufferOffset = PARTITION_OFFSET;
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_MESSAGE);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo(enableFlagBatchBegin((byte) 0));
 
-        bufferOffset += alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(MESSAGE_LENGTH);
+        bufferOffset += alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_MESSAGE);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo(enableFlagBatchEnd((byte) 0));
     }
@@ -133,12 +133,12 @@ public class ClaimedFragmentBatchTest
 
         // then
         int bufferOffset = PARTITION_OFFSET;
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo((byte) 0);
 
-        bufferOffset += alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(MESSAGE_LENGTH);
+        bufferOffset += alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo((byte) 0);
     }
@@ -156,8 +156,8 @@ public class ClaimedFragmentBatchTest
         claimedBatch.commit();
 
         // then
-        final int bufferOffset = PARTITION_OFFSET + 2 * alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - 2 * alignedLength(MESSAGE_LENGTH) - HEADER_LENGTH);
+        final int bufferOffset = PARTITION_OFFSET + 2 * alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - 2 * alignedFramedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
     }
 
@@ -174,8 +174,8 @@ public class ClaimedFragmentBatchTest
         claimedBatch.abort();
 
         // then
-        final int bufferOffset = PARTITION_OFFSET + 2 * alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - 2 * alignedLength(MESSAGE_LENGTH) - HEADER_LENGTH);
+        final int bufferOffset = PARTITION_OFFSET + 2 * alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - 2 * alignedFramedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
     }
 
@@ -192,12 +192,12 @@ public class ClaimedFragmentBatchTest
 
         // then
         int bufferOffset = PARTITION_OFFSET;
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_MESSAGE);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo((byte) 0);
 
-        bufferOffset += alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH) - HEADER_LENGTH);
+        bufferOffset += alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(FRAGMENT_LENGTH - alignedFramedLength(MESSAGE_LENGTH));
         assertThat(underlyingBuffer.getShort(typeOffset(bufferOffset))).isEqualTo(TYPE_PADDING);
         assertThat(underlyingBuffer.getByte(flagsOffset(bufferOffset))).isEqualTo((byte) 0);
     }
@@ -211,15 +211,15 @@ public class ClaimedFragmentBatchTest
         claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
         // when
-        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedFramedLength(MESSAGE_LENGTH);
         final int fragmentLength = remainingCapacity - HEADER_LENGTH;
 
         claimedBatch.nextFragment(fragmentLength, 2);
         claimedBatch.commit();
 
         // then
-        final int bufferOffset = PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(fragmentLength);
+        final int bufferOffset = PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(fragmentLength));
     }
 
     @Test
@@ -231,15 +231,15 @@ public class ClaimedFragmentBatchTest
         claimedBatch.nextFragment(MESSAGE_LENGTH, 1);
 
         // when
-        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedFramedLength(MESSAGE_LENGTH);
         final int fragmentLength = remainingCapacity - HEADER_LENGTH - FRAME_ALIGNMENT + 1;
 
         claimedBatch.nextFragment(fragmentLength, 2);
         claimedBatch.commit();
 
         // then
-        final int bufferOffset = PARTITION_OFFSET + alignedLength(MESSAGE_LENGTH);
-        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(fragmentLength);
+        final int bufferOffset = PARTITION_OFFSET + alignedFramedLength(MESSAGE_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(bufferOffset))).isEqualTo(framedLength(fragmentLength));
     }
 
     @Test
@@ -255,7 +255,7 @@ public class ClaimedFragmentBatchTest
         thrown.expectMessage("The given fragment length is greater than the remaining capacity");
 
         // when
-        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedFramedLength(MESSAGE_LENGTH);
 
         claimedBatch.nextFragment(remainingCapacity - HEADER_LENGTH + 1, 2);
     }
@@ -273,7 +273,7 @@ public class ClaimedFragmentBatchTest
         thrown.expectMessage("The given fragment length is greater than the remaining capacity");
 
         // when
-        final int remainingCapacity = FRAGMENT_LENGTH - alignedLength(MESSAGE_LENGTH);
+        final int remainingCapacity = FRAGMENT_LENGTH - alignedFramedLength(MESSAGE_LENGTH);
 
         claimedBatch.nextFragment(remainingCapacity - HEADER_LENGTH - FRAME_ALIGNMENT, 2);
     }

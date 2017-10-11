@@ -34,6 +34,9 @@ import static org.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  * </pre>
  *
+ * <p>Frame length: Including the length of the header to ensure length is always > 0
+ *   which is important for distinguishing committed from uncommitted but claimed fragments.
+ *
  * <p>Flags:
  * <ul>
  *   <li>B: Begin Batch
@@ -121,9 +124,24 @@ public class DataFrameDescriptor
         return offset + HEADER_LENGTH;
     }
 
+    public static int alignedFramedLength(int msgLength)
+    {
+        return alignedLength(framedLength(msgLength));
+    }
+
     public static int alignedLength(int msgLength)
     {
-        return align(msgLength + HEADER_LENGTH, FRAME_ALIGNMENT);
+        return align(msgLength, FRAME_ALIGNMENT);
+    }
+
+    public static int framedLength(int msgLength)
+    {
+        return msgLength + HEADER_LENGTH;
+    }
+
+    public static int messageLength(int framedLength)
+    {
+        return framedLength - HEADER_LENGTH;
     }
 
     public static boolean flagFailed(byte flags)

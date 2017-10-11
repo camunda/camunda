@@ -18,6 +18,7 @@ package io.zeebe.dispatcher;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -72,8 +73,8 @@ public class ClaimedFragment
      */
     public void commit()
     {
-        // commit the message by writing the positive length
-        buffer.putIntOrdered(0, buffer.capacity() - HEADER_LENGTH);
+        // commit the message by writing the positive framed length
+        buffer.putIntOrdered(lengthOffset(0), buffer.capacity());
         reset(buffer);
     }
 
@@ -83,9 +84,9 @@ public class ClaimedFragment
      */
     public void abort()
     {
-        // abort the message by setting type to padding and writing the positive length
+        // abort the message by setting type to padding and writing the positive framed length
         buffer.putInt(typeOffset(0), TYPE_PADDING);
-        buffer.putIntOrdered(0, buffer.capacity() - HEADER_LENGTH);
+        buffer.putIntOrdered(lengthOffset(0), buffer.capacity());
         reset(buffer);
     }
 

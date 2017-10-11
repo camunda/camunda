@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
@@ -160,9 +161,9 @@ public class LogBufferAppenderClaimBatchTest
         // and the buffer is filled with padding
         final int padLength = PARTITION_LENGTH - currentTail - HEADER_LENGTH;
         final InOrder inOrder = inOrder(dataBufferMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(padLength));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), framedLength(padLength));
     }
 
     @Test
@@ -186,9 +187,9 @@ public class LogBufferAppenderClaimBatchTest
         // and the buffer is filled with padding
         final int padLength = 0;
         final InOrder inOrder = inOrder(dataBufferMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(padLength));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), framedLength(padLength));
     }
 
     @Test

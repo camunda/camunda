@@ -48,7 +48,7 @@ public class ClaimedFragmentTest
         claimedFragment.commit();
 
         // then
-        assertThat(underlyingBuffer.getInt(lengthOffset(0))).isEqualTo(A_FRAGMENT_LENGTH - HEADER_LENGTH);
+        assertThat(underlyingBuffer.getInt(lengthOffset(0))).isEqualTo(A_FRAGMENT_LENGTH);
         assertThat(claimedFragment.getOffset()).isEqualTo(HEADER_LENGTH);
         assertThat(claimedFragment.getLength()).isEqualTo(-HEADER_LENGTH);
     }

@@ -22,11 +22,13 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagFailed;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -80,7 +82,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
@@ -102,7 +104,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn(enableFlagFailed((byte) 0));
@@ -126,12 +128,12 @@ public class SubscriptionPollFragmentsTest
         final int secondFragOffset = nextFragmentOffset(firstFragOffset);
         final long limit = position(A_PARTITION_ID, 2 * A_FRAGMENT_LENGTH);
 
-        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(firstFragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn((byte) 0);
 
-        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(secondFragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagFailed((byte) 0));
@@ -160,12 +162,12 @@ public class SubscriptionPollFragmentsTest
         final int secondFragOffset = nextFragmentOffset(firstFragOffset);
         final long limit = position(A_PARTITION_ID, A_FRAGMENT_LENGTH);
 
-        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(firstFragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn((byte) 0);
 
-        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(secondFragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagFailed((byte) 0));
@@ -188,9 +190,9 @@ public class SubscriptionPollFragmentsTest
     @Test
     public void shouldRollOverOnPaddingAtEndOfPartition()
     {
-        final int fragOffset = A_PARTITION_LENGTH - alignedLength(A_MSG_PAYLOAD_LENGTH);
+        final int fragOffset = A_PARTITION_LENGTH - alignedFramedLength(A_MSG_PAYLOAD_LENGTH);
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
@@ -209,7 +211,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
@@ -230,7 +232,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(-A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(-framedLength(A_MSG_PAYLOAD_LENGTH));
 
         // when
         final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, 0, false);
@@ -248,7 +250,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
@@ -269,7 +271,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
@@ -290,7 +292,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int fragOffset = 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
@@ -312,7 +314,7 @@ public class SubscriptionPollFragmentsTest
         final int fragOffset = 0;
         final byte flags = (byte) 0;
 
-        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn(flags);

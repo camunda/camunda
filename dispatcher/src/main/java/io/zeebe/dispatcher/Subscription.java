@@ -18,18 +18,29 @@ package io.zeebe.dispatcher;
 import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
 import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.agrona.BitUtil.align;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
+
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 
 public class Subscription
 {
@@ -111,8 +122,8 @@ public class Subscription
         int fragmentResult = FragmentHandler.CONSUME_FRAGMENT_RESULT;
         do
         {
-            final int length = buffer.getIntVolatile(lengthOffset(fragmentOffset));
-            if (length <= 0)
+            final int framedLength = buffer.getIntVolatile(lengthOffset(fragmentOffset));
+            if (framedLength <= 0)
             {
                 break;
             }
@@ -120,7 +131,7 @@ public class Subscription
             final short type = buffer.getShort(typeOffset(fragmentOffset));
             if (type == TYPE_PADDING)
             {
-                fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+                fragmentOffset += alignedLength(framedLength);
 
                 if (fragmentOffset >= partition.getPartitionSize())
                 {
@@ -138,7 +149,8 @@ public class Subscription
                 {
                     final boolean isMarkedAsFailed = flagFailed(flags);
 
-                    final int handlerResult = frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId, isMarkedAsFailed);
+                    final int messageLength = messageLength(framedLength);
+                    final int handlerResult = frgHandler.onFragment(buffer, messageOffset(fragmentOffset), messageLength, streamId, isMarkedAsFailed);
 
                     if (handlerResult == FragmentHandler.FAILED_FRAGMENT_RESULT && !isMarkedAsFailed)
                     {
@@ -160,7 +172,7 @@ public class Subscription
                 if (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT)
                 {
                     ++fragmentsConsumed;
-                    fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+                    fragmentOffset += alignedLength(framedLength);
                 }
             }
         }
@@ -299,8 +311,8 @@ public class Subscription
 
         do
         {
-            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
-            if (length <= 0)
+            final int framedLength = buffer.getIntVolatile(lengthOffset(partitionOffset));
+            if (framedLength <= 0)
             {
                 break;
             }
@@ -308,7 +320,7 @@ public class Subscription
             final short type = buffer.getShort(typeOffset(partitionOffset));
             if (type == TYPE_PADDING)
             {
-                partitionOffset += alignedLength(length);
+                partitionOffset += alignedLength(framedLength);
 
                 if (partitionOffset >= partition.getPartitionSize())
                 {
@@ -349,7 +361,7 @@ public class Subscription
                     isReadingBatch = !flagBatchEnd(flags);
                 }
 
-                final int alignedFrameLength = alignedLength(length);
+                final int alignedFrameLength = alignedLength(framedLength);
                 if (alignedFrameLength <= maxBlockSize - readBytes)
                 {
                     partitionOffset += alignedFrameLength;

@@ -15,24 +15,33 @@
  */
 package io.zeebe.dispatcher.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.*;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
 
 public class DispatcherIntegrationTest
 {
@@ -159,7 +168,7 @@ public class DispatcherIntegrationTest
             {
                 while (counter < totalWork)
                 {
-                    while (subscription.peekBlock(blockPeek, alignedLength(64), false) == 0)
+                    while (subscription.peekBlock(blockPeek, alignedFramedLength(64), false) == 0)
                     {
 
                     }
@@ -259,7 +268,7 @@ public class DispatcherIntegrationTest
         {
             while (counter1.get() < totalWork)
             {
-                while (subscription1.peekBlock(blockPeek1, alignedLength(64), false) == 0)
+                while (subscription1.peekBlock(blockPeek1, alignedFramedLength(64), false) == 0)
                 {
 
                 }
@@ -275,7 +284,7 @@ public class DispatcherIntegrationTest
                 // in pipeline mode, the second consumer should not overtake the first consumer
                 assertThat(counter2.get()).isLessThanOrEqualTo(counter1.get());
 
-                while (subscription2.peekBlock(blockPeek2, alignedLength(64), false) == 0)
+                while (subscription2.peekBlock(blockPeek2, alignedFramedLength(64), false) == 0)
                 {
 
                 }
@@ -392,6 +401,43 @@ public class DispatcherIntegrationTest
         consumerThread.join();
 
         dispatcher.close();
+    }
+
+    @Test
+    public void shouldSubscribeToFragmentsWithLengthZero()
+    {
+        // given
+        final Dispatcher dispatcher = Dispatchers.create("default")
+                .actorScheduler(actorScheduler)
+                .bufferSize(1024 * 10)
+                .initialPartitionId(2)
+                .build();
+
+        final Subscription subscription = dispatcher.openSubscription("foo");
+
+        doRepeatedly(() -> dispatcher.offer(new UnsafeBuffer(0, 0))).until(p -> p >= 0);
+
+        final LoggingFragmentHandler handler = new LoggingFragmentHandler();
+
+        // when
+        doRepeatedly(() -> subscription.poll(handler, Integer.MAX_VALUE)).until(v -> v > 0);
+
+        // then
+        assertThat(handler.handledFragmentLengths).hasSize(1);
+        assertThat(handler.handledFragmentLengths).containsExactly(0);
+    }
+
+    protected static class LoggingFragmentHandler implements FragmentHandler
+    {
+        protected List<Integer> handledFragmentLengths = new ArrayList<>();
+
+        @Override
+        public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+        {
+            handledFragmentLengths.add(length);
+            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        }
+
     }
 
     protected void offerMessage(final Dispatcher dispatcher, final UnsafeBuffer msg, final int totalWork)

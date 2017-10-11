@@ -84,7 +84,7 @@ public class LogBufferAppenderClaimTest
 
         // the negative header was written and the claimed fragment now wraps the buffer section
         final InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(A_MSG_PAYLOAD_LENGTH));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
         inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
@@ -111,7 +111,7 @@ public class LogBufferAppenderClaimTest
 
         // the negative header was written and the claimed fragment now wraps the buffer section
         final InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(A_MSG_PAYLOAD_LENGTH));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
         inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
@@ -140,9 +140,9 @@ public class LogBufferAppenderClaimTest
         // and the buffer is filled with padding
         final int padLength = A_PARTITION_LENGTH - currentTail - HEADER_LENGTH;
         final InOrder inOrder = inOrder(dataBufferMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(padLength));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), framedLength(padLength));
     }
 
     @Test
@@ -167,9 +167,9 @@ public class LogBufferAppenderClaimTest
         // and the buffer is filled with padding
         final int padLength = 0;
         final InOrder inOrder = inOrder(dataBufferMock);
-        inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), -framedLength(padLength));
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
+        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), framedLength(padLength));
     }
 
     @Test

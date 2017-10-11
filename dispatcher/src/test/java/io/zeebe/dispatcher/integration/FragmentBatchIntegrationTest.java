@@ -16,7 +16,7 @@
 package io.zeebe.dispatcher.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
@@ -25,6 +25,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
@@ -81,7 +82,7 @@ public class FragmentBatchIntegrationTest
         assertThat(readBytes).isGreaterThan(0);
 
         final int fragmentLength = assertThatBufferContains(blockPeek.getBuffer(), 0, MSG1, 1);
-        assertThatBufferContains(blockPeek.getBuffer(), alignedLength(fragmentLength), MSG2, 2);
+        assertThatBufferContains(blockPeek.getBuffer(), alignedFramedLength(fragmentLength), MSG2, 2);
     }
 
     @Test
@@ -140,7 +141,7 @@ public class FragmentBatchIntegrationTest
     @Test
     public void shouldOnlyReadCompleteBatch()
     {
-        final int batchSize = alignedLength(MSG1.length) + alignedLength(MSG2.length);
+        final int batchSize = alignedFramedLength(MSG1.length) + alignedFramedLength(MSG2.length);
 
         claimAndWriteFragments();
         batch.commit();
@@ -170,17 +171,18 @@ public class FragmentBatchIntegrationTest
 
     private int assertThatBufferContains(DirectBuffer buffer, int bufferOffset, byte[] expectedMessage, int expectedStreamId)
     {
-        final int length = buffer.getInt(lengthOffset(bufferOffset));
-        assertThat(length).isEqualTo(expectedMessage.length);
+        final int framedLength = buffer.getInt(lengthOffset(bufferOffset));
+        final int fragmentLength = framedLength - DataFrameDescriptor.HEADER_LENGTH;
+        assertThat(fragmentLength).isEqualTo(expectedMessage.length);
 
         final int streamId = buffer.getInt(streamIdOffset(bufferOffset));
         assertThat(streamId).isEqualTo(expectedStreamId);
 
-        final byte[] message = new byte[length];
+        final byte[] message = new byte[fragmentLength];
         buffer.getBytes(messageOffset(bufferOffset), message);
         assertThat(message).isEqualTo(expectedMessage);
 
-        return length;
+        return fragmentLength;
     }
 
 }

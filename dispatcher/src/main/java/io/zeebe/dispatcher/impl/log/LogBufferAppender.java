@@ -40,7 +40,8 @@ public class LogBufferAppender
             final int streamId)
     {
         final int partitionSize = partition.getPartitionSize();
-        final int alignedFrameLength = alignedLength(length);
+        final int framedLength = framedLength(length);
+        final int alignedFrameLength = alignedLength(framedLength);
 
         // move the tail of the partition
         final int frameOffset = partition.getAndAddTail(alignedFrameLength);
@@ -52,14 +53,14 @@ public class LogBufferAppender
             final UnsafeBuffer buffer = partition.getDataBuffer();
 
             // write negative length field
-            buffer.putIntOrdered(lengthOffset(frameOffset), -length);
+            buffer.putIntOrdered(lengthOffset(frameOffset), -framedLength);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
             buffer.putInt(streamIdOffset(frameOffset), streamId);
             buffer.putBytes(messageOffset(frameOffset), msg, start, length);
 
             // commit the message
-            buffer.putIntOrdered(lengthOffset(frameOffset), length);
+            buffer.putIntOrdered(lengthOffset(frameOffset), framedLength);
         }
         else
         {
@@ -78,8 +79,8 @@ public class LogBufferAppender
             final int streamId)
     {
         final int partitionSize = partition.getPartitionSize();
-        final int framedMessageLength = length + HEADER_LENGTH;
-        final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
+        final int framedMessageLength = framedLength(length);
+        final int alignedFrameLength = alignedLength(framedMessageLength);
 
         // move the tail of the partition
         final int frameOffset = partition.getAndAddTail(alignedFrameLength);
@@ -91,7 +92,7 @@ public class LogBufferAppender
             final UnsafeBuffer buffer = partition.getDataBuffer();
 
             // write negative length field
-            buffer.putIntOrdered(lengthOffset(frameOffset), -length);
+            buffer.putIntOrdered(lengthOffset(frameOffset), -framedMessageLength);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
             buffer.putInt(streamIdOffset(frameOffset), streamId);
@@ -143,9 +144,9 @@ public class LogBufferAppender
     {
         int newTail = RESULT_END_OF_PARTITION;
 
-        final int padLength = partition.getPartitionSize() - partitionOffset - HEADER_LENGTH;
+        final int padLength = partition.getPartitionSize() - partitionOffset;
 
-        if (padLength >= 0)
+        if (padLength >= HEADER_LENGTH)
         {
             // this message tripped the end of the partition, fill buffer with padding
             final UnsafeBuffer buffer = partition.getDataBuffer();

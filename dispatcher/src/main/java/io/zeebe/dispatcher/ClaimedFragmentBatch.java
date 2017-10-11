@@ -98,7 +98,8 @@ public class ClaimedFragmentBatch
     {
         currentOffset = nextOffset;
 
-        nextOffset += DataFrameDescriptor.alignedLength(length);
+        final int framedLength = framedLength(length);
+        nextOffset += alignedLength(framedLength);
 
         // ensure that there is enough capacity for padding message, or less than frame alignment which omits the padding message
         final int remainingCapacity = buffer.capacity() - nextOffset;
@@ -108,7 +109,7 @@ public class ClaimedFragmentBatch
         }
 
         // set negative length => uncommitted fragment
-        buffer.putIntOrdered(lengthOffset(currentOffset), -length);
+        buffer.putIntOrdered(lengthOffset(currentOffset), -framedLength);
         UNSAFE.storeFence();
         buffer.putShort(typeOffset(currentOffset), TYPE_MESSAGE);
         buffer.putInt(streamIdOffset(currentOffset), streamId);
@@ -122,7 +123,7 @@ public class ClaimedFragmentBatch
      */
     public void commit()
     {
-        final int firstFragmentLength = -buffer.getInt(lengthOffset(FIRST_FRAGMENT_OFFSET));
+        final int firstFragmentFramedLength = -buffer.getInt(lengthOffset(FIRST_FRAGMENT_OFFSET));
 
         // do not set batch flags if only one fragment in the batch
         if (currentOffset > 0)
@@ -132,13 +133,13 @@ public class ClaimedFragmentBatch
             buffer.putByte(flagsOffset(FIRST_FRAGMENT_OFFSET), enableFlagBatchBegin(firstFragmentFlags));
 
             // set positive length => commit fragment
-            int fragmentOffset = DataFrameDescriptor.alignedLength(firstFragmentLength);
+            int fragmentOffset = DataFrameDescriptor.alignedLength(firstFragmentFramedLength);
             while (fragmentOffset < nextOffset)
             {
-                final int fragmentLength = -buffer.getInt(lengthOffset(fragmentOffset));
-                buffer.putInt(lengthOffset(fragmentOffset), fragmentLength);
+                final int fragmentFramedLength = -buffer.getInt(lengthOffset(fragmentOffset));
+                buffer.putInt(lengthOffset(fragmentOffset), fragmentFramedLength);
 
-                fragmentOffset += DataFrameDescriptor.alignedLength(fragmentLength);
+                fragmentOffset += DataFrameDescriptor.alignedLength(fragmentFramedLength);
             }
 
             // set batch end flag
@@ -150,7 +151,7 @@ public class ClaimedFragmentBatch
 
         // commit the first fragment at the end so that the batch can be read at
         // once
-        buffer.putIntOrdered(lengthOffset(FIRST_FRAGMENT_OFFSET), firstFragmentLength);
+        buffer.putIntOrdered(lengthOffset(FIRST_FRAGMENT_OFFSET), firstFragmentFramedLength);
 
         reset();
     }
@@ -181,8 +182,8 @@ public class ClaimedFragmentBatch
     {
         // since the claimed batch size can be longer than the written fragment
         // size, we need to fill the rest with a padding fragment
-        final int remainingLength = buffer.capacity() - nextOffset - HEADER_LENGTH;
-        if (remainingLength >= 0)
+        final int remainingLength = buffer.capacity() - nextOffset;
+        if (remainingLength >= HEADER_LENGTH)
         {
             buffer.putInt(lengthOffset(nextOffset), remainingLength);
             buffer.putShort(typeOffset(nextOffset), TYPE_PADDING);
