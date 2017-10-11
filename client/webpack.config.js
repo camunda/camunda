@@ -1,7 +1,7 @@
 var webpack = require('webpack');
 var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-var ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
+// var ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
 var version = require('./scripts/version');
 
 module.exports = {
@@ -133,9 +133,9 @@ module.exports = {
       favicon: 'app/favicon.ico',
       chunks: ['error']
     }),
-    new ServiceWorkerWebpackPlugin({
-      entry: path.join(__dirname, 'app/sw.js')
-    })
+    // new ServiceWorkerWebpackPlugin({
+    //   entry: path.join(__dirname, 'app/sw.js')
+    // })
   ],
   devServer: {
     contentBase: './dist',
