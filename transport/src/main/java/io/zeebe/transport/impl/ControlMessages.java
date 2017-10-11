@@ -38,12 +38,12 @@ public class ControlMessages
         final int messageLength = BitUtil.SIZE_OF_INT;
         final int transportFramedLength = TransportHeaderDescriptor.framedLength(messageLength);
 
-        final UnsafeBuffer buf = new UnsafeBuffer(new byte[DataFrameDescriptor.alignedLength(transportFramedLength)]);
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[DataFrameDescriptor.alignedFramedLength(transportFramedLength)]);
         final int dataFrameHeaderOffset = 0;
         final int transportHeaderOffset = dataFrameHeaderOffset + DataFrameDescriptor.HEADER_LENGTH;
         final int messageOffset = transportHeaderOffset + TransportHeaderDescriptor.HEADER_LENGTH;
 
-        buf.putInt(DataFrameDescriptor.lengthOffset(dataFrameHeaderOffset), transportFramedLength);
+        buf.putInt(DataFrameDescriptor.lengthOffset(dataFrameHeaderOffset), DataFrameDescriptor.framedLength(transportFramedLength));
         buf.putShort(DataFrameDescriptor.typeOffset(dataFrameHeaderOffset), DataFrameDescriptor.TYPE_MESSAGE);
 
         transportHeaderDescriptor.wrap(buf, transportHeaderOffset)

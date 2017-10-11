@@ -110,9 +110,10 @@ public class TransportChannel
         {
             workCount += 1;
 
-            final int msgLength = channelReadBufferView.getInt(DataFrameDescriptor.lengthOffset(offset));
+            final int framedLength = channelReadBufferView.getInt(DataFrameDescriptor.lengthOffset(offset));
+            final int msgLength = DataFrameDescriptor.messageLength(framedLength);
             final int msgOffset = DataFrameDescriptor.messageOffset(offset);
-            final int frameLength = DataFrameDescriptor.alignedLength(msgLength);
+            final int frameLength = DataFrameDescriptor.alignedLength(framedLength);
 
             if (remaining < frameLength)
             {
