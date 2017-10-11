@@ -46,7 +46,7 @@ weight: 90
 menu:
   main:
     identifier: "user-guide-introduction-front-end-third-party-libraries"
-    parent: "user-guide-introduction"
+    parent: "user-guide-introduction-third-party-libraries"
 
 ---
 `;
