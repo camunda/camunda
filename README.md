@@ -36,6 +36,13 @@ Zeebe is currently a tech preview and not meant for production use - See [Roadma
 
 Read the [Contributions Guide](/CONTRIBUTING.md)
 
+## Code of Conduct
+
+This project adheres to the Contributor Covenant [Code of
+Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
+this code. Please report unacceptable behavior to
+code-of-conduct@zeebe.io.
+
 ## License
 
 Most Zeebe source files are made available under the [Apache License, Version
