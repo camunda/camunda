@@ -44,6 +44,7 @@ then
 else
   echo 'Public GPG Key not found.'
 fi
+'''
 
 def githubRelease = '''\
 #!/bin/bash
