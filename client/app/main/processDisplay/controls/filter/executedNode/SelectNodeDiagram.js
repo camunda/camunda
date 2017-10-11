@@ -92,11 +92,11 @@ export class SelectNodeDiagram extends React.PureComponent {
 
     this.viewer.importXML(xml, error => {
       if (error) {
-        return this.updateLoadingState();
+        return this.finishLoading();
       }
 
       this.diagramLoaded = true;
-      this.updateLoadingState();
+      this.finishLoading();
 
       resetZoom(this.viewer);
 
@@ -118,7 +118,7 @@ export class SelectNodeDiagram extends React.PureComponent {
     });
   }
 
-  updateLoadingState() {
+  finishLoading() {
     if (this.viewer) {
       this.setState({
         loading: false

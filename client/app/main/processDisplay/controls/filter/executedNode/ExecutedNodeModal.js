@@ -20,7 +20,6 @@ export class ExecutedNodeModal extends React.PureComponent {
   componentWillReceiveProps({isOpen}) {
     if (!isOpen) {
       this.setState({
-        ...this.state,
         diagramVisible: false
       });
     }
@@ -54,7 +53,6 @@ export class ExecutedNodeModal extends React.PureComponent {
 
   onEntered = () => {
     this.setState({
-      ...this.state,
       diagramVisible: true
     });
   }
@@ -68,13 +66,11 @@ export class ExecutedNodeModal extends React.PureComponent {
     onNextTick(this.props.onFilterAdded);
   }
 
-  switchModal(isOpen) {
+  close = () => {
     if (typeof this.props.setProperty === 'function') {
-      this.props.setProperty('isOpen', isOpen);
+      this.props.setProperty('isOpen', false);
     }
   }
-
-  close = () => this.switchModal(false)
 }
 
 export function createExecutedNodeModal(onFilterAdded, getDiagramXML) {
