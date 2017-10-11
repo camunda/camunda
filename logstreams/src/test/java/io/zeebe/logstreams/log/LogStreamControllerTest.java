@@ -389,8 +389,7 @@ public class LogStreamControllerTest
             final int positionOffset = positionOffset(messageOffset(0));
             buffer.putLong(positionOffset, logPosition);
 
-            // TODO: Hier ist was faul: Länge ist kein Long
-            buffer.putLong(lengthOffset(0), bytesRead);
+            buffer.putInt(lengthOffset(0), bytesRead);
 
             blockPeek.setBlock(writeBuffer, new AtomicLongPosition(), 0, 0, bytesRead, 0, bytesRead);
 
