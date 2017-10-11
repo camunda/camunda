@@ -24,13 +24,10 @@
     <dependencies>
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zb-util</artifactId>
+        <artifactId>zb-bom</artifactId>
         <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-test-util</artifactId>
-        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
     </dependencies>
   </dependencyManagement>
