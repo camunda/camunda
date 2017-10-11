@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -109,9 +109,9 @@ public class MockDispatcherFactory
             final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
             final int length = (int) invocation.getArguments()[1];
 
-            claimedFragment.wrap(sendBuffer, (int) offset, alignedLength(length));
+            claimedFragment.wrap(sendBuffer, (int) offset, alignedFramedLength(length));
 
-            offset += alignedLength(length);
+            offset += alignedFramedLength(length);
             return offset;
         }
     }

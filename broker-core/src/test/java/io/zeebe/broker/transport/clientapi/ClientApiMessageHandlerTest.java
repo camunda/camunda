@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -400,9 +400,9 @@ public class ClientApiMessageHandlerTest
 
             fragmentOffset = claimedFragment.getOffset();
 
-            claimedFragment.wrap(sendBuffer, 0, alignedLength(length));
+            claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length));
 
-            final long claimedPosition = offset + alignedLength(length);
+            final long claimedPosition = offset + alignedFramedLength(length);
             return claimedPosition;
         };
     }
