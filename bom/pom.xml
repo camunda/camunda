@@ -1,0 +1,134 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe BOM</name>
+  <groupId>io.zeebe</groupId>
+  <artifactId>zb-bom</artifactId>
+  <version>0.4.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <inceptionYear>2017</inceptionYear>
+  <url>http://zeebe.io/</url>
+
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>2.5</version>
+    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
+    <relativePath />
+  </parent>
+
+  <properties>
+    <version.zeebe>${project.version}</version.zeebe>
+    <version.zb-bpmn-model>${project.version}</version.zb-bpmn-model>
+    <version.zb-dispatcher>${project.version}</version.zb-dispatcher>
+    <version.zb-logstreams>${project.version}</version.zb-logstreams>
+    <version.zb-msgpack>${project.version}</version.zb-msgpack>
+    <version.zb-protocol>${project.version}</version.zb-protocol>
+    <version.zb-raft>${project.version}</version.zb-raft>
+    <version.zb-service-container>${project.version}</version.zb-service-container>
+    <version.zb-transport>${project.version}</version.zb-transport>
+    <version.zb-util>${project.version}</version.zb-util>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-broker-core</artifactId>
+        <version>${version.zeebe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-client-java</artifactId>
+        <version>${version.zeebe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-bpmn-model</artifactId>
+        <version>${version.zb-bpmn-model}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-dispatcher</artifactId>
+        <version>${version.zb-dispatcher}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-logstreams</artifactId>
+        <version>${version.zb-logstreams}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-json-el</artifactId>
+        <version>${version.zb-msgpack}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-json-path</artifactId>
+        <version>${version.zb-msgpack}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-msgpack-value</artifactId>
+        <version>${version.zb-msgpack}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-protocol</artifactId>
+        <version>${version.zb-protocol}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-raft</artifactId>
+        <version>${version.zb-raft}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-service-container</artifactId>
+        <version>${version.zb-service-container}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-transport</artifactId>
+        <version>${version.zb-transport}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-map</artifactId>
+        <version>${version.zb-util}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-test-util</artifactId>
+        <version>${version.zb-util}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-util</artifactId>
+        <version>${version.zb-util}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <scm>
+    <url>https://github.com/zeebe-io/zb-bom</url>
+    <connection>scm:git:git@github.com:zeebe-io/zb-bom.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zb-bom.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+</project>
