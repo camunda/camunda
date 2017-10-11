@@ -7,3 +7,5 @@ yarn-error.log
 errorShots/
 tmp/
 camunda-h2-dbs
+frontend-dependencies.md
+dependencies.json

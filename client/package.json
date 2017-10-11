@@ -14,7 +14,8 @@
     "test-watch": "node --max_old_space_size=4096 ./node_modules/karma/bin/karma start --no-single-run",
     "eslint": "./node_modules/.bin/eslint app test scripts demo-data",
     "eslint-fix": "./node_modules/.bin/eslint app test --fix || true",
-    "start-backend": "node scripts/run-backend.js"
+    "start-backend": "node scripts/run-backend.js",
+    "dependencies": "node scripts/dependencies.js"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -58,6 +59,7 @@
     "karma-webpack": "^2.0.4",
     "less": "^2.7.2",
     "less-loader": "^2.2.3",
+    "license-checker": "^14.0.0",
     "mocha": "^3.2.0",
     "promise-mock": "^1.1.0",
     "react-addons-test-utils": "^15.6.0",
