@@ -21,8 +21,6 @@ import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
-import org.agrona.LangUtil;
-
 public class TestUtil
 {
 
@@ -160,7 +158,7 @@ public class TestUtil
                 {
                     if (!exceptionCondition.apply(e))
                     {
-                        LangUtil.rethrowUnchecked(e);
+                        throw new RuntimeException("Unexpected exception while checking condition", e);
                     }
                 }
 
