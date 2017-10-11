@@ -19,10 +19,27 @@ You will be guided through the following steps:
 * Java 8
 * [Apache Maven](https://maven.apache.org/)
 * [Zeebe distribution](../introduction/install.html)
+* [Zeebe Command Line Client zbctl](https://github.com/zeebe-io/zbc-go#command-line-interface-zbctl)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
 Now, start the Zeebe broker.
+
+Create a [topic](../basics/topics-and-logs.html) named `default-topic`. If you have done this already for your Zeebe installation, you can skip this step.
+
+Create the topic with zbctl by executing the following command on the command line:
+
+```
+zbctl create topic --name default-topic --partitions 1
+```
+
+You should see the output:
+
+```
+CREATED
+```
+
+Note: On Windows systems the executable is called `zbctl.exe`.
 
 ## Set up a project
 
@@ -188,7 +205,7 @@ Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
 Open a web browser and go to <http://localhost:8080/>.
 
 Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active tasks, completed activities, the payload and open incidents.  
+Here, you see the current state of the workflow instance which includes active tasks, completed activities, the payload and open incidents.
 
 ![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
 
