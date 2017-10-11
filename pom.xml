@@ -13,10 +13,6 @@
     <relativePath />
   </parent>
 
-  <properties>
-    <version.util>0.4.0-SNAPSHOT</version.util>
-  </properties>
-
   <modules>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
@@ -29,39 +25,11 @@
     <dependencies>
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zb-msgpack-core</artifactId>
+        <artifactId>zb-bom</artifactId>
         <version>${project.version}</version>
-    </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-msgpack-value</artifactId>
-        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-msgpack-json-path</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-	  <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-util</artifactId>
-        <version>${version.util}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-map</artifactId>
-        <version>${version.util}</version>
-      </dependency>
-
-      <dependency>
-       <groupId>io.zeebe</groupId>
-       <artifactId>zb-test-util</artifactId>
-       <version>${version.util}</version>
-     </dependency>
     </dependencies>
   </dependencyManagement>
 
