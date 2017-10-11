@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe BPMN model API</name>
   <artifactId>zb-bpmn-model</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.4.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -14,30 +14,33 @@
     <relativePath />
   </parent>
 
-
-  <properties>
-    <version.util>0.4.0-SNAPSHOT</version.util>
-    <version.msgpack>0.4.0-SNAPSHOT</version.msgpack>
-  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-bom</artifactId>
+        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
-      <version>${version.util}</version>
     </dependency>
         
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-path</artifactId>
-      <version>${version.msgpack}</version>
     </dependency>
     
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-el</artifactId>
-      <version>${version.msgpack}</version>
     </dependency>
         
     <dependency>
