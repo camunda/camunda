@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
@@ -44,6 +44,7 @@ import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.mockito.invocation.InvocationOnMock;
 
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.spi.LogStorage;
 
 public class MockLogStorage
@@ -274,7 +275,7 @@ public class MockLogStorage
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
             int offset = byteBuffer.position();
-            buffer.putInt(lengthOffset(offset), messageLength);
+            buffer.putInt(lengthOffset(offset), DataFrameDescriptor.framedLength(messageLength));
 
             offset = messageOffset(offset);
             setPosition(buffer, offset, position);
@@ -314,7 +315,7 @@ public class MockLogStorage
                     }
                 }
             }
-            offset += alignedLength(messageLength);
+            offset += alignedFramedLength(messageLength);
 
             byteBuffer.position(Math.min(offset, byteBuffer.limit()));
         }
@@ -328,7 +329,7 @@ public class MockLogStorage
 
             for (int i = 0; i < amount; i++)
             {
-                buffer.putInt(lengthOffset(offset), messageLength);
+                buffer.putInt(lengthOffset(offset), DataFrameDescriptor.framedLength(messageLength));
 
                 final int messageOffset = messageOffset(offset);
                 if (messageOffset < byteBuffer.limit())
@@ -357,7 +358,7 @@ public class MockLogStorage
                         }
                     }
                 }
-                offset += alignedLength(messageLength);
+                offset += alignedFramedLength(messageLength);
             }
 
             byteBuffer.position(Math.min(offset, byteBuffer.limit()));

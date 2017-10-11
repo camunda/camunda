@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.keyOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
@@ -317,9 +317,9 @@ public class LogStreamWriterTest
             final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
             final int length = (int) invocation.getArguments()[1];
 
-            claimedFragment.wrap(writeBuffer, 0, alignedLength(length));
+            claimedFragment.wrap(writeBuffer, 0, alignedFramedLength(length));
 
-            return offset + alignedLength(length);
+            return offset + alignedFramedLength(length);
         };
     }
 

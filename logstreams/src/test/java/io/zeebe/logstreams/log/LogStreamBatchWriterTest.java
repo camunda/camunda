@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
 import static io.zeebe.util.StringUtil.getBytes;
@@ -132,7 +132,7 @@ public class LogStreamBatchWriterTest
         writeBuffer.getBytes(valueOffset(messageOffset(offset), (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(EVENT_VALUE_1);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(position(PARTITION_ID, offset));
 
@@ -165,7 +165,7 @@ public class LogStreamBatchWriterTest
         writeBuffer.getBytes(valueOffset(messageOffset(offset), (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_VALUE_1[1], EVENT_VALUE_1[2]});
 
-        offset += alignedLength(headerLength(0) + 2);
+        offset += alignedFramedLength(headerLength(0) + 2);
 
         valueBuffer = new byte[EVENT_VALUE_2.length];
         writeBuffer.getBytes(valueOffset(messageOffset(offset), (short) 0), valueBuffer);
@@ -194,7 +194,7 @@ public class LogStreamBatchWriterTest
         writeBuffer.getBytes(valueOffset(messageOffset(offset), (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(EVENT_VALUE_1);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         valueBuffer = new byte[EVENT_VALUE_2.length];
         writeBuffer.getBytes(valueOffset(messageOffset(offset), (short) 0), valueBuffer);
@@ -230,7 +230,7 @@ public class LogStreamBatchWriterTest
         final byte[] expectedMetadata1 = Arrays.copyOfRange(EVENT_METADATA_1, metadata1Offset, metadata1Offset + metadata1Length);
         assertThat(metadataBuffer).isEqualTo(expectedMetadata1);
 
-        offset += alignedLength(headerLength(metadata1Length) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(metadata1Length) + EVENT_VALUE_1.length);
 
         metadataBuffer = new byte[EVENT_METADATA_2.length];
         writeBuffer.getBytes(metadataOffset(messageOffset(offset)), metadataBuffer);
@@ -261,7 +261,7 @@ public class LogStreamBatchWriterTest
         writeBuffer.getBytes(metadataOffset(messageOffset(offset)), metadataBuffer);
         assertThat(metadataBuffer).isEqualTo(EVENT_METADATA_1);
 
-        offset += alignedLength(headerLength(EVENT_METADATA_1.length) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(EVENT_METADATA_1.length) + EVENT_VALUE_1.length);
 
         metadataBuffer = new byte[EVENT_METADATA_2.length];
         writeBuffer.getBytes(metadataOffset(messageOffset(offset)), metadataBuffer);
@@ -288,7 +288,7 @@ public class LogStreamBatchWriterTest
 
         assertThat(writeBuffer.getLong(keyOffset(messageOffset(offset)))).isEqualTo(1L);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getLong(keyOffset(messageOffset(offset)))).isEqualTo(2L);
     }
@@ -315,7 +315,7 @@ public class LogStreamBatchWriterTest
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(positionEvent1);
         assertThat(writeBuffer.getLong(keyOffset(messageOffset(offset)))).isEqualTo(positionEvent1);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         final long positionEvent2 = position(PARTITION_ID, offset);
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(positionEvent2);
@@ -344,7 +344,7 @@ public class LogStreamBatchWriterTest
 
         assertThat(writeBuffer.getInt(raftTermOffset(messageOffset(offset)))).isEqualTo(raftTerm);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getInt(raftTermOffset(messageOffset(offset)))).isEqualTo(raftTerm);
     }
@@ -371,7 +371,7 @@ public class LogStreamBatchWriterTest
         assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(messageOffset(offset)))).isEqualTo(PARTITION_ID);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(messageOffset(offset)))).isEqualTo(99L);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(messageOffset(offset)))).isEqualTo(PARTITION_ID);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(messageOffset(offset)))).isEqualTo(99L);
@@ -398,7 +398,7 @@ public class LogStreamBatchWriterTest
         assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(messageOffset(offset)))).isEqualTo(-1);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(messageOffset(offset)))).isEqualTo(-1);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(messageOffset(offset)))).isEqualTo(-1);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(messageOffset(offset)))).isEqualTo(-1);
@@ -425,7 +425,7 @@ public class LogStreamBatchWriterTest
 
         assertThat(writeBuffer.getInt(producerIdOffset(messageOffset(offset)))).isEqualTo(9);
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getInt(producerIdOffset(messageOffset(offset)))).isEqualTo(9);
     }
@@ -452,7 +452,7 @@ public class LogStreamBatchWriterTest
 
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(position(PARTITION_ID, PARTITION_OFFSET));
 
-        offset += alignedLength(headerLength(0) + EVENT_VALUE_1.length);
+        offset += alignedFramedLength(headerLength(0) + EVENT_VALUE_1.length);
 
         assertThat(writeBuffer.getLong(positionOffset(messageOffset(offset)))).isEqualTo(position(PARTITION_ID, offset));
 
@@ -539,9 +539,9 @@ public class LogStreamBatchWriterTest
             final int length = (int) invocation.getArguments()[2];
 
             final int batchLength = length + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
-            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedLength(batchLength));
+            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedFramedLength(batchLength));
 
-            return alignedLength(length);
+            return alignedFramedLength(length);
         };
     }
 

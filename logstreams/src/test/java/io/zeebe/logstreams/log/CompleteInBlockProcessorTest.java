@@ -42,7 +42,7 @@ public class CompleteInBlockProcessorTest
     private static final int SEGMENT_SIZE = 1024 * 16;
 
     protected static final int LENGTH = headerLength(0);
-    protected static final int ALIGNED_LEN = alignedLength(LENGTH);
+    protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH);
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -73,16 +73,16 @@ public class CompleteInBlockProcessorTest
          */
         //small events
         int idx = 0;
-        directBuffer.putInt(lengthOffset(idx), LENGTH);
+        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
         directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
 
         idx = ALIGNED_LEN;
-        directBuffer.putInt(idx, LENGTH);
+        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
         directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(idx, headerLength(256)); // aligned size: 48
+        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(256))); // aligned size: 48
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         fsLogStorage.open();
@@ -105,7 +105,7 @@ public class CompleteInBlockProcessorTest
         buffer.wrap(readBuffer);
 
         // first event was read
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, 0)).isEqualTo(1);
     }
 
@@ -125,11 +125,11 @@ public class CompleteInBlockProcessorTest
         buffer.wrap(readBuffer);
 
         // first event was read
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // second event was read as well
-        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
     }
 
@@ -149,7 +149,7 @@ public class CompleteInBlockProcessorTest
         buffer.wrap(readBuffer);
 
         // and only first event is read
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // position and limit is reset
@@ -174,7 +174,7 @@ public class CompleteInBlockProcessorTest
         buffer.wrap(readBuffer);
 
         // and only first event is read
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // position and limit is reset
@@ -214,7 +214,7 @@ public class CompleteInBlockProcessorTest
     public void shouldTruncateBufferOnHalfBufferWasRead()
     {
         // given buffer
-        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(256)));
+        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedFramedLength(headerLength(256)));
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
@@ -228,11 +228,11 @@ public class CompleteInBlockProcessorTest
         buffer.wrap(readBuffer);
 
         // first event was read
-        assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(0))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, 0)).isEqualTo(1);
 
         // second event was read as well
-        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
+        assertThat(buffer.getInt(lengthOffset(ALIGNED_LEN))).isEqualTo(framedLength(LENGTH));
         assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
 
         // position and limit is reset

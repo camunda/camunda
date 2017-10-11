@@ -244,7 +244,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
         }
         while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
-        return claimedPosition - DataFrameDescriptor.alignedLength(framedLength);
+        return claimedPosition - DataFrameDescriptor.alignedFramedLength(framedLength);
     }
 
 }

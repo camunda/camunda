@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
@@ -281,7 +281,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
             final long nextFragmentPosition = claimedBatch.nextFragment(fragmentLength, logId);
             final int bufferOffset = claimedBatch.getFragmentOffset();
 
-            final long position = nextFragmentPosition - alignedLength(fragmentLength);
+            final long position = nextFragmentPosition - alignedFramedLength(fragmentLength);
             final long keyToWrite = key == POSITION_AS_KEY ? position : key;
 
             // write log entry header

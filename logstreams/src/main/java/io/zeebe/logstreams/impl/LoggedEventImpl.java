@@ -53,7 +53,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     @Override
     public int getMessageLength()
     {
-        return buffer.getInt(lengthOffset(fragmentOffset));
+        return messageLength(buffer.getInt(lengthOffset(fragmentOffset)));
     }
 
     @Override

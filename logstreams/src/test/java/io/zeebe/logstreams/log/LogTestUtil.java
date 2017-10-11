@@ -17,6 +17,8 @@ package io.zeebe.logstreams.log;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -47,14 +49,16 @@ public class LogTestUtil
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
             unsafeBuffer.wrap(argBuffer);
 
+            final int length = 911;
+
             // set position
             // first event
-            unsafeBuffer.putLong(lengthOffset(0), 911);
+            unsafeBuffer.putLong(lengthOffset(0), DataFrameDescriptor.framedLength(length));
             unsafeBuffer.putLong(positionOffset(messageOffset(0)), LOG_POSITION);
 
             // second event
-            final int alignedLength = alignedLength(911);
-            unsafeBuffer.putLong(lengthOffset(alignedLength), 911);
+            final int alignedLength = alignedFramedLength(length);
+            unsafeBuffer.putLong(lengthOffset(alignedLength), DataFrameDescriptor.framedLength(length));
             unsafeBuffer.putLong(positionOffset(messageOffset(alignedLength)), LOG_POSITION + 1);
 
             argBuffer.position(blockSize);
@@ -73,11 +77,12 @@ public class LogTestUtil
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
             unsafeBuffer.wrap(argBuffer);
 
-            unsafeBuffer.putLong(lengthOffset(0), 911);
+            final int length = 911;
+            unsafeBuffer.putLong(lengthOffset(0), DataFrameDescriptor.framedLength(length));
             unsafeBuffer.putLong(positionOffset(messageOffset(0)), positionSupplier.get());
 
-            argBuffer.position(alignedLength(911));
-            return address + processor.process(argBuffer, alignedLength(911));
+            argBuffer.position(alignedFramedLength(length));
+            return address + processor.process(argBuffer, alignedFramedLength(length));
         };
     }
 }

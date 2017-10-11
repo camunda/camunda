@@ -887,13 +887,15 @@ public class BufferedLogStreamReaderTest
             buffer.wrap(byteBuffer);
 
             int offset = byteBuffer.position();
+            final int framedLength = framedLength(eventLength);
+
             for (int event = 0; event < eventCount && offset < byteBuffer.capacity(); event++)
             {
                 // first event
-                buffer.putInt(lengthOffset(offset), eventLength);
+                buffer.putInt(lengthOffset(offset), framedLength);
                 buffer.putLong(positionOffset(messageOffset(offset)), event + 1);
-                fillBuffer(buffer, positionOffset(messageOffset(offset)) + 8, alignedLength(eventLength));
-                offset += alignedLength(eventLength);
+                fillBuffer(buffer, positionOffset(messageOffset(offset)) + 8, alignedLength(framedLength));
+                offset += alignedLength(framedLength);
             }
 
             byteBuffer.position(byteBuffer.capacity());
