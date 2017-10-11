@@ -51,6 +51,12 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-protocol-test-util</artifactId>
+        <version>${version.zeebe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>zb-bpmn-model</artifactId>
         <version>${version.zb-bpmn-model}</version>
       </dependency>
