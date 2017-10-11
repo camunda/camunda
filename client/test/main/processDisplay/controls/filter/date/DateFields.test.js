@@ -17,10 +17,12 @@ describe('main/processDisplay/controls/filter/date <DateFields>', () => {
   let DateInput;
   let DateRange;
   let $setTimeout;
+  let $document;
   let event;
   let startDate;
   let endDate;
   let onDateChange;
+  let switchEscapeFlag;
   let wrapper;
 
   beforeEach(() => {
@@ -33,6 +35,12 @@ describe('main/processDisplay/controls/filter/date <DateFields>', () => {
     $setTimeout = sinon.stub().callsArg(0);
     __set__('$setTimeout', $setTimeout);
 
+    $document =  {
+      addEventListener: sinon.spy(),
+      removeEventListener: sinon.spy()
+    };
+    __set__('$document', $document);
+
     event = {
       nativeEvent: {
         stopImmediatePropagation: sinon.spy()
@@ -42,10 +50,12 @@ describe('main/processDisplay/controls/filter/date <DateFields>', () => {
     startDate = moment([2017, 8, 29]);
     endDate = moment([2020, 6, 5]);
     onDateChange = sinon.spy();
+    switchEscapeFlag = sinon.spy();
 
     wrapper = mount(<DateFields format={format}
                                 startDate={startDate}
                                 endDate={endDate}
+                                switchEscapeFlag={switchEscapeFlag}
                                 onDateChange={onDateChange} />);
   });
 
@@ -53,6 +63,7 @@ describe('main/processDisplay/controls/filter/date <DateFields>', () => {
     __ResetDependency__('DateInput');
     __ResetDependency__('DateRange');
     __ResetDependency__('$setTimeout');
+    __ResetDependency__('$document');
   });
 
   it('should have start date input field', () => {
@@ -129,6 +140,28 @@ describe('main/processDisplay/controls/filter/date <DateFields>', () => {
       onDateRangeChange('date2');
 
       expect(onDateChange.calledWith('endDate', 'date2')).to.eql(true);
+    });
+  });
+
+  describe('keyboard interaction', () => {
+    let keydownListener;
+
+    beforeEach(() => {
+      const onClick = DateInput.getProperty('onClick', 0);
+
+      onClick(event); // open modal
+
+      keydownListener = $document.addEventListener.secondCall.args[1];
+    });
+
+    it('should close modal on escape', () => {
+      expect(wrapper).to.have.state('popupOpen', true); // ensure that modal is open
+
+      keydownListener({
+        key: 'Escape'
+      });
+
+      expect(wrapper).to.have.state('popupOpen', false);
     });
   });
 });

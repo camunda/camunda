@@ -22,12 +22,13 @@ export function createDateModalReact(createCallback) {
 
         this.state = {
           startDate: moment(),
-          endDate: moment()
+          endDate: moment(),
+          closeOnEscape: true
         };
       }
 
       render() {
-        return <Modal show={this.props.isOpen} onHide={this.close}>
+        return <Modal show={this.props.isOpen} onHide={this.close} keyboard={this.state.closeOnEscape}>
           <Modal.Header>
             <button type="button" className="close" onClick={this.close}>
               <span>×</span>
@@ -38,6 +39,7 @@ export function createDateModalReact(createCallback) {
             <form>
               <span>Select beginning and end dates for filter</span>
               <DateFields format={FORMAT}
+                          switchEscapeFlag={this.switchEscapeFlag}
                           onDateChange={this.onDateChange}
                           startDate={this.state.startDate}
                           endDate={this.state.endDate} />
@@ -65,6 +67,9 @@ export function createDateModalReact(createCallback) {
           </Modal.Footer>
         </Modal>;
       }
+
+      switchEscapeFlag = flag => this.setState({closeOnEscape: flag});
+
       getDateButtons(labels) {
         return labels.map(label =>
           <DateButton dateLabel={label}

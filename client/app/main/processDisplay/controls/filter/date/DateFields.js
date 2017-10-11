@@ -24,13 +24,20 @@ export class DateFields extends React.PureComponent {
 
     if (popupOpen) {
       $document.addEventListener('click', this.hidePopup);
+      $document.addEventListener('keydown', this.closeOnEscape);
+      this.props.switchEscapeFlag(false);
     } else {
       $document.removeEventListener('click', this.hidePopup);
+      $document.removeEventListener('keydown', this.closeOnEscape);
+      // enabling of escape interaction needs to be delayed so event listener is enabled after
+      // escape is pressed.
+      $setTimeout(() => this.props.switchEscapeFlag(true), 100);
     }
   }
 
   componentWillUnmount() {
     $document.removeEventListener('click', this.hidePopup);
+    $document.removeEventListener('keydown', this.closeOnEscape);
   }
 
   render() {
@@ -84,6 +91,12 @@ export class DateFields extends React.PureComponent {
             endDate={this.props.endDate} />
       </div>
     </center>;
+  }
+
+  closeOnEscape = event => {
+    if (event.key === 'Escape') {
+      this.hidePopup();
+    }
   }
 
   saveEndDateField = input => this.endDateField = input;
