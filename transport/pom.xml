@@ -14,23 +14,28 @@
     <relativePath />
   </parent>
 
-  <properties>
-    <version.dispatcher>0.4.0-SNAPSHOT</version.dispatcher>
-    <version.util>0.4.0-SNAPSHOT</version.util>
-  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-bom</artifactId>
+        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-dispatcher</artifactId>
-      <version>${version.dispatcher}</version>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
-      <version>${version.util}</version>
     </dependency>
 
     <dependency>
@@ -46,7 +51,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-test-util</artifactId>
-      <version>${version.util}</version>
       <scope>test</scope>
     </dependency>
 
