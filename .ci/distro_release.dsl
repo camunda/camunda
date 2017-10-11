@@ -14,30 +14,9 @@ def downstreamProjects = [
     'zeebe-QA-performance-tests-trigger',
 ]
 
-def mavenGpgKeys = '''\
- #!/bin/bash
-
- if [ -e "${MVN_CENTRAL_GPG_KEY_SEC}" ]
- then
-   gpg -q --allow-secret-key-import --import ${MVN_CENTRAL_GPG_KEY_SEC} || echo 'Private GPG Sign Key is already imported!.'
-   rm ${MVN_CENTRAL_GPG_KEY_SEC}
- else
-   echo 'Private GPG Key not found.'
- fi
-
- if [ -e "${MVN_CENTRAL_GPG_KEY_PUB}" ]
- then
-   gpg -q --import ${MVN_CENTRAL_GPG_KEY_PUB} || echo 'Public GPG Sign Key is already imported!.'
-   rm ${MVN_CENTRAL_GPG_KEY_PUB}
- else
-   echo 'Public GPG Key not found.'
- fi
- '''
-
 // script to set access rights on ssh keys
 // and configure git user name and email
-def setupGitConfig =
-'''\
+def setupGitConfig = '''\
 #!/bin/bash -xe
 
 chmod 600 ~/.ssh/id_rsa
@@ -46,6 +25,25 @@ chmod 600 ~/.ssh/id_rsa.pub
 git config --global user.email "ci@camunda.com"
 git config --global user.name "camunda-jenkins"
 '''
+
+def mavenGpgKeys = '''\
+#!/bin/bash
+
+if [ -e "${MVN_CENTRAL_GPG_KEY_SEC}" ]
+then
+  gpg -q --allow-secret-key-import --import ${MVN_CENTRAL_GPG_KEY_SEC} || echo 'Private GPG Sign Key is already imported!.'
+  rm ${MVN_CENTRAL_GPG_KEY_SEC}
+else
+  echo 'Private GPG Key not found.'
+fi
+
+if [ -e "${MVN_CENTRAL_GPG_KEY_PUB}" ]
+then
+  gpg -q --import ${MVN_CENTRAL_GPG_KEY_PUB} || echo 'Public GPG Sign Key is already imported!.'
+  rm ${MVN_CENTRAL_GPG_KEY_PUB}
+else
+  echo 'Public GPG Key not found.'
+fi
 
 def githubRelease = '''\
 #!/bin/bash
@@ -67,8 +65,7 @@ done
 '''
 
 // properties used by the release build
-def releaseProperties =
-[
+def releaseProperties = [
     resume: 'false',
     tag: '${RELEASE_VERSION}',
     releaseVersion: '${RELEASE_VERSION}',
@@ -131,13 +128,15 @@ mavenJob(jobName)
             {
                 targetLocation '/home/camunda/.ssh/id_rsa.pub'
             }
-            mavenSettings(mavenSettingsId) {
-              variable('NEXUS_SETTINGS')
-            }
             // jenkins github private ssh key needed to push to github
             custom('Jenkins CI GitHub SSH Private Key')
             {
                 targetLocation '/home/camunda/.ssh/id_rsa'
+            }
+            // nexus settings xml
+            mavenSettings(mavenSettingsId)
+            {
+                variable('NEXUS_SETTINGS')
             }
         }
 
