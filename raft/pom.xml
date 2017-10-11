@@ -14,44 +14,42 @@
     <relativePath />
   </parent>
 
-
-  <properties>
-    <version.logstreams>0.4.0-SNAPSHOT</version.logstreams>
-    <version.msgpack>0.4.0-SNAPSHOT</version.msgpack>
-    <version.protocol>0.4.0-SNAPSHOT</version.protocol>
-    <version.transport>0.4.0-SNAPSHOT</version.transport>
-    <version.util>0.4.0-SNAPSHOT</version.util>
-  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-bom</artifactId>
+        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-logstreams</artifactId>
-      <version>${version.logstreams}</version>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-value</artifactId>
-      <version>${version.msgpack}</version>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>
-      <version>${version.protocol}</version>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-transport</artifactId>
-      <version>${version.transport}</version>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
-      <version>${version.util}</version>
     </dependency>
 
     <dependency>
@@ -62,7 +60,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-test-util</artifactId>
-      <version>${version.util}</version>
       <scope>test</scope>
     </dependency>
 
