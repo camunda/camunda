@@ -35,6 +35,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
     @Override
     protected void executeSetup(Properties properties, ZeebeClient client)
     {
+        super.executeSetup(properties, client);
         final WorkflowsClient workflowsClient = client.workflows();
 
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")

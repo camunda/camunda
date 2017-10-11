@@ -125,6 +125,8 @@ public class TopicSubscriptionThroughputTest
 
     private void executeSetup(Properties properties, ZeebeClient client)
     {
+        client.topics().create(CommonProperties.DEFAULT_TOPIC_NAME, 1).execute();
+
         final int numTasks = Integer.parseInt(properties.getProperty(TEST_NUM_TASKS));
         final int setUpTimeMs = Integer.parseInt(properties.getProperty(TEST_SETUP_TIMEMS));
 

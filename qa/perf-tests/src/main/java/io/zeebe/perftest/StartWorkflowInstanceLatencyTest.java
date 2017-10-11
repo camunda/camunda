@@ -33,6 +33,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     @Override
     protected void executeSetup(Properties properties, ZeebeClient client)
     {
+        super.executeSetup(properties, client);
         final WorkflowsClient workflowsClient = client.workflows();
 
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")

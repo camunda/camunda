@@ -78,7 +78,7 @@ public abstract class FixedRateLatencyTest
 
     protected void executeSetup(Properties properties, ZeebeClient client)
     {
-        // noop
+        client.topics().create(CommonProperties.DEFAULT_TOPIC_NAME, 1).execute();
     }
 
     @SuppressWarnings("rawtypes")

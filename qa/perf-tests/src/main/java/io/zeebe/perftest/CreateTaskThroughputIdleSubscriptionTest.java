@@ -38,6 +38,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     @Override
     protected void executeSetup(Properties properties, ZeebeClient client)
     {
+        super.executeSetup(properties, client);
         client.tasks().newTaskSubscription(DEFAULT_TOPIC_NAME)
             .taskType("another" + TASK_TYPE)
             .handler((c, t) ->
