@@ -13,9 +13,9 @@ export class LoginFormReact extends React.Component {
 
     this.state = {
       user: '',
-      password: '',
-      focusRequired: false
+      password: ''
     };
+    this.focusRequired = false;
   }
 
   render() {
@@ -43,7 +43,7 @@ export class LoginFormReact extends React.Component {
         <div className="col-sm-10" >
           <input type="password"
                  value={this.state.password}
-                 ref={this.savePasswordFiled}
+                 ref={this.savePasswordField}
                  className="form-control password"
                  placeholder="Password"
                  onChange={this.changePassword}
@@ -71,34 +71,26 @@ export class LoginFormReact extends React.Component {
 
   componentWillReceiveProps({error}) {
     if (error) {
-      this.setState({
-        ...this.state,
-        focusRequired: true
-      });
+      this.focusRequired = true;
     }
   }
 
   componentDidUpdate() {
-    if (this.state.focusRequired) {
+    if (this.focusRequired) {
       this.passwordField.focus();
       this.passwordField.select();
 
-      this.setState({
-        ...this.state,
-        focusRequired: false
-      });
+      this.focusRequired = false;
     }
   }
 
-  savePasswordFiled = input => this.passwordField = input;
+  savePasswordField = input => this.passwordField = input;
 
   changeUser = event => this.setState({
-    ...this.state,
     user: event.target.value
   });
 
   changePassword = event => this.setState({
-    ...this.state,
     password: event.target.value
   });
 
