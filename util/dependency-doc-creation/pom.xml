@@ -4,7 +4,7 @@
 
   <parent>
     <groupId>org.camunda.optimize</groupId>
-    <artifactId>qa</artifactId>
+    <artifactId>util</artifactId>
     <version>1.5.0-SNAPSHOT</version>
   </parent>
 
