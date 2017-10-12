@@ -1,5 +1,9 @@
 # Camunda Optimize Frontend
 
+## Requirements
+
+Node 6+
+
 ## Installation
 
 Install yarn
