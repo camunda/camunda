@@ -48,7 +48,8 @@ public abstract class HeatMapReader {
 
     SearchRequestBuilder srb = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getProcessInstanceType());
+      .setTypes(configurationService.getProcessInstanceType())
+      .setFetchSource(false);
 
     BoolQueryBuilder query = setupBaseQuery(dto.getProcessDefinitionId());
 

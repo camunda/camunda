@@ -77,7 +77,6 @@ public interface ConfigurationServiceConstants {
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
   String GENERAL_BACKOFF = "$.import.handler.backoff.value";
-  String CARDINALITY_PRECISION = "$.es.cardinalityPrecision";
 
   String DATE_FORMAT = "$.serialization.dateFormat";
   String MAX_VARIABLE_VALUE_LIST_SIZE = "$.variable.maxValueListSize";

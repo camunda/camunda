@@ -8,10 +8,10 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.springframework.stereotype.Component;
 
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -22,7 +22,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public class FrequencyHeatMapReader extends HeatMapReader {
 
   void processAggregations(HeatMapResponseDto result, SearchRequestBuilder srb) {
-    Aggregations aggregations = getTermsWithAggregation(srb);
+    SearchResponse searchReponse = getTermsWithAggregation(srb);
+    Aggregations aggregations = searchReponse.getAggregations();
     Nested activities = aggregations.get("events");
     Filter filteredActivities = activities.getAggregations().get("filteredEvents");
     Terms terms = filteredActivities.getAggregations().get("activities");
@@ -30,11 +31,10 @@ public class FrequencyHeatMapReader extends HeatMapReader {
       result.getFlowNodes().put(b.getKeyAsString(), b.getDocCount());
     }
 
-    Cardinality pi = aggregations.get("pi");
-    result.setPiCount(pi.getValue());
+    result.setPiCount(searchReponse.getHits().getTotalHits());
   }
 
-  private Aggregations getTermsWithAggregation(SearchRequestBuilder srb) {
+  private SearchResponse getTermsWithAggregation(SearchRequestBuilder srb) {
     SearchResponse sr = srb
       .addAggregation(
         nested("events", "events")
@@ -53,14 +53,9 @@ public class FrequencyHeatMapReader extends HeatMapReader {
           )
         )
       )
-      .addAggregation(AggregationBuilders
-        .cardinality("pi")
-        .field("processInstanceId")
-        .precisionThreshold(configurationService.getCardinalityPrecisionThreshold())
-      )
       .get();
 
-    return sr.getAggregations();
+    return sr;
   }
 
 }

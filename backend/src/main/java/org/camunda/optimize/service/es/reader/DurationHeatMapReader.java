@@ -19,7 +19,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 public class DurationHeatMapReader extends HeatMapReader {
 
   void processAggregations(HeatMapResponseDto result, SearchRequestBuilder srb) {
-    Aggregations aggregations = getTermsWithAggregation(srb);
+    SearchResponse searchReponse = getTermsWithAggregation(srb);
+    Aggregations aggregations = searchReponse.getAggregations();
     Nested activities = aggregations.get("events");
     Filter filteredActivities = activities.getAggregations().get("filteredEvents");
     Terms terms = filteredActivities.getAggregations().get("activities");
@@ -29,11 +30,10 @@ public class DurationHeatMapReader extends HeatMapReader {
       result.getFlowNodes().put(b.getKeyAsString(), roundedDuration);
     }
 
-    Cardinality pi = aggregations.get("pi");
-    result.setPiCount(pi.getValue());
+    result.setPiCount(searchReponse.getHits().getTotalHits());
   }
 
-  private Aggregations getTermsWithAggregation(SearchRequestBuilder srb) {
+  private SearchResponse getTermsWithAggregation(SearchRequestBuilder srb) {
     SearchResponse sr = srb
       .addAggregation(
         nested("events", "events")
@@ -56,13 +56,8 @@ public class DurationHeatMapReader extends HeatMapReader {
           )
         )
       )
-      .addAggregation(
-        cardinality("pi")
-        .field("processInstanceId")
-        .precisionThreshold(configurationService.getCardinalityPrecisionThreshold())
-      )
       .get();
 
-    return sr.getAggregations();
+    return sr;
   }
 }

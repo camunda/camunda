@@ -110,7 +110,6 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
-  private Long cardinalityPrecisionThreshold;
 
   public ConfigurationService() {
     this((String[]) null);
@@ -748,17 +747,6 @@ public class ConfigurationService {
 
   public boolean areProcessDefinitionsToImportDefined() {
     return getProcessDefinitionIdsToImport() != null && !getProcessDefinitionIdsToImport().isEmpty();
-  }
-
-  public Long getCardinalityPrecisionThreshold() {
-    if (cardinalityPrecisionThreshold == null) {
-      cardinalityPrecisionThreshold = jsonContext.read(ConfigurationServiceConstants.CARDINALITY_PRECISION, Long.class);
-    }
-    return cardinalityPrecisionThreshold;
-  }
-
-  public void setCardinalityPrecisionThreshold(Long cardinalityPrecisionThreshold) {
-    this.cardinalityPrecisionThreshold = cardinalityPrecisionThreshold;
   }
 
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
