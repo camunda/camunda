@@ -22,23 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
@@ -51,11 +38,14 @@ import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.impl.Partition;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
+import org.junit.*;
+import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Ignore("Unreliable cause of multiple problems: " +
     "https://github.com/zeebe-io/zeebe/issues/292 " +
@@ -69,7 +59,6 @@ public class BrokerLeaderChangeTest
 
     public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
     public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("localhost", 51015);
-    public static final SocketAddress BROKER_1_RAFT_ADDRESS = new SocketAddress("localhost", 51017);
 
     public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
     public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("localhost", 41015);
@@ -84,13 +73,12 @@ public class BrokerLeaderChangeTest
     @Rule
     public ClientRule clientRule = new ClientRule();
 
-    protected Partition defaultPartition;
-
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
     protected ZeebeClient client;
     protected TopicsClient topicClient;
     protected TasksClient taskClient;
+    protected int partition;
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(120);
@@ -101,7 +89,7 @@ public class BrokerLeaderChangeTest
         client = clientRule.getClient();
         topicClient = clientRule.topics();
         taskClient = clientRule.tasks();
-        defaultPartition = new Partition(clientRule.getDefaultTopic(), clientRule.getDefaultPartition());
+        partition = clientRule.getDefaultPartition();
     }
 
     @After
@@ -138,7 +126,7 @@ public class BrokerLeaderChangeTest
         refreshTopologyNow();
 
         // wait for topic leader
-        SocketAddress leader = topologyObserver.waitForLeader(defaultPartition, brokers.keySet());
+        SocketAddress leader = topologyObserver.waitForLeader(partition, brokers.keySet());
 
         // create task on leader
         LOG.info("Creating task for type {}", TASK_TYPE);
@@ -156,7 +144,7 @@ public class BrokerLeaderChangeTest
         LOG.info("Leader {} is shutdown", leader);
 
         // wait for other broker become leader
-        leader = topologyObserver.waitForLeader(defaultPartition, brokers.keySet());
+        leader = topologyObserver.waitForLeader(partition, brokers.keySet());
         LOG.info("Leader changed to {}", leader);
 
         // complete task and wait for completed event
@@ -257,15 +245,15 @@ public class BrokerLeaderChangeTest
             LOG.info("Broker {} is known by the cluster", socketAddress);
         }
 
-        SocketAddress waitForLeader(final Partition topic, final Set<SocketAddress> socketAddresses)
+        SocketAddress waitForLeader(final int partition, final Set<SocketAddress> socketAddresses)
         {
             final TopologyResponse respose = updateTopology()
-                .until(t -> t != null && socketAddresses.contains(getLeaderForTopic(t, topic)),
-                    "Failed to wait for %s become leader of topic %s", socketAddresses, topic);
+                .until(t -> t != null && socketAddresses.contains(getLeaderForPartition(t, partition)),
+                    "Failed to wait for %s become leader of partition %d", socketAddresses, partition);
 
-            final SocketAddress leader = getLeaderForTopic(respose, topic);
+            final SocketAddress leader = getLeaderForPartition(respose, partition);
 
-            LOG.info("Broker {} is leader for topic {}", leader, topic);
+            LOG.info("Broker {} is leader for partition {}", leader, partition);
             return leader;
         }
 
@@ -274,11 +262,11 @@ public class BrokerLeaderChangeTest
             return doRepeatedly(requestTopologyCmd::execute);
         }
 
-        static SocketAddress getLeaderForTopic(TopologyResponse resp, Partition topic)
+        static SocketAddress getLeaderForPartition(TopologyResponse resp, int partition)
         {
             for (TopicLeader leader : resp.getTopicLeaders())
             {
-                if (topic.getPartitionId() == leader.getPartitionId())
+                if (partition == leader.getPartitionId())
                 {
                     return leader.getSocketAddress();
                 }
