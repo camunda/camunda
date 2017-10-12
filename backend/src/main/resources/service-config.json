@@ -384,6 +384,12 @@
     */
     "index": "optimize",
     "licenseType": "license",
+    /*
+    Defines how precise the cardinality estimation is. Counts below the given
+     value are determined accurately. However, above the value the estimate
+     becomes fuzzy. Maximum supported threshold is 40 000.
+    */
+    "cardinalityPrecision": 10000,
 
     "sampler": {
       /*

@@ -26,7 +26,7 @@ public abstract class HeatMapReader {
   @Autowired
   private Client esclient;
   @Autowired
-  private ConfigurationService configurationService;
+  protected ConfigurationService configurationService;
 
   @Autowired
   private QueryFilterEnhancer queryFilterEnhancer;

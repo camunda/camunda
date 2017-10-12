@@ -56,6 +56,7 @@ public class FrequencyHeatMapReader extends HeatMapReader {
       .addAggregation(AggregationBuilders
         .cardinality("pi")
         .field("processInstanceId")
+        .precisionThreshold(configurationService.getCardinalityPrecisionThreshold())
       )
       .get();
 

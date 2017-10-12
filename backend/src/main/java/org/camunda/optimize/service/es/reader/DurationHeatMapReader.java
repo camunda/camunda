@@ -59,6 +59,7 @@ public class DurationHeatMapReader extends HeatMapReader {
       .addAggregation(
         cardinality("pi")
         .field("processInstanceId")
+        .precisionThreshold(configurationService.getCardinalityPrecisionThreshold())
       )
       .get();
 
