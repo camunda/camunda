@@ -344,7 +344,7 @@
   "es": {
     "analyzer": {
       /*
-      camunda.optimize.es.analyzer.name=case_sensitive
+      Defines the name of the analyzer.
       */
       "name": "case_sensitive",
       /*
