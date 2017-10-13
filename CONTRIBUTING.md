@@ -16,6 +16,20 @@ Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
 this code. Please report unacceptable behavior to
 code-of-conduct@zeebe.io.
 
+## Using GitHub issues
+
+We use [GitHub issues][issues] to track bugs and enhancements. If you have a
+general usage question please ask on the [forum][] or [slack][] channel.
+
+If you are reporting a bug, please help to speed up problem diagnosis by
+providing as much information as possible. Ideally, that would include a small
+[sample project][sample] that reproduces the problem.
+
+[issues]: https://github.com/zeebe-io/zeebe/issues
+[forum]: https://forum.zeebe.io/
+[slack]: https://zeebe-slackin.herokuapp.com/
+[sample]: https://github.com/zeebe-io/zeebe-test-template-java
+
 ## Building zb from Source
 
 ## Building the Documentation
