@@ -2,6 +2,13 @@
 
 Library for fast exchange of messages between threads.
 
+* [Web Site](https://zeebe.io)
+* [Documentation](https://docs.zeebe.io)
+* [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
+* [Slack Channel](https://zeebe-slackin.herokuapp.com/)
+* [User Forum](https://forum.zeebe.io)
+* [Contribution Guidelines](/CONTRIBUTING.md)
+
 ## DISCLAIMER
 
 This project is work in progress and currently NOT meant for production use!
