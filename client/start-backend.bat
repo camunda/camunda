@@ -1,1 +1,0 @@
-yarn run start-backend

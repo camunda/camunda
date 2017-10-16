@@ -25,7 +25,7 @@ yarn run start-backend
 Then in new terminal
 
 ```bash
-yarn run serve
+yarn start
 ```
 
 Backend also can be started without maven compilation step. It's possible only if there is already
@@ -40,31 +40,13 @@ yarn run start-backend
 ## Production
 
 ```bash
-yarn run compile
+yarn build
 ```
 
-Should create ``dist`` folder with built application.
+Should create ``build`` folder with built application.
 
 ## Unit Testing
 
-To run tests single time:
 ```bash
-yarn run test
+yarn test
 ```
-
-Watch:
-```bash
-yarn run test-watch
-```
-
-## Contributing
-
-Please refer to the [.eslintrc file](https://github.com/camunda/camunda-optimize/blob/master/client/.eslintrc.json) for coding style guidelines.
-
-### Naming Conventions
-
-Please use a capital letter for component files and lower case letters for reducer, service and other files. E.g. use `client/app/App.js` for the App component and `client/app/reducer.js` for the app reducer.
-
-## Documentation
-
-You can find the documentation of the frontend structure in the [Github Wiki](https://github.com/camunda/camunda-optimize/wiki/Frontend-Wiki)

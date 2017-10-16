@@ -1,0 +1,17 @@
+.LogoutButton {
+  list-style: none;
+  background-color: transparent;
+}
+
+.LogoutButton.hidden {
+  display: none;
+}
+
+.LogoutButton a {
+  display: block;
+  height: 42px;
+  line-height: 45px;
+  padding: 0 6px;
+  color: #545454;
+  text-decoration: none;
+}

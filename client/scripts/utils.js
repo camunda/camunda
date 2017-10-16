@@ -143,7 +143,7 @@ function splitIntoChunks(data, chunkSize) {
     currentChunk.push(data[i]);
     chunkIndex++;
 
-    if (chunkIndex === chunkIndex || i + 1 === data.length) {
+    if (i + 1 === data.length) {
       result.push(currentChunk);
       chunkIndex = 0;
       currentChunk = [];

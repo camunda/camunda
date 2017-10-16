@@ -1,1 +1,0 @@
-export {definition} from './definition';

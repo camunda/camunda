@@ -379,7 +379,7 @@
       <build>
         <resources>
           <resource>
-            <directory>${project.build.outputDirectory}/../../../client/dist</directory>
+            <directory>${project.build.outputDirectory}/../../../client/build</directory>
             <targetPath>webapp</targetPath>
           </resource>
           <resource>
@@ -695,7 +695,7 @@
         </plugins>
         <resources>
           <resource>
-            <directory>${project.build.outputDirectory}/../../../client/dist</directory>
+            <directory>${project.build.outputDirectory}/../../../client/build</directory>
             <targetPath>webapp</targetPath>
           </resource>
           <resource>

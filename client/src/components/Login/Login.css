@@ -1,0 +1,11 @@
+.Login {
+  display: block;
+  margin: 4rem auto;
+  padding: 1rem 3rem;
+  width: 40vw;
+  border: 1px solid lightgray;
+}
+
+.Login .error-message.hidden {
+  display: none;
+}

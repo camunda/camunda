@@ -57,15 +57,6 @@ pipeline {
         ]) {}
       }
     }
-    stage('Linting') {
-      steps {
-        sh '''
-          cd ./client
-          yarn
-          yarn run eslint
-        '''
-      }
-    }
     stage('Unit') {
       steps {
         sh 'mvn -Pproduction -s settings.xml clean install'
@@ -81,7 +72,7 @@ pipeline {
         sh '''
           cd ./client
           yarn
-          yarn run test
+          CI=true yarn test
         '''
       }
       post {

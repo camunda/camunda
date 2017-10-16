@@ -1,0 +1,47 @@
+@font-face {
+  font-family: 'bpmn';
+  src: url('/fonts/bpmn.eot');
+  src: url('/fonts/bpmn.eot#iefix') format('embedded-opentype'),
+       url('/fonts/bpmn.woff') format('woff'),
+       url('/fonts/bpmn.ttf') format('truetype'),
+       url('/fonts/bpmn.svg#bpmn') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.Header {
+  border-top: 3px solid #b5152b;
+  min-height: 45px;
+  box-shadow: 0 2px 10px -4px #555555;
+  color: #777777;
+  background-color: #fff;
+  font-size: 14px;
+}
+
+.Header a {
+  float: left;
+  font-size: 21px;
+  line-height: 42px;
+  height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 10.5px;
+  padding-right: 15px;
+  color: #000;
+  text-decoration: none;
+}
+
+.Header a .brand-logo:before {
+  color: #b5152b;
+  display: inline-block;
+  font-family: "bpmn";
+  font-style: normal;
+  font-weight: normal;
+  content: '\E831';
+}
+
+.Header nav ul {
+  float: right;
+  margin: 0;
+  padding: 0;
+}
