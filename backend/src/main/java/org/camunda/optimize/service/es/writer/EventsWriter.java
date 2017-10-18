@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -42,7 +43,7 @@ public class EventsWriter {
     logger.debug("Writing [{}] events to elasticsearch", events.size());
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     Map<String, List<EventDto>> processInstanceToEvents = new HashMap<>();
     for (EventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {

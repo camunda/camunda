@@ -16,15 +16,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class ProcessDefinitionXmlIdBasedImportService
+public class IdBasedProcessDefinitionXmlImportService
     extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportIndexHandler> {
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlIdBasedImportService.class);
+  private final Logger logger = LoggerFactory.getLogger(IdBasedProcessDefinitionXmlImportService.class);
 
   private ProcessDefinitionWriter procDefWriter;
   private MissingProcessDefinitionXmlFinder xmlFinder;
   private IdBasedProcessDefinitionXmlFetcher idBasedProcessDefinitionXmlFetcher;
 
-  public ProcessDefinitionXmlIdBasedImportService(String engineAlias) {
+  public IdBasedProcessDefinitionXmlImportService(String engineAlias) {
     super(engineAlias);
   }
 

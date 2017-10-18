@@ -213,6 +213,7 @@ public class ImportScheduler extends Thread {
    * An example is import of HPI based on information obtained from HAI.
    */
   public void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
+    logger.debug("post processing [{}] import", toExecute.getElasticsearchType());
     if (importResult.getIdsToFetch() != null) {
       importScheduleJobs.addAll(
           scheduleJobFactory.createIndexedScheduleJobs(
@@ -228,7 +229,28 @@ public class ImportScheduler extends Thread {
           importResult.getEngineHasStillNewData(),
           typeCastedJob
       );
+    } else {
+      //TODO: move in branching statement above once PI import is paged
+      boolean pi_have_data = configurationService.getProcessInstanceType().equals(toExecute.getElasticsearchType()) && importResult.getEngineHasStillNewData();
+      if (pi_have_data && !this.variableImportScheduled()) {
+        logger.debug("creating variable import job");
+        importScheduleJobs.add(
+            scheduleJobFactory.createPagedJob(configurationService.getVariableType(), toExecute.getEngineAlias())
+        );
+      }
     }
+
+  }
+
+  private boolean variableImportScheduled() {
+    boolean result = false;
+    for (ImportScheduleJob job : importScheduleJobs) {
+      if (configurationService.getVariableType().equals(job.getElasticsearchType())) {
+        result = true;
+        break;
+      }
+    }
+    return result;
   }
 
   /**

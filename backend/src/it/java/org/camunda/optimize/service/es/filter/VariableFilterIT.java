@@ -360,8 +360,15 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
+  }
+
+  private void resetIndexesAndClean() {
+    embeddedOptimizeRule.resetImportStartIndexes();
+
+    elasticSearchRule.cleanAndVerify();
   }
 
   @Test
@@ -388,7 +395,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -416,6 +424,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 1L);
+
+      embeddedOptimizeRule.restartImportCycle();
       elasticSearchRule.cleanAndVerify();
     }
   }
@@ -444,7 +454,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -471,7 +482,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -498,7 +510,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -525,7 +538,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 1L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -552,6 +566,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
+
+      embeddedOptimizeRule.restartImportCycle();
       elasticSearchRule.cleanAndVerify();
     }
   }
@@ -580,7 +596,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 1L);
-      elasticSearchRule.cleanAndVerify();
+
+      resetIndexesAndClean();
     }
   }
 
@@ -965,8 +982,8 @@ public class VariableFilterIT {
   }
 
   private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
-    assertThat(resultMap.getFlowNodes().size(), is(size));
-    assertThat(resultMap.getPiCount(), is(piCount));
+    assertThat("flow nodes count", resultMap.getFlowNodes().size(), is(size));
+    assertThat("PI count", resultMap.getPiCount(), is(piCount));
   }
 
   private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {

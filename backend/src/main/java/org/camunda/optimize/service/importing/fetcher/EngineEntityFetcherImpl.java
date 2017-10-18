@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing.fetcher;
 
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -92,6 +93,30 @@ public class EngineEntityFetcherImpl extends AbstractEntityFetcher {
     }
     return entries;
   }
+
+  public Integer fetchHistoricVariableInstancesCount(String engineAlias) throws OptimizeException {
+    Integer result = null;
+    long requestStart = System.currentTimeMillis();
+    try {
+      CountDto count = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
+          .queryParam("deserializeValues", "false")
+          .path(configurationService.getHistoricVariableInstanceCountEndpoint())
+          .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
+          .get()
+          .readEntity(CountDto.class);
+      long requestEnd = System.currentTimeMillis();
+      logger.debug("Fetch of [HVI] count took [{}] ms", requestEnd - requestStart);
+
+      result = count.getCount();
+    } catch (RuntimeException e) {
+      logError("Could not fetch historic variable instances from engine. Please check the connection!", e);
+      throw new OptimizeException();
+    }
+    return result;
+  }
+
 
   protected void logError(String message, Exception e) {
     if (logger.isDebugEnabled()) {

@@ -16,6 +16,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -69,7 +70,7 @@ public class VariableWriter {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
     BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
     //build map first
     Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();

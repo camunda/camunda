@@ -117,4 +117,19 @@ public class VariableReader {
     return termsAggregation;
   }
 
+  public int getVariableInstanceCount(String engineAlias) {
+    Long result;
+
+    QueryBuilder query;
+    query = QueryBuilders.matchAllQuery();
+    SearchResponse scrollResp = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getVariableType())
+        .setQuery(query)
+        .setFetchSource(false)
+        .get();
+
+    result = scrollResp.getHits().getTotalHits();
+    return result.intValue();
+  }
 }

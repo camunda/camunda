@@ -78,18 +78,9 @@ public class ScheduleJobFactory {
   public List<ImportScheduleJob> createIndexedScheduleJobs(Set<String> idsToFetch, String engineAlias) {
     List<ImportScheduleJob> jobs = new ArrayList<>();
     if (idsToFetch != null) {
-      addHistoricVariableInstanceScheduleJobs(jobs, idsToFetch, engineAlias);
       addHistoricProcessInstanceScheduleJobs(jobs, idsToFetch, engineAlias);
     }
     return jobs;
-  }
-
-  private void addHistoricVariableInstanceScheduleJobs(List<ImportScheduleJob> jobs, Set<String> idsToFetch, String engineAlias) {
-    List<Set<String>> batches =
-      splitUpSetIntoListOfBatches(idsToFetch, configurationService.getEngineImportVariableInstanceMaxPageSize());
-    for (Set<String> batch : batches) {
-      jobs.add(createHistoricVariableInstanceScheduleJob(batch, engineAlias));
-    }
   }
 
   private void addHistoricProcessInstanceScheduleJobs(List<ImportScheduleJob> jobs, Set<String> idsToFetch, String engineAlias) {

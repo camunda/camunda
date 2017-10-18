@@ -143,30 +143,6 @@ public class VariableRetrievalIT {
   }
 
   @Test
-  public void variablesInDifferentProcessDefinitionDoesNotAffectResult() throws IOException, OptimizeException {
-    // given
-    String processDefinitionId = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("stringVar", "stringValue");
-    engineRule.startProcessInstance(processDefinitionId, variables);
-    String processDefinitionId2 = deploySimpleProcessDefinition();
-    variables.put("boolVar", 12345);
-    engineRule.startProcessInstance(processDefinitionId2, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    List<GetVariablesResponseDto> variableResponse = getGetVariablesResponseDtos(processDefinitionId);
-
-    // then
-    assertThat(variableResponse.size(), is(1));
-    GetVariablesResponseDto responseDto = variableResponse.get(0);
-    assertThat(responseDto.getValues().size(), is(1));
-    assertThat(responseDto.getName(), is("stringVar"));
-    assertThat(responseDto.isValuesAreComplete(), is(true));
-  }
-
-  @Test
   public void allPrimitiveTypesCanBeRead() throws ParseException, IOException, OptimizeException {
     // given
     Map<String, Object> variables = new HashMap<>();

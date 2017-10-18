@@ -3,9 +3,9 @@ package org.camunda.optimize.service.importing.provider;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionIdBasedImportService;
+import org.camunda.optimize.service.importing.impl.IdBasedProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlIdBasedImportService;
+import org.camunda.optimize.service.importing.impl.IdBasedProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
@@ -42,10 +42,12 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       PaginatedImportService processDefinitionImportService = getProcessDefinitionImportService(engineAlias);
       PaginatedImportService processDefinitionXmlImportService = getProcessDefinitionXmlImportService(engineAlias);
       ActivityImportService activityImportService = getActivityImportService(engineAlias);
+      VariableImportService variableImportService = getVariableImportService(engineAlias);
 
       engineServices.put(processDefinitionImportService.getElasticsearchType(), processDefinitionImportService);
       engineServices.put(processDefinitionXmlImportService.getElasticsearchType(), processDefinitionXmlImportService);
       engineServices.put(activityImportService.getElasticsearchType(), activityImportService);
+      engineServices.put(variableImportService.getElasticsearchType(), variableImportService);
 
       paginatedServices.put(engineAlias, engineServices);
 
@@ -53,11 +55,9 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       importServiceMap.put(processDefinitionImportService.getElasticsearchType(), processDefinitionImportService);
       importServiceMap.put(processDefinitionXmlImportService.getElasticsearchType(), processDefinitionXmlImportService);
       importServiceMap.put(activityImportService.getElasticsearchType(), activityImportService);
-
-      VariableImportService variableImportService = getVariableImportService(engineAlias);
-      ProcessInstanceImportService processInstanceImportService = getProcessInstanceImportService(engineAlias);
-
       importServiceMap.put(variableImportService.getElasticsearchType(), variableImportService);
+
+      ProcessInstanceImportService processInstanceImportService = getProcessInstanceImportService(engineAlias);
       importServiceMap.put(processInstanceImportService.getElasticsearchType(), processInstanceImportService);
 
       allServices.put(engineAlias, importServiceMap);
@@ -88,7 +88,7 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       result = (PaginatedImportService) this.allServices.get(engineAlias).get(configurationService.getProcessDefinitionType());
     } else {
       if (configurationService.areProcessDefinitionsToImportDefined()) {
-        result = new ProcessDefinitionIdBasedImportService(engineAlias);
+        result = new IdBasedProcessDefinitionImportService(engineAlias);
       } else {
         result = new ProcessDefinitionImportService(engineAlias);
       }
@@ -106,7 +106,7 @@ public class ImportServiceProvider implements ConfigurationReloadable {
 
     } else {
       if (configurationService.areProcessDefinitionsToImportDefined()) {
-        result = new ProcessDefinitionXmlIdBasedImportService(engineAlias);
+        result = new IdBasedProcessDefinitionXmlImportService(engineAlias);
       } else {
         result = new ProcessDefinitionXmlImportService(engineAlias);
       }

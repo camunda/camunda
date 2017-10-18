@@ -5,11 +5,16 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
+import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.es.reader.VariableReader;
 import org.camunda.optimize.service.es.writer.VariableWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingVariablesFinder;
+import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcherImpl;
+import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.VariableImportJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +25,8 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-public class VariableImportService extends IdBasedImportService<HistoricVariableInstanceDto, VariableDto> {
+public class VariableImportService
+    extends PaginatedImportService<HistoricVariableInstanceDto, VariableDto, AllEntitiesBasedImportIndexHandler> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
 
@@ -28,13 +34,17 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   private MissingVariablesFinder missingVariablesFinder;
   private ImportAdapterProvider importServiceProvider;
 
+  private EngineEntityFetcherImpl engineEntityFetcher;
+  private ProcessInstanceReader processInstanceReader;
+  private VariableReader variableReader;
+
   public VariableImportService(String engineAlias) {
     super(engineAlias);
   }
 
   @Override
-  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds, String engineAlias) throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricVariableInstances(processInstanceIds, engineAlias);
+  public Class<AllEntitiesBasedImportIndexHandler> getIndexHandlerType() {
+    return AllEntitiesBasedImportIndexHandler.class;
   }
 
   @Override
@@ -51,6 +61,38 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     return convertPluginListToImportList(pluginVariableList);
+  }
+
+  @Override
+  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
+    Set<String> ids = fetchIds(job);
+    logger.debug("Fetched [{}] PID for HVI import", ids.size());
+    if (ids.size() == 0) {
+      return new ArrayList<> ();
+    } else {
+      return engineEntityFetcher.fetchHistoricVariableInstances(ids, job.getEngineAlias());
+    }
+  }
+
+  private Set<String> fetchIds(PageBasedImportScheduleJob job) {
+    return processInstanceReader.getProcessInstanceIds(job.getAbsoluteImportIndex(), job.getEngineAlias());
+  }
+
+  /**
+   * Please note that proper implementation is not possible until the moment Engine provides endpoint
+   * to filter variables by process definition ID.
+   *
+   * Right now just return count that we already have in Elasticsearch, in order for progress to be
+   * always 100%
+   *
+   * @param indexHandler
+   * @param engineAlias
+   * @return
+   * @throws OptimizeException
+   */
+  @Override
+  public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
+    return variableReader.getVariableInstanceCount(engineAlias);
   }
 
   private List<VariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
@@ -159,5 +201,20 @@ public class VariableImportService extends IdBasedImportService<HistoricVariable
   @Autowired
   public void setImportServiceProvider(ImportAdapterProvider importServiceProvider) {
     this.importServiceProvider = importServiceProvider;
+  }
+
+  @Autowired
+  public void setEngineEntityFetcher(EngineEntityFetcherImpl engineEntityFetcher) {
+    this.engineEntityFetcher = engineEntityFetcher;
+  }
+
+  @Autowired
+  public void setProcessInstanceReader(ProcessInstanceReader processInstanceReader) {
+    this.processInstanceReader = processInstanceReader;
+  }
+
+  @Autowired
+  public void setVariableReader(VariableReader variableReader) {
+    this.variableReader = variableReader;
   }
 }

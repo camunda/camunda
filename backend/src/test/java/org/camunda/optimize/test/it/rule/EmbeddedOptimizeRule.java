@@ -41,15 +41,17 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    */
   public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
     scheduleImport();
-    getJobExecutor().startExecutingImportJobs();
 
     for (ImportScheduler scheduler : getImportSchedulerFactory().getInstances().values()) {
       while (scheduler.hasStillJobsToExecute()) {
+        getJobExecutor().startExecutingImportJobs();
+
         executeIfJobsArePresent(scheduler);
+
+        //make sure that all entities are updated in ES between import rounds
+        getJobExecutor().stopExecutingImportJobs();
       }
     }
-
-    getJobExecutor().stopExecutingImportJobs();
   }
 
   /**
@@ -67,6 +69,13 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getJobExecutor().stopExecutingImportJobs();
   }
 
+  /**
+   * This method is a "reconstructed" version of {@link org.camunda.optimize.service.importing.ImportScheduler#executeNextJob()},
+   * without backoff handling
+   *
+   * @param scheduler
+   * @throws OptimizeException
+   */
   private void executeIfJobsArePresent(ImportScheduler scheduler) throws OptimizeException {
     if (scheduler.hasStillJobsToExecute()) {
       ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
@@ -75,8 +84,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
           nextToExecute.getEngineAlias()
       ).executeImport(nextToExecute);
 
-      result.setEngineHasStillNewData(scheduler.handleIndexes(result, nextToExecute));
-      scheduler.postProcess(nextToExecute, result);
+      boolean engineHasStillNewData = scheduler.handleIndexes(result, nextToExecute);
+      result.setEngineHasStillNewData(engineHasStillNewData);
+      if (engineHasStillNewData) {
+        scheduler.postProcess(nextToExecute, result);
+      }
     }
   }
 

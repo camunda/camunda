@@ -145,7 +145,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     importScheduler.executeNextJob();
     importScheduler.executeNextJob();
 
-    assertThat(importScheduler.importScheduleJobs.size(), is(5));
+    assertThat(importScheduler.importScheduleJobs.size(), is(4));
     ImportScheduleJob piJob = importScheduler.importScheduleJobs.poll();
     assertThat(piJob, is(instanceOf(IdBasedImportScheduleJob.class)));
     assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch(), is(notNullValue()));

@@ -16,16 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class ProcessDefinitionIdBasedImportService
+public class IdBasedProcessDefinitionImportService
     extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, DefinitionBasedImportIndexHandler> {
 
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionIdBasedImportService.class);
+  private final Logger logger = LoggerFactory.getLogger(IdBasedProcessDefinitionImportService.class);
 
   private ProcessDefinitionWriter procDefWriter;
   private MissingProcessDefinitionFinder processDefinitionFinder;
   private IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher;
 
-  public ProcessDefinitionIdBasedImportService(String engineAlias) {
+  public IdBasedProcessDefinitionImportService(String engineAlias) {
     super(engineAlias);
   }
 

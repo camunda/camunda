@@ -290,6 +290,7 @@ public class MultipleEngineSupportIT {
       List events = (List) searchHit.getSource().get(EVENTS);
       assertThat(events.size(), is(2));
       List stringVariables = (List) searchHit.getSource().get(STRING_VARIABLES);
+      //NOTE: independent from process definition
       assertThat(stringVariables.size(), is(1));
     }
   }
