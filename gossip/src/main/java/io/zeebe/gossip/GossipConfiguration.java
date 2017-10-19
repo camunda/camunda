@@ -140,9 +140,9 @@ public class GossipConfiguration
     @Override
     public String toString()
     {
-        return "GossipConfiguration{" + "retransmitMultiplier=" + retransmissionMultiplier + ", probeInterval=" + probeInterval + ", probeTimeout=" + probeTimeout
-            + ", probeIndirectNodes=" + probeIndirectNodes + ", syncInterval=" + syncInterval + ", syncNode=" + syncNode + ", suspicionTimeout="
-            + suspicionTimeout + '}';
+        return "GossipConfiguration{" + "retransmitMultiplier=" + retransmissionMultiplier + ", probeInterval=" + probeInterval +
+            ", probeTimeout=" + probeTimeout + ", probeIndirectNodes=" + probeIndirectNodes + ", syncInterval=" + syncInterval +
+            ", syncNode=" + syncNode + ", suspicionTimeout=" + suspicionTimeout + '}';
     }
 
 }
