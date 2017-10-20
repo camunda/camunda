@@ -20,10 +20,11 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import java.util.Iterator;
 import java.util.Map;
 
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -40,15 +41,15 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-        final ArrayValueIterator<MinimalPOJO> iterator1 = pojo.simpleArray();
+        final ValueArray<MinimalPOJO> iterator1 = pojo.simpleArray();
         iterator1.add().setLongProp(123L);
         iterator1.add().setLongProp(456L);
         iterator1.add().setLongProp(789L);
 
-        final ArrayValueIterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
+        final ValueArray<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
         iterator2.add().setLongProp(753L);
 
-        final ArrayValueIterator<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray();
+        final ValueArray<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray();
         iterator3.add().setLongProp(357L);
         iterator3.add().setLongProp(951L);
 
@@ -72,7 +73,7 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-        final ArrayValueIterator<MinimalPOJO> iterator1 = pojo.simpleArray();
+        final ValueArray<MinimalPOJO> iterator1 = pojo.simpleArray();
         iterator1.add().setLongProp(123L);
 
         final int writeLength = pojo.getLength();
@@ -103,7 +104,7 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
         iterator.next();
         iterator.next();
@@ -136,7 +137,7 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
         iterator.next();
         iterator.next();
@@ -170,7 +171,7 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
         iterator.next();
         iterator.next();
@@ -178,7 +179,7 @@ public class ArrayValueTest
         iterator.next();
 
         // when
-        iterator.add().setLongProp(999L);
+        pojo.simpleArray().add().setLongProp(999L);
 
         // then
         final int writeLength = pojo.getLength();
@@ -205,13 +206,13 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
         iterator.next();
         iterator.next();
 
         // when
-        iterator.add().setLongProp(999L);
+        pojo.simpleArrayProp.add().setLongProp(999L);
 
         // then
         final int writeLength = pojo.getLength();
@@ -252,7 +253,7 @@ public class ArrayValueTest
         pojo.wrap(buffer);
 
         // then
-        final ArrayValueIterator<MinimalPOJO> iterator1 = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator1 = pojo.simpleArray().iterator();
         assertThat(iterator1.hasNext()).isTrue();
         assertThat(iterator1.next().getLongProp()).isEqualTo(123L);
         assertThat(iterator1.hasNext()).isTrue();
@@ -265,12 +266,12 @@ public class ArrayValueTest
         assertThat(iterator1.next().getLongProp()).isEqualTo(777L);
         assertThat(iterator1.hasNext()).isFalse();
 
-        final ArrayValueIterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray().iterator();
         assertThat(iterator2.hasNext()).isTrue();
         assertThat(iterator2.next().getLongProp()).isEqualTo(753L);
         assertThat(iterator2.hasNext()).isFalse();
 
-        final ArrayValueIterator<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray().iterator();
         assertThat(iterator3.hasNext()).isFalse();
     }
 
@@ -290,7 +291,7 @@ public class ArrayValueTest
         pojo.wrap(buffer);
 
         // then
-        final ArrayValueIterator<MinimalPOJO> iterator1 = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator1 = pojo.simpleArray().iterator();
         assertThat(iterator1.hasNext()).isTrue();
         assertThat(iterator1.next().getLongProp()).isEqualTo(123L);
         assertThat(iterator1.hasNext()).isTrue();
@@ -303,10 +304,10 @@ public class ArrayValueTest
         assertThat(iterator1.next().getLongProp()).isEqualTo(777L);
         assertThat(iterator1.hasNext()).isFalse();
 
-        final ArrayValueIterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray().iterator();
         assertThat(iterator2.hasNext()).isFalse();
 
-        final ArrayValueIterator<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator3 = pojo.notEmptyDefaultArray().iterator();
         assertThat(iterator3.hasNext()).isTrue();
         assertThat(iterator3.next().getLongProp()).isEqualTo(123L);
         assertThat(iterator3.hasNext()).isTrue();
@@ -351,14 +352,14 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final ValueArray<MinimalPOJO> array = pojo.simpleArray();
 
         // then
         exception.expect(RuntimeException.class);
         exception.expectMessage("Property 'simpleArray' has no valid value");
 
         // when
-        iterator.hasNext();
+        array.iterator().hasNext();
     }
 
     @Test
@@ -366,14 +367,14 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final ValueArray<MinimalPOJO> array = pojo.simpleArray();
 
         // then
         exception.expect(RuntimeException.class);
         exception.expectMessage("Property 'simpleArray' has no valid value");
 
         // when
-        iterator.next();
+        array.iterator().next();
     }
 
     @Test
@@ -389,7 +390,7 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
 
         // then
         exception.expect(IllegalStateException.class);
@@ -411,7 +412,7 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
         iterator.remove();
 
@@ -435,9 +436,9 @@ public class ArrayValueTest
         });
 
         pojo.wrap(buffer);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
         iterator.next();
-        iterator.add().setLongProp(999L);
+        pojo.simpleArray().add().setLongProp(999L);
 
         // then
         exception.expect(IllegalStateException.class);
@@ -451,7 +452,7 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.simpleArray();
+        final ValueArray<MinimalPOJO> iterator = pojo.simpleArray();
 
         // when
         iterator.add().setLongProp(741L);
@@ -475,7 +476,7 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.emptyDefaultArray();
+        final ValueArray<MinimalPOJO> iterator = pojo.emptyDefaultArray();
 
         // when
         iterator.add().setLongProp(741L);
@@ -499,7 +500,7 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final ValueArray<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
 
         // when
         iterator.add().setLongProp(741L);
@@ -523,14 +524,14 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray().iterator();
 
         // when
         while (iterator.hasNext())
         {
             iterator.next();
         }
-        iterator.add().setLongProp(741L);
+        pojo.notEmptyDefaultArray().add().setLongProp(741L);
 
         // then
         final int length = pojo.getLength();
@@ -551,7 +552,7 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray().iterator();
 
         // when
         iterator.next();
@@ -576,7 +577,7 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray().iterator();
 
         // when
         iterator.next();
@@ -602,7 +603,7 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray().iterator();
 
         iterator.next().setLongProp(Long.MAX_VALUE);
 
@@ -626,10 +627,10 @@ public class ArrayValueTest
         // given
         final POJOArray pojo = new POJOArray();
         pojo.simpleArray().add().setLongProp(123L);
-        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+        final Iterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray().iterator();
 
         iterator.next().setLongProp(Long.MAX_VALUE);
-        iterator.add().setLongProp(1L);
+        pojo.notEmptyDefaultArray().add().setLongProp(1L);
 
         // when
         final int length = pojo.getLength();
@@ -643,6 +644,23 @@ public class ArrayValueTest
                 entry("simpleArray", "[{longProp=123}]"),
                 entry("emptyDefaultArray", "[]"),
                 entry("notEmptyDefaultArray", "[{longProp=9223372036854775807}, {longProp=1}, {longProp=456}, {longProp=789}]"));
+    }
+
+    @Test
+    public void shouldIterateOverModifiedArray()
+    {
+        // given
+        final POJOArray pojo = new POJOArray();
+        final ValueArray<MinimalPOJO> array = pojo.simpleArray();
+
+        // when
+        array.add().setLongProp(123L);
+
+        // then
+        final Iterator<MinimalPOJO> iterator = array.iterator();
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next().getLongProp()).isEqualTo(123L);
+        assertThat(iterator.hasNext()).isFalse();
     }
 
     protected void encodeSimpleArrayProp(MsgPackWriter writer)

@@ -19,7 +19,7 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -71,17 +71,17 @@ public class POJOArray extends UnpackedObject
             .declareProperty(notEmptyDefaultArrayProp);
     }
 
-    public ArrayValueIterator<MinimalPOJO> simpleArray()
+    public ValueArray<MinimalPOJO> simpleArray()
     {
         return simpleArrayProp;
     }
 
-    public ArrayValueIterator<MinimalPOJO> emptyDefaultArray()
+    public ValueArray<MinimalPOJO> emptyDefaultArray()
     {
         return emptyDefaultArrayProp;
     }
 
-    public ArrayValueIterator<MinimalPOJO> notEmptyDefaultArray()
+    public ValueArray<MinimalPOJO> notEmptyDefaultArray()
     {
         return notEmptyDefaultArrayProp;
     }

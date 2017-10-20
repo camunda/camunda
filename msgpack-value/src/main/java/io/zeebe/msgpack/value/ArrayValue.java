@@ -15,6 +15,7 @@
  */
 package io.zeebe.msgpack.value;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import io.zeebe.msgpack.spec.MsgPackReader;
@@ -22,7 +23,7 @@ import io.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayValueIterator<T>
+public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterator<T>
 {
     protected MsgPackReader elementReader = new MsgPackReader();
     protected MsgPackWriter elementWriter = new MsgPackWriter();
@@ -37,6 +38,7 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
     protected int cursor;
     protected int lastReturned;
     protected boolean skipLastReturned = false;
+    protected boolean modified = false;
 
     public ArrayValue()
     {
@@ -72,6 +74,7 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         cursor = 0;
         lastReturned = -1;
         skipLastReturned = false;
+        modified = false;
 
         elementReader.wrap(elementReader.getBuffer(), 0, 0);
 
@@ -119,15 +122,24 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         }
     }
 
-    public ArrayValueIterator<T> iterator()
+    public Iterator<T> iterator()
     {
         // reset the iterator
+        if (modified)
+        {
+            flushLastReturned();
+
+            elementReader.wrap(writeBuffer, 0, writeBuffer.capacity());
+        }
+        else
+        {
+            final DirectBuffer buffer = elementReader.getBuffer();
+            elementReader.wrap(buffer, 0, buffer.capacity());
+        }
+
         cursor = 0;
         lastReturned = -1;
         skipLastReturned = false;
-
-        final DirectBuffer buffer = elementReader.getBuffer();
-        elementReader.wrap(buffer, 0, buffer.capacity());
 
         innerValue.reset();
 
@@ -272,6 +284,7 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         skipLastReturned = true;
         cursor = lastReturned;
         lastReturned = -1;
+        modified = true;
     }
 
     public T add()
@@ -283,6 +296,7 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         skipLastReturned = false;
         cursor += 1;
         lastReturned = -1;
+        modified = true;
 
         innerValue.reset();
         return innerValue;

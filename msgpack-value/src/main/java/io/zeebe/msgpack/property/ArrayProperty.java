@@ -15,11 +15,11 @@
  */
 package io.zeebe.msgpack.property;
 
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
-import io.zeebe.msgpack.value.BaseValue;
+import java.util.Iterator;
 
-public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>> implements ArrayValueIterator<T>
+import io.zeebe.msgpack.value.*;
+
+public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>> implements ValueArray<T>
 {
     public ArrayProperty(String keyString, ArrayValue<T> value, T innerValue)
     {
@@ -35,31 +35,9 @@ public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<
     }
 
     @Override
-    public boolean hasNext()
+    public Iterator<T> iterator()
     {
-        return resolveValue().hasNext();
-    }
-
-    @Override
-    public T next()
-    {
-        return resolveValue().next();
-    }
-
-    @Override
-    public void remove()
-    {
-        if (!isSet)
-        {
-            isSet = true;
-
-            if (defaultValue != null)
-            {
-                value.wrapArrayValue(defaultValue);
-            }
-        }
-
-        value.remove();
+        return resolveValue().iterator();
     }
 
     @Override
