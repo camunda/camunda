@@ -20,26 +20,12 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
@@ -47,12 +33,11 @@ import io.zeebe.raft.event.RaftConfiguration;
 import io.zeebe.raft.event.RaftConfigurationMember;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 public class RaftRule extends ExternalResource
 {
@@ -379,7 +364,7 @@ public class RaftRule extends ExternalResource
             {
                 event.readValue(configuration);
 
-                final ArrayValueIterator<RaftConfigurationMember> configurationMembers = configuration.members();
+                final Iterator<RaftConfigurationMember> configurationMembers = configuration.members().iterator();
 
                 final Set<SocketAddress> found = new HashSet<>();
 

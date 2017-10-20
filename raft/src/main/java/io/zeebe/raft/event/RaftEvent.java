@@ -17,7 +17,7 @@ package io.zeebe.raft.event;
 
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
@@ -48,7 +48,7 @@ public class RaftEvent
 
         configuration.reset();
 
-        final ArrayValueIterator<RaftConfigurationMember> configurationMembers = configuration.members();
+        final ValueArray<RaftConfigurationMember> configurationMembers = configuration.members();
 
         // add self also to configuration
         configurationMembers.add().setSocketAddress(raft.getSocketAddress());

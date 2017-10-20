@@ -21,7 +21,7 @@ import java.util.*;
 
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.*;
 import io.zeebe.raft.event.RaftConfigurationMember;
 import io.zeebe.raft.protocol.*;
@@ -194,6 +194,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     // actor
 
+    @Override
     public int doWork()
     {
         int workCount = 0;
@@ -454,15 +455,16 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     /**
      * Replace existing members know by this node with new list of members
      */
-    public void setMembers(final ArrayValueIterator<RaftConfigurationMember> members)
+    public void setMembers(final ValueArray<RaftConfigurationMember> members)
     {
         this.members.clear();
         this.memberLookup.clear();
         persistentStorage.clearMembers();
 
-        while (members.hasNext())
+        final Iterator<RaftConfigurationMember> iterator = members.iterator();
+        while (iterator.hasNext())
         {
-            addMember(members.next().getSocketAddress());
+            addMember(iterator.next().getSocketAddress());
         }
 
         persistentStorage.save();

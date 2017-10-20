@@ -19,7 +19,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -36,7 +36,7 @@ public class RaftConfiguration extends UnpackedObject
         declareProperty(membersProp);
     }
 
-    public ArrayValueIterator<RaftConfigurationMember> members()
+    public ValueArray<RaftConfigurationMember> members()
     {
         return membersProp;
     }
