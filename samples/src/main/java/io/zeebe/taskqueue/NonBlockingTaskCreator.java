@@ -15,19 +15,15 @@
  */
 package io.zeebe.taskqueue;
 
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.task.cmd.CreateTaskCommand;
 
@@ -48,14 +44,23 @@ public class NonBlockingTaskCreator
 
         printProperties(properties);
 
-        final int numOfRequets = Integer.parseInt(properties.getProperty(SAMPLE_NUMBER_OF_REQUESTS));
+        final int numOfRequests = Integer.parseInt(properties.getProperty(SAMPLE_NUMBER_OF_REQUESTS));
         final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(SAMPLE_MAX_CONCURRENT_REQUESTS));
 
         final String topicName = "default-topic";
-        final int partitionId = 0;
 
         try (ZeebeClient client = ZeebeClient.create(properties))
         {
+            try
+            {
+                // try to create default topic if it not exists already
+                client.topics().create(topicName, 1).execute();
+            }
+            catch (final ClientCommandRejectedException e)
+            {
+                // topic already exists
+            }
+
             final TasksClient asyncTaskService = client.tasks();
 
             final String payload = "{}";
@@ -66,7 +71,7 @@ public class NonBlockingTaskCreator
 
             final List<Future<TaskEvent>> inFlightRequests = new LinkedList<>();
 
-            while (tasksCreated < numOfRequets)
+            while (tasksCreated < numOfRequests)
             {
 
                 if (inFlightRequests.size() < maxConcurrentRequests)
