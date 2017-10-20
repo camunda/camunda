@@ -28,16 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
-import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
-import io.zeebe.broker.clustering.management.message.InvitationRequest;
-import io.zeebe.broker.clustering.management.message.InvitationResponse;
+import io.zeebe.broker.clustering.management.message.*;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
@@ -49,16 +44,12 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestResponseController;
-import io.zeebe.transport.ServerInputSubscription;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
 {
@@ -78,15 +69,13 @@ public class ClusterManager implements Actor
     private final InvitationResponse invitationResponse;
     private final CreatePartitionMessage createPartitionMessage = new CreatePartitionMessage();
 
-    private final TransportMessage message = new TransportMessage();
-
     private ClusterManagementConfig config;
 
     //    private final MessageWriter messageWriter;
-    protected final ServerResponse response = new ServerResponse();
-    protected final ServerInputSubscription inputSubscription;
+    private final ServerResponse response = new ServerResponse();
+    private final ServerInputSubscription inputSubscription;
 
-    protected final LogStreamsManager logStreamsManager;
+    private final LogStreamsManager logStreamsManager;
 
     public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final ClusterManagementConfig config)
     {
@@ -102,7 +91,7 @@ public class ClusterManager implements Actor
 
         this.invitationResponse = new InvitationResponse();
 
-        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this);
+        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this, context.getWorkflowRequestHandler());
         inputSubscription = context.getServerTransport()
                                    .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
                                    .join();

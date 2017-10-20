@@ -23,7 +23,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.*;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -32,6 +32,8 @@ public class DeploymentEvent extends UnpackedObject
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
     private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_STATE, DeploymentState.class);
+
+    private final StringProperty topicNameProp = new StringProperty("topicName");
 
     private final BinaryProperty resourceProp = new BinaryProperty("resource");
     private final EnumProperty<ResourceType> resourceTypeProp = new EnumProperty<ResourceType>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
@@ -47,6 +49,7 @@ public class DeploymentEvent extends UnpackedObject
     public DeploymentEvent()
     {
         this.declareProperty(stateProp)
+            .declareProperty(topicNameProp)
             .declareProperty(resourceProp)
             .declareProperty(resourceTypeProp)
             .declareProperty(deployedWorkflowsProp)
@@ -91,7 +94,7 @@ public class DeploymentEvent extends UnpackedObject
         return this;
     }
 
-    public ArrayValueIterator<DeployedWorkflow> deployedWorkflows()
+    public ValueArray<DeployedWorkflow> deployedWorkflows()
     {
         return deployedWorkflowsProp;
     }
@@ -110,6 +113,17 @@ public class DeploymentEvent extends UnpackedObject
     public DeploymentEvent setErrorMessage(DirectBuffer errorMessage, int offset, int length)
     {
         this.errorMessageProp.setValue(errorMessage, offset, length);
+        return this;
+    }
+
+    public DirectBuffer getTopicName()
+    {
+        return topicNameProp.getValue();
+    }
+
+    public DeploymentEvent setTopicName(String topicName)
+    {
+        this.topicNameProp.setValue(topicName);
         return this;
     }
 }

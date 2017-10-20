@@ -17,21 +17,17 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.START_EVENT_OCCURRED;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,21 +35,16 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.assertj.core.util.Files;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.assertj.core.util.Files;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 
 public class CreateWorkflowInstanceTest
@@ -429,9 +420,11 @@ public class CreateWorkflowInstanceTest
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
         final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
+                .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                 .put("resource", yamlWorkflow.getBytes(UTF_8))
                 .put("resourceType", ResourceType.YAML_WORKFLOW)
                 .done()

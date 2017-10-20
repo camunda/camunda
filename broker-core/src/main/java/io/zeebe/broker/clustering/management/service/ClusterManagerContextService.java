@@ -21,10 +21,8 @@ import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.broker.logstreams.LogStreamsManager;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.ActorScheduler;
@@ -37,6 +35,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     private final Injector<Peer> localPeerInjector = new Injector<>();
     private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<LogStreamsManager> logStreamsManagerInjector = new Injector<>();
+    private final Injector<CreateWorkflowRequestHandler> workflowRequestHandlerInjector = new Injector<>();
 
     private ClusterManagerContext context;
 
@@ -49,6 +48,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         final Peer localPeer = localPeerInjector.getValue();
         final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
+        final CreateWorkflowRequestHandler workflowRequestHandler = workflowRequestHandlerInjector.getValue();
 
         context = new ClusterManagerContext();
         context.setActorScheduler(actorScheduler);
@@ -57,6 +57,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         context.setServerTransport(serverTransport);
         context.setPeers(peers);
         context.setLogStreamsManager(logStreamsManager);
+        context.setWorkflowRequestHandler(workflowRequestHandler);
     }
 
     @Override
@@ -98,6 +99,11 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     public Injector<ClientTransport> getClientTransportInjector()
     {
         return clientTransportInjector;
+    }
+
+    public Injector<CreateWorkflowRequestHandler> getWorkflowRequestHandlerInjector()
+    {
+        return workflowRequestHandlerInjector;
     }
 
 }

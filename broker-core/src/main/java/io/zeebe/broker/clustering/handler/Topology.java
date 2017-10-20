@@ -23,7 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ArrayValueIterator;
+import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 
 
@@ -48,7 +48,7 @@ public class Topology extends UnpackedObject
             .declareProperty(brokersProp);
     }
 
-    public ArrayValueIterator<TopicLeader> topicLeaders()
+    public ValueArray<TopicLeader> topicLeaders()
     {
         return topicLeadersProp;
     }

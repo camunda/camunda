@@ -65,14 +65,18 @@ public class WorkflowTopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
+        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 2);
 
-        final WorkflowEvent event = handler.getEvent(0);
-        assertThat(event.getState()).isEqualTo("CREATED");
-        assertThat(event.getBpmnProcessId()).isEqualTo("process");
-        assertThat(event.getVersion()).isEqualTo(1);
-        assertThat(event.getDeploymentKey()).isEqualTo(deploymentResult.getMetadata().getKey());
-        assertThat(event.getBpmnXml()).isEqualTo(Bpmn.convertToString(WORKFLOW));
+        assertThat(handler.getEvent(0).getState()).isEqualTo("CREATE");
+        assertThat(handler.getEvent(1).getState()).isEqualTo("CREATED");
+
+        for (WorkflowEvent event : handler.events)
+        {
+            assertThat(event.getBpmnProcessId()).isEqualTo("process");
+            assertThat(event.getVersion()).isEqualTo(1);
+            assertThat(event.getDeploymentKey()).isEqualTo(deploymentResult.getMetadata().getKey());
+            assertThat(event.getBpmnXml()).isEqualTo(Bpmn.convertToString(WORKFLOW));
+        }
     }
 
     @Test
@@ -93,7 +97,7 @@ public class WorkflowTopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEventsOfType(TopicEventType.WORKFLOW) >= 1);
+        TestUtil.waitUntil(() -> handler.numRecordedEventsOfType(TopicEventType.WORKFLOW) >= 2);
     }
 
     protected static class RecordingWorkflowEventHandler implements WorkflowEventHandler

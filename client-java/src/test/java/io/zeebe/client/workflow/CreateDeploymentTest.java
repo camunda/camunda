@@ -30,6 +30,7 @@ import io.zeebe.client.event.ResourceType;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.junit.*;
@@ -61,6 +62,32 @@ public class CreateDeploymentTest
         this.client = clientRule.getClient();
     }
 
+    @Test
+    public void shouldSendDeploymentRequestToSystemTopic()
+    {
+        // given
+        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, DEPLOYMENT_EVENT, "CREATE_DEPLOYMENT")
+            .respondWith()
+            .key(2L)
+            .event()
+                .put("state", "DEPLOYMENT_CREATED")
+                .done()
+            .register();
+
+        // when
+        final DeploymentEvent deployment = clientRule.workflows().deploy("test-topic")
+            .workflowModel(WORKFLOW_MODEL)
+            .execute();
+
+        // then
+        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+        assertThat(commandRequest.getCommand()).containsEntry("topicName", "test-topic");
+
+        assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
+    }
 
     @Test
     public void shouldCreateDeployment()

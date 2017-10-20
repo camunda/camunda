@@ -21,14 +21,15 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.*;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
+import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.system.ConfigurationManager;
+import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.workflow.processor.DeploymentStreamProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
@@ -43,6 +44,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     protected static final String NAME = "workflow.queue.manager";
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<ServerTransport> managementServerInjector = new Injector<>();
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
@@ -65,33 +67,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         EnsureUtil.ensureNotNull("logStream", logStream);
 
-        installDeploymentStreamProcessor(logStream.getLogName());
         installWorkflowStreamProcessor(logStream);
         installIncidentStreamProcessor(logStream);
-    }
-
-    private void installDeploymentStreamProcessor(final String logName)
-    {
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = deploymentStreamProcessorServiceName(logName);
-        final String streamProcessorName = streamProcessorServiceName.getName();
-
-        final ServerTransport transport = clientApiTransportInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
-        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
-
-        final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter);
-        final StreamProcessorService deploymentStreamProcessorService = new StreamProcessorService(
-                streamProcessorName,
-                StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID,
-                deploymentStreamProcessor)
-                .eventFilter(DeploymentStreamProcessor.eventFilter());
-
-        serviceContext.createService(streamProcessorServiceName, deploymentStreamProcessorService)
-                .dependency(logStreamServiceName, deploymentStreamProcessorService.getSourceStreamInjector())
-                .dependency(logStreamServiceName, deploymentStreamProcessorService.getTargetStreamInjector())
-                .dependency(SNAPSHOT_STORAGE_SERVICE, deploymentStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(ACTOR_SCHEDULER_SERVICE, deploymentStreamProcessorService.getActorSchedulerInjector())
-                .install();
     }
 
     private void installWorkflowStreamProcessor(final LogStream logStream)
@@ -103,8 +80,12 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
+        final ServerTransport managementServer = managementServerInjector.getValue();
+        final CreateWorkflowResponseSender createWorkflowResponseSender = new CreateWorkflowResponseSender(managementServer);
+
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,
+                createWorkflowResponseSender,
                 workflowCfg.deploymentCacheSize,
                 workflowCfg.payloadCacheSize);
 
@@ -185,6 +166,11 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         return actorSchedulerInjector;
     }
 
+    public Injector<ServerTransport> getManagementServerInjector()
+    {
+        return managementServerInjector;
+    }
+
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
     {
         asyncContext.runAsync((r) ->
@@ -210,4 +196,5 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         return NAME;
     }
+
 }

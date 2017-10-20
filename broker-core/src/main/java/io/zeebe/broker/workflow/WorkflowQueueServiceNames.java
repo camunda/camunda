@@ -24,11 +24,6 @@ public class WorkflowQueueServiceNames
 {
     public static final ServiceName<WorkflowQueueManager> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowQueueManager.class);
 
-    public static ServiceName<StreamProcessorController> deploymentStreamProcessorServiceName(String queueName)
-    {
-        return ServiceName.newServiceName(String.format("workflow.%s.processor.deployment", queueName), StreamProcessorController.class);
-    }
-
     public static ServiceName<StreamProcessorController> workflowInstanceStreamProcessorServiceName(String queueName)
     {
         return ServiceName.newServiceName(String.format("workflow.%s.processor.instance", queueName), StreamProcessorController.class);

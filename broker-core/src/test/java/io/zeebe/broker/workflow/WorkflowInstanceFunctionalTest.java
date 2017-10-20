@@ -17,11 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
@@ -33,22 +29,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.assertj.core.util.Files;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.*;
 import io.zeebe.test.util.MsgPackUtil;
+import org.assertj.core.util.Files;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceFunctionalTest
 {
@@ -468,9 +459,11 @@ public class WorkflowInstanceFunctionalTest
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
         final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
+                .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                 .put("resource", yamlWorkflow.getBytes(UTF_8))
                 .put("resourceType", ResourceType.YAML_WORKFLOW)
                 .done()

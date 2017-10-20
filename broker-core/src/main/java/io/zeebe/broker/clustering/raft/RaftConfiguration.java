@@ -21,19 +21,15 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.util.*;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.property.*;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.transport.SocketAddress;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class RaftConfiguration extends UnpackedObject
 {
@@ -136,9 +132,10 @@ public class RaftConfiguration extends UnpackedObject
     {
         final List<SocketAddress> members = new ArrayList<>();
 
-        while (membersProp.hasNext())
+        final Iterator<RaftConfigurationMember> iterator = membersProp.iterator();
+        while (iterator.hasNext())
         {
-            final RaftConfigurationMember configurationMember = membersProp.next();
+            final RaftConfigurationMember configurationMember = iterator.next();
             final DirectBuffer hostBuffer = configurationMember.getHost();
 
 

@@ -17,37 +17,25 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_STATE;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_RESOURCE;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -92,9 +80,11 @@ public class WorkflowTaskIOMappingTest
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                 .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
@@ -119,9 +109,11 @@ public class WorkflowTaskIOMappingTest
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
+            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
             .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
@@ -253,9 +245,11 @@ public class WorkflowTaskIOMappingTest
                 .done();
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
+            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
             .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();
@@ -459,9 +453,11 @@ public class WorkflowTaskIOMappingTest
 
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_STATE, "CREATE_DEPLOYMENT")
+            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
             .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
             .done()
             .sendAndAwait();

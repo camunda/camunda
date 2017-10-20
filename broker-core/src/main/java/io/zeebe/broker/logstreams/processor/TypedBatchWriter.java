@@ -17,14 +17,21 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.util.function.Consumer;
+
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 public interface TypedBatchWriter
 {
 
     TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event);
 
+    TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> metadata);
+
     TypedBatchWriter addNewEvent(UnpackedObject event);
+
+    TypedBatchWriter addNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata);
 
     /**
      * @return position of new event, negative value on failure

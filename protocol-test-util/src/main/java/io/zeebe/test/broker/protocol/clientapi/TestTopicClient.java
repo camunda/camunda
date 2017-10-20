@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.util.collection.MapBuilder;
@@ -58,10 +59,11 @@ public class TestTopicClient
     public long deploy(final WorkflowDefinition workflow)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .partitionId(partitionId)
+                .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put(PROP_WORKFLOW_RESOURCE, Bpmn.convertToString(workflow).getBytes(UTF_8))
                     .put("resouceType", "BPMN_XML")
                 .done()

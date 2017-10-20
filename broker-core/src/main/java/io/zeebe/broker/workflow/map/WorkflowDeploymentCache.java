@@ -27,6 +27,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
+import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import io.zeebe.model.bpmn.instance.Workflow;
@@ -58,8 +59,10 @@ public class WorkflowDeploymentCache implements AutoCloseable
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
 
     private final Bytes2LongZbMap idVersionToKeyMap;
+    private final Long2LongZbMap keyToPositionMap;
 
-    private final ZbMapSnapshotSupport<Bytes2LongZbMap> snapshotSupport;
+    private final ZbMapSnapshotSupport<Bytes2LongZbMap> idVersionSnapshot;
+    private final ZbMapSnapshotSupport<Long2LongZbMap> keyPositionSnapshot;
 
     private final LongLruCache<DeployedWorkflow> cache;
     private final LogStreamReader logStreamReader;
@@ -69,17 +72,24 @@ public class WorkflowDeploymentCache implements AutoCloseable
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
         this.idVersionToKeyMap = new Bytes2LongZbMap(SIZE_OF_COMPOSITE_KEY);
+        this.keyToPositionMap = new Long2LongZbMap();
 
-        this.snapshotSupport = new ZbMapSnapshotSupport<>(idVersionToKeyMap);
+        this.idVersionSnapshot = new ZbMapSnapshotSupport<>(idVersionToKeyMap);
+        this.keyPositionSnapshot = new ZbMapSnapshotSupport<>(keyToPositionMap);
 
         this.logStreamReader = logStreamReader;
         this.cache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
         { });
     }
 
-    public ZbMapSnapshotSupport<Bytes2LongZbMap> getSnapshotSupport()
+    public ZbMapSnapshotSupport<Bytes2LongZbMap> getIdVersionSnapshot()
     {
-        return snapshotSupport;
+        return idVersionSnapshot;
+    }
+
+    public ZbMapSnapshotSupport<Long2LongZbMap> getKeyPositionSnapshot()
+    {
+        return keyPositionSnapshot;
     }
 
     private void wrap(DirectBuffer bpmnProcessId, int version)
@@ -90,8 +100,10 @@ public class WorkflowDeploymentCache implements AutoCloseable
         bufferLength = bpmnProcessId.capacity() + SIZE_OF_INT;
     }
 
-    public void addDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
+    public void addDeployedWorkflow(long eventPosition, long workflowKey, DirectBuffer bpmnProcessId, int version)
     {
+        keyToPositionMap.put(workflowKey, eventPosition);
+
         wrap(bpmnProcessId, version);
         idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
 
@@ -124,9 +136,11 @@ public class WorkflowDeploymentCache implements AutoCloseable
         return workflow;
     }
 
-    private DeployedWorkflow lookupWorkflow(long position)
+    private DeployedWorkflow lookupWorkflow(long key)
     {
         DeployedWorkflow deployedWorkflow = null;
+
+        final long position = keyToPositionMap.get(key, -1L);
 
         final boolean found = logStreamReader.seek(position);
         if (found && logStreamReader.hasNext())
@@ -149,6 +163,7 @@ public class WorkflowDeploymentCache implements AutoCloseable
     public void close()
     {
         idVersionToKeyMap.close();
+        keyToPositionMap.close();
     }
 
 }

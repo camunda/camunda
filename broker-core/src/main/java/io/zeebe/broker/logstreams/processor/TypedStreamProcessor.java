@@ -22,12 +22,10 @@ import java.util.List;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
@@ -154,6 +152,14 @@ public class TypedStreamProcessor implements StreamProcessor
         {
             return ((PartitionEvent) value).getState();
         }
+        else if (value instanceof DeploymentEvent)
+        {
+            return ((DeploymentEvent) value).getState();
+        }
+        else if (value instanceof WorkflowEvent)
+        {
+            return ((WorkflowEvent) value).getState();
+        }
         else
         {
             throw new RuntimeException("event type " + value.getClass() + " not supported");
@@ -196,17 +202,20 @@ public class TypedStreamProcessor implements StreamProcessor
             eventProcessor.processEvent(event);
         }
 
+        @Override
         public boolean executeSideEffects()
         {
             return eventProcessor.executeSideEffects(event, responseWriter);
         }
 
+        @Override
         public long writeEvent(LogStreamWriter writer)
         {
             this.writer.configureSourceContext(streamProcessorId, sourceStream.getPartitionId(), event.getPosition());
             return eventProcessor.writeEvent(event, this.writer);
         }
 
+        @Override
         public void updateState()
         {
             eventProcessor.updateState(event);

@@ -25,11 +25,13 @@ import io.zeebe.client.event.impl.EventImpl;
 
 public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
 {
+    @JsonProperty("topicName")
+    private String deploymentTopic;
+
     private byte[] resource;
     private ResourceType resourceType;
 
     private List<WorkflowDefinition> deployedWorkflows;
-
     private String errorMessage;
 
     @JsonCreator
@@ -83,11 +85,23 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         this.errorMessage = errorMessage;
     }
 
+    public String getDeploymentTopic()
+    {
+        return deploymentTopic;
+    }
+
+    public void setDeploymentTopic(String deploymentTopic)
+    {
+        this.deploymentTopic = deploymentTopic;
+    }
+
     @Override
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("DeploymentEvent [resource=");
+        builder.append("DeploymentEvent [topic=");
+        builder.append(deploymentTopic);
+        builder.append(", resource=");
         builder.append(new String(resource, StandardCharsets.UTF_8));
         builder.append(", deployedWorkflows=");
         builder.append(deployedWorkflows);
@@ -96,4 +110,5 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         builder.append("]");
         return builder.toString();
     }
+
 }

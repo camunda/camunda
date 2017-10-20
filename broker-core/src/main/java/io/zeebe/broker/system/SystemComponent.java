@@ -17,14 +17,15 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.EXECUTOR_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.*;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.CountersManagerService;
+import io.zeebe.broker.system.deployment.service.DeploymentManager;
+import io.zeebe.broker.system.deployment.service.WorkflowRequestHandlerService;
 import io.zeebe.broker.system.executor.ScheduledExecutorService;
+import io.zeebe.broker.system.log.PartitionManagerService;
 import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.system.threads.ActorSchedulerService;
 import io.zeebe.broker.transport.TransportServiceNames;
@@ -53,14 +54,34 @@ public class SystemComponent implements Component
 
         final SystemConfiguration systemConfiguration = context.getConfigurationManager().readEntry("system", SystemConfiguration.class);
 
+        final PartitionManagerService partitionManagerService = new PartitionManagerService();
+        serviceContainer.createService(SystemServiceNames.PARTITION_MANAGER_SERVICE, partitionManagerService)
+            .dependency(ClusterServiceNames.PEER_LIST_SERVICE, partitionManagerService.getPeerListInjector())
+            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), partitionManagerService.getManagementClientInjector())
+            .install();
+
         final SystemPartitionManager systemPartitionManager = new SystemPartitionManager(systemConfiguration);
         serviceContainer.createService(SystemServiceNames.SYSTEM_LOG_MANAGER, systemPartitionManager)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), systemPartitionManager.getClientApiTransportInjector())
-            .dependency(ClusterServiceNames.PEER_LIST_SERVICE, systemPartitionManager.getPeerListInjector())
-            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), systemPartitionManager.getManagementClientInjector())
             .dependency(EXECUTOR_SERVICE, systemPartitionManager.getExecutorInjector())
+            .dependency(PARTITION_MANAGER_SERVICE, systemPartitionManager.getPartitionManagerInjector())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, systemPartitionManager.getLogStreamsGroupReference())
             .install();
+
+        final DeploymentManager deploymentManagerService = new DeploymentManager();
+        serviceContainer.createService(SystemServiceNames.DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
+            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), deploymentManagerService.getManagementClientInjector())
+            .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
+            .dependency(PARTITION_MANAGER_SERVICE, deploymentManagerService.getPartitionManagerInjector())
+            .dependency(EXECUTOR_SERVICE, deploymentManagerService.getScheduledExecutorInjector())
+            .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, deploymentManagerService.getSystemStreamGroupReference())
+            .install();
+
+        final WorkflowRequestHandlerService workflowRequestHandlerService = new WorkflowRequestHandlerService();
+        serviceContainer.createService(WORKFLOW_REQUEST_HANDLER_SERVICE, workflowRequestHandlerService)
+            .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, workflowRequestHandlerService.getLogStreamsGroupReference())
+            .install();
+
 
     }
 

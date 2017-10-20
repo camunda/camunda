@@ -26,17 +26,27 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
+import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.TopicLeader;
+import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
 import org.assertj.core.util.Files;
 import org.junit.*;
@@ -452,6 +462,86 @@ public class BrokerRecoveryTest
         assertThat(eventRecorder.getIncidentEvents(i -> true))
             .extracting("state")
             .containsExactly("CREATE", "CREATED", "RESOLVE", "RESOLVE_FAILED", "RESOLVE", "RESOLVED");
+    }
+
+    @Test
+    public void shouldLoadRaftConfiguration()
+    {
+        // given
+        final int testTerm = 8;
+
+        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(clientRule.getDefaultTopic() + "." + clientRule.getDefaultPartition());
+
+        Raft raft = brokerRule.getService(serviceName).get();
+        waitUntil(raft::isInitialEventCommitted);
+
+        raft.setTerm(testTerm);
+
+        // when
+        restartBroker();
+
+        raft = brokerRule.getService(serviceName).get();
+        waitUntil(raft::isInitialEventCommitted);
+
+        // then
+        assertThat(raft.getState()).isEqualTo(RaftState.LEADER);
+        assertThat(raft.getTerm()).isEqualTo(testTerm + 1);
+        assertThat(raft.getMembers()).isEmpty();
+        assertThat(raft.getVotedFor()).isEqualTo(new SocketAddress("localhost", 51017));
+    }
+
+    @Test
+    public void shouldCreateTopicAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+        restartBroker();
+
+        // when
+        client.topics().create("foo", 2).execute();
+
+        // then
+        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
+        assertThat(taskEvent.getState()).isEqualTo("CREATED");
+    }
+
+
+    @Test
+    public void shouldNotCreatePreviouslyCreatedTopicAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        final String topicName = "foo";
+        client.topics().create(topicName, 2).execute();
+
+        restartBroker();
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+
+        // when
+        client.topics().create(topicName, 2).execute();
+    }
+
+    @Test
+    public void shouldCreateUniquePartitionIdsAfterRestart()
+    {
+        // given
+        final ZeebeClient client = clientRule.getClient();
+
+        client.topics().create("foo", 2).execute();
+
+        restartBroker();
+
+        // when
+        client.topics().create("bar", 2).execute();
+
+        // then
+        final TopologyResponse topology = client.requestTopology().execute();
+        final List<TopicLeader> leaders = topology.getTopicLeaders();
+        assertThat(leaders).hasSize(6); // default partition + system partition + 4 partitions we create here
+        assertThat(leaders).extracting("partitionId").doesNotHaveDuplicates();
     }
 
     protected void restartBroker()

@@ -19,20 +19,14 @@ package io.zeebe.broker.workflow.data;
 
 public enum DeploymentState
 {
-    CREATE_DEPLOYMENT(0),
-    DEPLOYMENT_CREATED(1),
-    DEPLOYMENT_REJECTED(2);
+    CREATE_DEPLOYMENT,
 
-    // don't change the ids because the stream processor use them for the map
-    private final int id;
+    DEPLOYMENT_VALIDATED,
 
-    DeploymentState(int id)
-    {
-        this.id = id;
-    }
+    DEPLOYMENT_DISTRIBUTED,
 
-    public int id()
-    {
-        return id;
-    }
+    DEPLOYMENT_CREATED,
+
+    DEPLOYMENT_REJECTED;
+
 }

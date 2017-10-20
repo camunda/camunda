@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.util.function.Consumer;
+
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 public interface TypedStreamWriter
 {
@@ -30,7 +33,17 @@ public interface TypedStreamWriter
     /**
      * @return position of new event, negative value on failure
      */
+    long writeFollowupEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> metadata);
+
+    /**
+     * @return position of new event, negative value on failure
+     */
     long writeNewEvent(UnpackedObject event);
+
+    /**
+     * @return position of new event, negative value on failure
+     */
+    long writeNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata);
 
     TypedBatchWriter newBatch();
 }

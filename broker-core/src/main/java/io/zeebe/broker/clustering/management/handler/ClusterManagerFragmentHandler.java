@@ -17,27 +17,23 @@
  */
 package io.zeebe.broker.clustering.management.handler;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.clustering.management.ClusterManager;
-import io.zeebe.clustering.management.CreatePartitionMessageDecoder;
-import io.zeebe.clustering.management.InvitationRequestEncoder;
-import io.zeebe.clustering.management.InvitationResponseDecoder;
-import io.zeebe.clustering.management.MessageHeaderDecoder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
+import io.zeebe.clustering.management.*;
+import io.zeebe.transport.*;
+import org.agrona.DirectBuffer;
 
 public class ClusterManagerFragmentHandler implements ServerMessageHandler, ServerRequestHandler
 {
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
     private final ClusterManager clusterManager;
+    private final CreateWorkflowRequestHandler workflowRequestHandler;
 
-    public ClusterManagerFragmentHandler(final ClusterManager clusterManager)
+    public ClusterManagerFragmentHandler(final ClusterManager clusterManager, final CreateWorkflowRequestHandler workflowRequestHandler)
     {
         this.clusterManager = clusterManager;
+        this.workflowRequestHandler = workflowRequestHandler;
     }
 
     @Override
@@ -45,6 +41,8 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
             int length, long requestId)
     {
         messageHeaderDecoder.wrap(buffer, offset);
+
+        // TODO verify the protocol version
 
         final int schemaId = messageHeaderDecoder.schemaId();
 
@@ -56,6 +54,10 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
                 case InvitationRequestEncoder.TEMPLATE_ID:
                 {
                     return clusterManager.onInvitationRequest(buffer, offset, length, output, remoteAddress, requestId);
+                }
+                case CreateWorkflowRequestEncoder.TEMPLATE_ID:
+                {
+                    return workflowRequestHandler.onCreateWorkflowRequest(buffer, offset, length, remoteAddress, requestId);
                 }
                 default:
                 {

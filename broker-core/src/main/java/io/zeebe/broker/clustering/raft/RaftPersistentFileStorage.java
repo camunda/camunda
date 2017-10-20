@@ -21,11 +21,8 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.*;
+import java.util.*;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.RaftPersistentStorage;
@@ -111,9 +108,10 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     {
         final List<SocketAddress> members = new ArrayList<>();
 
-        while (configuration.membersProp.hasNext())
+        final Iterator<RaftConfigurationMember> iterator = configuration.membersProp.iterator();
+        while (iterator.hasNext())
         {
-            final RaftConfigurationMember member = configuration.membersProp.next();
+            final RaftConfigurationMember member = iterator.next();
             final DirectBuffer hostBuffer = member.getHost();
 
             final SocketAddress socketAddress = new SocketAddress();
@@ -166,6 +164,7 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
         }
     }
 
+    @Override
     public RaftPersistentFileStorage save()
     {
         final int length = configuration.getEncodedLength();

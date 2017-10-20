@@ -30,6 +30,7 @@ import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.workflow.cmd.CreateDeploymentCommand;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.StreamUtil;
 
 public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> implements CreateDeploymentCommand
@@ -41,7 +42,10 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     public CreateDeploymentCommandImpl(final RequestManager commandManager, String topic)
     {
         super(commandManager);
-        this.deploymentEvent.setTopicName(topic);
+        // send command always to the system topic
+        this.deploymentEvent.setTopicName(Protocol.SYSTEM_TOPIC);
+        // set the topic to deploy to
+        this.deploymentEvent.setDeploymentTopic(topic);
     }
 
     @Override

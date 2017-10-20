@@ -19,13 +19,10 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -33,6 +30,8 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWriter
 {
+    protected final Consumer<BrokerEventMetadata> noop = m ->
+    { };
 
     protected BrokerEventMetadata metadata = new BrokerEventMetadata();
     protected final Map<Class<? extends UnpackedObject>, EventType> typeRegistry;
@@ -64,8 +63,16 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         this.sourcePosition = sourcePosition;
     }
 
+    protected void initMetadata(UnpackedObject event)
+    {
+        metadata.reset();
+        final EventType eventType = typeRegistry.get(event.getClass());
+
+        metadata.eventType(eventType);
+    }
+
     @Override
-    public long writeFollowupEvent(long key, UnpackedObject event)
+    public long writeFollowupEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> additionalMetadata)
     {
         writer.reset();
         writer.raftTermId(stream.getTerm());
@@ -77,6 +84,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         }
 
         initMetadata(event);
+        additionalMetadata.accept(metadata);
 
         if (key >= 0)
         {
@@ -93,25 +101,29 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
             .tryWrite();
     }
 
-    protected void initMetadata(UnpackedObject event)
+    @Override
+    public long writeFollowupEvent(long key, UnpackedObject event)
     {
-        metadata.reset();
-        final EventType eventType = typeRegistry.get(event.getClass());
+        return writeFollowupEvent(key, event, noop);
+    }
 
-        metadata.eventType(eventType);
+    @Override
+    public long writeNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata)
+    {
+        return writeFollowupEvent(-1, event, metadata);
     }
 
     @Override
     public long writeNewEvent(UnpackedObject event)
     {
-        return writeFollowupEvent(-1, event);
-
+        return writeFollowupEvent(-1, event, noop);
     }
 
     @Override
-    public TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event)
+    public TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> additionalMetadata)
     {
         initMetadata(event);
+        additionalMetadata.accept(metadata);
 
         final LogEntryBuilder logEntryBuilder = batchWriter.event();
 
@@ -130,13 +142,24 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
             .done();
 
         return this;
+    }
 
+    @Override
+    public TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event)
+    {
+        return addFollowUpEvent(key, event, noop);
     }
 
     @Override
     public TypedBatchWriter addNewEvent(UnpackedObject event)
     {
-        return addFollowUpEvent(-1, event);
+        return addFollowUpEvent(-1, event, noop);
+    }
+
+    @Override
+    public TypedBatchWriter addNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata)
+    {
+        return addFollowUpEvent(-1, event, metadata);
     }
 
     @Override

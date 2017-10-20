@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering.management;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.logstreams.LogStreamsManager;
+import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.ActorScheduler;
@@ -30,8 +31,9 @@ public class ClusterManagerContext
     private Peer localPeer;
     private PeerList peers;
     private LogStreamsManager logStreamsManager;
-    protected ClientTransport clientTransport;
-    protected BufferingServerTransport serverTransport;
+    private CreateWorkflowRequestHandler workflowRequestHandler;
+    private ClientTransport clientTransport;
+    private BufferingServerTransport serverTransport;
 
     public ActorScheduler getActorScheduler()
     {
@@ -91,6 +93,16 @@ public class ClusterManagerContext
     public void setLogStreamsManager(LogStreamsManager logStreamsManager)
     {
         this.logStreamsManager = logStreamsManager;
+    }
+
+    public CreateWorkflowRequestHandler getWorkflowRequestHandler()
+    {
+        return workflowRequestHandler;
+    }
+
+    public void setWorkflowRequestHandler(CreateWorkflowRequestHandler workflowRequestHandler)
+    {
+        this.workflowRequestHandler = workflowRequestHandler;
     }
 
 }

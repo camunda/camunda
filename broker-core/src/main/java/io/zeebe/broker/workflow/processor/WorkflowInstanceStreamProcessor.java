@@ -27,6 +27,7 @@ import java.util.*;
 import io.zeebe.broker.incident.IncidentEventWriter;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.task.data.TaskState;
@@ -56,7 +57,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private static final UnsafeBuffer EMPTY_TASK_TYPE = new UnsafeBuffer("".getBytes());
 
     // processors ////////////////////////////////////
-    protected final WorkflowCreatedEventProcessor workflowCreatedEventProcessor = new WorkflowCreatedEventProcessor();
+    protected final WorkflowCreateEventProcessor workflowCreateEventProcessor = new WorkflowCreateEventProcessor();
 
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
@@ -113,10 +114,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final MappingProcessor payloadMappingProcessor;
     protected final JsonConditionInterpreter conditionInterpreter = new JsonConditionInterpreter();
 
+    protected final CreateWorkflowResponseSender workflowResponseSender;
+
     protected LogStream targetStream;
 
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
+            CreateWorkflowResponseSender createWorkflowResponseSender,
             int deploymentCacheSize,
             int payloadCacheSize)
     {
@@ -131,10 +135,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         this.payloadMappingProcessor = new MappingProcessor(4096);
 
+        this.workflowResponseSender = createWorkflowResponseSender;
+
         this.composedSnapshot = new ComposedSnapshot(
             workflowInstanceIndex.getSnapshotSupport(),
             activityInstanceMap.getSnapshotSupport(),
-            workflowDeploymentCache.getSnapshotSupport(),
+            workflowDeploymentCache.getIdVersionSnapshot(),
+            workflowDeploymentCache.getKeyPositionSnapshot(),
             payloadCache.getSnapshotSupport());
 
     }
@@ -303,8 +310,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         switch (workflowEvent.getState())
         {
-            case CREATED:
-                return workflowCreatedEventProcessor;
+            case CREATE:
+                return workflowCreateEventProcessor;
 
             default:
                 return null;
@@ -383,15 +390,41 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
     }
 
-    private final class WorkflowCreatedEventProcessor implements EventProcessor
+    private final class WorkflowCreateEventProcessor implements EventProcessor
     {
         @Override
         public void processEvent()
         {
-            if (eventKey != eventPosition)
-            {
-                throw new RuntimeException("The workflow event position is not equal to the key, but the implementation based on it.");
-            }
+            workflowEvent.setState(WorkflowState.CREATED);
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            final long requestId = sourceEventMetadata.getRequestId();
+            final int requestStreamId = sourceEventMetadata.getRequestStreamId();
+
+            return workflowResponseSender.sendCreateWorkflowResponse(
+                       logStreamPartitionId,
+                       eventKey,
+                       workflowEvent.getDeploymentKey(),
+                       requestId,
+                       requestStreamId);
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                    .protocolVersion(Protocol.PROTOCOL_VERSION)
+                    .eventType(EventType.WORKFLOW_EVENT);
+
+            return writer
+                    .key(eventKey)
+                    .metadataWriter(targetEventMetadata)
+                    .valueWriter(workflowEvent)
+                    .tryWrite();
         }
 
         @Override
@@ -400,7 +433,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final int version = workflowEvent.getVersion();
             final DirectBuffer bpmnProcessId = workflowEvent.getBpmnProcessId();
 
-            workflowDeploymentCache.addDeployedWorkflow(eventKey, bpmnProcessId, version);
+            workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, bpmnProcessId, version);
         }
     }
 

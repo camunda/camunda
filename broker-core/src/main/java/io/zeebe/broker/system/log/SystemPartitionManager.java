@@ -19,46 +19,33 @@ package io.zeebe.broker.system.log;
 
 import java.time.Duration;
 
-import io.zeebe.broker.clustering.gossip.data.PeerList;
 import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.clustering.management.PartitionManagerImpl;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.ClientTransport;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 
 public class SystemPartitionManager implements Service<SystemPartitionManager>
 {
-    protected ServiceStartContext serviceContext;
+    private ServiceStartContext serviceContext;
 
-    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    protected final Injector<PeerList> peerListInjector = new Injector<>();
-    protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
-    protected final Injector<ClientTransport> managementClientInjector = new Injector<>();
+    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<ScheduledExecutor> executorInjector = new Injector<>();
+    private final Injector<PartitionManager> partitionManagerInjector = new Injector<>();
 
-    protected final SystemConfiguration systemConfiguration;
+    private final SystemConfiguration systemConfiguration;
 
-    protected ServerTransport clientApiTransport;
-    protected PeerList peerList;
-    protected ScheduledExecutor executor;
-    protected ClientTransport managementClient;
+    private PartitionManager partitionManager;
+    private ServerTransport clientApiTransport;
+    private ScheduledExecutor executor;
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
+    private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd((name, stream) -> addSystemPartition(stream, name))
         .build();
 
@@ -71,12 +58,10 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
-
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
-        final PartitionManager partitionManager = new PartitionManagerImpl(peerList, managementClient);
 
         final ResolvePendingPartitionsCommand cmd =
                 new ResolvePendingPartitionsCommand(
@@ -134,9 +119,8 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     {
         this.serviceContext = startContext;
         this.clientApiTransport = clientApiTransportInjector.getValue();
-        this.peerList = peerListInjector.getValue();
         this.executor = executorInjector.getValue();
-        this.managementClient = managementClientInjector.getValue();
+        this.partitionManager = getPartitionManagerInjector().getValue();
     }
 
     @Override
@@ -164,19 +148,14 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         return clientApiTransportInjector;
     }
 
-    public Injector<PeerList> getPeerListInjector()
-    {
-        return peerListInjector;
-    }
-
     public Injector<ScheduledExecutor> getExecutorInjector()
     {
         return executorInjector;
     }
 
-    public Injector<ClientTransport> getManagementClientInjector()
+    public Injector<PartitionManager> getPartitionManagerInjector()
     {
-        return managementClientInjector;
+        return partitionManagerInjector;
     }
 
 }

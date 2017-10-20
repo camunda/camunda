@@ -19,5 +19,9 @@ package io.zeebe.broker.workflow.data;
 
 public enum WorkflowState
 {
-    CREATED;
+    CREATE,
+    CREATED,
+
+    DELETE,
+    DELETED;
 }

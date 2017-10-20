@@ -17,29 +17,17 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_CONTEXT_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.GOSSIP_CONTEXT_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.GOSSIP_PEER_SELECTOR_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.GOSSIP_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.PEER_LIST_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
-import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.ClusterServiceNames.*;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_HANDLER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 
-import io.zeebe.broker.clustering.gossip.service.GossipContextService;
-import io.zeebe.broker.clustering.gossip.service.GossipService;
-import io.zeebe.broker.clustering.gossip.service.LocalPeerService;
-import io.zeebe.broker.clustering.gossip.service.PeerListService;
-import io.zeebe.broker.clustering.gossip.service.PeerSelectorService;
+import io.zeebe.broker.clustering.gossip.service.*;
 import io.zeebe.broker.clustering.management.service.ClusterManagerContextService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerService;
-import io.zeebe.broker.system.Component;
-import io.zeebe.broker.system.ConfigurationManager;
-import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.*;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
@@ -114,6 +102,7 @@ public class ClusterComponent implements Component
             .dependency(PEER_LOCAL_SERVICE, clusterManagementContextService.getLocalPeerInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
+            .dependency(WORKFLOW_REQUEST_HANDLER_SERVICE, clusterManagementContextService.getWorkflowRequestHandlerInjector())
             .install();
 
         final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config.management);
