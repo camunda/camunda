@@ -106,8 +106,9 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.updateImportIndex();
     // then
-    // proportion is 6 to 11, (3 events + 1 PD + 1 PD_XML + 1 Variable) to (6 evt + 1 Var + 2 PD_XML + 2 PD)
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(54));
+    // proportion is 6 to 11, (3 events + 1 PD + 1 PI + 1 PD_XML + 1 Variable)
+    // to (6 evt + 1 Var + 2 PI + 2 PD_XML + 2 PD)
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(53));
   }
 
   @Test

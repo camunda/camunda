@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing.fetcher;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineClientFactory;
@@ -86,6 +87,56 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
         totalCount += newCount.getCount();
       } catch (RuntimeException e) {
         throw new OptimizeException("Could not fetch historic activity instance count from engine. Please check the connection!", e);
+      }
+    }
+    return totalCount;
+  }
+
+  public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(int indexOfFirstResult,
+                                                                                int maxPageSize,
+                                                                                String processDefinitionId,
+                                                                                String engineAlias) {
+    List<HistoricProcessInstanceDto> entries;
+    long requestStart = System.currentTimeMillis();
+    try {
+      entries = getEngineClient(engineAlias)
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
+          .path(configurationService.getHistoricProcessInstanceEndpoint())
+          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+          .request(MediaType.APPLICATION_JSON)
+          .acceptEncoding(UTF8)
+          .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+          });
+      long requestEnd = System.currentTimeMillis();
+      logger.debug("Fetch of [HPI] took [{}] ms", requestEnd - requestStart);
+    } catch (RuntimeException e) {
+      logError("Could not fetch historic process instances from engine. Please check the connection!", e);
+      entries = Collections.emptyList();
+    }
+
+    return entries;
+  }
+
+  public Integer fetchHistoricProcessInstanceCount(List<String> processDefinitionIds, String engineAlias) throws OptimizeException {
+    int totalCount = 0;
+    for (String processDefinitionId : processDefinitionIds) {
+      try {
+        CountDto newCount = getEngineClient(engineAlias)
+            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineAlias))
+            .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+            .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+            .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+            .request()
+            .acceptEncoding(UTF8)
+            .get(CountDto.class);
+        totalCount += newCount.getCount();
+      } catch (RuntimeException e) {
+        throw new OptimizeException("Could not fetch historic process instance count from engine. Please check the connection!", e);
       }
     }
     return totalCount;

@@ -227,6 +227,9 @@ public class ProcessDefinitionBaseImportIT {
     //third full round
     fullImportRound();
 
+    // forth full round
+    fullImportRound();
+
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -344,6 +347,7 @@ public class ProcessDefinitionBaseImportIT {
     embeddedOptimizeRule.scheduleImport();
 
     // when
+    fullImportRound();
     fullImportRound();
 
     // then

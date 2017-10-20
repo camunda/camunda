@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.impl.FinishedProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -60,8 +60,8 @@ public class SchedulerBackoffTest extends AbstractSchedulerTest {
     when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(services);
     when(importServiceProvider.getVariableImportService(Mockito.any()))
         .thenReturn((VariableImportService) allServicesMap.get("variable"));
-    when(importServiceProvider.getProcessInstanceImportService(Mockito.any()))
-        .thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
+    when(importServiceProvider.getFinishedProcessInstanceImportService(Mockito.any()))
+        .thenReturn((FinishedProcessInstanceImportService) allServicesMap.get("pi-is"));
   }
 
   private ImportScheduler getImportScheduler() {

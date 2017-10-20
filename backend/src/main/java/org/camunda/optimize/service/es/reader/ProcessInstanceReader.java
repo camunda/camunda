@@ -31,6 +31,12 @@ public class ProcessInstanceReader {
   public Set<String> getProcessInstanceIds(int absoluteIndex, String engineAlias) {
     logger.debug("Fetching process instance ids");
 
+    esclient
+      .admin()
+      .indices()
+      .prepareRefresh(configurationService.getOptimizeIndex())
+      .get();
+
     Set<String> result = new HashSet<>();
     QueryBuilder query;
     query = buildBasicQuery(engineAlias);

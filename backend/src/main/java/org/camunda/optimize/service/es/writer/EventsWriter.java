@@ -43,7 +43,7 @@ public class EventsWriter {
     logger.debug("Writing [{}] events to elasticsearch", events.size());
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     Map<String, List<EventDto>> processInstanceToEvents = new HashMap<>();
     for (EventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
@@ -98,8 +98,6 @@ public class EventsWriter {
     procInst.setProcessDefinitionId(e.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(e.getProcessDefinitionKey());
     procInst.setProcessInstanceId(e.getProcessInstanceId());
-    procInst.setStartDate(new Date());
-    procInst.setEndDate(new Date());
     procInst.getEvents().addAll(simpleEvents);
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 

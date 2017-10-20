@@ -2,10 +2,11 @@ package org.camunda.optimize.service.importing.provider;
 
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
-import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.impl.FinishedProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.IdBasedProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.IdBasedProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
@@ -22,6 +23,8 @@ import java.util.Map;
 
 @Component
 public class ImportServiceProvider implements ConfigurationReloadable {
+
+  public static final String UNFINISHED_PROCESS_INSTANCE_TYPE = "unfinished-process-instance";
 
   @Autowired
   private ApplicationContext applicationContext;
@@ -43,11 +46,13 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       PaginatedImportService processDefinitionXmlImportService = getProcessDefinitionXmlImportService(engineAlias);
       ActivityImportService activityImportService = getActivityImportService(engineAlias);
       VariableImportService variableImportService = getVariableImportService(engineAlias);
+      FinishedProcessInstanceImportService processInstanceImportService = getFinishedProcessInstanceImportService(engineAlias);
 
       engineServices.put(processDefinitionImportService.getElasticsearchType(), processDefinitionImportService);
       engineServices.put(processDefinitionXmlImportService.getElasticsearchType(), processDefinitionXmlImportService);
       engineServices.put(activityImportService.getElasticsearchType(), activityImportService);
       engineServices.put(variableImportService.getElasticsearchType(), variableImportService);
+      engineServices.put(processInstanceImportService.getElasticsearchType(), processInstanceImportService);
 
       paginatedServices.put(engineAlias, engineServices);
 
@@ -56,9 +61,8 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       importServiceMap.put(processDefinitionXmlImportService.getElasticsearchType(), processDefinitionXmlImportService);
       importServiceMap.put(activityImportService.getElasticsearchType(), activityImportService);
       importServiceMap.put(variableImportService.getElasticsearchType(), variableImportService);
-
-      ProcessInstanceImportService processInstanceImportService = getProcessInstanceImportService(engineAlias);
       importServiceMap.put(processInstanceImportService.getElasticsearchType(), processInstanceImportService);
+      importServiceMap.put(UNFINISHED_PROCESS_INSTANCE_TYPE, getUnfinishedProcessInstanceImportService(engineAlias));
 
       allServices.put(engineAlias, importServiceMap);
     }
@@ -71,6 +75,17 @@ public class ImportServiceProvider implements ConfigurationReloadable {
       result = (ActivityImportService) this.allServices.get(engineAlias).get(configurationService.getEventType());
     } else {
       result = new ActivityImportService(engineAlias);
+      applicationContext.getAutowireCapableBeanFactory().autowireBean(result);
+    }
+    return result;
+  }
+
+  public FinishedProcessInstanceImportService getFinishedProcessInstanceImportService(String engineAlias) {
+    FinishedProcessInstanceImportService result;
+    if (isInstantiated(engineAlias, configurationService.getProcessInstanceType())) {
+      result = (FinishedProcessInstanceImportService) this.allServices.get(engineAlias).get(configurationService.getProcessInstanceType());
+    } else {
+      result = new FinishedProcessInstanceImportService(engineAlias);
       applicationContext.getAutowireCapableBeanFactory().autowireBean(result);
     }
     return result;
@@ -123,10 +138,10 @@ public class ImportServiceProvider implements ConfigurationReloadable {
     init();
   }
 
-  public ProcessInstanceImportService getProcessInstanceImportService(String engineAlias) {
+  public ProcessInstanceImportService getUnfinishedProcessInstanceImportService(String engineAlias) {
     ProcessInstanceImportService result;
-    if (isInstantiated(engineAlias, configurationService.getProcessInstanceType())) {
-      result = (ProcessInstanceImportService) this.allServices.get(engineAlias).get(configurationService.getProcessInstanceType());
+    if (isInstantiated(engineAlias, UNFINISHED_PROCESS_INSTANCE_TYPE)) {
+      result = (ProcessInstanceImportService) this.allServices.get(engineAlias).get(UNFINISHED_PROCESS_INSTANCE_TYPE);
     } else {
       result = new ProcessInstanceImportService(engineAlias);
       applicationContext.getAutowireCapableBeanFactory().autowireBean(result);

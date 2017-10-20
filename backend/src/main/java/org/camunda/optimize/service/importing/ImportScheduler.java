@@ -216,10 +216,9 @@ public class ImportScheduler extends Thread {
     logger.debug("post processing [{}] import", toExecute.getElasticsearchType());
     if (importResult.getIdsToFetch() != null) {
       importScheduleJobs.addAll(
-          scheduleJobFactory.createIndexedScheduleJobs(
-              importResult.getIdsToFetch(),
-              toExecute.getEngineAlias()
-          )
+        scheduleJobFactory.createUnfinishedProcessInstanceJobs(
+          toExecute.getEngineAlias()
+        )
       );
     }
 
@@ -229,8 +228,6 @@ public class ImportScheduler extends Thread {
           importResult.getEngineHasStillNewData(),
           typeCastedJob
       );
-    } else {
-      //TODO: move in branching statement above once PI import is paged
       boolean pi_have_data = configurationService.getProcessInstanceType().equals(toExecute.getElasticsearchType()) && importResult.getEngineHasStillNewData();
       if (pi_have_data && !this.variableImportScheduled()) {
         logger.debug("creating variable import job");
@@ -239,7 +236,6 @@ public class ImportScheduler extends Thread {
         );
       }
     }
-
   }
 
   private boolean variableImportScheduled() {

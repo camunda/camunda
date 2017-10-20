@@ -58,7 +58,7 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
     procInst.setProcessDefinitionId(dto.getProcessDefinitionId());
     procInst.setProcessInstanceId(dto.getId());
     procInst.setStartDate(dto.getStartTime());
-    procInst.setEndDate(dto.getEndTime());
+    procInst.setEndDate(null);
   }
 
   @Override

@@ -70,7 +70,7 @@ public class VariableWriter {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
     BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esclient.prepareBulk();
-    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
     //build map first
     Map<String, Map <String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();

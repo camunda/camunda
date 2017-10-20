@@ -23,6 +23,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -414,10 +415,12 @@ public class MultipleEngineSupportIT {
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
-    Set<String> allowedProcessDefinitionKeys = new HashSet<>();
+    List<String> allowedProcessDefinitionKeys = new ArrayList<>();
+    allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess2");
-    assertThat(searchResponse.getHits().getTotalHits(), is(2L));
+    allowedProcessDefinitionKeys.add("TestProcess2");
+    assertThat(searchResponse.getHits().getTotalHits(), is(4L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionId = searchHit.getSource().get(CURRENT_PROCESS_DEFINITION_ID).toString();
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);

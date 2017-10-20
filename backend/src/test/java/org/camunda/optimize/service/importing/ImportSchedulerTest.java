@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.impl.FinishedProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
@@ -75,7 +75,7 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     when(importServiceProvider.getPagedServices(Mockito.any())).thenReturn(paginatedImportServices);
     when(importServiceProvider.getPaginatedImportService(Mockito.any(), Mockito.any())).thenReturn(paginatedImportServices.get(0));
     when(importServiceProvider.getVariableImportService(Mockito.any())).thenReturn((VariableImportService) allServicesMap.get("variable"));
-    when(importServiceProvider.getProcessInstanceImportService(Mockito.any())).thenReturn((ProcessInstanceImportService) allServicesMap.get("pi-is"));
+    when(importServiceProvider.getFinishedProcessInstanceImportService(Mockito.any())).thenReturn((FinishedProcessInstanceImportService) allServicesMap.get("pi-is"));
   }
 
 
@@ -127,41 +127,6 @@ public class ImportSchedulerTest extends AbstractSchedulerTest {
     for (ImportService service : services) {
       verify(service, times(1)).executeImport(Mockito.any());
     }
-  }
-
-  @Test
-  public void testProcessInstanceImportScheduledBasedOnActivities () throws Exception {
-    PaginatedImportService paginatedImportService = paginatedImportServices.get(0);
-
-    ImportResult result = getConstructResult(paginatedImportService);
-
-    when(paginatedImportService.executeImport(Mockito.any())).thenReturn(result);
-    ImportScheduler importScheduler = importSchedulerFactory.getInstances().values().iterator().next();
-
-    importScheduler.scheduleNewImportRound();
-
-    //when
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-    importScheduler.executeNextJob();
-
-    assertThat(importScheduler.importScheduleJobs.size(), is(4));
-    ImportScheduleJob piJob = importScheduler.importScheduleJobs.poll();
-    assertThat(piJob, is(instanceOf(IdBasedImportScheduleJob.class)));
-    assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch(), is(notNullValue()));
-    assertThat(((IdBasedImportScheduleJob)piJob).getIdsToFetch().toArray()[0], is(TEST_ID));
-  }
-
-  private ImportResult getConstructResult(PaginatedImportService paginatedImportService) {
-    ImportResult result = new ImportResult();
-    result.setEngineHasStillNewData(true);
-    result.setSearchedSize(1);
-    Set<String> piIds = new HashSet<>();
-    piIds.add(TEST_ID);
-    result.setIdsToFetch(piIds);
-    result.setElasticSearchType(paginatedImportService.getElasticsearchType());
-    result.setIndexHandlerType(paginatedImportService.getIndexHandlerType());
-    return result;
   }
 
   @Test

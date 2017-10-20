@@ -2,10 +2,10 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.impl.FinishedProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
-import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
 import org.camunda.optimize.service.importing.impl.VariableImportService;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
@@ -65,7 +65,7 @@ public abstract class AbstractSchedulerTest {
     when(variableImportService.getElasticsearchType()).thenReturn("variable");
     services.put("variable", variableImportService);
 
-    ProcessInstanceImportService processInstanceImportService = mock(ProcessInstanceImportService.class);
+    FinishedProcessInstanceImportService processInstanceImportService = mock(FinishedProcessInstanceImportService.class);
     when(processInstanceImportService.getElasticsearchType()).thenReturn("pi-is");
     services.put("pi-is",processInstanceImportService);
 
