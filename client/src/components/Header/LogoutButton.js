@@ -1,15 +1,16 @@
 import React from 'react';
-import {getToken, destroy} from 'credentials';
+import {Link} from 'react-router-dom';
+import {destroy} from 'credentials';
 import {get} from 'request';
 
 import './LogoutButton.css';
 
 export default function LogoutButton() {
   return (
-    <li className={`LogoutButton${getToken() ? '' : ' hidden'}`}>
-      <a href="#/login" onClick={logout}>
+    <li className='LogoutButton'>
+      <Link to='/login' onClick={logout}>
         Logout
-      </a>
+      </Link>
     </li>
   );
 }

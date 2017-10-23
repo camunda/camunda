@@ -16,6 +16,9 @@
   color: #777777;
   background-color: #fff;
   font-size: 14px;
+  position: fixed;
+  width: 100%;
+  top: 0;
 }
 
 .Header a {
@@ -41,7 +44,18 @@
 }
 
 .Header nav ul {
-  float: right;
   margin: 0;
   padding: 0;
+}
+
+.Header nav.left ul {
+  float: left;
+}
+
+.Header nav.right ul {
+  float: right;
+}
+
+.Header li {
+  display: inline-block;
 }

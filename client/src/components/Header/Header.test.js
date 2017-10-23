@@ -3,6 +3,10 @@ import { shallow, mount } from 'enzyme';
 
 import Header from './Header';
 
+jest.mock('react-router-dom', () => { return {
+  Link: ({children}) => {return <a>{children}</a>}
+}});
+
 it('renders without crashing', () => {
   shallow(<Header />);
 });
@@ -10,7 +14,7 @@ it('renders without crashing', () => {
 it('includes the name provided as property', () => {
   const name = 'Awesome App';
 
-  const node = shallow(<Header name={name} />);
+  const node = mount(<Header name={name} />);
   expect(node).toIncludeText(name);
 });
 

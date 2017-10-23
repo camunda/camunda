@@ -12,6 +12,9 @@ jest.mock('credentials', () => {return {
 jest.mock('request', () => {return {
   get: jest.fn()
 }});
+jest.mock('react-router-dom', () => { return {
+  Link: ({children, onClick}) => {return <a onClick={onClick}>{children}</a>}
+}});
 
 it('renders without crashing', () => {
   shallow(<LogoutButton />);
@@ -34,7 +37,7 @@ it('is hidden when there is no authentication token', () => {
 });
 
 it('should clear the token and logout from server on click', () => {
-  const node = shallow(<LogoutButton />);
+  const node = mount(<LogoutButton />);
 
   node.find('a').simulate('click');
 
