@@ -17,6 +17,7 @@ package io.zeebe.perftest;
 
 import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static io.zeebe.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
+import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_COUNT;
 import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 import static io.zeebe.perftest.helper.TestHelper.printProperties;
 
@@ -128,7 +129,7 @@ public class TaskSubscriptionThroughputTest
 
     private void executeSetup(Properties properties, ZeebeClient client)
     {
-        client.topics().create(CommonProperties.DEFAULT_TOPIC_NAME, 1).execute();
+        client.topics().create(CommonProperties.DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_COUNT).execute();
 
         final int numTasks = Integer.parseInt(properties.getProperty(TEST_NUM_TASKS));
         final int setUpTimeMs = Integer.parseInt(properties.getProperty(TEST_SETUP_TIMEMS));

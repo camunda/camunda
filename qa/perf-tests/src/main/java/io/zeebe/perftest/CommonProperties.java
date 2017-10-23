@@ -22,6 +22,6 @@ public class CommonProperties
     public static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
 
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
-    public static final int DEFAULT_PARTITION_ID = 0;
+    public static final int DEFAULT_PARTITION_COUNT = 1;
 
 }

@@ -16,6 +16,8 @@
 package io.zeebe.perftest.helper;
 
 import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static io.zeebe.perftest.CommonProperties.DEFAULT_PARTITION_COUNT;
+import static io.zeebe.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 import static io.zeebe.perftest.helper.TestHelper.printProperties;
 
 import java.util.Properties;
@@ -78,7 +80,7 @@ public abstract class MaxRateThroughputTest
 
     protected void executeSetup(Properties properties, ZeebeClient client)
     {
-        client.topics().create(CommonProperties.DEFAULT_TOPIC_NAME, 1).execute();
+        client.topics().create(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_COUNT).execute();
     }
 
     @SuppressWarnings("rawtypes")
