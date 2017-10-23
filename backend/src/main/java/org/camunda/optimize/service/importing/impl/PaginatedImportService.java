@@ -38,8 +38,8 @@ public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends 
     ImportResult result = new ImportResult();
     int searchedSize;
 
-    logger.debug("Importing page from type [{}] with index starting from [{}].",
-        getElasticsearchType(), job.getRelativeImportIndex());
+    logger.debug("Importing page from type [{}] with relative index starting from [{}] for PD [{}].",
+        getElasticsearchType(), job.getRelativeImportIndex(), job.getCurrentProcessDefinitionId());
 
     List<ENG> pageOfEngineEntities = queryEngineRestPoint(job);
     searchedSize = pageOfEngineEntities.size();

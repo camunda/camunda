@@ -39,7 +39,7 @@ public class AllEntitiesBasedProcessDefinitionFetcher  {
   }
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult, String engineAlias) {
-    logger.info("Using page size [{}] for fetching process definitions.", pageSizeCalculator.getCalculatedPageSize());
+    logger.debug("Using page size [{}] for fetching [PD].", pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<ProcessDefinitionEngineDto> list =  engineEntityFetcher.fetchProcessDefinitions(
       indexOfFirstResult,

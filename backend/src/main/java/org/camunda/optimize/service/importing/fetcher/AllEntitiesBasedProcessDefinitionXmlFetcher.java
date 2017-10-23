@@ -37,7 +37,7 @@ public class AllEntitiesBasedProcessDefinitionXmlFetcher {
   }
 
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, String engineAlias) {
-    logger.info("Using page size of [{}] for fetching process definition xmls.",
+    logger.debug("Using page size of [{}] for fetching [PD_XML].",
       pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<ProcessDefinitionXmlEngineDto> list =  engineEntityFetcher.fetchProcessDefinitionXmls(

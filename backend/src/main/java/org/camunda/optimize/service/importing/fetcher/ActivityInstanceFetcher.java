@@ -40,7 +40,7 @@ public class ActivityInstanceFetcher {
                                                                                 String processDefinitionId,
                                                                                 String engineAlias) {
 
-    logger.info("Using page size of [{}] for fetching historic activity instances.", pageSizeCalculator.getCalculatedPageSize());
+    logger.debug("Using page size of [{}] for fetching [HAI].", pageSizeCalculator.getCalculatedPageSize());
     long startRequestTime = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> list =  engineEntityFetcher.fetchHistoricActivityInstances(
       indexOfFirstResult,
