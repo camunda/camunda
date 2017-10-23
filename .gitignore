@@ -12,3 +12,4 @@ hosts
 *.retry
 nohup.out
 errorShots/
+.DS_Store
