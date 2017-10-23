@@ -173,3 +173,91 @@ describe('formatQuery', () => {
     expect(formatQuery(query)).toBe('a=1&b=5%3D5');
   });
 });
+
+describe('methods shortcuts functions', () => {
+  const url = 'http://example.com';
+  const body = 'BODY';
+
+  beforeEach(() => {
+    fetch.mockClear();
+  })
+
+  describe('put', () => {
+    it('should call request with correct options', async () => {
+      await put(url, body);
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetch.mock.calls[0][0]).toBe(url);
+      expect(fetchPayload.body).toBe(body);
+      expect(fetchPayload.method).toBe('PUT');
+    });
+
+    it('should use custom options', async () => {
+      await put(url, body, {
+        headers: {d: 12}
+      });
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetchPayload.headers.d).toBe(12);
+    });
+
+    it('should return request response', async () => {
+      expect(await put()).toBe(successResponse);
+    });
+  });
+
+  describe('post', () => {
+    it('should call request with correct options', async () => {
+      await post(url, body);
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetch.mock.calls[0][0]).toBe(url);
+      expect(fetchPayload.body).toBe(body);
+      expect(fetchPayload.method).toBe('POST');
+    });
+
+    it('should use custom options', async () => {
+      await post(url, body, {
+        headers: {d: 12}
+      });
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetchPayload.headers.d).toBe(12);
+    });
+
+    it('should return request response', async () => {
+      expect(await post()).toBe(successResponse);
+    });
+  });
+
+  describe('get', () => {
+    const query = {param: 'q'};
+
+    it('should call request with correct options', async () => {
+      await get(url, query);
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetch.mock.calls[0][0]).toBe(url + '?param=q');
+      expect(fetchPayload.method).toBe('GET');
+    });
+
+    it('should use custom options', async () => {
+      await get(url, body, {
+        headers: {d: 12}
+      });
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetchPayload.headers.d).toBe(12);
+    });
+
+    it('should return request response', async () => {
+      expect(await get()).toBe(successResponse);
+    });
+  });
+});
