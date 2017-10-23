@@ -48,7 +48,6 @@ export function request({url, method, body, query, headers}) {
     } else if (status === 401) {
       destroy();
     }
-
     return Promise.reject(response);
   });
 }
