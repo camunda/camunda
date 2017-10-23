@@ -40,7 +40,7 @@ export default class Login extends React.Component {
 
   render() {
     const {username, password, redirect, error} = this.state;
-    const locationState = this.props.location.state;
+    const locationState = this.props.location && this.props.location.state;
 
     if(redirect || getToken()) {
       return (
