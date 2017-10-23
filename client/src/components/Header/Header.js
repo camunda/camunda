@@ -5,7 +5,7 @@ export default class Header extends React.Component {
   render() {
     const {name, children} = this.props;
     return (
-      <header className='Header'>
+      <header role='banner' className='Header'>
         <a href='/' title={name}>
           <span className='brand-logo' />
           &nbsp;
