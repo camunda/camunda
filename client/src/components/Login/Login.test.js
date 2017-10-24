@@ -38,18 +38,12 @@ it('should update the state from the input fields', () => {
   expect(node).toHaveState(field, input);
 });
 
-it('should not display the error message if there is no error', () => {
-  const node = mount(<Login />);
-
-  expect(node.find('.error-message')).toHaveClassName('hidden');
-});
-
 it('should display the error message if there is an error', () => {
   const node = mount(<Login />);
 
   node.setState({error: true});
-
-  expect(node.find('.error-message')).not.toHaveClassName('hidden');
+  
+  expect(node.find('.Message')).toBePresent();
 });
 
 it('should call the login function when submitting the form', async () => {
