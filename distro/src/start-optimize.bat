@@ -5,7 +5,7 @@ echo Setting up environment variables...
 set ARGUMENT=%1
 set PROGRAM=optimize
 set BASEDIR=%~dp0
-cd %BASEDIR%
+cd "%BASEDIR%"
 
 if not exist ".\log" mkdir log
 if not exist ".\run" mkdir run
@@ -24,7 +24,7 @@ echo Environment is set up.
 if "%ARGUMENT%" neq "standalone" (
 
     echo Starting Elasticsearch ${elasticsearch.version}...
-    start %BASEDIR%server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat
+    start "" call "%BASEDIR%server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat"
 
     :: query elasticsearch if it's up
     :while1

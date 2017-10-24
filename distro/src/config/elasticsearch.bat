@@ -79,6 +79,6 @@ IF ERRORLEVEL 1 (
 	EXIT /B %ERRORLEVEL%
 )
 
-%JAVA% %ES_JAVA_OPTS% -Djava.security.policy=file:///%ES_HOME%/config/.java.policy %ES_PARAMS% -cp "%ES_CLASSPATH%" "org.elasticsearch.bootstrap.Elasticsearch" !newparams!
+%JAVA% %ES_JAVA_OPTS% -Djava.security.policy="file:///%ES_HOME%/config/.java.policy" %ES_PARAMS% -cp "%ES_CLASSPATH%" "org.elasticsearch.bootstrap.Elasticsearch" !newparams!
 
 ENDLOCAL
