@@ -5,7 +5,7 @@ import {
   Route
 } from 'react-router-dom'
 
-import 'style.css';
+import './style.css';
 
 import {
   PrivateRoute,
