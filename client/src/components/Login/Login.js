@@ -54,7 +54,7 @@ export default class Login extends React.Component {
     return (
       <form  className='Login'>
         <h2>Login</h2>
-        {error ? (<Message message='Could not log you in. Please check your username and password.'/>) : ('')}
+        {error ? (<Message type="error" message='Could not log you in. Please check your username and password.'/>) : ('')}
         <div className='Login__row'>
           <label  className='Login__label'>Username</label>
           <input placeholder='Username' value={username} onChange={this.handleInputChange} type='text' name='username' autoFocus={true} />

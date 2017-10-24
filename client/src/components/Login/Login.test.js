@@ -42,8 +42,8 @@ it('should display the error message if there is an error', () => {
   const node = mount(<Login />);
 
   node.setState({error: true});
-  
-  expect(node.find('.Message')).toBePresent();
+
+  expect(node.find('.Message--error')).toBePresent();
 });
 
 it('should call the login function when submitting the form', async () => {
