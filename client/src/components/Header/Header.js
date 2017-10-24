@@ -11,9 +11,8 @@ import './Header.css';
 export default function Header({name}) {
   return (
     <header role='banner' className='Header'>
-      <Link to='/' title={name}>
-        <span className='brand-logo' />
-        &nbsp;
+      <Link to='/' className='Header__link' title={name}>
+        <span className='Header__brand-logo' />
         <span>{name}</span>
       </Link>
       {(getToken() && <nav className='left'>

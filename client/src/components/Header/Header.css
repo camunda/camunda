@@ -21,7 +21,7 @@
   top: 0;
 }
 
-.Header a {
+.Header__link {
   float: left;
   font-size: 21px;
   line-height: 42px;
@@ -34,7 +34,11 @@
   text-decoration: none;
 }
 
-.Header a .brand-logo:before {
+.Header__brand-logo {
+  margin-right: .3em;
+}
+
+.Header__brand-logo:before {
   color: #b5152b;
   display: inline-block;
   font-family: "bpmn";
