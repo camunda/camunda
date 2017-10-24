@@ -3,6 +3,9 @@ import {Redirect} from 'react-router-dom';
 import {getToken} from 'credentials';
 
 import {login} from './service';
+
+import {Message} from '../Message';
+
 import './Login.css';
 
 export default class Login extends React.Component {
@@ -51,6 +54,7 @@ export default class Login extends React.Component {
     return (
       <form className='Login'>
         <h2>Login</h2>
+        {error ? (<Message message='Could not log you in. Please check your username and password.'/>) : ('')}
         <div>
           <label>Username</label>
           <input placeholder='Username' value={username} onChange={this.handleInputChange} type='text' name='username' autoFocus={true} />
@@ -59,7 +63,6 @@ export default class Login extends React.Component {
           <label>Password</label>
           <input placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
         </div>
-        <div className={`error-message${error ? '' : ' hidden'}`}>Could not login. Check username / password.</div>
         <button type='submit' onClick={this.submit}>Login</button>
       </form>
     );
