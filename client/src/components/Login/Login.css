@@ -6,14 +6,6 @@
   border: 1px solid lightgray;
 }
 
-.Login .error-message {
-  color: red;
-}
-
-.Login .error-message.hidden {
-  display: none;
-}
-
 .Login label {
   display: block;
   font-variant: small-caps;
