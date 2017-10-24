@@ -21,6 +21,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,9 +92,13 @@ public class ResilienceTest {
     long startTime, requestDuration;
     startTime = System.currentTimeMillis();
     while (!connectionStatusDto.isConnectedToElasticsearch()){
-      connectionStatusDto = optimize.target("status/connection")
-        .request()
-        .get(ConnectionStatusDto.class);
+      try {
+        connectionStatusDto = optimize.target("status/connection")
+          .request()
+          .get(ConnectionStatusDto.class);
+      } catch (Exception ignored) {
+        // socket timeout exception, so we should try it another round
+      }
       requestDuration = System.currentTimeMillis() - startTime;
       if (requestDuration > TIMEOUT_CONNECTION_STATUS) {
         throw new TestTimedOutException(TIMEOUT_CONNECTION_STATUS, TimeUnit.MILLISECONDS);
