@@ -52,15 +52,15 @@ export default class Login extends React.Component {
     }
 
     return (
-      <form className='Login'>
+      <form  className='Login'>
         <h2>Login</h2>
         {error ? (<Message message='Could not log you in. Please check your username and password.'/>) : ('')}
-        <div>
-          <label>Username</label>
+        <div className='Login__row'>
+          <label  className='Login__label'>Username</label>
           <input placeholder='Username' value={username} onChange={this.handleInputChange} type='text' name='username' autoFocus={true} />
         </div>
-        <div>
-          <label>Password</label>
+        <div className='Login__row'>
+          <label className='Login__label'>Password</label>
           <input placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
         </div>
         <button type='submit' onClick={this.submit}>Login</button>

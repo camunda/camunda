@@ -6,11 +6,11 @@
   border: 1px solid lightgray;
 }
 
-.Login label {
+.Login__label {
   display: block;
   font-variant: small-caps;
 }
 
-.Login div {
+.Login__row {
   margin-bottom: 1em;
 }
