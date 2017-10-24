@@ -50,3 +50,22 @@ Should create ``build`` folder with built application.
 ```bash
 yarn test
 ```
+
+If you’re running a Mac and `yarn test` fails with something like:
+
+```
+2017-10-24 13:57 node[16138] (FSEvents.framework) FSEventStreamStart: register_with_server: ERROR: f2d_register_rpc() => (null) (-22)
+2017-10-24 13:57 node[16138] (FSEvents.framework) FSEventStreamStart: register_with_server: ERROR: f2d_register_rpc() => (null) (-22)
+2017-10-24 13:57 node[16138] (FSEvents.framework) FSEventStreamStart: register_with_server: ERROR: f2d_register_rpc() => (null) (-22)
+events.js:160
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: Error watching file for changes: EMFILE
+    at exports._errnoException (util.js:1020:11)
+    at FSEvent.FSWatcher._handle.onchange (fs.js:1420:11)
+error Command failed with exit code 1.
+
+```
+
+you can make the tests run by installing [watchman](https://facebook.github.io/watchman/docs/install.html).
