@@ -7,4 +7,3 @@ export {Dashboard} from './Dashboard';
 export {Dashboards} from './Dashboards';
 export {Report} from './Report';
 export {Reports} from './Reports';
-export {Message} from './Message';

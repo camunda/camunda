@@ -16,8 +16,7 @@ import {
   Dashboards,
   Reports,
   Report,
-  Dashboard,
-  Message
+  Dashboard
 } from './components';
 
 ReactDOM.render(<Router>
