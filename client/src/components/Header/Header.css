@@ -21,17 +21,21 @@
   top: 0;
 }
 
-.Header__link {
-  float: left;
+.Header a {
+  color: #000;
+  text-decoration: none;
   font-size: 21px;
   line-height: 42px;
+  margin-right: 0.3em;
+}
+
+.Header__link {
+  float: left;
   height: 42px;
   padding-top: 0;
   padding-bottom: 0;
   padding-left: 10.5px;
   padding-right: 15px;
-  color: #000;
-  text-decoration: none;
 }
 
 .Header__brand-logo {
