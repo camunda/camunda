@@ -1,4 +1,6 @@
-import {destroy, getToken} from 'credentials';
+import {getToken} from 'credentials';
+
+const handlers = [];
 
 export function put(url, body, options = {}) {
   return request({
@@ -27,10 +29,28 @@ export function get(url, query, options = {}) {
   });
 }
 
-export function request({url, method, body, query, headers}) {
+export function del(url, query, options = {}) {
+  return request({
+    url,
+    query,
+    method: 'DELETE',
+    ...options
+  });
+}
+
+
+export function addHandler(fct) {
+  handlers.push(fct);
+}
+
+export function removeHandler(fct) {
+  handlers.splice(handlers.indexOf(fct), 1);
+}
+
+export async function request({url, method, body, query, headers}) {
   const resourceUrl = query ? `${url}?${formatQuery(query)}` : url;
 
-  return fetch(resourceUrl, {
+  let response = await fetch(resourceUrl, {
     method,
     body: processBody(body),
     headers: {
@@ -39,17 +59,17 @@ export function request({url, method, body, query, headers}) {
       ...headers
     },
     mode: 'cors'
-  })
-  .then(response => {
-    const {status} = response;
-
-    if (status >= 200 && status < 300) {
-      return response;
-    } else if (status === 401) {
-      destroy();
-    }
-    return Promise.reject(response);
   });
+
+  handlers.forEach(async fct => {
+    response = await fct(response);
+  });
+
+  if(response.status >= 200 && response.status < 300) {
+    return response;
+  } else {
+    throw response;
+  }
 }
 
 function createAuthorizationHeader() {

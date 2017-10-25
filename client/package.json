@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "moment": "^2.19.1",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
     "react-router-dom": "^4.2.2",
-    "react-scripts": "1.0.14",
-    "semantic-ui-css": "^2.2.12",
-    "semantic-ui-react": "^0.75.0"
+    "react-scripts": "1.0.14"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -29,5 +28,9 @@
     "shelljs": "^0.7.8",
     "tarball-extract": "^0.0.6"
   },
-  "proxy": "http://localhost:8090"
+  "proxy": {
+    "/api": {
+      "target": "http://localhost:8090"
+    }
+  }
 }

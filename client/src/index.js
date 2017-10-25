@@ -26,8 +26,8 @@ ReactDOM.render(<Router>
     <PrivateRoute exact path="/" component={Home} />
     <PrivateRoute exact path="/dashboards" component={Dashboards} />
     <PrivateRoute exact path="/reports" component={Reports} />
-    <PrivateRoute exact path="/report/:id" component={Report} />
-    <PrivateRoute exact path="/dashboard/:id" component={Dashboard} />
+    <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
+    <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
     <Footer version="2.0.0" />
   </div>
 </Router>, document.getElementById('root'));

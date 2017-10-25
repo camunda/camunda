@@ -1,9 +1,8 @@
-import {request, formatQuery, put, post, get} from './request';
-import {getToken, destroy} from 'credentials';
+import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
+import {getToken} from 'credentials';
 
 jest.mock('credentials', () => {return {
-  getToken: jest.fn(),
-  destroy: jest.fn()
+  getToken: jest.fn()
 }});
 
 const successResponse = {
@@ -21,9 +20,9 @@ global.fetch.mockReturnValue(Promise.resolve(successResponse));
 
 getToken.mockReturnValue(token);
 
+const url = 'https://example.com';
 
 describe('request', () => {
-  const url = 'https://example.com';
   const method = 'GET';
 
   beforeEach(() => {
@@ -123,19 +122,6 @@ describe('request', () => {
     }
   });
 
-  it('should clear login when response status is 401', async () => {
-    fetch.mockReturnValueOnce(Promise.resolve(failedResponse));
-
-    try {
-      await request({
-        url,
-        method
-      });
-    } catch(e) {
-      expect(destroy).toHaveBeenCalled();
-    }
-  });
-
   it('should add Authorization header', async () => {
     await request({
       url,
@@ -160,6 +146,29 @@ describe('request', () => {
     expect(headers).not.toBe(expect.objectContaining({
       'X-Optimize-Authorization': expect.any(String)
     }));
+  });
+});
+
+describe('handlers', () => {
+  it('should call a registered handler with the response', async () => {
+    const spy = jest.fn();
+
+    addHandler(spy);
+
+    await request({url});
+
+    expect(spy).toHaveBeenCalledWith(successResponse);
+  });
+
+  it('should not call a handler after it has been unregistered', async () => {
+    const spy = jest.fn();
+
+    addHandler(spy);
+    removeHandler(spy);
+
+    await request({url});
+
+    expect(spy).not.toHaveBeenCalledWith(successResponse);
   });
 });
 
