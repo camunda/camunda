@@ -18,7 +18,7 @@ echo "Downloading Zeebe distribution ${VERSION}."
 curl -sL "https://app.camunda.com/nexus/service/local/artifact/maven/redirect?r=public&g=io.zeebe&a=zeebe-distribution&v=${VERSION}&p=tar.gz" > zeebe.tar.gz
 
 echo "Building Zeebe Docker image ${RELEASE_VERSION}."
-docker build -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe.tar.gz .
+docker build --no-cache -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe.tar.gz .
 
 echo "Authenticating with DockerHub and pushing image."
 docker login --username ${DOCKER_HUB_USERNAME} --password ${DOCKER_HUB_PASSWORD} --email ci@camunda.com
