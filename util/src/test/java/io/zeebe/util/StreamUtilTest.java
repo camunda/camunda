@@ -19,12 +19,7 @@ import static io.zeebe.util.StreamUtil.readLong;
 import static io.zeebe.util.StreamUtil.writeLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
@@ -78,7 +73,7 @@ public class StreamUtilTest
         // given
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(2);
         final byte[] thingsToRead = new byte[] {1, 2, 3, 4};
-        final InputStream stream = new ByteArrayInputStream(thingsToRead);
+        final InputStream stream = new RepeatedlyFailingInputStream(new ByteArrayInputStream(thingsToRead), 2);
 
         // when
         StreamUtil.read(stream, buffer, 4);

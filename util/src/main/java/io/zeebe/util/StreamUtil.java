@@ -185,7 +185,7 @@ public class StreamUtil
         do
         {
             buffer.checkLimit(offset + DEFAULT_BUFFER_SIZE); // for expandable buffers, this triggers expansion
-            bytesRead = input.read(buffer.byteArray(), offset, DEFAULT_BUFFER_SIZE);
+            bytesRead = input.read(buffer.byteArray(), writeOffset, DEFAULT_BUFFER_SIZE);
 
             if (bytesRead > 0)
             {
