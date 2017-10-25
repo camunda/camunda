@@ -108,8 +108,6 @@ public class PendingPartitionsIndex implements Iterable<PendingPartition>
     {
 
         protected Iterator<Long2BytesZbMapEntry> iterator;
-        protected long currentKey;
-        protected DirectBuffer currentValue;
         protected PendingPartitionImpl partition = new PendingPartitionImpl();
 
         public void reset()

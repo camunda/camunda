@@ -316,7 +316,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
         });
     }
 
-    protected void removeSubscriptionsForLogStream(final long partitionId)
+    protected void removeSubscriptionsForLogStream(final int partitionId)
     {
         final Set<Entry<Long, LockTaskStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
         for (Entry<Long, LockTaskStreamProcessor> entry : entrySet)

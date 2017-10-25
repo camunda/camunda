@@ -242,7 +242,7 @@ public class ClusterManager implements Actor
     public void removeRaft(final Raft raft)
     {
         final LogStream logStream = raft.getLogStream();
-        final long partitionId = logStream.getPartitionId();
+        final int partitionId = logStream.getPartitionId();
 
         commandQueue.runAsync(() ->
         {

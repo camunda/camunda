@@ -73,7 +73,7 @@ public class TopicLeader extends UnpackedObject
         return this;
     }
 
-    public long getPartitionId()
+    public int getPartitionId()
     {
         return partitionIdProp.getValue();
     }
