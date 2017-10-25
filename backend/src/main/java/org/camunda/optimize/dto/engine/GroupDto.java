@@ -1,9 +1,9 @@
 package org.camunda.optimize.dto.engine;
 
 public class GroupDto {
-  // TODO make protected
-  private String id;
-  private String name;
+
+  protected String id;
+  protected String name;
 
   public String getId() {
     return id;

@@ -51,6 +51,7 @@ public interface ConfigurationServiceConstants {
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.import.data.process-definition.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
+  String REPORT_TYPE = "$.es.reportType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";

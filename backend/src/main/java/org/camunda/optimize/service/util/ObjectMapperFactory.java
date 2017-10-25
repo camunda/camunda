@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.util;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ public class ObjectMapperFactory {
       result.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
       DateFormat df = new SimpleDateFormat(configurationService.getDateFormat());
       result.setDateFormat(df);
+      result.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
     return result;
   }

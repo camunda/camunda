@@ -92,6 +92,7 @@ public class ConfigurationService {
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private String processDefinitionXmlEndpoint;
   private String licenseType;
+  private String reportType;
   private Long generalBackoff;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
@@ -557,6 +558,13 @@ public class ConfigurationService {
       licenseType = jsonContext.read(ConfigurationServiceConstants.LICENSE_TYPE);
     }
     return licenseType;
+  }
+
+  public String getReportType() {
+    if (reportType == null) {
+      reportType = jsonContext.read(ConfigurationServiceConstants.REPORT_TYPE);
+    }
+    return reportType;
   }
 
   public long getGeneralBackoff() {
@@ -1027,6 +1035,10 @@ public class ConfigurationService {
 
   public void setLicenseType(String licenseType) {
     this.licenseType = licenseType;
+  }
+
+  public void setReportType(String reportType) {
+    this.reportType = reportType;
   }
 
   public void setGeneralBackoff(Long generalBackoff) {

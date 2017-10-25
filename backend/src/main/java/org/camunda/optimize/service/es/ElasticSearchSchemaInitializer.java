@@ -9,6 +9,7 @@ import org.camunda.optimize.service.es.schema.type.LicenseType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.type.ReportType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.camunda.optimize.service.es.schema.type.VariableType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -58,6 +59,9 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private DefinitionImportIndexType definitionImportIndexType;
 
+  @Autowired
+  private ReportType reportType;
+
   public void initializeSchema() {
     if (!initialized) {
       try {
@@ -85,6 +89,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(processInstanceType);
     schemaManager.addMapping(definitionImportIndexType);
     schemaManager.addMapping(licenseType);
+    schemaManager.addMapping(reportType);
   }
 
   /**

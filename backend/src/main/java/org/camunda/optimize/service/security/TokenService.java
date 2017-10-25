@@ -30,8 +30,7 @@ public class TokenService {
   private ConfigurationService configurationService;
 
   public void validateToken(String token) throws InvalidTokenException {
-    JWT decoded = JWT.decode(token);
-    String username = decoded.getIssuer();
+    String username = getTokenIssuer(token);
     TokenVerifier tokenVerifier = tokenVerifiers.get(username);
     if (tokenVerifier == null ) {
       throw new InvalidTokenException("Error while validating authentication token [" + token + "]. " +
@@ -41,6 +40,11 @@ public class TokenService {
     tokenVerifier.isExpired(token);
     LocalDateTime expiry = calculateExpiryDate();
     tokenVerifier.updateExpiryDate(expiry);
+  }
+
+  public String getTokenIssuer(String token) {
+    JWT decoded = JWT.decode(token);
+    return decoded.getIssuer();
   }
 
   private LocalDateTime calculateExpiryDate() {
@@ -75,8 +79,7 @@ public class TokenService {
   }
 
   public void expireToken(String token) {
-    JWT decoded = JWT.decode(token);
-    String username = decoded.getIssuer();
+    String username = getTokenIssuer(token);
     tokenVerifiers.remove(username);
   }
 

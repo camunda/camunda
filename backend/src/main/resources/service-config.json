@@ -384,6 +384,7 @@
     */
     "index": "optimize",
     "licenseType": "license",
+    "reportType": "report",
     "sampler": {
       /*
       Connection sampler interval set to the client
