@@ -110,6 +110,8 @@ public class LogEntryDescriptor
 
         METADATA_LENGTH_OFFSET = offset;
         offset += SIZE_OF_SHORT;
+
+        // UNUSED BLOCK
         offset += SIZE_OF_SHORT;
 
         HEADER_BLOCK_LENGTH = offset;
