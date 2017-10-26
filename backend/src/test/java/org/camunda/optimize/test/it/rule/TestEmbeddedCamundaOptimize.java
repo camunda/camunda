@@ -1,5 +1,8 @@
 package org.camunda.optimize.test.it.rule;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
@@ -10,6 +13,7 @@ import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
@@ -207,7 +211,13 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   private Client getClient() {
-    Client client = ClientBuilder.newClient();
+    // register the default object mapper for serialization/deserialization ob objects
+    ObjectMapper mapper = getApplicationContext().getBean(ObjectMapper.class);
+    JacksonJaxbJsonProvider jsonProvider =new JacksonJaxbJsonProvider();
+    jsonProvider.setMapper(mapper);
+
+    Client client = ClientBuilder.newClient()
+      .register(jsonProvider);
     client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
     client.property(ClientProperties.READ_TIMEOUT,    10000);
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);

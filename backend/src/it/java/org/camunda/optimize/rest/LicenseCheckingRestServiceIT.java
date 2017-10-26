@@ -46,7 +46,7 @@ public class LicenseCheckingRestServiceIT {
 
   @BeforeClass
   public static void init() throws ParseException {
-    VALID_UNTIL = sdf.parse("9999-01-01T01:00:00");
+    VALID_UNTIL = sdf.parse("9999-01-01T00:00:00");
   }
 
   @Test

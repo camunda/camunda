@@ -195,7 +195,6 @@ public class ReportRestServiceIT {
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .delete();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -208,7 +207,6 @@ public class ReportRestServiceIT {
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(""));
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     return response.readEntity(IdDto.class).getId();
   }

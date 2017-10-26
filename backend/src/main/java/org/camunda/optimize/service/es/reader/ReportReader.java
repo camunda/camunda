@@ -51,7 +51,7 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReport() throws IOException {
+  public List<ReportDefinitionDto> getAllReports() throws IOException {
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
       .setTypes(configurationService.getReportType())

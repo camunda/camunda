@@ -1,12 +1,17 @@
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.report;
 
 import org.camunda.optimize.dto.optimize.query.report.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.rest.report.decorator.OffsetResultListDecorator;
+import org.camunda.optimize.rest.report.decorator.OrderByModifiedLastResultListDecorator;
+import org.camunda.optimize.rest.report.decorator.OriginalResultList;
+import org.camunda.optimize.rest.report.decorator.QueryParameterAdjustedResultList;
+import org.camunda.optimize.rest.report.decorator.RestrictResultListSizeDecorator;
+import org.camunda.optimize.rest.report.decorator.ReverseResultListDecorator;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,7 +27,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
 
@@ -45,7 +52,6 @@ public class ReportRestService {
   /**
    * Creates an empty report.
    * @return the id of the report
-   * @throws OptimizeException if it wasn't possible to create the report.
    */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
@@ -65,14 +71,19 @@ public class ReportRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateReport(@Context ContainerRequestContext requestContext,
+  public Response updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            ReportDefinitionDto updatedReport) {
     updatedReport.setId(reportId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
     updatedReport.setLastModifier(userId);
-    reportWriter.updateReport(updatedReport);
+    try {
+      reportWriter.updateReport(updatedReport);
+      return Response.noContent().build();
+    } catch (Exception e) {
+      return buildServerErrorResponse(e);
+    }
   }
 
   /**
@@ -81,8 +92,31 @@ public class ReportRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ReportDefinitionDto> getStoredReports() throws IOException {
-    return reportReader.getAllReport();
+  public Response getStoredReports(@Context UriInfo uriInfo) throws IOException {
+    try {
+      List<ReportDefinitionDto> reports = reportReader.getAllReports();
+      MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
+      reports = adjustReportListAccordingToQueryParameters(reports, queryParameters);
+      return Response.ok(reports, MediaType.APPLICATION_JSON).build();
+    } catch (Exception e) {
+      return buildServerErrorResponse(e);
+    }
+  }
+
+  private List<ReportDefinitionDto> adjustReportListAccordingToQueryParameters(List<ReportDefinitionDto> reports,
+                                                                               MultivaluedMap<String, String> queryParameters) {
+    QueryParameterAdjustedResultList adjustedResultList =
+      new RestrictResultListSizeDecorator(
+        new OffsetResultListDecorator(
+          new ReverseResultListDecorator(
+            new OrderByModifiedLastResultListDecorator(
+              new OriginalResultList(reports, queryParameters)
+            )
+          )
+        )
+      );
+    reports = adjustedResultList.adjustList();
+    return reports;
   }
 
   /**
@@ -91,7 +125,7 @@ public class ReportRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
+  public Response getReport(@PathParam("id") String reportId) {
     try {
       return Response.ok(reportReader.getReport(reportId), MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
