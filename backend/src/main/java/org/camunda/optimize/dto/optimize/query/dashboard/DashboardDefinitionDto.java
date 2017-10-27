@@ -1,17 +1,27 @@
-package org.camunda.optimize.dto.optimize.query.report;
+package org.camunda.optimize.dto.optimize.query.dashboard;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.camunda.optimize.dto.optimize.query.util.SortableFields;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReportDefinitionUpdateDto {
+public class DashboardDefinitionDto implements SortableFields {
 
+  protected String id;
   protected String name;
   protected LocalDateTime lastModified;
+  protected LocalDateTime created;
   protected String owner;
   protected String lastModifier;
-  protected ReportDataDto data;
+  protected List<ReportLocationDto> reports;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getName() {
     return name;
@@ -27,6 +37,14 @@ public class ReportDefinitionUpdateDto {
 
   public void setLastModified(LocalDateTime lastModified) {
     this.lastModified = lastModified;
+  }
+
+  public LocalDateTime getCreated() {
+    return created;
+  }
+
+  public void setCreated(LocalDateTime created) {
+    this.created = created;
   }
 
   public String getOwner() {
@@ -45,11 +63,11 @@ public class ReportDefinitionUpdateDto {
     this.lastModifier = lastModifier;
   }
 
-  public ReportDataDto getData() {
-    return data;
+  public List<ReportLocationDto> getReports() {
+    return reports;
   }
 
-  public void setData(ReportDataDto data) {
-    this.data = data;
+  public void setReports(List<ReportLocationDto> reports) {
+    this.reports = reports;
   }
 }

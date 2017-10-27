@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -22,15 +22,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ReportType.CREATED;
-import static org.camunda.optimize.service.es.schema.type.ReportType.ID;
-import static org.camunda.optimize.service.es.schema.type.ReportType.LAST_MODIFIED;
-import static org.camunda.optimize.service.es.schema.type.ReportType.LAST_MODIFIER;
-import static org.camunda.optimize.service.es.schema.type.ReportType.NAME;
-import static org.camunda.optimize.service.es.schema.type.ReportType.OWNER;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.CREATED;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.ID;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.LAST_MODIFIED;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.LAST_MODIFIER;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.NAME;
+import static org.camunda.optimize.service.es.schema.type.DashboardType.OWNER;
 
 @Component
-public class ReportWriter {
+public class DashboardWriter {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -44,10 +44,10 @@ public class ReportWriter {
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
-  private static final String DEFAULT_REPORT_NAME = "New Report";
+  private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
 
-  public IdDto createNewReportAndReturnId(String userId) {
-    logger.debug("Writing new report to Elasticsearch");
+  public IdDto createNewDashboardAndReturnId(String userId) {
+    logger.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();
     Map<String, Object> map = new HashMap<>();
@@ -55,47 +55,47 @@ public class ReportWriter {
     map.put(LAST_MODIFIED, currentDateAsString());
     map.put(OWNER, userId);
     map.put(LAST_MODIFIER, userId);
-    map.put(NAME, DEFAULT_REPORT_NAME);
+    map.put(NAME, DEFAULT_DASHBOARD_NAME);
     map.put(ID, id);
 
     esclient
       .prepareIndex(
         configurationService.getOptimizeIndex(),
-        configurationService.getReportType(),
+        configurationService.getDashboardType(),
         id
       )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(map)
       .get();
 
-    logger.debug("Report with id [{}] has successfully been created.", id);
+    logger.debug("Dashboard with id [{}] has successfully been created.", id);
     IdDto idDto = new IdDto();
     idDto.setId(id);
     return idDto;
   }
 
-  public void updateReport(ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
-    logger.debug("Updating report with id [{}] in Elasticsearch");
-    ReportDefinitionUpdateDto updateDto = new ReportDefinitionUpdateDto();
+  public void updateDashboard(DashboardDefinitionDto dashboard) throws OptimizeException, JsonProcessingException {
+    logger.debug("Updating dashboard with id [{}] in Elasticsearch");
+    DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    updateDto.setLastModifier(updatedReport.getLastModifier());
-    updateDto.setOwner(updatedReport.getOwner());
-    updateDto.setName(updatedReport.getName());
-    updateDto.setData(updatedReport.getData());
+    updateDto.setLastModifier(dashboard.getLastModifier());
+    updateDto.setOwner(dashboard.getOwner());
+    updateDto.setName(dashboard.getName());
+    updateDto.setReports(dashboard.getReports());
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
         configurationService.getOptimizeIndex(),
-        configurationService.getReportType(),
-        updatedReport.getId())
+        configurationService.getDashboardType(),
+        dashboard.getId())
       .setDoc(objectMapper.writeValueAsString(updateDto), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
 
     if (updateResponse.getShardInfo().getFailed() > 0) {
-      logger.error("Was not able to store report with id [{}] and name [{}]. Exception: {} \n Stacktrace: {}",
-        updatedReport.getId(),
-        updatedReport.getName());
-      throw new OptimizeException("Was not able to store report!");
+      logger.error("Was not able to store dashboard with id [{}] and name [{}]. Exception: {} \n Stacktrace: {}",
+        dashboard.getId(),
+        dashboard.getName());
+      throw new OptimizeException("Was not able to store dashboard!");
     }
   }
 
@@ -103,14 +103,13 @@ public class ReportWriter {
     return dateTimeFormatter.format(LocalDateUtil.getCurrentDateTime());
   }
 
-  public void deleteReport(String reportId) {
-    logger.debug("Deleting report with id [{}]");
+  public void deleteDashboard(String dashboardId) {
+    logger.debug("Deleting dashboard with id [{}]");
     esclient.prepareDelete(
       configurationService.getOptimizeIndex(),
-      configurationService.getReportType(),
-      reportId)
+      configurationService.getDashboardType(),
+      dashboardId)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
   }
-
 }

@@ -1,17 +1,18 @@
-package org.camunda.optimize.dto.optimize.query.report;
+package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReportDefinitionUpdateDto {
+public class DashboardDefinitionUpdateDto {
 
   protected String name;
   protected LocalDateTime lastModified;
   protected String owner;
   protected String lastModifier;
-  protected ReportDataDto data;
+  protected List<ReportLocationDto> reports;
 
   public String getName() {
     return name;
@@ -45,11 +46,11 @@ public class ReportDefinitionUpdateDto {
     this.lastModifier = lastModifier;
   }
 
-  public ReportDataDto getData() {
-    return data;
+  public List<ReportLocationDto> getReports() {
+    return reports;
   }
 
-  public void setData(ReportDataDto data) {
-    this.data = data;
+  public void setReports(List<ReportLocationDto> reports) {
+    this.reports = reports;
   }
 }

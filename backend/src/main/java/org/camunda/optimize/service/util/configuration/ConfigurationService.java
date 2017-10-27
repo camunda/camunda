@@ -93,6 +93,7 @@ public class ConfigurationService {
   private String processDefinitionXmlEndpoint;
   private String licenseType;
   private String reportType;
+  private String dashboardType;
   private Long generalBackoff;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
@@ -567,6 +568,13 @@ public class ConfigurationService {
     return reportType;
   }
 
+  public String getDashboardType() {
+    if (dashboardType == null) {
+      dashboardType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_TYPE);
+    }
+    return dashboardType;
+  }
+
   public long getGeneralBackoff() {
     if (generalBackoff == null) {
       generalBackoff = jsonContext.read(ConfigurationServiceConstants.GENERAL_BACKOFF, Long.class);
@@ -1039,6 +1047,10 @@ public class ConfigurationService {
 
   public void setReportType(String reportType) {
     this.reportType = reportType;
+  }
+
+  public void setDashboardType(String dashboardType) {
+    this.dashboardType = dashboardType;
   }
 
   public void setGeneralBackoff(Long generalBackoff) {

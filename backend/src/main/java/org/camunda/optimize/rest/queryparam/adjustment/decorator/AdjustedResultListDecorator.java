@@ -1,6 +1,6 @@
-package org.camunda.optimize.rest.report.decorator;
+package org.camunda.optimize.rest.queryparam.adjustment.decorator;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.util.SortableFields;
 
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
@@ -14,7 +14,7 @@ public abstract class AdjustedResultListDecorator implements QueryParameterAdjus
   }
 
   @Override
-  public List<ReportDefinitionDto> adjustList() {
+  public <T extends SortableFields>  List<T> adjustList() {
     return decoratedList.adjustList();
   }
 

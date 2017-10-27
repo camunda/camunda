@@ -1,14 +1,9 @@
-package org.camunda.optimize.rest.report;
+package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.report.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.report.decorator.OffsetResultListDecorator;
-import org.camunda.optimize.rest.report.decorator.OrderByModifiedLastResultListDecorator;
-import org.camunda.optimize.rest.report.decorator.OriginalResultList;
-import org.camunda.optimize.rest.report.decorator.QueryParameterAdjustedResultList;
-import org.camunda.optimize.rest.report.decorator.RestrictResultListSizeDecorator;
-import org.camunda.optimize.rest.report.decorator.ReverseResultListDecorator;
+import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
@@ -96,27 +91,11 @@ public class ReportRestService {
     try {
       List<ReportDefinitionDto> reports = reportReader.getAllReports();
       MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      reports = adjustReportListAccordingToQueryParameters(reports, queryParameters);
+      reports = QueryParamAdjustmentUtil.adjustResultListAccordingToQueryParameters(reports, queryParameters);
       return Response.ok(reports, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       return buildServerErrorResponse(e);
     }
-  }
-
-  private List<ReportDefinitionDto> adjustReportListAccordingToQueryParameters(List<ReportDefinitionDto> reports,
-                                                                               MultivaluedMap<String, String> queryParameters) {
-    QueryParameterAdjustedResultList adjustedResultList =
-      new RestrictResultListSizeDecorator(
-        new OffsetResultListDecorator(
-          new ReverseResultListDecorator(
-            new OrderByModifiedLastResultListDecorator(
-              new OriginalResultList(reports, queryParameters)
-            )
-          )
-        )
-      );
-    reports = adjustedResultList.adjustList();
-    return reports;
   }
 
   /**

@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
-public class ReportRestServiceIT {
+public class DashboardRestServiceIT {
 
   public static final String BEARER = "Bearer ";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -34,10 +34,10 @@ public class ReportRestServiceIT {
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
-  public void createNewReportWithoutAuthentication() throws IOException {
+  public void createNewDashboardWithoutAuthentication() throws IOException {
     // when
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("dashboard")
         .request()
         .post(Entity.json(""));
 
@@ -46,13 +46,13 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void createNewReport() throws IOException {
+  public void createNewDashboard() throws IOException {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("dashboard")
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(""));
@@ -65,10 +65,10 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void updateReportWithoutAuthentication() throws IOException {
+  public void updateDashboardWithoutAuthentication() throws IOException {
     // when
     Response response =
-      embeddedOptimizeRule.target("report/1")
+      embeddedOptimizeRule.target("dashboard/1")
         .request()
         .put(Entity.json(""));
 
@@ -77,29 +77,29 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void updateReport() throws IOException {
+  public void updateDashboard() throws IOException {
 
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyDashboardToOptimize(token);
 
     // when
-    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     Response response =
-      embeddedOptimizeRule.target("report/" + id)
+      embeddedOptimizeRule.target("dashboard/" + id)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .put(Entity.json(reportDefinitionDto));
+        .put(Entity.json(dashboardDefinitionDto));
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
   }
 
   @Test
-  public void getStoredReportsWithoutAuthentication() throws IOException {
+  public void getStoredDashboardsWithoutAuthentication() throws IOException {
     // when
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("dashboard")
         .request()
         .get();
 
@@ -108,24 +108,24 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReports() throws IOException {
+  public void getStoredDashboards() throws IOException {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyDashboardToOptimize(token);
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports(token);
+    List<DashboardDefinitionDto> dashboards = getAllDashboards(token);
 
     // then
-    assertThat(reports.size(), is(1));
-    assertThat(reports.get(0).getId(), is(id));
+    assertThat(dashboards.size(), is(1));
+    assertThat(dashboards.get(0).getId(), is(id));
   }
 
   @Test
-  public void getReportWithoutAuthentication() throws IOException {
+  public void getDashboardWithoutAuthentication() throws IOException {
     // when
     Response response =
-      embeddedOptimizeRule.target("report/asdf")
+      embeddedOptimizeRule.target("dashboard/asdf")
         .request()
         .get();
 
@@ -134,48 +134,48 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReport() throws IOException {
+  public void getDashboard() throws IOException {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyDashboardToOptimize(token);
 
     // when
     Response response =
-      embeddedOptimizeRule.target("report/" + id)
+      embeddedOptimizeRule.target("dashboard/" + id)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .get();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    ReportDefinitionDto report =
-      response.readEntity(ReportDefinitionDto.class);
-    assertThat(report, is(notNullValue()));
-    assertThat(report.getId(), is(id));
+    DashboardDefinitionDto dashboard =
+      response.readEntity(DashboardDefinitionDto.class);
+    assertThat(dashboard, is(notNullValue()));
+    assertThat(dashboard.getId(), is(id));
   }
 
   @Test
-  public void getReportForNonExistingIdThrowsError() throws IOException {
+  public void getDashboardForNonExistingIdThrowsError() throws IOException {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
     Response response =
-      embeddedOptimizeRule.target("report/FooId")
+      embeddedOptimizeRule.target("dashboard/FooId")
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .get();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
-    assertThat(response.readEntity(String.class).contains("Report does not exist!"), is(true));
+    assertThat(response.readEntity(String.class).contains("Dashboard does not exist!"), is(true));
   }
 
   @Test
-  public void deleteReportWithoutAuthentication() throws IOException {
+  public void deleteDashboardWithoutAuthentication() throws IOException {
     // when
     Response response =
-        embeddedOptimizeRule.target("report/1124")
+        embeddedOptimizeRule.target("dashboard/1124")
             .request()
             .delete();
 
@@ -184,26 +184,26 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void deleteNewReport() throws IOException {
+  public void deleteNewDashboard() throws IOException {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyDashboardToOptimize(token);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("report/" + id)
+        embeddedOptimizeRule.target("dashboard/" + id)
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .delete();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllReports(token).size(), is(0));
+    assertThat(getAllDashboards(token).size(), is(0));
   }
 
-  private String addEmptyReportToOptimize(String token) {
+  private String addEmptyDashboardToOptimize(String token) {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("dashboard")
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(""));
@@ -211,15 +211,15 @@ public class ReportRestServiceIT {
     return response.readEntity(IdDto.class).getId();
   }
 
-  private List<ReportDefinitionDto> getAllReports(String token) {
+  private List<DashboardDefinitionDto> getAllDashboards(String token) {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("dashboard")
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .get();
 
     assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<ReportDefinitionDto>>() {
+    return response.readEntity(new GenericType<List<DashboardDefinitionDto>>() {
     });
   }
 }

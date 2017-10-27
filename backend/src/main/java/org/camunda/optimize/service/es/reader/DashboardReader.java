@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class ReportReader {
+public class DashboardReader {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -31,41 +31,41 @@ public class ReportReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public ReportDefinitionDto getReport(String reportId) throws IOException, OptimizeException {
-    logger.debug("Fetching report with id [{}]", reportId);
+  public DashboardDefinitionDto getDashboard(String dashboardId) throws IOException, OptimizeException {
+    logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
         configurationService.getOptimizeIndex(),
-        configurationService.getReportType(),
-        reportId
+        configurationService.getDashboardType(),
+        dashboardId
       )
       .setRealtime(false)
       .get();
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
-      return objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
+      return objectMapper.readValue(responseAsString, DashboardDefinitionDto.class);
     } else {
-      logger.error("Was not able to retrieve report with id [{}] from Elasticsearch.", reportId);
-      throw new OptimizeException("Report does not exist!");
+      logger.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
+      throw new OptimizeException("Dashboard does not exist!");
     }
   }
 
-  public List<ReportDefinitionDto> getAllReports() throws IOException {
-    logger.debug("Fetching all available reports");
+  public List<DashboardDefinitionDto> getAllDashboards() throws IOException {
+    logger.debug("Fetching all available dashboards");
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getReportType())
+      .setTypes(configurationService.getDashboardType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(100)
       .get();
-    List<ReportDefinitionDto> reportRequests = new ArrayList<>();
+    List<DashboardDefinitionDto> storedDashboards = new ArrayList<>();
 
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         String responseAsString = hit.getSourceAsString();
-        reportRequests.add(objectMapper.readValue(responseAsString, ReportDefinitionDto.class));
+        storedDashboards.add(objectMapper.readValue(responseAsString, DashboardDefinitionDto.class));
       }
 
       scrollResp = esclient
@@ -74,7 +74,7 @@ public class ReportReader {
         .get();
     } while (scrollResp.getHits().getHits().length != 0);
 
-    return reportRequests;
+    return storedDashboards;
   }
 
 }

@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.report.IdDto;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -144,6 +144,27 @@ public class ReportHandlingIT {
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is("NewOwner"));
+  }
+
+  @Test
+  public void doNotUpdateNullFieldsInReport() throws Exception {
+    // given
+    String id = createNewReport();
+    ReportDefinitionDto report = new ReportDefinitionDto();
+
+    // when
+    updateReport(id, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    assertThat(reports.size(), is(1));
+    ReportDefinitionDto newDashboard = reports.get(0);
+    assertThat(newDashboard.getId(), is(id));
+    assertThat(newDashboard.getCreated(), is(notNullValue()));
+    assertThat(newDashboard.getLastModified(), is(notNullValue()));
+    assertThat(newDashboard.getLastModifier(), is(notNullValue()));
+    assertThat(newDashboard.getName(), is(notNullValue()));
+    assertThat(newDashboard.getOwner(), is(notNullValue()));
   }
 
   @Test
