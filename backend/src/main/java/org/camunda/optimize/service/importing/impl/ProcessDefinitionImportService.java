@@ -6,7 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
-import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesSetBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -21,9 +21,14 @@ public class ProcessDefinitionImportService
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionImportService.class);
 
+  @Autowired
   private ProcessDefinitionWriter procDefWriter;
+
+  @Autowired
   private MissingProcessDefinitionFinder processDefinitionFinder;
-  private AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher;
+
+  @Autowired
+  private AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
 
   @Autowired
   public ProcessDefinitionImportService(String engineAlias) {
@@ -42,7 +47,7 @@ public class ProcessDefinitionImportService
 
   @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
-    return processDefinitionFetcher.fetchProcessDefinitions(
+    return engineEntityFetcher.fetchProcessDefinitions(
       job.getAbsoluteImportIndex(),
       job.getEngineAlias()
     );
@@ -50,7 +55,7 @@ public class ProcessDefinitionImportService
 
   @Override
   public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
-    return processDefinitionFetcher.fetchProcessDefinitionCount(engineAlias);
+    return engineEntityFetcher.fetchProcessDefinitionCount(engineAlias);
   }
 
   @Override
@@ -85,18 +90,4 @@ public class ProcessDefinitionImportService
     return configurationService.getProcessDefinitionType();
   }
 
-  @Autowired
-  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
-    this.procDefWriter = procDefWriter;
-  }
-
-  @Autowired
-  public void setProcessDefinitionFinder(MissingProcessDefinitionFinder processDefinitionFinder) {
-    this.processDefinitionFinder = processDefinitionFinder;
-  }
-
-  @Autowired
-  public void setProcessDefinitionFetcher(AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher) {
-    this.processDefinitionFetcher = processDefinitionFetcher;
-  }
 }

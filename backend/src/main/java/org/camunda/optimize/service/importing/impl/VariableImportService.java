@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.writer.VariableWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingVariablesFinder;
-import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcherImpl;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesSetBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.VariableImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -30,12 +30,18 @@ public class VariableImportService
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
 
+  @Autowired
   private VariableWriter variableWriter;
+  @Autowired
   private MissingVariablesFinder missingVariablesFinder;
+  @Autowired
   private ImportAdapterProvider importServiceProvider;
 
-  private EngineEntityFetcherImpl engineEntityFetcher;
+  @Autowired
+  private AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
+  @Autowired
   private ProcessInstanceReader processInstanceReader;
+  @Autowired
   private VariableReader variableReader;
 
   public VariableImportService(String engineAlias) {
@@ -85,10 +91,6 @@ public class VariableImportService
    * Right now just return count that we already have in Elasticsearch, in order for progress to be
    * always 100%
    *
-   * @param indexHandler
-   * @param engineAlias
-   * @return
-   * @throws OptimizeException
    */
   @Override
   public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
@@ -188,33 +190,4 @@ public class VariableImportService
     return configurationService.getVariableType();
   }
 
-  @Autowired
-  public void setVariableWriter(VariableWriter variableWriter) {
-    this.variableWriter = variableWriter;
-  }
-
-  @Autowired
-  public void setMissingVariablesFinder(MissingVariablesFinder missingVariablesFinder) {
-    this.missingVariablesFinder = missingVariablesFinder;
-  }
-
-  @Autowired
-  public void setImportServiceProvider(ImportAdapterProvider importServiceProvider) {
-    this.importServiceProvider = importServiceProvider;
-  }
-
-  @Autowired
-  public void setEngineEntityFetcher(EngineEntityFetcherImpl engineEntityFetcher) {
-    this.engineEntityFetcher = engineEntityFetcher;
-  }
-
-  @Autowired
-  public void setProcessInstanceReader(ProcessInstanceReader processInstanceReader) {
-    this.processInstanceReader = processInstanceReader;
-  }
-
-  @Autowired
-  public void setVariableReader(VariableReader variableReader) {
-    this.variableReader = variableReader;
-  }
 }

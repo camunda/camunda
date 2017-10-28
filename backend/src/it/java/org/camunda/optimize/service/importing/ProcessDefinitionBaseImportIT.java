@@ -200,17 +200,19 @@ public class ProcessDefinitionBaseImportIT {
   @Test
   public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
     //given
+    int oldPageSize = configurationService.getEngineImportProcessInstanceMaxPageSize();
+    configurationService.setEngineImportProcessInstanceMaxPageSize(1);
     ArrayList<String> ids = new ArrayList<>();
 
-    BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
-    engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    BpmnModelInstance simpleServiceTaskProcess = createSimpleServiceTaskProcess();
+    engineRule.deployAndStartProcess(simpleServiceTaskProcess);
 
-    ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleServiceTaskProcess);
     String latestPd = latestProcessInstance.getDefinitionId();
     ids.add(latestPd);
 
-    simpleUserTaskProcess = createSimpleUserTaskProcess();
-    latestProcessInstance = engineRule.deployAndStartProcess(simpleUserTaskProcess);
+    simpleServiceTaskProcess = createSimpleServiceTaskProcess();
+    latestProcessInstance = engineRule.deployAndStartProcess(simpleServiceTaskProcess);
     latestPd = latestProcessInstance.getDefinitionId();
     ids.add(latestPd);
 
@@ -226,8 +228,8 @@ public class ProcessDefinitionBaseImportIT {
 
     //third full round
     fullImportRound();
-
-    // forth full round
+    
+    //forth full round
     fullImportRound();
 
     //then
@@ -238,6 +240,7 @@ public class ProcessDefinitionBaseImportIT {
       assertThat(idsResp.getHits().totalHits, is((long) ids.size()));
       assertThat((String) searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
     }
+    configurationService.setEngineImportProcessInstanceMaxPageSize(oldPageSize);
   }
 
   private void fullImportRound() throws OptimizeException {

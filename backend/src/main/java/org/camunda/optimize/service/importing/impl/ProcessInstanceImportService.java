@@ -18,7 +18,9 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
 
   private final Logger logger = LoggerFactory.getLogger(ProcessInstanceImportService.class);
 
+  @Autowired
   private ProcessInstanceWriter processInstanceWriter;
+  @Autowired
   private MissingProcessInstanceFinder missingProcessInstanceFinder;
 
   public ProcessInstanceImportService(String engineAlias) {
@@ -66,13 +68,4 @@ public class ProcessInstanceImportService extends IdBasedImportService<HistoricP
     return configurationService.getProcessInstanceType();
   }
 
-  @Autowired
-  public void setProcessInstanceWriter(ProcessInstanceWriter processInstanceWriter) {
-    this.processInstanceWriter = processInstanceWriter;
-  }
-
-  @Autowired
-  public void setMissingProcessInstanceFinder(MissingProcessInstanceFinder missingProcessInstanceFinder) {
-    this.missingProcessInstanceFinder = missingProcessInstanceFinder;
-  }
 }

@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInfo
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.DefinitionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesSetBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.job.importing.DefinitionBasedImportIndexJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,7 +39,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private AllEntitiesBasedProcessDefinitionFetcher processDefinitionFetcher;
+  private AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
   @Autowired
   private ImportJobExecutor importJobExecutor;
 
@@ -145,7 +144,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine(String engineAlias) {
     int currentStart = 0;
-    List<ProcessDefinitionEngineDto> currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart, engineAlias);
+    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, engineAlias);
 
     HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
@@ -166,7 +165,7 @@ public class DefinitionBasedImportIndexHandler implements ImportIndexHandler {
         versionSortedProcesses.get(dto.getKey()).add(definitionImportInformation);
       }
       currentStart = currentStart + currentPage.size();
-      currentPage = processDefinitionFetcher.fetchProcessDefinitions(currentStart, engineAlias);
+      currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, engineAlias);
     }
     List<DefinitionImportInformation> result = buildSortedOrder(versionSortedProcesses);
     return result;

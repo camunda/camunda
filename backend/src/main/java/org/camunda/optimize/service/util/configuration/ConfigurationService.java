@@ -101,9 +101,6 @@ public class ConfigurationService {
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Integer engineImportActivityInstanceMaxPageSize;
-  private Integer engineImportProcessDefinitionMinPageSize;
-  private Integer engineImportProcessDefinitionXmlMinPageSize;
-  private Integer engineImportActivityInstanceMinPageSize;
   private Boolean defaultUserCreationEnabled;
   private String groupsEndpoint;
   private String importResetIntervalUnit;
@@ -628,30 +625,6 @@ public class ConfigurationService {
     return engineImportActivityInstanceMaxPageSize;
   }
 
-  public int getEngineImportProcessDefinitionMinPageSize() {
-    if (engineImportProcessDefinitionMinPageSize == null) {
-      engineImportProcessDefinitionMinPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE);
-    }
-    ensureGreaterThanZero(engineImportProcessDefinitionMinPageSize);
-    return engineImportProcessDefinitionMinPageSize;
-  }
-
-  public int getEngineImportProcessDefinitionXmlMinPageSize() {
-    if (engineImportProcessDefinitionXmlMinPageSize == null) {
-      engineImportProcessDefinitionXmlMinPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE);
-    }
-    ensureGreaterThanZero(engineImportProcessDefinitionXmlMinPageSize);
-    return engineImportProcessDefinitionXmlMinPageSize;
-  }
-
-  public int getEngineImportActivityInstanceMinPageSize() {
-    if (engineImportActivityInstanceMinPageSize == null) {
-      engineImportActivityInstanceMinPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE);
-    }
-    ensureGreaterThanZero(engineImportActivityInstanceMinPageSize);
-    return engineImportActivityInstanceMinPageSize;
-  }
-
   public boolean isDefaultUserCreationEnabled() {
     if (defaultUserCreationEnabled == null) {
       defaultUserCreationEnabled = jsonContext.read(ConfigurationServiceConstants.DEFAULT_USER_ENABLED);
@@ -1079,18 +1052,6 @@ public class ConfigurationService {
 
   public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
     this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
-  }
-
-  public void setEngineImportProcessDefinitionMinPageSize(Integer engineImportProcessDefinitionMinPageSize) {
-    this.engineImportProcessDefinitionMinPageSize = engineImportProcessDefinitionMinPageSize;
-  }
-
-  public void setEngineImportProcessDefinitionXmlMinPageSize(Integer engineImportProcessDefinitionXmlMinPageSize) {
-    this.engineImportProcessDefinitionXmlMinPageSize = engineImportProcessDefinitionXmlMinPageSize;
-  }
-
-  public void setEngineImportActivityInstanceMinPageSize(Integer engineImportActivityInstanceMinPageSize) {
-    this.engineImportActivityInstanceMinPageSize = engineImportActivityInstanceMinPageSize;
   }
 
   public Boolean getDefaultUserCreationEnabled() {

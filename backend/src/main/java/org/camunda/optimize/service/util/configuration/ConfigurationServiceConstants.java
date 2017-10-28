@@ -20,17 +20,12 @@ public interface ConfigurationServiceConstants {
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
   String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.import.process-definition-ids-to-import";
 
-  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.pageMaxSize";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.pageSize.max";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.pageSize.max";
-  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.pageSize.max";
-  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.pageSize.max";
-
-  String ENGINE_IMPORT_PROCESSDEFINITION_MIN_PAGE_SIZE = "$.import.data.process-definition.pageSize.min";
-  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MIN_PAGE_SIZE = "$.import.data.process-definition-xml.pageSize.min";
-  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MIN_PAGE_SIZE = "$.import.data.activity-instance.pageSize.min";
-
+  String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.maxPageSize";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
+  String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
+  String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
+  String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ELASTIC_SEARCH_HOST = "$.es.host";

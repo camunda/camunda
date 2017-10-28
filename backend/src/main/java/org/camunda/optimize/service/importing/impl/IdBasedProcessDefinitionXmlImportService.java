@@ -6,7 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
-import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionXmlFetcher;
+import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -20,9 +20,12 @@ public class IdBasedProcessDefinitionXmlImportService
     extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportIndexHandler> {
   private final Logger logger = LoggerFactory.getLogger(IdBasedProcessDefinitionXmlImportService.class);
 
+  @Autowired
   private ProcessDefinitionWriter procDefWriter;
+  @Autowired
   private MissingProcessDefinitionXmlFinder xmlFinder;
-  private IdBasedProcessDefinitionXmlFetcher idBasedProcessDefinitionXmlFetcher;
+  @Autowired
+  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
 
   public IdBasedProcessDefinitionXmlImportService(String engineAlias) {
     super(engineAlias);
@@ -41,7 +44,7 @@ public class IdBasedProcessDefinitionXmlImportService
 
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
-    return idBasedProcessDefinitionXmlFetcher.fetchProcessDefinitionXmls(
+    return engineEntityFetcher.fetchProcessDefinitionXmls(
         job.getCurrentDefinitionBasedImportIndex(),
         job.getCurrentProcessDefinitionId(),
         job.getEngineAlias()
@@ -50,7 +53,7 @@ public class IdBasedProcessDefinitionXmlImportService
 
   @Override
   public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
-    return idBasedProcessDefinitionXmlFetcher
+    return engineEntityFetcher
         .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
@@ -89,18 +92,4 @@ public class IdBasedProcessDefinitionXmlImportService
     return true;
   }
 
-  @Autowired
-  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
-    this.procDefWriter = procDefWriter;
-  }
-
-  @Autowired
-  public void setXmlFinder(MissingProcessDefinitionXmlFinder xmlFinder) {
-    this.xmlFinder = xmlFinder;
-  }
-
-  @Autowired
-  public void setIdBasedProcessDefinitionXmlFetcher(IdBasedProcessDefinitionXmlFetcher idBasedProcessDefinitionXmlFetcher) {
-    this.idBasedProcessDefinitionXmlFetcher = idBasedProcessDefinitionXmlFetcher;
-  }
 }

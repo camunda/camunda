@@ -6,7 +6,7 @@ import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
-import org.camunda.optimize.service.importing.fetcher.ActivityInstanceFetcher;
+import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.EventImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -26,9 +26,14 @@ public class ActivityImportService
 
   private final Logger logger = LoggerFactory.getLogger(ActivityImportService.class);
 
+  @Autowired
   private EventsWriter eventsWriter;
+
+  @Autowired
   private MissingActivityFinder missingActivityFinder;
-  private ActivityInstanceFetcher activityInstanceFetcher;
+
+  @Autowired
+  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
 
   @Autowired
   public ActivityImportService(String engineAlias) {
@@ -47,7 +52,7 @@ public class ActivityImportService
 
   @Override
   protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) {
-    return activityInstanceFetcher.fetchHistoricActivityInstances(
+    return engineEntityFetcher.fetchHistoricActivityInstances(
         job.getCurrentDefinitionBasedImportIndex(),
         job.getCurrentProcessDefinitionId(),
         job.getEngineAlias()
@@ -56,7 +61,7 @@ public class ActivityImportService
 
   @Override
   public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
-    return activityInstanceFetcher
+    return engineEntityFetcher
         .fetchHistoricActivityInstanceCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
@@ -123,18 +128,4 @@ public class ActivityImportService
     return this.engineAlias;
   }
 
-  @Autowired
-  public void setEventsWriter(EventsWriter eventsWriter) {
-    this.eventsWriter = eventsWriter;
-  }
-
-  @Autowired
-  public void setMissingActivityFinder(MissingActivityFinder missingActivityFinder) {
-    this.missingActivityFinder = missingActivityFinder;
-  }
-
-  @Autowired
-  public void setActivityInstanceFetcher(ActivityInstanceFetcher activityInstanceFetcher) {
-    this.activityInstanceFetcher = activityInstanceFetcher;
-  }
 }

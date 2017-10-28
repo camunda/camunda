@@ -5,18 +5,14 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
@@ -43,7 +39,6 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
   private ConfigurationService configurationService;
 
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(int indexOfFirstResult,
-                                                                                int maxPageSize,
                                                                                 String processDefinitionId,
                                                                                 String engineAlias) {
     List<HistoricActivityInstanceEngineDto> entries;
@@ -55,7 +50,7 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
           .queryParam(SORT_BY, SORT_TYPE_END_TIME)
           .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
           .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportActivityInstanceMaxPageSize())
           .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
           .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
           .request(MediaType.APPLICATION_JSON)
@@ -143,10 +138,13 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
   }
 
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult,
-                                                                        int maxPageSize,
                                                                         String processDefinitionId,
                                                                         String engineAlias) {
-    List<ProcessDefinitionEngineDto> procDefs = fetchProcessDefinitions(indexOfFirstResult, maxPageSize, processDefinitionId, engineAlias);
+    List<ProcessDefinitionEngineDto> procDefs =
+      fetchProcessDefinitions(indexOfFirstResult,
+        configurationService.getEngineImportProcessDefinitionXmlMaxPageSize(),
+        processDefinitionId,
+        engineAlias);
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>();
     for (ProcessDefinitionEngineDto procDef : procDefs) {
       ProcessDefinitionXmlEngineDto xml;
@@ -167,6 +165,17 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
   }
 
   public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,
+                                                                  String processDefinitionId,
+                                                                  String engineAlias) {
+    return fetchProcessDefinitions(
+      indexOfFirstResult,
+      configurationService.getEngineImportProcessDefinitionMaxPageSize(),
+      processDefinitionId,
+      engineAlias
+    );
+  }
+
+  private List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult,
                                                                   int maxPageSize,
                                                                   String processDefinitionId,
                                                                   String engineAlias) {
@@ -222,7 +231,7 @@ public class DefinitionBasedEngineEntityFetcher extends AbstractEntityFetcher {
       throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
     }
     return count.getCount();
-}
+  }
 
 
 }

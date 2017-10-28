@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.fetcher.EngineEntityFetcherImpl;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesSetBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,7 +18,9 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
     extends AbstractImportService<ENG, OPT, IdBasedImportScheduleJob> {
 
   protected final String engineAlias;
-  protected EngineEntityFetcherImpl engineEntityFetcher;
+
+  @Autowired
+  protected AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
 
   public IdBasedImportService(String engineAlias) {
     this.engineAlias = engineAlias;
@@ -60,10 +62,5 @@ public abstract class IdBasedImportService<ENG extends EngineDto, OPT extends Op
 
   public String getEngineName() {
     return this.engineAlias;
-  }
-
-  @Autowired
-  public void setEngineEntityFetcher(EngineEntityFetcherImpl engineEntityFetcher) {
-    this.engineEntityFetcher = engineEntityFetcher;
   }
 }

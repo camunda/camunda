@@ -179,31 +179,21 @@
   "import": {
     "data" : {
       "activity-instance": {
-        "pageSize": {
-          /*
+        /*
           Overwrites the maximum page size for historic activity instance
           fetching.
-          */
-          "max": 10000,
-          /*
-          Overwrites the maximum page size for historic activity instance
-          fetching.
-          */
-          "min": 50
-        },
+         */
+        "maxPageSize": 10000,
         /*
         The name of the event type.
         */
         "elasticsearchType": "event"
       },
       "process-definition": {
-        "pageSize": {
-          "max": 1000,
-          /*
+        /*
           Overwrites the minimum page size for process definitions fetching.
-          */
-          "min": 10
-        },
+        */
+        "maxPageSize": 1000,
         /*
         The name of the import index type when a list of process definitions
         to import is defined.
@@ -215,33 +205,23 @@
         "elasticsearchType": "process-definition"
       },
       "process-definition-xml": {
-        "pageSize": {
-          /*
+        /*
           Overwrites the maximum page size for process definition xml model
           fetching. Should be a low value, as large models will lead to
           memory or timeout problems.
-          */
-          "max": 4,
-          /*
-          Overwrites the minimum page size for process definition xml
-          model fetching. Should be a low value, as large models will lead
-          to memory or timeout problems.
-          */
-          "min": 1
-        },
+        */
+        "maxPageSize": 2,
         /*
         The name of the process definition xml type.
         */
         "elasticsearchType" : "process-definition-xml"
       },
       "process-instance": {
-        "pageSize": {
-          /*
+        /*
           Overwrites the maximum page size for historic process instance
           fetching.
-          */
-          "max": 1000
-        },
+        */
+        "maxPageSize": 1000,
         /*
         The name of the process instance (pi) tracking type that is used
         to find pi’s that were already imported.
@@ -253,13 +233,11 @@
         "elasticsearchType": "process-instance"
       },
       "variable": {
-        "pageSize": {
-          /*
+        /*
           Overwrites the maximum page size for historic variable instance
           fetching.
-          */
-          "max": 1000
-        },
+        */
+        "maxPageSize": 1000,
         /*
         The name of the variable type.
         */
@@ -278,11 +256,11 @@
     */
     "jobQueueMaxSize": 100,
     /*
-    The data is fetched from the engine in pages. Define a default minimum
-    and maximum size or, to be precise, a range for the number of entities
-    that should be fetched at once for each import type.
+    The data is fetched from the engine in pages. Define
+    maximum size or, to be precise, a range for the number
+    of entities that should be fetched at once for each import type.
     */
-    "pageMaxSize": 1000,
+    "maxPageSize": 1000,
 
     /*
     Restrict the import to the given process definition ids.

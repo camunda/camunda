@@ -6,7 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
-import org.camunda.optimize.service.importing.fetcher.IdBasedProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.fetcher.DefinitionBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -21,9 +21,14 @@ public class IdBasedProcessDefinitionImportService
 
   private final Logger logger = LoggerFactory.getLogger(IdBasedProcessDefinitionImportService.class);
 
+  @Autowired
   private ProcessDefinitionWriter procDefWriter;
+
+  @Autowired
   private MissingProcessDefinitionFinder processDefinitionFinder;
-  private IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher;
+
+  @Autowired
+  private DefinitionBasedEngineEntityFetcher engineEntityFetcher;
 
   public IdBasedProcessDefinitionImportService(String engineAlias) {
     super(engineAlias);
@@ -42,7 +47,7 @@ public class IdBasedProcessDefinitionImportService
 
   @Override
   protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
-    return idBasedProcessDefinitionFetcher.fetchProcessDefinitions(
+    return engineEntityFetcher.fetchProcessDefinitions(
         job.getCurrentDefinitionBasedImportIndex(),
         job.getCurrentProcessDefinitionId(),
         job.getEngineAlias()
@@ -51,7 +56,7 @@ public class IdBasedProcessDefinitionImportService
 
   @Override
   public int getEngineEntityCount(DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler, String engineAlias) throws OptimizeException {
-    return idBasedProcessDefinitionFetcher
+    return engineEntityFetcher
         .fetchProcessDefinitionCount(definitionBasedImportIndexHandler.getAllProcessDefinitions(), engineAlias);
   }
 
@@ -92,18 +97,4 @@ public class IdBasedProcessDefinitionImportService
     return true;
   }
 
-  @Autowired
-  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
-    this.procDefWriter = procDefWriter;
-  }
-
-  @Autowired
-  public void setProcessDefinitionFinder(MissingProcessDefinitionFinder processDefinitionFinder) {
-    this.processDefinitionFinder = processDefinitionFinder;
-  }
-
-  @Autowired
-  public void setIdBasedProcessDefinitionFetcher(IdBasedProcessDefinitionFetcher idBasedProcessDefinitionFetcher) {
-    this.idBasedProcessDefinitionFetcher = idBasedProcessDefinitionFetcher;
-  }
 }

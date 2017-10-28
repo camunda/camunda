@@ -6,7 +6,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
-import org.camunda.optimize.service.importing.fetcher.AllEntitiesBasedProcessDefinitionXmlFetcher;
+import org.camunda.optimize.service.importing.fetcher.AllEntitiesSetBasedEngineEntityFetcher;
 import org.camunda.optimize.service.importing.index.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.job.importing.ProcessDefinitionXmlImportJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
@@ -20,9 +20,14 @@ public class ProcessDefinitionXmlImportService extends
     PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, AllEntitiesBasedImportIndexHandler> {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportService.class);
 
+  @Autowired
   private ProcessDefinitionWriter procDefWriter;
+
+  @Autowired
   private MissingProcessDefinitionXmlFinder xmlFinder;
-  private AllEntitiesBasedProcessDefinitionXmlFetcher processDefinitionXmlFetcher;
+
+  @Autowired
+  private AllEntitiesSetBasedEngineEntityFetcher engineEntityFetcher;
 
   public ProcessDefinitionXmlImportService(String engineAlias) {
     super(engineAlias);
@@ -40,7 +45,7 @@ public class ProcessDefinitionXmlImportService extends
 
   @Override
   protected List<ProcessDefinitionXmlEngineDto> queryEngineRestPoint(PageBasedImportScheduleJob job) throws OptimizeException {
-    return processDefinitionXmlFetcher.fetchProcessDefinitionXmls(
+    return engineEntityFetcher.fetchProcessDefinitionXmls(
       job.getAbsoluteImportIndex(),
       job.getEngineAlias()
     );
@@ -48,7 +53,7 @@ public class ProcessDefinitionXmlImportService extends
 
   @Override
   public int getEngineEntityCount(AllEntitiesBasedImportIndexHandler indexHandler, String engineAlias) throws OptimizeException {
-    return processDefinitionXmlFetcher
+    return engineEntityFetcher
       .fetchProcessDefinitionCount(engineAlias);
   }
 
@@ -82,18 +87,4 @@ public class ProcessDefinitionXmlImportService extends
     return configurationService.getProcessDefinitionXmlType();
   }
 
-  @Autowired
-  public void setProcDefWriter(ProcessDefinitionWriter procDefWriter) {
-    this.procDefWriter = procDefWriter;
-  }
-
-  @Autowired
-  public void setXmlFinder(MissingProcessDefinitionXmlFinder xmlFinder) {
-    this.xmlFinder = xmlFinder;
-  }
-
-  @Autowired
-  public void setProcessDefinitionXmlFetcher(AllEntitiesBasedProcessDefinitionXmlFetcher processDefinitionXmlFetcher) {
-    this.processDefinitionXmlFetcher = processDefinitionXmlFetcher;
-  }
 }
