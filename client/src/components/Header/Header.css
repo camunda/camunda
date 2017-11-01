@@ -16,6 +16,7 @@
   color: #777777;
   font-size: 14px;
   padding: 0 15px;
+  display: flex;
 }
 
 .Header a {
@@ -23,7 +24,6 @@
   text-decoration: none;
   font-size: 21px;
   line-height: 42px;
-  margin-right: 0.3em;
 }
 
 .Header__link {
@@ -49,16 +49,14 @@
 .Header__nav {
   margin: 0;
   padding: 0;
+  flex-grow: 1;
 }
 
-.Header__nav.left {
-  float: left;
-}
-
-.Header__nav.right {
-  float: right;
-}
-
-.Header li {
+.Header__nav li {
   display: inline-block;
+  margin-right: .5em;
+}
+
+.Header__nav li:last-child {
+  margin-right: 0;
 }

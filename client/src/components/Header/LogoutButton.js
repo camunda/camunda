@@ -7,11 +7,11 @@ import './LogoutButton.css';
 
 export default function LogoutButton() {
   return (
-    <li className='LogoutButton'>
+    <div className='LogoutButton'>
       <Link to='/login' onClick={logout}>
         Logout
       </Link>
-    </li>
+    </div>
   );
 }
 

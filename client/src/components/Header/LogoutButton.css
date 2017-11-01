@@ -1,6 +1,5 @@
 .LogoutButton {
-  list-style: none;
-  background-color: transparent;
+  flex-shrink: 0;
 }
 
 .LogoutButton.hidden {
