@@ -22,12 +22,14 @@ import {
 ReactDOM.render(<Router>
   <div>
     <Header name="Camunda Optimize" />
-    <Route exact path="/login" component={Login} />
-    <PrivateRoute exact path="/" component={Home} />
-    <PrivateRoute exact path="/dashboards" component={Dashboards} />
-    <PrivateRoute exact path="/reports" component={Reports} />
-    <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
-    <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+    <main>
+      <Route exact path="/login" component={Login} />
+      <PrivateRoute exact path="/" component={Home} />
+      <PrivateRoute exact path="/dashboards" component={Dashboards} />
+      <PrivateRoute exact path="/reports" component={Reports} />
+      <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
+      <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+    </main>
     <Footer version="2.0.0" />
   </div>
 </Router>, document.getElementById('root'));
