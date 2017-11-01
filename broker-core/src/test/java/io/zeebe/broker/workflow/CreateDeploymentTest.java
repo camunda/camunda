@@ -23,8 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
@@ -50,7 +49,7 @@ public class CreateDeploymentTest
     @Test
     public void shouldCreateDeploymentWithBpmnXml()
     {
-        // given charset
+        // given
         final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
             .startEvent()
             .endEvent()
@@ -285,6 +284,37 @@ public class CreateDeploymentTest
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
             .containsEntry("deploymentKey", resp.key())
             .containsEntry("bpmnXml", bpmnXml(Bpmn.readFromYamlFile(yamlFile)));
+    }
+
+    @Test
+    public void shouldCreateWorkflowOnAllPartitions()
+    {
+        // given
+        final int partitions = 3;
+
+        apiRule.createTopic("test", partitions);
+        final List<Integer> partitionIds = apiRule.getPartitionIds("test");
+
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
+                .startEvent()
+                .endEvent()
+                .done();
+
+        // when
+        apiRule.topic().deploy("test", definition);
+
+        // then
+        final List<Long> workflowKeys = new ArrayList<>();
+        partitionIds.forEach(partitionId ->
+        {
+            final SubscribedEvent event = apiRule.topic(partitionId).receiveSingleEvent(workflowEvents("CREATED"));
+
+            workflowKeys.add(event.key());
+        });
+
+        assertThat(workflowKeys)
+            .hasSize(partitions)
+            .containsOnly(workflowKeys.get(0));
     }
 
     private byte[] bpmnXml(final WorkflowDefinition definition)

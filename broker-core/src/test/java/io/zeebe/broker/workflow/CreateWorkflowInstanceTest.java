@@ -32,6 +32,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -440,6 +441,37 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstanceEvent.event())
             .containsEntry("bpmnProcessId", "yaml-workflow")
             .containsEntry("workflowInstanceKey", workflowInstanceKey);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceOnAllPartitions()
+    {
+        // given
+        final int partitions = 3;
+
+        apiRule.createTopic("test", partitions);
+        final List<Integer> partitionIds = apiRule.getPartitionIds("test");
+
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .endEvent()
+            .done();
+
+        // when
+        apiRule.topic().deploy("test", definition);
+
+        // then
+        final List<Long> workflowInstanceKeys = new ArrayList<>();
+        partitionIds.forEach(partitionId ->
+        {
+            final long workflowInstanceKey = apiRule.topic(partitionId).createWorkflowInstance("process");
+
+            workflowInstanceKeys.add(workflowInstanceKey);
+        });
+
+        assertThat(workflowInstanceKeys)
+            .hasSize(partitions)
+            .allMatch(k -> k > 0);
     }
 
 }

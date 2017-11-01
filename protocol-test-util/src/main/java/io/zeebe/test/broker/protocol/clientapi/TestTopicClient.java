@@ -58,12 +58,17 @@ public class TestTopicClient
 
     public long deploy(final WorkflowDefinition workflow)
     {
+        return deploy(ClientApiRule.DEFAULT_TOPIC_NAME, workflow);
+    }
+
+    public long deploy(String topic, final WorkflowDefinition workflow)
+    {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
+                    .put("topicName", topic)
                     .put(PROP_WORKFLOW_RESOURCE, Bpmn.convertToString(workflow).getBytes(UTF_8))
                     .put("resouceType", "BPMN_XML")
                 .done()
