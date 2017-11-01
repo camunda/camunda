@@ -157,6 +157,9 @@ public class RaftRule extends ExternalResource
 
         clientTransport.close();
         clientSendBuffer.close();
+
+        uncommittedReader.close();
+        committedReader.close();
     }
 
     public void schedule()

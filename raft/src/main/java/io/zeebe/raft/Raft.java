@@ -457,6 +457,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public void setMembers(final ValueArray<RaftConfigurationMember> members)
     {
+        this.members.forEach(RaftMember::close);
         this.members.clear();
         this.memberLookup.clear();
         persistentStorage.clearMembers();
