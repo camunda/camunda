@@ -18,20 +18,19 @@ package io.zeebe.logstreams.snapshot;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.agrona.ExpandableArrayBuffer;
-
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.util.StreamUtil;
+import org.agrona.ExpandableArrayBuffer;
 
 public class UnpackedObjectSnapshotSupport implements ComposableSnapshotSupport
 {
 
-    protected UnpackedObject object;
-    protected MsgPackWriter writer = new MsgPackWriter();
-    protected MsgPackReader reader = new MsgPackReader();
+    protected final UnpackedObject object;
+    protected final MsgPackWriter writer = new MsgPackWriter();
+    protected final MsgPackReader reader = new MsgPackReader();
 
     /*
      * This implementation via an intermediate buffer is not the most efficient, because
@@ -41,7 +40,7 @@ public class UnpackedObjectSnapshotSupport implements ComposableSnapshotSupport
      *
      * This implementation should be ok for rather small objects.
      */
-    protected ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
+    protected final ExpandableArrayBuffer ioBuffer = new ExpandableArrayBuffer();
 
     public UnpackedObjectSnapshotSupport(UnpackedObject object)
     {
