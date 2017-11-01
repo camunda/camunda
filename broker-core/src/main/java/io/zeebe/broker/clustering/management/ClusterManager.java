@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -32,7 +33,9 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
-import io.zeebe.broker.clustering.management.message.*;
+import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
+import io.zeebe.broker.clustering.management.message.InvitationRequest;
+import io.zeebe.broker.clustering.management.message.InvitationResponse;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
@@ -47,7 +50,6 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -308,20 +310,18 @@ public class ClusterManager implements Actor
      */
     protected void createPartition(DirectBuffer topicName, int partitionId)
     {
+        createPartition(topicName, partitionId, Collections.emptyList());
+    }
+
+    /**
+     * Creates log stream and sets up raft service to participate in raft group
+     */
+    protected void createPartition(DirectBuffer topicName, int partitionId, List<SocketAddress> members)
+    {
         final LogStream logStream = logStreamsManager.createLogStream(topicName, partitionId);
 
         final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
-        createRaft(socketAddress, logStream, new ArrayList<>(invitationRequest.members()));
-    }
-
-    public void createPartitionAsync(DirectBuffer topicName, int partitionId)
-    {
-        final DirectBuffer nameBuffer = BufferUtil.cloneBuffer(topicName);
-
-        commandQueue.runAsync(() ->
-        {
-            createPartition(nameBuffer, partitionId);
-        });
+        createRaft(socketAddress, logStream, members);
     }
 
     public boolean onInvitationRequest(
@@ -338,7 +338,7 @@ public class ClusterManager implements Actor
         final DirectBuffer topicName = invitationRequest.topicName();
         final int partitionId = invitationRequest.partitionId();
 
-        createPartition(topicName, partitionId);
+        createPartition(topicName, partitionId, new ArrayList<>(invitationRequest.members()));
 
         invitationResponse.reset();
         response.reset()
