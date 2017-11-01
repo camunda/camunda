@@ -8,7 +8,7 @@ export default withRouter(function Section({name, linksTo, active, location}) {
 
   return (
     <li className={`Section${isActive ? ' active' : ''}`}>
-      <Link to={linksTo}>
+      <Link to={linksTo} title={name}>
         {name}
       </Link>
     </li>
