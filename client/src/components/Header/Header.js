@@ -15,17 +15,17 @@ export default function Header({name}) {
         <span className='Header__brand-logo' />
         <span>{name}</span>
       </Link>
-      {(getToken() && <nav className='Header__nav left'>
-        <ul>
+      {(getToken() &&
+        <ul role='navigation' className='Header__nav left'>
           <Section name='Dashboards' linksTo='/dashboards' active='/dashboard' />
           <Section name='Reports' linksTo='/reports' active='/report' />
         </ul>
-      </nav>)}
-      {(getToken() && <nav className='Header__nav right'>
-        <ul>
+      )}
+      {(getToken() &&
+        <ul  className='Header__nav right'>
           <LogoutButton />
         </ul>
-      </nav>)}
+      )}
     </header>
   );
 }

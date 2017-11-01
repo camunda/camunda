@@ -46,16 +46,16 @@
   content: '\E831';
 }
 
-.Header__nav ul {
+.Header__nav {
   margin: 0;
   padding: 0;
 }
 
-.Header__nav.left ul {
+.Header__nav.left {
   float: left;
 }
 
-.Header__nav.right ul {
+.Header__nav.right {
   float: right;
 }
 
