@@ -45,6 +45,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
+import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
@@ -209,23 +210,28 @@ public class ClusterManager implements Actor
             for (int i = 0; i < rafts.size(); i++)
             {
                 final Raft raft = rafts.get(i);
-                // TODO(menski): implement replication factor
-                // TODO: if this should be garbage free, we have to limit
-                // the number of concurrent invitations.
-                final List<SocketAddress> members = new ArrayList<>();
-                members.add(raft.getSocketAddress());
-                raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
 
-                final LogStream logStream = raft.getLogStream();
-                final InvitationRequest invitationRequest = new InvitationRequest()
-                    .topicName(logStream.getTopicName())
-                    .partitionId(logStream.getPartitionId())
-                    .term(raft.getTerm())
-                    .members(members);
+                // only send an invitation request if we are currently leader of the raft group
+                if (raft.getState() == RaftState.LEADER)
+                {
+                    // TODO(menski): implement replication factor
+                    // TODO: if this should be garbage free, we have to limit
+                    // the number of concurrent invitations.
+                    final List<SocketAddress> members = new ArrayList<>();
+                    members.add(raft.getSocketAddress());
+                    raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
 
-                final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
-                requestController.open(copy.managementEndpoint(), invitationRequest, null);
-                activeRequestControllers.add(requestController);
+                    final LogStream logStream = raft.getLogStream();
+                    final InvitationRequest invitationRequest = new InvitationRequest()
+                        .topicName(logStream.getTopicName())
+                        .partitionId(logStream.getPartitionId())
+                        .term(raft.getTerm())
+                        .members(members);
+
+                    final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
+                    requestController.open(copy.managementEndpoint(), invitationRequest, null);
+                    activeRequestControllers.add(requestController);
+                }
             }
 
         });
