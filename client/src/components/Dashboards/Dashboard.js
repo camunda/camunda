@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {loadDashboard, remove} from './service';
+import {loadDashboard, remove, update} from './service';
 
 export default class Dashboard extends React.Component {
   constructor(props) {
@@ -40,6 +40,17 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  updateName = evt => {
+    const currentState = this.state;
+    currentState.name = evt.currentTarget.value;
+    this.setState(currentState);
+  }
+
+  saveChanges = async evt => {
+    console.log('sending name [' + this.state.name + '] to the backend');
+    await update(this.id, this.state);
+  }
+
   render() {
     const {viewMode} = this.props.match.params;
 
@@ -54,11 +65,15 @@ export default class Dashboard extends React.Component {
     }
 
     return (<div>
-      <h2>{name}</h2>
+      {viewMode === 'edit' ? (
+        <input onChange={this.updateName} value={name}></input>
+      ) : (
+        <h2>{name}</h2>
+      )}
       <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
       {viewMode === 'edit' ? (
         <div>
-          <Link to={`/dashboard/${this.id}`}>Save</Link> |
+          <Link to={`/dashboard/${this.id}`} onClick={this.saveChanges}>Save</Link> |
           <Link to={`/dashboard/${this.id}`}>Cancel</Link>
         </div>
       ) : (
