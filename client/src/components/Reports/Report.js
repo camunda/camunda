@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {loadSingleReport, remove, getReportData, saveReport} from './service';
+import {loadSingleReport, remove, update, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
 import ReportView from './ReportView';
 
@@ -62,6 +62,10 @@ export default class Report extends React.Component {
     });
   }
 
+  updateName = evt => {
+    this.setState({name : evt.target.value});
+  }
+
   updateReport = async (field, newValue) => {
     const data = {
       ...this.state.data,
@@ -111,17 +115,21 @@ export default class Report extends React.Component {
     }
 
     return (<div>
-      <h2>{name}</h2>
+      {viewMode === 'edit' ? (
+          <input id={'name'} onChange={this.updateName} value={name}></input>
+      ) : (
+          <h2>{name}</h2>
+      )}
       <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
       {viewMode === 'edit' ? (
         <div>
-          <Link to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
+          <Link id={'save'} to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
           <Link to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
           <ControlPanel {...data} onChange={this.updateReport} />
         </div>
       ) : (
         <div>
-          <Link to={`/report/${this.id}/edit`}>Edit</Link> |
+          <Link id={'edit'} to={`/report/${this.id}/edit`}>Edit</Link> |
           <button onClick={this.deleteReport}>Delete</button>
         </div>
       )}

@@ -41,13 +41,10 @@ export default class Dashboard extends React.Component {
   }
 
   updateName = evt => {
-    const currentState = this.state;
-    currentState.name = evt.currentTarget.value;
-    this.setState(currentState);
+    this.setState({name : evt.target.value});
   }
 
   saveChanges = async evt => {
-    console.log('sending name [' + this.state.name + '] to the backend');
     await update(this.id, this.state);
   }
 
@@ -66,7 +63,7 @@ export default class Dashboard extends React.Component {
 
     return (<div>
       {viewMode === 'edit' ? (
-        <input onChange={this.updateName} value={name}></input>
+        <input id={'name'} onChange={this.updateName} value={name}></input>
       ) : (
         <h2>{name}</h2>
       )}
@@ -78,7 +75,7 @@ export default class Dashboard extends React.Component {
         </div>
       ) : (
         <div>
-          <Link to={`/dashboard/${this.id}/edit`}>Edit</Link> |
+          <Link id={'edit'} to={`/dashboard/${this.id}/edit`}>Edit</Link> |
           <button onClick={this.deleteDashboard}>Delete</button>
         </div>
       )}

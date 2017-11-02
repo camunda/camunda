@@ -10,10 +10,12 @@ jest.mock('./service', () => {return {
   getReportData: jest.fn(),
   saveReport: jest.fn()
 }});
+
 jest.mock('react-router-dom', () => {return {
   Redirect: ({to}) => {return <div>REDIRECT to {to}</div>},
-  Link: ({children, to}) => {return <a href={to}>{children}</a>}
+  Link: ({children, to, onClick, id}) => {return <a id={id} href={to} onClick={onClick}>{children}</a>}
 }});
+
 jest.mock('moment', () => () => {return {
   format: () => 'some date'
 }});
@@ -70,16 +72,6 @@ it('should provide a link to edit mode in view mode', () => {
   expect(node).toIncludeText('Edit');
 });
 
-it('should provide a link to view mode in edit mode', () => {
-  props.match.params.viewMode = 'edit';
-
-  const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
-
-  expect(node).toIncludeText('Save');
-  expect(node).toIncludeText('Cancel');
-  expect(node).not.toIncludeText('Edit');
-});
 
 it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
@@ -164,4 +156,47 @@ it('should save a changed report', () => {
   node.instance().save();
 
   expect(saveReport).toHaveBeenCalled();
+});
+
+describe('edit mode', async () => {
+
+    it('should provide a link to view mode', () => {
+        props.match.params.viewMode = 'edit';
+
+        const node = mount(<Report {...props} />);
+        node.setState({loaded: true});
+
+        expect(node).toIncludeText('Save');
+        expect(node).toIncludeText('Cancel');
+        expect(node).not.toIncludeText('Edit');
+    });
+
+    it('should provide name edit input', async () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Report {...props} />);
+        node.setState({loaded: true, name: 'test name'});
+
+        expect(node.find('input#name')).toBePresent();
+    });
+
+    it('should invoke update on save click', async () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Report {...props} />);
+        node.setState({loaded: true, name: 'test name'});
+
+        node.find('a#save').simulate('click');
+
+        expect(saveReport).toHaveBeenCalled();
+    });
+
+    it('should update name on input change', async () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Report {...props} />);
+        node.setState({loaded: true, name: 'test name'});
+
+        const input = 'asdf';
+        node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+        expect(node).toHaveState('name', input);
+    });
+
 });
