@@ -2,7 +2,6 @@ import React from 'react';
 import { mount } from 'enzyme';
 
 import Table from './Table';
-import {Link} from 'react-router-dom';
 
 jest.mock('react-router-dom', () => { return {
   Link: ({children}) => {return <a>{children}</a>}
@@ -50,4 +49,16 @@ it('should draw a link when providing a link property', () => {
 
   expect(node.find('a')).toBePresent();
   expect(node.find('a')).toIncludeText('cell');
+});
+
+it('should render apply the className to buttons', () => {
+  const node = mount(<Table data={[[{content: 'cell', onClick: jest.fn(), className: 'buttonClass'}]]} />);
+
+  expect(node.find('.buttonClass')).toBePresent();
+});
+
+it('should render apply the className to links', () => {
+  const node = mount(<Table data={[[{content: 'cell', link: '/newRoute', className: 'linkClass'}]]} />);
+
+  expect(node.find('.linkClass')).toBePresent();
 });

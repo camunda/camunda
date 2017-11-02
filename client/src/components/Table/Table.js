@@ -24,12 +24,12 @@ function renderCell(cell) {
   }
 
   if(cell.link) {
-    return (<Link to={cell.link}>
+    return (<Link to={cell.link} className={cell.className}>
       {cell.content}
     </Link>);
   }
 
   if(cell.onClick) {
-    return (<button onClick={cell.onClick}>{cell.content}</button>);
+    return (<button onClick={cell.onClick} className={cell.className}>{cell.content}</button>);
   }
 }
