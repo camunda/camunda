@@ -152,6 +152,7 @@ public class ClusterManager implements Actor
             final boolean isBootstrappingBroker = context.getPeers().sizeVolatile() == 1;
             if (isBootstrappingBroker)
             {
+                LOG.debug("Broker bootstraps the system topic");
                 createPartition(Protocol.SYSTEM_TOPIC_BUF, Protocol.SYSTEM_PARTITION);
             }
         }
@@ -204,6 +205,9 @@ public class ClusterManager implements Actor
     {
         final Peer copy = new Peer();
         copy.wrap(peer);
+
+        LOG.debug("Peer {} joined the cluster", copy.managementEndpoint());
+
         commandQueue.runAsync(() ->
         {
 
@@ -227,6 +231,8 @@ public class ClusterManager implements Actor
                         .partitionId(logStream.getPartitionId())
                         .term(raft.getTerm())
                         .members(members);
+
+                    LOG.debug("Send invitation request to {} for partition {} in term {}", copy.managementEndpoint(), logStream.getPartitionId(), raft.getTerm());
 
                     final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
                     requestController.open(copy.managementEndpoint(), invitationRequest, null);
@@ -341,6 +347,8 @@ public class ClusterManager implements Actor
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
 
+        LOG.debug("Received invitation request from {} for partition {}", requestAddress.getAddress(), invitationRequest.partitionId());
+
         final DirectBuffer topicName = invitationRequest.topicName();
         final int partitionId = invitationRequest.partitionId();
 
@@ -362,6 +370,7 @@ public class ClusterManager implements Actor
     {
         createPartitionMessage.wrap(buffer, offset, length);
 
+        LOG.debug("Received create partition message for partition {}", createPartitionMessage.getPartitionId());
         createPartition(createPartitionMessage.getTopicName(), createPartitionMessage.getPartitionId());
     }
 
