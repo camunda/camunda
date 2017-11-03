@@ -23,7 +23,7 @@ import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.CountersManagerService;
 import io.zeebe.broker.system.deployment.service.DeploymentManager;
-import io.zeebe.broker.system.deployment.service.WorkflowRequestHandlerService;
+import io.zeebe.broker.system.deployment.service.WorkflowRequestMessageHandlerService;
 import io.zeebe.broker.system.executor.ScheduledExecutorService;
 import io.zeebe.broker.system.log.PartitionManagerService;
 import io.zeebe.broker.system.log.SystemPartitionManager;
@@ -68,7 +68,7 @@ public class SystemComponent implements Component
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, systemPartitionManager.getLogStreamsGroupReference())
             .install();
 
-        final DeploymentManager deploymentManagerService = new DeploymentManager();
+        final DeploymentManager deploymentManagerService = new DeploymentManager(systemConfiguration);
         serviceContainer.createService(SystemServiceNames.DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
             .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), deploymentManagerService.getManagementClientInjector())
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
@@ -77,8 +77,8 @@ public class SystemComponent implements Component
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, deploymentManagerService.getSystemStreamGroupReference())
             .install();
 
-        final WorkflowRequestHandlerService workflowRequestHandlerService = new WorkflowRequestHandlerService();
-        serviceContainer.createService(WORKFLOW_REQUEST_HANDLER_SERVICE, workflowRequestHandlerService)
+        final WorkflowRequestMessageHandlerService workflowRequestHandlerService = new WorkflowRequestMessageHandlerService();
+        serviceContainer.createService(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, workflowRequestHandlerService)
             .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, workflowRequestHandlerService.getLogStreamsGroupReference())
             .install();
 

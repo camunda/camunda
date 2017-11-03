@@ -20,7 +20,7 @@ package io.zeebe.broker.clustering;
 import static io.zeebe.broker.clustering.ClusterServiceNames.*;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_HANDLER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 
@@ -102,7 +102,7 @@ public class ClusterComponent implements Component
             .dependency(PEER_LOCAL_SERVICE, clusterManagementContextService.getLocalPeerInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
-            .dependency(WORKFLOW_REQUEST_HANDLER_SERVICE, clusterManagementContextService.getWorkflowRequestHandlerInjector())
+            .dependency(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, clusterManagementContextService.getWorkflowRequestMessageHandlerInjector())
             .install();
 
         final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config.management);

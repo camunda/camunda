@@ -58,6 +58,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     // processors ////////////////////////////////////
     protected final WorkflowCreateEventProcessor workflowCreateEventProcessor = new WorkflowCreateEventProcessor();
+    protected final WorkflowDeleteEventProcessor workflowDeleteEventProcessor = new WorkflowDeleteEventProcessor();
 
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
@@ -313,6 +314,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             case CREATE:
                 return workflowCreateEventProcessor;
 
+            case DELETE:
+                return workflowDeleteEventProcessor;
+
             default:
                 return null;
         }
@@ -434,6 +438,58 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final DirectBuffer bpmnProcessId = workflowEvent.getBpmnProcessId();
 
             workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, bpmnProcessId, version);
+        }
+    }
+
+    private final class WorkflowDeleteEventProcessor implements EventProcessor
+    {
+        private boolean isDeleted;
+
+        @Override
+        public void processEvent()
+        {
+            isDeleted = false;
+
+            if (workflowDeploymentCache.getWorkflow(eventKey) != null)
+            {
+                workflowEvent.setState(WorkflowState.DELETED);
+
+                isDeleted = true;
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            long position = 0L;
+
+            if (isDeleted)
+            {
+                targetEventMetadata.reset();
+                targetEventMetadata
+                    .protocolVersion(Protocol.PROTOCOL_VERSION)
+                    .eventType(EventType.WORKFLOW_EVENT);
+
+                position = writer
+                        .key(eventKey)
+                        .metadataWriter(targetEventMetadata)
+                        .valueWriter(workflowEvent)
+                        .tryWrite();
+            }
+
+            return position;
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isDeleted)
+            {
+                final DirectBuffer bpmnProcessId = workflowEvent.getBpmnProcessId();
+                final int version = workflowEvent.getVersion();
+
+                workflowDeploymentCache.removeDeployedWorkflow(eventKey, bpmnProcessId, version);
+            }
         }
     }
 

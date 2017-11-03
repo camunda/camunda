@@ -63,7 +63,18 @@ public class TestTopicClient
 
     public long deploy(String topic, final WorkflowDefinition workflow)
     {
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+        final ExecuteCommandResponse response = deployWithResponse(topic, workflow);
+
+        assertThat(response.getEvent().get(PROP_STATE))
+            .withFailMessage("Deployment failed: %s", response.getEvent().get("errorMessage"))
+            .isEqualTo("DEPLOYMENT_CREATED");
+
+        return response.key();
+    }
+
+    public ExecuteCommandResponse deployWithResponse(String topic, final WorkflowDefinition workflow)
+    {
+        return apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
@@ -73,12 +84,6 @@ public class TestTopicClient
                     .put("resouceType", "BPMN_XML")
                 .done()
                 .sendAndAwait();
-
-        assertThat(response.getEvent().get(PROP_STATE))
-            .withFailMessage("Deployment failed: %s", response.getEvent().get("errorMessage"))
-            .isEqualTo("DEPLOYMENT_CREATED");
-
-        return response.key();
     }
 
     public ExecuteCommandResponse createWorkflowInstanceWithResponse(String bpmnProcessId)
@@ -95,14 +100,7 @@ public class TestTopicClient
 
     public long createWorkflowInstance(String bpmnProcessId)
     {
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .partitionId(partitionId)
-                .eventTypeWorkflow()
-                .command()
-                    .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
-                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
         assertThat(response.position()).isGreaterThanOrEqualTo(0L);

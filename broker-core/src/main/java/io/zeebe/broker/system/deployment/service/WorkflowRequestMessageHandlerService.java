@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
+import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 
-public class WorkflowRequestHandlerService implements Service<CreateWorkflowRequestHandler>
+public class WorkflowRequestMessageHandlerService implements Service<WorkflowRequestMessageHandler>
 {
-    private CreateWorkflowRequestHandler handler;
+    private WorkflowRequestMessageHandler handler;
 
     private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> handler.addStream(stream))
@@ -34,7 +34,7 @@ public class WorkflowRequestHandlerService implements Service<CreateWorkflowRequ
     @Override
     public void start(ServiceStartContext startContext)
     {
-        handler = new CreateWorkflowRequestHandler();
+        handler = new WorkflowRequestMessageHandler();
     }
 
     @Override
@@ -44,7 +44,7 @@ public class WorkflowRequestHandlerService implements Service<CreateWorkflowRequ
     }
 
     @Override
-    public CreateWorkflowRequestHandler get()
+    public WorkflowRequestMessageHandler get()
     {
         return handler;
     }

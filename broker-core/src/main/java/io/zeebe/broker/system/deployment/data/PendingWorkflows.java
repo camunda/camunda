@@ -39,7 +39,7 @@ public class PendingWorkflows
     private static final int VALUE_LENGTH = SIZE_OF_SHORT + SIZE_OF_LONG;
 
     private static final int WORKFLOW_KEY_OFFSET = 0;
-    private static final int PARTITION_ID_OFFSET = WORKFLOW_KEY_OFFSET + SIZE_OF_INT;
+    private static final int PARTITION_ID_OFFSET = WORKFLOW_KEY_OFFSET + SIZE_OF_LONG;
 
     private static final int STATE_OFFSET = 0;
     private static final int DEPLOYMENT_KEY_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
@@ -62,7 +62,7 @@ public class PendingWorkflows
     public PendingWorkflow get(long workflowKey, int partitionId)
     {
         keyBuffer.putLong(WORKFLOW_KEY_OFFSET, workflowKey, BYTE_ORDER);
-        keyBuffer.putLong(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
+        keyBuffer.putInt(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
 
         final DirectBuffer currentValue = map.get(keyBuffer);
 
@@ -80,7 +80,7 @@ public class PendingWorkflows
     public void put(long workflowKey, int partitionId, short state, long deploymentKey)
     {
         keyBuffer.putLong(WORKFLOW_KEY_OFFSET, workflowKey, BYTE_ORDER);
-        keyBuffer.putLong(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
+        keyBuffer.putInt(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
 
         valueBuffer.putShort(STATE_OFFSET, state, BYTE_ORDER);
         valueBuffer.putLong(DEPLOYMENT_KEY_OFFSET, deploymentKey, BYTE_ORDER);
@@ -91,7 +91,7 @@ public class PendingWorkflows
     public void remove(long workflowKey, int partitionId)
     {
         keyBuffer.putLong(WORKFLOW_KEY_OFFSET, workflowKey, BYTE_ORDER);
-        keyBuffer.putLong(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
+        keyBuffer.putInt(PARTITION_ID_OFFSET, partitionId, BYTE_ORDER);
 
         map.remove(keyBuffer);
     }

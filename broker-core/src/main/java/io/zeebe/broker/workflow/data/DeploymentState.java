@@ -27,6 +27,10 @@ public enum DeploymentState
 
     DEPLOYMENT_CREATED,
 
+    DEPLOYMENT_TIMED_OUT,
+
+    REJECT_DEPLOYMENT,
+
     DEPLOYMENT_REJECTED;
 
 }

@@ -94,7 +94,7 @@ public class ClusterManager implements Actor
 
         this.invitationResponse = new InvitationResponse();
 
-        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this, context.getWorkflowRequestHandler());
+        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this, context.getWorkflowRequestMessageHandler());
         inputSubscription = context.getServerTransport()
                                    .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
                                    .join();

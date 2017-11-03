@@ -33,6 +33,9 @@ numberOfThreads = 2
 maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
+[system]
+deploymentCreationTimeoutSeconds = 1
+
 # Log Configuration -----------------------------------
 
 [logs]

@@ -19,7 +19,7 @@ package io.zeebe.broker.system;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.services.Counters;
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
+import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.broker.system.deployment.service.DeploymentManager;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.system.log.SystemPartitionManager;
@@ -40,7 +40,7 @@ public class SystemServiceNames
 
     public static final ServiceName<PartitionManager> PARTITION_MANAGER_SERVICE = ServiceName.newServiceName("broker.system.partition.manager", PartitionManager.class);
 
-    public static final ServiceName<CreateWorkflowRequestHandler> WORKFLOW_REQUEST_HANDLER_SERVICE = ServiceName.newServiceName("broker.system.workflow.handler", CreateWorkflowRequestHandler.class);
+    public static final ServiceName<WorkflowRequestMessageHandler> WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE = ServiceName.newServiceName("broker.system.workflow.handler", WorkflowRequestMessageHandler.class);
     public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE = ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
     public static final ServiceName<StreamProcessorController> DEPLOYMENT_PROCESSOR = ServiceName.newServiceName("broker.system.deployment.processor", StreamProcessorController.class);
 

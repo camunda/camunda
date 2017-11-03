@@ -18,61 +18,53 @@
 package io.zeebe.broker.system.deployment.processor;
 
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.deployment.data.*;
-import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
-import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartition;
-import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartitionIterator;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
+import io.zeebe.broker.system.deployment.data.WorkflowVersions;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
+import io.zeebe.broker.workflow.data.WorkflowState;
 import org.agrona.collections.IntArrayList;
 
-public class WorkflowCreateProcessor implements TypedEventProcessor<WorkflowEvent>
+public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEvent>
 {
-    private final TopicPartitions topicPartitions;
-    private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
+    private final WorkflowVersions workflowVersions;
 
-    private final WorkflowRequestMessageSender workflowRequestSender;
+    private final WorkflowRequestMessageSender workflowMessageSender;
 
     private final IntArrayList partitionIds = new IntArrayList();
 
-    public WorkflowCreateProcessor(
-            TopicPartitions topicPartitions,
-            PendingDeployments pendingDeployments,
+    public WorkflowDeleteProcessor(
             PendingWorkflows pendingWorkflows,
-            WorkflowRequestMessageSender workflowRequestSender)
+            WorkflowVersions workflowVersions,
+            WorkflowRequestMessageSender workflowMessageSender)
     {
-        this.topicPartitions = topicPartitions;
-        this.pendingDeployments = pendingDeployments;
         this.pendingWorkflows = pendingWorkflows;
-        this.workflowRequestSender = workflowRequestSender;
+        this.workflowVersions = workflowVersions;
+        this.workflowMessageSender = workflowMessageSender;
     }
 
     @Override
     public void processEvent(TypedEvent<WorkflowEvent> event)
     {
+        event.getValue().setState(WorkflowState.DELETED);
+
+        final long workflowKey = event.getKey();
+
         partitionIds.clear();
 
-        final WorkflowEvent workflowEvent = event.getValue();
-
-        final PendingDeployment pendingDeployment = pendingDeployments.get(workflowEvent.getDeploymentKey());
-        ensureNotNull("pending deployment", pendingDeployment);
-
-        final DirectBuffer topicName = pendingDeployment.getTopicName();
-
-        final TopicPartitionIterator iterator = topicPartitions.iterator();
-        while (iterator.hasNext())
+        final PendingWorkflowIterator workflows = pendingWorkflows.iterator();
+        while (workflows.hasNext())
         {
-            final TopicPartition topicPartition = iterator.next();
+            final PendingWorkflow workflow = workflows.next();
 
-            if (BufferUtil.equals(topicName, topicPartition.getTopicName()))
+            if (workflow.getWorkflowKey() == workflowKey)
             {
-                partitionIds.add(topicPartition.getPartitionId());
+                partitionIds.addInt(workflow.getPartitionId());
             }
         }
 
@@ -82,21 +74,32 @@ public class WorkflowCreateProcessor implements TypedEventProcessor<WorkflowEven
     @Override
     public boolean executeSideEffects(TypedEvent<WorkflowEvent> event, TypedResponseWriter responseWriter)
     {
-        return workflowRequestSender.sendCreateWorkflowRequest(
+        return workflowMessageSender.sendDeleteWorkflowMessage(
                    partitionIds,
                    event.getKey(),
                    event.getValue());
     }
 
     @Override
+    public long writeEvent(TypedEvent<WorkflowEvent> event, TypedStreamWriter writer)
+    {
+        return writer.writeFollowupEvent(event.getKey(), event.getValue());
+    }
+
+    @Override
     public void updateState(TypedEvent<WorkflowEvent> event)
     {
+        final long workflowKey = event.getKey();
         final WorkflowEvent workflowEvent = event.getValue();
 
         for (int partitionId: partitionIds)
         {
-            pendingWorkflows.put(event.getKey(), partitionId, PendingWorkflows.STATE_CREATE, workflowEvent.getDeploymentKey());
+            pendingWorkflows.remove(workflowKey, partitionId);
         }
+
+        // TODO the version between different topics should be independent
+        // reset the workflow's version which is incremented on creation
+        workflowVersions.setLatestVersion(workflowEvent.getBpmnProcessId(), workflowEvent.getVersion() - 1);
     }
 
 }

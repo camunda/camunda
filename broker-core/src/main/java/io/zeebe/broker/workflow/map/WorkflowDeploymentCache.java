@@ -112,6 +112,20 @@ public class WorkflowDeploymentCache implements AutoCloseable
         idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
     }
 
+    public void removeDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
+    {
+        keyToPositionMap.remove(workflowKey, -1L);
+
+        wrap(bpmnProcessId, version);
+        idVersionToKeyMap.remove(buffer, 0, bufferLength, -1L);
+
+        // override the latest version by the key of the previous version
+        final long workflowKeyOfPreviousVersion = getWorkflowKeyByIdAndVersion(bpmnProcessId, version - 1);
+
+        wrap(bpmnProcessId, LATEST_VERSION);
+        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKeyOfPreviousVersion);
+    }
+
     public long getWorkflowKeyByIdAndLatestVersion(DirectBuffer bpmnProcessId)
     {
         return getWorkflowKeyByIdAndVersion(bpmnProcessId, LATEST_VERSION);

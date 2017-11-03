@@ -18,18 +18,25 @@
 package io.zeebe.broker.system.deployment.handler;
 
 import java.util.*;
+import java.util.function.IntConsumer;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
+import io.zeebe.broker.system.deployment.message.DeleteWorkflowMessage;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.transport.*;
+import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.collection.IntIterator;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.IntArrayList;
 
-public class CreateWorkflowRequestSender
+public class WorkflowRequestMessageSender
 {
-    private final CreateWorkflowRequest request = new CreateWorkflowRequest();
+    private final CreateWorkflowRequest createRequest = new CreateWorkflowRequest();
+
+    private final DeleteWorkflowMessage deleteMessage = new DeleteWorkflowMessage();
+
+    private final TransportMessage transportMessage = new TransportMessage();
 
     private final Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
 
@@ -37,7 +44,7 @@ public class CreateWorkflowRequestSender
     private final ClientTransport managementClient;
     private final ClientOutput output;
 
-    public CreateWorkflowRequestSender(PartitionManager partitionManager, ClientTransport managementClient)
+    public WorkflowRequestMessageSender(PartitionManager partitionManager, ClientTransport managementClient)
     {
         this.partitionManager = partitionManager;
         this.managementClient = managementClient;
@@ -47,19 +54,36 @@ public class CreateWorkflowRequestSender
     public boolean sendCreateWorkflowRequest(
             IntArrayList partitionIds,
             long workflowKey,
-            DirectBuffer bpmnProcessId,
-            int version,
-            DirectBuffer bpmnXml,
-            long deploymentKey)
+            WorkflowEvent event)
+    {
+        createRequest
+            .workflowKey(workflowKey)
+            .deploymentKey(event.getDeploymentKey())
+            .version(event.getVersion())
+            .bpmnProcessId(event.getBpmnProcessId())
+            .bpmnXml(event.getBpmnXml());
+
+        return forEachPartition(partitionIds, createRequest::partitionId, addr -> sendRequest(createRequest, addr));
+    }
+
+    public boolean sendDeleteWorkflowMessage(
+            IntArrayList partitionIds,
+            long workflowKey,
+            WorkflowEvent event)
+    {
+        deleteMessage
+            .workflowKey(workflowKey)
+            .deploymentKey(event.getDeploymentKey())
+            .version(event.getVersion())
+            .bpmnProcessId(event.getBpmnProcessId())
+            .bpmnXml(event.getBpmnXml());
+
+        return forEachPartition(partitionIds, deleteMessage::partitionId, addr -> sendMessage(deleteMessage, addr));
+    }
+
+    private boolean forEachPartition(IntArrayList partitionIds, IntConsumer partitionIdConsumer, BooleanConsumer<SocketAddress> action)
     {
         boolean success = true;
-
-        request
-            .workflowKey(workflowKey)
-            .deploymentKey(deploymentKey)
-            .version(version)
-            .bpmnProcessId(bpmnProcessId)
-            .bpmnXml(bpmnXml);
 
         final Iterator<Member> members = partitionManager.getKnownMembers();
         while (members.hasNext() && success)
@@ -73,9 +97,9 @@ public class CreateWorkflowRequestSender
 
                 if (partitionIds.containsInt(partitionId))
                 {
-                    request.partitionId(partitionId);
+                    partitionIdConsumer.accept(partitionId);
 
-                    success = sendRequest(request, member);
+                    success = action.apply(member.getManagementAddress());
                 }
             }
         }
@@ -83,10 +107,8 @@ public class CreateWorkflowRequestSender
         return success;
     }
 
-    private boolean sendRequest(final CreateWorkflowRequest request, final Member member)
+    private boolean sendRequest(final BufferWriter request, final SocketAddress addr)
     {
-        final SocketAddress addr = member.getManagementAddress();
-
         final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
 
         final ClientRequest clientRequest = output.sendRequest(remoteAddress, request);
@@ -103,9 +125,24 @@ public class CreateWorkflowRequestSender
         }
     }
 
+    private boolean sendMessage(final BufferWriter message, final SocketAddress addr)
+    {
+        final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
+
+        transportMessage.remoteAddress(remoteAddress).writer(message);
+
+        return output.sendMessage(transportMessage);
+    }
+
     public Collection<ClientRequest> getPendingRequests()
     {
         return pendingRequests;
+    }
+
+    @FunctionalInterface
+    private interface BooleanConsumer<T>
+    {
+        boolean apply(T value);
     }
 
 }

@@ -21,8 +21,15 @@ public class SystemConfiguration extends ComponentConfiguration
 {
     public long partitionCreationTimeoutSeconds = 30;
 
+    private long deploymentCreationTimeoutSeconds = 10;
+
     public long getPartitionCreationTimeoutSeconds()
     {
         return partitionCreationTimeoutSeconds;
+    }
+
+    public long getDeploymentCreationTimeoutSeconds()
+    {
+        return deploymentCreationTimeoutSeconds;
     }
 }

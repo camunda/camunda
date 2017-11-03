@@ -282,6 +282,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         {
             final DeployedWorkflow deployedWorkflow = iterator.next();
 
+            // TODO the version between different topics should be independent
             workflowVersions.setLatestVersion(deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
         }
     }

@@ -63,4 +63,14 @@
       <field name="partitionId" id="0" type="uint16"/>
       <data name="topicName" id="1" type="varDataEncoding" />
     </sbe:message>
+    
+    <sbe:message name="DeleteWorkflowMessage" id="5">
+        <field name="partitionId" id="0" type="uint16"/>
+        <field name="workflowKey" id="1" type="uint64"/>
+        <field name="deploymentKey" id="2" type="uint64"/>
+        <field name="version" id="3" type="uint16"/>
+        <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
+        <data name="bpmnXml" id="5" type="varDataEncoding" />
+    </sbe:message>
+    
 </sbe:messageSchema>

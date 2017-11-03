@@ -18,7 +18,7 @@
 package io.zeebe.broker.clustering.management.handler;
 
 import io.zeebe.broker.clustering.management.ClusterManager;
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestHandler;
+import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.clustering.management.*;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
@@ -28,12 +28,12 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
     private final ClusterManager clusterManager;
-    private final CreateWorkflowRequestHandler workflowRequestHandler;
+    private final WorkflowRequestMessageHandler workflowRequestMessageHandler;
 
-    public ClusterManagerFragmentHandler(final ClusterManager clusterManager, final CreateWorkflowRequestHandler workflowRequestHandler)
+    public ClusterManagerFragmentHandler(final ClusterManager clusterManager, final WorkflowRequestMessageHandler workflowRequestMessageHandler)
     {
         this.clusterManager = clusterManager;
-        this.workflowRequestHandler = workflowRequestHandler;
+        this.workflowRequestMessageHandler = workflowRequestMessageHandler;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
                 }
                 case CreateWorkflowRequestEncoder.TEMPLATE_ID:
                 {
-                    return workflowRequestHandler.onCreateWorkflowRequest(buffer, offset, length, remoteAddress, requestId);
+                    return workflowRequestMessageHandler.onCreateWorkflowRequest(buffer, offset, length, remoteAddress, requestId);
                 }
                 default:
                 {
@@ -88,6 +88,11 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
                 case CreatePartitionMessageDecoder.TEMPLATE_ID:
                 {
                     clusterManager.onCreatePartitionMessage(buffer, offset, length);
+                    break;
+                }
+                case DeleteWorkflowMessageDecoder.TEMPLATE_ID:
+                {
+                    workflowRequestMessageHandler.onDeleteWorkflowMessage(buffer, offset, length);
                     break;
                 }
                 default:

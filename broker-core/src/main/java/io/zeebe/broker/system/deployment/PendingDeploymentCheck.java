@@ -27,12 +27,13 @@ import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployme
 import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestSender;
+import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
 import io.zeebe.broker.system.deployment.message.CreateWorkflowResponse;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
@@ -41,7 +42,7 @@ public class PendingDeploymentCheck implements Runnable
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
 
-    private final CreateWorkflowRequestSender workflowRequestSender;
+    private final WorkflowRequestMessageSender workflowRequestSender;
 
     private final TypedStreamWriter writer;
     private final TypedStreamReader reader;
@@ -50,9 +51,10 @@ public class PendingDeploymentCheck implements Runnable
 
     private final LongArrayList pendingDeploymentKeys = new LongArrayList();
     private final LongArrayList distributedDeploymentKeys = new LongArrayList();
+    private final LongArrayList timedOutDeploymentKeys = new LongArrayList();
 
     public PendingDeploymentCheck(
-            CreateWorkflowRequestSender workflowRequestSender,
+            WorkflowRequestMessageSender workflowRequestSender,
             TypedStreamReader reader,
             TypedStreamWriter writer,
             PendingDeployments pendingDeployments,
@@ -87,14 +89,17 @@ public class PendingDeploymentCheck implements Runnable
 
             if (pendingRequest.isDone())
             {
-                final DirectBuffer responseBuffer = pendingRequest.join();
-                response.wrap(responseBuffer, 0, responseBuffer.capacity());
+                if (!pendingRequest.isFailed())
+                {
+                    final DirectBuffer responseBuffer = pendingRequest.join();
+                    response.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-                final long workflowKey = response.getWorkflowKey();
-                final int partitionId = response.getPartitionId();
-                final long deploymentKey = response.getDeploymentKey();
+                    final long workflowKey = response.getWorkflowKey();
+                    final int partitionId = response.getPartitionId();
+                    final long deploymentKey = response.getDeploymentKey();
 
-                pendingWorkflows.put(workflowKey, partitionId, PendingWorkflows.STATE_CREATED, deploymentKey);
+                    pendingWorkflows.put(workflowKey, partitionId, PendingWorkflows.STATE_CREATED, deploymentKey);
+                }
 
                 // remove completed request
                 iterator.remove();
@@ -107,10 +112,17 @@ public class PendingDeploymentCheck implements Runnable
         pendingDeploymentKeys.clear();
         collectPendingDeployments();
 
+        timedOutDeploymentKeys.clear();
+        collectTimedOutDeployments();
+
+        pendingDeploymentKeys.removeAll(timedOutDeploymentKeys);
+
         distributedDeploymentKeys.clear();
         collectDistributedDeployments();
 
         distributedDeploymentKeys.forEachOrderedLong(this::writeEventForDistributedDeployment);
+
+        timedOutDeploymentKeys.forEachOrderedLong(this::writeEventForTimedOutDeployment);
     }
 
     private void collectPendingDeployments()
@@ -122,6 +134,23 @@ public class PendingDeploymentCheck implements Runnable
             final long deploymentKey = pendingDeployment.getDeploymentKey();
 
             pendingDeploymentKeys.add(deploymentKey);
+        }
+    }
+
+    private void collectTimedOutDeployments()
+    {
+        final long currentTime = ClockUtil.getCurrentTimeInMillis();
+
+        final PendingDeploymentIterator iterator = pendingDeployments.iterator();
+        while (iterator.hasNext())
+        {
+            final PendingDeployment pendingDeployment = iterator.next();
+            final long timeout = pendingDeployment.getTimeout();
+
+            if (timeout <= currentTime)
+            {
+                timedOutDeploymentKeys.add(pendingDeployment.getDeploymentKey());
+            }
         }
     }
 
@@ -151,17 +180,27 @@ public class PendingDeploymentCheck implements Runnable
 
     private void writeEventForDistributedDeployment(final long deploymentKey)
     {
+        writeDeploymentEventWithState(deploymentKey, DeploymentState.DEPLOYMENT_DISTRIBUTED);
+    }
+
+    private void writeEventForTimedOutDeployment(final long deploymentKey)
+    {
+        writeDeploymentEventWithState(deploymentKey, DeploymentState.DEPLOYMENT_TIMED_OUT);
+    }
+
+    private void writeDeploymentEventWithState(final long deploymentKey, DeploymentState newState)
+    {
         final PendingDeployment pendingDeployment = pendingDeployments.get(deploymentKey);
 
         final TypedEvent<DeploymentEvent> event = reader.readValue(pendingDeployment.getDeploymentEventPosition(), DeploymentEvent.class);
 
-        final DeploymentEvent deploymentEvent = event.getValue().setState(DeploymentState.DEPLOYMENT_DISTRIBUTED);
+        final DeploymentEvent deploymentEvent = event.getValue().setState(newState);
 
         // if the write operation fails then the next check will try again.
-        writer.writeFollowupEvent(event.getKey(), deploymentEvent, addRequestMetadata(event));
+        writer.writeFollowupEvent(event.getKey(), deploymentEvent, copyRequestMetadata(event));
     }
 
-    private Consumer<BrokerEventMetadata> addRequestMetadata(TypedEvent<DeploymentEvent> event)
+    private Consumer<BrokerEventMetadata> copyRequestMetadata(TypedEvent<DeploymentEvent> event)
     {
         final BrokerEventMetadata metadata = event.getMetadata();
         return m -> m

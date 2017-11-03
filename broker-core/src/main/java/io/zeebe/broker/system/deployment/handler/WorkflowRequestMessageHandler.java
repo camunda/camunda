@@ -20,6 +20,7 @@ package io.zeebe.broker.system.deployment.handler;
 import java.util.function.Consumer;
 
 import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
+import io.zeebe.broker.system.deployment.message.DeleteWorkflowMessage;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.data.WorkflowState;
 import io.zeebe.logstreams.log.*;
@@ -31,9 +32,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
-public class CreateWorkflowRequestHandler
+public class WorkflowRequestMessageHandler
 {
-    private final CreateWorkflowRequest request = new CreateWorkflowRequest();
+    private final CreateWorkflowRequest createRequest = new CreateWorkflowRequest();
+    private final DeleteWorkflowMessage deleteMessage = new DeleteWorkflowMessage();
 
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
     private final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
@@ -58,42 +60,71 @@ public class CreateWorkflowRequestHandler
             .protocolVersion(Protocol.PROTOCOL_VERSION)
             .eventType(EventType.WORKFLOW_EVENT);
 
-        request.wrap(buffer, offset, length);
+        createRequest.wrap(buffer, offset, length);
 
-        return onRequest(request);
+        final LogStream logStream = getLogStream(createRequest.getPartitionId());
+        if (logStream != null)
+        {
+            workflowEvent.reset();
+            workflowEvent
+                .setState(WorkflowState.CREATE)
+                .setDeploymentKey(createRequest.getDeploymentKey())
+                .setBpmnProcessId(createRequest.getBpmnProcessId())
+                .setVersion(createRequest.getVersion())
+                .setBpmnXml(createRequest.getBpmnXml());
+
+            return writeWorkflowEvent(createRequest.getWorkflowKey(), logStream);
+        }
+        else
+        {
+            return true;
+        }
     }
 
-    private boolean onRequest(CreateWorkflowRequest request)
+    public boolean onDeleteWorkflowMessage(
+            DirectBuffer buffer,
+            int offset,
+            int length)
     {
-        boolean success = false;
+        eventMetadata.reset()
+            .protocolVersion(Protocol.PROTOCOL_VERSION)
+            .eventType(EventType.WORKFLOW_EVENT);
 
+        deleteMessage.wrap(buffer, offset, length);
+
+        final LogStream logStream = getLogStream(deleteMessage.getPartitionId());
+        if (logStream != null)
+        {
+            workflowEvent.reset();
+            workflowEvent
+                .setState(WorkflowState.DELETE)
+                .setDeploymentKey(deleteMessage.getDeploymentKey())
+                .setBpmnProcessId(deleteMessage.getBpmnProcessId())
+                .setVersion(deleteMessage.getVersion())
+                .setBpmnXml(deleteMessage.getBpmnXml());
+
+            return writeWorkflowEvent(deleteMessage.getWorkflowKey(), logStream);
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    private LogStream getLogStream(int partitionId)
+    {
         // process log-stream add / remove commands
         cmdQueue.drain(cmdConsumer);
 
-        final LogStream logStream = logStreams.get(request.getPartitionId());
-
-        if (logStream != null)
-        {
-            success = writeWorkflowEvent(request, logStream);
-        }
-
-        return success;
+        return logStreams.get(partitionId);
     }
 
-    private boolean writeWorkflowEvent(CreateWorkflowRequest request, final LogStream logStream)
+    private boolean writeWorkflowEvent(long key, final LogStream logStream)
     {
         logStreamWriter.wrap(logStream);
 
-        workflowEvent.reset();
-        workflowEvent
-            .setState(WorkflowState.CREATE)
-            .setDeploymentKey(request.getDeploymentKey())
-            .setBpmnProcessId(request.getBpmnProcessId())
-            .setVersion(request.getVersion())
-            .setBpmnXml(request.getBpmnXml());
-
         final long eventPosition = logStreamWriter
-                .key(request.getWorkflowKey())
+                .key(key)
                 .raftTermId(logStream.getTerm())
                 .metadataWriter(eventMetadata)
                 .valueWriter(workflowEvent)

@@ -22,10 +22,11 @@ import java.time.Duration;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.deployment.PendingDeploymentCheck;
 import io.zeebe.broker.system.deployment.data.*;
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowRequestSender;
+import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
@@ -46,7 +47,7 @@ public class DeploymentManager implements Service<DeploymentManager>
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<ScheduledExecutor> scheduledExecutorInjector = new Injector<>();
 
-    private final Duration deploymentRequestTimeout = Duration.ofSeconds(10);
+    private final SystemConfiguration systemConfiguration;
 
     private ServiceStartContext serviceContext;
 
@@ -60,6 +61,11 @@ public class DeploymentManager implements Service<DeploymentManager>
     private final ServiceGroupReference<LogStream> systemStreamGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> installDeploymentStreamProcessor(stream, name))
             .build();
+
+    public DeploymentManager(SystemConfiguration systemConfiguration)
+    {
+        this.systemConfiguration = systemConfiguration;
+    }
 
     @Override
     public void start(ServiceStartContext startContext)
@@ -79,7 +85,9 @@ public class DeploymentManager implements Service<DeploymentManager>
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
 
-        final CreateWorkflowRequestSender workflowRequestSender = new CreateWorkflowRequestSender(partitionManager, managementClient);
+        final WorkflowRequestMessageSender workflowRequestMessageSender = new WorkflowRequestMessageSender(partitionManager, managementClient);
+
+        final Duration deploymentRequestTimeout = Duration.ofSeconds(systemConfiguration.getDeploymentCreationTimeoutSeconds());
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
 
@@ -88,8 +96,11 @@ public class DeploymentManager implements Service<DeploymentManager>
             .onEvent(EventType.TOPIC_EVENT, TopicState.CREATED, new TopicCreatedProcessor(topicPartitions))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE_DEPLOYMENT, new DeploymentCreateProcessor(topicPartitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DEPLOYMENT_VALIDATED, new DeploymentValidatedProcessor(pendingDeployments))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(topicPartitions, pendingDeployments, pendingWorkflows, workflowRequestSender))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(topicPartitions, pendingDeployments, pendingWorkflows, workflowRequestMessageSender))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DEPLOYMENT_DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DEPLOYMENT_TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, streamEnvironment.buildStreamReader()))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingWorkflows, workflowVersions, workflowRequestMessageSender))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT_DEPLOYMENT, new DeploymentRejectProcessor())
             .withStateResource(topicPartitions.getRawMap())
             .withStateResource(workflowVersions.getRawMap())
             .withStateResource(pendingDeployments.getRawMap())
@@ -110,14 +121,14 @@ public class DeploymentManager implements Service<DeploymentManager>
              .install()
              .thenRun(() ->
              {
-                 scheduledChecker = scheduleChecker(streamEnvironment, streamProcessor, workflowRequestSender, pendingDeployments, pendingWorkflows);
+                 scheduledChecker = scheduleChecker(streamEnvironment, streamProcessor, workflowRequestMessageSender, pendingDeployments, pendingWorkflows);
              });
     }
 
     private ScheduledCommand scheduleChecker(
             final TypedStreamEnvironment streamEnvironment,
             final TypedStreamProcessor streamProcessor,
-            final CreateWorkflowRequestSender workflowRequestSender,
+            final WorkflowRequestMessageSender workflowRequestSender,
             final PendingDeployments pendingDeployments,
             final PendingWorkflows pendingWorkflows)
     {
