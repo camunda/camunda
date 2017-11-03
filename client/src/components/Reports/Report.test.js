@@ -198,5 +198,4 @@ describe('edit mode', async () => {
         node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
         expect(node).toHaveState('name', input);
     });
-
 });

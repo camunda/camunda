@@ -45,13 +45,44 @@ export default class Dashboard extends React.Component {
   }
 
   saveChanges = async evt => {
-    await update(this.id, this.state);
+    await update(this.id, { name : this.state.name});
+  }
+
+  renderEditMode = (state) => {
+    const {name, lastModifier, lastModified} = state;
+
+    return (
+      <div>
+        <input id={'name'} onChange={this.updateName} value={name || ''}></input>
+        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
+        <div>
+          <Link id={'save'} to={`/dashboard/${this.id}`} onClick={this.saveChanges}>Save</Link> |
+          <Link to={`/dashboard/${this.id}`}>Cancel</Link>
+        </div>
+      </div>
+    )
+  }
+
+  renderViewMode = (state) => {
+    const {name, lastModifier, lastModified} = state;
+
+    return (
+      <div>
+        <h2>{name}</h2>
+        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
+        <div>
+          <Link id={'edit'} to={`/dashboard/${this.id}/edit`}>Edit</Link> |
+          <button onClick={this.deleteDashboard}>Delete</button>
+        </div>
+      </div>
+    )
   }
 
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {name, lastModified, lastModifier, loaded, redirect} = this.state;
+    const {loaded, redirect} = this.state;
+
 
     if(!loaded) {
       return <div>loading...</div>;
@@ -62,24 +93,7 @@ export default class Dashboard extends React.Component {
     }
 
     return (<div>
-      {viewMode === 'edit' ? (
-        <input id={'name'} onChange={this.updateName} value={name}></input>
-      ) : (
-        <h2>{name}</h2>
-      )}
-      <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-      {viewMode === 'edit' ? (
-        <div>
-          <Link to={`/dashboard/${this.id}`} onClick={this.saveChanges}>Save</Link> |
-          <Link to={`/dashboard/${this.id}`}>Cancel</Link>
-        </div>
-      ) : (
-        <div>
-          <Link id={'edit'} to={`/dashboard/${this.id}/edit`}>Edit</Link> |
-          <button onClick={this.deleteDashboard}>Delete</button>
-        </div>
-      )}
-
+      {viewMode === 'edit' ? (this.renderEditMode(this.state)) : (this.renderViewMode(this.state))}
     </div>);
   }
 }

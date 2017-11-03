@@ -101,10 +101,46 @@ export default class Report extends React.Component {
     });
   }
 
+  renderEditMode = (state) => {
+    const {name, lastModifier, lastModified, data} = state;
+
+    return (
+      <div>
+        <input id={'name'} onChange={this.updateName} value={name || ''}></input>
+        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
+        <div>
+          <Link id={'save'} to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
+          <Link to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+          <ControlPanel {...data} onChange={this.updateReport} />
+        </div>
+
+        <ReportView data={state.reportResult} />
+      </div>
+    )
+  }
+
+  renderViewMode = (state) => {
+    const {name, lastModifier, lastModified} = state;
+
+    return (
+      <div>
+        <h2>{name}</h2>
+        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
+        <div>
+          <Link id={'edit'} to={`/report/${this.id}/edit`}>Edit</Link> |
+          <button onClick={this.deleteReport}>Delete</button>
+        </div>
+
+        <ReportView data={state.reportResult} />
+      </div>
+    )
+  }
+
+
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {name, lastModified, lastModifier, data, loaded, redirect} = this.state;
+    const {loaded, redirect} = this.state;
 
     if(!loaded) {
       return <div>loading...</div>;
@@ -115,26 +151,7 @@ export default class Report extends React.Component {
     }
 
     return (<div>
-      {viewMode === 'edit' ? (
-          <input id={'name'} onChange={this.updateName} value={name}></input>
-      ) : (
-          <h2>{name}</h2>
-      )}
-      <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-      {viewMode === 'edit' ? (
-        <div>
-          <Link id={'save'} to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
-          <Link to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
-          <ControlPanel {...data} onChange={this.updateReport} />
-        </div>
-      ) : (
-        <div>
-          <Link id={'edit'} to={`/report/${this.id}/edit`}>Edit</Link> |
-          <button onClick={this.deleteReport}>Delete</button>
-        </div>
-      )}
-
-      <ReportView data={this.state.reportResult} />
+      {viewMode === 'edit' ? (this.renderEditMode(this.state)) : (this.renderViewMode(this.state))}
     </div>);
   }
 }
