@@ -19,6 +19,7 @@ jest.mock('react-router-dom', () => {return {
 jest.mock('moment', () => () => {return {
   format: () => 'some date'
 }});
+
 jest.mock('./ControlPanel', () => {return () => <div>ControlPanel</div>});
 jest.mock('./ReportView', () => {return () => <div>ReportView</div>});
 
@@ -150,7 +151,7 @@ it('should reset the report data to its original state after canceling', async()
   expect(node.state().data).toEqual(dataBefore);
 });
 
-it('should save a changed report', () => {
+it('should save a changed report', async () => {
   const node = mount(<Report {...props} />);
 
   node.instance().save();
@@ -160,7 +161,7 @@ it('should save a changed report', () => {
 
 describe('edit mode', async () => {
 
-    it('should provide a link to view mode', () => {
+    it('should provide a link to view mode', async () => {
         props.match.params.viewMode = 'edit';
 
         const node = mount(<Report {...props} />);
@@ -197,5 +198,18 @@ describe('edit mode', async () => {
         const input = 'asdf';
         node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
         expect(node).toHaveState('name', input);
+    });
+
+    it('should reset name on cancel', async () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Report {...props} />);
+
+        node.setState({loaded: true, name: 'test name'});
+
+        const input = 'asdf';
+        await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+
+        await node.instance().cancel();
+        expect(node).toHaveState('name', 'test name');
     });
 });

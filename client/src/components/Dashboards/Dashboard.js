@@ -15,7 +15,9 @@ export default class Dashboard extends React.Component {
       lastModified: null,
       lastModifier: null,
       loaded: false,
-      redirect: false
+      redirect: false,
+      originalName: null,
+      renamed: false
     };
 
     this.load();
@@ -41,11 +43,23 @@ export default class Dashboard extends React.Component {
   }
 
   updateName = evt => {
-    this.setState({name : evt.target.value});
+    let originalName = !this.state.renamed ? this.state.name : this.state.originalName;
+    this.setState({
+      renamed : true,
+      name : evt.target.value,
+      originalName : originalName
+    });
   }
 
-  saveChanges = async evt => {
+  saveChanges = async () => {
     await update(this.id, { name : this.state.name});
+  }
+
+  cancelChanges = async () => {
+    this.setState({
+      name : this.state.originalName,
+      renamed : false
+    });
   }
 
   renderEditMode = (state) => {
@@ -57,7 +71,7 @@ export default class Dashboard extends React.Component {
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'save'} to={`/dashboard/${this.id}`} onClick={this.saveChanges}>Save</Link> |
-          <Link to={`/dashboard/${this.id}`}>Cancel</Link>
+          <Link id={'cancel'} to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
         </div>
       </div>
     )

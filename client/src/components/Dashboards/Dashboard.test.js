@@ -126,4 +126,16 @@ describe('edit mode', async () => {
         node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
         expect(node).toHaveState('name', input);
     });
+
+    it('should reset name on cancel', () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Dashboard {...props} />);
+        node.setState({loaded: true, name: 'test name'});
+
+        const input = 'asdf';
+        node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+
+        node.find('a#cancel').simulate('click');
+        expect(node).toHaveState('name', 'test name');
+    });
 });

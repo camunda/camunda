@@ -17,7 +17,9 @@ export default class Report extends React.Component {
       lastModified: null,
       lastModifier: null,
       loaded: false,
-      redirect: false
+      redirect: false,
+      originalName: null,
+      renamed: false
     };
 
     this.loadReport();
@@ -63,7 +65,12 @@ export default class Report extends React.Component {
   }
 
   updateName = evt => {
-    this.setState({name : evt.target.value});
+    let originalName = !this.state.renamed ? this.state.name : this.state.originalName;
+    this.setState({
+      renamed : true,
+      name : evt.target.value,
+      originalName : originalName
+    });
   }
 
   updateReport = async (field, newValue) => {
@@ -92,10 +99,11 @@ export default class Report extends React.Component {
     });
   }
 
-  cancel = async evt => {
+  cancel = async () => {
     const reportResult = await getReportData(this.id);
-
     this.setState({
+      name : this.state.originalName,
+      renamed : false,
       data: {...this.state.originalData},
       reportResult
     });
@@ -110,7 +118,7 @@ export default class Report extends React.Component {
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'save'} to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
-          <Link to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+          <Link id={'cancel'} to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
           <ControlPanel {...data} onChange={this.updateReport} />
         </div>
 
