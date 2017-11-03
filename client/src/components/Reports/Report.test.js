@@ -212,4 +212,19 @@ describe('edit mode', async () => {
         await node.instance().cancel();
         expect(node).toHaveState('name', 'test name');
     });
+
+    it('should invoke cancel', async () => {
+        props.match.params.viewMode = 'edit';
+        const node = mount(<Report {...props} />);
+
+        const spy = jest.spyOn(node.instance(), 'cancel');
+        node.setState({loaded: true, name: 'test name'});
+
+        const input = 'asdf';
+        await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+
+        await node.find('a#cancel').simulate('click');
+        expect(spy).toHaveBeenCalled();
+        expect(node).toHaveState('name', 'test name');
+    });
 });
