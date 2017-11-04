@@ -81,7 +81,11 @@ public class RawDataCommand extends ReportCommand {
   }
 
   private LocalDateTime convertDate(Date date) {
-    return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    if (date != null) {
+      return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    } else {
+      return null;
+    }
   }
 
   private List<RawDataProcessInstanceDto> cutRawDataSizeToMaxSize(List<RawDataProcessInstanceDto> rawData) {

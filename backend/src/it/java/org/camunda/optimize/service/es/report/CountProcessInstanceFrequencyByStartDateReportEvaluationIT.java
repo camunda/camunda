@@ -425,6 +425,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(1));
   }
 
+
   private FilterMapDto createDateFilter(String operator, String type, Date dateValue) {
     FilterMapDto filter ;
     filter = new FilterMapDto();

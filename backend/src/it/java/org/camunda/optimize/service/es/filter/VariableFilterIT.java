@@ -402,10 +402,10 @@ public class VariableFilterIT {
 
   @Test
   public void multipleNumericInequalityVariableFilter() throws Exception {
-    String processDefinitionId = deploySimpleProcessDefinition();
-
-    // given
     for (String variableType : NUMERIC_TYPES) {
+      // given
+      String processDefinitionId = deploySimpleProcessDefinition();
+
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
       engineRule.startProcessInstance(processDefinitionId, variables);
@@ -424,10 +424,8 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 1L);
-
-      embeddedOptimizeRule.restartImportCycle();
-      elasticSearchRule.cleanAndVerify();
     }
+
   }
 
   @Test
@@ -545,10 +543,10 @@ public class VariableFilterIT {
 
   @Test
   public void numericUnequalVariableFilter() throws Exception {
-    String processDefinitionId = deploySimpleProcessDefinition();
-
     for (String variableType : NUMERIC_TYPES) {
       // given
+      String processDefinitionId = deploySimpleProcessDefinition();
+
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
       engineRule.startProcessInstance(processDefinitionId, variables);
@@ -566,9 +564,6 @@ public class VariableFilterIT {
 
       // then
       assertResults(testDefinition, 2, 2L);
-
-      embeddedOptimizeRule.restartImportCycle();
-      elasticSearchRule.cleanAndVerify();
     }
   }
 

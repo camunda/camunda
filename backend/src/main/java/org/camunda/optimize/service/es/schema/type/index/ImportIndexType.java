@@ -1,0 +1,34 @@
+package org.camunda.optimize.service.es.schema.type.index;
+
+import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+@Component
+public class ImportIndexType extends StrictTypeMappingCreator {
+
+  public static final String IMPORT_INDEX = "importIndex";
+  public static final String MAX_ENTITIES_COUNT = "maxEntityCount";
+  public static final String ENGINE = "engine";
+
+  @Override
+  public String getType() {
+    return configurationService.getImportIndexType();
+  }
+
+  @Override
+  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    return xContentBuilder
+      .startObject(ENGINE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(IMPORT_INDEX)
+        .field("type", "long")
+      .endObject()
+      .startObject(MAX_ENTITIES_COUNT)
+        .field("type", "long")
+      .endObject();
+  }
+}

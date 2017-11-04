@@ -4,10 +4,9 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportScheduler;
-import org.camunda.optimize.service.importing.ImportSchedulerFactory;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.engine.importing.EngineImportBuilder;
+import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -204,27 +203,23 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     jettyServer.destroy();
   }
 
-  public ImportJobExecutor getImportJobExecutor() {
-    return jerseyCamundaOptimize.getApplicationContext().getBean(ImportJobExecutor.class);
-  }
-
-  public ImportServiceProvider getImportServiceProvider() {
-    return jerseyCamundaOptimize.getApplicationContext().getBean(ImportServiceProvider.class);
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return jerseyCamundaOptimize.getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
   }
 
   public void startImportSchedulers() {
-    for (ImportScheduler scheduler : getImportSchedulerFactory ().getInstances().values()) {
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.start();
     }
   }
 
-  private ImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimizeApplicationContext().getBean(ImportSchedulerFactory.class);
+  private EngineImportBuilder getImportSchedulerFactory() {
+    return getOptimizeApplicationContext().getBean(EngineImportBuilder.class);
   }
 
   @Override
   public void disableImportSchedulers() {
-    for (ImportScheduler scheduler : getImportSchedulerFactory ().getInstances().values()) {
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.disable();
     }
   }

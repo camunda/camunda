@@ -1,27 +1,27 @@
 package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 
 @Component
 public class ImportProgressReporter {
 
-  @Autowired
-  private ImportServiceProvider importServiceProvider;
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private IndexHandlerProvider indexHandlerProvider;
+  private ImportIndexHandlerProvider indexHandlerProvider;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -31,7 +31,7 @@ public class ImportProgressReporter {
 
   public boolean allEntitiesAreImported() {
     try {
-      return computeImportProgress() == 100;
+      return computeImportProgress() == 100L;
     } catch (OptimizeException e) {
       return false;
     }
@@ -43,7 +43,7 @@ public class ImportProgressReporter {
    * @throws OptimizeException if there were problems while trying to fetch the historic activity instance count
    * or the process definition count from the engine.
    */
-  public int computeImportProgress() throws OptimizeException {
+  public long computeImportProgress() throws OptimizeException {
     List<String> connectedEngineAliases = getAllConnectedEngines();
     if (connectedEngineAliases.isEmpty()) {
       throw new OptimizeException(
@@ -51,24 +51,8 @@ public class ImportProgressReporter {
           "Maybe there is a problem with the connection!"
       );
     }
-    double totalEngineEntityCount = getTotalEngineEntityCount(connectedEngineAliases);
-    double alreadyImportedCount = getAlreadyImportedCount(connectedEngineAliases);
-    if (totalEngineEntityCount > 0) {
-      int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
-      return Math.min(tempResult, 100);
-    } else {
-      return 0;
-    }
-  }
-
-  private double getTotalEngineEntityCount(List<String> connectedEngineAliases) throws OptimizeException {
-    double totalEngineEntityCount = 0;
-    if (configurationService.getConfiguredEngines() != null) {
-      for (String engine : connectedEngineAliases) {
-        totalEngineEntityCount = totalEngineEntityCount + getTotalEngineCount(engine);
-      }
-    }
-    return totalEngineEntityCount;
+    double progress = computeProgress(connectedEngineAliases);
+    return Math.round(progress);
   }
 
   private List<String> getAllConnectedEngines() {
@@ -83,24 +67,29 @@ public class ImportProgressReporter {
     return connectedEngines;
   }
 
-  private double getAlreadyImportedCount(List<String> connectedEngineAliases) {
-    double alreadyImportedCount = 0;
-    for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlersForAliases(connectedEngineAliases)) {
-      alreadyImportedCount += importIndexHandler.getAbsoluteImportIndex();
+  private double computeProgress(List<String> connectedEngineAliases) {
+    double totalProgress = 0;
+    int handlersWithData = 0;
+    for (ImportIndexHandler importIndexHandler : indexHandlerProvider.getAllHandlers()) {
+      OptionalDouble computedProgressOptional = importIndexHandler.computeProgress();
+      Double computedProgress = computedProgressOptional.orElse(0.0);
+      totalProgress += computedProgress;
+      handlersWithData += computedProgressOptional.isPresent()? 1 : 0;
+      logDebugStatement(importIndexHandler.getClass().getSimpleName(),
+        computedProgressOptional.isPresent(),
+        computedProgress);
     }
-    return alreadyImportedCount;
+    totalProgress = totalProgress/handlersWithData;
+    totalProgress = Math.ceil(totalProgress);
+    return totalProgress;
   }
 
-  private double getTotalEngineCount(String engineAlias) throws OptimizeException {
-    double engineCount = 0;
-    for (PaginatedImportService importService : importServiceProvider.getPagedServices(engineAlias)) {
-      ImportIndexHandler indexHandler = indexHandlerProvider.getIndexHandler(
-          importService.getElasticsearchType(),
-          importService.getIndexHandlerType(),
-          engineAlias);
-
-      engineCount += importService.getEngineEntityCount(indexHandler, engineAlias);
-    }
-    return engineCount;
+  private void logDebugStatement(String handlerName, boolean isPresent, Double computedProgress) {
+    logger.debug("[{}] has data to import [{}] and thus the computed progress is [{}]",
+      handlerName,
+      isPresent,
+      computedProgress
+      );
   }
+
 }

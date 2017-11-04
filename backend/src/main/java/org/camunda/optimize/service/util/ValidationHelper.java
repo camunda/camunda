@@ -5,7 +5,6 @@ import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -100,6 +99,12 @@ public class ValidationHelper {
   public static void ensureNotNull(String fieldName, Object object) {
     if (object == null) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be null");
+    }
+  }
+
+  public static void ensureGreaterThanZero(long value) {
+    if( value <= 0) {
+      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
     }
   }
 

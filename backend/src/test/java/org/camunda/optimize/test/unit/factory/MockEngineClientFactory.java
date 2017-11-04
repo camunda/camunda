@@ -15,7 +15,7 @@ import javax.ws.rs.client.Client;
 public class MockEngineClientFactory extends EngineClientFactory {
 
   @Override
-  protected Client newInstance(String engineAlias) {
+  protected Client newInstance() {
     return Mockito.mock(Client.class);
   }
 }

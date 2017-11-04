@@ -35,9 +35,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
-  private ObjectMapper objectMapper;
   private Properties properties;
-  private Client esclient;
+  private static ObjectMapper objectMapper;
+  private static Client esclient;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
@@ -46,21 +46,24 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     properties = PropertyUtil.loadProperties("integration-rules.properties");
   }
 
-  private void init() {
-    initObjectMapper();
-    initTransport();
+  private void initEsclient() {
+    if (esclient == null) {
+      initTransportClient();
+    }
   }
 
   private void initObjectMapper() {
-    objectMapper = new ObjectMapper();
-    objectMapper.setDateFormat(new SimpleDateFormat(getDateFormat()));
+    if (objectMapper==null) {
+      objectMapper = new ObjectMapper();
+      objectMapper.setDateFormat(new SimpleDateFormat(getDateFormat()));
+    }
   }
 
   public String getDateFormat() {
     return properties.getProperty("camunda.optimize.serialization.date.format");
   }
 
-  private void initTransport() {
+  private void initTransportClient() {
     try {
       esclient =
           new PreBuiltTransportClient(Settings.EMPTY)
@@ -87,9 +90,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   protected void starting(Description description) {
-    if (esclient == null) {
-      this.init();
-    }
+    initObjectMapper();
+    this.initEsclient();
     logger.info("Cleaning elasticsearch...");
     this.cleanAndVerify();
     logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
@@ -181,6 +183,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     CredentialsDto user = new CredentialsDto();
     user.setUsername("demo");
     user.setPassword("demo");
+
+    System.out.println("Objectmapper" + objectMapper);
 
     esclient
       .prepareIndex(

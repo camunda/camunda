@@ -38,7 +38,7 @@
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
-  <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
+  <bean id="elasticsearchImportJobExecutor" class="org.camunda.optimize.service.es.ElasticsearchImportJobExecutor" />
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

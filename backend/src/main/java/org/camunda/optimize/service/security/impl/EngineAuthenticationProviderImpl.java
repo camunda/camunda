@@ -2,9 +2,7 @@ package org.camunda.optimize.service.security.impl;
 
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.engine.GroupInfoDto;
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.EngineCredentialsDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -27,7 +25,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
   private static final Logger logger = LoggerFactory.getLogger(EngineAuthenticationProviderImpl.class);
 
   @Autowired
-  private EngineClientFactory engineClientFactory;
+  private Client engineClient;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -44,7 +42,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
   private boolean performAuthorizationCheck(EngineCredentialsDto credentialsDto) {
     boolean isAuthorized = false;
     try {
-      Response response = getEngineClient(credentialsDto.getEngineAlias())
+      Response response = engineClient
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
           .queryParam(USER_ID, credentialsDto.getUsername())
           .path(configurationService.getGetGroupsEndpoint())
@@ -69,14 +67,10 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
     return isAuthorized;
   }
 
-  private Client getEngineClient(String engineAlias) {
-    return engineClientFactory.getInstance(engineAlias);
-  }
-
   private boolean performAuthenticationCheck(EngineCredentialsDto credentialsDto) {
     boolean authenticated = false;
     try {
-      Response response = getEngineClient(credentialsDto.getEngineAlias())
+      Response response = engineClient
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
           .path(configurationService.getUserValidationEndpoint())
           .request(MediaType.APPLICATION_JSON)

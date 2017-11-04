@@ -2,13 +2,13 @@ package org.camunda.optimize.dto.engine;
 
 public class CountDto {
 
-  protected int count;
+  protected long count;
 
-  public int getCount() {
+  public long getCount() {
     return count;
   }
 
-  public void setCount(int count) {
+  public void setCount(long count) {
     this.count = count;
   }
 }

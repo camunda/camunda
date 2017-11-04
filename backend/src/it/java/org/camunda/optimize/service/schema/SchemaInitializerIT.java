@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.schema;
 
-import org.camunda.optimize.dto.optimize.importing.EventDto;
+import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -54,7 +54,7 @@ public class SchemaInitializerIT {
   @Autowired
   private Client transportClient;
   @Autowired
-  private ImportJobExecutor jobExecutor;
+  private ElasticsearchImportJobExecutor jobExecutor;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -161,8 +161,8 @@ public class SchemaInitializerIT {
     thrown.expect(TypeMissingException.class);
 
     // when I add a document to an unknown type
-    EventDto eventDto = new EventDto();
-    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewType", "12312412", eventDto);
+    FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
+    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewType", "12312412", flowNodeEventDto);
   }
 
   @Test
@@ -174,7 +174,7 @@ public class SchemaInitializerIT {
     thrown.expect(StrictDynamicMappingException.class);
 
     // when we add an event with an undefined type in schema
-    ExtendedEventDto extendedEventDto = new ExtendedEventDto();
+    ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     elasticSearchRule.addEntryToElasticsearch(configurationService.getEventType(), "12312412", extendedEventDto);
   }
 

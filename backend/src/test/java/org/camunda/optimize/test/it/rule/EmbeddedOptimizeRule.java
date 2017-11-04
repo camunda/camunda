@@ -2,18 +2,17 @@ package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.service.engine.importing.EngineImportBuilder;
+import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
+import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
+import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportResult;
-import org.camunda.optimize.service.importing.ImportScheduler;
-import org.camunda.optimize.service.importing.ImportSchedulerFactory;
-import org.camunda.optimize.service.importing.index.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.index.ImportIndexHandler;
-import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
-import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
-import org.camunda.optimize.service.importing.provider.IndexHandlerProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -26,6 +25,7 @@ import javax.ws.rs.core.Response;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
@@ -41,17 +41,59 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * until nothing more exists in scheduler queue.
    */
   public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
-    scheduleImport();
 
-    for (ImportScheduler scheduler : getImportSchedulerFactory().getInstances().values()) {
-      while (scheduler.hasStillJobsToExecute()) {
-        getJobExecutor().startExecutingImportJobs();
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
+    EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
+    engineImportJobExecutor.startExecutingImportJobs();
+    elasticsearchImportJobExecutor.startExecutingImportJobs();
 
-        executeIfJobsArePresent(scheduler);
+    resetImportStartIndexes();
 
-        //make sure that all entities are updated in ES between import rounds
-        getJobExecutor().stopExecutingImportJobs();
-      }
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+
+      scheduleImportAndWaitUntilIsFinished(scheduler);
+      // we need another round for the scroll based import index handlers
+      scheduleImportAndWaitUntilIsFinished(scheduler);
+    }
+  }
+
+  private void scheduleImportAndWaitUntilIsFinished(EngineImportJobScheduler scheduler) {
+    scheduler.scheduleUntilCantCreateNewJobs();
+    makeSureAllScheduledJobsAreFinished();
+  }
+
+  public void storeImportIndexesToElasticsearch() {
+    StoreIndexesEngineImportJobFactory storeIndexesEngineImportJobFactory =
+      getApplicationContext().getBean(StoreIndexesEngineImportJobFactory.class);
+    storeIndexesEngineImportJobFactory.disableBlocking();
+
+    Runnable storeIndexesEngineImportJob =
+      storeIndexesEngineImportJobFactory.getNextJob().get();
+
+    try {
+      getEngineImportJobExecutor().executeImportJob(storeIndexesEngineImportJob);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    makeSureAllScheduledJobsAreFinished();
+  }
+
+  private void makeSureAllScheduledJobsAreFinished() {
+    CountDownLatch synchronizationObject = new CountDownLatch(2);
+    SynchronizationEngineImportJob synchronizationEngineImportJob =
+      new SynchronizationEngineImportJob(getElasticsearchImportJobExecutor(), synchronizationObject);
+
+    try {
+      getEngineImportJobExecutor().executeImportJob(synchronizationEngineImportJob);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    try {
+      synchronizationObject.countDown();
+      synchronizationObject.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
   }
 
@@ -61,62 +103,38 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * NOTE: this method does not invoke scheduling of jobs
    */
   public void importEngineEntitiesRound() throws OptimizeException {
-    getJobExecutor().startExecutingImportJobs();
+    getElasticsearchImportJobExecutor().startExecutingImportJobs();
 
-    for (ImportScheduler scheduler : getImportSchedulerFactory().getInstances().values()) {
-      executeIfJobsArePresent(scheduler);
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler.scheduleNextRound();
     }
 
-    getJobExecutor().stopExecutingImportJobs();
-  }
-
-  /**
-   * This method is a "reconstructed" version of {@link org.camunda.optimize.service.importing.ImportScheduler#executeNextJob()},
-   * without backoff handling
-   *
-   * @param scheduler
-   * @throws OptimizeException
-   */
-  private void executeIfJobsArePresent(ImportScheduler scheduler) throws OptimizeException {
-    if (scheduler.hasStillJobsToExecute()) {
-      ImportScheduleJob nextToExecute = scheduler.getNextToExecute();
-      ImportResult result = getServiceProvider().getImportService(
-          nextToExecute.getElasticsearchType(),
-          nextToExecute.getEngineAlias()
-      ).executeImport(nextToExecute);
-
-      boolean engineHasStillNewData = scheduler.handleIndexes(result, nextToExecute);
-      result.setEngineHasStillNewData(engineHasStillNewData);
-      if (engineHasStillNewData) {
-        scheduler.postProcess(nextToExecute, result);
-      }
-    }
   }
 
   public void scheduleImport() {
-    for (ImportScheduler scheduler : getImportSchedulerFactory().getInstances().values()) {
-      scheduler.scheduleNewImportRound();
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler.scheduleNextRound();
     }
   }
 
-  private ImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimize().getApplicationContext().getBean(ImportSchedulerFactory.class);
+  private EngineImportBuilder getImportSchedulerFactory() {
+    return getOptimize().getApplicationContext().getBean(EngineImportBuilder.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {
     return TestEmbeddedCamundaOptimize.getInstance();
   }
 
-  private ScheduleJobFactory getScheduleFactory() {
-    return getOptimize().getImportScheduleFactory();
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return getOptimize().getElasticsearchImportJobExecutor();
   }
 
-  private ImportServiceProvider getServiceProvider() {
-    return getOptimize().getImportServiceProvider();
+  public void initializeSchema() {
+    getOptimize().initializeSchema();
   }
 
-  public ImportJobExecutor getJobExecutor() {
-    return getOptimize().getImportJobExecutor();
+  public EngineImportJobExecutor getEngineImportJobExecutor() {
+    return getOptimize().getEngineImportJobExecutor();
   }
 
   protected void starting(Description description) {
@@ -155,17 +173,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  public void initializeSchema() {
-    getOptimize().initializeSchema();
-  }
-
   protected void finished(Description description) {
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
     reloadConfiguration();
-    for (ImportScheduler scheduler : getImportSchedulerFactory().getInstances().values()) {
-      scheduler.clearQueue();
-    }
-    getIndexProvider().unregisterHandlers();
   }
 
   public void reloadConfiguration() {
@@ -200,11 +210,14 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getConfigurationService().getProcessDefinitionEndpoint();
   }
 
-  public List<Integer> getImportIndexes() {
-    List<Integer> indexes = new LinkedList<>();
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
-      indexes.add(importIndexHandler.getAbsoluteImportIndex());
-    }
+  public List<Long> getImportIndexes() {
+    List<Long> indexes = new LinkedList<>();
+    getIndexProvider()
+      .getAllEntitiesBasedHandlers()
+      .forEach(handler -> indexes.add(handler.getImportIndex()));
+    getIndexProvider()
+      .getDefinitionBasedHandlers()
+      .forEach(handler -> indexes.add(handler.getCurrentDefinitionBasedImportIndex()));
     return indexes;
   }
 
@@ -218,33 +231,21 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return indexes;
   }
 
-  public void restartImportCycle() {
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
-      importIndexHandler.restartImportCycle();
-    }
-  }
-
   public void resetImportStartIndexes() {
-    getJobExecutor().startExecutingImportJobs();
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
-    getJobExecutor().stopExecutingImportJobs();
   }
 
-  public int getProgressValue() {
+  public long getProgressValue() {
     return this.target()
         .path("status/import-progress")
         .request()
         .get(ProgressDto.class).getProgress();
   }
 
-  public void startImportScheduler() {
-    getOptimize().startImportSchedulers();
-  }
-
   public boolean isImporting() {
-    return this.getJobExecutor().isActive();
+    return this.getElasticsearchImportJobExecutor().isActive();
   }
 
   public ApplicationContext getApplicationContext() {
@@ -267,12 +268,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
   public void updateImportIndex() {
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+    for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers()) {
       importIndexHandler.updateImportIndex();
     }
   }
 
-  private IndexHandlerProvider getIndexProvider() {
-    return getApplicationContext().getBean(IndexHandlerProvider.class);
+  private ImportIndexHandlerProvider getIndexProvider() {
+    return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
 }
