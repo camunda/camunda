@@ -21,11 +21,12 @@ public class DashboardType extends StrictTypeMappingCreator {
   public static final String X_POSITION = "x";
   public static final String Y_POSITION = "y";
 
-  public static final String DIMENSION = "dimension";
+  public static final String DIMENSION = "dimensions";
   public static final String HEIGHT = "height";
   public static final String WIDTH = "width";
 
-  public static final String REPORT_ID = "reportId";
+  public static final String REPORT_ID = "id";
+  public static final String REPORT_NAME = "name";
 
   @Override
   public String getType() {
@@ -69,13 +70,16 @@ public class DashboardType extends StrictTypeMappingCreator {
       .startObject(REPORT_ID)
         .field("type", "keyword")
       .endObject()
+      .startObject(REPORT_NAME)
+        .field("type", "keyword")
+      .endObject()
       .startObject(POSITION)
         .field("type", "nested")
         .startObject("properties");
           addNestedPositionField(newBuilder)
         .endObject()
       .endObject()
-      .startObject(POSITION)
+      .startObject(DIMENSION)
         .field("type", "nested")
         .startObject("properties");
           addNestedDimensionField(newBuilder)
@@ -84,7 +88,7 @@ public class DashboardType extends StrictTypeMappingCreator {
     return newBuilder;
   }
 
-  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(X_POSITION)
         .field("type", "keyword")
@@ -94,7 +98,7 @@ public class DashboardType extends StrictTypeMappingCreator {
       .endObject();
   }
 
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(WIDTH)
         .field("type", "keyword")

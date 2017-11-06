@@ -1,0 +1,28 @@
+.add-button {
+  z-index: 2;
+  background-color: white;
+  border: 2px dashed darkgray;
+  color: darkgray;
+  position: absolute;
+  cursor: pointer;
+}
+
+.add-sign-container {
+  width: 100%;
+  height: 70%;
+}
+
+.add-text {
+  color: darkgray;
+  text-align: center;
+  font-size: 1.5vw;
+}
+
+.add-sign {
+  position: relative;
+  float: left;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3vw;
+}

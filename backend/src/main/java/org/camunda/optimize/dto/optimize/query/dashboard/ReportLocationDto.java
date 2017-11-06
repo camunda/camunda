@@ -2,16 +2,25 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 
 public class ReportLocationDto {
 
-  protected String reportId;
+  protected String id;
+  protected String name;
   protected PositionDto position;
-  protected DimensionDto dimension;
+  protected DimensionDto dimensions;
 
-  public String getReportId() {
-    return reportId;
+  public String getName() {
+    return name;
   }
 
-  public void setReportId(String reportId) {
-    this.reportId = reportId;
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   public PositionDto getPosition() {
@@ -22,11 +31,11 @@ public class ReportLocationDto {
     this.position = position;
   }
 
-  public DimensionDto getDimension() {
-    return dimension;
+  public DimensionDto getDimensions() {
+    return dimensions;
   }
 
-  public void setDimension(DimensionDto dimension) {
-    this.dimension = dimension;
+  public void setDimensions(DimensionDto dimensions) {
+    this.dimensions = dimensions;
   }
 }

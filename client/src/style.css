@@ -12,3 +12,7 @@ input[type="password"] {
   border: 1px solid lightgray;
   padding: 4px;
 }
+
+main {
+  padding: 10px;
+}
