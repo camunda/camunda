@@ -2,26 +2,40 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Report from './Report';
-import {loadSingleReport, remove, getReportData, saveReport} from './service';
+import {getReportData, loadSingleReport, remove, saveReport} from './service';
 
-jest.mock('./service', () => {return {
-  loadSingleReport: jest.fn(),
-  remove: jest.fn(),
-  getReportData: jest.fn(),
-  saveReport: jest.fn()
-}});
+jest.mock('./service', () => {
+  return {
+    loadSingleReport: jest.fn(),
+    remove: jest.fn(),
+    getReportData: jest.fn(),
+    saveReport: jest.fn()
+  }
+});
 
-jest.mock('react-router-dom', () => {return {
-  Redirect: ({to}) => {return <div>REDIRECT to {to}</div>},
-  Link: ({children, to, onClick, id}) => {return <a id={id} href={to} onClick={onClick}>{children}</a>}
-}});
+jest.mock('react-router-dom', () => {
+  return {
+    Redirect: ({to}) => {
+      return <div>REDIRECT to {to}</div>
+    },
+    Link: ({children, to, onClick, id}) => {
+      return <a id={id} href={to} onClick={onClick}>{children}</a>
+    }
+  }
+});
 
-jest.mock('moment', () => () => {return {
-  format: () => 'some date'
-}});
+jest.mock('moment', () => () => {
+  return {
+    format: () => 'some date'
+  }
+});
 
-jest.mock('./ControlPanel', () => {return () => <div>ControlPanel</div>});
-jest.mock('./ReportView', () => {return () => <div>ReportView</div>});
+jest.mock('./ControlPanel', () => {
+  return () => <div>ControlPanel</div>
+});
+jest.mock('./ReportView', () => {
+  return () => <div>ReportView</div>
+});
 
 
 const props = {
@@ -138,7 +152,7 @@ it('should evaluate the report after updating', async () => {
   expect(getReportData).toHaveBeenCalled();
 });
 
-it('should reset the report data to its original state after canceling', async() => {
+it('should reset the report data to its original state after canceling', async () => {
   const node = mount(<Report {...props} />);
 
   await node.instance().loadReport();
@@ -161,70 +175,70 @@ it('should save a changed report', async () => {
 
 describe('edit mode', async () => {
 
-    it('should provide a link to view mode', async () => {
-        props.match.params.viewMode = 'edit';
+  it('should provide a link to view mode', async () => {
+    props.match.params.viewMode = 'edit';
 
-        const node = mount(<Report {...props} />);
-        node.setState({loaded: true});
+    const node = mount(<Report {...props} />);
+    node.setState({loaded: true});
 
-        expect(node).toIncludeText('Save');
-        expect(node).toIncludeText('Cancel');
-        expect(node).not.toIncludeText('Edit');
-    });
+    expect(node).toIncludeText('Save');
+    expect(node).toIncludeText('Cancel');
+    expect(node).not.toIncludeText('Edit');
+  });
 
-    it('should provide name edit input', async () => {
-        props.match.params.viewMode = 'edit';
-        const node = mount(<Report {...props} />);
-        node.setState({loaded: true, name: 'test name'});
+  it('should provide name edit input', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    node.setState({loaded: true, name: 'test name'});
 
-        expect(node.find('input#name')).toBePresent();
-    });
+    expect(node.find('input#name')).toBePresent();
+  });
 
-    it('should invoke update on save click', async () => {
-        props.match.params.viewMode = 'edit';
-        const node = mount(<Report {...props} />);
-        node.setState({loaded: true, name: 'test name'});
+  it('should invoke update on save click', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    node.setState({loaded: true, name: 'test name'});
 
-        node.find('a#save').simulate('click');
+    node.find('a#save').simulate('click');
 
-        expect(saveReport).toHaveBeenCalled();
-    });
+    expect(saveReport).toHaveBeenCalled();
+  });
 
-    it('should update name on input change', async () => {
-        props.match.params.viewMode = 'edit';
-        const node = mount(<Report {...props} />);
-        node.setState({loaded: true, name: 'test name'});
+  it('should update name on input change', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    node.setState({loaded: true, name: 'test name'});
 
-        const input = 'asdf';
-        node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-        expect(node).toHaveState('name', input);
-    });
+    const input = 'asdf';
+    node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+    expect(node).toHaveState('name', input);
+  });
 
-    it('should reset name on cancel', async () => {
-        props.match.params.viewMode = 'edit';
-        const node = mount(<Report {...props} />);
+  it('should reset name on cancel', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
 
-        node.setState({loaded: true});
+    node.setState({loaded: true});
 
-        const input = 'asdf';
-        await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+    const input = 'asdf';
+    await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
-        await node.instance().cancel();
-        expect(node).toHaveState('name', 'name');
-    });
+    await node.instance().cancel();
+    expect(node).toHaveState('name', 'name');
+  });
 
-    it('should invoke cancel', async () => {
-        props.match.params.viewMode = 'edit';
-        const node = mount(<Report {...props} />);
+  it('should invoke cancel', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
 
-        const spy = jest.spyOn(node.instance(), 'cancel');
-        node.setState({loaded: true});
+    const spy = jest.spyOn(node.instance(), 'cancel');
+    node.setState({loaded: true});
 
-        const input = 'asdf';
-        await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+    const input = 'asdf';
+    await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
-        await node.find('a#cancel').simulate('click');
-        expect(spy).toHaveBeenCalled();
-        expect(node).toHaveState('name', 'name');
-    });
+    await node.find('a#cancel').simulate('click');
+    expect(spy).toHaveBeenCalled();
+    expect(node).toHaveState('name', 'name');
+  });
 });

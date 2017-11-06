@@ -12,52 +12,68 @@ const sampleEntity = {
   lastModified: '2017-11-11T11:11:11.1111+0200',
 };
 
-jest.mock('./service', () => {return {
-  load: jest.fn(),
-  remove: jest.fn(),
-  create: jest.fn()
-}});
-jest.mock('react-router-dom', () => {return {
-  Redirect: ({to}) => {return <div>REDIRECT to {to}</div>},
-}});
+jest.mock('./service', () => {
+  return {
+    load: jest.fn(),
+    remove: jest.fn(),
+    create: jest.fn()
+  }
+});
+jest.mock('react-router-dom', () => {
+  return {
+    Redirect: ({to}) => {
+      return <div>REDIRECT to {to}</div>
+    },
+  }
+});
 
 jest.mock('moment', () => (...params) => {
   const initialData = params;
   return {
     format: () => 'some date',
-    getInitialData: () => {return initialData},
+    getInitialData: () => {
+      return initialData
+    },
     isBefore: (date) => {
-        return new Date(initialData) < new Date(date.getInitialData());
+      return new Date(initialData) < new Date(date.getInitialData());
     }
   }
 });
 
-jest.mock('../Table', () => {return {
-  Table: ({data}) => <table><tbody><tr><td>{JSON.stringify(data)}</td></tr></tbody></table>
-}});
+jest.mock('../Table', () => {
+  return {
+    Table: ({data}) => <table>
+      <tbody>
+      <tr>
+        <td>{JSON.stringify(data)}</td>
+      </tr>
+      </tbody>
+    </table>
+  }
+});
 
 load.mockReturnValue([sampleEntity]);
 
 it('should display a loading indicator', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
 
   expect(node).toIncludeText('loading');
 });
 
 it('should initially load data', () => {
-  mount(<EntityList api='endpoint' label='Dashboard' />);
+  mount(<EntityList api='endpoint' label='Dashboard'/>);
 
   expect(load).toHaveBeenCalled();
 });
 
 it('should only load the specified amount of results', () => {
-  mount(<EntityList api='endpoint' label='Dashboard' displayOnly='5' />);
+  mount(<EntityList api='endpoint' label='Dashboard' displayOnly='5'/>);
 
   expect(load).toHaveBeenCalledWith('endpoint', '5');
 });
 
 it('should display a table with the results', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
 
   node.setState({
     loaded: true,
@@ -71,7 +87,7 @@ it('should display a table with the results', () => {
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {
   create.mockReturnValueOnce('2');
-  const node = mount(<EntityList api='endpoint' label='Dashboard' />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
 
   await node.find('button').simulate('click');
 
@@ -79,7 +95,7 @@ it('should call new entity on click on the new entity button and redirect to the
 });
 
 it('should display all operations per default', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -91,7 +107,7 @@ it('should display all operations per default', () => {
 });
 
 it('should not display any operations if none are specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={[]} />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={[]}/>);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -103,7 +119,7 @@ it('should not display any operations if none are specified', () => {
 });
 
 it('should display a create button if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['create']} />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['create']}/>);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -113,7 +129,7 @@ it('should display a create button if specified', () => {
 });
 
 it('should display an edit link if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['edit']} />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['edit']}/>);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -123,7 +139,7 @@ it('should display an edit link if specified', () => {
 });
 
 it('should display a delete button if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']} />);
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']}/>);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -134,16 +150,16 @@ it('should display a delete button if specified', () => {
 
 
 it('should be able to sort by date', async () => {
-    const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']} sortBy={'lastModified'}/>);
-    const sampleEntity2 = {
-        id: '2',
-        name: 'Test Entity 2',
-        lastModifier: 'Admin 2',
-        lastModified: '2017-11-11T11:12:11.1111+0200',
-    };
-    load.mockReturnValue([sampleEntity, sampleEntity2]);
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']} sortBy={'lastModified'}/>);
+  const sampleEntity2 = {
+    id: '2',
+    name: 'Test Entity 2',
+    lastModifier: 'Admin 2',
+    lastModified: '2017-11-11T11:12:11.1111+0200',
+  };
+  load.mockReturnValue([sampleEntity, sampleEntity2]);
 
-    //this will make method to be invoked twice, but we can wait on second call
-    await node.instance().loadEntities();
-    expect(node.state().data[0]).toEqual(sampleEntity2);
+  //this will make method to be invoked twice, but we can wait on second call
+  await node.instance().loadEntities();
+  expect(node.state().data[0]).toEqual(sampleEntity2);
 });
