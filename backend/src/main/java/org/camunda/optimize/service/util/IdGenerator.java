@@ -1,12 +1,11 @@
 package org.camunda.optimize.service.util;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.UUID;
 
 public class IdGenerator {
 
-  private static AtomicLong idCounter = new AtomicLong();
-
   public static String getNextId() {
-    return String.valueOf(idCounter.getAndIncrement());
+    UUID randomUUID = UUID.randomUUID();
+    return randomUUID.toString();
   }
 }
