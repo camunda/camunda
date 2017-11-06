@@ -10,6 +10,7 @@ export default function Home() {
       api='dashboard'
       label='Dashboard'
       displayOnly='5'
+      sortBy={'lastModified'}
       operations={['edit']}>
 
       <Link to='/dashboards'>View all Dashboards...</Link>
@@ -20,6 +21,7 @@ export default function Home() {
       api='report'
       label='Report'
       displayOnly='5'
+      sortBy={'lastModified'}
       operations={['edit']}>
 
       <Link to='/reports'>View all Reports...</Link>

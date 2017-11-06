@@ -21,9 +21,8 @@ export default class EntityList extends React.Component {
 
   loadEntities = async () => {
     const response = await load(this.props.api, this.props.displayOnly);
-
     this.setState({
-      data: response,
+      data: this.applySorting(response),
       loaded: true
     });
   }
@@ -66,6 +65,19 @@ export default class EntityList extends React.Component {
 
     return entry;
   })
+
+  applySorting = data => {
+    if (this.props.sortBy) {
+      return [].concat(data)
+        .sort((a, b) => {
+          const dateA = moment(a[this.props.sortBy]);
+          const dateB = moment(b[this.props.sortBy]);
+          return dateA.isBefore(dateB);
+        });
+    } else {
+      return data;
+    }
+  }
 
   render() {
     const {redirectToEntity, loaded} = this.state;
