@@ -2,6 +2,34 @@ import React from 'react';
 
 import {loadProcessDefinitions} from './service';
 
+const options = {
+  view: [
+    {key: 'count_processInstance', label: 'Count Process Instance Frequency'},
+    {key: 'count_flowNode', label: 'Count Flow Node Frequency'},
+    {key: 'avg_processInstance', label: 'Average Process Instance Duration'},
+    {key: 'avg_flowNode', label: 'Average Flow Node Duration'}
+  ],
+  groupBy: [
+    {key: 'none_null', label: 'None'},
+    {key: 'flowNodes_null', label: 'Flow Nodes'},
+    {key: 'startDate_year', label: 'Start Date of Process Instance - Year'},
+    {key: 'startDate_month', label: 'Start Date of Process Instance - Month'},
+    {key: 'startDate_week', label: 'Start Date of Process Instance - Week'},
+    {key: 'startDate_day', label: 'Start Date of Process Instance - Day'},
+    {key: 'startDate_hour', label: 'Start Date of Process Instance - Hour'}
+  ],
+  visualizeAs: [
+    {key: 'number', label: 'Number'},
+    {key: 'table', label: 'Table'},
+    {key: 'bar', label: 'Bar Chart'},
+    {key: 'line', label: 'Line Chart'},
+    {key: 'pie', label: 'Pie Chart'},
+    {key: 'badge', label: 'Diagram Badge'},
+    {key: 'heat', label: 'Heatmap'},
+    {key: 'json', label: 'JSON Dump'}
+  ]
+};
+
 export default class ControlPanel extends React.Component {
   constructor(props) {
     super(props);
@@ -49,31 +77,15 @@ export default class ControlPanel extends React.Component {
       </select>
       View:
       <select value={parseView(this.props.view)} onChange={this.changeView}>
-        <option value='count_processInstance'>Count Process Instance Frequency</option>
-        <option value='count_flowNode'>Count Flow Node Frequency</option>
-        <option value='avg_processInstance'>Average Process Instance Duration</option>
-        <option value='avg_flowNode'>Average Flow Node Duration</option>
+        {renderOptions('view')}
       </select>
       Group By:
       <select value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
-        <option value='none_null'>None</option>
-        <option value='flowNodes_null'>Flow Nodes</option>
-        <option value='startDate_year'>Start Date of Process Instance - Year</option>
-        <option value='startDate_month'>Start Date of Process Instance - Month</option>
-        <option value='startDate_week'>Start Date of Process Instance - Week</option>
-        <option value='startDate_day'>Start Date of Process Instance - Day</option>
-        <option value='startDate_hour'>Start Date of Process Instance - Hour</option>
+        {renderOptions('groupBy')}
       </select>
       Visualize as:
       <select value={this.props.visualization} onChange={this.changeVisualization}>
-        <option value='number'>Number</option>
-        <option value='table'>Table</option>
-        <option value='bar'>Bar Chart</option>
-        <option value='line'>Line Chart</option>
-        <option value='pie'>Pie Chart</option>
-        <option value='badge'>Diagram Badge</option>
-        <option value='heat'>Heatmap</option>
-        <option value='json'>JSON Dump</option>
+        {renderOptions('visualizeAs')}
       </select>
     </div>
   }
@@ -84,4 +96,8 @@ function parseView({operation, entity}) {
 }
 function parseGroup({type, unit}) {
   return `${type}_${unit}`;
+}
+
+function renderOptions(prop) {
+  return options[prop].map(({key, label}) => <option key={key} value={key}>{label}</option>);
 }
