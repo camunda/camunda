@@ -14,10 +14,12 @@ export default class ErrorBoundary extends React.Component {
   }
 
   render() {
-    if (this.state.error) {
+    const {error} = this.state;
+
+    if (error) {
       return (<div>
         <h1>Oh no :(</h1>
-        <p>{this.state.error.message}</p>
+        <pre>{error.message || error}</pre>
       </div>);
     }
     return this.props.children;

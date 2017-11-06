@@ -1,9 +1,21 @@
 import React from 'react';
 
-import './ReportView.css';
+import {ErrorBoundary} from '../ErrorBoundary';
+
+import {Number, Json} from './views';
 
 export default class ReportView extends React.Component {
   render() {
-    return (<textarea readOnly value={JSON.stringify(this.props.data, null, 2)} className='ReportView__textarea' />);
+    const {data} = this.props;
+
+    let view;
+    switch(data.visualization) {
+      case 'number': view = <Number data={data.result.number} />; break;
+      default: view = <Json data={data} />; break;
+    }
+
+    return (<ErrorBoundary>
+      {view}
+    </ErrorBoundary>);
   }
 }

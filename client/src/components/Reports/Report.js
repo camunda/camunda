@@ -28,7 +28,7 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
     const reportResult = await getReportData(this.id);
 
-    const mockedData = {
+    const stateData = data || {
       processDefinitionId: '',
       view: {operation: 'count', entity: 'processInstance'},
       groupBy: {type: 'none', unit: null},
@@ -40,16 +40,8 @@ export default class Report extends React.Component {
       name,
       lastModifier,
       lastModified,
-      // data: data || { //TODO: use this as soon as backend stores the correct info
-      //   processDefinitionId: '',
-      //   view: {operation: 'count', entity: 'processInstance'},
-      //   groupBy: {type: 'none', unit: null},
-      //   visualization: 'json',
-      //   filter: null
-      // },
-      // originalData: data,
-      data: mockedData,
-      originalData: mockedData,
+      data: stateData,
+      originalData: stateData,
       reportResult,
       loaded: true,
       originalName: name
