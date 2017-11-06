@@ -1,7 +1,9 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -16,8 +18,10 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.ReportEvaluationManager.RAW_DATA_OPERATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,6 +203,107 @@ public class ReportRestServiceIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
     assertThat(getAllReports(token).size(), is(0));
+  }
+  
+  @Test
+  public void evaluateReportByIdWithoutAuthorization() throws Exception {
+   // when
+    Response response = embeddedOptimizeRule.target("report/123/evaluate")
+      .request()
+      .get();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void evaluateReportById() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String id = createAndStoreDefaultReportDefinition("someRandomId");
+
+    // then
+    Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void evaluateUnsavedReportWithoutAuthorization() throws Exception {
+    // when
+    Response response =
+        embeddedOptimizeRule.target("report/evaluate")
+            .request()
+            .post(Entity.json(""));
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void evaluateUnsavedReport() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    ReportDataDto reportDataDto = createDefaultReportData("someRandomId");
+
+    // then
+    Response response = embeddedOptimizeRule.target("report/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .post(Entity.json(reportDataDto));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+  }
+
+  private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
+    String id = createNewReportHelper();
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("something");
+    report.setLastModifier("something");
+    report.setName("something");
+    LocalDateTime someDate = LocalDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  private ReportDataDto createDefaultReportData(String processDefinitionId) {
+    ReportDataDto reportData = new ReportDataDto();
+    reportData.setProcessDefinitionId(processDefinitionId);
+    reportData.setVisualization("table");
+    reportData.setView(new ViewDto(RAW_DATA_OPERATION, null));
+    return reportData;
+  }
+
+  private String createNewReportHelper() {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+      embeddedOptimizeRule.target("report")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+      embeddedOptimizeRule.target("report/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .put(Entity.json(updatedReport));
+    assertThat(response.getStatus(), is(204));
   }
 
   private String addEmptyReportToOptimize(String token) {

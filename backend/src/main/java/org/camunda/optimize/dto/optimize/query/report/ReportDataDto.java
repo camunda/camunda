@@ -52,4 +52,6 @@ public class ReportDataDto {
   public void setVisualization(String visualization) {
     this.visualization = visualization;
   }
+
+
 }

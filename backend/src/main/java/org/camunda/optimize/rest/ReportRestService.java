@@ -1,13 +1,18 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.es.report.ReportEvaluationManager;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.security.TokenService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +40,8 @@ import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorRe
 @Component
 public class ReportRestService {
 
+  private Logger logger = LoggerFactory.getLogger(getClass());
+
   @Autowired
   private ReportWriter reportWriter;
 
@@ -43,6 +50,9 @@ public class ReportRestService {
 
   @Autowired
   private TokenService tokenService;
+
+  @Autowired
+  private ReportEvaluationManager reportEvaluationManager;
 
   /**
    * Creates an empty report.
@@ -94,6 +104,7 @@ public class ReportRestService {
       reports = QueryParamAdjustmentUtil.adjustResultListAccordingToQueryParameters(reports, queryParameters);
       return Response.ok(reports, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
+      logger.error("Error while trying to fetch all stored reports from Elasticsearch", e);
       return buildServerErrorResponse(e);
     }
   }
@@ -108,6 +119,7 @@ public class ReportRestService {
     try {
       return Response.ok(reportReader.getReport(reportId), MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
+      logger.error("Error during retrieval of a report", e);
       return buildServerErrorResponse(e);
     }
   }
@@ -121,5 +133,42 @@ public class ReportRestService {
     reportWriter.deleteReport(reportId);
   }
 
+  /**
+   * Retrieves the report definition to the given report id and then
+   * evaluate this report and return the result.
+   * @param reportId the id of the report
+   * @return A report definition that is also containing the actual result of the report evaluation.
+   */
+  @GET
+  @Path("/{id}/evaluate")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response evaluateReport(@PathParam("id") String reportId) {
+    try {
+      ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+      ReportResultDto result = reportEvaluationManager.evaluate(reportDefinition.getData());
+      return Response.ok(result, MediaType.APPLICATION_JSON).build();
+    } catch (Exception e) {
+      logger.error("Error during report evaluation", e);
+      return buildServerErrorResponse(e);
+    }
+  }
 
+  /**
+   * Evaluates the given report and returns the result.
+   * @return A report definition that is also containing the actual result of the report evaluation.
+   */
+  @POST
+  @Path("/evaluate")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response evaluateReport(ReportDataDto reportData) {
+    try {
+      ReportResultDto result = reportEvaluationManager.evaluate(reportData);
+      return Response.ok(result, MediaType.APPLICATION_JSON).build();
+    } catch (Exception e) {
+      logger.error("Error during report evaluation", e);
+      return buildServerErrorResponse(e);
+    }
+  }
 }

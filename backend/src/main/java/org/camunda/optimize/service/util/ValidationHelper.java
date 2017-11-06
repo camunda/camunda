@@ -4,6 +4,9 @@ import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
@@ -61,6 +64,42 @@ public class ValidationHelper {
   public static void ensureGreaterThanZero(int value) {
     if( value <= 0) {
       throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
+    }
+  }
+
+  public static void validate(ReportDataDto dataDto) {
+    ensureNotNull("report data", dataDto);
+    ViewDto viewDto = dataDto.getView();
+    ensureNotNull("view", viewDto);
+    ensureNotEmpty("view operation", viewDto.getOperation());
+    ensureNotEmpty("visualization", dataDto.getVisualization());
+    ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dataDto.getProcessDefinitionId());
+    if (dataDto.getFilter() != null && dataDto.getFilter().getDates() != null) {
+      for (DateFilterDto date : dataDto.getFilter().getDates()) {
+        ensureNotEmpty("date filter operator", date.getOperator());
+        ensureNotEmpty("date filter type", date.getType());
+        ensureNotEmpty("date filter value", date.getValue());
+      }
+    }
+    if (dataDto.getFilter() != null && dataDto.getFilter().getVariables() != null) {
+      for (VariableFilterDto variable : dataDto.getFilter().getVariables()) {
+        ensureNotEmpty("variable filter operator", variable.getOperator());
+        ensureNotEmpty("variable filter name", variable.getName());
+        ensureNotEmpty("variable filter type", variable.getType());
+        ensureNotEmpty("variable filter value", variable.getValues());
+      }
+    }
+    if (dataDto.getFilter() != null && dataDto.getFilter().getExecutedFlowNodes() != null) {
+      for (ExecutedFlowNodeFilterDto flowNodeFilter : dataDto.getFilter().getExecutedFlowNodes()) {
+        ensureNotEmpty("flow node filter operator", flowNodeFilter.getOperator());
+        ensureNotEmpty("flow node filter value", flowNodeFilter.getValues());
+      }
+    }
+  }
+
+  public static void ensureNotNull(String fieldName, Object object) {
+    if (object == null) {
+      throw new OptimizeValidationException(fieldName + " is not allowed to be null");
     }
   }
 

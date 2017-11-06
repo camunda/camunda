@@ -57,6 +57,18 @@ public class ProcessInstanceDto implements OptimizeDto {
     }
   }
 
+  public List<VariableInstanceDto> obtainAllVariables() {
+    List<VariableInstanceDto> variables = new ArrayList<>();
+    variables.addAll(stringVariables);
+    variables.addAll(integerVariables);
+    variables.addAll(longVariables);
+    variables.addAll(shortVariables);
+    variables.addAll(doubleVariables);
+    variables.addAll(dateVariables);
+    variables.addAll(booleanVariables);
+    return variables;
+  }
+
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
   }

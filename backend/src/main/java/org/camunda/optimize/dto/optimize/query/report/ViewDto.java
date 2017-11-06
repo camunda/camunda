@@ -5,6 +5,15 @@ public class ViewDto {
   protected String operation;
   protected String entity;
 
+  public ViewDto() {
+    super();
+  }
+
+  public ViewDto(String operation, String entity) {
+    this.operation = operation;
+    this.entity = entity;
+  }
+
   public String getOperation() {
     return operation;
   }
