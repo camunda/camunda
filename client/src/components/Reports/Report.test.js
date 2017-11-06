@@ -31,7 +31,7 @@ const props = {
 const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
-  lastModified: '2017-11-11T11:11:11.1111+0200'
+  lastModified: '2017-11-11T11:11:11.1111+0200',
 };
 
 loadSingleReport.mockReturnValue(sampleReport);
@@ -204,13 +204,13 @@ describe('edit mode', async () => {
         props.match.params.viewMode = 'edit';
         const node = mount(<Report {...props} />);
 
-        node.setState({loaded: true, name: 'test name'});
+        node.setState({loaded: true});
 
         const input = 'asdf';
         await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
         await node.instance().cancel();
-        expect(node).toHaveState('name', 'test name');
+        expect(node).toHaveState('name', 'name');
     });
 
     it('should invoke cancel', async () => {
@@ -218,13 +218,13 @@ describe('edit mode', async () => {
         const node = mount(<Report {...props} />);
 
         const spy = jest.spyOn(node.instance(), 'cancel');
-        node.setState({loaded: true, name: 'test name'});
+        node.setState({loaded: true});
 
         const input = 'asdf';
         await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
         await node.find('a#cancel').simulate('click');
         expect(spy).toHaveBeenCalled();
-        expect(node).toHaveState('name', 'test name');
+        expect(node).toHaveState('name', 'name');
     });
 });

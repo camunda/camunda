@@ -16,8 +16,7 @@ export default class Dashboard extends React.Component {
       lastModifier: null,
       loaded: false,
       redirect: false,
-      originalName: null,
-      renamed: false
+      originalName: null
     };
 
     this.load();
@@ -30,7 +29,8 @@ export default class Dashboard extends React.Component {
       name,
       lastModifier,
       lastModified,
-      loaded: true
+      loaded: true,
+      originalName: name
     });
   }
 
@@ -43,26 +43,22 @@ export default class Dashboard extends React.Component {
   }
 
   updateName = evt => {
-    let originalName = !this.state.renamed ? this.state.name : this.state.originalName;
+
     this.setState({
-      renamed : true,
-      name : evt.target.value,
-      originalName : originalName
+      name : evt.target.value
     });
   }
 
   saveChanges = async () => {
     await update(this.id, { name : this.state.name});
     this.setState({
-      originalName: this.state.name,
-      renamed: false
+      originalName: this.state.name
     });
   }
 
   cancelChanges = async () => {
     this.setState({
-      name : this.state.originalName,
-      renamed : false
+      name : this.state.originalName
     });
   }
 

@@ -130,7 +130,7 @@ describe('edit mode', async () => {
     it('should reset name on cancel', () => {
         props.match.params.viewMode = 'edit';
         const node = mount(<Dashboard {...props} />);
-        node.setState({loaded: true, name: 'test name'});
+        node.setState({loaded: true, name: 'test name', originalName: 'test name'});
 
         const input = 'asdf';
         node.find(`input[id="name"]`).simulate('change', {target: {value: input}});

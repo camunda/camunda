@@ -18,8 +18,7 @@ export default class Report extends React.Component {
       lastModifier: null,
       loaded: false,
       redirect: false,
-      originalName: null,
-      renamed: false
+      originalName: null
     };
 
     this.loadReport();
@@ -52,7 +51,8 @@ export default class Report extends React.Component {
       data: mockedData,
       originalData: mockedData,
       reportResult,
-      loaded: true
+      loaded: true,
+      originalName: name
     });
   }
 
@@ -65,11 +65,8 @@ export default class Report extends React.Component {
   }
 
   updateName = evt => {
-    let originalName = !this.state.renamed ? this.state.name : this.state.originalName;
     this.setState({
-      renamed : true,
-      name : evt.target.value,
-      originalName : originalName
+      name : evt.target.value
     });
   }
 
@@ -96,8 +93,7 @@ export default class Report extends React.Component {
 
     this.setState({
       originalData: {...this.state.data},
-      originalName: this.state.name,
-      renamed: false
+      originalName: this.state.name
     });
   }
 
@@ -105,7 +101,6 @@ export default class Report extends React.Component {
     const reportResult = await getReportData(this.id);
     this.setState({
       name : this.state.originalName,
-      renamed : false,
       data: {...this.state.originalData},
       reportResult
     });
