@@ -19,7 +19,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -48,7 +48,7 @@ public class TestTopicClient
     private final ClientApiRule apiRule;
     private final int partitionId;
 
-    private boolean isTopicSubscriptionOpen = false;
+    private final List<Integer> partitionIdsOfOpenSubscription = new ArrayList<>();
 
     public TestTopicClient(final ClientApiRule apiRule, final int partitionId)
     {
@@ -193,6 +193,7 @@ public class TestTopicClient
                 .moveMessageStreamToHead()
                 .subscribedEvents()
                 .filter(s -> s.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION)
+                .filter(s -> s.partitionId() == partitionId)
                 .filter(filter);
     }
 
@@ -205,12 +206,12 @@ public class TestTopicClient
 
     private void ensureOpenTopicSubscription()
     {
-        if (!isTopicSubscriptionOpen)
+        if (!partitionIdsOfOpenSubscription.contains(partitionId))
         {
             final ExecuteCommandResponse response = apiRule.openTopicSubscription(partitionId, "test", 0).await();
             assertThat(response.key()).isGreaterThanOrEqualTo(0);
 
-            isTopicSubscriptionOpen = true;
+            partitionIdsOfOpenSubscription.add(partitionId);
         }
     }
 

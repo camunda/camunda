@@ -147,7 +147,7 @@ public class PendingDeploymentCheck implements Runnable
             final PendingDeployment pendingDeployment = iterator.next();
             final long timeout = pendingDeployment.getTimeout();
 
-            if (timeout <= currentTime)
+            if (timeout > 0 && timeout <= currentTime)
             {
                 timedOutDeploymentKeys.add(pendingDeployment.getDeploymentKey());
             }

@@ -19,16 +19,24 @@ package io.zeebe.broker.system.deployment.data;
 
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * bpmn-process-id -> latest-version
+ * (bpmn-process-id, topicName) -> latest-version
  */
 public class WorkflowVersions
 {
-    private static final int VALUE_LENGTH = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int BPMN_PROCESS_ID_LENGTH = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int VALUE_LENGTH = BPMN_PROCESS_ID_LENGTH + LogStream.MAX_TOPIC_NAME_LENGTH;
+
+    private static final int BPMN_PROCESS_ID_OFFSET = 0;
+    private static final int TOPIC_NAME_OFFSET = BPMN_PROCESS_ID_LENGTH;
+
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[VALUE_LENGTH]);
 
     private final Bytes2LongZbMap map = new Bytes2LongZbMap(VALUE_LENGTH);
 
@@ -37,13 +45,23 @@ public class WorkflowVersions
         return map;
     }
 
-    public int getLatestVersion(DirectBuffer bpmnProcessId, int missingValue)
+    public int getLatestVersion(DirectBuffer topicName, DirectBuffer bpmnProcessId, int missingValue)
     {
-        return (int) map.get(bpmnProcessId, 0, bpmnProcessId.capacity(), missingValue);
+        wrap(topicName, bpmnProcessId);
+
+        return (int) map.get(buffer, 0, buffer.capacity(), missingValue);
     }
 
-    public void setLatestVersion(DirectBuffer bpmnProcessId, int version)
+    public void setLatestVersion(DirectBuffer topicName, DirectBuffer bpmnProcessId, int version)
     {
-        map.put(bpmnProcessId, 0, bpmnProcessId.capacity(), version);
+        wrap(topicName, bpmnProcessId);
+
+        map.put(buffer, 0, buffer.capacity(), version);
+    }
+
+    private void wrap(DirectBuffer topicName, DirectBuffer bpmnProcessId)
+    {
+        buffer.putBytes(BPMN_PROCESS_ID_OFFSET, bpmnProcessId, 0, bpmnProcessId.capacity());
+        buffer.putBytes(TOPIC_NAME_OFFSET, topicName, 0, topicName.capacity());
     }
 }

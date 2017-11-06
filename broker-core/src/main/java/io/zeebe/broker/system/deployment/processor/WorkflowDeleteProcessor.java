@@ -20,10 +20,10 @@ package io.zeebe.broker.system.deployment.processor;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.deployment.data.PendingWorkflows;
+import io.zeebe.broker.system.deployment.data.*;
+import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
-import io.zeebe.broker.system.deployment.data.WorkflowVersions;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.data.WorkflowState;
@@ -31,6 +31,7 @@ import org.agrona.collections.IntArrayList;
 
 public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEvent>
 {
+    private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
     private final WorkflowVersions workflowVersions;
 
@@ -39,10 +40,12 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
     private final IntArrayList partitionIds = new IntArrayList();
 
     public WorkflowDeleteProcessor(
+            PendingDeployments pendingDeployments,
             PendingWorkflows pendingWorkflows,
             WorkflowVersions workflowVersions,
             WorkflowRequestMessageSender workflowMessageSender)
     {
+        this.pendingDeployments = pendingDeployments;
         this.pendingWorkflows = pendingWorkflows;
         this.workflowVersions = workflowVersions;
         this.workflowMessageSender = workflowMessageSender;
@@ -97,9 +100,9 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
             pendingWorkflows.remove(workflowKey, partitionId);
         }
 
-        // TODO the version between different topics should be independent
+        final PendingDeployment pendingDeployment = pendingDeployments.get(workflowEvent.getDeploymentKey());
         // reset the workflow's version which is incremented on creation
-        workflowVersions.setLatestVersion(workflowEvent.getBpmnProcessId(), workflowEvent.getVersion() - 1);
+        workflowVersions.setLatestVersion(pendingDeployment.getTopicName(), workflowEvent.getBpmnProcessId(), workflowEvent.getVersion() - 1);
     }
 
 }

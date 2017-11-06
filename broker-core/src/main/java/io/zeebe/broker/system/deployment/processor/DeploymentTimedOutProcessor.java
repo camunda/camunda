@@ -51,7 +51,7 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     {
         final PendingDeployment pendingDeployment = pendingDeployments.get(event.getKey());
 
-        if (pendingDeployment != null)
+        if (pendingDeployment != null && pendingDeployment.getTimeout() > 0)
         {
             event.getValue().setState(REJECT_DEPLOYMENT);
 
@@ -122,11 +122,12 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     public void updateState(TypedEvent<DeploymentEvent> event)
     {
         final DeploymentEvent deploymentEvent = event.getValue();
-        final long deploymentKey = event.getKey();
 
         if (deploymentEvent.getState() == REJECT_DEPLOYMENT)
         {
-            pendingDeployments.remove(deploymentKey);
+            // reset timeout to avoid another invocation
+            // -- remove the pending deployment when all delete workflow messages are sent while process the reject event
+            pendingDeployments.put(event.getKey(), event.getPosition(), -1L, deploymentEvent.getTopicName());
         }
     }
 }

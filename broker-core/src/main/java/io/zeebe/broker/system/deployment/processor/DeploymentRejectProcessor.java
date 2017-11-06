@@ -20,10 +20,17 @@ package io.zeebe.broker.system.deployment.processor;
 import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_REJECTED;
 
 import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 
 public class DeploymentRejectProcessor implements TypedEventProcessor<DeploymentEvent>
 {
+    private final PendingDeployments pendingDeployments;
+
+    public DeploymentRejectProcessor(PendingDeployments pendingDeployments)
+    {
+        this.pendingDeployments = pendingDeployments;
+    }
 
     @Override
     public void processEvent(TypedEvent<DeploymentEvent> event)
@@ -46,5 +53,11 @@ public class DeploymentRejectProcessor implements TypedEventProcessor<Deployment
     public long writeEvent(TypedEvent<DeploymentEvent> event, TypedStreamWriter writer)
     {
         return writer.writeFollowupEvent(event.getKey(), event.getValue());
+    }
+
+    @Override
+    public void updateState(TypedEvent<DeploymentEvent> event)
+    {
+        pendingDeployments.remove(event.getKey());
     }
 }

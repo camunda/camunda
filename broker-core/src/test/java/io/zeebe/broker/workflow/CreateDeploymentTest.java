@@ -317,6 +317,30 @@ public class CreateDeploymentTest
             .containsOnly(workflowKeys.get(0));
     }
 
+    @Test
+    public void shouldAssignWorkflowVersionsPerTopic()
+    {
+        // given
+        apiRule.createTopic("foo", 1);
+        apiRule.createTopic("bar", 1);
+
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
+                .startEvent()
+                .endEvent()
+                .done();
+
+        // when
+        apiRule.topic().deploy("foo", definition);
+        apiRule.topic().deploy("bar", definition);
+
+        // then
+        final SubscribedEvent eventFoo = apiRule.topic(apiRule.getSinglePartitionId("foo")).receiveSingleEvent(workflowEvents("CREATED"));
+        final SubscribedEvent eventBar = apiRule.topic(apiRule.getSinglePartitionId("bar")).receiveSingleEvent(workflowEvents("CREATED"));
+
+        assertThat(eventFoo.event().get("version")).isEqualTo(1);
+        assertThat(eventBar.event().get("version")).isEqualTo(1);
+    }
+
     private byte[] bpmnXml(final WorkflowDefinition definition)
     {
         return Bpmn.convertToString(definition).getBytes(UTF_8);

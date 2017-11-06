@@ -177,6 +177,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
     private void assignVersionToWorkflows(DeploymentEvent deploymentEvent, final WorkflowDefinition definition)
     {
+        final DirectBuffer topicName = deploymentEvent.getTopicName();
         final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
 
         for (Workflow workflow : definition.getWorkflows())
@@ -185,7 +186,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
             {
                 final DirectBuffer bpmnProcessId = workflow.getBpmnProcessId();
 
-                final int latestVersion = workflowVersions.getLatestVersion(bpmnProcessId, 0);
+                final int latestVersion = workflowVersions.getLatestVersion(topicName, bpmnProcessId, 0);
 
                 deployedWorkflows.add()
                     .setBpmnProcessId(bpmnProcessId)
@@ -267,7 +268,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
         if (deploymentEvent.getState() == DeploymentState.DEPLOYMENT_VALIDATED)
         {
-            updateWorkflowVersions(deploymentEvent.deployedWorkflows());
+            updateWorkflowVersions(deploymentEvent.getTopicName(), deploymentEvent.deployedWorkflows());
 
             final long timeout = ClockUtil.getCurrentTimeInMillis() + timeoutInMillis;
 
@@ -275,15 +276,14 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         }
     }
 
-    private void updateWorkflowVersions(final ValueArray<DeployedWorkflow> deployedWorkflows)
+    private void updateWorkflowVersions(final DirectBuffer topicName, final ValueArray<DeployedWorkflow> deployedWorkflows)
     {
         final Iterator<DeployedWorkflow> iterator = deployedWorkflows.iterator();
         while (iterator.hasNext())
         {
             final DeployedWorkflow deployedWorkflow = iterator.next();
 
-            // TODO the version between different topics should be independent
-            workflowVersions.setLatestVersion(deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
+            workflowVersions.setLatestVersion(topicName, deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
         }
     }
 
