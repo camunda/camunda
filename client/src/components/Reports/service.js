@@ -41,7 +41,7 @@ export async function getReportData(query) {
       unit: 'day' // month, hour, day, year, week, null
     },
     visualization: 'number',
-    result: {number: 1234}
+    result: 1234
   };
 }
 

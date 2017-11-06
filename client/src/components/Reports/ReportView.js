@@ -10,7 +10,7 @@ export default class ReportView extends React.Component {
 
     let view;
     switch(data.visualization) {
-      case 'number': view = <Number data={data.result.number} />; break;
+      case 'number': view = <Number data={data.result} />; break;
       default: view = <Json data={data} />; break;
     }
 

@@ -11,7 +11,7 @@ jest.mock('./views', () => {return {
 it('should display a number if visualization is number', () => {
   const node = mount(<ReportView data={{
     visualization: 'number',
-    result: {number: 1234}
+    result: 1234
   }} />);
 
   expect(node).toIncludeText('Number: 1234');
@@ -20,7 +20,7 @@ it('should display a number if visualization is number', () => {
 it('should display a json if visualization is json', () => {
   const node = mount(<ReportView data={{
     visualization: 'json',
-    result: {number: 1234}
+    result: 1234
   }} />);
 
   expect(node).toIncludeText('JSON');
