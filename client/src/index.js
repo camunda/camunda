@@ -16,19 +16,22 @@ import {
   Dashboards,
   Reports,
   Report,
-  Dashboard
+  Dashboard,
+  ErrorBoundary
 } from './components';
 
 ReactDOM.render(<Router>
   <div>
     <Header name="Camunda Optimize" />
     <main>
-      <Route exact path="/login" component={Login} />
-      <PrivateRoute exact path="/" component={Home} />
-      <PrivateRoute exact path="/dashboards" component={Dashboards} />
-      <PrivateRoute exact path="/reports" component={Reports} />
-      <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
-      <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+      <ErrorBoundary>
+        <Route exact path="/login" component={Login} />
+        <PrivateRoute exact path="/" component={Home} />
+        <PrivateRoute exact path="/dashboards" component={Dashboards} />
+        <PrivateRoute exact path="/reports" component={Reports} />
+        <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
+        <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+      </ErrorBoundary>
     </main>
     <Footer version="2.0.0" />
   </div>
