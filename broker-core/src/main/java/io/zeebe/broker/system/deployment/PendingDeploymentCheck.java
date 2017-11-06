@@ -20,6 +20,7 @@ package io.zeebe.broker.system.deployment;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
@@ -36,9 +37,12 @@ import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
+import org.slf4j.Logger;
 
 public class PendingDeploymentCheck implements Runnable
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
 
@@ -89,7 +93,11 @@ public class PendingDeploymentCheck implements Runnable
 
             if (pendingRequest.isDone())
             {
-                if (!pendingRequest.isFailed())
+                if (pendingRequest.isFailed())
+                {
+                    LOG.info("Create workflow request with id '{}' failed.", pendingRequest.getRequestId());
+                }
+                else
                 {
                     final DirectBuffer responseBuffer = pendingRequest.join();
                     response.wrap(responseBuffer, 0, responseBuffer.capacity());

@@ -18,15 +18,20 @@
 package io.zeebe.broker.system.deployment.processor;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
+import org.slf4j.Logger;
 
 public class DeploymentValidatedProcessor implements TypedEventProcessor<DeploymentEvent>
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final PendingDeployments pendingDeployments;
 
     public DeploymentValidatedProcessor(PendingDeployments pendingDeployments)
@@ -38,6 +43,8 @@ public class DeploymentValidatedProcessor implements TypedEventProcessor<Deploym
     public void processEvent(TypedEvent<DeploymentEvent> event)
     {
         // just add the event position to the index
+
+        LOG.debug("Create deployment with key '{}' on topic '{}'.", event.getKey(), bufferAsString(event.getValue().getTopicName()));
     }
 
     @Override

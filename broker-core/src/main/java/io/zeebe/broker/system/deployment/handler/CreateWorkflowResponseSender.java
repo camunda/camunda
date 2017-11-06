@@ -17,11 +17,15 @@
  */
 package io.zeebe.broker.system.deployment.handler;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.deployment.message.CreateWorkflowResponse;
 import io.zeebe.transport.*;
+import org.slf4j.Logger;
 
 public class CreateWorkflowResponseSender
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final CreateWorkflowResponse response = new CreateWorkflowResponse();
 
     private final ServerResponse serverResponse = new ServerResponse();
@@ -40,6 +44,9 @@ public class CreateWorkflowResponseSender
             long requestId,
             int requestStreamId)
     {
+        LOG.debug("Respond to create workflow request with id '{}'. Deployment-Key: {}, Workflow-Key: {}",
+                  requestId, deploymentKey, workflowKey);
+
         response
             .partitionId(partitionId)
             .workflowKey(workflowKey)

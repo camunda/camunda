@@ -19,6 +19,7 @@ package io.zeebe.broker.system.deployment.processor;
 
 import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_REJECTED;
 import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_VALIDATED;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.io.PrintWriter;
@@ -27,6 +28,7 @@ import java.time.Duration;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
@@ -43,9 +45,12 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public class DeploymentCreateProcessor implements TypedEventProcessor<DeploymentEvent>
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final BpmnModelApi bpmn = new BpmnModelApi();
 
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
@@ -76,11 +81,22 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
         boolean success = false;
 
-        // reject deployment if a previous deployment is not completed yet
-        // -- otherwise, we could run into problems with the workflow versions when the previous deployment is rejected
-        if (isTopicCreated(topicName) && !hasPendingDeploymentForTopic(topicName))
+        if (isTopicCreated(topicName))
         {
-            success = readAndValidateWorkflows(deploymentEvent);
+            if (hasPendingDeploymentForTopic(topicName))
+            {
+                // reject deployment if a previous deployment is not completed yet
+                // -- otherwise, we could run into problems with the workflow versions when the previous deployment is rejected
+                LOG.info("Cannot create deployment: pending deployment found for topic with name '{}'.", bufferAsString(topicName));
+            }
+            else
+            {
+                success = readAndValidateWorkflows(deploymentEvent);
+            }
+        }
+        else
+        {
+            LOG.info("Cannot create deployment: no topic found with name '{}'.", bufferAsString(topicName));
         }
 
         deploymentEvent.setState(success ? DEPLOYMENT_VALIDATED : DEPLOYMENT_REJECTED);

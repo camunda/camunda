@@ -20,6 +20,7 @@ package io.zeebe.broker.system.deployment.handler;
 import java.util.*;
 import java.util.function.IntConsumer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
@@ -29,9 +30,12 @@ import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.collection.IntIterator;
 import org.agrona.collections.IntArrayList;
+import org.slf4j.Logger;
 
 public class WorkflowRequestMessageSender
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final CreateWorkflowRequest createRequest = new CreateWorkflowRequest();
 
     private final DeleteWorkflowMessage deleteMessage = new DeleteWorkflowMessage();
@@ -63,7 +67,15 @@ public class WorkflowRequestMessageSender
             .bpmnProcessId(event.getBpmnProcessId())
             .bpmnXml(event.getBpmnXml());
 
-        return forEachPartition(partitionIds, createRequest::partitionId, addr -> sendRequest(createRequest, addr));
+        return forEachPartition(partitionIds, createRequest::partitionId, addr ->
+        {
+            final long requestId = sendRequest(createRequest, addr);
+
+            LOG.debug("Send create workflow request to '{}'. Request-Id: {}, Deployment-Key: {}, Workflow-Key: {}",
+                      addr, requestId, event.getDeploymentKey(), workflowKey);
+
+            return requestId >= 0;
+        });
     }
 
     public boolean sendDeleteWorkflowMessage(
@@ -78,7 +90,13 @@ public class WorkflowRequestMessageSender
             .bpmnProcessId(event.getBpmnProcessId())
             .bpmnXml(event.getBpmnXml());
 
-        return forEachPartition(partitionIds, deleteMessage::partitionId, addr -> sendMessage(deleteMessage, addr));
+        return forEachPartition(partitionIds, deleteMessage::partitionId, addr ->
+        {
+            LOG.debug("Send delete workflow message to '{}'. Deployment-Key: {}, Workflow-Key: {}",
+                      addr, event.getDeploymentKey(), workflowKey);
+
+            return sendMessage(deleteMessage, addr);
+        });
     }
 
     private boolean forEachPartition(IntArrayList partitionIds, IntConsumer partitionIdConsumer, BooleanConsumer<SocketAddress> action)
@@ -107,7 +125,7 @@ public class WorkflowRequestMessageSender
         return success;
     }
 
-    private boolean sendRequest(final BufferWriter request, final SocketAddress addr)
+    private long sendRequest(final BufferWriter request, final SocketAddress addr)
     {
         final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
 
@@ -117,11 +135,11 @@ public class WorkflowRequestMessageSender
         {
             pendingRequests.add(clientRequest);
 
-            return true;
+            return clientRequest.getRequestId();
         }
         else
         {
-            return false;
+            return -1L;
         }
     }
 

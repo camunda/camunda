@@ -21,6 +21,7 @@ import static io.zeebe.broker.workflow.data.DeploymentState.REJECT_DEPLOYMENT;
 
 import java.util.function.Consumer;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
@@ -30,9 +31,12 @@ import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIt
 import io.zeebe.broker.workflow.data.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import org.agrona.collections.LongArrayList;
+import org.slf4j.Logger;
 
 public class DeploymentTimedOutProcessor implements TypedEventProcessor<DeploymentEvent>
 {
+    private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
     private final TypedStreamReader reader;
@@ -57,6 +61,8 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
 
             workflowKeys.clear();
             collectWorkflowKeysForDeployment(event.getKey());
+
+            LOG.info("Creation of deployment with key '{}' timed out. Delete containg workflows with keys: {}", event.getKey(), workflowKeys);
         }
 
         if (!event.getMetadata().hasRequestMetadata())
