@@ -1,4 +1,4 @@
-import {get, post, del, put} from 'request';
+import {get, del, put} from 'request';
 
 export async function loadSingleReport(id) {
   const response = await get('/api/report/' + id);

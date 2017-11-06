@@ -53,6 +53,10 @@ export default class Dashboard extends React.Component {
 
   saveChanges = async () => {
     await update(this.id, { name : this.state.name});
+    this.setState({
+      originalName: this.state.name,
+      renamed: false
+    });
   }
 
   cancelChanges = async () => {

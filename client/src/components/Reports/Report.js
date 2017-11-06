@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {loadSingleReport, remove, update, getReportData, saveReport} from './service';
+import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
 import ReportView from './ReportView';
 
@@ -95,7 +95,9 @@ export default class Report extends React.Component {
     });
 
     this.setState({
-      originalData: {...this.state.data}
+      originalData: {...this.state.data},
+      originalName: this.state.name,
+      renamed: false
     });
   }
 
