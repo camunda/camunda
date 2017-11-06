@@ -21,6 +21,16 @@ public class ReportType extends StrictTypeMappingCreator {
   public static final String DATA = "data";
   public static final String FILTER = "filter";
 
+  public static final String VIEW = "view";
+  public static final String VIEW_OPERATION = "operation";
+  public static final String VIEW_ENTITY = "entity";
+
+  public static final String GROUP_BY = "groupBy";
+  public static final String GROUP_BY_TYPE = "type";
+  public static final String GROUP_BY_UNIT = "unit";
+
+  public static final String VISUALIZATION = "visualization";
+
   public static final String DATES = "dates";
   public static final String DATE_TYPE = "type";
   public static final String DATE_OPERATOR = "operator";
@@ -83,6 +93,43 @@ public class ReportType extends StrictTypeMappingCreator {
         .startObject("properties");
           addNestedFilterField(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(VIEW)
+        .field("type", "nested")
+        .startObject("properties");
+          addViewField(newBuilder)
+        .endObject()
+      .endObject()
+      .startObject(GROUP_BY)
+        .field("type", "nested")
+        .startObject("properties");
+          addGroupByField(newBuilder)
+        .endObject()
+      .endObject()
+      .startObject(VISUALIZATION)
+        .field("type", "keyword")
+      .endObject();
+    return newBuilder;
+  }
+
+  private XContentBuilder addViewField(XContentBuilder builder) throws IOException {
+    XContentBuilder newBuilder = builder
+      .startObject(VIEW_OPERATION)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(VIEW_ENTITY)
+        .field("type", "keyword")
+      .endObject();
+    return newBuilder;
+  }
+
+  private XContentBuilder addGroupByField(XContentBuilder builder) throws IOException {
+    XContentBuilder newBuilder = builder
+      .startObject(GROUP_BY_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(GROUP_BY_UNIT)
+        .field("type", "keyword")
       .endObject();
     return newBuilder;
   }

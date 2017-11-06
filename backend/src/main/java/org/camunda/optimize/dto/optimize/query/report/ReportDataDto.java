@@ -8,6 +8,10 @@ public class ReportDataDto {
 
   protected String processDefinitionId;
   protected FilterMapDto filter;
+  protected ViewDto view;
+  protected GroupByDto groupBy;
+  protected String visualization;
+
 
   public String getProcessDefinitionId() {
     return processDefinitionId;
@@ -23,5 +27,29 @@ public class ReportDataDto {
 
   public void setFilter(FilterMapDto filter) {
     this.filter = filter;
+  }
+
+  public ViewDto getView() {
+    return view;
+  }
+
+  public void setView(ViewDto view) {
+    this.view = view;
+  }
+
+  public GroupByDto getGroupBy() {
+    return groupBy;
+  }
+
+  public void setGroupBy(GroupByDto groupBy) {
+    this.groupBy = groupBy;
+  }
+
+  public String getVisualization() {
+    return visualization;
+  }
+
+  public void setVisualization(String visualization) {
+    this.visualization = visualization;
   }
 }
