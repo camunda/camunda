@@ -12,7 +12,7 @@ You will be guided through the following steps:
 * [Open a topic subscription](#open-a-topic-subscription)
 
 
-> You can find the complete source code, on [GitHub](https://github.com/zeebe-io/zb-get-started-go-client).
+> You can find the complete source code, on [GitHub](https://github.com/zeebe-io/zeebe-get-started-go-client).
 
 
 ## Prerequisites
@@ -48,6 +48,7 @@ Create a new project using your IDE, or create new Go module with:
 
 ```
 mkdir -p $GOPATH/src/github.com/{{your username}}/zb-example
+cd $GOPATH/src/github.com/{{your username}}/zb-example
 ```
 
 Install Zeebe Go client library:
@@ -92,9 +93,17 @@ You should see similar output:
 
 ```json
 {
+    "default-topic": [
+        {
+            "Host": "0.0.0.0",
+            "Port": 51015,
+            "TopicName": "default-topic",
+            "PartitionID": 1
+        }
+    ],
     "internal-system": [
         {
-            "Host": "172.17.0.2",
+            "Host": "0.0.0.0",
             "Port": 51015,
             "TopicName": "internal-system",
             "PartitionID": 0
@@ -113,8 +122,8 @@ Add a start event and an end event to the diagram and connect the events.
 
 ![model-workflow-step-1](/go-client/order-process-simple.png)
 
-Set the id (i.e., the BPMN process id) and mark the diagram as executable.
-Save the diagram in the project's source folder.
+Set the id to `order-process` (i.e., the BPMN process id) and mark the diagram
+as executable.  Save the diagram in the project's source folder.
 
 
 ## Deploy a workflow
@@ -159,6 +168,7 @@ You should see similar the output:
 {
   "State": "DEPLOYMENT_CREATED",
   "ResourceType": "BPMN_XML",
+  "TopicName": "default-topic",
   "Resource": "..."
 }
 
@@ -173,8 +183,10 @@ zbctl create workflow order-process.bpmn
 
 ## Create a workflow instance
 
-Finally, we are ready to create a first instance of the deployed workflow.
-A workflow instance is created of a specific version of the workflow, which can be set on creation.
+Finally, we are ready to create a first instance of the deployed workflow.  A
+workflow instance is created of a specific version of the workflow, which can
+be set on creation. If the version is set to `-1` the latest version of the
+workflow is used.
 
 ```go
 package main
@@ -217,8 +229,10 @@ Run the program and verify that the workflow instance is created. You should see
 ```json
 {
   "State": "WORKFLOW_INSTANCE_CREATED",
-  "ResourceType": "",
-  "Resource": null
+  "BPMNProcessID": "order-process",
+  "Version": 1,
+  "Payload": "gadvcmRlcklkpTMxMjQz",
+  "PayloadJSON": null
 }
 ```
 
@@ -236,9 +250,10 @@ Here, you see the current state of the workflow instance which includes active t
 
 ## Work on a task
 
-Now we want to do some work within your workflow.
-First, add a few service tasks to the BPMN diagram and set the required attributes.
-Then extend your main class and open a task subscription to process tasks which are created when the workflow instance reaches a service task.
+Now we want to do some work within your workflow.  First, add a few service
+tasks to the BPMN diagram and set the required attributes.  Then extend your
+`main.go` file and open a task subscription to process tasks which are created
+when the workflow instance reaches a service task.
 
 Open the BPMN diagram in the Zeebe Modeler.
 Insert a few service tasks between the start and the end event.
@@ -246,19 +261,20 @@ Insert a few service tasks between the start and the end event.
 ![model-workflow-step-2](/go-client/order-process.png)
 
 You need to set the type of each task, which identifies the nature of the work to be performed.
-Set the type of the first task to 'payment-service'.
+Set the type of the first task to `payment-service`.
 
-Add the following lines to open a task subscription for the first tasks type:
+Add the following lines to redeploy the modified process and open a task
+subscription for the first tasks type:
 
 ```go
 package main
 
 import (
-	"errors"
-	"fmt"
-	"github.com/zeebe-io/zbc-go/zbc"
-	"os"
-	"os/signal"
+    "errors"
+    "fmt"
+    "github.com/zeebe-io/zbc-go/zbc"
+    "os"
+    "os/signal"
 )
 
 const topicName = "default-topic"
@@ -267,34 +283,57 @@ const brokerAddr = "0.0.0.0:51015"
 var errClientStartFailed = errors.New("cannot start client")
 
 func main() {
-	zbClient, err := zbc.NewClient(brokerAddr)
-	if err != nil {
-		panic(errClientStartFailed)
-	}
+    zbClient, err := zbc.NewClient(brokerAddr)
+    if err != nil {
+        panic(err)
+    }
 
-	subscriptionCh, subscription, err := zbClient.TaskConsumer(topicName, "sample-app", "payment-service")
+    // deploy workflow
+    response, err := zbClient.CreateWorkflowFromFile(topicName, zbc.BpmnXml, "order-process.bpmn")
+    if err != nil {
+        panic(err)
+    }
 
-	osCh := make(chan os.Signal, 1)
-	signal.Notify(osCh, os.Interrupt)
-	go func() {
-		<-osCh
-		fmt.Println("Closing subscription.")
-		_, err := zbClient.CloseTaskSubscription(subscription)
-		if err != nil {
-			fmt.Println("failed to close subscription: ", err)
-		} else {
-			fmt.Println("Subscription closed.")
-		}
-		os.Exit(0)
-	}()
+    fmt.Println(response.String())
 
-	for {
-		message := <-subscriptionCh
-		fmt.Println(message.String())
+    // create a new workflow instance
+    payload := make(map[string]interface{})
+    payload["orderId"] = "31243"
 
-		response, _ := zbClient.CompleteTask(message)
-		fmt.Println(response)
-	}
+    instance := zbc.NewWorkflowInstance("order-process", -1, payload)
+    msg, err := zbClient.CreateWorkflowInstance(topicName, instance)
+
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(msg.String())
+
+    // open a task subscription for the payment-service task
+    subscriptionCh, subscription, err := zbClient.TaskConsumer(topicName, "sample-app", "payment-service")
+
+    osCh := make(chan os.Signal, 1)
+    signal.Notify(osCh, os.Interrupt)
+    go func() {
+        <-osCh
+        fmt.Println("Closing subscription.")
+        _, err := zbClient.CloseTaskSubscription(subscription)
+        if err != nil {
+            fmt.Println("failed to close subscription: ", err)
+        } else {
+            fmt.Println("Subscription closed.")
+        }
+        os.Exit(0)
+    }()
+
+    for {
+        message := <-subscriptionCh
+        fmt.Println(message.String())
+
+        // complete task after processing
+        response, _ := zbClient.CompleteTask(message)
+        fmt.Println(response)
+    }
 }
 ```
 
