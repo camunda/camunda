@@ -1,10 +1,18 @@
 import {get, post, del} from 'request';
 
-export async function load(api, numResults) {
+export async function load(api, numResults, sortBy) {
   let url = `/api/${api}`;
 
   if(numResults) {
     url += `?numResults=${numResults}`;
+  }
+
+  if (sortBy) {
+    if (url.indexOf('?') >= 0 ) {
+      url += `&orderBy=${sortBy}`
+    } else {
+      url += `?orderBy=${sortBy}`;
+    }
   }
 
   const response = await get(url);

@@ -26,14 +26,14 @@ const props = {};
 
 const sampleReports = [
   {
-    name: 'name 1',
-    lastModifier: 'lastModifier 1',
-    lastModified: '2017-11-11T11:11:11.1111+0200',
-  },
-  {
     name: 'name 2',
     lastModifier: 'lastModifier 2',
     lastModified: '2017-11-11T11:12:11.1111+0200',
+  },
+  {
+    name: 'name 1',
+    lastModifier: 'lastModifier 1',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
   }
 ];
 
@@ -44,5 +44,6 @@ it('should sort dashboards by last modified property', async () => {
 
   //this will make method to be invoked twice, but we can wait on second call
   await node.instance().loadEntities();
-  expect(node.state().data[0]).toEqual(sampleReports[1]);
+  expect(load).toBeCalledWith('dashboard', undefined, 'lastModified');
+  expect(node.state().data[0]).toEqual(sampleReports[0]);
 });

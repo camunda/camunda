@@ -69,7 +69,7 @@ it('should initially load data', () => {
 it('should only load the specified amount of results', () => {
   mount(<EntityList api='endpoint' label='Dashboard' displayOnly='5'/>);
 
-  expect(load).toHaveBeenCalledWith('endpoint', '5');
+  expect(load).toHaveBeenCalledWith('endpoint', '5', undefined);
 });
 
 it('should display a table with the results', () => {
@@ -157,9 +157,10 @@ it('should be able to sort by date', async () => {
     lastModifier: 'Admin 2',
     lastModified: '2017-11-11T11:12:11.1111+0200',
   };
-  load.mockReturnValue([sampleEntity, sampleEntity2]);
+  load.mockReturnValue([sampleEntity2, sampleEntity]);
 
   //this will make method to be invoked twice, but we can wait on second call
   await node.instance().loadEntities();
+  expect(load).toBeCalledWith('endpoint', undefined, 'lastModified');
   expect(node.state().data[0]).toEqual(sampleEntity2);
 });
