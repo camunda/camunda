@@ -39,9 +39,8 @@ public class EventLogger
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 
         final String topicName = "default-topic";
-        final int partitionid = 0;
 
-        System.out.println(String.format("> Open event subscription from topic '%s' and partition '%d'", topicName, partitionid));
+        System.out.println(String.format("> Open event subscription from topic '%s'", topicName));
 
         final TopicSubscription subscription = zeebeClient.topics()
             .newSubscription(topicName)
