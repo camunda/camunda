@@ -3,19 +3,16 @@ import {get, post, del} from 'request';
 export async function load(api, numResults, sortBy) {
   let url = `/api/${api}`;
 
+  let params = {};
   if(numResults) {
-    url += `?numResults=${numResults}`;
+    params['numResults'] = numResults;
   }
 
   if (sortBy) {
-    if (url.indexOf('?') >= 0 ) {
-      url += `&orderBy=${sortBy}`
-    } else {
-      url += `?orderBy=${sortBy}`;
-    }
+    params['orderBy'] = sortBy;
   }
 
-  const response = await get(url);
+  const response = await get(url, params);
 
   return await response.json();
 }
