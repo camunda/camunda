@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Protocol</name>
   <artifactId>zb-protocol</artifactId>
-  <version>0.4.0-SNAPSHOT</version>
+  <version>0.4.0</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -171,7 +171,7 @@
     <url>https://github.com/zeebe-io/zb-protocol</url>
     <connection>scm:git:git@github.com:zeebe-io/zb-protocol.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zb-protocol.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>0.4.0</tag>
   </scm>
 
 </project>
