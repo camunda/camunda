@@ -2,7 +2,7 @@ import React from 'react';
 
 import {ErrorBoundary} from '../ErrorBoundary';
 
-import {Number, Json} from './views';
+import {Number, Json, Table} from './views';
 
 export default class ReportView extends React.Component {
   render() {
@@ -11,6 +11,7 @@ export default class ReportView extends React.Component {
     let view;
     switch(data.visualization) {
       case 'number': view = <Number data={data.result} />; break;
+      case 'table': view = <Table data={data.result} />; break;
       default: view = <Json data={data} />; break;
     }
 

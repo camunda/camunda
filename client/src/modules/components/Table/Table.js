@@ -19,7 +19,7 @@ export default function Table({data}) {
 }
 
 function renderCell(cell) {
-  if(typeof cell === 'string') {
+  if(typeof cell !== 'object') {
     return cell;
   }
 

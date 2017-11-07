@@ -40,8 +40,12 @@ export async function getReportData(query) {
       type: 'startDate', // 'startDate', 'flowNodes'
       unit: 'day' // month, hour, day, year, week, null
     },
-    visualization: 'number',
-    result: 1234
+    visualization: 'table',
+    result: {
+      "2017-09-01": 23,
+      "2017-09-02": 7,
+      "2017-09-03": 11
+    }
   };
 }
 

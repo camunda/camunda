@@ -40,7 +40,7 @@ jest.mock('moment', () => (...params) => {
   }
 });
 
-jest.mock('../Table', () => {
+jest.mock('components', () => {
   return {
     Table: ({data}) => <table>
       <tbody>

@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Redirect} from 'react-router-dom';
 
-import {Table} from '../Table';
+import {Table} from 'components';
 
 import {load, create, remove} from './service';
 
