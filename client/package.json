@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "array-includes": "^3.0.3",
     "bpmn-js": "0.23.2",
+    "chart.js": "^2.7.1",
     "heatmap.js": "^2.0.5",
     "moment": "^2.19.1",
+    "object.values": "^1.0.4",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
     "react-router-dom": "^4.2.2",
-    "react-scripts": "1.0.14"
+    "react-scripts": "1.0.14",
+    "string.prototype.includes": "^1.0.0"
   },
   "scripts": {
     "start": "react-scripts start",

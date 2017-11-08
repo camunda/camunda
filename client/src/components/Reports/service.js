@@ -40,7 +40,7 @@ export async function getReportData(query) {
       type: 'startDate', // 'startDate', 'flowNodes'
       unit: 'day' // month, hour, day, year, week, null
     },
-    visualization: 'heat',
+    visualization: 'bar',
     result: {
       "assignApprover": 23,
       "approveInvoice": 7,
