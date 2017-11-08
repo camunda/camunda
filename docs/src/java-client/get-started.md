@@ -18,7 +18,7 @@ You will be guided through the following steps:
 
 * Java 8
 * [Apache Maven](https://maven.apache.org/)
-* [Zeebe distribution](../introduction/install.html)
+* [Zeebe distribution](../introduction/install.md)
 * [Zeebe Command Line Client zbctl](https://github.com/zeebe-io/zbc-go#command-line-interface-zbctl)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
