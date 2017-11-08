@@ -46,6 +46,7 @@ public class BucketBufferArray implements AutoCloseable
 
     protected long realAddresses[];
     private long bucketBufferHeaderAddress;
+    protected int nextNotFullBucketBuffer;
 
     public BucketBufferArray(int maxBucketBlockCount, int maxKeyLength, int maxValueLength)
     {
@@ -82,6 +83,8 @@ public class BucketBufferArray implements AutoCloseable
         setBucketBufferCount(0);
         setBucketCount(0);
         setBlockCount(0);
+        setHighestBucketId(0);
+        nextNotFullBucketBuffer = 0;
 
         allocateNewBucketBuffer(0);
     }
@@ -136,6 +139,16 @@ public class BucketBufferArray implements AutoCloseable
     private void setBlockCount(long newBlockCount)
     {
         UNSAFE.putLong(bucketBufferHeaderAddress + MAIN_BLOCK_COUNT_OFFSET, newBlockCount);
+    }
+
+    public void setHighestBucketId(int highestBucketId)
+    {
+        UNSAFE.putLong(bucketBufferHeaderAddress + MAIN_HIGHEST_BUCKET_ID, highestBucketId);
+    }
+
+    public int getHighestBucketId()
+    {
+        return UNSAFE.getInt(bucketBufferHeaderAddress + MAIN_HIGHEST_BUCKET_ID);
     }
 
     public int getBucketBufferCount()
@@ -369,6 +382,13 @@ public class BucketBufferArray implements AutoCloseable
         return lastBucketOffset == bucketOffset;
     }
 
+    /**
+     * Removes the bucket with the given address, if the bucket is empty.
+     *
+     * @param bucketAddress
+     * @return the address of the next bucket which can be removed,
+     * returns zero if the last existing bucket in the first bucket buffer was removed
+     */
     public long removeBucket(long bucketAddress)
     {
         final int bucketBufferId = (int) (bucketAddress >> 32);
@@ -391,6 +411,12 @@ public class BucketBufferArray implements AutoCloseable
         if (lastBucketOffset == bucketOffset)
         {
             final int totalBucketCount = getBucketCount();
+
+            if (nextNotFullBucketBuffer > bucketBufferId)
+            {
+                nextNotFullBucketBuffer = bucketBufferId;
+            }
+
             setBucketCount(bucketBufferId, bucketCount - 1);
             setBucketCount(totalBucketCount - 1);
             lastBucketOffset = bucketCount == 1 ? 0 : BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 2) * maxBucketLength);
@@ -402,7 +428,7 @@ public class BucketBufferArray implements AutoCloseable
                 if (bucketBufferId > 0)
                 {
                     int nextBucketBufferId = bucketBufferId - 1;
-                    if (realAddresses[nextBucketBufferId] == INVALID_ADDRESS)
+                    if (nextBucketBufferId >= realAddresses.length || realAddresses[nextBucketBufferId] == INVALID_ADDRESS)
                     {
                         nextBucketBufferId = resolveLastFilledBucketBuffer();
                     }
@@ -455,6 +481,10 @@ public class BucketBufferArray implements AutoCloseable
                 isEmpty = getBucketCount(bucketBufferId) == 0;
             } while (isEmpty && bucketBufferId > 0);
 
+            if (nextNotFullBucketBuffer >= bucketBufferCount)
+            {
+                nextNotFullBucketBuffer = bucketBufferCount - 1;
+            }
             setBucketBufferCount(bucketBufferCount);
 
             final int halfAddressBufferSize = realAddresses.length / 2;
@@ -528,15 +558,16 @@ public class BucketBufferArray implements AutoCloseable
         }
     }
 
+
     /**
 
      * @return the first not fully filled bucket buffer or the last bucket buffer if all are filled.
      */
-    private int findNotFullBucketBuffer()
+    private int findNextNotFullBucketBuffer(int startBucketBufferId)
     {
         final int bucketBufferCount = getBucketBufferCount();
 
-        for (int bucketBufferId = 0; bucketBufferId < bucketBufferCount; bucketBufferId++)
+        for (int bucketBufferId = startBucketBufferId; bucketBufferId < bucketBufferCount; bucketBufferId++)
         {
             if (getBucketCount(bucketBufferId) != ALLOCATION_FACTOR)
             {
@@ -556,19 +587,23 @@ public class BucketBufferArray implements AutoCloseable
      */
     public long allocateNewBucket(int newBucketId, int newBucketDepth)
     {
-        int bucketBufferId = findNotFullBucketBuffer();
+        int bucketBufferId = nextNotFullBucketBuffer;
         int bucketCountInBucketBuffer = getBucketCount(bucketBufferId);
 
         if (bucketCountInBucketBuffer >= ALLOCATION_FACTOR)
         {
             allocateNewBucketBuffer(++bucketBufferId);
+            nextNotFullBucketBuffer = bucketBufferId;
             bucketCountInBucketBuffer = 0;
         }
 
         final int bucketOffset = BUCKET_BUFFER_HEADER_LENGTH + bucketCountInBucketBuffer * maxBucketLength;
         final long bucketAddress = getBucketAddress(bucketBufferId, bucketOffset);
 
-
+        if (newBucketId > getHighestBucketId())
+        {
+            setHighestBucketId(newBucketId);
+        }
         setBucketId(bucketBufferId, bucketOffset, newBucketId);
         setBucketDepth(bucketBufferId, bucketOffset, newBucketDepth);
         clearBucketOverflowPointer(bucketBufferId, bucketOffset);
@@ -576,6 +611,11 @@ public class BucketBufferArray implements AutoCloseable
 
         setBucketCount(bucketBufferId, bucketCountInBucketBuffer + 1);
         setBucketCount(getBucketCount() + 1);
+
+        if (bucketCountInBucketBuffer + 1 == ALLOCATION_FACTOR)
+        {
+            nextNotFullBucketBuffer = findNextNotFullBucketBuffer(bucketBufferId);
+        }
 
         return bucketAddress;
     }
@@ -720,6 +760,7 @@ public class BucketBufferArray implements AutoCloseable
             clear();
             throw new IOException(errorMessage, ioe);
         }
+        nextNotFullBucketBuffer = findNextNotFullBucketBuffer(0);
     }
 
     // HELPER METHODS ////////////////////////
@@ -748,6 +789,35 @@ public class BucketBufferArray implements AutoCloseable
         realAddresses[newBucketBufferId] = UNSAFE.allocateMemory(maxBucketBufferLength);
         setBucketCount(newBucketBufferId, 0);
         setBucketBufferCount(getBucketBufferCount() + 1);
+    }
+
+    public int searchHighestBucketId()
+    {
+        int highestBucketId = 0;
+
+        for (int i = 0; i < realAddresses.length; i++)
+        {
+            if (realAddresses[i] != 0)
+            {
+                final int bucketCount = getBucketCount(i);
+                for (int j = 0; j < bucketCount; j++)
+                {
+                    final int offset = BUCKET_BUFFER_HEADER_LENGTH + j * getMaxBucketLength();
+                    final long bucketAddress = getBucketAddress(i, offset);
+                    final int bucketId = getBucketId(bucketAddress);
+                    if (bucketId > highestBucketId)
+                    {
+                        highestBucketId = bucketId;
+                    }
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        return highestBucketId;
+
     }
 
     public String toString()

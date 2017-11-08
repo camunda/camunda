@@ -1209,6 +1209,36 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBucketCount(3)).isEqualTo(1);
     }
 
+
+    @Test
+    public void shouldReleaseBucketBufferInBetweenAndResizeAddressBufferAndResolveNextRemovableAddress()
+    {
+        // given
+        allocateBuckets(32 * 48 + 1);
+
+        // when buffer between 0 and 32 is cleared and then last bucket buffer is cleared
+        for (int bufferId = 1; bufferId < 48; bufferId++)
+        {
+            for (int i = 31; i >= 0; i--)
+            {
+                final int bucketOffset = BUCKET_BUFFER_HEADER_LENGTH + i * bucketBufferArray.getMaxBucketLength();
+                bucketBufferArray.removeBucket(getBucketAddress(bufferId, bucketOffset));
+            }
+        }
+
+        final long nextRemovableBucket = bucketBufferArray.removeBucket(getBucketAddress(48, BUCKET_BUFFER_HEADER_LENGTH));
+
+        // then bucket buffers are released and address buffer is shrinked
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32);
+        assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
+
+        final int lastBucketOffsetInFirstBuffer = BUCKET_BUFFER_HEADER_LENGTH + 31 * bucketBufferArray.getMaxBucketLength();
+        assertThat(nextRemovableBucket)
+            .isEqualTo(getBucketAddress(0, lastBucketOffsetInFirstBuffer));
+    }
+
     @Test
     public void shouldAbleToAllocateNewBufferAfterRemoveAllEmptyBucketBuffers()
     {
@@ -1354,6 +1384,118 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBlockCount()).isEqualTo(32 * 31 * 2);
         assertThat(bucketBufferArray.getBucketCount()).isEqualTo(32 * 31);
         assertThat(bucketBufferArray.realAddresses.length).isEqualTo(32);
+    }
+
+    @Test
+    public void shouldNotUpdateNextNotFilledBucketBufferIdIfBucketBufferIsLarger()
+    {
+        // given
+        final List<Long> bucketAddresses = fillBucketBufferArray(3 * 32);
+
+        // when bucket in second buffer is removed
+        Long bucketAddress = bucketAddresses.get(63);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(31);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(1);
+
+        // when bucket in third buffer is removed
+        bucketAddress = bucketAddresses.get(95);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        // then first not full bucket buffer is not updated
+        assertThat(bucketBufferArray.getBucketCount(2)).isEqualTo(31);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(1);
+
+        // when new bucket is allocated
+        bucketBufferArray.allocateNewBucket(32 + 16, 21);
+
+        // then bucket is allocated in second bucket and first not full bucket buffer id is updated
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(32);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldUpdateNextNotFilledBucketBufferId()
+    {
+        // given
+        final List<Long> bucketAddresses = fillBucketBufferArray(3 * 32);
+
+        // when bucket in second buffer is removed
+        Long bucketAddress = bucketAddresses.get(95);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount(2)).isEqualTo(31);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(2);
+
+        // when bucket in third buffer is removed
+        bucketAddress = bucketAddresses.get(63);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        // then last not full bucket buffer is updated
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(31);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(1);
+
+        // when new bucket is allocated
+        bucketBufferArray.allocateNewBucket(32 + 16, 21);
+
+        // then bucket is allocated in second bucket and last not full bucket buffer id is updated
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(32);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldUpdateNextNotFilledBucketBufferIdOnNewBucketBufferAllocation()
+    {
+        // given
+        fillBucketBufferArray(32);
+
+        // when new bucket is allocated
+        bucketBufferArray.allocateNewBucket(32, 32);
+
+        // then bucket is allocated in second bucket and last not full bucket buffer id is updated
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(1);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNextNotFilledBucketBufferIdStartOnZero()
+    {
+        // given
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(0);
+
+        // when new bucket is allocated
+        bucketBufferArray.allocateNewBucket(1, 1);
+
+        // then bucket is allocated in first bucket and last not full bucket buffer id is not updated since bucket buffer is not full
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(1);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldResetNextNotFilledBucketBufferIdOnClear()
+    {
+        // given
+        fillBucketBufferArray(32 * 32);
+
+        // when
+        bucketBufferArray.clear();
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount(0)).isEqualTo(0);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(0);
     }
 
     private float getExpectedLoadFactor(float blockCount, int bucketCount)

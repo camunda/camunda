@@ -224,6 +224,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         hashTable.clear();
         bucketBufferArray.clear();
 
+
         init();
     }
 
@@ -338,25 +339,29 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     /**
      * Tries to shrink the hash table.
      *
-     * If the current bucket count is below the {@link #HASH_TABLE_SHRINK_LIMIT} multiplied with the hash table capacity,
+     * If the highest bucket id is below the {@link #HASH_TABLE_SHRINK_LIMIT} multiplied with the hash table capacity,
      * then the hash table will be shrinked.
      */
     private void tryShrinkHashTable()
     {
-        final int bucketCount = getBucketBufferArray().getBucketCount();
-        if (bucketCount < (hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT) &&
+        final float shrinkLimit = hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT;
+        final int highestBucketId = bucketBufferArray.getHighestBucketId();
+
+        if (highestBucketId < shrinkLimit &&
             hashTable.getCapacity() != initialTableSize)
         {
-            if (bucketCount < initialTableSize && hashTable.getCapacity() > initialTableSize)
+            if (highestBucketId < initialTableSize && hashTable.getCapacity() > initialTableSize)
             {
                 hashTable.resize(initialTableSize);
             }
             else
             {
-                hashTable.resize(bucketCount * 2);
+                hashTable.resize(highestBucketId);
             }
         }
     }
+
+
 
     protected boolean get()
     {

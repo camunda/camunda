@@ -18,7 +18,6 @@ package io.zeebe.map;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,7 +46,6 @@ public class HashTableTest
     }
 
     @Test
-    @Ignore("disabled until shrink is fixed see https://github.com/zeebe-io/zeebe/issues/464")
     public void shouldShrinkHashTable()
     {
         // given
@@ -139,5 +137,19 @@ public class HashTableTest
 
         // then
         assertThat(hashTable.getLength()).isEqualTo(4 * SIZE_OF_LONG);
+    }
+
+    @Test
+    public void shouldThrowExceptionOnToLargeIdx()
+    {
+        // given
+        final HashTable hashTable = new HashTable(1);
+
+        // expect
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("Bucket id is larger then capacity!");
+
+        // when
+        hashTable.getBucketAddress(1);
     }
 }

@@ -36,6 +36,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |                         BLOCK COUNT                         |
  *  |                                                             |
  *  +-------------------------------------------------------------+
+ *  |                         HIGHEST BUCKET ID                   |
+ *  +-------------------------------------------------------------+
  * </pre>
  *
  * The BUCKET BUFFER COUNT contains the count of all existing bucket buffers.
@@ -43,6 +45,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * The BLOCK COUNT contains the count of all existing block.
  * The last two headers are mainly used to calculate fast the load factor and also be available after
  * deserialization.
+ * The HIGHEST BUCKET ID is used to determine whether the hash table can be resized or not.
  *
  * There can exist multiple BucketBuffers, each of them have the same layout.
  * These BucketBuffers can contain till 32 buckets. The current bucket count is
@@ -104,6 +107,7 @@ public class BucketBufferArrayDescriptor
     public static final int MAIN_BUFFER_COUNT_OFFSET;
     public static final int MAIN_BUCKET_COUNT_OFFSET;
     public static final int MAIN_BLOCK_COUNT_OFFSET;
+    public static final int MAIN_HIGHEST_BUCKET_ID;
     public static final int MAIN_BUCKET_BUFFER_HEADER_LEN;
 
     public static final int BUCKET_BUFFER_BUCKET_COUNT_OFFSET;
@@ -131,6 +135,9 @@ public class BucketBufferArrayDescriptor
 
         MAIN_BLOCK_COUNT_OFFSET = offset;
         offset += SIZE_OF_LONG;
+
+        MAIN_HIGHEST_BUCKET_ID = offset;
+        offset += SIZE_OF_INT;
 
         MAIN_BUCKET_BUFFER_HEADER_LEN = offset;
 

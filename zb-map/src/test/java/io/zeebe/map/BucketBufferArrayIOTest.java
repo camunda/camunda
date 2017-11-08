@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.map.types.LongValueHandler;
@@ -895,6 +897,86 @@ public class BucketBufferArrayIOTest
         newBucketBufferArray.close();
     }
 
+    @Test
+    public void shouldReadBucketBufferArrayAndAddBucketsToNotFullBucketBuffers() throws IOException
+    {
+        // given
+        final int bucketCount = 32 * 32;
+
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        long lastBucketAddress;
+        for (int i = 0; i < bucketCount; i++)
+        {
+            lastBucketAddress = bucketBufferArray.allocateNewBucket(i, i);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketBufferArray.addBlock(lastBucketAddress, keyHandler, valueHandler);
+            bucketAddresses.add(lastBucketAddress);
+        }
+
+        // remove last bucket from second and third bucket buffer
+        Long bucketAddress = bucketAddresses.get(63);
+        final int firstBlockOffset = bucketBufferArray.getFirstBlockOffset();
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        bucketAddress = bucketAddresses.get(32 * 7 - 1);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset);
+        bucketBufferArray.removeBlock(bucketAddress, firstBlockOffset + bucketBufferArray.getBlockLength());
+        bucketBufferArray.removeBucket(bucketAddress);
+
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final byte[] writeBuffer = new byte[4096];
+        bucketBufferArray.writeToStream(outputStream, writeBuffer);
+
+        final byte[] writtenBytes = outputStream.toByteArray();
+        assertThat(writtenBytes.length).isEqualTo((int) bucketBufferArray.size());
+
+        // when
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(writtenBytes);
+        final byte[] readBuffer = new byte[4096];
+        bucketBufferArray.readFromStream(inputStream, readBuffer);
+
+        // then we expect
+        // bucket buffer main header
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(bucketCount / ALLOCATION_FACTOR);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(bucketCount - 2);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo((bucketCount - 2) * MIN_BLOCK_COUNT);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(31);
+        assertThat(bucketBufferArray.getBucketCount(6)).isEqualTo(31);
+
+        // when we add a new bucket
+        bucketBufferArray.allocateNewBucket(63, 63);
+
+        // then bucket was added to second bucket buffer and next full bucket buffer pointer was updated
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(bucketCount / ALLOCATION_FACTOR);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(6);
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(6)).isEqualTo(31);
+
+        // when next add
+        bucketBufferArray.allocateNewBucket(32 * 7 - 1, 32 * 7 - 1);
+
+        // then bucket was added to third bucket buffer
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(bucketCount / ALLOCATION_FACTOR);
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(31);
+        assertThat(bucketBufferArray.getBucketCount(1)).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketCount(6)).isEqualTo(32);
+
+        // when next add
+        bucketBufferArray.allocateNewBucket(32 * 32, 32 * 32);
+
+        // then bucket was added to new allocate bucket buffer
+        assertThat(bucketBufferArray.nextNotFullBucketBuffer).isEqualTo(32);
+        assertThat(bucketBufferArray.getBucketBufferCount()).isEqualTo(bucketCount / ALLOCATION_FACTOR + 1);
+        assertThat(bucketBufferArray.getBucketCount(32)).isEqualTo(1);
+    }
 
     @Test
     public void shouldThrowExceptionOnReadIOException() throws IOException

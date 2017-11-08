@@ -205,41 +205,40 @@ final class ZbMapBucketMergeHelper
      */
     void tryMergingBuckets(long bucketAddress, int newBucketFillCount)
     {
-        final int bucketId = bucketBufferArrayRef.getBucketId(bucketAddress);
-        final int depth = bucketBufferArrayRef.getBucketDepth(bucketAddress);
+        int bucketId = bucketBufferArrayRef.getBucketId(bucketAddress);
+        int depth = bucketBufferArrayRef.getBucketDepth(bucketAddress);
 
         if (splitWasCalledAtLeastOnce(bucketId, depth))
         {
-            long newLastBucketAddress = 0;
-            if (bucketId == ABANDONED_BUCKET)
+            long newLastBucketAddress = bucketAddress;
+            while (newLastBucketAddress > 0)
             {
-                newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
-            }
-            else if (depth == BucketBufferArray.OVERFLOW_BUCKET)
-            {
-                newLastBucketAddress = tryMergeOverflowBucket(bucketAddress, newBucketFillCount, bucketId);
-            }
-            else
-            {
-                final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
-                if (bucketOverflowPointer != 0)
+                if (bucketId == ABANDONED_BUCKET)
                 {
-                    newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
+                    newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
+                }
+                else if (depth == BucketBufferArray.OVERFLOW_BUCKET)
+                {
+                    newLastBucketAddress = tryMergeOverflowBucket(bucketAddress, newBucketFillCount, bucketId);
                 }
                 else
                 {
-                    newLastBucketAddress = tryMergeSplitBucket(bucketAddress, newBucketFillCount, depth, bucketId);
+                    final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
+                    if (bucketOverflowPointer != 0)
+                    {
+                        newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
+                    }
+                    else
+                    {
+                        newLastBucketAddress = tryMergeSplitBucket(bucketAddress, newBucketFillCount, depth, bucketId);
+                    }
                 }
-            }
+                newBucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
 
-            /* disable recursive merging till https://github.com/zeebe-io/zeebe/issues/466 is fixed
-            // recursion to try merging more buckets
-            if (newLastBucketAddress > 0)
-            {
-                final int bucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
-                tryMergingBuckets(newLastBucketAddress, bucketFillCount);
+                bucketAddress = newLastBucketAddress;
+                bucketId = bucketBufferArrayRef.getBucketId(newLastBucketAddress);
+                depth = bucketBufferArrayRef.getBucketDepth(newLastBucketAddress);
             }
-            */
         }
     }
 
@@ -417,9 +416,15 @@ final class ZbMapBucketMergeHelper
             bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
             // 2. remove bucket
             newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
-            // 3. update hash table like on split
+            // 3. update highest bucket id
+            final int highestBucketId = bucketBufferArrayRef.getHighestBucketId();
+            if (highestBucketId == bucketId)
+            {
+                bucketBufferArrayRef.setHighestBucketId(bucketBufferArrayRef.searchHighestBucketId());
+            }
+            // 4. update hash table like on split
             hashTableRef.updateTable(depth, bucketId, parentBucketAddress);
-            // 4. decrease parent bucket depth
+            // 5. decrease parent bucket depth
             bucketBufferArrayRef.setBucketDepth(parentBucketAddress, depth - 1);
         }
         return newLastBucketAddress;

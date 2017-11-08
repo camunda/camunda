@@ -128,17 +128,66 @@ public class ZbMapTest
             putValue(zbMap, i, i);
         }
 
-        // when
-        for (int i = 63; i > 7; i--)
+        // when most of the value are removed
+        for (int i = 63; i > 8; i--)
         {
             removeValue(zbMap, i);
         }
-        // if only 25% bucket exist of the table size
-        removeValue(zbMap, 7);
+        // and the after removing the highest bucket id is under 0.25 * hash table size
+        removeValue(zbMap, 8);
 
-        // then table is shrinked
-        // TODO: disabled until shrink is fixed see https://github.com/zeebe-io/zeebe/issues/464
-        //assertThat(zbMap.getHashTableSize()).isEqualTo(16 * SIZE_OF_LONG);
+        // then table can be shrinked
+        // the highest bucket id is in this case 7 that's why the table has to be at least of size 8
+        assertThat(zbMap.getHashTableSize()).isEqualTo(8 * SIZE_OF_LONG);
+    }
+
+    @Test
+    public void shouldNotShrinkHashTableUnderLargestBucketId()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        // when
+        putValue(zbMap, 0, 0);
+        putValue(zbMap, 1, 1);
+        putValue(zbMap, 4, 4);
+        putValue(zbMap, 20, 20);
+        putValue(zbMap, 36, 36);
+        putValue(zbMap, 100, 100);
+        putValue(zbMap, 256, 256);
+
+        // then
+        // Bucket 0 [0]
+        // Bucket 1 [1]
+        // Bucket 2 [-]
+        // Bucket 4 [4]
+        // Bucket 12 [-]
+        // Bucket 20 [20]
+        // Bucket 36 [36]
+        // Bucket 100 [100]
+        // Bucket 8 [-]
+        // Bucket 16 [-]
+        // Bucket 32 [-]
+        // Bucket 64 [-]
+        // Overflow-Bucket-0 [256]
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(128);
+
+        // when
+        removeValue(zbMap, 256);
+
+        // then
+        // buckets are removed and merged, but hash table must not shrinked
+        // since highest id is 100 which means the hash table size have to be at least 128
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(128);
+
+        // values are still available
+        assertThat(getValue(zbMap, 100, -1)).isEqualTo(100);
+        assertThat(getValue(zbMap, 36, -1)).isEqualTo(36);
+        assertThat(getValue(zbMap, 20, -1)).isEqualTo(20);
+        assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
+        assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
     }
 
     @Test
@@ -160,8 +209,7 @@ public class ZbMapTest
         }
 
         // then table is shrinked - but only till init table size
-        // TODO: disabled until shrink is fixed see https://github.com/zeebe-io/zeebe/issues/464
-        //assertThat(zbMap.getHashTableSize()).isEqualTo(4 * SIZE_OF_LONG);
+        assertThat(zbMap.getHashTableSize()).isEqualTo(4 * SIZE_OF_LONG);
     }
 
     @Test
@@ -250,11 +298,9 @@ public class ZbMapTest
         {
             assertThat(removeValue(zbMap, i)).isTrue();
         }
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
-        //assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
-        // TODO: disabled until shrink is fixed see https://github.com/zeebe-io/zeebe/issues/464
-        //assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
     }
 
     @Test
@@ -273,11 +319,9 @@ public class ZbMapTest
         {
             assertThat(removeValue(zbMap, i)).isTrue();
         }
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
-        //assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
-        // TODO: disabled until shrink is fixed see https://github.com/zeebe-io/zeebe/issues/464
-        //assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getCapacity()).isEqualTo(zbMap.getBucketBufferArray().getMaxBucketBufferLength());
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(4);
 
         // then again put is possible
         for (int i = 0; i < DATA_COUNT; i++)
@@ -442,6 +486,7 @@ public class ZbMapTest
             assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
         }
 
+        zbMap.close();
     }
 
     @Test
@@ -456,6 +501,8 @@ public class ZbMapTest
 
         // then
         assertThat(zbMap.maxTableSize).isEqualTo(4);
+
+        zbMap.close();
     }
 
     @Test
@@ -470,6 +517,8 @@ public class ZbMapTest
 
         // then
         assertThat(zbMap.maxTableSize).isEqualTo(ZbMap.MAX_TABLE_SIZE);
+
+        zbMap.close();
     }
 
     @Test
@@ -936,8 +985,7 @@ public class ZbMapTest
         // then blocks of overflow bucket are relocated to original bucket
         // overflow bucket is marked as removable
         // overflow pointer is removed
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
         final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
         assertThat(bucketBufferArray.getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
 
@@ -994,8 +1042,7 @@ public class ZbMapTest
         // merges 4 and 2 with 0
         // end at bucket 1 since it has one block and bucket 0 as well
 
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(bucketBufferArray.getBucketCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(2);
         final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
         assertThat(bucketBufferArray.getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
         final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
@@ -1053,8 +1100,7 @@ public class ZbMapTest
         // merges 4 and 2 with 0
         // end at bucket 1 since it has one block and bucket 0 as well
 
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(bucketBufferArray.getBucketCount()).isEqualTo(2);
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(2);
         final long firstBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH);
         assertThat(bucketBufferArray.getBucketOverflowPointer(firstBucketAddress)).isEqualTo(0);
         final long secondBucketAddress = getBucketAddress(0, BUCKET_BUFFER_HEADER_LENGTH + bucketBufferArray.getMaxBucketLength());
@@ -1236,8 +1282,7 @@ public class ZbMapTest
         // when
         removeValue(zbMap, 1);
         // then Bucket 1 is empty - merging 5 with 1 and also 3 with 1 since Bucket 3 is empty
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(3);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(3);
         assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
         assertThat(getValue(zbMap, 2, -1)).isEqualTo(2);
         assertThat(getValue(zbMap, 8, -1)).isEqualTo(8);
@@ -1284,8 +1329,7 @@ public class ZbMapTest
         removeValue(zbMap, 5);
 
         // then Bucket 5 is empty - merging 5, 3 and 2 since bucket 1 and 0 is half full
-        // TODO: disabled until recursive merging is fixed see https://github.com/zeebe-io/zeebe/issues/466
-        //assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(2);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(2);
         assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
         assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
     }
@@ -1517,6 +1561,11 @@ public class ZbMapTest
 
         // block count is equal to the missing values
         assertThat(removedValues).isEqualTo(values.size());
+
+        // hash table was shrinked and bucket buffers are released
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(8);
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
     }
 
     private int maxRecordPerBlockForLong2Longmap()
