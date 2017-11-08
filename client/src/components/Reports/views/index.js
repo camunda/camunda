@@ -1,3 +1,4 @@
-export {default as Json} from './Json.js';
-export {default as Number} from './Number.js';
-export {default as Table} from './Table.js';
+export {default as Json} from './Json';
+export {default as Number} from './Number';
+export {default as Table} from './Table';
+export {Heatmap} from './Heatmap';

@@ -30,7 +30,7 @@ export async function getReportData(query) {
 
   //TODO: use code above once backend implements evaluate query
   return {
-    processDefinitionId: 'asdf',
+    processDefinitionId: 'invoice:2:ea26313d-c3c3-11e7-b5fb-a0afbd96e1d2',
     filter: null,
     view: {
       operation: 'count',
@@ -40,11 +40,11 @@ export async function getReportData(query) {
       type: 'startDate', // 'startDate', 'flowNodes'
       unit: 'day' // month, hour, day, year, week, null
     },
-    visualization: 'table',
+    visualization: 'heat',
     result: {
-      "2017-09-01": 23,
-      "2017-09-02": 7,
-      "2017-09-03": 11
+      "assignApprover": 23,
+      "approveInvoice": 7,
+      "StartEvent_1": 11
     }
   };
 }
