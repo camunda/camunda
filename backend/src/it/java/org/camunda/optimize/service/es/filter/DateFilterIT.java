@@ -1,8 +1,7 @@
-package org.camunda.optimize.service.es.query;
+package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
@@ -36,18 +35,14 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LES
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-/**
- * @author Askar Akhmerov
- */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
-public class FrequencyHeatMapQueryIT {
+public class DateFilterIT {
 
-  private Logger logger = LoggerFactory.getLogger(FrequencyHeatMapQueryIT.class);
+  private Logger logger = LoggerFactory.getLogger(DateFilterIT.class);
 
   private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_ACTIVITY = "testActivity";
-  private static final String TEST_ACTIVITY_2 = "testActivity_2";
   private static final long TIME_OFFSET_MILLS = 2000L;
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -57,112 +52,6 @@ public class FrequencyHeatMapQueryIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  @Test
-  public void getHeatMap() throws Exception {
-
-    // given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(processDefinitionId);
-
-    // then
-    assertResults(testDefinition, 3, TEST_ACTIVITY, 1L, 1L);
-  }
-
-  @Test
-  public void getHeatMapMultipleEvents() throws Exception {
-    // given
-    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    engineRule.startProcessInstance(engineDto.getDefinitionId());
-    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(engineDto.getDefinitionId());
-
-    // then
-    assertResults(testDefinition, 3, TEST_ACTIVITY, 2L, 2L);
-  }
-
-  @Test
-  public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
-    // given
-    ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionId1 = instanceDto.getDefinitionId();
-    engineRule.startProcessInstance(processDefinitionId1);
-
-    instanceDto = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionId2 = instanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(processDefinitionId1);
-    HeatMapResponseDto testDefinition2 = getHeatMapResponseDto(processDefinitionId2);
-
-    // then
-    assertResults(testDefinition1, 3, TEST_ACTIVITY, 2L, 2L);
-    assertResults(testDefinition2, 3, TEST_ACTIVITY, 1L, 1L);
-  }
-  
-  @Test
-  public void getHeatMapWithMoreThenTenEvents() throws Exception {
-    // given
-    AbstractServiceTaskBuilder serviceTaskBuilder = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .serviceTask(TEST_ACTIVITY + 0)
-      .camundaExpression("${true}");
-    for (int i = 1; i < 11; i++) {
-      serviceTaskBuilder = serviceTaskBuilder
-        .serviceTask(TEST_ACTIVITY + i)
-        .camundaExpression("${true}");
-    }
-    BpmnModelInstance processModel =
-      serviceTaskBuilder.endEvent()
-        .done();
-
-    ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
-    String processDefinitionId = instanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(processDefinitionId);
-
-    // then
-    assertResults(testDefinition, 13,1L);
-  }
-
-  private HeatMapResponseDto getHeatMapResponseDto(String id) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-        embeddedOptimizeRule.target("process-definition/" + id + "/heatmap/frequency")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-            .get();
-    return response.readEntity(HeatMapResponseDto.class);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .serviceTask(activityId)
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
-    return engineRule.deployAndStartProcess(processModel);
-  }
 
   @Test
   public void testGetHeatMapWithLtStartDateCriteria() throws Exception {
@@ -412,24 +301,6 @@ public class FrequencyHeatMapQueryIT {
     assertResults(resultMap, 0, 0L);
   }
 
-  private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
-    assertThat(resultMap.getFlowNodes().size(), is(size));
-    assertThat(resultMap.getPiCount(), is(piCount));
-  }
-
-  public void assertResults(HeatMapResponseDto resultMap, int size, String activity, Long activityCount, Long piCount) {
-    this.assertResults(resultMap, size, piCount);
-    assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
-  }
-
-  private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
-    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(processDefinitionId);
-    DataUtilHelper.addDateFilter(operator, type, dateValue, dto);
-    return dto;
-  }
-
   @Test
   public void testValidationExceptionOnNullDto() {
     //when
@@ -459,4 +330,37 @@ public class FrequencyHeatMapQueryIT {
     assertThat(getResponse(dto).getStatus(),is(500));
   }
 
+  private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
+    assertThat(resultMap.getFlowNodes().size(), is(size));
+    assertThat(resultMap.getPiCount(), is(piCount));
+  }
+
+  public void assertResults(HeatMapResponseDto resultMap, int size, String activity, Long activityCount, Long piCount) {
+    this.assertResults(resultMap, size, piCount);
+    assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
+  }
+
+  private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
+    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
+    HeatMapQueryDto dto = new HeatMapQueryDto();
+    dto.setProcessDefinitionId(processDefinitionId);
+    DataUtilHelper.addDateFilter(operator, type, dateValue, dto);
+    return dto;
+  }
+
+
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
+    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .serviceTask(activityId)
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
+  }
 }

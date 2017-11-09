@@ -1,28 +1,20 @@
 package org.camunda.optimize.dto.optimize.query.report.result.raw;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 
 import java.util.List;
 
 public class RawDataReportResultDto extends ReportResultDto {
 
-  protected List<RawDataProcessInstanceDto> rawData;
+  protected List<RawDataProcessInstanceDto> result;
 
-  public List<RawDataProcessInstanceDto> getRawData() {
-    return rawData;
+  public List<RawDataProcessInstanceDto> getResult() {
+    return result;
   }
 
-  public void setRawData(List<RawDataProcessInstanceDto> rawData) {
-    this.rawData = rawData;
+  public void setResult(List<RawDataProcessInstanceDto> result) {
+    this.result = result;
   }
 
-  public void copyReportDataProperties(ReportDataDto reportData) {
-    this.setProcessDefinitionId(reportData.getProcessDefinitionId());
-    this.setView(reportData.getView());
-    this.setGroupBy(reportData.getGroupBy());
-    this.setFilter(reportData.getFilter());
-    this.setVisualization(reportData.getVisualization());
-  }
 }

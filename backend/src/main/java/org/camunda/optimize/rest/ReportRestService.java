@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluationManager;
 import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,13 +145,21 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response evaluateReport(@PathParam("id") String reportId) {
+    ReportDefinitionDto reportDefinition = null;
     try {
-      ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+      reportDefinition = reportReader.getReport(reportId);
       ReportResultDto result = reportEvaluationManager.evaluate(reportDefinition.getData());
       return Response.ok(result, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
-      logger.error("Error during report evaluation", e);
-      return buildServerErrorResponse(e);
+      String reportName = reportDefinition != null? reportDefinition.getName() : "unknown report";
+      logger.error("Error during report evaluation of repord with id [{}] and name [{}]. Reason: {}",
+        reportId,
+        reportName,
+        e);
+      String errorMessage = "Report [" + reportName + "]: " +
+        "Could not evaluate report. Reason: " + e.getMessage();
+      Exception optimizeException = new OptimizeException(errorMessage);
+      return buildServerErrorResponse(optimizeException);
     }
   }
 
@@ -167,8 +176,10 @@ public class ReportRestService {
       ReportResultDto result = reportEvaluationManager.evaluate(reportData);
       return Response.ok(result, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
-      logger.error("Error during report evaluation", e);
-      return buildServerErrorResponse(e);
+      logger.error("Error during evaluation of an unsaved report", e);
+      String errorMessage = "Report [unsaved report]: Could not evaluate report. Reason: " + e.getMessage();
+      Exception optimizeException = new OptimizeException(errorMessage);
+      return buildServerErrorResponse(optimizeException);
     }
   }
 }

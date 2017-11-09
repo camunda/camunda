@@ -53,5 +53,12 @@ public class ReportDataDto {
     this.visualization = visualization;
   }
 
+  public void copyReportDataProperties(ReportDataDto reportData) {
+    this.setProcessDefinitionId(reportData.getProcessDefinitionId());
+    this.setView(reportData.getView());
+    this.setGroupBy(reportData.getGroupBy());
+    this.setFilter(reportData.getFilter());
+    this.setVisualization(reportData.getVisualization());
+  }
 
 }

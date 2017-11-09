@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.RAW_DATA_OPERATION;
+import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_RAW_DATA_OPERATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -280,7 +280,7 @@ public class ReportRestServiceIT {
     ReportDataDto reportData = new ReportDataDto();
     reportData.setProcessDefinitionId(processDefinitionId);
     reportData.setVisualization("table");
-    reportData.setView(new ViewDto(RAW_DATA_OPERATION, null));
+    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
     return reportData;
   }
 

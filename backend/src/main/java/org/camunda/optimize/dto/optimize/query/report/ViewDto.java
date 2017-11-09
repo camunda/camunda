@@ -4,14 +4,14 @@ public class ViewDto {
 
   protected String operation;
   protected String entity;
+  protected String property;
 
   public ViewDto() {
     super();
   }
 
-  public ViewDto(String operation, String entity) {
+  public ViewDto(String operation) {
     this.operation = operation;
-    this.entity = entity;
   }
 
   public String getOperation() {
@@ -28,5 +28,13 @@ public class ViewDto {
 
   public void setEntity(String entity) {
     this.entity = entity;
+  }
+
+  public String getProperty() {
+    return property;
+  }
+
+  public void setProperty(String property) {
+    this.property = property;
   }
 }

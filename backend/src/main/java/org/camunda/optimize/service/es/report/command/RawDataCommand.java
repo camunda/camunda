@@ -1,23 +1,16 @@
-package org.camunda.optimize.service.es.report;
+package org.camunda.optimize.service.es.report.command;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataVariableDto;
-import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -29,24 +22,11 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 
-@Component
-public class RawDataReportEvaluator {
+public class RawDataCommand extends ReportCommand {
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  private Client esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ObjectMapper objectMapper;
-  @Autowired
-  private QueryFilterEnhancer queryFilterEnhancer;
-
-  public RawDataReportResultDto evaluate(ReportDataDto reportData) throws IOException {
-    // validate
+  public ReportResultDto evaluate() throws IOException {
     logger.debug("Evaluating raw data report for process definition id [{}]", reportData.getProcessDefinitionId());
 
     BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
@@ -114,7 +94,7 @@ public class RawDataReportEvaluator {
                                               List<RawDataProcessInstanceDto> rawDataResult) {
     RawDataReportResultDto result = new RawDataReportResultDto();
     result.copyReportDataProperties(reportData);
-    result.setRawData(rawDataResult);
+    result.setResult(rawDataResult);
     return result;
   }
 
@@ -123,5 +103,5 @@ public class RawDataReportEvaluator {
     query = QueryBuilders.boolQuery()
       .must(QueryBuilders.termQuery("processDefinitionId", processDefinitionId));
     return query;
-}
+  }
 }

@@ -24,6 +24,7 @@ public class ReportType extends StrictTypeMappingCreator {
   public static final String VIEW = "view";
   public static final String VIEW_OPERATION = "operation";
   public static final String VIEW_ENTITY = "entity";
+  public static final String VIEW_PROPERTY = "entity";
 
   public static final String GROUP_BY = "groupBy";
   public static final String GROUP_BY_TYPE = "type";
@@ -118,6 +119,9 @@ public class ReportType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(VIEW_ENTITY)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(VIEW_PROPERTY)
         .field("type", "keyword")
       .endObject();
     return newBuilder;
