@@ -26,7 +26,6 @@ export default class Dashboard extends React.Component {
 
   load = async () => {
     const {name, lastModifier, lastModified, reports} = await loadDashboard(this.id);
-
     this.setState({
       name,
       lastModifier,
@@ -73,16 +72,29 @@ export default class Dashboard extends React.Component {
   }
 
   handleReportSelection = (report, position, dimensions) => {
-    this.state.reports.push({
+    let newState = JSON.parse(JSON.stringify(this.state));
+    newState.reports.push({
       id : report.id,
       dimensions: dimensions,
       position: position,
       name: report.name
     });
+    this.setState(newState);
   }
 
   handleReportRemoval = (report) => {
     console.log('removing report [' + report.id + '] from dashboard')
+  }
+
+  handleReportMove = (oldReport, newReport) => {
+    let newState = JSON.parse(JSON.stringify(this.state));
+
+    for (let i = 0; i < newState.reports.length; i++) {
+      if (newState.reports[i].position.x === oldReport.position.x && newState.reports[i].position.y === oldReport.position.y) {
+        newState.reports[i] = newReport;
+      }
+    }
+    this.setState(newState);
   }
 
   renderEditMode = (state) => {
@@ -102,6 +114,7 @@ export default class Dashboard extends React.Component {
             reports={state.reports}
             onReportSelected={this.handleReportSelection.bind(this)}
             onReportRemoved={this.handleReportRemoval.bind(this)}
+            onReportMoved={this.handleReportMove.bind(this)}
         />
       </div>
     )

@@ -33,7 +33,6 @@ export default class ViewGrid extends React.Component {
       return report.id === event.target.value;
     });
     this.props.onSelectReport(report);
-    this.closeModal();
   }
 
   render () {

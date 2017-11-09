@@ -16,6 +16,7 @@ export default class ViewGrid extends React.Component {
       width: gridSize * buttonTiles - gridMargin + 'px',
       height: gridSize * buttonTiles - gridMargin + 'px'
     };
+
     return (
       <div className={'add-button'} onClick={this.props.onClick} style={buttonStyle}>
 

@@ -2,8 +2,4 @@
   position: relative;
 }
 
-.grid-tile {
-  position: absolute;
-  border: 1px solid lightgray;
-  z-index: 1;
-}
+
