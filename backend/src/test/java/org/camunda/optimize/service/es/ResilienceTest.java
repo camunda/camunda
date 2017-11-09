@@ -15,13 +15,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.model.TestTimedOutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,8 +44,9 @@ import static org.junit.Assert.assertThat;
 public class ResilienceTest {
 
   private File esFolder;
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
-  public static final long TIMEOUT_CONNECTION_STATUS = 5_000;
+  public static final long TIMEOUT_CONNECTION_STATUS = 10_000;
 
   @After
   public void tearDown() throws IOException {
@@ -96,7 +98,8 @@ public class ResilienceTest {
         connectionStatusDto = optimize.target("status/connection")
           .request()
           .get(ConnectionStatusDto.class);
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        logger.error("Was not able to retrieve connection status from Optimize!", e);
         // socket timeout exception, so we should try it another round
       }
       requestDuration = System.currentTimeMillis() - startTime;
