@@ -1,7 +1,15 @@
 import React from 'react';
-import Chart from 'chart.js';
+import ChartRenderer from 'chart.js';
 
-export default class BarChart extends React.Component {
+const colors = [
+  '#b5152b',
+  '#5315b5',
+  '#15b5af',
+  '#59b515',
+  '#b59315'
+]
+
+export default class Chart extends React.Component {
   storeContainer = container => {
     this.container = container;
   }
@@ -19,23 +27,24 @@ export default class BarChart extends React.Component {
   }
 
   componentDidMount() {
-    const {data} = this.props;
+    const {data, type} = this.props;
 
     if(!data || typeof data !== 'object') {
       return;
     }
 
-    this.chart = new Chart(this.container, {
-      type: 'bar',
+    this.chart = new ChartRenderer(this.container, {
+      type,
       data: {
         labels: Object.keys(data),
         datasets: [{
-          data: Object.values(data)
+          data: Object.values(data),
+          backgroundColor: (type === 'pie' && colors) || undefined
         }]
       },
       options: {
         legend: {
-          display: false
+          display: type === 'pie'
         }
       }
     });

@@ -2,7 +2,7 @@ import React from 'react';
 
 import {ErrorBoundary} from '../ErrorBoundary';
 
-import {Number, Json, Table, Heatmap, BarChart} from './views';
+import {Number, Json, Table, Heatmap, Chart} from './views';
 
 export default class ReportView extends React.Component {
   render() {
@@ -13,7 +13,10 @@ export default class ReportView extends React.Component {
       case 'number': view = <Number data={data.result} />; break;
       case 'table': view = <Table data={data.result} />; break;
       case 'heat': view = <Heatmap process={data.processDefinitionId} data={data.result} />; break;
-      case 'bar': view = <BarChart data={data.result} />; break;
+      case 'bar':
+      case 'line':
+      case 'pie':
+        view = <Chart type={data.visualization} data={data.result} />; break;
       default: view = <Json data={data} />; break;
     }
 
