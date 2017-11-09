@@ -22,10 +22,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
@@ -33,19 +45,11 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.clustering.impl.TopicLeader;
-import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskSubscription;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
-import org.junit.*;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Ignore("Unreliable cause of multiple problems: " +
     "https://github.com/zeebe-io/zeebe/issues/292 " +
@@ -222,57 +226,6 @@ public class BrokerLeaderChangeTest
                 subscription.close();
                 LOG.info("Raft subscription closed");
             }
-        }
-
-    }
-
-    static class TopologyObserver
-    {
-
-        private final Request<TopologyResponse> requestTopologyCmd;
-
-        TopologyObserver(final ZeebeClient client)
-        {
-            requestTopologyCmd = client.requestTopology();
-        }
-
-        void waitForBroker(final SocketAddress socketAddress)
-        {
-            updateTopology()
-                .until(t -> t != null && t.getBrokers().contains(socketAddress),
-                    "Failed to wait for %s be a known broker", socketAddress);
-
-            LOG.info("Broker {} is known by the cluster", socketAddress);
-        }
-
-        SocketAddress waitForLeader(final int partition, final Set<SocketAddress> socketAddresses)
-        {
-            final TopologyResponse respose = updateTopology()
-                .until(t -> t != null && socketAddresses.contains(getLeaderForPartition(t, partition)),
-                    "Failed to wait for %s become leader of partition %d", socketAddresses, partition);
-
-            final SocketAddress leader = getLeaderForPartition(respose, partition);
-
-            LOG.info("Broker {} is leader for partition {}", leader, partition);
-            return leader;
-        }
-
-        TestUtil.Invocation<TopologyResponse> updateTopology()
-        {
-            return doRepeatedly(requestTopologyCmd::execute);
-        }
-
-        static SocketAddress getLeaderForPartition(TopologyResponse resp, int partition)
-        {
-            for (TopicLeader leader : resp.getTopicLeaders())
-            {
-                if (partition == leader.getPartitionId())
-                {
-                    return leader.getSocketAddress();
-                }
-            }
-
-            return null;
         }
 
     }

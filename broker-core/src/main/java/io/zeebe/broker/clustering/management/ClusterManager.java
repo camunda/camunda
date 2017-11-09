@@ -31,6 +31,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.gossip.data.Peer;
+import io.zeebe.broker.clustering.gossip.data.PeerList;
+import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
@@ -218,38 +220,64 @@ public class ClusterManager implements Actor
                 // only send an invitation request if we are currently leader of the raft group
                 if (raft.getState() == RaftState.LEADER)
                 {
-                    // TODO(menski): implement replication factor
-                    // TODO: if this should be garbage free, we have to limit
-                    // the number of concurrent invitations.
-                    final List<SocketAddress> members = new ArrayList<>();
-                    members.add(raft.getSocketAddress());
-                    raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
-
-                    final LogStream logStream = raft.getLogStream();
-                    final InvitationRequest invitationRequest = new InvitationRequest()
-                        .topicName(logStream.getTopicName())
-                        .partitionId(logStream.getPartitionId())
-                        .term(raft.getTerm())
-                        .members(members);
-
-                    LOG.debug("Send invitation request to {} for partition {} in term {}", copy.managementEndpoint(), logStream.getPartitionId(), raft.getTerm());
-
-                    final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
-                    requestController.open(copy.managementEndpoint(), invitationRequest, null);
-                    activeRequestControllers.add(requestController);
+                    invitePeerToRaft(raft, copy);
                 }
             }
 
         });
     }
 
+    protected void invitePeerToRaft(Raft raft, Peer peer)
+    {
+        // TODO(menski): implement replication factor
+        // TODO: if this should be garbage free, we have to limit
+        // the number of concurrent invitations.
+        final List<SocketAddress> members = new ArrayList<>();
+        members.add(raft.getSocketAddress());
+        raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
+
+        final LogStream logStream = raft.getLogStream();
+        final InvitationRequest invitationRequest = new InvitationRequest()
+            .topicName(logStream.getTopicName())
+            .partitionId(logStream.getPartitionId())
+            .term(raft.getTerm())
+            .members(members);
+
+        LOG.debug("Send invitation request to {} for partition {} in term {}", peer.managementEndpoint(), logStream.getPartitionId(), raft.getTerm());
+
+        final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
+        requestController.open(peer.managementEndpoint(), invitationRequest, null);
+        activeRequestControllers.add(requestController);
+    }
+
     public void addRaft(final Raft raft)
     {
+        // this must be determined before we cross the async boundary to avoid race conditions
+        final boolean isRaftCreator = raft.getMemberSize() == 0;
+
         commandQueue.runAsync(() ->
         {
             context.getLocalPeer().addRaft(raft);
             rafts.add(raft);
             startLogStreamServiceControllers.add(new StartLogStreamServiceController(raft, serviceContainer));
+
+            if (isRaftCreator)
+            {
+                // invite every known peer
+                // TODO: not garbage-free, but required to avoid shared state and conflicting iterator use
+                // this should be resolved when we rewrite gossip
+                final PeerList knownPeers = context.getPeers().copy();
+                final PeerListIterator it = knownPeers.iterator();
+
+                while (it.hasNext())
+                {
+                    final Peer nextPeer = it.next();
+                    if (!nextPeer.equals(context.getLocalPeer()))
+                    {
+                        invitePeerToRaft(raft, nextPeer);
+                    }
+                }
+            }
         });
     }
 

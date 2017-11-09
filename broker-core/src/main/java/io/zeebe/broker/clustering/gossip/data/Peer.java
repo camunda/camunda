@@ -169,6 +169,45 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     }
 
     @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((managementEndpoint == null) ? 0 : managementEndpoint.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final Peer other = (Peer) obj;
+        if (managementEndpoint == null)
+        {
+            if (other.managementEndpoint != null)
+            {
+                return false;
+            }
+        }
+        else if (!managementEndpoint.equals(other.managementEndpoint))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public void wrap(final DirectBuffer buffer, final int offset, final int length)
     {
         final int frameEnd = offset + length;

@@ -34,6 +34,7 @@ public class Broker implements AutoCloseable
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
     protected final SystemContext brokerContext;
+    protected boolean isClosed = false;
 
     public Broker(String configFileLocation)
     {
@@ -71,9 +72,13 @@ public class Broker implements AutoCloseable
     @Override
     public void close()
     {
-        brokerContext.close();
+        if (!isClosed)
+        {
+            brokerContext.close();
+            isClosed = true;
+            LOG.info("Broker closed");
+        }
 
-        LOG.info("Broker closed");
     }
 
     public SystemContext getBrokerContext()
