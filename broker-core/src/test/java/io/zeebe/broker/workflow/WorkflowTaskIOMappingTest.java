@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.test.MsgPackUtil.*;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
@@ -31,8 +30,6 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
 import org.junit.*;
 import org.junit.rules.RuleChain;
@@ -79,15 +76,7 @@ public class WorkflowTaskIOMappingTest
                 .done();
 
         // when
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-                .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
-            .done()
-            .sendAndAwait();
+        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
@@ -108,15 +97,7 @@ public class WorkflowTaskIOMappingTest
                 .done();
 
         // when
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-            .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
-            .done()
-            .sendAndAwait();
+        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
@@ -244,15 +225,7 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done();
 
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-            .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
-            .done()
-            .sendAndAwait();
+        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
     }
@@ -452,15 +425,7 @@ public class WorkflowTaskIOMappingTest
                 .done();
 
         // when
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-            .put(PROP_STATE, "CREATE_DEPLOYMENT")
-            .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-            .put(PROP_WORKFLOW_RESOURCE, bpmnXml(definition))
-            .done()
-            .sendAndAwait();
+        final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
@@ -500,11 +465,6 @@ public class WorkflowTaskIOMappingTest
         assertThat(MSGPACK_MAPPER.readTree(result))
             .isEqualTo(JSON_MAPPER.readTree(
                 "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}"));
-    }
-
-    private byte[] bpmnXml(final WorkflowDefinition definition)
-    {
-        return Bpmn.convertToString(definition).getBytes(UTF_8);
     }
 
 }

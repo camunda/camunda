@@ -68,7 +68,7 @@ public class ExclusiveGatewayTest
                 .done();
 
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(workflowDefinition)
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
             .execute();
 
         // when
@@ -96,7 +96,7 @@ public class ExclusiveGatewayTest
                 .done();
 
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(workflowDefinition)
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
             .execute();
 
         // when
@@ -126,7 +126,7 @@ public class ExclusiveGatewayTest
                     .done();
 
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(workflowDefinition)
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
             .execute();
 
         // when

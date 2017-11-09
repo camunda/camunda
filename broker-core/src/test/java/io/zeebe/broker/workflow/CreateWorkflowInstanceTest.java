@@ -32,8 +32,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -420,14 +419,18 @@ public class CreateWorkflowInstanceTest
         final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
+        final Map<String, Object> deploymentResource = new HashMap<>();
+        deploymentResource.put("resource", yamlWorkflow.getBytes(UTF_8));
+        deploymentResource.put("resourceType", ResourceType.YAML_WORKFLOW);
+        deploymentResource.put("resourceName", "simple-workflow.yaml");
+
         final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                 .put(PROP_STATE, "CREATE_DEPLOYMENT")
                 .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                .put("resource", yamlWorkflow.getBytes(UTF_8))
-                .put("resourceType", ResourceType.YAML_WORKFLOW)
+                .put("resources", Collections.singletonList(deploymentResource))
                 .done()
                 .sendAndAwait();
 

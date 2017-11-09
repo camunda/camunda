@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.workflow.impl;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.*;
@@ -28,8 +27,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
     @JsonProperty("topicName")
     private String deploymentTopic;
 
-    private byte[] resource;
-    private ResourceType resourceType;
+    private List<DeploymentResource> resources;
 
     private List<WorkflowDefinition> deployedWorkflows;
     private String errorMessage;
@@ -41,25 +39,15 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
     }
 
     @Override
-    public byte[] getResource()
+    @JsonTypeInfo(use = Id.NAME, defaultImpl = DeploymentResourceImpl.class)
+    public List<DeploymentResource> getResources()
     {
-        return resource;
+        return resources;
     }
 
-    public void setResource(byte[] resource)
+    public void setResources(List<DeploymentResource> resources)
     {
-        this.resource = resource;
-    }
-
-    @Override
-    public ResourceType getResourceType()
-    {
-        return resourceType;
-    }
-
-    public void setResourceType(ResourceType resourceType)
-    {
-        this.resourceType = resourceType;
+        this.resources = resources;
     }
 
     @Override
@@ -102,7 +90,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
         builder.append("DeploymentEvent [topic=");
         builder.append(deploymentTopic);
         builder.append(", resource=");
-        builder.append(new String(resource, StandardCharsets.UTF_8));
+        builder.append(resources);
         builder.append(", deployedWorkflows=");
         builder.append(deployedWorkflows);
         builder.append(", errorMessage=");

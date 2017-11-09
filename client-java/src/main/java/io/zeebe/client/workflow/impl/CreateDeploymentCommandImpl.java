@@ -20,10 +20,11 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.ResourceType;
+import io.zeebe.client.event.*;
 import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.cmd.CommandImpl;
@@ -35,9 +36,10 @@ import io.zeebe.util.StreamUtil;
 
 public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> implements CreateDeploymentCommand
 {
-    protected final DeploymentEventImpl deploymentEvent = new DeploymentEventImpl(DeploymentEventType.CREATE_DEPLOYMENT.name());
+    private final DeploymentEventImpl deploymentEvent = new DeploymentEventImpl(DeploymentEventType.CREATE_DEPLOYMENT.name());
+    private final List<DeploymentResource> resources = new ArrayList<>();
 
-    protected final BpmnModelApi bpmn = new BpmnModelApi();
+    private final BpmnModelApi bpmn = new BpmnModelApi();
 
     public CreateDeploymentCommandImpl(final RequestManager commandManager, String topic)
     {
@@ -49,27 +51,33 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand resourceBytes(final byte[] resource, ResourceType resourceType)
+    public CreateDeploymentCommand addResourceBytes(final byte[] resource, String resourceName)
     {
-        this.deploymentEvent.setResource(resource);
-        this.deploymentEvent.setResourceType(resourceType);
+        final DeploymentResourceImpl deploymentResource = new DeploymentResourceImpl();
+
+        deploymentResource.setResource(resource);
+        deploymentResource.setResourceName(resourceName);
+        deploymentResource.setResourceType(getResourceType(resourceName));
+
+        resources.add(deploymentResource);
+
         return this;
     }
 
     @Override
-    public CreateDeploymentCommand resourceString(final String resource, Charset charset, ResourceType resourceType)
+    public CreateDeploymentCommand addResourceString(final String resource, Charset charset, String resourceName)
     {
-        return resourceBytes(resource.getBytes(charset), resourceType);
+        return addResourceBytes(resource.getBytes(charset), resourceName);
     }
 
     @Override
-    public CreateDeploymentCommand resourceStringUtf8(String resourceString, ResourceType resourceType)
+    public CreateDeploymentCommand addResourceStringUtf8(String resourceString, String resourceName)
     {
-        return resourceString(resourceString, StandardCharsets.UTF_8, resourceType);
+        return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
     }
 
     @Override
-    public CreateDeploymentCommand resourceStream(final InputStream resourceStream, ResourceType resourceType)
+    public CreateDeploymentCommand addResourceStream(final InputStream resourceStream, String resourceName)
     {
         ensureNotNull("resource stream", resourceStream);
 
@@ -77,7 +85,7 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
         {
             final byte[] bytes = StreamUtil.read(resourceStream);
 
-            return resourceBytes(bytes, resourceType);
+            return addResourceBytes(bytes, resourceName);
         }
         catch (final IOException e)
         {
@@ -87,19 +95,19 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand resourceFromClasspath(final String resourceName)
+    public CreateDeploymentCommand addResourceFromClasspath(final String classpathResource)
     {
-        ensureNotNull("classpath resource", resourceName);
+        ensureNotNull("classpath resource", classpathResource);
 
-        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourceName))
+        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(classpathResource))
         {
             if (resourceStream != null)
             {
-                return resourceStream(resourceStream, getResourceType(resourceName));
+                return addResourceStream(resourceStream, classpathResource);
             }
             else
             {
-                throw new FileNotFoundException(resourceName);
+                throw new FileNotFoundException(classpathResource);
             }
 
         }
@@ -111,13 +119,13 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand resourceFile(final String filename)
+    public CreateDeploymentCommand addResourceFile(final String filename)
     {
         ensureNotNull("filename", filename);
 
         try (InputStream resourceStream = new FileInputStream(filename))
         {
-            return resourceStream(resourceStream, getResourceType(filename));
+            return addResourceStream(resourceStream, filename);
         }
         catch (final IOException e)
         {
@@ -127,17 +135,18 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     }
 
     @Override
-    public CreateDeploymentCommand workflowModel(final WorkflowDefinition workflowDefinition)
+    public CreateDeploymentCommand addWorkflowModel(final WorkflowDefinition workflowDefinition, String resourceName)
     {
         ensureNotNull("workflow model", workflowDefinition);
 
         final String bpmnXml = bpmn.convertToString(workflowDefinition);
-        return resourceStringUtf8(bpmnXml, ResourceType.BPMN_XML);
+        return addResourceStringUtf8(bpmnXml, resourceName);
     }
 
     @Override
     public EventImpl getEvent()
     {
+        deploymentEvent.setResources(resources);
         return deploymentEvent;
     }
 
@@ -155,6 +164,8 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
 
     private ResourceType getResourceType(String resourceName)
     {
+        resourceName = resourceName.toLowerCase();
+
         if (resourceName.endsWith(".yaml"))
         {
             return ResourceType.YAML_WORKFLOW;

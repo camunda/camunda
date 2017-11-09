@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -39,6 +40,11 @@ import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest
 {
+    private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
+            .startEvent()
+            .endEvent()
+            .done();
+
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientApiRule apiRule = new ClientApiRule();
@@ -49,12 +55,6 @@ public class CreateDeploymentTest
     @Test
     public void shouldCreateDeploymentWithBpmnXml()
     {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-            .startEvent()
-            .endEvent()
-            .done();
-
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
@@ -62,8 +62,7 @@ public class CreateDeploymentTest
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", bpmnXml(definition))
-                    .put("resourceType", ResourceType.BPMN_XML)
+                    .put("resources", Collections.singletonList(deploymentResource(WORKFLOW, "process.bpmn")))
                 .done()
                 .sendAndAwait();
 
@@ -78,23 +77,8 @@ public class CreateDeploymentTest
     @Test
     public void shouldReturnDeployedWorkflowDefinitions()
     {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-            .startEvent()
-            .endEvent()
-            .done();
-
         // when
-        ExecuteCommandResponse resp = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-                .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                .put("resource", bpmnXml(definition))
-                .put("resourceType", ResourceType.BPMN_XML)
-            .done()
-            .sendAndAwait();
+        ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then
         List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
@@ -103,16 +87,7 @@ public class CreateDeploymentTest
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 1);
 
         // when deploy the workflow definition a second time
-        resp = apiRule.createCmdRequest()
-            .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.DEPLOYMENT_EVENT)
-            .command()
-                .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                .put("resource", bpmnXml(definition))
-                .put("resourceType", ResourceType.BPMN_XML)
-            .done()
-            .sendAndAwait();
+        resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then the workflow definition version is increased
         deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
@@ -124,11 +99,28 @@ public class CreateDeploymentTest
     @Test
     public void shouldWriteWorkflowEvent()
     {
+        // when
+        final long deploymentKey = apiRule.topic().deploy(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
+
+        // then
+        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents("CREATED"));
+        assertThat(workflowEvent.key()).isGreaterThanOrEqualTo(0L).isNotEqualTo(deploymentKey);
+        assertThat(workflowEvent.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry("deploymentKey", deploymentKey)
+            .containsEntry("bpmnXml", bpmnXml(WORKFLOW));
+    }
+
+    @Test
+    public void shouldCreateDeploymentWithMultipleResources()
+    {
         // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-            .startEvent()
-            .endEvent()
-            .done();
+        final WorkflowDefinition definition1 = Bpmn.createExecutableWorkflow("process1").startEvent().done();
+        final WorkflowDefinition definition2 = Bpmn.createExecutableWorkflow("process2").startEvent().done();
+
+        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(definition1, "process1.bpmn"),
+                                                                  deploymentResource(definition2, "process2.bpmn"));
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -137,44 +129,28 @@ public class CreateDeploymentTest
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", bpmnXml(definition))
-                    .put("resourceType", ResourceType.BPMN_XML)
+                    .put("resources", resources)
                 .done()
                 .sendAndAwait();
 
         // then
-        final long deploymentKey = resp.key();
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
 
-        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents("CREATED"));
-        assertThat(workflowEvent.key()).isGreaterThanOrEqualTo(0L).isNotEqualTo(deploymentKey);
-        assertThat(workflowEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry("deploymentKey", deploymentKey)
-            .containsEntry("bpmnXml", bpmnXml(definition));
+        final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(toList());
+
+        assertThat(workflowEvents)
+            .extracting(s -> s.event().get(PROP_WORKFLOW_BPMN_PROCESS_ID))
+            .contains("process1", "process2");
     }
 
     @Test
     public void shouldRejectDeploymentIfTopicNotExists()
     {
-        // given
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .endEvent()
-                .done();
-
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", "not-exist")
-                    .put("resource", bpmnXml(definition))
-                    .put("resourceType", ResourceType.BPMN_XML)
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse("not-existing", WORKFLOW);
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -189,16 +165,7 @@ public class CreateDeploymentTest
         final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process").done();
 
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", bpmnXml(definition))
-                    .put("resourceType", ResourceType.BPMN_XML)
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -207,7 +174,35 @@ public class CreateDeploymentTest
     }
 
     @Test
-    public void shouldRejectDeploymentIfNotParsable()
+    public void shouldRejectDeploymentIfOneResourceIsNotValid()
+    {
+        // given
+        final WorkflowDefinition invalidDefinition = Bpmn.createExecutableWorkflow("process").done();
+
+        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(WORKFLOW, "process1.bpmn"),
+                                                                  deploymentResource(invalidDefinition, "process2.bpmn"));
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .partitionId(Protocol.SYSTEM_PARTITION)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
+                    .put("resources", resources)
+                .done()
+                .sendAndAwait();
+
+        // then
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat((String) resp.getEvent().get("errorMessage"))
+            .contains("Resource 'process2.bpmn':")
+            .contains("The process must contain at least one none start event.");
+    }
+
+    @Test
+    public void shouldRejectDeploymentIfNoResources()
     {
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -216,21 +211,48 @@ public class CreateDeploymentTest
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", "not a workflow".getBytes(UTF_8))
-                    .put("resourceType", ResourceType.BPMN_XML)
+                    .put("resources", Collections.emptyList())
                 .done()
                 .sendAndAwait();
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).contains("Failed to deploy BPMN model");
+        assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
+    }
+
+    @Test
+    public void shouldRejectDeploymentIfNotParsable()
+    {
+        // given
+        final Map<String, Object> deploymentResource = new HashMap<>();
+        deploymentResource.put("resource", "not a workflow".getBytes(UTF_8));
+        deploymentResource.put("resourceType", ResourceType.BPMN_XML);
+        deploymentResource.put("resourceName", "invalid.bpmn");
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                .partitionId(Protocol.SYSTEM_PARTITION)
+                .eventType(EventType.DEPLOYMENT_EVENT)
+                .command()
+                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
+                    .put("resources", Collections.singletonList(deploymentResource))
+                .done()
+                .sendAndAwait();
+
+        // then
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat((String) resp.getEvent().get("errorMessage"))
+            .contains("Failed to deploy resource 'invalid.bpmn':")
+            .contains("Failed to read BPMN model");
     }
 
     @Test
     public void shouldRejectDeploymentIfConditionIsInvalid()
     {
-        final WorkflowDefinition workflowDefinition = Bpmn.createExecutableWorkflow("workflow")
+        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("workflow")
                                      .startEvent()
                                      .exclusiveGateway()
                                      .sequenceFlow(s -> s.condition("foobar"))
@@ -240,16 +262,7 @@ public class CreateDeploymentTest
                                          .done();
 
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", bpmnXml(workflowDefinition))
-                    .put("resourceType", ResourceType.BPMN_XML)
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -264,6 +277,11 @@ public class CreateDeploymentTest
         final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
+        final Map<String, Object> deploymentResource = new HashMap<>();
+        deploymentResource.put("resource", yamlWorkflow.getBytes(UTF_8));
+        deploymentResource.put("resourceType", ResourceType.YAML_WORKFLOW);
+        deploymentResource.put("resourceName", "process.yaml");
+
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
@@ -271,8 +289,7 @@ public class CreateDeploymentTest
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resource", yamlWorkflow.getBytes(UTF_8))
-                    .put("resourceType", ResourceType.YAML_WORKFLOW)
+                    .put("resources", Collections.singletonList(deploymentResource))
                 .done()
                 .sendAndAwait();
 
@@ -295,13 +312,8 @@ public class CreateDeploymentTest
         apiRule.createTopic("test", partitions);
         final List<Integer> partitionIds = apiRule.getPartitionIds("test");
 
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .endEvent()
-                .done();
-
         // when
-        apiRule.topic().deploy("test", definition);
+        apiRule.topic().deploy("test", WORKFLOW);
 
         // then
         final List<Long> workflowKeys = new ArrayList<>();
@@ -324,14 +336,9 @@ public class CreateDeploymentTest
         apiRule.createTopic("foo", 1);
         apiRule.createTopic("bar", 1);
 
-        final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
-                .startEvent()
-                .endEvent()
-                .done();
-
         // when
-        apiRule.topic().deploy("foo", definition);
-        apiRule.topic().deploy("bar", definition);
+        apiRule.topic().deploy("foo", WORKFLOW);
+        apiRule.topic().deploy("bar", WORKFLOW);
 
         // then
         final SubscribedEvent eventFoo = apiRule.topic(apiRule.getSinglePartitionId("foo")).receiveSingleEvent(workflowEvents("CREATED"));
@@ -339,6 +346,16 @@ public class CreateDeploymentTest
 
         assertThat(eventFoo.event().get("version")).isEqualTo(1);
         assertThat(eventBar.event().get("version")).isEqualTo(1);
+    }
+
+    private Map<String, Object> deploymentResource(final WorkflowDefinition definition, String name)
+    {
+        final Map<String, Object> deploymentResource = new HashMap<>();
+        deploymentResource.put("resource", bpmnXml(definition));
+        deploymentResource.put("resourceType", ResourceType.BPMN_XML);
+        deploymentResource.put("resourceName", name);
+
+        return deploymentResource;
     }
 
     private byte[] bpmnXml(final WorkflowDefinition definition)

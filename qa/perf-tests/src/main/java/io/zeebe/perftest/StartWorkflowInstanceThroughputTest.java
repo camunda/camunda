@@ -47,7 +47,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
         // create deployment
         workflowsClient
             .deploy(DEFAULT_TOPIC_NAME)
-            .workflowModel(workflow)
+            .addWorkflowModel(workflow, "workflow.bpmn")
             .execute();
 
         try

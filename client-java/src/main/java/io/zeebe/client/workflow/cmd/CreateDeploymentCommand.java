@@ -29,41 +29,41 @@ public interface CreateDeploymentCommand extends Request<DeploymentEvent>
     /**
      * Add the given resource to the deployment.
      */
-    CreateDeploymentCommand resourceBytes(byte[] resourceBytes, ResourceType resourceType);
+    CreateDeploymentCommand addResourceBytes(byte[] resourceBytes, String resourceName);
 
     /**
      * Add the given resource to the deployment. The charset must match the
      * encoding of the resource.
      */
-    CreateDeploymentCommand resourceString(String resourceString, Charset charset, ResourceType resourceType);
+    CreateDeploymentCommand addResourceString(String resourceString, Charset charset, String resourceName);
 
     /**
      * Convenience method for invoking
-     * {@link #resourceString(String, Charset, ResourceType)} with
+     * {@link #addResourceString(String, Charset, ResourceType)} with
      * {@link StandardCharsets#UTF_8}.
      */
-    CreateDeploymentCommand resourceStringUtf8(String resourceString, ResourceType resourceType);
+    CreateDeploymentCommand addResourceStringUtf8(String resourceString, String resourceName);
 
     /**
      * Add the given resource stream to the deployment.
      */
-    CreateDeploymentCommand resourceStream(InputStream resourceStream, ResourceType resourceType);
+    CreateDeploymentCommand addResourceStream(InputStream resourceStream, String resourceName);
 
     /**
      * Add the given classpath resource to the deployment. The resource type is
      * detected by the resource name.
      */
-    CreateDeploymentCommand resourceFromClasspath(String classpathResource);
+    CreateDeploymentCommand addResourceFromClasspath(String classpathResource);
 
     /**
      * Add the given file resource to the deployment. The resource type is
      * detected by the resource name.
      */
-    CreateDeploymentCommand resourceFile(String filename);
+    CreateDeploymentCommand addResourceFile(String filename);
 
     /**
      * Add the given workflow model to the deployment.
      */
-    CreateDeploymentCommand workflowModel(WorkflowDefinition workflowDefinition);
+    CreateDeploymentCommand addWorkflowModel(WorkflowDefinition workflowDefinition, String resourceName);
 
 }

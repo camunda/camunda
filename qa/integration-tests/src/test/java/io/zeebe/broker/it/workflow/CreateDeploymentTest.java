@@ -64,13 +64,18 @@ public class CreateDeploymentTest
         // when
         final DeploymentEvent result = workflowService
                 .deploy(clientRule.getDefaultTopic())
-                .workflowModel(workflow)
+                .addWorkflowModel(workflow, "workflow.bpmn")
                 .execute();
 
         // then
         assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-        assertThat(result.getResource()).isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
-        assertThat(result.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
+        assertThat(result.getResources()).hasSize(1);
+
+        final DeploymentResource deployedResource = result.getResources().get(0);
+        assertThat(deployedResource.getResource()).isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
+        assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
+        assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
+
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
@@ -87,6 +92,34 @@ public class CreateDeploymentTest
     }
 
     @Test
+    public void shouldDeployMultipleResources()
+    {
+        // given
+        final WorkflowsClient workflowService = clientRule.workflows();
+
+        // when
+        final DeploymentEvent result = workflowService
+                .deploy(clientRule.getDefaultTopic())
+                .addWorkflowModel(Bpmn.createExecutableWorkflow("model1").startEvent().done(), "model1.bpmn")
+                .addWorkflowModel(Bpmn.createExecutableWorkflow("model2").startEvent().done(), "model2.bpmn")
+                .execute();
+
+        // then
+        assertThat(result.getResources())
+            .hasSize(2)
+            .extracting(DeploymentResource::getResourceName)
+            .contains("model1.bpmn", "model2.bpmn");
+
+        assertThat(result.getDeployedWorkflows())
+            .hasSize(2)
+            .extracting(WorkflowDefinition::getBpmnProcessId)
+            .contains("model1", "model2");
+
+        assertThat(eventRecorder.hasWorkflowEvent(w -> w.getBpmnProcessId().equals("model1"))).isTrue();
+        assertThat(eventRecorder.hasWorkflowEvent(w -> w.getBpmnProcessId().equals("model2"))).isTrue();
+    }
+
+    @Test
     public void shouldNotDeployUnparsableModel()
     {
         // given
@@ -94,11 +127,11 @@ public class CreateDeploymentTest
 
         // then
         exception.expect(ClientCommandRejectedException.class);
-        exception.expectMessage(containsString("Failed to deploy BPMN model"));
+        exception.expectMessage(containsString("Failed to deploy resource 'invalid.bpmn'"));
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-                .resourceStringUtf8("Foooo", ResourceType.BPMN_XML)
+                .addResourceStringUtf8("Foooo", "invalid.bpmn")
                 .execute();
     }
 
@@ -114,7 +147,7 @@ public class CreateDeploymentTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("no-start-event").done()) // does not have a start event
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("no-start-event").done(), "invalid.bpmn") // does not have a start event
             .execute();
     }
 
@@ -138,7 +171,22 @@ public class CreateDeploymentTest
 
         // when
         workflowService.deploy(clientRule.getDefaultTopic())
-            .workflowModel(workflowDefinition)
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
+            .execute();
+    }
+
+    @Test
+    public void shouldNotDeployIfNoResourceIsAdded()
+    {
+        // given
+        final WorkflowsClient workflowService = clientRule.workflows();
+
+        // then
+        exception.expect(ClientCommandRejectedException.class);
+        exception.expectMessage(containsString("Deployment doesn't contain a resource to deploy."));
+
+        // when
+        workflowService.deploy(clientRule.getDefaultTopic())
             .execute();
     }
 
@@ -151,12 +199,18 @@ public class CreateDeploymentTest
         // when
         final DeploymentEvent result = workflowService
                 .deploy(clientRule.getDefaultTopic())
-                .resourceFromClasspath("workflows/simple-workflow.yaml")
+                .addResourceFromClasspath("workflows/simple-workflow.yaml")
                 .execute();
 
         // then
         assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-        assertThat(result.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
+
+        assertThat(result.getResources()).hasSize(1);
+
+        final DeploymentResource deployedResource = result.getResources().get(0);
+        assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
+        assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
+
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);

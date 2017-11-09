@@ -69,11 +69,12 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("process")
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         // when
@@ -95,13 +96,14 @@ public class ServiceTaskTest
         taskHeaders.put("cust2", "b");
 
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("process")
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                                 .taskHeader("cust1", "a")
                                 .taskHeader("cust2", "b"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         final WorkflowInstanceEvent workflowInstance = workflowClient.create(clientRule.getDefaultTopic())
@@ -144,11 +146,12 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("process")
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -173,13 +176,14 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(
+            .addWorkflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                        .input("$.foo", "$.bar"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -209,13 +213,14 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(
+            .addWorkflowModel(
                     Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                        .output("$.foo", "$.bar"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -242,13 +247,14 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("process")
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                    .startEvent("start")
                    .serviceTask("task", t -> t.taskType("foo")
                        .input("$.foo", "$.foo")
                        .output("$.foo", "$.foo"))
                    .endEvent("end")
-                   .done())
+                   .done(),
+                   "workflow.bpmn")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -280,13 +286,14 @@ public class ServiceTaskTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .workflowModel(Bpmn.createExecutableWorkflow("process")
+            .addWorkflowModel(Bpmn.createExecutableWorkflow("process")
                        .startEvent("start")
                        .serviceTask("task", t -> t.taskType("foo")
                        .input("$.foo", "$.foo")
                        .output("$.foo", "$.foo"))
                        .endEvent("end")
-                       .done())
+                       .done(),
+                       "workflow.bpmn")
             .execute();
 
         // when

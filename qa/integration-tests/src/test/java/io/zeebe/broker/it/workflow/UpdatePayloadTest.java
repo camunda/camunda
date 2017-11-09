@@ -61,7 +61,7 @@ public class UpdatePayloadTest
     public void init()
     {
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
     }
 

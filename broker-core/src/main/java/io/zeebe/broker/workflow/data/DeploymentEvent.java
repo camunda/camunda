@@ -35,8 +35,10 @@ public class DeploymentEvent extends UnpackedObject
 
     private final StringProperty topicNameProp = new StringProperty("topicName");
 
-    private final BinaryProperty resourceProp = new BinaryProperty("resource");
-    private final EnumProperty<ResourceType> resourceTypeProp = new EnumProperty<ResourceType>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
+    private final ArrayProperty<DeploymentResource> resourcesProp = new ArrayProperty<DeploymentResource>(
+            "resources",
+            new ArrayValue<>(),
+            new DeploymentResource());
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
             "deployedWorkflows",
@@ -50,8 +52,7 @@ public class DeploymentEvent extends UnpackedObject
     {
         this.declareProperty(stateProp)
             .declareProperty(topicNameProp)
-            .declareProperty(resourceProp)
-            .declareProperty(resourceTypeProp)
+            .declareProperty(resourcesProp)
             .declareProperty(deployedWorkflowsProp)
             .declareProperty(errorMessageProp);
     }
@@ -67,36 +68,14 @@ public class DeploymentEvent extends UnpackedObject
         return this;
     }
 
-    public DirectBuffer getResource()
-    {
-        return resourceProp.getValue();
-    }
-
-    public DeploymentEvent setResource(DirectBuffer resource)
-    {
-        return setResource(resource, 0, resource.capacity());
-    }
-
-    public DeploymentEvent setResource(DirectBuffer resource, int offset, int length)
-    {
-        this.resourceProp.setValue(resource, offset, length);
-        return this;
-    }
-
-    public ResourceType getResourceType()
-    {
-        return resourceTypeProp.getValue();
-    }
-
-    public DeploymentEvent setResourceName(ResourceType resourceType)
-    {
-        this.resourceTypeProp.setValue(resourceType);
-        return this;
-    }
-
     public ValueArray<DeployedWorkflow> deployedWorkflows()
     {
         return deployedWorkflowsProp;
+    }
+
+    public ValueArray<DeploymentResource> resources()
+    {
+        return resourcesProp;
     }
 
     public DirectBuffer getErrorMessage()

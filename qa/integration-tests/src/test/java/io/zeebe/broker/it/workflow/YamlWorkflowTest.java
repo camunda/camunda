@@ -65,7 +65,7 @@ public class YamlWorkflowTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .resourceFromClasspath("workflows/simple-workflow.yaml")
+            .addResourceFromClasspath("workflows/simple-workflow.yaml")
             .execute();
 
         // when
@@ -83,7 +83,7 @@ public class YamlWorkflowTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .resourceFromClasspath("workflows/simple-workflow.yaml")
+            .addResourceFromClasspath("workflows/simple-workflow.yaml")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -108,7 +108,7 @@ public class YamlWorkflowTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .resourceFromClasspath("workflows/workflow-with-headers.yaml")
+            .addResourceFromClasspath("workflows/workflow-with-headers.yaml")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())
@@ -139,7 +139,7 @@ public class YamlWorkflowTest
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
-            .resourceFromClasspath("workflows/workflow-with-mappings.yaml")
+            .addResourceFromClasspath("workflows/workflow-with-mappings.yaml")
             .execute();
 
         workflowClient.create(clientRule.getDefaultTopic())

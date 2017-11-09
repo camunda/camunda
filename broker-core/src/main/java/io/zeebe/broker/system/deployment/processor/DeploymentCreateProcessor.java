@@ -43,8 +43,10 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.collection.IntArrayListIterator;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
 import org.slf4j.Logger;
 
 public class DeploymentCreateProcessor implements TypedEventProcessor<DeploymentEvent>
@@ -60,6 +62,8 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
     private final PendingDeployments pendingDeployments;
 
     private final long timeoutInMillis;
+
+    private final DeploymentResourceIterator deploymentResourceIterator = new DeploymentResourceIterator();
 
     public DeploymentCreateProcessor(
             TopicPartitions topicPartitions,
@@ -138,40 +142,74 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
     private boolean readAndValidateWorkflows(final DeploymentEvent deploymentEvent)
     {
-        boolean success = false;
+        final DirectBuffer topicName = deploymentEvent.getTopicName();
+        final StringBuilder validationErrors = new StringBuilder();
 
-        try
+        boolean success = true;
+
+        deploymentResourceIterator.wrap(deploymentEvent);
+
+        if (!deploymentResourceIterator.hasNext())
         {
-            final WorkflowDefinition definition = readWorkflowDefinition(deploymentEvent);
-            final ValidationResult validationResult = bpmn.validate(definition);
+            validationErrors.append("Deployment doesn't contain a resource to deploy.");
 
-            success = !validationResult.hasErrors();
-            if (success)
+            success = false;
+        }
+
+        while (deploymentResourceIterator.hasNext())
+        {
+            final DeploymentResource deploymentResource = deploymentResourceIterator.next();
+
+            try
             {
-                assignVersionToWorkflows(deploymentEvent, definition);
+                success &= readAndValidateWorkflowsOfResource(deploymentResource, topicName, validationErrors);
 
-                transformWorkflowResource(deploymentEvent, definition);
             }
-
-            if (validationResult.hasErrors() || validationResult.hasWarnings())
+            catch (Exception e)
             {
-                deploymentEvent.setErrorMessage(validationResult.format());
+                validationErrors.append(String.format("Failed to deploy resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
+                validationErrors.append(generateErrorMessage(e));
+
+                success = false;
             }
         }
-        catch (Exception e)
-        {
-            final String errorMessage = generateErrorMessage(e);
-            deploymentEvent.setErrorMessage(errorMessage);
-        }
+
+        deploymentEvent.setErrorMessage(validationErrors.toString());
 
         return success;
     }
 
-    private WorkflowDefinition readWorkflowDefinition(DeploymentEvent deploymentEvent)
+    private boolean readAndValidateWorkflowsOfResource(
+            final DeploymentResource deploymentResource,
+            final DirectBuffer topicName,
+            final StringBuilder validationErrors)
     {
-        final DirectBuffer resource = deploymentEvent.getResource();
+        final WorkflowDefinition definition = readWorkflowDefinition(deploymentResource);
+        final ValidationResult validationResult = bpmn.validate(definition);
 
-        switch (deploymentEvent.getResourceType())
+        final boolean isValid = !validationResult.hasErrors();
+
+        if (isValid)
+        {
+            assignVersionToWorkflows(deploymentResourceIterator, topicName, definition);
+
+            transformWorkflowResource(deploymentResource, definition);
+        }
+
+        if (validationResult.hasErrors() || validationResult.hasWarnings())
+        {
+            validationErrors.append(String.format("Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
+            validationErrors.append(validationResult.format());
+        }
+
+        return isValid;
+    }
+
+    private WorkflowDefinition readWorkflowDefinition(DeploymentResource deploymentResource)
+    {
+        final DirectBuffer resource = deploymentResource.getResource();
+
+        switch (deploymentResource.getResourceType())
         {
             case BPMN_XML:
                 return bpmn.readFromXmlBuffer(resource);
@@ -182,20 +220,20 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         }
     }
 
-    private void transformWorkflowResource(final DeploymentEvent deploymentEvent, final WorkflowDefinition definition)
+    private boolean transformWorkflowResource(final DeploymentResource deploymentResource, final WorkflowDefinition definition)
     {
-        if (deploymentEvent.getResourceType() != ResourceType.BPMN_XML)
+        if (deploymentResource.getResourceType() != ResourceType.BPMN_XML)
         {
             final DirectBuffer bpmnXml = wrapString(bpmn.convertToString(definition));
-            deploymentEvent.setResource(bpmnXml);
+            deploymentResource.setResource(bpmnXml);
+
+            return true;
         }
+        return false;
     }
 
-    private void assignVersionToWorkflows(DeploymentEvent deploymentEvent, final WorkflowDefinition definition)
+    private void assignVersionToWorkflows(final DeploymentResourceIterator resourceIterator, final DirectBuffer topicName, final WorkflowDefinition definition)
     {
-        final DirectBuffer topicName = deploymentEvent.getTopicName();
-        final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
-
         for (Workflow workflow : definition.getWorkflows())
         {
             if (workflow.isExecutable())
@@ -204,7 +242,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
                 final int latestVersion = workflowVersions.getLatestVersion(topicName, bpmnProcessId, 0);
 
-                deployedWorkflows.add()
+                resourceIterator.addDeployedWorkflow()
                     .setBpmnProcessId(bpmnProcessId)
                     .setVersion(latestVersion + 1);
             }
@@ -217,7 +255,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
         e.printStackTrace(new PrintWriter(stacktraceWriter));
 
-        return String.format("Failed to deploy BPMN model: %s", stacktraceWriter);
+        return stacktraceWriter.toString();
     }
 
     @Override
@@ -250,16 +288,16 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
 
             batch.addFollowUpEvent(event.getKey(), deploymentEvent, addRequestMetadata(event));
 
-            final Iterator<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows().iterator();
-            while (deployedWorkflows.hasNext())
+            final DeployedWorkflowIterator deployedWorkflowIterator = deploymentResourceIterator.getDeployedWorkflows();
+            while (deployedWorkflowIterator.hasNext())
             {
-                final DeployedWorkflow deployedWorkflow = deployedWorkflows.next();
+                final DeployedWorkflow deployedWorkflow = deployedWorkflowIterator.next();
 
                 workflowEvent
                     .setState(WorkflowState.CREATE)
                     .setBpmnProcessId(deployedWorkflow.getBpmnProcessId())
                     .setVersion(deployedWorkflow.getVersion())
-                    .setBpmnXml(deploymentEvent.getResource())
+                    .setBpmnXml(deployedWorkflowIterator.getDeploymentResource().getResource())
                     .setDeploymentKey(event.getKey());
 
                 batch.addNewEvent(workflowEvent);
@@ -300,6 +338,108 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
             final DeployedWorkflow deployedWorkflow = iterator.next();
 
             workflowVersions.setLatestVersion(topicName, deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
+        }
+    }
+
+    private class DeploymentResourceIterator implements Iterator<DeploymentResource>
+    {
+        private final DeployedWorkflowIterator deployedWorkflowIterator = new DeployedWorkflowIterator();
+        private final IntArrayList workflowToResourceMapping = new IntArrayList();
+
+        private ValueArray<DeployedWorkflow> deployedWorkflows;
+        private ValueArray<DeploymentResource> deploymentResources;
+        private Iterator<DeploymentResource> iterator;
+
+        private int currentResource = 0;
+
+        public void wrap(DeploymentEvent deploymentEvent)
+        {
+            this.deployedWorkflows = deploymentEvent.deployedWorkflows();
+            this.deploymentResources = deploymentEvent.resources();
+            this.iterator = deploymentResources.iterator();
+
+            currentResource = 0;
+            workflowToResourceMapping.clear();
+        }
+
+        public DeployedWorkflow addDeployedWorkflow()
+        {
+            workflowToResourceMapping.addInt(currentResource);
+
+            return deployedWorkflows.add();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public DeploymentResource next()
+        {
+            currentResource += 1;
+            return iterator.next();
+        }
+
+        public DeployedWorkflowIterator getDeployedWorkflows()
+        {
+            deployedWorkflowIterator.wrap(deploymentResources.iterator(), deployedWorkflows.iterator(), workflowToResourceMapping);
+
+            return deployedWorkflowIterator;
+        }
+
+    }
+
+    private class DeployedWorkflowIterator implements Iterator<DeployedWorkflow>
+    {
+        private Iterator<DeploymentResource> deploymentResourceIterator;
+
+        private Iterator<DeployedWorkflow> deployedWorkflowIterator;
+
+        private final IntArrayListIterator workflowToResourceIterator = new IntArrayListIterator();
+
+        private DeploymentResource deploymentResource;
+        private int lastResource = -1;
+
+        public void wrap(
+                Iterator<DeploymentResource> deploymentResourceIterator,
+                Iterator<DeployedWorkflow> deployedWorkflowIterator,
+                IntArrayList workflowToResourceMapping)
+        {
+            this.deploymentResourceIterator = deploymentResourceIterator;
+            this.deployedWorkflowIterator = deployedWorkflowIterator;
+
+            workflowToResourceIterator.wrap(workflowToResourceMapping);
+
+            lastResource = -1;
+            deploymentResource = null;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return deployedWorkflowIterator.hasNext();
+        }
+
+        @Override
+        public DeployedWorkflow next()
+        {
+            final DeployedWorkflow deployedWorkflow = deployedWorkflowIterator.next();
+
+            final int resource = workflowToResourceIterator.nextInt();
+            if (resource > lastResource)
+            {
+                lastResource = resource;
+                deploymentResource = deploymentResourceIterator.next();
+            }
+
+            return deployedWorkflow;
+        }
+
+        public DeploymentResource getDeploymentResource()
+        {
+            return deploymentResource;
         }
     }
 

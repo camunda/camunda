@@ -26,7 +26,6 @@ import java.util.*;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.ResourceType;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -76,7 +75,7 @@ public class CreateDeploymentTest
 
         // when
         final DeploymentEvent deployment = clientRule.workflows().deploy("test-topic")
-            .workflowModel(WORKFLOW_MODEL)
+            .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
             .execute();
 
         // then
@@ -115,7 +114,7 @@ public class CreateDeploymentTest
 
         // when
         final DeploymentEvent deployment = clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .workflowModel(WORKFLOW_MODEL)
+            .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
             .execute();
 
         // then
@@ -151,10 +150,11 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .workflowModel(WORKFLOW_MODEL)
+            .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
             .execute();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsWorkflowModel()
     {
@@ -163,18 +163,22 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .workflowModel(WORKFLOW_MODEL)
+            .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsEntry("resource", WORKFLOW_AS_BYTES)
+            .containsEntry("resourceName", "model.bpmn")
             .containsEntry("resourceType", "BPMN_XML");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsString()
     {
@@ -183,18 +187,22 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceStringUtf8(Bpmn.convertToString(WORKFLOW_MODEL), ResourceType.BPMN_XML)
+            .addResourceStringUtf8(Bpmn.convertToString(WORKFLOW_MODEL), "workflow.bpmn")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsEntry("resource", WORKFLOW_AS_BYTES)
+            .containsEntry("resourceName", "workflow.bpmn")
             .containsEntry("resourceType", "BPMN_XML");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsBytes()
     {
@@ -203,18 +211,22 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceBytes(WORKFLOW_AS_BYTES, ResourceType.BPMN_XML)
+            .addResourceBytes(WORKFLOW_AS_BYTES, "workflow.bpmn")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsEntry("resource", WORKFLOW_AS_BYTES)
+            .containsEntry("resourceName", "workflow.bpmn")
             .containsEntry("resourceType", "BPMN_XML");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsStream()
     {
@@ -223,18 +235,22 @@ public class CreateDeploymentTest
 
         // when
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceStream(new ByteArrayInputStream(WORKFLOW_AS_BYTES), ResourceType.BPMN_XML)
+            .addResourceStream(new ByteArrayInputStream(WORKFLOW_AS_BYTES), "workflow.bpmn")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsEntry("resource", WORKFLOW_AS_BYTES)
+            .containsEntry("resourceName", "workflow.bpmn")
             .containsEntry("resourceType", "BPMN_XML");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsXmlFile() throws Exception
     {
@@ -245,21 +261,25 @@ public class CreateDeploymentTest
         final String filePath = getClass().getResource("/workflows/one-task-process.bpmn").toURI().getPath();
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFile(filePath)
+            .addResourceFile(filePath)
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsKey("resource")
+            .containsEntry("resourceName", filePath)
             .containsEntry("resourceType", "BPMN_XML");
 
-        final byte[] resource = (byte[]) commandRequest.getCommand().get("resource");
+        final byte[] resource = (byte[]) resources.get(0).get("resource");
         assertThat(new File(filePath)).hasBinaryContent(resource);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceAsYamlFile() throws Exception
     {
@@ -270,21 +290,25 @@ public class CreateDeploymentTest
         final String filePath = getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFile(filePath)
+            .addResourceFile(filePath)
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsKey("resource")
+            .containsEntry("resourceName", filePath)
             .containsEntry("resourceType", "YAML_WORKFLOW");
 
-        final byte[] resource = (byte[]) commandRequest.getCommand().get("resource");
+        final byte[] resource = (byte[]) resources.get(0).get("resource");
         assertThat(new File(filePath)).hasBinaryContent(resource);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceFromXmlClasspath() throws Exception
     {
@@ -294,23 +318,27 @@ public class CreateDeploymentTest
         // when
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFromClasspath("workflows/one-task-process.bpmn")
+            .addResourceFromClasspath("workflows/one-task-process.bpmn")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsKey("resource")
+            .containsEntry("resourceName", "workflows/one-task-process.bpmn")
             .containsEntry("resourceType", "BPMN_XML");
 
-        final byte[] resource = (byte[]) commandRequest.getCommand().get("resource");
+        final byte[] resource = (byte[]) resources.get(0).get("resource");
         final String filePath = getClass().getResource("/workflows/one-task-process.bpmn").toURI().getPath();
 
         assertThat(new File(filePath)).hasBinaryContent(resource);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldDeployResourceFromYamlClasspath() throws Exception
     {
@@ -320,21 +348,52 @@ public class CreateDeploymentTest
         // when
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFromClasspath("workflows/simple-workflow.yaml")
+            .addResourceFromClasspath("workflows/simple-workflow.yaml")
             .execute();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand())
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(1);
+        assertThat(resources.get(0))
             .containsKey("resource")
+            .containsEntry("resourceName", "workflows/simple-workflow.yaml")
             .containsEntry("resourceType", "YAML_WORKFLOW");
 
-        final byte[] resource = (byte[]) commandRequest.getCommand().get("resource");
+        final byte[] resource = (byte[]) resources.get(0).get("resource");
         final String filePath = getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
 
         assertThat(new File(filePath)).hasBinaryContent(resource);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void shouldDeployMultipleResources()
+    {
+        // given
+        stubDeploymentRequest();
+
+        final WorkflowDefinition definition1 = Bpmn.createExecutableWorkflow("model1").startEvent().done();
+        final WorkflowDefinition definition2 = Bpmn.createExecutableWorkflow("model2").startEvent().done();
+
+        // when
+        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+            .addWorkflowModel(definition1, "model1.bpmn")
+            .addWorkflowModel(definition2, "model2.bpmn")
+            .execute();
+
+        // then
+        assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
+
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        final List<Map<String, Object>> resources = (List<Map<String, Object>>) commandRequest.getCommand().get("resources");
+        assertThat(resources).hasSize(2);
+        assertThat(resources).extracting("resourceName").contains("model1.bpmn", "model2.bpmn");
+        assertThat(resources).extracting("resourceType").contains("BPMN_XML", "BPMN_XML");
+        assertThat(resources).extracting("resource").contains(Bpmn.convertToString(definition1).getBytes(UTF_8),
+                                                              Bpmn.convertToString(definition2).getBytes(UTF_8));
     }
 
     @Test
@@ -344,7 +403,7 @@ public class CreateDeploymentTest
         thrown.expectMessage("Cannot deploy resource from file");
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFile("not existing")
+            .addResourceFile("not existing")
             .execute();
     }
 
@@ -355,7 +414,7 @@ public class CreateDeploymentTest
         thrown.expectMessage("Cannot deploy resource from classpath");
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFromClasspath("not existing")
+            .addResourceFromClasspath("not existing")
             .execute();
     }
 
@@ -366,7 +425,7 @@ public class CreateDeploymentTest
         thrown.expectMessage("resource stream must not be null");
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceStream(getClass().getResourceAsStream("not existing"), ResourceType.BPMN_XML)
+            .addResourceStream(getClass().getResourceAsStream("not existing"), "workflow.bpmn")
             .execute();
     }
 
@@ -377,7 +436,7 @@ public class CreateDeploymentTest
         thrown.expectMessage("Cannot resolve type of resource 'example_file'.");
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFromClasspath("example_file")
+            .addResourceFromClasspath("example_file")
             .execute();
     }
 
@@ -390,7 +449,7 @@ public class CreateDeploymentTest
         thrown.expectMessage("Cannot resolve type of resource");
 
         clientRule.workflows().deploy(clientRule.getDefaultTopicName())
-            .resourceFile(filePath)
+            .addResourceFile(filePath)
             .execute();
     }
 

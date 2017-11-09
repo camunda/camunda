@@ -15,22 +15,20 @@
  */
 package io.zeebe.client.event;
 
-import java.util.List;
-
-public interface DeploymentEvent extends Event
+public interface DeploymentResource
 {
     /**
-     * @return the list of the resources which are part of the deployment
+     * @return the resource for deployment
      */
-    List<DeploymentResource> getResources();
+    byte[] getResource();
 
     /**
-     * @return the workflow definitions that were created as a result of the deployment
+     * @return the type of the resource
      */
-    List<WorkflowDefinition> getDeployedWorkflows();
+    ResourceType getResourceType();
 
     /**
-     * @return a message identifying the error that prevented deployment success
+     * @return the name of the resource
      */
-    String getErrorMessage();
+    String getResourceName();
 }

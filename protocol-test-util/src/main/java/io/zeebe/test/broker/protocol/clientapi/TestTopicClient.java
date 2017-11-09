@@ -39,7 +39,7 @@ public class TestTopicClient
     // workflow related properties
 
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
-    public static final String PROP_WORKFLOW_RESOURCE = "resource";
+    public static final String PROP_WORKFLOW_RESOURCES = "resources";
     public static final String PROP_WORKFLOW_VERSION = "version";
     public static final String PROP_WORKFLOW_PAYLOAD = "payload";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
@@ -74,13 +74,18 @@ public class TestTopicClient
 
     public ExecuteCommandResponse deployWithResponse(String topic, final WorkflowDefinition workflow)
     {
+        final Map<String, Object> deploymentResource = new HashMap<>();
+        deploymentResource.put("resource", Bpmn.convertToString(workflow).getBytes(UTF_8));
+        deploymentResource.put("resourceType", "BPMN_XML");
+        deploymentResource.put("resourceName", "process.bpmn");
+
         return apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", topic)
-                    .put(PROP_WORKFLOW_RESOURCE, Bpmn.convertToString(workflow).getBytes(UTF_8))
+                    .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
                     .put("resouceType", "BPMN_XML")
                 .done()
                 .sendAndAwait();

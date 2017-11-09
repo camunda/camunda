@@ -113,7 +113,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // when
@@ -132,7 +132,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -161,7 +161,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -194,7 +194,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_TWO_TASKS)
+            .addWorkflowModel(WORKFLOW_TWO_TASKS, "two-tasks.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -230,14 +230,14 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // when
         restartBroker();
 
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // then
@@ -397,7 +397,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_INCIDENT)
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -430,7 +430,7 @@ public class BrokerRecoveryTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_INCIDENT)
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

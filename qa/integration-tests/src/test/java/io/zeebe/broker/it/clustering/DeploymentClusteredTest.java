@@ -90,7 +90,7 @@ public class DeploymentClusteredTest
 
         // when
         client.workflows().deploy("test")
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // then
@@ -120,7 +120,7 @@ public class DeploymentClusteredTest
         assertThatThrownBy(() ->
         {
             client.workflows().deploy("test")
-                .workflowModel(WORKFLOW)
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                 .execute();
         }).hasMessageContaining("Deployment was rejected");
     }
@@ -141,7 +141,7 @@ public class DeploymentClusteredTest
         assertThatThrownBy(() ->
         {
             client.workflows().deploy("test")
-                .workflowModel(WORKFLOW)
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                 .execute();
         }).hasMessageContaining("Deployment was rejected");
 
@@ -180,7 +180,7 @@ public class DeploymentClusteredTest
         assertThatThrownBy(() ->
         {
             client.workflows().deploy("test")
-                .workflowModel(WORKFLOW)
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                 .execute();
         }).hasMessageContaining("Deployment was rejected");
 
@@ -216,7 +216,7 @@ public class DeploymentClusteredTest
         assertThatThrownBy(() ->
         {
             client.workflows().deploy("test")
-                .workflowModel(WORKFLOW)
+                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                 .execute();
         }).hasMessageContaining("Deployment was rejected");
 
@@ -224,7 +224,7 @@ public class DeploymentClusteredTest
         // TODO repair cluster
 
         final DeploymentEvent deploymentEvent = client.workflows().deploy("test")
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         final int version = deploymentEvent.getDeployedWorkflows().get(0).getVersion();

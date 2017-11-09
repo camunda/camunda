@@ -15,9 +15,7 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.*;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,13 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -46,9 +37,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -58,6 +47,8 @@ import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class BrokerRestartTest
 {
@@ -121,7 +112,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // when
@@ -140,7 +131,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -169,7 +160,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -202,7 +193,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_TWO_TASKS)
+            .addWorkflowModel(WORKFLOW_TWO_TASKS, "two-tasks.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -238,14 +229,14 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // when
         restartBroker();
 
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW)
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         // then
@@ -396,7 +387,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_INCIDENT)
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
@@ -425,7 +416,7 @@ public class BrokerRestartTest
     {
         // given
         clientRule.workflows().deploy(clientRule.getDefaultTopic())
-            .workflowModel(WORKFLOW_INCIDENT)
+            .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .execute();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())

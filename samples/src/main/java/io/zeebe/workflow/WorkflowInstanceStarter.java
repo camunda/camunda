@@ -45,7 +45,7 @@ public class WorkflowInstanceStarter
 
         final DeploymentEvent deploymentResult = zeebeClient.workflows()
             .deploy(topicName)
-            .resourceFromClasspath("demoProcess.bpmn")
+            .addResourceFromClasspath("demoProcess.bpmn")
             .execute();
 
         try
