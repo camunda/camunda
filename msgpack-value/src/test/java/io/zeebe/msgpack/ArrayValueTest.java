@@ -663,6 +663,25 @@ public class ArrayValueTest
         assertThat(iterator.hasNext()).isFalse();
     }
 
+    @Test
+    public void shouldReadModifiedArrayValue()
+    {
+        // given
+        final POJOArray pojoArray = new POJOArray();
+        final ValueArray<MinimalPOJO> array = pojoArray.notEmptyDefaultArray();
+
+        // when
+        final MinimalPOJO pojo = array.iterator().next();
+
+        final long oldValue = pojo.getLongProp();
+        final long newValue = oldValue + 1;
+        pojo.setLongProp(newValue);
+
+        // then
+        final Iterator<MinimalPOJO> iterator = array.iterator();
+        assertThat(iterator.next().getLongProp()).isEqualTo(newValue);
+    }
+
     protected void encodeSimpleArrayProp(MsgPackWriter writer)
     {
         writer.writeString(wrapString("simpleArray"));

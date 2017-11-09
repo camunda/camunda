@@ -125,7 +125,7 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     public Iterator<T> iterator()
     {
         // reset the iterator
-        if (modified)
+        if (modified || cursor > 0)
         {
             flushLastReturned();
 
@@ -341,6 +341,11 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     public void setInnerValue(T innerValue)
     {
         this.innerValue = innerValue;
+    }
+
+    public void markAsModified()
+    {
+        modified = true;
     }
 
 }
