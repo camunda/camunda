@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.report.command;
 
-import org.camunda.optimize.dto.optimize.query.report.result.CountFlowNodeFrequencyByFlowNodeReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
@@ -44,8 +44,8 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends ReportCommand {
       .get();
 
     Map<String, Long> resultMap = processAggregations(response.getAggregations());
-    CountFlowNodeFrequencyByFlowNodeReportResultDto resultDto =
-      new CountFlowNodeFrequencyByFlowNodeReportResultDto();
+    MapReportResultDto resultDto =
+      new MapReportResultDto();
     resultDto.setResult(resultMap);
     return resultDto;
   }

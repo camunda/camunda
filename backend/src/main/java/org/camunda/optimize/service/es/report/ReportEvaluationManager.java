@@ -8,6 +8,7 @@ import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.CountFlowNodeFrequencyByFlowNodeCommand;
+import org.camunda.optimize.service.es.report.command.CountTotalProcessInstanceFrequencyCommand;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -26,9 +27,12 @@ public class ReportEvaluationManager {
   public static final String VIEW_COUNT_OPERATION = "count";
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
+  public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
+
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
 
   public static final String GROUP_BY_FLOW_NODE_TYPE = "flowNode";
+  public static final String GROUP_BY_NONE_TYPE = "none";
 
   @Autowired
   private ConfigurationService configurationService;
@@ -71,6 +75,34 @@ public class ReportEvaluationManager {
     switch (entity) {
       case VIEW_FLOW_NODE_ENTITY:
         evaluationCommand = extractPropertyForCountFlowNode(reportData);
+        break;
+      case VIEW_PROCESS_INSTANCE_ENTITY:
+        evaluationCommand = extractPropertyForCountProcessInstance(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractPropertyForCountProcessInstance(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    String property = reportData.getView().getProperty();
+    ValidationHelper.ensureNotEmpty("view property", property);
+    switch (property) {
+      case VIEW_FREQUENCY_PROPERTY:
+        evaluationCommand = extractGroupForCountProcessInstanceFrequency(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractGroupForCountProcessInstanceFrequency(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    ValidationHelper.ensureNotNull("group by", reportData.getGroupBy());
+    String type = reportData.getGroupBy().getType();
+    ValidationHelper.ensureNotEmpty("group by type", type);
+    switch (type) {
+      case GROUP_BY_NONE_TYPE:
+        evaluationCommand = new CountTotalProcessInstanceFrequencyCommand();
         break;
     }
     return evaluationCommand;
