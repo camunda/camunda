@@ -3,7 +3,8 @@
 }
 
 .Button--primary, a.button--primary {
-  
+  color: white;
+  background-color: #49a7f8;
 }
 
 .Button--danger, a.Button--danger {
