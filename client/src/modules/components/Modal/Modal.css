@@ -1,0 +1,46 @@
+.Modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.Modal__container {
+  position: fixed;
+  background: #fff;
+  top: 50%;
+  left: 50%;
+
+  /* TODO: make responsive */
+  width: 950px;
+  margin: 0 0 0 -475px;
+
+  border-radius: 3px;
+}
+
+.Modal__header {
+  font-size: 1.4em;
+  border-bottom: 1px solid lightgray;
+  padding: 0.6em;
+  font-weight: 600;
+}
+
+.Modal__closeBtn {
+  color: #aaa;
+  float: right;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.Modal__content {
+  padding: 0.6em;
+}
+
+.Modal__actions {
+  background: #f9fafb;
+  padding: 0.6em;
+  border-top: 1px solid lightgray;
+  text-align: right;
+}
