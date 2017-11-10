@@ -121,7 +121,7 @@ export default class Report extends React.Component {
 
     return (
       <div>
-        <h2>{name}</h2>
+        <h1>{name}</h1>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'edit'} to={`/report/${this.id}/edit`}>Edit</Link> |

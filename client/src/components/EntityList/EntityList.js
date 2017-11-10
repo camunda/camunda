@@ -74,7 +74,7 @@ export default class EntityList extends React.Component {
       createButton = <button className='EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</button>;
     }
 
-    const header = <h2>{this.props.label}s</h2>;
+    const header = <h1>{this.props.label}s</h1>;
 
     let table;
     if(loaded) {
@@ -86,12 +86,12 @@ export default class EntityList extends React.Component {
     if(redirectToEntity !== false) {
       return (<Redirect to={`/${this.props.api}/${redirectToEntity}/edit`} />);
     } else {
-      return (<div>
+      return (<section>
         {createButton}
         {header}
         {table}
         {this.props.children}
-      </div>);
+      </section>);
     }
   }
 }

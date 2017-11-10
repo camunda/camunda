@@ -113,7 +113,7 @@ export default class Dashboard extends React.Component {
 
     return (
       <div>
-        <h2>{name}</h2>
+        <h1>{name}</h1>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'edit'} to={`/dashboard/${this.id}/edit`}>Edit</Link> |
