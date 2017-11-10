@@ -17,21 +17,22 @@
  */
 package io.zeebe.broker.workflow.map;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteOrder;
+import java.util.Iterator;
 
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
-import io.zeebe.map.Long2LongZbMap;
+import io.zeebe.map.Long2BytesZbMap;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,19 +51,28 @@ public class WorkflowDeploymentCache implements AutoCloseable
 {
     private static final int LATEST_VERSION = -1;
 
-    private static final int SIZE_OF_PROCESS_ID = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
-    private static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
+    private static final int PROCESS_ID_LENGTH = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
+    private static final int ID_VERSION_KEY_LENGTH = PROCESS_ID_LENGTH + SIZE_OF_INT;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_COMPOSITE_KEY]);
-    private int bufferLength;
+    private static final int POSITION_WORKFLOW_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
+
+    private static final int POSITION_OFFSET = 0;
+    private static final int WORKFLOW_INDEX_OFFSET = POSITION_OFFSET + SIZE_OF_LONG;
+
+    private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
+
+    private final UnsafeBuffer positionWorkflowValueBuffer = new UnsafeBuffer(new byte[POSITION_WORKFLOW_VALUE_LENGTH]);
+
+    private final UnsafeBuffer idVersionKeyBuffer = new UnsafeBuffer(new byte[ID_VERSION_KEY_LENGTH]);
+    private int idVersionKeyBufferLength;
 
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
 
     private final Bytes2LongZbMap idVersionToKeyMap;
-    private final Long2LongZbMap keyToPositionMap;
+    private final Long2BytesZbMap keyToPositionWorkflowMap;
 
     private final ZbMapSnapshotSupport<Bytes2LongZbMap> idVersionSnapshot;
-    private final ZbMapSnapshotSupport<Long2LongZbMap> keyPositionSnapshot;
+    private final ZbMapSnapshotSupport<Long2BytesZbMap> keyPositionSnapshot;
 
     private final LongLruCache<DeployedWorkflow> cache;
     private final LogStreamReader logStreamReader;
@@ -71,11 +81,11 @@ public class WorkflowDeploymentCache implements AutoCloseable
 
     public WorkflowDeploymentCache(int cacheSize, LogStreamReader logStreamReader)
     {
-        this.idVersionToKeyMap = new Bytes2LongZbMap(SIZE_OF_COMPOSITE_KEY);
-        this.keyToPositionMap = new Long2LongZbMap();
+        this.idVersionToKeyMap = new Bytes2LongZbMap(ID_VERSION_KEY_LENGTH);
+        this.keyToPositionWorkflowMap = new Long2BytesZbMap(POSITION_WORKFLOW_VALUE_LENGTH);
 
         this.idVersionSnapshot = new ZbMapSnapshotSupport<>(idVersionToKeyMap);
-        this.keyPositionSnapshot = new ZbMapSnapshotSupport<>(keyToPositionMap);
+        this.keyPositionSnapshot = new ZbMapSnapshotSupport<>(keyToPositionWorkflowMap);
 
         this.logStreamReader = logStreamReader;
         this.cache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
@@ -87,43 +97,66 @@ public class WorkflowDeploymentCache implements AutoCloseable
         return idVersionSnapshot;
     }
 
-    public ZbMapSnapshotSupport<Long2LongZbMap> getKeyPositionSnapshot()
+    public ZbMapSnapshotSupport<Long2BytesZbMap> getKeyPositionSnapshot()
     {
         return keyPositionSnapshot;
     }
 
-    private void wrap(DirectBuffer bpmnProcessId, int version)
+    private void wrapIdVersionKey(DirectBuffer bpmnProcessId, int version)
     {
-        bpmnProcessId.getBytes(0, buffer, 0, bpmnProcessId.capacity());
-        buffer.putInt(bpmnProcessId.capacity(), version, ByteOrder.LITTLE_ENDIAN);
+        bpmnProcessId.getBytes(0, idVersionKeyBuffer, 0, bpmnProcessId.capacity());
+        idVersionKeyBuffer.putInt(bpmnProcessId.capacity(), version, BYTE_ORDER);
 
-        bufferLength = bpmnProcessId.capacity() + SIZE_OF_INT;
+        idVersionKeyBufferLength = bpmnProcessId.capacity() + SIZE_OF_INT;
     }
 
-    public void addDeployedWorkflow(long eventPosition, long workflowKey, DirectBuffer bpmnProcessId, int version)
+    public void addDeployedWorkflow(long eventPosition, long workflowKey, WorkflowEvent event)
     {
-        keyToPositionMap.put(workflowKey, eventPosition);
+        positionWorkflowValueBuffer.putLong(POSITION_OFFSET, eventPosition, BYTE_ORDER);
+        positionWorkflowValueBuffer.putInt(WORKFLOW_INDEX_OFFSET, getWorkflowIndex(event), BYTE_ORDER);
+        keyToPositionWorkflowMap.put(workflowKey, positionWorkflowValueBuffer);
 
-        wrap(bpmnProcessId, version);
-        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
+        wrapIdVersionKey(event.getBpmnProcessId(), event.getVersion());
+        idVersionToKeyMap.put(idVersionKeyBuffer, 0, idVersionKeyBufferLength, workflowKey);
 
         // override the latest version by the given key
-        wrap(bpmnProcessId, LATEST_VERSION);
-        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKey);
+        wrapIdVersionKey(event.getBpmnProcessId(), LATEST_VERSION);
+        idVersionToKeyMap.put(idVersionKeyBuffer, 0, idVersionKeyBufferLength, workflowKey);
+    }
+
+    private int getWorkflowIndex(WorkflowEvent event)
+    {
+        final DirectBuffer bpmnProcessId = event.getBpmnProcessId();
+        final DirectBuffer bpmnXml = event.getBpmnXml();
+
+        int index = 0;
+
+        final WorkflowDefinition workflowDefinition = bpmn.readFromXmlBuffer(bpmnXml);
+        final Iterator<Workflow> workflows = workflowDefinition.getWorkflows().iterator();
+        while (workflows.hasNext())
+        {
+            final Workflow workflow = workflows.next();
+            if (BufferUtil.equals(bpmnProcessId, workflow.getBpmnProcessId()))
+            {
+                return index;
+            }
+            index += 1;
+        }
+        throw new RuntimeException("workflow not found");
     }
 
     public void removeDeployedWorkflow(long workflowKey, DirectBuffer bpmnProcessId, int version)
     {
-        keyToPositionMap.remove(workflowKey, -1L);
+        keyToPositionWorkflowMap.remove(workflowKey);
 
-        wrap(bpmnProcessId, version);
-        idVersionToKeyMap.remove(buffer, 0, bufferLength, -1L);
+        wrapIdVersionKey(bpmnProcessId, version);
+        idVersionToKeyMap.remove(idVersionKeyBuffer, 0, idVersionKeyBufferLength, -1L);
 
         // override the latest version by the key of the previous version
         final long workflowKeyOfPreviousVersion = getWorkflowKeyByIdAndVersion(bpmnProcessId, version - 1);
 
-        wrap(bpmnProcessId, LATEST_VERSION);
-        idVersionToKeyMap.put(buffer, 0, bufferLength, workflowKeyOfPreviousVersion);
+        wrapIdVersionKey(bpmnProcessId, LATEST_VERSION);
+        idVersionToKeyMap.put(idVersionKeyBuffer, 0, idVersionKeyBufferLength, workflowKeyOfPreviousVersion);
     }
 
     public long getWorkflowKeyByIdAndLatestVersion(DirectBuffer bpmnProcessId)
@@ -133,9 +166,9 @@ public class WorkflowDeploymentCache implements AutoCloseable
 
     public long getWorkflowKeyByIdAndVersion(DirectBuffer bpmnProcessId, int version)
     {
-        wrap(bpmnProcessId, version);
+        wrapIdVersionKey(bpmnProcessId, version);
 
-        return idVersionToKeyMap.get(buffer, 0, bufferLength, -1L);
+        return idVersionToKeyMap.get(idVersionKeyBuffer, 0, idVersionKeyBufferLength, -1L);
     }
 
     public DeployedWorkflow getWorkflow(long workflowKey)
@@ -154,30 +187,53 @@ public class WorkflowDeploymentCache implements AutoCloseable
     {
         DeployedWorkflow deployedWorkflow = null;
 
-        final long position = keyToPositionMap.get(key, -1L);
+        final DirectBuffer positionWorkflowBuffer = keyToPositionWorkflowMap.get(key);
 
-        final boolean found = logStreamReader.seek(position);
-        if (found && logStreamReader.hasNext())
+        if (positionWorkflowBuffer != null)
         {
-            final LoggedEvent event = logStreamReader.next();
+            final long eventPosition = positionWorkflowBuffer.getLong(POSITION_OFFSET, BYTE_ORDER);
+            final int workflowIndex = positionWorkflowBuffer.getInt(WORKFLOW_INDEX_OFFSET, BYTE_ORDER);
 
-            workflowEvent.reset();
-            event.readValue(workflowEvent);
+            final boolean found = logStreamReader.seek(eventPosition);
+            if (found && logStreamReader.hasNext())
+            {
+                final LoggedEvent event = logStreamReader.next();
 
-            // currently, it can only be one
-            final WorkflowDefinition workflowDefinition = bpmn.readFromXmlBuffer(workflowEvent.getBpmnXml());
-            final Workflow workflow = workflowDefinition.getWorkflows().iterator().next();
+                workflowEvent.reset();
+                event.readValue(workflowEvent);
 
-            deployedWorkflow = new DeployedWorkflow(workflow, workflowEvent.getVersion());
+                final WorkflowDefinition workflowDefinition = bpmn.readFromXmlBuffer(workflowEvent.getBpmnXml());
+                final Workflow workflow = getWorkflowAt(workflowDefinition, workflowIndex);
+
+                deployedWorkflow = new DeployedWorkflow(workflow, workflowEvent.getVersion());
+            }
         }
         return deployedWorkflow;
+    }
+
+    private Workflow getWorkflowAt(final WorkflowDefinition workflowDefinition, final int index)
+    {
+        int i = 0;
+
+        final Iterator<Workflow> workflows = workflowDefinition.getWorkflows().iterator();
+        while (workflows.hasNext())
+        {
+            final Workflow workflow = workflows.next();
+
+            if (index == i)
+            {
+                return workflow;
+            }
+            i += 1;
+        }
+        throw new RuntimeException("no workflow found");
     }
 
     @Override
     public void close()
     {
         idVersionToKeyMap.close();
-        keyToPositionMap.close();
+        keyToPositionWorkflowMap.close();
     }
 
 }

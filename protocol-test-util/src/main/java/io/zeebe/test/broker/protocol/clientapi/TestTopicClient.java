@@ -74,10 +74,17 @@ public class TestTopicClient
 
     public ExecuteCommandResponse deployWithResponse(String topic, final WorkflowDefinition workflow)
     {
+        final byte[] resource = Bpmn.convertToString(workflow).getBytes(UTF_8);
+
+        return deployWithResponse(topic, resource, "BPMN_XML", "process.bpmn");
+    }
+
+    public ExecuteCommandResponse deployWithResponse(String topic, final byte[] resource, final String resourceType, final String resourceName)
+    {
         final Map<String, Object> deploymentResource = new HashMap<>();
-        deploymentResource.put("resource", Bpmn.convertToString(workflow).getBytes(UTF_8));
-        deploymentResource.put("resourceType", "BPMN_XML");
-        deploymentResource.put("resourceName", "process.bpmn");
+        deploymentResource.put("resource", resource);
+        deploymentResource.put("resourceType", resourceType);
+        deploymentResource.put("resourceName", resourceName);
 
         return apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
@@ -86,7 +93,7 @@ public class TestTopicClient
                     .put(PROP_STATE, "CREATE_DEPLOYMENT")
                     .put("topicName", topic)
                     .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
-                    .put("resouceType", "BPMN_XML")
+                    .put("resouceType", resourceType)
                 .done()
                 .sendAndAwait();
     }

@@ -434,10 +434,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            final int version = workflowEvent.getVersion();
-            final DirectBuffer bpmnProcessId = workflowEvent.getBpmnProcessId();
-
-            workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, bpmnProcessId, version);
+            workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, workflowEvent);
         }
     }
 

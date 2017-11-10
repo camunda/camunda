@@ -23,7 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -33,6 +33,7 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.util.StreamUtil;
 import org.assertj.core.util.Files;
 import org.junit.Rule;
 import org.junit.Test;
@@ -147,6 +148,32 @@ public class CreateDeploymentTest
     }
 
     @Test
+    public void shouldCreateDeploymentResourceWithMultipleWorkflows() throws IOException
+    {
+        // given
+        final InputStream resourceAsStream = getClass().getResourceAsStream("/workflows/collaboration.bpmn");
+
+        // when
+        final ExecuteCommandResponse resp = apiRule.topic()
+                .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+                                    StreamUtil.read(resourceAsStream),
+                                    ResourceType.BPMN_XML.name(),
+                                    "collaboration.bpmn");
+
+        // then
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+
+        final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
+                .limit(2)
+                .collect(toList());
+
+        assertThat(workflowEvents)
+            .extracting(s -> s.event().get(PROP_WORKFLOW_BPMN_PROCESS_ID))
+            .contains("process1", "process2");
+    }
+
+    @Test
     public void shouldRejectDeploymentIfTopicNotExists()
     {
         // when
@@ -224,22 +251,12 @@ public class CreateDeploymentTest
     @Test
     public void shouldRejectDeploymentIfNotParsable()
     {
-        // given
-        final Map<String, Object> deploymentResource = new HashMap<>();
-        deploymentResource.put("resource", "not a workflow".getBytes(UTF_8));
-        deploymentResource.put("resourceType", ResourceType.BPMN_XML);
-        deploymentResource.put("resourceName", "invalid.bpmn");
-
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resources", Collections.singletonList(deploymentResource))
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse resp = apiRule.topic()
+                .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+                                    "not a workflow".getBytes(UTF_8),
+                                    ResourceType.BPMN_XML.name(),
+                                    "invalid.bpmn");
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
@@ -277,21 +294,12 @@ public class CreateDeploymentTest
         final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
         final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
 
-        final Map<String, Object> deploymentResource = new HashMap<>();
-        deploymentResource.put("resource", yamlWorkflow.getBytes(UTF_8));
-        deploymentResource.put("resourceType", ResourceType.YAML_WORKFLOW);
-        deploymentResource.put("resourceName", "process.yaml");
-
         // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resources", Collections.singletonList(deploymentResource))
-                .done()
-                .sendAndAwait();
+        final ExecuteCommandResponse resp = apiRule.topic()
+                .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+                                    yamlWorkflow.getBytes(UTF_8),
+                                    ResourceType.YAML_WORKFLOW.name(),
+                                    "simple-workflow.yaml");
 
         // then
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");

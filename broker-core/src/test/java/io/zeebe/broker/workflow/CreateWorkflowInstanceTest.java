@@ -28,21 +28,20 @@ import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKF
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.*;
-import org.assertj.core.util.Files;
+import io.zeebe.util.StreamUtil;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 
@@ -416,25 +415,15 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateInstanceOfYamlWorkflow() throws Exception
     {
         // given
-        final File yamlFile = new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
-        final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
+        final InputStream resourceAsStream = getClass().getResourceAsStream("/workflows/simple-workflow.yaml");
 
-        final Map<String, Object> deploymentResource = new HashMap<>();
-        deploymentResource.put("resource", yamlWorkflow.getBytes(UTF_8));
-        deploymentResource.put("resourceType", ResourceType.YAML_WORKFLOW);
-        deploymentResource.put("resourceName", "simple-workflow.yaml");
+        final ExecuteCommandResponse resp = apiRule.topic()
+                .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+                                    StreamUtil.read(resourceAsStream),
+                                    ResourceType.YAML_WORKFLOW.name(),
+                                    "simple-workflow.yaml");
 
-        final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                .put(PROP_STATE, "CREATE_DEPLOYMENT")
-                .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                .put("resources", Collections.singletonList(deploymentResource))
-                .done()
-                .sendAndAwait();
-
-        assertThat(deploymentResp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
@@ -475,6 +464,32 @@ public class CreateWorkflowInstanceTest
         assertThat(workflowInstanceKeys)
             .hasSize(partitions)
             .allMatch(k -> k > 0);
+    }
+
+    @Test
+    public void shouldCreateWorkflowInstanceOfCollaboration() throws IOException
+    {
+        final InputStream resourceAsStream = getClass().getResourceAsStream("/workflows/collaboration.bpmn");
+
+        final ExecuteCommandResponse resp = apiRule.topic()
+                .deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+                                    StreamUtil.read(resourceAsStream),
+                                    ResourceType.BPMN_XML.name(),
+                                    "collaboration.bpmn");
+
+        assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+
+        // when
+        final long wfInstance1 = testClient.createWorkflowInstance("process1");
+        final long wfInstance2 = testClient.createWorkflowInstance("process2");
+
+        // then
+        final SubscribedEvent event1 = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_CREATED", wfInstance1));
+        assertThat(event1.event().get("bpmnProcessId")).isEqualTo("process1");
+
+        final SubscribedEvent event2 = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_CREATED", wfInstance2));
+        assertThat(event2.event().get("bpmnProcessId")).isEqualTo("process2");
     }
 
 }
