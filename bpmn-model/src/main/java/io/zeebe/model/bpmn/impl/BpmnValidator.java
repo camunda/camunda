@@ -47,10 +47,6 @@ public class BpmnValidator
         {
             validationResult.addError(definition, "BPMN model must contain at least one executable process.");
         }
-        else if (executableWorkflows.size() > 1)
-        {
-            validationResult.addError(definition, "BPMN model must not contain more than one executable process.");
-        }
 
         for (Workflow executableWorkflow : executableWorkflows)
         {
