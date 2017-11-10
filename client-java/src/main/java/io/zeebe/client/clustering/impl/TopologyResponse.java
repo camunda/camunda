@@ -44,4 +44,11 @@ public class TopologyResponse
     {
         this.topicLeaders = topicLeaders;
     }
+
+    @Override
+    public String toString()
+    {
+        return "TopologyResponse{" + "brokers=" + brokers + ", topicLeaders=" + topicLeaders + '}';
+    }
+
 }

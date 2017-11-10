@@ -64,4 +64,9 @@ public class TopicLeader
         return new SocketAddress(host, port);
     }
 
+    @Override
+    public String toString()
+    {
+        return "TopicLeader{" + "host='" + host + '\'' + ", port=" + port + ", topicName='" + topicName + '\'' + ", partitionId=" + partitionId + '}';
+    }
 }
