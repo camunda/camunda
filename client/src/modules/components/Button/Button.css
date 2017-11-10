@@ -1,0 +1,12 @@
+.Button, a.Button {
+
+}
+
+.Button--primary, a.button--primary {
+  
+}
+
+.Button--danger, a.Button--danger {
+  color: white;
+  background-color: red;
+}
