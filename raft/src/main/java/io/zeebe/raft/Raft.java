@@ -123,6 +123,12 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         // start as follower
         becomeFollower();
 
+        if (members.isEmpty())
+        {
+            // fast path to become leader if initial member
+            bootstrapElectionTimeout();
+        }
+
         // immediately try to join cluster
         joinController.open();
     }
@@ -598,6 +604,14 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     public void resetElectionTimeout()
     {
         electionTimeout = nextElectionTimeout();
+    }
+
+    /**
+     * Sets election timeout to now to bootstrap raft as initial leader
+     */
+    public void bootstrapElectionTimeout()
+    {
+        electionTimeout = System.currentTimeMillis();
     }
 
     /**
