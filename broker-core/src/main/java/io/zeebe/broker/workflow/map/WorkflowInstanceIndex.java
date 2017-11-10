@@ -21,37 +21,38 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.util.Iterator;
 
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Maps <b>workflow instance key</b> to
  *
  * <li>workflow instance event position
+ * <li>workflow key
  * <li>active token count
  * <li>activity instance key
  */
 public class WorkflowInstanceIndex implements AutoCloseable
 {
-    private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_LONG;
+    private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_LONG;
 
     private static final int POSITION_OFFSET = 0;
-    private static final int TOKEN_COUNT_OFFSET = POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int WORKFLOW_KEY_OFFSET = POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int TOKEN_COUNT_OFFSET = WORKFLOW_KEY_OFFSET + SIZE_OF_LONG;
     private static final int ACTIVITY_INSTANCE_KEY_OFFSET = TOKEN_COUNT_OFFSET + SIZE_OF_INT;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
+    private final WorkflowInstance workflowInstance = new WorkflowInstance();
+    private final WorkflowInstanceIterator iterator = new WorkflowInstanceIterator();
 
     private final Long2BytesZbMap map;
     private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
-
-    private long key;
-    private boolean isRead = false;
 
     public WorkflowInstanceIndex()
     {
@@ -64,85 +65,35 @@ public class WorkflowInstanceIndex implements AutoCloseable
         return snapshotSupport;
     }
 
-    public void reset()
-    {
-        isRead = false;
-    }
-
     public void remove(long workflowInstanceKey)
     {
         map.remove(workflowInstanceKey);
     }
 
-    public WorkflowInstanceIndex wrapWorkflowInstanceKey(long key)
+    public WorkflowInstance get(long key)
     {
-        final DirectBuffer result = map.get(key);
-        if (result != null)
+        final DirectBuffer currentValue = map.get(key);
+        if (currentValue != null)
         {
-            buffer.putBytes(0, result, 0, result.capacity());
+            workflowInstance.wrap(key, currentValue);
+            return workflowInstance;
         }
-
-        this.isRead = result != null;
-        this.key = key;
-
-        return this;
-    }
-
-    public long getPosition()
-    {
-        return isRead ? buffer.getLong(POSITION_OFFSET, BYTE_ORDER) : -1L;
-    }
-
-    public int getTokenCount()
-    {
-        return isRead ? buffer.getInt(TOKEN_COUNT_OFFSET, BYTE_ORDER) : -1;
-    }
-
-    public long getActivityInstanceKey()
-    {
-        return isRead ? buffer.getLong(ACTIVITY_INSTANCE_KEY_OFFSET, BYTE_ORDER) : -1L;
-    }
-
-    public WorkflowInstanceIndex newWorkflowInstance(long workflowInstanceKey)
-    {
-        key = workflowInstanceKey;
-        isRead = true;
-        return this;
-    }
-
-    public void write()
-    {
-        ensureRead();
-        map.put(key, buffer);
-    }
-
-    public WorkflowInstanceIndex setPosition(long position)
-    {
-        ensureRead();
-        buffer.putLong(POSITION_OFFSET, position, BYTE_ORDER);
-        return this;
-    }
-
-    public WorkflowInstanceIndex setActivityKey(long activityInstanceKey)
-    {
-        ensureRead();
-        buffer.putLong(ACTIVITY_INSTANCE_KEY_OFFSET, activityInstanceKey, BYTE_ORDER);
-        return this;
-    }
-
-    public WorkflowInstanceIndex setActiveTokenCount(int activeTokenCount)
-    {
-        ensureRead();
-        buffer.putInt(TOKEN_COUNT_OFFSET, activeTokenCount, BYTE_ORDER);
-        return this;
-    }
-
-    private void ensureRead()
-    {
-        if (!isRead)
+        else
         {
-            throw new IllegalStateException("must call wrap() before");
+            return null;
         }
+    }
+
+    public WorkflowInstance newWorkflowInstance(long workflowInstanceKey)
+    {
+        workflowInstance.reset(workflowInstanceKey);
+        return workflowInstance;
+    }
+
+    public Iterator<WorkflowInstance> iterator()
+    {
+        iterator.reset();
+        return iterator;
     }
 
     @Override
@@ -150,4 +101,103 @@ public class WorkflowInstanceIndex implements AutoCloseable
     {
         map.close();
     }
+
+    public class WorkflowInstanceIterator implements Iterator<WorkflowInstance>
+    {
+        private Iterator<Long2BytesZbMapEntry> iterator;
+        private WorkflowInstance workflowInstance = new WorkflowInstance();
+
+        public void reset()
+        {
+            iterator = map.iterator();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public WorkflowInstance next()
+        {
+            final Long2BytesZbMapEntry entry = iterator.next();
+            workflowInstance.wrap(entry.getKey(), entry.getValue());
+
+            return workflowInstance;
+        }
+    }
+
+    public class WorkflowInstance
+    {
+        private long workflowInstanceKey;
+        private final UnsafeBuffer currentValue = new UnsafeBuffer(new byte[INDEX_VALUE_SIZE]);
+
+        public void reset(long workflowInstanceKey)
+        {
+            this.workflowInstanceKey = workflowInstanceKey;
+            this.currentValue.setMemory(0, INDEX_VALUE_SIZE, (byte) 0);
+        }
+
+        public void wrap(long workflowInstanceKey, DirectBuffer value)
+        {
+            this.workflowInstanceKey = workflowInstanceKey;
+            this.currentValue.wrap(value);
+        }
+
+        public long getKey()
+        {
+            return workflowInstanceKey;
+        }
+
+        public long getPosition()
+        {
+            return currentValue.getLong(POSITION_OFFSET, BYTE_ORDER);
+        }
+
+        public int getTokenCount()
+        {
+            return currentValue.getInt(TOKEN_COUNT_OFFSET, BYTE_ORDER);
+        }
+
+        public long getActivityInstanceKey()
+        {
+            return currentValue.getLong(ACTIVITY_INSTANCE_KEY_OFFSET, BYTE_ORDER);
+        }
+
+        public long getWorkflowKey()
+        {
+            return currentValue.getLong(WORKFLOW_KEY_OFFSET, BYTE_ORDER);
+        }
+
+        public WorkflowInstance setPosition(long position)
+        {
+            currentValue.putLong(POSITION_OFFSET, position, BYTE_ORDER);
+            return this;
+        }
+
+        public WorkflowInstance setWorkflowKey(long workflowKey)
+        {
+            currentValue.putLong(WORKFLOW_KEY_OFFSET, workflowKey, BYTE_ORDER);
+            return this;
+        }
+
+        public WorkflowInstance setActivityKey(long activityInstanceKey)
+        {
+            currentValue.putLong(ACTIVITY_INSTANCE_KEY_OFFSET, activityInstanceKey, BYTE_ORDER);
+            return this;
+        }
+
+        public WorkflowInstance setActiveTokenCount(int activeTokenCount)
+        {
+            currentValue.putInt(TOKEN_COUNT_OFFSET, activeTokenCount, BYTE_ORDER);
+            return this;
+        }
+
+        public void write()
+        {
+            map.put(workflowInstanceKey, currentValue);
+        }
+    }
+
 }

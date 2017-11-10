@@ -35,6 +35,7 @@ import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.data.*;
 import io.zeebe.broker.workflow.map.*;
 import io.zeebe.broker.workflow.map.DeployedWorkflow;
+import io.zeebe.broker.workflow.map.WorkflowInstanceIndex.WorkflowInstance;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.processor.*;
@@ -50,6 +51,7 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.actor.Actor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
@@ -225,7 +227,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected void reset()
     {
-        workflowInstanceIndex.reset();
         activityInstanceMap.reset();
     }
 
@@ -440,6 +441,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class WorkflowDeleteEventProcessor implements EventProcessor
     {
+        private LongArrayList workflowInstanceKeys = new LongArrayList();
+
         private boolean isDeleted;
 
         @Override
@@ -451,7 +454,25 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowEvent.setState(WorkflowState.DELETED);
 
+                collectInstancesOfWorkflow();
+
                 isDeleted = true;
+            }
+        }
+
+        private void collectInstancesOfWorkflow()
+        {
+            workflowInstanceKeys.clear();
+
+            final Iterator<WorkflowInstance> workflowInstances = workflowInstanceIndex.iterator();
+            while (workflowInstances.hasNext())
+            {
+                final WorkflowInstance workflowInstance = workflowInstances.next();
+
+                if (eventKey == workflowInstance.getWorkflowKey())
+                {
+                    workflowInstanceKeys.addLong(workflowInstance.getKey());
+                }
             }
         }
 
@@ -462,19 +483,56 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             if (isDeleted)
             {
+                logStreamBatchWriter
+                    .producerId(streamProcessorId)
+                    .raftTermId(targetStream.getTerm())
+                    .sourceEvent(logStreamPartitionId, eventPosition);
+
                 targetEventMetadata.reset();
                 targetEventMetadata
                     .protocolVersion(Protocol.PROTOCOL_VERSION)
                     .eventType(EventType.WORKFLOW_EVENT);
 
-                position = writer
-                        .key(eventKey)
-                        .metadataWriter(targetEventMetadata)
-                        .valueWriter(workflowEvent)
-                        .tryWrite();
+                logStreamBatchWriter.event()
+                    .key(eventKey)
+                    .metadataWriter(targetEventMetadata)
+                    .valueWriter(workflowEvent)
+                    .done();
+
+                if (!workflowInstanceKeys.isEmpty())
+                {
+                    addWorkflowInstanceCancelEvents();
+                }
+
+                position = logStreamBatchWriter.tryWrite();
             }
 
             return position;
+        }
+
+        private void addWorkflowInstanceCancelEvents()
+        {
+            targetEventMetadata.eventType(EventType.WORKFLOW_INSTANCE_EVENT);
+
+            workflowInstanceEvent.reset();
+            workflowInstanceEvent
+                .setState(WorkflowInstanceState.CANCEL_WORKFLOW_INSTANCE)
+                .setWorkflowKey(eventKey)
+                .setBpmnProcessId(workflowEvent.getBpmnProcessId())
+                .setVersion(workflowEvent.getVersion());
+
+            for (int w = 0; w < workflowInstanceKeys.size(); w++)
+            {
+                final long workflowInstanceKey = workflowInstanceKeys.getLong(w);
+
+                workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
+
+                logStreamBatchWriter.event()
+                    .key(workflowInstanceKey)
+                    .metadataWriter(targetEventMetadata)
+                    .valueWriter(workflowInstanceEvent)
+                    .done();
+            }
         }
 
         @Override
@@ -699,9 +757,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             isCompleted = false;
 
-            activeTokenCount = workflowInstanceIndex
-                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .getTokenCount();
+            final WorkflowInstance workflowInstance = workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
+
+            activeTokenCount = workflowInstance != null ? workflowInstance.getTokenCount() : 0;
             if (activeTokenCount == 1)
             {
                 workflowInstanceEvent
@@ -832,7 +890,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         public void updateState()
         {
             workflowInstanceIndex
-                .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .get(workflowInstanceEvent.getWorkflowInstanceKey())
                 .setActivityKey(eventKey)
                 .write();
 
@@ -905,9 +963,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final long activityInstanceKey = taskHeaders.getActivityInstanceKey();
             if (activityInstanceKey > 0)
             {
-                final long currentActivityInstanceKey = workflowInstanceIndex.wrapWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey()).getActivityInstanceKey();
+                final WorkflowInstance workflowInstance = workflowInstanceIndex.get(taskHeaders.getWorkflowInstanceKey());
 
-                isActive = activityInstanceKey == currentActivityInstanceKey;
+                isActive = workflowInstance != null && activityInstanceKey == workflowInstance.getActivityInstanceKey();
             }
         }
 
@@ -1061,7 +1119,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             if (!hasIncident)
             {
                 workflowInstanceIndex
-                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .get(workflowInstanceEvent.getWorkflowInstanceKey())
                     .setActivityKey(-1L)
                     .write();
 
@@ -1083,17 +1141,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             isCanceled = false;
 
-            workflowInstanceIndex.wrapWorkflowInstanceKey(eventKey);
+            final WorkflowInstance workflowInstance = workflowInstanceIndex.get(eventKey);
 
-            if (workflowInstanceIndex.getTokenCount() > 0)
+            if (workflowInstance != null && workflowInstance.getTokenCount() > 0)
             {
-                lookupWorkflowInstanceEvent(workflowInstanceIndex.getPosition());
+                lookupWorkflowInstanceEvent(workflowInstance.getPosition());
 
                 workflowInstanceEvent
                     .setState(WorkflowInstanceState.WORKFLOW_INSTANCE_CANCELED)
                     .setPayload(WorkflowInstanceEvent.NO_PAYLOAD);
 
-                activityInstanceKey = workflowInstanceIndex.getActivityInstanceKey();
+                activityInstanceKey = workflowInstance.getActivityInstanceKey();
                 taskKey = activityInstanceMap.wrapActivityInstanceKey(activityInstanceKey).getTaskKey();
 
                 isCanceled = true;
@@ -1215,9 +1273,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             isUpdated = false;
 
-            final boolean isActive = workflowInstanceIndex
-                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .getTokenCount() > 0;
+            final WorkflowInstance workflowInstance = workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
+            final boolean isActive = workflowInstance != null && workflowInstance.getTokenCount() > 0;
 
             WorkflowInstanceState workflowInstanceEventType = WorkflowInstanceState.UPDATE_PAYLOAD_REJECTED;
             if (isActive && isValidPayload(workflowInstanceEvent.getPayload()))
@@ -1264,9 +1321,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            isActive = workflowInstanceIndex
-                    .wrapWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .getTokenCount() > 0;
+            final WorkflowInstance workflowInstance = workflowInstanceIndex.get(workflowInstanceEvent.getWorkflowInstanceKey());
+            isActive = workflowInstance != null && workflowInstance.getTokenCount() > 0;
 
             if (isActive)
             {
