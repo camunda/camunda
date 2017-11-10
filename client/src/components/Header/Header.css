@@ -19,15 +19,15 @@
 }
 
 .Header a {
-  color: #000;
   text-decoration: none;
 }
 
 .Header__link {
+  color: #333;
   float: left;
   padding-top: 0;
   padding-bottom: 0;
-  margin-right: 15px;
+  margin-right: 36px;
 }
 
 .Header__brand-logo {
@@ -51,7 +51,7 @@
 
 .Header__nav li {
   display: inline-block;
-  margin-right: .5em;
+  margin-right: .75em;
 }
 
 .Header__nav li:last-child {

@@ -1,3 +1,8 @@
-.Section.active {
-  background-color: lightgray;
+.Section a {
+  color: #888;
+}
+
+
+.Section.active a {
+  color: #333;
 }
