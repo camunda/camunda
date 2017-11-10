@@ -3,6 +3,17 @@ import { mount } from 'enzyme';
 
 import Button from './Button';
 
+jest.mock('react-router-dom', () => {
+  return {
+    Redirect: ({to}) => {
+      return <div>REDIRECT to {to}</div>
+    },
+    Link: ({children, to, onClick, id}) => {
+      return <a id={id} href={to} onClick={onClick}>{children}</a>
+    }
+  }
+});
+
 it('should render without crashing', () => {
   mount(<Button />);
 });
@@ -17,14 +28,14 @@ it('renders a <a> element when specified as a property', () => {
   const type = 'a'
 
   const node = mount(<Button tag={type} />);
-  expect(node.find('.Button')).toHaveTagName('a');
+  expect(node.find('.Button')).toHaveTagName('Link');
 });
 
 it('renders a label as provided as a property', () => {
   const text = 'Click Me';
 
-  const node = mount(<Button label={text} />);
-  expect(node).toIncludeText(text);
+  const node = mount(<Button>{text}</Button>);
+  expect(node.find('button')).toIncludeText(text);
 });
 
 it('renders a modifier class name based on the type provided as a property', () => {

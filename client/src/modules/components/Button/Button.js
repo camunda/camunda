@@ -3,14 +3,14 @@ import {Link} from 'react-router-dom';
 
 import './Button.css';
 
-export default function Button({tag, label, type, id, title, onClick}) {
-  if (tag === 'a') {
-    return (<a className={(type ? 'Button Button--' + type : 'Button')} id={id} title={title} onClick={onClick}>
-      {label}
-    </a>);
+export default function Button(props) {
+  if (props.tag === 'a') {
+    return (<Link className={(props.type ? 'Button Button--' + props.type : 'Button')} {...props}>
+      {props.children}
+    </Link>);
   } else {
-    return (<button className={(type ? 'Button--' + type : '')} id={id} title={title} onClick={onClick}>
-      {label}
+    return (<button className={(props.type ? 'Button Button--' + props.type : 'Button')} {...props}>
+      {props.children}
     </button>);
   }
 }
