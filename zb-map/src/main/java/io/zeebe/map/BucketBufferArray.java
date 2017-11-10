@@ -406,44 +406,74 @@ public class BucketBufferArray implements AutoCloseable
             throw new IllegalStateException("Bucket can't be removed, since it is not empty!");
         }
 
-        int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
         long nextBucketAddress = 0;
-        if (lastBucketOffset == bucketOffset)
+        final int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
+        final boolean isBucketRemovable = lastBucketOffset == bucketOffset;
+
+        final int bucketDepth = getBucketDepth(bucketAddress);
+        if (isBucketRemovable)
         {
-            final int totalBucketCount = getBucketCount();
+            final int bucketId = getBucketId(bucketAddress);
+            nextBucketAddress = removeBucket(bucketBufferId, bucketCount);
 
-            if (nextNotFullBucketBuffer > bucketBufferId)
+            if (bucketDepth != OVERFLOW_BUCKET && bucketDepth != ABANDONED_BUCKET)
             {
-                nextNotFullBucketBuffer = bucketBufferId;
-            }
-
-            setBucketCount(bucketBufferId, bucketCount - 1);
-            setBucketCount(totalBucketCount - 1);
-            lastBucketOffset = bucketCount == 1 ? 0 : BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 2) * maxBucketLength);
-
-            final boolean bufferIsEmpty = (bucketCount - 1) == 0;
-            if (bufferIsEmpty)
-            {
-                releaseEmptyBucketBuffers(bucketBufferId);
-                if (bucketBufferId > 0)
+                final int highestBucketId = getHighestBucketId();
+                if (highestBucketId == bucketId)
                 {
-                    int nextBucketBufferId = bucketBufferId - 1;
-                    if (nextBucketBufferId >= realAddresses.length || realAddresses[nextBucketBufferId] == INVALID_ADDRESS)
-                    {
-                        nextBucketBufferId = resolveLastFilledBucketBuffer();
-                    }
-
-                    int bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
-                    while (nextBucketBufferId > 0 && bucketCountOfNextBuffer == 0)
-                    {
-                        nextBucketBufferId--;
-                        bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
-                    }
-                    lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCountOfNextBuffer - 1) * maxBucketLength);
-                    nextBucketAddress = getBucketAddress(nextBucketBufferId, lastBucketOffset);
+                    setHighestBucketId(searchHighestBucketId());
                 }
             }
         }
+        else
+        {
+            if (bucketDepth == OVERFLOW_BUCKET)
+            {
+                setBucketDepth(bucketAddress, ABANDONED_BUCKET);
+            }
+            nextBucketAddress = nextBucketAddress == 0 ? getBucketAddress(bucketBufferId, lastBucketOffset) : nextBucketAddress;
+        }
+
+        return nextBucketAddress;
+    }
+
+    private long removeBucket(int bucketBufferId, int bucketCount)
+    {
+        long nextBucketAddress = 0;
+        final int totalBucketCount = getBucketCount();
+
+        if (nextNotFullBucketBuffer > bucketBufferId)
+        {
+            nextNotFullBucketBuffer = bucketBufferId;
+        }
+
+        setBucketCount(bucketBufferId, bucketCount - 1);
+        setBucketCount(totalBucketCount - 1);
+        int lastBucketOffset = bucketCount == 1 ? 0 : BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 2) * maxBucketLength);
+
+        final boolean bufferIsEmpty = (bucketCount - 1) == 0;
+        if (bufferIsEmpty)
+        {
+            releaseEmptyBucketBuffers(bucketBufferId);
+            if (bucketBufferId > 0)
+            {
+                int nextBucketBufferId = bucketBufferId - 1;
+                if (nextBucketBufferId >= realAddresses.length || realAddresses[nextBucketBufferId] == INVALID_ADDRESS)
+                {
+                    nextBucketBufferId = resolveLastFilledBucketBuffer();
+                }
+
+                int bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
+                while (nextBucketBufferId > 0 && bucketCountOfNextBuffer == 0)
+                {
+                    nextBucketBufferId--;
+                    bucketCountOfNextBuffer = getBucketCount(nextBucketBufferId);
+                }
+                lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCountOfNextBuffer - 1) * maxBucketLength);
+                nextBucketAddress = getBucketAddress(nextBucketBufferId, lastBucketOffset);
+            }
+        }
+
         return nextBucketAddress == 0 ? getBucketAddress(bucketBufferId, lastBucketOffset) : nextBucketAddress;
     }
 
@@ -495,11 +525,6 @@ public class BucketBufferArray implements AutoCloseable
                 realAddresses = newAddressTable;
             }
         }
-    }
-
-    public void setBucketId(long bucketAddress, int newBlockId)
-    {
-        UNSAFE.putInt(getRealAddress(bucketAddress) + BUCKET_ID_OFFSET, newBlockId);
     }
 
     private void setBucketId(int bucketBufferId, int bucketOffset, int newBlockId)
@@ -851,19 +876,18 @@ public class BucketBufferArray implements AutoCloseable
 
 
         final int bucketId = getBucketId(bucketAddress);
-        if (bucketId == ABANDONED_BUCKET)
+        final int bucketDepth = getBucketDepth(bucketAddress);
+        if (bucketDepth == OVERFLOW_BUCKET)
         {
-            builder.append("ABANDONED-BUCKET");
+            builder.append("Overflow-");
         }
-        else
+        else if (bucketDepth == ABANDONED_BUCKET)
         {
-            final int bucketDepth = getBucketDepth(bucketAddress);
-            if (bucketDepth == OVERFLOW_BUCKET)
-            {
-                builder.append("Overflow-");
-            }
-            builder.append("Bucket-").append(bucketId);
+            builder.append("Abandoned-");
+
         }
+        builder.append("Bucket-").append(bucketId);
+
         builder.append(" contains ")
                .append(getBlockCount() == 0 ? 0 : ((double) bucketFillCount / (double) getBlockCount()) * 100D)
                .append(" % of all blocks")

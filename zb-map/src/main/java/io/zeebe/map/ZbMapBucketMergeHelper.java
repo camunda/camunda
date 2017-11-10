@@ -213,7 +213,7 @@ final class ZbMapBucketMergeHelper
             long newLastBucketAddress = bucketAddress;
             while (newLastBucketAddress > 0)
             {
-                if (bucketId == ABANDONED_BUCKET)
+                if (depth == ABANDONED_BUCKET)
                 {
                     newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
                 }
@@ -264,12 +264,8 @@ final class ZbMapBucketMergeHelper
      */
     private long tryRemoveAbandonedBucketWithoutMerge(long bucketAddress)
     {
-        long newLastBucketAddress = 0;
-        if (bucketBufferArrayRef.isBucketRemoveable(bucketAddress))
-        {
-            newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
-        }
-        return newLastBucketAddress;
+        final long newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
+        return newLastBucketAddress > bucketAddress ? 0 : newLastBucketAddress;
     }
 
     /**
@@ -287,29 +283,18 @@ final class ZbMapBucketMergeHelper
         final long parentBucketAddress = hashTableRef.getBucketAddress(bucketId);
         long newLastBucketAddress = 0;
 
-        if (bucketBufferArrayRef.isBucketRemoveable(bucketAddress))
+        final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
+        if (bucketOverflowPointer != 0)
         {
-            if (isMergableWithParentBucket(parentBucketAddress, newBucketFillCount))
-            {
-                bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
-                bucketBufferArrayRef.removeOverflowBucket(parentBucketAddress, bucketAddress);
-                newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
-            }
+            newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
         }
-        else
+        else if (isMergableWithParentBucket(parentBucketAddress, newBucketFillCount))
         {
-            final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
-            if (bucketOverflowPointer != 0)
-            {
-                newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
-            }
-            else if (isMergableWithParentBucket(parentBucketAddress, newBucketFillCount))
-            {
-                bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
-                bucketBufferArrayRef.removeOverflowBucket(parentBucketAddress, bucketAddress);
-                bucketBufferArrayRef.setBucketId(bucketAddress, ABANDONED_BUCKET);
-            }
+            bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
+            bucketBufferArrayRef.removeOverflowBucket(parentBucketAddress, bucketAddress);
+            newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
         }
+
         return newLastBucketAddress;
     }
 
@@ -332,18 +317,9 @@ final class ZbMapBucketMergeHelper
         {
             bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
             bucketBufferArrayRef.removeOverflowBucket(parentBucketAddress, bucketAddress);
-
-            if (bucketBufferArrayRef.isBucketRemoveable(bucketAddress))
-            {
-                newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
-            }
-            else
-            {
-                bucketBufferArrayRef.setBucketId(bucketAddress, ABANDONED_BUCKET);
-            }
+            newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
         }
-
-        return newLastBucketAddress;
+        return newLastBucketAddress > bucketAddress ? 0 : newLastBucketAddress;
     }
 
     /**
@@ -416,15 +392,9 @@ final class ZbMapBucketMergeHelper
             bucketBufferArrayRef.relocateBlocksFromBucket(bucketAddress, parentBucketAddress);
             // 2. remove bucket
             newLastBucketAddress = bucketBufferArrayRef.removeBucket(bucketAddress);
-            // 3. update highest bucket id
-            final int highestBucketId = bucketBufferArrayRef.getHighestBucketId();
-            if (highestBucketId == bucketId)
-            {
-                bucketBufferArrayRef.setHighestBucketId(bucketBufferArrayRef.searchHighestBucketId());
-            }
-            // 4. update hash table like on split
+            // 3. update hash table like on split
             hashTableRef.updateTable(depth, bucketId, parentBucketAddress);
-            // 5. decrease parent bucket depth
+            // 4. decrease parent bucket depth
             bucketBufferArrayRef.setBucketDepth(parentBucketAddress, depth - 1);
         }
         return newLastBucketAddress;
