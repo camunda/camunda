@@ -24,10 +24,10 @@ export default class Heatmap extends React.Component {
 
   render() {
     const {xml} = this.state;
-    const {data} = this.props;
+    const {data, errorMessage} = this.props;
 
     if(!data || typeof data !== 'object') {
-      return <p>Cannot display data. Choose another visualization.</p>;
+      return <p>{errorMessage}</p>;
     }
 
     if(!xml) {

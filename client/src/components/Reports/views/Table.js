@@ -2,9 +2,9 @@ import React from 'react';
 
 import {Table as TableRenderer} from 'components';
 
-export default function Table({data}) {
+export default function Table({data, errorMessage}) {
   if(!data || typeof data !== 'object') {
-    return <p>Cannot display data. Choose another visualization.</p>;
+    return <p>{errorMessage}</p>;
   }
 
   return <TableRenderer data={formatData(data)} />;

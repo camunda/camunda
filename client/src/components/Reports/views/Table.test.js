@@ -45,13 +45,28 @@ it('should display object properties for a list of objects', () => {
 });
 
 it('should display an error message for a non-object result (single number)', () => {
-  const node = mount(<Table data={7} />);
+  const node = mount(<Table data={7} errorMessage='Error' />);
 
-  expect(node).toIncludeText('Cannot display data');
+  expect(node).toIncludeText('Error');
 });
 
 it('should display an error message if no data is provided', () => {
-  const node = mount(<Table />);
+  const node = mount(<Table errorMessage='Error' />);
 
-  expect(node).toIncludeText('Cannot display data');
+  expect(node).toIncludeText('Error');
+});
+
+it('should display an error message if data is null', () => {
+  const node = mount(<Table data={null} errorMessage='Error'/>);
+
+  expect(node).toIncludeText('Error');
+});
+
+it('should not display an error message if data is valid', () => {
+  const node = mount(<Table data={[
+    {prop1: 'foo', prop2: 'bar'},
+    {prop1: 'asdf', prop2: 'ghjk'}
+  ]} errorMessage='Error' />);
+
+    expect(node).not.toIncludeText('Error');
 });

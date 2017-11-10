@@ -8,20 +8,42 @@ export default class ReportView extends React.Component {
   render() {
     const {data} = this.props;
 
-    let view;
+    let config;
     switch(data.visualization) {
-      case 'number': view = <Number data={data.result} />; break;
-      case 'table': view = <Table data={data.result} />; break;
-      case 'heat': view = <Heatmap process={data.processDefinitionId} data={data.result} />; break;
+      case 'number':
+        config = {
+          component: Number,
+          props: {data: data.result}
+        }; break;
+      case 'table':
+        config = {
+          component: Table,
+          props: {data: data.result}
+        }; break;
+      case 'heat':
+        config = {
+          component: Heatmap,
+          props: {data: data.result, process: data.processDefinitionId}
+        }; break;
       case 'bar':
       case 'line':
       case 'pie':
-        view = <Chart type={data.visualization} data={data.result} />; break;
-      default: view = <Json data={data} />; break;
+        config = {
+          component: Chart,
+          props: {data: data.result, type: data.visualization}
+        }; break;
+      default:
+        config = {
+          component: Json,
+          props: {data}
+        }; break;
     }
 
+    config.props.errorMessage = 'Cannot display data. Choose another visualization.';
+    const Component = config.component;
+
     return (<ErrorBoundary>
-      {view}
+      <Component {...config.props} />
     </ErrorBoundary>);
   }
 }

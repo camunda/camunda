@@ -15,10 +15,10 @@ export default class Chart extends React.Component {
   }
 
   render() {
-    const {data} = this.props;
+    const {data, errorMessage} = this.props;
 
     if(!data || typeof data !== 'object') {
-      return <p>Cannot display data. Choose another visualization.</p>;
+      return <p>{errorMessage}</p>;
     }
 
     return (<div style={{height: '400px', width: '600px'}}>

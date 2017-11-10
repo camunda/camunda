@@ -27,9 +27,9 @@ it('should display a loading indication while loading', () => {
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
-  const node = mount(<Heatmap process='a' data='123' />);
+  const node = mount(<Heatmap process='a' data='123' errorMessage='Error' />);
 
-  expect(node).toIncludeText('Cannot display data');
+  expect(node).toIncludeText('Error');
 });
 
 it('should display a diagram', async () => {
@@ -45,9 +45,15 @@ it('should display a diagram', async () => {
 it('should display a heatmap overlay', async () => {
   loadProcessDefinitionXml.mockReturnValue(diagramXml);
 
-    const node = mount(<Heatmap process='a' data={data} />);
+  const node = mount(<Heatmap process='a' data={data} />);
 
-    await node.instance().load();
+  await node.instance().load();
 
-    expect(node).toIncludeText('HeatmapOverlay');
+  expect(node).toIncludeText('HeatmapOverlay');
+});
+
+it('should not display an error message if data is valid', () => {
+  const node = mount(<Heatmap process='a' data={data} errorMessage='Error' />);
+
+  expect(node).not.toIncludeText('Error');
 });
