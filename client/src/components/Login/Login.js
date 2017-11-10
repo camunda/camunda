@@ -4,7 +4,7 @@ import {getToken} from 'credentials';
 
 import {login} from './service';
 
-import {Message} from '../Message';
+import {Message} from 'components';
 
 import './Login.css';
 
