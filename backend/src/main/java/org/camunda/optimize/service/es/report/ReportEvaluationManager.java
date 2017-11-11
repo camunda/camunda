@@ -1,14 +1,16 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.CountFlowNodeFrequencyByFlowNodeCommand;
-import org.camunda.optimize.service.es.report.command.CountTotalProcessInstanceFrequencyCommand;
+import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
+import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -20,19 +22,17 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
+
 @Component
 public class ReportEvaluationManager {
-
-  public static final String VIEW_RAW_DATA_OPERATION = "rawData";
-  public static final String VIEW_COUNT_OPERATION = "count";
-
-  public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
-  public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
-
-  public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
-
-  public static final String GROUP_BY_FLOW_NODE_TYPE = "flowNode";
-  public static final String GROUP_BY_NONE_TYPE = "none";
 
   @Autowired
   private ConfigurationService configurationService;
@@ -97,12 +97,17 @@ public class ReportEvaluationManager {
 
   private Command extractGroupForCountProcessInstanceFrequency(ReportDataDto reportData) {
     Command evaluationCommand = new NotSupportedCommand();
-    ValidationHelper.ensureNotNull("group by", reportData.getGroupBy());
-    String type = reportData.getGroupBy().getType();
+    GroupByDto groupBy = reportData.getGroupBy();
+    ValidationHelper.ensureNotNull("group by", groupBy);
+    String type = groupBy.getType();
     ValidationHelper.ensureNotEmpty("group by type", type);
     switch (type) {
       case GROUP_BY_NONE_TYPE:
         evaluationCommand = new CountTotalProcessInstanceFrequencyCommand();
+        break;
+      case GROUP_BY_START_DATE_TYPE:
+        ValidationHelper.ensureNotEmpty("group by unit", groupBy.getUnit());
+        evaluationCommand = new CountProcessInstanceFrequencyByStartDateCommand();
         break;
     }
     return evaluationCommand;

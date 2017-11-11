@@ -17,6 +17,7 @@
         <module>engine-rest-secure</module>
         <module>import-performance-tests</module>
         <module>service-performance-tests</module>
+        <module>engine-database-connection</module>
     </modules>
 
 

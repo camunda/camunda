@@ -10,13 +10,17 @@
   <process-engine name="default">
     <job-acquisition>default</job-acquisition>
     <configuration>org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration</configuration>
-    <datasource>java:jdbc/ProcessEngine</datasource>
 
     <properties>
       <property name="history">full</property>
       <property name="databaseSchemaUpdate">true</property>
       <property name="authorizationEnabled">true</property>
       <property name="jobExecutorDeploymentAware">true</property>
+
+      <property name="jdbcUrl">jdbc:h2:mem:camunda1;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</property>
+      <property name="jdbcDriver">org.h2.Driver</property>
+      <property name="jdbcUsername">sa</property>
+      <property name="jdbcPassword"></property>
 
     </properties>
 
@@ -40,6 +44,10 @@
         <class>org.camunda.bpm.platform.plugin.duration.adaption.HistoricActivityInstanceAdaptionPlugin</class>
       </plugin>
 
+      <plugin>
+        <class>org.camunda.bpm.platform.plugin.database.connection.DatabaseConnectionPlugin</class>
+      </plugin>
+
     </plugins>
   </process-engine>
 
@@ -53,7 +61,7 @@
       <property name="authorizationEnabled">true</property>
       <property name="jobExecutorDeploymentAware">true</property>
 
-      <property name="jdbcUrl">jdbc:h2:mem:camunda2;DB_CLOSE_DELAY=1000</property>
+      <property name="jdbcUrl">jdbc:h2:mem:camunda2;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</property>
       <property name="jdbcDriver">org.h2.Driver</property>
       <property name="jdbcUsername">sa</property>
       <property name="jdbcPassword"></property>

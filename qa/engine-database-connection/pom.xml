@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.camunda.optimize</groupId>
+        <artifactId>qa</artifactId>
+        <version>1.5.0-SNAPSHOT</version>
+    </parent>
+
+    <version>1.5.0-SNAPSHOT</version>
+    <artifactId>engine-database-connection</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <version.camunda>${camunda.engine.version}</version.camunda>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+    </properties>
+
+    <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
+    <repositories>
+        <repository>
+            <id>test</id>
+            <url>http://repository</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.camunda.bpm</groupId>
+            <artifactId>camunda-engine</artifactId>
+            <version>${version.camunda}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.190</version>
+        </dependency>
+
+    </dependencies>
+</project>

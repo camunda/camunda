@@ -32,10 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.GROUP_BY_NONE_TYPE;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_COUNT_OPERATION;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_FREQUENCY_PROPERTY;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;

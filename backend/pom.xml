@@ -501,6 +501,13 @@
           <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-database-connection</artifactId>
+          <scope>test</scope>
+          <version>${project.version}</version>
+        </dependency>
+
 
       </dependencies>
 
@@ -623,6 +630,10 @@
                   <dependency>
                     <groupId>org.camunda.optimize</groupId>
                     <artifactId>engine-duration-adaption</artifactId>
+                  </dependency>
+                  <dependency>
+                    <groupId>org.camunda.optimize</groupId>
+                    <artifactId>engine-database-connection</artifactId>
                   </dependency>
                 </dependencies>
               </container>

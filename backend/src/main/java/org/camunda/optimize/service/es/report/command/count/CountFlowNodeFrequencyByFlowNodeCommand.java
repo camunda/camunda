@@ -1,7 +1,8 @@
-package org.camunda.optimize.service.es.report.command;
+package org.camunda.optimize.service.es.report.command.count;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;

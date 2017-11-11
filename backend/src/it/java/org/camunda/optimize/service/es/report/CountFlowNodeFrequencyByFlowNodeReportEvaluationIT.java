@@ -1,4 +1,5 @@
 package org.camunda.optimize.service.es.report;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
@@ -32,10 +33,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.GROUP_BY_FLOW_NODE_TYPE;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_COUNT_OPERATION;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_FLOW_NODE_ENTITY;
-import static org.camunda.optimize.service.es.report.ReportEvaluationManager.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,10 +50,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_ACTIVITY = "testActivity";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
-  private static final long TIME_OFFSET_MILLS = 2000L;
 
   @Rule
   public RuleChain chain = RuleChain

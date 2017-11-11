@@ -23,6 +23,7 @@ import org.springframework.context.ApplicationContext;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -250,6 +251,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getApplicationContext();
   }
 
+  public DateTimeFormatter getDateTimeFormatter() {
+    return getOptimize().getDateTimeFormatter();
+  }
 
   public int getMaxVariableValueListSize() {
     return getConfigurationService().getMaxVariableValueListSize();

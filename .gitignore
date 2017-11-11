@@ -13,3 +13,7 @@ hosts
 nohup.out
 errorShots/
 .DS_Store
+
+client/.vscode/
+client/dist
+client/*.md

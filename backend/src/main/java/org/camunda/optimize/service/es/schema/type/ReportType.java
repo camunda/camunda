@@ -24,7 +24,7 @@ public class ReportType extends StrictTypeMappingCreator {
   public static final String VIEW = "view";
   public static final String VIEW_OPERATION = "operation";
   public static final String VIEW_ENTITY = "entity";
-  public static final String VIEW_PROPERTY = "entity";
+  public static final String VIEW_PROPERTY = "property";
 
   public static final String GROUP_BY = "groupBy";
   public static final String GROUP_BY_TYPE = "type";
