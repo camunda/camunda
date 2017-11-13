@@ -53,7 +53,7 @@ it('should close when selecting an option', () => {
   expect(node.find('.Dropdown')).not.toMatchSelector('.is-open');
 });
 
-it('should set aria-haspop to true', () => {
+it('should set aria-haspopup to true', () => {
   const node = mount(<Dropdown label='Click me'>
     <Dropdown.Option>foo</Dropdown.Option>
   </Dropdown>);
