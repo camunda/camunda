@@ -17,6 +17,7 @@ a.Button:hover {
   background-color: #e6e6e6;
   border: 1px solid #adadad;
   cursor: pointer;
+  transition: background-color .3s;
 }
 
 .Button[disabled],
