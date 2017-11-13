@@ -14,10 +14,11 @@
 
   <properties>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
+    <largeTest.name>**/LargeZbMapTest.java</largeTest.name>
   </properties>
 
   <dependencies>
-  	 <dependency>
+	 <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
     </dependency>
@@ -154,6 +155,30 @@
       </build>
 
     </profile>
+
+    <profile>
+      <id>long-running</id>
+
+      <properties>
+        <largeTest.name></largeTest.name>
+      </properties>
+
+    </profile>
   </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${plugin.version.surefire}</version>
+        <configuration>
+          <excludes>
+            <exclude>${largeTest.name}</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
 

@@ -5,7 +5,7 @@ def repository = 'zb-util'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'clean license:check source:jar deploy -B'
+def mvnGoals = 'clean -Plong-running license:check source:jar deploy -B'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
