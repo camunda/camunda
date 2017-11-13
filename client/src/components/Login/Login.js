@@ -63,7 +63,7 @@ export default class Login extends React.Component {
           <label className='Login__label'>Password</label>
           <input placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
         </div>
-        <button type='submit' onClick={this.submit}>Login</button>
+        <button className="Button" type='submit' onClick={this.submit}>Login</button>
       </form>
     );
   }
