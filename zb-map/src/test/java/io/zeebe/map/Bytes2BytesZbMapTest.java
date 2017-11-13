@@ -189,6 +189,22 @@ public class Bytes2BytesZbMapTest
     }
 
     @Test
+    public void shouldFailToGetValueWithHalfKey()
+    {
+        // given
+        final UnsafeBuffer shortenedKey = new UnsafeBuffer(new byte[30]);
+        shortenedKey.putBytes(0, key, 0, shortenedKey.capacity());
+
+        map.put(key, value);
+
+        // when
+        final DirectBuffer result = map.get(shortenedKey);
+
+        // then
+        assertThat(result).isNull();
+    }
+
+    @Test
     public void shouldRejectGetIfKeyTooLong()
     {
         // then

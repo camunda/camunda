@@ -15,13 +15,10 @@
  */
 package io.zeebe.map.types;
 
-import static org.agrona.BufferUtil.ARRAY_BASE_OFFSET;
-
-import java.util.Arrays;
-
 import io.zeebe.map.KeyHandler;
 import org.agrona.DirectBuffer;
 import org.agrona.UnsafeAccess;
+import org.agrona.concurrent.UnsafeBuffer;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
@@ -29,28 +26,25 @@ public class ByteArrayKeyHandler implements KeyHandler
 {
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    public byte[] theKey;
     public int keyLength;
+    public UnsafeBuffer keyBuffer = new UnsafeBuffer(0, 0);
 
     public void setKey(byte[] key)
     {
         checkKeyLength(key.length);
-        System.arraycopy(key, 0, this.theKey, 0, key.length);
-        zeroRemainingBytes(key.length);
+        keyBuffer.wrap(key);
     }
 
     public void setKey(DirectBuffer buffer, int offset, int length)
     {
         checkKeyLength(length);
-        buffer.getBytes(offset, this.theKey, 0, length);
-        zeroRemainingBytes(length);
+        keyBuffer.wrap(buffer, offset, length);
     }
 
     @Override
     public void setKeyLength(int keyLength)
     {
         this.keyLength = keyLength;
-        this.theKey = new byte[keyLength];
     }
 
     @Override
@@ -64,9 +58,9 @@ public class ByteArrayKeyHandler implements KeyHandler
     {
         int result = 1;
 
-        for (int i = 0; i < keyLength; i++)
+        for (int i = 0; i < keyBuffer.capacity(); i++)
         {
-            result = 31 * result + theKey[i];
+            result = 31 * result + keyBuffer.getByte(i);
         }
 
         return result;
@@ -75,30 +69,32 @@ public class ByteArrayKeyHandler implements KeyHandler
     @Override
     public void readKey(long keyAddr)
     {
-        UNSAFE.copyMemory(null, keyAddr, theKey, ARRAY_BASE_OFFSET, keyLength);
+        keyBuffer.wrap(keyAddr, keyLength);
     }
 
     @Override
     public void writeKey(long keyAddr)
     {
-        UNSAFE.copyMemory(theKey, ARRAY_BASE_OFFSET, null, keyAddr, keyLength);
+        final int actualValueLength = keyBuffer.capacity();
+        UNSAFE.copyMemory(keyBuffer.byteArray(), keyBuffer.addressOffset(), null, keyAddr, actualValueLength);
+        UNSAFE.setMemory(keyAddr + actualValueLength, keyLength - actualValueLength, (byte) 0);
     }
 
     @Override
     public boolean keyEquals(long keyAddr)
     {
-        final long thisOffset = ARRAY_BASE_OFFSET;
         final long thatOffset = keyAddr;
 
-        for (int i = 0; i < keyLength; i++)
+        for (int i = 0; i < keyBuffer.capacity(); i++)
         {
-            if (UNSAFE.getByte(theKey, thisOffset + i) != UNSAFE.getByte(null, thatOffset + i))
+            if (keyBuffer.getByte(i) != UNSAFE.getByte(null, thatOffset + i))
             {
                 return false;
             }
         }
 
-        return true;
+        return keyBuffer.capacity() == keyLength ||
+               UNSAFE.getByte(null, thatOffset + keyBuffer.capacity()) == 0;
     }
 
     protected void checkKeyLength(final int providedLength)
@@ -108,13 +104,4 @@ public class ByteArrayKeyHandler implements KeyHandler
             throw new IllegalArgumentException("Illegal byte array length: expected at most " + keyLength + ", got " + providedLength);
         }
     }
-
-    protected void zeroRemainingBytes(final int length)
-    {
-        if (length < keyLength)
-        {
-            Arrays.fill(theKey, length, keyLength, (byte) 0);
-        }
-    }
-
 }

@@ -17,6 +17,8 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Random;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -37,15 +39,14 @@ public class Bytes2LongZbMapTest
 
         map = new Bytes2LongZbMap(tableSize, 1, 64);
 
+        final Random random = new Random(100);
+
         // generate keys
+        final byte randomBytes[] = new byte[64];
         for (int i = 0; i < keys.length; i++)
         {
-            final byte[] val = String.valueOf(i).getBytes();
-
-            for (int j = 0; j < val.length; j++)
-            {
-                keys[i][j] = val[j];
-            }
+            random.nextBytes(randomBytes);
+            keys[i] = randomBytes;
         }
     }
 
@@ -68,6 +69,22 @@ public class Bytes2LongZbMapTest
 
         // when then
         assertThat(map.get(shortenedKey, -1)).isEqualTo(76L);
+    }
+
+
+    @Test
+    public void shouldFailToGetValueWithHalfKey()
+    {
+        // given
+        final byte[] key = new byte[64];
+        final byte[] shortenedKey = new byte[30];
+        System.arraycopy(keys[1], 0, key, 0, 64);
+        System.arraycopy(keys[1], 0, shortenedKey, 0, 30);
+
+        map.put(key, 76L);
+
+        // when then
+        assertThat(map.get(shortenedKey, -1)).isEqualTo(-1);
     }
 
     @Test

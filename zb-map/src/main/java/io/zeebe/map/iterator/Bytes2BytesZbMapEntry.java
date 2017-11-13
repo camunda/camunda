@@ -29,7 +29,7 @@ public class Bytes2BytesZbMapEntry implements ZbMapEntry<ByteArrayKeyHandler, By
     @Override
     public void read(ByteArrayKeyHandler keyHandler, ByteArrayValueHandler valueHandler)
     {
-        key.wrap(keyHandler.theKey, 0, keyHandler.keyLength);
+        key.wrap(keyHandler.keyBuffer);
         value.wrap(valueHandler.valueBuffer);
     }
 

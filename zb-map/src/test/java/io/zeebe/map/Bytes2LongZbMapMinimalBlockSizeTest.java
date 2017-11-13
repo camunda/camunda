@@ -231,11 +231,13 @@ public class Bytes2LongZbMapMinimalBlockSizeTest
         final List<byte[]> foundKeys = new ArrayList<>();
 
         final Iterator<Bytes2LongZbMapEntry> iterator = map.iterator();
+        final byte key[] = new byte[64];
         while (iterator.hasNext())
         {
             final Bytes2LongZbMapEntry entry = iterator.next();
 
-            foundKeys.add(entry.getKey().clone());
+            entry.getKey().getBytes(0, key);
+            foundKeys.add(key.clone());
         }
 
         assertThat(foundKeys)
