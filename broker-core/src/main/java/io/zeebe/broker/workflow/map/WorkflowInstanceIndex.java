@@ -142,7 +142,8 @@ public class WorkflowInstanceIndex implements AutoCloseable
         public void wrap(long workflowInstanceKey, DirectBuffer value)
         {
             this.workflowInstanceKey = workflowInstanceKey;
-            this.currentValue.wrap(value);
+
+            this.currentValue.putBytes(0, value, 0, value.capacity());
         }
 
         public long getKey()
