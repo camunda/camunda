@@ -217,8 +217,10 @@ export default class EditGrid extends React.Component {
     this.setState(newState);
   }
 
-  generateGridRows = (state) => {
+  generateGridRows = () => {
     const result = [];
+
+    const state = this.state;
 
     if (state && state.tilesRows) {
       for(let row in state.tilesRows) {
@@ -280,8 +282,10 @@ export default class EditGrid extends React.Component {
     this.props.onReportMoved(oldReport,updatedReport);
   }
 
-  generateReportCards = (state) => {
+  generateReportCards = () => {
     let reportTiles = [];
+
+    const state = this.state;
 
     if (state.reports) {
       for (let i = 0; i < state.reports.length; i++) {
@@ -342,8 +346,8 @@ export default class EditGrid extends React.Component {
     return (
       <div className={'edit-grid'}>
         <div className={'edit-grid--grid'}>
-          {this.generateGridRows(this.state)}
-          {this.generateReportCards(this.state)}
+          {this.generateGridRows()}
+          {this.generateReportCards()}
           {
 
             (this.state && this.state.dragState && !this.state.dragState.dragging) ?
