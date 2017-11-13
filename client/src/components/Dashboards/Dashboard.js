@@ -94,8 +94,8 @@ export default class Dashboard extends React.Component {
           <input id={'name'} onChange={this.updateName} value={name || ''}></input>
           <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
           <div>
-            <Link id={'save'} to={`/dashboard/${this.id}`} onClick={this.saveChanges.bind(this)}>Save</Link> |
-            <Link id={'cancel'} to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
+            <Link id={'save'} className="Button" to={`/dashboard/${this.id}`} onClick={this.saveChanges.bind(this)}>Save</Link>
+            <Link id={'cancel'} className="Button" to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
         <EditGrid
@@ -116,8 +116,8 @@ export default class Dashboard extends React.Component {
         <h1>{name}</h1>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
-          <Link id={'edit'} to={`/dashboard/${this.id}/edit`}>Edit</Link> |
-          <button onClick={this.deleteDashboard}>Delete</button>
+          <Link id={'edit'} className="Button" to={`/dashboard/${this.id}/edit`}>Edit</Link>
+          <button className="Button" onClick={this.deleteDashboard}>Delete</button>
         </div>
       </div>
     )

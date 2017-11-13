@@ -106,8 +106,8 @@ export default class Report extends React.Component {
         <input id={'name'} onChange={this.updateName} value={name || ''}></input>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
-          <Link id={'save'} to={`/report/${this.id}`} onClick={this.save}>Save</Link> |
-          <Link id={'cancel'} to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+          <Link id={'save'} className="Button" to={`/report/${this.id}`} onClick={this.save}>Save</Link>
+          <Link id={'cancel'} className="Button" to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
           <ControlPanel {...data} onChange={this.updateReport} />
         </div>
 
