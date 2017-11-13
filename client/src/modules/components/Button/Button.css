@@ -20,6 +20,13 @@ a.Button:hover {
   transition: background-color .3s;
 }
 
+.Button:active,
+a.Button:active {
+  color: #111;
+  background-color: #e6e6e6;
+  border: 1px solid #adadad;
+}
+
 .Button[disabled],
 .Button[disabled="disabled"],
 a.Button[disabled],
