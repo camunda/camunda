@@ -22,9 +22,9 @@ it('should display the child elements when clicking the trigger', () => {
     <Dropdown.Option>foo</Dropdown.Option>
   </Dropdown>);
 
-  node.find('button').simulate('click');
+  node.find('.Button').simulate('click');
 
-  expect(node).toIncludeText('foo');
+  expect(node.find('.Dropdown')).toMatchSelector('.is-open');
 })
 
 it('should close when clicking somewhere', () => {
@@ -36,8 +36,8 @@ it('should close when clicking somewhere', () => {
 
   node.simulate('click');
 
-  expect(node).not.toIncludeText('foo');
   expect(node.state('open')).toBe(false);
+  expect(node.find('.Dropdown')).not.toMatchSelector('.is-open');
 })
 
 it('should close when selecting an option', () => {
@@ -49,6 +49,6 @@ it('should close when selecting an option', () => {
 
   node.find('.test_option').simulate('click');
 
-  expect(node).not.toIncludeText('foo');
   expect(node.state('open')).toBe(false);
+  expect(node.find('.Dropdown')).not.toMatchSelector('.is-open');
 });
