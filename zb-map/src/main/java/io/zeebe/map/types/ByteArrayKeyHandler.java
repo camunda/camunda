@@ -63,6 +63,13 @@ public class ByteArrayKeyHandler implements KeyHandler
             result = 31 * result + keyBuffer.getByte(i);
         }
 
+        if (keyBuffer.capacity() < keyLength)
+        {
+            for (int i = keyBuffer.capacity(); i < keyLength; i++)
+            {
+                result = 31 * result;
+            }
+        }
         return result;
     }
 
@@ -93,8 +100,17 @@ public class ByteArrayKeyHandler implements KeyHandler
             }
         }
 
-        return keyBuffer.capacity() == keyLength ||
-               UNSAFE.getByte(null, thatOffset + keyBuffer.capacity()) == 0;
+        if (keyBuffer.capacity() < keyLength)
+        {
+            for (int i = keyBuffer.capacity(); i < keyLength; i++)
+            {
+                if (UNSAFE.getByte(null, thatOffset + i) != 0)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     protected void checkKeyLength(final int providedLength)

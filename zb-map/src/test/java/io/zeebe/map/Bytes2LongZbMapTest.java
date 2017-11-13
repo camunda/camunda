@@ -17,6 +17,7 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.*;
@@ -25,7 +26,7 @@ import org.junit.rules.ExpectedException;
 public class Bytes2LongZbMapTest
 {
 
-    byte[][] keys = new byte[16][64];
+    byte[][] keys = new byte[100_000][64];
 
     Bytes2LongZbMap map;
 
@@ -46,7 +47,7 @@ public class Bytes2LongZbMapTest
         for (int i = 0; i < keys.length; i++)
         {
             random.nextBytes(randomBytes);
-            keys[i] = randomBytes;
+            keys[i] = randomBytes.clone();
         }
     }
 
@@ -71,6 +72,67 @@ public class Bytes2LongZbMapTest
         assertThat(map.get(shortenedKey, -1)).isEqualTo(76L);
     }
 
+    @Test
+    public void shouldUpdateValueWithKeyAndRemainingBytesAreZero()
+    {
+        // given
+        final Bytes2LongZbMap map = new Bytes2LongZbMap(1024 * 32 * 32, 16, 64);
+        final byte[] key = new byte[64];
+        final byte[] shortenedKey = new byte[30];
+        System.arraycopy(keys[1], 0, key, 0, 64);
+        System.arraycopy(keys[1], 0, shortenedKey, 0, 30);
+        Arrays.fill(key, 30, key.length, (byte) 0);
+
+        for (int i = 0; i < keys.length; i++)
+        {
+            map.put(keys[i], i);
+        }
+
+        // when
+        map.put(shortenedKey, 0x10);
+        map.put(key, 0xFF);
+
+        // then
+        assertThat(map.get(shortenedKey, -1)).isEqualTo(0xFF);
+        assertThat(map.get(key, -1)).isEqualTo(0xFF);
+    }
+
+    @Test
+    public void shouldGetValueWithKeyAndRemainingBytesAreZero()
+    {
+        // given
+        final byte[] key = new byte[64];
+        final byte[] shortenedKey = new byte[30];
+        System.arraycopy(keys[1], 0, key, 0, 64);
+        System.arraycopy(keys[1], 0, shortenedKey, 0, 30);
+
+        Arrays.fill(key, 30, key.length, (byte) 0);
+
+        // when
+        map.put(key, 76L);
+
+        // then
+        assertThat(map.get(shortenedKey, -1)).isEqualTo(76);
+    }
+
+
+    @Test
+    public void shouldFailToGetValueWithKeyWhichIsPartOfLargerKey()
+    {
+        // given
+        final byte[] key = new byte[64];
+        final byte[] shortenedKey = new byte[30];
+        System.arraycopy(keys[1], 0, key, 0, 64);
+        System.arraycopy(keys[1], 0, shortenedKey, 0, 30);
+
+        key[30] = 0;
+
+        // when
+        map.put(key, 76L);
+
+        // then
+        assertThat(map.get(shortenedKey, -1)).isEqualTo(-1);
+    }
 
     @Test
     public void shouldFailToGetValueWithHalfKey()
@@ -81,9 +143,10 @@ public class Bytes2LongZbMapTest
         System.arraycopy(keys[1], 0, key, 0, 64);
         System.arraycopy(keys[1], 0, shortenedKey, 0, 30);
 
+        // when
         map.put(key, 76L);
 
-        // when then
+        // then
         assertThat(map.get(shortenedKey, -1)).isEqualTo(-1);
     }
 
