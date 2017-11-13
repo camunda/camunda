@@ -2,6 +2,14 @@
   display: inline-block;
 }
 
+.Dropdown__menu {
+  display: none;
+}
+
+.is-open .Dropdown__menu {
+  display: block;
+}
+
 .Dropdown__caret {
   display: inline-block;
   width: 0;
