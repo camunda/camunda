@@ -91,7 +91,7 @@ export default class Dashboard extends React.Component {
     return (
       <div className={'dashboard'}>
         <div className={'navigation'}>
-          <input id={'name'} onChange={this.updateName} value={name || ''}></input>
+          <input type="text" id={'name'} onChange={this.updateName} value={name || ''}></input>
           <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
           <div>
             <Link id={'save'} className="Button" to={`/dashboard/${this.id}`} onClick={this.saveChanges.bind(this)}>Save</Link>

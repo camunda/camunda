@@ -103,7 +103,7 @@ export default class Report extends React.Component {
 
     return (
       <div>
-        <input id={'name'} onChange={this.updateName} value={name || ''}></input>
+        <input id={'name'} type='text' onChange={this.updateName} value={name || ''}></input>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'save'} className="Button" to={`/report/${this.id}`} onClick={this.save}>Save</Link>
