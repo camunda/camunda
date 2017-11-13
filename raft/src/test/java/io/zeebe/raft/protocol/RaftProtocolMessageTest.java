@@ -16,6 +16,7 @@
 package io.zeebe.raft.protocol;
 
 import static io.zeebe.test.util.BufferWriterUtil.writeAndRead;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
@@ -93,6 +94,8 @@ public class RaftProtocolMessageTest
     public void shouldReadWritePollRequest()
     {
         // given
+        waitUntil(() -> raft.getTerm() == 1);
+
         PollRequest pollRequest = new PollRequest()
             .setRaft(raft)
             .setLastEventPosition(111)
