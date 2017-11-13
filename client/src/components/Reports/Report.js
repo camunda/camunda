@@ -124,8 +124,8 @@ export default class Report extends React.Component {
         <h1>{name}</h1>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
-          <Link id={'edit'} to={`/report/${this.id}/edit`}>Edit</Link> |
-          <button onClick={this.deleteReport}>Delete</button>
+          <Link id={'edit'} className="Button" to={`/report/${this.id}/edit`}>Edit</Link>
+          <button className="Button" onClick={this.deleteReport}>Delete</button>
         </div>
 
         <ReportView data={state.reportResult} />
