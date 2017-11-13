@@ -21,10 +21,6 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -47,8 +43,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
@@ -62,10 +56,12 @@ import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.broker.system.log.TopicsIndex;
+import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
+import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
@@ -88,8 +84,7 @@ public class CreateTopicStreamProcessorTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(closeables);
 
-    @Mock
-    public ServerOutput output;
+    public BufferingServerOutput output;
 
     public PartitionManagerImpl partitionManager;
     protected TestStreams streams;
@@ -100,8 +95,7 @@ public class CreateTopicStreamProcessorTest
     @Before
     public void setUp()
     {
-        MockitoAnnotations.initMocks(this);
-        when(output.sendResponse(any())).thenReturn(true);
+        output = new BufferingServerOutput();
 
         final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
         closeables.manage(scheduler);
@@ -170,7 +164,7 @@ public class CreateTopicStreamProcessorTest
             .isPresent());
 
         final PartitionRequest request = partitionManager.getPartitionRequests().get(0);
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", request.getPartitionId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, request.getPartitionId());
 
         // calling check pending partition once
         streamProcessor.runAsync(checkPartitionsCmd);
@@ -229,7 +223,7 @@ public class CreateTopicStreamProcessorTest
         final PartitionEvent creatingEvent = doRepeatedly(() -> partitionEventsInState(PartitionState.CREATING).findFirst())
             .until(Optional::isPresent)
             .get();
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", creatingEvent.getId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, creatingEvent.getId());
         streamProcessor.runAsync(checkPartitionsCmd);
 
         waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
@@ -308,15 +302,15 @@ public class CreateTopicStreamProcessorTest
 
         // when both partitions become available at once
         final List<PartitionRequest> requests = partitionManager.getPartitionRequests();
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", requests.get(0).getPartitionId());
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", requests.get(1).getPartitionId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, requests.get(0).getPartitionId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, requests.get(1).getPartitionId());
         streamProcessor.runAsync(checkPartitionsCmd);
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE_COMPLETE).findFirst().isPresent());
 
         // then the topic created response is sent once
         processorControl.unblock();
         waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
-        verify(output, times(1)).sendResponse(any());
+        assertThat(output.getSentResponses()).hasSize(1);
     }
 
     @Test
@@ -444,7 +438,7 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
 
         final PartitionRequest firstRequest = partitionManager.getPartitionRequests().get(0);
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", firstRequest.getPartitionId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, firstRequest.getPartitionId());
 
         // a partition with expired creation
         ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
@@ -457,13 +451,13 @@ public class CreateTopicStreamProcessorTest
             .get();
 
         // when
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", creatingEvent.getId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, creatingEvent.getId());
         streamProcessor.runAsync(checkPartitionsCmd);
         waitUntil(() -> topicEventsInState(TopicState.CREATED).findFirst().isPresent());
 
         // then topic is marked created after two out of three partitions have been created
         assertThat(topicEventsInState(TopicState.CREATED).count()).isEqualTo(1);
-        verify(output, times(1)).sendResponse(any());
+        assertThat(output.getSentResponses()).hasSize(1);
     }
 
     @Test
@@ -558,7 +552,7 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> processorControl.isBlocked());
 
         final PartitionRequest request = partitionManager.getPartitionRequests().get(0);
-        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, "foo", request.getPartitionId());
+        partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, request.getPartitionId());
 
         // when creating a complete and expire command
         ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
@@ -569,6 +563,47 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE_EXPIRE_REJECTED).count() == 1);
         assertThat(partitionEventsInState(PartitionState.CREATE_EXPIRED).count()).isEqualTo(0);
         assertThat(partitionEventsInState(PartitionState.CREATED).count()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldCreateTopicsWithInterleavingRequests()
+    {
+        // given
+        partitionManager.addMember(SOCKET_ADDRESS1);
+
+        final long request1 = 42;
+        final long request2 = 52;
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 2))
+            .metadata(m -> m.requestId(request1))
+            .write();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("bar", 2))
+            .metadata(m -> m.requestId(request2))
+            .write();
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        waitUntil(() -> partitionManager.getPartitionRequests().size() == 4);
+
+        partitionManager.getPartitionRequests().forEach(r -> partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, r.getPartitionId()));
+
+        // when
+        streamProcessor.runAsync(checkPartitionsCmd);
+
+        // then
+        waitUntil(() -> output.getSentResponses().size() >= 2);
+
+        final RequestResponseHeaderDescriptor responseHeader = new RequestResponseHeaderDescriptor();
+
+        final List<Long> respondedRequests = output.getSentResponses().stream()
+            .map(b -> responseHeader.wrap(b, TransportHeaderDescriptor.headerLength()).requestId())
+            .collect(Collectors.toList());
+
+        assertThat(respondedRequests).containsExactlyInAnyOrder(request1, request2);
     }
 
     @Test
@@ -665,7 +700,7 @@ public class CreateTopicStreamProcessorTest
             });
         }
 
-        public void declarePartitionLeader(SocketAddress memberAddress, String topicName, int partitionId)
+        public void declarePartitionLeader(SocketAddress memberAddress, int partitionId)
         {
             if (!this.partitionsByMember.containsKey(memberAddress))
             {

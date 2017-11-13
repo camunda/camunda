@@ -17,22 +17,20 @@ package io.zeebe.broker.it.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.event.TaskEvent;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class CreateTopicTest
 {
@@ -67,8 +65,7 @@ public class CreateTopicTest
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/537")
-    public void shouldCreateMultipleTopicsInParallel() throws InterruptedException, ExecutionException, TimeoutException
+    public void shouldCreateMultipleTopicsInParallel() throws Exception
     {
         // given
         final TopicsClient topics = clientRule.topics();

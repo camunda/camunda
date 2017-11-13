@@ -83,13 +83,4 @@ public class TopicsIndex
 
         topics.put(topicName, inputValue);
     }
-
-    public void putRemainingPartitions(DirectBuffer topicName, int partitions)
-    {
-        inputValue.putInt(REMAINING_PARTITIONS_OFFSET, partitions, BYTE_ORDER);
-
-        topics.put(topicName, inputValue);
-    }
-
-
 }

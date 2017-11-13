@@ -53,6 +53,10 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
             createRequest = reader.readValue(topics.getRequestPosition(), TopicEvent.class);
             createRequest.getValue().setState(TopicState.CREATED);
         }
+        else
+        {
+            createRequest = null;
+        }
     }
 
     @Override
@@ -91,7 +95,7 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
 
         if (remainingPartitions > 0)
         {
-            topics.putRemainingPartitions(topicName, remainingPartitions - 1);
+            topics.put(topicName, remainingPartitions - 1, topics.getRequestPosition());
         }
     }
 }

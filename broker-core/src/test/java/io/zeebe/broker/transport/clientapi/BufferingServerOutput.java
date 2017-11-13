@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -37,7 +37,7 @@ public class BufferingServerOutput implements ServerOutput
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorDecoder = new ErrorResponseDecoder();
 
-    protected List<DirectBuffer> sentResponses = new ArrayList<>();
+    protected List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
 
     @Override
     public boolean sendMessage(TransportMessage transportMessage)
