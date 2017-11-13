@@ -9,7 +9,7 @@ export default function ReportTile (props) {
   }
 
   const endDrag = () => {
-    this.props.onDragEnd(props.data);
+    props.onDragEnd(props.data);
   }
 
 
