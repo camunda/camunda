@@ -4,7 +4,7 @@ a.Button {
   font-size: .875em; /* 14px/16px */
   user-select: none;
   padding: 6px 12px;
-  background-color: #fff;
+  background-color: #f8f8f8;
   border: 1px solid #ccc;
   border-radius: 3px;
   text-decoration: none;
