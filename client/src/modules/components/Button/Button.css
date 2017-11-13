@@ -1,13 +1,57 @@
-.Button, a.Button {
-
+.Button,
+a.Button {
+  color: #333;
+  font-size: .875em; /* 14px/16px */
+  user-select: none;
+  padding: 6px 12px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 3px;
 }
 
-.Button--primary, a.button--primary {
-  color: white;
-  background-color: #49a7f8;
+.Button:hover,
+a.Button:hover {
+  color: #111;
+  background-color: #e6e6e6;
+  border: 1px solid #adadad;
+  cursor: pointer;
 }
 
-.Button--danger, a.Button--danger {
+.Button[disabled],
+.Button[disabled="disabled"],
+a.Button[disabled],
+a.Button[disabled="disabled"] {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+.Button--small {
+  font--size: .65em;
+  padding: 4px 8px;
+}
+
+
+/* TODO: (New design: do not use red for primary buttons / semantics) */
+.Button--primary,
+a.button--primary {
   color: white;
-  background-color: red;
+  /* background-color: #49a7f8; */
+  background-color: #B5152E;
+  border: 1px solid #9e1226;
+}
+
+.Button--danger,
+a.Button--danger {
+  color: white;
+  background-color: #B5152E;
+  border: 1px solid #9e1226;
+}
+
+.Button--primary:hover,
+a.Button--primary:hover,
+.Button--danger:hover,
+a.Button--danger:hover {
+  color: white;
+  background-color: #871020;
+  border: 1px solid #670c19;
 }

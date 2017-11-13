@@ -52,7 +52,7 @@ export default class EntityList extends React.Component {
       entry.push({
         content: 'Delete',
         onClick: this.deleteEntity(id),
-        className: 'EntityList__deleteButton'
+        className: 'Button Button--small'
       });
     }
     if(this.props.operations.includes('edit')) {
@@ -71,7 +71,7 @@ export default class EntityList extends React.Component {
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
-      createButton = <button className='EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</button>;
+      createButton = <button className='Button ' onClick={this.createEntity}>Create New {this.props.label}</button>;
     }
 
     const header = <h1>{this.props.label}s</h1>;
