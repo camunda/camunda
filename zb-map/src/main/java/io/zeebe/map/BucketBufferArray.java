@@ -576,7 +576,7 @@ public class BucketBufferArray implements AutoCloseable
         {
             bucketBefore = bucketOverflowPointer;
             bucketOverflowPointer = getBucketOverflowPointer(bucketBefore);
-        } while (bucketOverflowPointer != overflowBucket || bucketOverflowPointer == 0);
+        } while (bucketOverflowPointer != overflowBucket && bucketOverflowPointer != 0);
         if (bucketOverflowPointer != 0)
         {
             setBucketOverflowPointer(bucketBefore, getBucketOverflowPointer(bucketOverflowPointer));

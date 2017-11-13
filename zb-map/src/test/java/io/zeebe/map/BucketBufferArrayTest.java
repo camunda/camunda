@@ -903,6 +903,63 @@ public class BucketBufferArrayTest
     }
 
     @Test
+    public void shouldRemoveOverflowBucketInBetween()
+    {
+        // given
+        final long bucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long firstoverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long secondOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long thirdOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+
+        // when
+        bucketBufferArray.removeOverflowBucket(bucketAddress, secondOverflowBucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(4);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstoverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(firstoverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
+    }
+
+    @Test
+    public void shouldNotFailOnRemoveNotExistingOverflowBucket()
+    {
+        // given
+        final long bucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
+        // when
+        bucketBufferArray.removeOverflowBucket(bucketAddress, 22131);
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(1);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotFailOnRemoveOverflowBucketTwice()
+    {
+        // given
+        final long bucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+        final long firstoverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long secondOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long thirdOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+
+        // when
+        bucketBufferArray.removeOverflowBucket(bucketAddress, secondOverflowBucketAddress);
+        bucketBufferArray.removeOverflowBucket(bucketAddress, secondOverflowBucketAddress);
+
+        // then
+        assertThat(bucketBufferArray.getBucketCount()).isEqualTo(4);
+        assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
+
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstoverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(firstoverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
+    }
+
+    @Test
     public void shouldCalculateOverflowBucketCount()
     {
         // given
