@@ -4,11 +4,11 @@
   z-index: 1;
 }
 
-.highlight {
+.grid-tile--highlight {
   background-color: lightgrey;
   z-index: 2;
 }
 
-.conflict {
+.grid-tile--conflict {
   background-color: lightpink;
 }

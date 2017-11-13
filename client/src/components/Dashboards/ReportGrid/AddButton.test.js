@@ -28,7 +28,7 @@ it('should callback on click', async () => {
     onClick={showMock}
   />);
 
-  node.find('.add-button').simulate('click');
+  node.find('.add-button--container').simulate('click');
   expect(showMock).toHaveBeenCalled();
 });
 

@@ -31,11 +31,11 @@ export default class GridTile extends React.Component {
 
     let className = 'grid-tile';
     if (highlighted) {
-      className = className + ' highlight'
+      className = className + ' grid-tile--highlight'
     }
 
     if (inConflict) {
-      className = className + ' conflict'
+      className = className + ' grid-tile--conflict'
     }
 
     return (

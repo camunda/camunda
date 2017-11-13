@@ -1,4 +1,4 @@
-.add-button {
+.add-button--container {
   z-index: 2;
   background-color: white;
   border: 2px dashed darkgray;
@@ -7,18 +7,18 @@
   cursor: pointer;
 }
 
-.add-sign-container {
+.add-button--add-sign-container {
   width: 100%;
   height: 70%;
 }
 
-.add-text {
+.add-button--add-text {
   color: darkgray;
   text-align: center;
   font-size: 1.5vw;
 }
 
-.add-sign {
+.add-button--add-sign {
   position: relative;
   float: left;
   top: 50%;

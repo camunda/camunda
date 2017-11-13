@@ -18,7 +18,9 @@ export default class Dashboard extends React.Component {
       lastModifier: null,
       loaded: false,
       redirect: false,
-      originalName: null
+      originalName: null,
+      reports: [],
+      originalReports : []
     };
 
     this.load();
@@ -33,7 +35,7 @@ export default class Dashboard extends React.Component {
       loaded: true,
       originalName: name,
       reports: reports ? reports : [],
-      originalReports: reports ? reports.slice() : []
+      originalReports: reports ? JSON.parse(JSON.stringify(reports)) : []
     });
   }
 
@@ -60,14 +62,14 @@ export default class Dashboard extends React.Component {
 
     this.setState({
       originalName: this.state.name,
-      originalReports: this.state.reports ? this.state.reports.slice() : []
+      originalReports: JSON.parse(JSON.stringify(this.state.reports))
     });
   }
 
   cancelChanges = async () => {
     this.setState({
       name : this.state.originalName,
-      reports: this.state.originalReports? this.state.originalReports.slice() : []
+      reports: JSON.parse(JSON.stringify(this.state.originalReports))
     });
   }
 
@@ -101,8 +103,8 @@ export default class Dashboard extends React.Component {
     const {name, lastModifier, lastModified} = state;
 
     return (
-      <div className={'dashboard'}>
-        <div className={'navigation'}>
+      <div className='dashboard'>
+        <div className='navigation'>
           <input type="text" id={'name'} onChange={this.updateName} value={name || ''}></input>
           <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
           <div>

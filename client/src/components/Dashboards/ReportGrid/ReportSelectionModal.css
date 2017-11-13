@@ -1,5 +1,5 @@
 /* The Modal (background) */
-.modal {
+.report-selection-modal--modal {
   display: block; /* Hidden by default */
   position: fixed; /* Stay in place */
   z-index: 2; /* Sit on top */
@@ -13,7 +13,7 @@
 }
 
 /* Modal Content/Box */
-.modal-content {
+.report-selection-modal--modal-content {
   background-color: #fefefe;
   margin: 15% auto; /* 15% from the top and centered */
   padding: 20px;
@@ -22,15 +22,15 @@
 }
 
 /* The Close Button */
-.close {
+.report-selection-modal--close {
   color: #aaa;
   float: right;
   font-size: 28px;
   font-weight: bold;
 }
 
-.close:hover,
-.close:focus {
+.report-selection-modal--close:hover,
+.report-selection-modal--close:focus {
   color: black;
   text-decoration: none;
   cursor: pointer;

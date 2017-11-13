@@ -1,4 +1,4 @@
-.report-tile {
+.report-tile--container {
   z-index: 2;
   background-color: white;
   border: 2px solid darkgray;
@@ -7,12 +7,12 @@
   cursor: pointer;
 }
 
-.report-name-container {
+.report-tile--report-name-container {
   width: 100%;
   height: 100%;
 }
 
-.report-name {
+.report-tile--report-name {
   position: relative;
   float: left;
   top: 50%;

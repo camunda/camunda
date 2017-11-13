@@ -3,7 +3,7 @@ import {load} from '../../EntityList/service';
 
 import './ReportSelectionModal.css'
 
-export default class ViewGrid extends React.Component {
+export default class ReportSelectionModal extends React.Component {
   constructor(props) {
     super(props);
 
@@ -37,10 +37,10 @@ export default class ViewGrid extends React.Component {
 
   render () {
     return (
-      <div id="report-selection-modal" className='modal'>
+      <div id="report-selection-modal" className='report-selection-modal--modal'>
 
-        <div className='modal-content'>
-          <span className='close' onClick={this.closeModal}>&times;</span>
+        <div className='report-selection-modal--modal-content'>
+          <span className='report-selection-modal--close' onClick={this.closeModal}>&times;</span>
           <p>Select a report from the list</p>
           <select value={this.state.selectedReport} onChange={this.changeReport.bind(this)}>
             <option value=''>Please select report</option>

@@ -58,7 +58,7 @@ it('should callback on close', async () => {
                                            onCloseModal={closeMock}
   /> );
 
-  node.find('.close').simulate('click');
+  node.find('.report-selection-modal--close').simulate('click');
 
   expect(closeMock).toHaveBeenCalled();
 });

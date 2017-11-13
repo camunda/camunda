@@ -64,6 +64,6 @@ it('should invoke callback on selection', async () => {
 it('should show modal on add click', async () => {
   const node = mount(<EditGrid onReportSelected={selectionMock} onReportRemoved={removeMock} reports={[]}/>);
 
-  node.find('.add-button').simulate('click');
+  node.find('.add-button--container').simulate('click');
   expect(node).toIncludeText('Select a report from the list');
 });

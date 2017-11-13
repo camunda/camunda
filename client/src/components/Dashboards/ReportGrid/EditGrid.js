@@ -11,8 +11,7 @@ import './EditGrid.css'
 export default class EditGrid extends React.Component {
   constructor(props) {
     super(props);
-    const initialState = this.initState(props);
-    this.state = initialState;
+    this.state = this.initState(props);
   }
 
   initState(props) {
@@ -284,21 +283,19 @@ export default class EditGrid extends React.Component {
   generateReportCards = (state) => {
     let reportTiles = [];
 
-    if (state && state.reports) {
-      if (state.reports) {
-        for (let i = 0; i < state.reports.length; i++) {
-          let report = state.reports[i];
-          reportTiles.push(
-            <ReportTile
-              key={this.reportKey(report)}
-              gridMargin={state.gridMargin}
-              gridSize={state.gridSize}
-              data={report}
-              onDragEnd={this.processDragEnd.bind(this)}
-              startDrag={this.processDragStart.bind(this)}
-            />
-          );
-        }
+    if (state.reports) {
+      for (let i = 0; i < state.reports.length; i++) {
+        let report = state.reports[i];
+        reportTiles.push(
+          <ReportTile
+            key={this.reportKey(report)}
+            gridMargin={state.gridMargin}
+            gridSize={state.gridSize}
+            data={report}
+            onDragEnd={this.processDragEnd.bind(this)}
+            startDrag={this.processDragStart.bind(this)}
+          />
+        );
       }
     }
 
@@ -308,14 +305,17 @@ export default class EditGrid extends React.Component {
   }
 
   addReport = (data) => {
-
-    this.props.onReportSelected(data, {
-      x: this.state.buttonTop,
-      y: this.state.buttonLeft
-    }, {
+    const dimensions = {
       width: this.state.buttonSize,
       height: this.state.buttonSize
-    });
+    };
+
+    const position = {
+      x: this.state.buttonTop,
+      y: this.state.buttonLeft
+    };
+
+    this.props.onReportSelected(data, position , dimensions);
   }
 
   closeModal = () => {
@@ -341,7 +341,7 @@ export default class EditGrid extends React.Component {
 
     return (
       <div className={'edit-grid'}>
-        <div className={'grid'}>
+        <div className={'edit-grid--grid'}>
           {this.generateGridRows(this.state)}
           {this.generateReportCards(this.state)}
           {
@@ -353,15 +353,15 @@ export default class EditGrid extends React.Component {
                 buttonLeft={this.state.buttonLeft}
                 gridMargin={this.state.gridMargin}
                 gridSize={this.state.gridSize}
-                onClick={this.showModal.bind(this)}
+                onClick={this.showModal}
               /> : ''
           }
 
         </div>
         {
           (this.state && this.state.modalVisible) ?
-            <ReportSelectionModal onSelectReport={this.addReport.bind(this)}
-                                  onCloseModal={this.closeModal.bind(this)}
+            <ReportSelectionModal onSelectReport={this.addReport}
+                                  onCloseModal={this.closeModal}
             /> : ''
         }
       </div>
