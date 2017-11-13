@@ -113,7 +113,7 @@ it('should not display any operations if none are specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__createButton')).not.toBePresent();
+  expect(node.find('.Button')).not.toBePresent();
   expect(node).not.toIncludeText('EntityList__deleteButton');
   expect(node).not.toIncludeText('EntityList__editLink');
 });
