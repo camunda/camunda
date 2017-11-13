@@ -7,16 +7,26 @@ export default class GridTile extends React.Component {
   processLeave = (event) => {
     event.preventDefault();
 
-    this.props.highlightOut(Number.parseInt(this.props.row, 10), Number.parseInt(this.props.col, 10));
+    this.props.highlightOut(
+      Number.parseInt(this.props.row, 10),
+      Number.parseInt(this.props.col, 10)
+    );
   }
 
   processOver = (event) => {
     event.preventDefault();
-    this.props.highlightIn(Number.parseInt(this.props.row, 10), Number.parseInt(this.props.col, 10));
+    this.props.highlightIn(
+      Number.parseInt(this.props.row, 10),
+      Number.parseInt(this.props.col, 10)
+    );
   }
 
   processDrop = (event) => {
-    this.props.reportDroped({row: Number.parseInt(this.props.row, 10), col: Number.parseInt(this.props.col, 10), target: event.target});
+    this.props.reportDroped({
+      row: Number.parseInt(this.props.row, 10),
+      col: Number.parseInt(this.props.col, 10),
+      target: event.target
+    });
   }
 
   render() {
