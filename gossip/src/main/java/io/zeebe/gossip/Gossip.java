@@ -15,9 +15,6 @@
  */
 package io.zeebe.gossip;
 
-import io.zeebe.gossip.broadcasts.BroadcastQueue;
-import io.zeebe.gossip.events.EventManager;
-import io.zeebe.gossip.nodes.NodeManager;
 import io.zeebe.transport.*;
 import io.zeebe.util.actor.Actor;
 import org.agrona.DirectBuffer;
@@ -30,32 +27,19 @@ public class Gossip implements Actor, ServerMessageHandler, ServerRequestHandler
     private final BufferingServerTransport serverTransport;
     private final ClientTransport clientTransport;
 
-    private final NodeManager nodeManager;
-    private final BroadcastQueue queue;
-    private final EventManager eventManager;
-
     public Gossip(final SocketAddress socketAddress, final GossipConfiguration configuration, final BufferingServerTransport serverTransport, final ClientTransport clientTransport)
     {
         this.socketAddress = socketAddress;
         this.configuration = configuration;
         this.serverTransport = serverTransport;
         this.clientTransport = clientTransport;
-
-        nodeManager = new NodeManager();
-        queue = new BroadcastQueue();
-        eventManager = new EventManager();
     }
 
     @Override
     public int doWork() throws Exception
     {
-        int workCount = 0;
-
-        workCount += nodeManager.doWork();
-        workCount += queue.doWork();
-        workCount += eventManager.doWork();
-
-        return workCount;
+        // TODO: implement
+        return 0;
     }
 
     @Override
