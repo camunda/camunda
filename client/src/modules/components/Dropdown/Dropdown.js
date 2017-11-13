@@ -29,14 +29,16 @@ export default class Dropdown extends React.Component {
 
   render() {
     return (<div className='Dropdown' ref={this.storeContainer} onClick={this.toggleOpen}>
-      <Button>{this.props.label} <span className='Dropdown__caret' /></Button>
+      <Button aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id}>{this.props.label} <span className='Dropdown__caret' /></Button>
       {
         this.state.open &&
-        <ul>
-          {React.Children.map(this.props.children,
-            (child, idx) => <li key={idx}>{child}</li>
-          )}
-        </ul>
+        <div className="Dropdown__menu" aria-labelledby={this.props.id}>
+          <ul>
+            {React.Children.map(this.props.children,
+              (child, idx) => <li key={idx}>{child}</li>
+            )}
+          </ul>
+        </div>
       }
     </div>);
   }
