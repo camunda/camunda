@@ -33,6 +33,7 @@ public class TopologyObserver
 {
 
     public static final Logger LOG = LoggerFactory.getLogger(TopologyObserver.class);
+    public static final int WAIT_FOR_LEADER_RETRIES = 50;
 
     private final Request<TopologyResponse> requestTopologyCmd;
 
@@ -52,11 +53,11 @@ public class TopologyObserver
 
     public SocketAddress waitForLeader(final int partition, final Set<SocketAddress> socketAddresses)
     {
-        final TopologyResponse respose = updateTopology()
-            .until(t -> t != null && socketAddresses.contains(getLeaderForPartition(t, partition)),
+        final TopologyResponse response = updateTopology()
+            .until(t -> t != null && socketAddresses.contains(getLeaderForPartition(t, partition)), WAIT_FOR_LEADER_RETRIES,
                 "Failed to wait for %s become leader of partition %d", socketAddresses, partition);
 
-        final SocketAddress leader = getLeaderForPartition(respose, partition);
+        final SocketAddress leader = getLeaderForPartition(response, partition);
 
         LOG.info("Broker {} is leader for partition {}", leader, partition);
         return leader;
