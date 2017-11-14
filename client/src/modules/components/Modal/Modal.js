@@ -11,7 +11,7 @@ export default class Modal extends React.Component {
 
   componentDidMount() {
     document.body.appendChild(this.el);
-    this.fixHeight();
+    this.fixPositioning();
   }
 
   componentWillUnmount() {
@@ -22,9 +22,10 @@ export default class Modal extends React.Component {
     this.container = node;
   }
 
-  fixHeight = () => {
+  fixPositioning = () => {
     if(this.container) {
       this.container.style.marginTop = -this.container.clientHeight / 2 + 'px';
+      this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
     }
   }
 
@@ -47,7 +48,7 @@ export default class Modal extends React.Component {
     if(open) {
       return ReactDOM.createPortal(
         <div className='Modal' onClick={this.onBackdropClick}>
-          <div className='Modal__container' ref={this.storeContainer} onClick={this.catchClick}>
+          <div className={`Modal__container ${this.props.className || ''}`} ref={this.storeContainer} onClick={this.catchClick}>
             {children}
           </div>
         </div>,
@@ -58,7 +59,7 @@ export default class Modal extends React.Component {
   }
 
   componentDidUpdate() {
-    this.fixHeight();
+    this.fixPositioning();
   }
 }
 

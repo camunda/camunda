@@ -6,6 +6,9 @@ import ControlPanel from './ControlPanel';
 jest.mock('./service', () => {return {
   loadProcessDefinitions: () => [{id:'procdef1'}, {id:'procdef2'}]
 }});
+jest.mock('./filter', () => {return {
+  Filter: () => 'Filter'
+}});
 
 const data = {
   processDefinitionId: '',

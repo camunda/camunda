@@ -1,0 +1,19 @@
+.DateInput__start {
+  border-right-width: 0;
+  flex: 1 0 auto;
+}
+
+.DateInput__start--highlight {
+  border-color: rgb(0, 145, 255);
+  background-color: rgba(0, 145, 255, .1);
+}
+
+.DateInput__end {
+  border-left-width: 0;
+  flex: 1 0 auto;
+}
+
+.DateInput__end--highlight {
+  border-color: rgb(0, 145, 255);
+  background-color: rgba(0, 145, 255, .1);
+}

@@ -1,0 +1,54 @@
+.DateFields {
+  position: relative;
+}
+
+.DateFields__inputContainer {
+  display: flex;
+}
+
+.DateFields__range {
+  position: absolute;
+  left: 0;
+  top: 50px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: white;
+  padding: 5px 0;
+}
+
+.DateFields__range::before {
+  content: ' ';
+  display: block;
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  transform: rotate(45deg);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: white;
+  top: -10px
+}
+
+.DateFields__range::after {
+  content: ' ';
+  display: block;
+  width: 50px;
+  height: 22px;
+  position: absolute;
+  background-color: white;
+  top: 0;
+}
+
+.DateFields__range--left::before {
+  left: 20px;
+}
+.DateFields__range--left::after {
+  left: 0;
+}
+
+.DateFields__range--right::before {
+  right: 20px;
+}
+.DateFields__range--right::after {
+  right: 0;
+}

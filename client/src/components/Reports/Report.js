@@ -98,8 +98,8 @@ export default class Report extends React.Component {
     });
   }
 
-  renderEditMode = (state) => {
-    const {name, lastModifier, lastModified, data} = state;
+  renderEditMode = () => {
+    const {name, lastModifier, lastModified, data, reportResult} = this.state;
 
     return (
       <div>
@@ -111,13 +111,13 @@ export default class Report extends React.Component {
           <ControlPanel {...data} onChange={this.updateReport} />
         </div>
 
-        <ReportView data={state.reportResult} />
+        <ReportView data={reportResult} />
       </div>
     )
   }
 
-  renderViewMode = (state) => {
-    const {name, lastModifier, lastModified} = state;
+  renderViewMode = () => {
+    const {name, lastModifier, lastModified, reportResult} = this.state;
 
     return (
       <div>
@@ -128,7 +128,7 @@ export default class Report extends React.Component {
           <button className="Button" onClick={this.deleteReport}>Delete</button>
         </div>
 
-        <ReportView data={state.reportResult} />
+        <ReportView data={reportResult} />
       </div>
     )
   }
@@ -148,7 +148,7 @@ export default class Report extends React.Component {
     }
 
     return (<div>
-      {viewMode === 'edit' ? (this.renderEditMode(this.state)) : (this.renderViewMode(this.state))}
+      {viewMode === 'edit' ? (this.renderEditMode()) : (this.renderViewMode())}
     </div>);
   }
 }

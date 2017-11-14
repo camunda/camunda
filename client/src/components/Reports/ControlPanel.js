@@ -1,5 +1,6 @@
 import React from 'react';
 
+import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
 
 const options = {
@@ -87,6 +88,7 @@ export default class ControlPanel extends React.Component {
       <select value={this.props.visualization} onChange={this.changeVisualization}>
         {renderOptions('visualizeAs')}
       </select>
+      <Filter data={this.props.filter} onChange={this.props.onChange} />
     </div>
   }
 }
