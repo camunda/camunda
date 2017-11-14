@@ -60,6 +60,11 @@ public class LogStreamsManager
         return logStreams.get(partitionId);
     }
 
+    public boolean hasLogStream(final int partitionId)
+    {
+        return getLogStream(partitionId) != null;
+    }
+
     /**
      * Creates a new log stream but does not open it. The caller has to call {@link LogStream#openAsync()} or
      * {@link LogStream#open()} before using it.

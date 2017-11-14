@@ -345,6 +345,11 @@ public class ClusterManager implements Actor
                         .install();
     }
 
+    protected boolean partitionExists(int partitionId)
+    {
+        return logStreamsManager.hasLogStream(partitionId);
+    }
+
     /**
      * Creates log stream and sets up raft service to participate in raft group
      */
@@ -399,7 +404,18 @@ public class ClusterManager implements Actor
         createPartitionMessage.wrap(buffer, offset, length);
 
         LOG.debug("Received create partition message for partition {}", createPartitionMessage.getPartitionId());
-        createPartition(createPartitionMessage.getTopicName(), createPartitionMessage.getPartitionId());
+
+        final int partitionId = createPartitionMessage.getPartitionId();
+
+        if (!partitionExists(partitionId))
+        {
+            LOG.debug("Creating partition {}", createPartitionMessage.getPartitionId());
+            createPartition(createPartitionMessage.getTopicName(), partitionId);
+        }
+        else
+        {
+            LOG.debug("Partition {} exists already. Ignoring creation request.", createPartitionMessage.getPartitionId());
+        }
     }
 
 }

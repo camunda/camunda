@@ -61,6 +61,8 @@ public class TestStreams
     {
         EVENT_TYPES.put(PartitionEvent.class, EventType.PARTITION_EVENT);
         EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
+
+        EVENT_TYPES.put(UnpackedObject.class, EventType.NOOP_EVENT);
     }
 
     protected final File storageDirectory;
@@ -103,6 +105,36 @@ public class TestStreams
     public LogStream getLogStream(String name)
     {
         return managedLogs.get(name);
+    }
+
+    /**
+     * Truncates events with position greater than the argument. Includes committed events.
+     * Resets commit position to the argument position.
+     *
+     * @param position exclusive (unlike {@link LogStream#truncate(long)}!)
+     */
+    public void truncate(String stream, long position)
+    {
+        final LogStream logStream = getLogStream(stream);
+        try (LogStreamReader reader = new BufferedLogStreamReader(logStream))
+        {
+            logStream.closeLogStreamController().get();
+
+            reader.seek(position + 1);
+
+            logStream.setCommitPosition(position);
+            if (reader.hasNext())
+            {
+                logStream.truncate(reader.next().getPosition());
+            }
+            logStream.setCommitPosition(Long.MAX_VALUE);
+
+            logStream.openLogStreamController().get();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Could not truncate log stream " + stream, e);
+        }
     }
 
     public Stream<LoggedEvent> events(String logName)

@@ -25,6 +25,7 @@ import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.transport.SocketAddress;
 
 public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
 {
@@ -32,11 +33,16 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
     protected final TopicsIndex topics;
     protected final PartitionIdGenerator idGenerator;
     protected final PartitionEvent partitionEvent = new PartitionEvent();
+    protected final PartitionCreatorSelectionStrategy creatorStrategy;
 
-    public CreateTopicProcessor(TopicsIndex topics, PartitionIdGenerator idGenerator)
+    public CreateTopicProcessor(
+            TopicsIndex topics,
+            PartitionIdGenerator idGenerator,
+            PartitionCreatorSelectionStrategy creatorStrategy)
     {
         this.topics = topics;
         this.idGenerator = idGenerator;
+        this.creatorStrategy = creatorStrategy;
     }
 
     @Override
@@ -86,10 +92,20 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
 
             for (int i = 0; i < value.getPartitions(); i++)
             {
+                // in contrast to choosing the partition ID, choosing the creator
+                // does not have to be deterministic (e.g. when this method is invoked multiple times due to backpressure),
+                // so it is ok to choose the creator here and not in #processEvent
+                final SocketAddress nextCreator = creatorStrategy.selectBrokerForNewPartition();
+                if (nextCreator == null)
+                {
+                    return -1;
+                }
+
                 partitionEvent.reset();
                 partitionEvent.setState(PartitionState.CREATE);
                 partitionEvent.setTopicName(value.getName());
                 partitionEvent.setId(idGenerator.currentId(i));
+                partitionEvent.setCreator(nextCreator.getHostBuffer(), nextCreator.port());
 
                 batchWriter.addNewEvent(partitionEvent);
             }

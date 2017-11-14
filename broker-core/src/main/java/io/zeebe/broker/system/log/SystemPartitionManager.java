@@ -101,13 +101,14 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             Duration creationExpiration)
     {
         final PartitionIdGenerator idGenerator = new PartitionIdGenerator();
+        final PartitionCreatorSelectionStrategy creationStrategy = new RoundRobinSelectionStrategy(partitionManager);
 
         return streamEnvironment.newStreamProcessor()
-            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex, idGenerator))
+            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex, idGenerator, creationStrategy))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(partitionManager, partitionsIndex, creationExpiration))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_COMPLETE, new CompletePartitionProcessor(partitionsIndex))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicsIndex, streamEnvironment.buildStreamReader()))
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex, idGenerator))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex, idGenerator, creationStrategy))
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
             .withStateResource(idGenerator)

@@ -19,6 +19,9 @@ package io.zeebe.broker.system.log;
 
 import java.time.Duration;
 
+import org.agrona.DirectBuffer;
+
+import io.zeebe.broker.clustering.handler.BrokerAddress;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
@@ -30,11 +33,12 @@ import io.zeebe.util.time.ClockUtil;
 public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
-    protected final PartitionCreatorSelectionStrategy creatorStrategy;
     protected final PartitionManager partitionManager;
     protected final PendingPartitionsIndex partitions;
 
     protected final long creationTimeoutMillis;
+
+    protected final SocketAddress creatorAddress = new SocketAddress();
 
     public CreatePartitionProcessor(
             PartitionManager partitionManager,
@@ -43,7 +47,6 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     {
         this.partitionManager = partitionManager;
         this.partitions = partitions;
-        this.creatorStrategy = new RoundRobinSelectionStrategy(partitionManager);
         this.creationTimeoutMillis = creationTimeout.toMillis();
     }
 
@@ -61,16 +64,13 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     public boolean executeSideEffects(TypedEvent<PartitionEvent> event, TypedResponseWriter responseWriter)
     {
         final PartitionEvent value = event.getValue();
-        final SocketAddress nextBroker = creatorStrategy.selectBrokerForNewPartition();
+        final BrokerAddress creator = value.getCreator();
+        final DirectBuffer creatorHost = creator.getHost();
 
-        if (nextBroker == null)
-        {
-            return false;
-        }
-        else
-        {
-            return partitionManager.createPartitionRemote(nextBroker, value.getTopicName(), value.getId());
-        }
+        creatorAddress.host(creatorHost, 0, creatorHost.capacity());
+        creatorAddress.port(creator.getPort());
+
+        return partitionManager.createPartitionRemote(creatorAddress, value.getTopicName(), value.getId());
     }
 
     @Override

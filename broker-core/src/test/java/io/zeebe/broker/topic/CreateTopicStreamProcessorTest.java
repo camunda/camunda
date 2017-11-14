@@ -44,6 +44,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+import io.zeebe.broker.clustering.handler.BrokerAddress;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -58,6 +59,7 @@ import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.broker.system.log.TopicsIndex;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
@@ -102,6 +104,10 @@ public class CreateTopicStreamProcessorTest
 
         streams = new TestStreams(tempFolder.getRoot(), closeables, scheduler);
         streams.createLogStream(STREAM_NAME);
+
+        streams.newEvent(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
+            .event(new UnpackedObject())
+            .write();
 
         this.partitionManager = new PartitionManagerImpl();
         rebuildStreamProcessor();
@@ -241,10 +247,103 @@ public class CreateTopicStreamProcessorTest
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/415")
-    public void shouldNotResendPartitionRequestOnRecovery() throws InterruptedException
+    public void shouldResendPartitionRequestToSameBrokerOnRecovery() throws InterruptedException
     {
         // given
+        partitionManager.addMember(SOCKET_ADDRESS1);
+        partitionManager.addMember(SOCKET_ADDRESS2);
+        StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+
+        processorControl.blockAfterEvent(e -> false);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+
+        // stream processor has processed CREATE and triggered the cluster manager to create a partition
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).findFirst().isPresent());
+
+        final long createPosition = streams.events(STREAM_NAME)
+            .filter(e -> Events.isPartitionEvent(e) && Events.asPartitionEvent(e).getState() == PartitionState.CREATE)
+            .findFirst()
+            .get()
+            .getPosition();
+
+        processorControl.close();
+
+        // removing CREATING, such that CREATE is reprocessed
+        streams.truncate(STREAM_NAME, createPosition);
+        processorControl.purgeSnapshot();
+
+        // when restarting the stream processor
+        rebuildStreamProcessor();
+
+        processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.blockAfterEvent(e -> false);
+        processorControl.unblock();
+
+        // then
+        waitUntil(() -> partitionManager.getPartitionRequests().size() == 2);
+
+        assertThat(partitionManager.getPartitionRequests()).hasSize(2);
+        assertThat(partitionManager.getPartitionRequests()).extracting("endpoint").containsOnly(SOCKET_ADDRESS1);
+    }
+
+    @Test
+    public void shouldNotSendPartitionRequestToAnotherBrokerOnRecoveryIfOriginalBrokerNotAvailable() throws InterruptedException
+    {
+        // given
+        partitionManager.addMember(SOCKET_ADDRESS1);
+        StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+
+        processorControl.blockAfterEvent(e -> false);
+        processorControl.unblock();
+
+        streams.newEvent(STREAM_NAME)
+            .event(createTopic("foo", 1))
+            .write();
+
+        // stream processor has processed CREATE and triggered partition creation
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).findFirst().isPresent());
+
+        final long createPosition = streams.events(STREAM_NAME)
+            .filter(e -> Events.isPartitionEvent(e) && Events.asPartitionEvent(e).getState() == PartitionState.CREATE)
+            .findFirst()
+            .get()
+            .getPosition();
+
+        processorControl.close();
+
+        // removing the CREATING event such that the stream processor reprocesses CREATE on restart
+        streams.truncate(STREAM_NAME, createPosition);
+        processorControl.purgeSnapshot();
+
+        // making a different cluster member available
+        partitionManager.removeMember(SOCKET_ADDRESS1);
+        partitionManager.addMember(SOCKET_ADDRESS2);
+
+        // when restarting the stream processor
+        rebuildStreamProcessor();
+
+        processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.blockAfterEvent(e -> false);
+        processorControl.unblock();
+
+        // then
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
+
+        // it is not important for correct behavior in this scenario if
+        // the request was resent (assuming that it the receiving broker is not available anyway),
+        // so we don't assert the number of requests
+        assertThat(partitionManager.getPartitionRequests()).extracting("endpoint").containsOnly(SOCKET_ADDRESS1);
+    }
+
+    @Test
+    public void shouldPersistCreatingBrokerInPartitionCreateEvent()
+    {
+        // given
+        partitionManager.addMember(SOCKET_ADDRESS1);
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
 
         processorControl.blockAfterEvent(e ->
@@ -256,18 +355,14 @@ public class CreateTopicStreamProcessorTest
             .event(createTopic("foo", 1))
             .write();
 
-        // stream processor has processed CREATE and triggered the cluster manager to create a partition
+        // when
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE).findFirst().isPresent());
 
-        // when restarting the stream processor
-        processorControl.close();
-        processorControl.start();
-        processorControl.unblock();
-
-        // then the same partition has not been created after restart
-        // (because we cannot be sure the partition has not been created before yet)
-        Thread.sleep(500L); // not explicity condition we can wait for
-        assertThat(partitionManager.getPartitionRequests()).isEqualTo(0);
+        // then
+        final PartitionEvent partitionEvent = partitionEventsInState(PartitionState.CREATE).findFirst().get();
+        final BrokerAddress creator = partitionEvent.getCreator();
+        assertThat(creator.getHost()).isEqualTo(SOCKET_ADDRESS1.getHostBuffer());
+        assertThat(creator.getPort()).isEqualTo(SOCKET_ADDRESS1.port());
     }
 
     @Test
@@ -685,7 +780,6 @@ public class CreateTopicStreamProcessorTest
         {
             this.currentMembers.add(new Member()
             {
-
                 @Override
                 public SocketAddress getManagementAddress()
                 {
@@ -698,6 +792,11 @@ public class CreateTopicStreamProcessorTest
                     return new IntListIterator(partitionsByMember.getOrDefault(socketAddress, Collections.emptyList()));
                 }
             });
+        }
+
+        public void removeMember(SocketAddress socketAddress)
+        {
+            this.currentMembers.removeIf(m -> socketAddress.equals(m.getManagementAddress()));
         }
 
         public void declarePartitionLeader(SocketAddress memberAddress, int partitionId)
@@ -744,6 +843,11 @@ public class CreateTopicStreamProcessorTest
         public int getPartitionId()
         {
             return partitionId;
+        }
+
+        public SocketAddress getEndpoint()
+        {
+            return endpoint;
         }
     }
 

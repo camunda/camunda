@@ -316,4 +316,9 @@ public class ClientApiRule extends ExternalResource
     {
         return defaultPartitionId;
     }
+
+    public ClientTransport getTransport()
+    {
+        return transport;
+    }
 }

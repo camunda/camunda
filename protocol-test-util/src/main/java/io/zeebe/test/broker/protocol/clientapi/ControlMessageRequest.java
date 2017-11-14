@@ -39,7 +39,7 @@ public class ControlMessageRequest implements BufferWriter
 
     protected ControlMessageType messageType = ControlMessageType.NULL_VAL;
     protected int partitionId = ControlMessageRequestEncoder.partitionIdNullValue();
-    protected byte[] encodedData;
+    protected byte[] encodedData = new byte[0];
 
     protected ClientRequest request;
 

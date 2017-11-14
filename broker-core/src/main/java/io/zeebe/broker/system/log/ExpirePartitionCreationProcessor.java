@@ -23,19 +23,22 @@ import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
+import io.zeebe.transport.SocketAddress;
 
 public class ExpirePartitionCreationProcessor implements TypedEventProcessor<PartitionEvent>
 {
 
     protected final PendingPartitionsIndex partitions;
     protected final PartitionIdGenerator idGenerator;
+    protected final PartitionCreatorSelectionStrategy creatorStrategy;
 
     protected final PartitionEvent newEvent = new PartitionEvent();
 
-    public ExpirePartitionCreationProcessor(PendingPartitionsIndex partitions, PartitionIdGenerator idGenerator)
+    public ExpirePartitionCreationProcessor(PendingPartitionsIndex partitions, PartitionIdGenerator idGenerator, PartitionCreatorSelectionStrategy creatorStrategy)
     {
         this.partitions = partitions;
         this.idGenerator = idGenerator;
+        this.creatorStrategy = creatorStrategy;
     }
 
     @Override
@@ -72,10 +75,17 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
         if (value.getState() == PartitionState.CREATE_EXPIRED)
         {
             // create a new partition
+            final SocketAddress nextCreator = creatorStrategy.selectBrokerForNewPartition();
+            if (nextCreator == null)
+            {
+                return -1;
+            }
+
             newEvent.reset();
             newEvent.setState(PartitionState.CREATE);
             newEvent.setTopicName(value.getTopicName());
             newEvent.setId(idGenerator.currentId());
+            newEvent.setCreator(nextCreator.getHostBuffer(), nextCreator.port());
 
             batchWriter.addNewEvent(newEvent);
         }
