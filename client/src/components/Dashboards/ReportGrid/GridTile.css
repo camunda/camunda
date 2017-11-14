@@ -1,12 +1,10 @@
 .grid-tile {
   position: absolute;
   border: 1px solid lightgray;
-  z-index: 1;
 }
 
 .grid-tile--highlight {
   background-color: lightgrey;
-  z-index: 2;
 }
 
 .grid-tile--conflict {

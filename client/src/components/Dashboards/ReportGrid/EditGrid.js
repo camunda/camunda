@@ -11,10 +11,10 @@ import './EditGrid.css'
 export default class EditGrid extends React.Component {
   constructor(props) {
     super(props);
-    this.state = this.initState(props);
+    this.state = this.getInitialState(props);
   }
 
-  initState(props) {
+  getInitialState(props) {
     const gridNums = 16;
     const gridMargin = 10;
     const availWidth = window.innerWidth - gridMargin * 3;
@@ -32,11 +32,10 @@ export default class EditGrid extends React.Component {
       dragState: {
         dragging: false,
         draggedReport: null
-      },
-      reports: props.reports
+      }
     };
 
-    initialState.tilesRows = this.initGridState(initialState);
+    initialState.tilesRows = this.initGridState(initialState, props);
 
     this.initButtonState(initialState);
 
@@ -44,17 +43,15 @@ export default class EditGrid extends React.Component {
   }
 
   enoughSpaceForButton(cell, initialState) {
-    let result = true;
     for (let w = 0; w < initialState.buttonSize; w++ ) {
       for (let h = 0; h < initialState.buttonSize; h++ ) {
         if (initialState.tilesRows[cell.row + w][cell.col + h].hasReport) {
-          result = false;
-          return result;
+          return false;
         }
       }
     }
 
-    return result;
+    return true;
   }
 
   initButtonState(initialState) {
@@ -71,8 +68,8 @@ export default class EditGrid extends React.Component {
     }
   }
 
-  initGridState(state) {
-    const availHeight = this.calculateMaxRows(state);
+  initGridState(state, props) {
+    const availHeight = this.calculateMaxRows(state, props);
     const tilesColumns = [];
 
     for (let row = 0; row < availHeight; row++) {
@@ -88,9 +85,11 @@ export default class EditGrid extends React.Component {
       }
     }
 
-    if (state.reports) {
-      for (let i = 0; i < state.reports.length; i++) {
-        let report = state.reports[i];
+    const reports = props.reports;
+
+    if (reports) {
+      for (let i = 0; i < reports.length; i++) {
+        let report = reports[i];
         if (report.position) {
           for (let w = 0; w < report.dimensions.width; w++ ) {
             for (let h = 0; h < report.dimensions.height; h++ ) {
@@ -105,10 +104,10 @@ export default class EditGrid extends React.Component {
   }
 
   componentWillReceiveProps(newProps) {
+
     let newState = JSON.parse(JSON.stringify(this.state));
 
-    newState.reports = newProps.reports;
-    newState.tilesRows = this.initGridState(newState);
+    newState.tilesRows = this.initGridState(newState, newProps);
     newState.modalVisible = false;
     newState.dragState =  {
       dragging: false,
@@ -120,11 +119,11 @@ export default class EditGrid extends React.Component {
     this.setState(newState);
   }
 
-  calculateMaxRows = (state) => {
+  calculateMaxRows = (state, props) => {
     const {gridMargin, offsetTop = 0, gridSize} = state;
 
     //number of rows to render all reports + add button below
-    const reportRows = this.maxReportRows(state);
+    const reportRows = this.maxReportRows(state, props);
 
     //number of rows fitting the screen without reports
     const rowsWithoutReports = (window.innerHeight - gridMargin * 4 - offsetTop)
@@ -135,15 +134,16 @@ export default class EditGrid extends React.Component {
     return Math.max(screenRows, reportRows);
   }
 
-  maxReportRows(state) {
+  maxReportRows(state, props) {
     let reportRows = 0;
-    if (state.reports) {
+    const reports = props.reports;
+    if (reports) {
       let maxRow = 0;
       let maxH = 0;
-      for (let i = 0; i < state.reports.length; i++) {
-        if ((state.reports[i].position.x + state.reports[i].dimensions.height) > (maxRow + maxH)) {
-          maxRow = state.reports[i].position.x;
-          maxH = state.reports[i].dimensions.height;
+      for (let i = 0; i < reports.length; i++) {
+        if ((reports[i].position.x + reports[i].dimensions.height) > (maxRow + maxH)) {
+          maxRow = reports[i].position.x;
+          maxH = reports[i].dimensions.height;
         }
       }
       reportRows = maxRow + maxH + state.buttonSize;
@@ -162,11 +162,14 @@ export default class EditGrid extends React.Component {
       for (let h = 0; h < report.dimensions.height; h++ ) {
         const column = inCol + h;
         const row = inRow + w;
-        if (newState.tilesRows[row] && newState.tilesRows[row][column]) {
-          affectedCells.push(newState.tilesRows[row][column]);
-          newState.tilesRows[row][column].highlighted = true;
 
-          if (newState.tilesRows[row][column].hasReport && this.sameReport(newState, column, row)) {
+        if (newState.tilesRows[row] && newState.tilesRows[row][column]) {
+          const currentTile = newState.tilesRows[row][column];
+          affectedCells.push(currentTile);
+          currentTile.highlighted = true;
+
+          if (currentTile.hasReport &&
+            this.notSameReport(currentTile.report, newState.dragState.draggedReport)) {
             inConflict = true;
             newState.dragState.inConflict = true;
           }
@@ -185,8 +188,8 @@ export default class EditGrid extends React.Component {
     this.setState(newState);
   }
 
-  sameReport(newState, inColumn, inRow) {
-    return this.reportKey(newState.tilesRows[inRow][inColumn].report) !== this.reportKey(newState.dragState.draggedReport);
+  notSameReport(r1, r2) {
+    return this.reportKey(r1) !== this.reportKey(r2);
   }
 
   reportKey(reprot) {
@@ -202,13 +205,16 @@ export default class EditGrid extends React.Component {
 
         const column = inCol + h;
         const row = inRow + w;
+
         if (newState.tilesRows[row] && newState.tilesRows[row][column]) {
-          newState.tilesRows[row][column].highlighted = false;
-          newState.tilesRows[row][column].inConflict = false;
+
+          const currentTile = newState.tilesRows[row][column];
+          currentTile.highlighted = false;
+          currentTile.inConflict = false;
           newState.dragState.inConflict = false;
 
           if (resetReport) {
-            newState.tilesRows[row][column].report = null;
+            currentTile.report = null;
           }
         }
       }
@@ -226,19 +232,21 @@ export default class EditGrid extends React.Component {
       for(let row in state.tilesRows) {
         for (let col in state.tilesRows[row]) {
 
+          const currentTile = state.tilesRows[row][col];
+
           result.push(
             (<GridTile
               gridSize={state.gridSize}
               gridMargin={state.gridMargin}
-              row={state.tilesRows[row][col].row}
-              col={state.tilesRows[row][col].col}
+              row={currentTile.row}
+              col={currentTile.col}
               highlightIn={this.highlightIn.bind(this)}
               highlightOut={this.highlightOut.bind(this)}
 
               reportDroped={this.processDrop.bind(this)}
-              highlighted={state.tilesRows[row][col].highlighted}
-              hasReport={state.tilesRows[row][col].hasReport}
-              inConflict={state.tilesRows[row][col].inConflict}
+              highlighted={currentTile.highlighted}
+              hasReport={currentTile.hasReport}
+              inConflict={currentTile.inConflict}
               key={'row-' + row + '-col-' + col}
             />)
           );
@@ -286,16 +294,19 @@ export default class EditGrid extends React.Component {
     let reportTiles = [];
 
     const state = this.state;
+    const reports = this.props.reports;
 
-    if (state.reports) {
-      for (let i = 0; i < state.reports.length; i++) {
-        let report = state.reports[i];
+    if (reports) {
+      for (let i = 0; i < reports.length; i++) {
+        const report = reports[i];
+        const dragged = state.dragState && state.dragState.dragging && !this.notSameReport(report, state.dragState.draggedReport);
         reportTiles.push(
           <ReportTile
             key={this.reportKey(report)}
             gridMargin={state.gridMargin}
             gridSize={state.gridSize}
             data={report}
+            dragged={dragged}
             onDragEnd={this.processDragEnd.bind(this)}
             startDrag={this.processDragStart.bind(this)}
           />
@@ -303,7 +314,7 @@ export default class EditGrid extends React.Component {
       }
     }
 
-    return <div className={'reports'}>
+    return <div className='reports'>
       {reportTiles}
     </div>
   }
@@ -344,8 +355,8 @@ export default class EditGrid extends React.Component {
   render() {
 
     return (
-      <div className={'edit-grid'}>
-        <div className={'edit-grid--grid'}>
+      <div className='edit-grid'>
+        <div className='edit-grid--grid'>
           {this.generateGridRows()}
           {this.generateReportCards()}
           {

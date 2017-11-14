@@ -12,10 +12,9 @@ export default function ReportTile (props) {
     props.onDragEnd(props.data);
   }
 
-
   const { gridSize, gridMargin, data} = props;
 
-  const tileStyle = {
+  let tileStyle = {
     top: (gridSize * data.position.x) + gridMargin + 'px',
     left: (gridSize * data.position.y) + gridMargin + 'px',
     width: gridSize * data.dimensions.width - gridMargin + 'px',
@@ -23,15 +22,15 @@ export default function ReportTile (props) {
   };
 
   return (
-    <div className={'report-tile--container'}
+    <div className='report-tile--container'
          onDragStart={startDrag.bind(this)}
          onDragEnd={endDrag.bind(this)}
          draggable="true"
          style={tileStyle}
     >
 
-      <div className={'report-tile--report-name-container'}>
-        <div className={'report-tile--report-name'}>{data.name}</div>
+      <div className='report-tile--report-name-container'>
+        <div className='report-tile--report-name'>{data.name}</div>
       </div>
     </div>)
 }

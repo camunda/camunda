@@ -74,14 +74,14 @@ export default class Dashboard extends React.Component {
   }
 
   handleReportSelection = (report, position, dimensions) => {
-    let newState = JSON.parse(JSON.stringify(this.state));
-    newState.reports.push({
+    let reports = JSON.parse(JSON.stringify(this.state.reports));
+    reports.push({
       id : report.id,
       dimensions: dimensions,
       position: position,
       name: report.name
     });
-    this.setState(newState);
+    this.setState({reports: reports});
   }
 
   handleReportRemoval = (report) => {
@@ -89,14 +89,14 @@ export default class Dashboard extends React.Component {
   }
 
   handleReportMove = (oldReport, newReport) => {
-    let newState = JSON.parse(JSON.stringify(this.state));
+    let reports = JSON.parse(JSON.stringify(this.state.reports));
 
-    for (let i = 0; i < newState.reports.length; i++) {
-      if (newState.reports[i].position.x === oldReport.position.x && newState.reports[i].position.y === oldReport.position.y) {
-        newState.reports[i] = newReport;
+    for (let i = 0; i < reports.length; i++) {
+      if (reports[i].position.x === oldReport.position.x && reports[i].position.y === oldReport.position.y) {
+        reports[i] = newReport;
       }
     }
-    this.setState(newState);
+    this.setState({reports: reports});
   }
 
   renderEditMode = (state) => {
