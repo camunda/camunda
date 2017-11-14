@@ -1,0 +1,13 @@
+.Input[type="text"],
+.Input[type="password"] {
+  color: #333;
+  font-size: .875em;
+  padding: 4px 6px;
+}
+
+.Input[type="text"][disabled],
+.Input[type="text"][disabled="disabled"],
+.Input[type="password"][disabled],
+.Input[type="password"][disabled="disabled"] {
+  cursor: not-allowed;
+}

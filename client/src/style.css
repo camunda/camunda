@@ -26,20 +26,6 @@ main {
 
 
 /* Form elements */
-input[type="text"],
-input[type="password"] {
-  color: #333;
-  font-size: .875em;
-  padding: 4px 6px;
-}
-
-input[type="text"][disabled],
-input[type="text"][disabled="disabled"],
-input[type="password"][disabled],
-input[type="password"][disabled="disabled"] {
-  cursor: not-allowed;
-}
-
 
 select {
   font-size: .875em;
