@@ -23,18 +23,3 @@ input[type="password"] {
 main {
   padding: 15px;
 }
-
-
-/* Form elements */
-
-select {
-  font-size: .875em;
-  color: #333;
-  height: 2em;
-}
-
-select[disabled],
-select[disabled="disabled"] {
-  opacity: .65;
-  cursor: not-allowed;
-}

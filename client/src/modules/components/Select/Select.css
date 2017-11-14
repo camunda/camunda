@@ -1,0 +1,12 @@
+.Select {
+  font-size: .875em;
+  color: #333;
+  height: 2.15em;
+  border-color: #ccc;
+}
+
+.Select[disabled],
+.Select[disabled="disabled"] {
+  opacity: .65;
+  cursor: not-allowed;
+}
