@@ -143,7 +143,7 @@ public class BucketBufferArray implements AutoCloseable
 
     public void setHighestBucketId(int highestBucketId)
     {
-        UNSAFE.putLong(bucketBufferHeaderAddress + MAIN_HIGHEST_BUCKET_ID, highestBucketId);
+        UNSAFE.putInt(bucketBufferHeaderAddress + MAIN_HIGHEST_BUCKET_ID, highestBucketId);
     }
 
     public int getHighestBucketId()

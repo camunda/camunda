@@ -72,7 +72,7 @@ public class LargeZbMapTest
 
         // when
         int removedValues = 0;
-        for (Long value : values)
+        for (final Long value : values)
         {
             final boolean removed = removeValue(zbMap, value);
 
@@ -139,10 +139,7 @@ public class LargeZbMapTest
         // when then
         for (int i = 0; i < DATA_SET_SIZE; i++)
         {
-            if (getValue(zbMap, i, -1) != i)
-            {
-                throw new RuntimeException("Illegal value for " + i);
-            }
+            assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
         }
     }
 
@@ -166,10 +163,7 @@ public class LargeZbMapTest
         // then
         for (int i = 0; i < DATA_SET_SIZE; i++)
         {
-            if (getValue(zbMap, keys[i], -1) != i)
-            {
-                throw new RuntimeException("Illegal value for key: " + keys[i] + " index: " + i);
-            }
+            assertThat(getValue(zbMap, keys[i], -1)).isEqualTo(i);
         }
     }
 }

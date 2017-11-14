@@ -14,7 +14,7 @@
 
   <properties>
     <uberjar.name>${project.artifactId}-benchmarks</uberjar.name>
-    <largeTest.name>**/LargeZbMapTest.java</largeTest.name>
+    <long-running-tests>**/LargeZbMapTest.java</long-running-tests>
   </properties>
 
   <dependencies>
@@ -160,7 +160,7 @@
       <id>long-running</id>
 
       <properties>
-        <largeTest.name></largeTest.name>
+        <long-running-tests/>
       </properties>
 
     </profile>
@@ -171,14 +171,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${plugin.version.surefire}</version>
         <configuration>
           <excludes>
-            <exclude>${largeTest.name}</exclude>
+            <exclude>${long-running-tests}</exclude>
           </excludes>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
 </project>
 
