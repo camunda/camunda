@@ -24,27 +24,24 @@ import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.util.ActorSchedulerRule;
+import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
-
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class RaftProtocolMessageTest
 {
 
-    public static ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-    public static RaftRule raft1 = new RaftRule(actorSchedulerRule, "localhost", 8001, "test", 123);
-    public static RaftRule raft2 = new RaftRule(actorSchedulerRule, "localhost", 8002, "test", 123, raft1);
+    public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public static RaftRule raft1 = new RaftRule(actorScheduler, "localhost", 8001, "test", 123);
+    public static RaftRule raft2 = new RaftRule(actorScheduler, "localhost", 8002, "test", 123, raft1);
 
     @ClassRule
-    public static RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule)
-                                                 .around(raft1)
-                                                 .around(raft2);
+    public static RaftClusterRule cluster = new RaftClusterRule(actorScheduler, raft1, raft2);
 
     public static Raft raft;
     public static LogStream logStream;
@@ -54,6 +51,12 @@ public class RaftProtocolMessageTest
     {
         raft = raft2.getRaft();
         logStream = raft2.getLogStream();
+
+        // wait for raft 2 to join raft group in term 1 as follower
+        waitUntil(() -> raft.getTerm() == 1);
+
+        // freeze state by not calling doWork() on raft nodes anymore
+        cluster.removeRafts(raft1, raft2);
     }
 
     @Test
@@ -94,8 +97,6 @@ public class RaftProtocolMessageTest
     public void shouldReadWritePollRequest()
     {
         // given
-        waitUntil(() -> raft.getTerm() == 1);
-
         PollRequest pollRequest = new PollRequest()
             .setRaft(raft)
             .setLastEventPosition(111)
