@@ -103,6 +103,7 @@ mavenJob(jobName)
     triggers
     {
         githubPush()
+        snapshotDependencies true
     }
     label 'ubuntu-large'
     jdk 'jdk-8-latest'
