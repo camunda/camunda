@@ -44,13 +44,4 @@ public class NotFoundErrorHandler extends ErrorHandler {
       return;
     }
   }
-
-  private boolean indexExists() {
-    boolean result = false;
-    if (this.getClass().getClassLoader().getResourceAsStream("webapp/" + INDEX_PAGE) != null) {
-      result = true;
-    }
-    return result;
-  }
-
 }

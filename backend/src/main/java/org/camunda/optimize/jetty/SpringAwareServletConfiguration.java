@@ -90,7 +90,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.setErrorHandler(errorMapper);
 
     initGzipFilterHolder(context);
-    initJSRewriteHandler(context);
+    //initJSRewriteHandler(context);
   }
 
   private void initJSRewriteHandler(ServletContextHandler context) {
