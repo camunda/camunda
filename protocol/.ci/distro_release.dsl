@@ -70,6 +70,7 @@ mavenJob(jobName) {
   }
   triggers {
     githubPush()
+    snapshotDependencies true
   }
   label 'ubuntu'
   jdk 'jdk-8-latest'
