@@ -136,13 +136,12 @@ public class WorkflowInstanceIndex implements AutoCloseable
         public void reset(long workflowInstanceKey)
         {
             this.workflowInstanceKey = workflowInstanceKey;
-            this.currentValue.setMemory(0, INDEX_VALUE_SIZE, (byte) 0);
+            // ensure that all properties are set before saving the new entry
         }
 
         public void wrap(long workflowInstanceKey, DirectBuffer value)
         {
             this.workflowInstanceKey = workflowInstanceKey;
-
             this.currentValue.putBytes(0, value, 0, value.capacity());
         }
 
@@ -183,7 +182,7 @@ public class WorkflowInstanceIndex implements AutoCloseable
             return this;
         }
 
-        public WorkflowInstance setActivityKey(long activityInstanceKey)
+        public WorkflowInstance setActivityInstanceKey(long activityInstanceKey)
         {
             currentValue.putLong(ACTIVITY_INSTANCE_KEY_OFFSET, activityInstanceKey, BYTE_ORDER);
             return this;
@@ -199,6 +198,25 @@ public class WorkflowInstanceIndex implements AutoCloseable
         {
             map.put(workflowInstanceKey, currentValue);
         }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder builder = new StringBuilder();
+            builder.append("WorkflowInstance [key=");
+            builder.append(getKey());
+            builder.append(", position=");
+            builder.append(getPosition());
+            builder.append(", tokenCount=");
+            builder.append(getTokenCount());
+            builder.append(", activityInstanceKey=");
+            builder.append(getActivityInstanceKey());
+            builder.append(", workflowKey=");
+            builder.append(getWorkflowKey());
+            builder.append("]");
+            return builder.toString();
+        }
+
     }
 
 }

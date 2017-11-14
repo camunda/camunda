@@ -423,7 +423,7 @@ public class CreateWorkflowInstanceTest
                                     ResourceType.YAML_WORKFLOW.name(),
                                     "simple-workflow.yaml");
 
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
@@ -478,7 +478,7 @@ public class CreateWorkflowInstanceTest
                                     "collaboration.bpmn");
 
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         // when
         final long wfInstance1 = testClient.createWorkflowInstance("process1");

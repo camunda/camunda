@@ -229,6 +229,11 @@ public class WorkflowDeploymentCache implements AutoCloseable
         throw new RuntimeException("no workflow found");
     }
 
+    public boolean hasWorkflow(long key)
+    {
+        return keyToPositionWorkflowMap.get(key) != null;
+    }
+
     @Override
     public void close()
     {

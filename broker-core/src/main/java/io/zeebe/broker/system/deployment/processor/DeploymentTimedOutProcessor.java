@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.REJECT_DEPLOYMENT;
+import static io.zeebe.broker.workflow.data.DeploymentState.REJECT;
 
 import java.util.function.Consumer;
 
@@ -57,7 +57,7 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
 
         if (pendingDeployment != null && pendingDeployment.getTimeout() > 0)
         {
-            event.getValue().setState(REJECT_DEPLOYMENT);
+            event.getValue().setState(REJECT);
 
             workflowKeys.clear();
             collectWorkflowKeysForDeployment(event.getKey());
@@ -93,7 +93,7 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     @Override
     public long writeEvent(TypedEvent<DeploymentEvent> event, TypedStreamWriter writer)
     {
-        if (event.getValue().getState() == REJECT_DEPLOYMENT)
+        if (event.getValue().getState() == REJECT)
         {
             final TypedBatchWriter batch = writer.newBatch();
 
@@ -129,7 +129,7 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     {
         final DeploymentEvent deploymentEvent = event.getValue();
 
-        if (deploymentEvent.getState() == REJECT_DEPLOYMENT)
+        if (deploymentEvent.getState() == REJECT)
         {
             // reset timeout to avoid another invocation
             // -- remove the pending deployment when all delete workflow messages are sent while process the reject event

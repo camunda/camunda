@@ -67,7 +67,7 @@ public class TestTopicClient
 
         assertThat(response.getEvent().get(PROP_STATE))
             .withFailMessage("Deployment failed: %s", response.getEvent().get("errorMessage"))
-            .isEqualTo("DEPLOYMENT_CREATED");
+            .isEqualTo("CREATED");
 
         return response.key();
     }
@@ -90,7 +90,7 @@ public class TestTopicClient
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE")
                     .put("topicName", topic)
                     .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
                     .put("resouceType", resourceType)

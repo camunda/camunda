@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.system.deployment.handler;
 
-import java.util.function.Consumer;
-
 import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
 import io.zeebe.broker.system.deployment.message.DeleteWorkflowMessage;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
@@ -28,9 +26,9 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.DeferredCommandContext;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class WorkflowRequestMessageHandler
 {
@@ -40,8 +38,7 @@ public class WorkflowRequestMessageHandler
     private final WorkflowEvent workflowEvent = new WorkflowEvent();
     private final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
 
-    private final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
-    private final Consumer<Runnable> cmdConsumer = (c) -> c.run();
+    private final DeferredCommandContext deferredContext = new DeferredCommandContext();
 
     private final Int2ObjectHashMap<LogStream> logStreams = new Int2ObjectHashMap<>();
 
@@ -114,7 +111,7 @@ public class WorkflowRequestMessageHandler
     private LogStream getLogStream(int partitionId)
     {
         // process log-stream add / remove commands
-        cmdQueue.drain(cmdConsumer);
+        deferredContext.doWork();
 
         return logStreams.get(partitionId);
     }
@@ -135,11 +132,11 @@ public class WorkflowRequestMessageHandler
 
     public void addStream(final LogStream logStream)
     {
-        cmdQueue.add(() -> logStreams.put(logStream.getPartitionId(), logStream));
+        deferredContext.runAsync(() -> logStreams.put(logStream.getPartitionId(), logStream));
     }
 
     public void removeStream(final LogStream logStream)
     {
-        cmdQueue.add(() -> logStreams.remove(logStream.getPartitionId()));
+        deferredContext.runAsync(() -> logStreams.remove(logStream.getPartitionId()));
     }
 }

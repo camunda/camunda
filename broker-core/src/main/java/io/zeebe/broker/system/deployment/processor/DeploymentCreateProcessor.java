@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_REJECTED;
-import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_VALIDATED;
+import static io.zeebe.broker.workflow.data.DeploymentState.REJECTED;
+import static io.zeebe.broker.workflow.data.DeploymentState.VALIDATED;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -103,7 +103,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
             LOG.info("Cannot create deployment: no topic found with name '{}'.", bufferAsString(topicName));
         }
 
-        deploymentEvent.setState(success ? DEPLOYMENT_VALIDATED : DEPLOYMENT_REJECTED);
+        deploymentEvent.setState(success ? VALIDATED : REJECTED);
     }
 
     private boolean isTopicCreated(final DirectBuffer topicName)
@@ -263,7 +263,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
     {
         final DeploymentEvent deploymentEvent = event.getValue();
 
-        if (deploymentEvent.getState() == DEPLOYMENT_REJECTED)
+        if (deploymentEvent.getState() == REJECTED)
         {
             return responseWriter.write(event);
         }
@@ -278,7 +278,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
     {
         final DeploymentEvent deploymentEvent = event.getValue();
 
-        if (deploymentEvent.getState() == DEPLOYMENT_REJECTED)
+        if (deploymentEvent.getState() == REJECTED)
         {
             return writer.writeFollowupEvent(event.getKey(), deploymentEvent);
         }
@@ -320,7 +320,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
     {
         final DeploymentEvent deploymentEvent = event.getValue();
 
-        if (deploymentEvent.getState() == DeploymentState.DEPLOYMENT_VALIDATED)
+        if (deploymentEvent.getState() == DeploymentState.VALIDATED)
         {
             updateWorkflowVersions(deploymentEvent.getTopicName(), deploymentEvent.deployedWorkflows());
 

@@ -466,13 +466,13 @@ public class WorkflowInstanceFunctionalTest
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                .put(PROP_STATE, "CREATE")
                 .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                 .put("resources", Collections.singletonList(deploymentResource))
                 .done()
                 .sendAndAwait();
 
-        assertThat(deploymentResp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(deploymentResp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
 

@@ -61,7 +61,7 @@ public class CreateDeploymentTest
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.singletonList(deploymentResource(WORKFLOW, "process.bpmn")))
                 .done()
@@ -71,7 +71,7 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
     }
 
     @SuppressWarnings("unchecked")
@@ -128,7 +128,7 @@ public class CreateDeploymentTest
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", resources)
                 .done()
@@ -136,7 +136,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
                 .limit(2)
@@ -162,7 +162,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
                 .limit(2)
@@ -181,7 +181,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).isEmpty();
     }
 
@@ -196,7 +196,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("The process must contain at least one none start event.");
     }
 
@@ -214,7 +214,7 @@ public class CreateDeploymentTest
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", resources)
                 .done()
@@ -222,7 +222,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage"))
             .contains("Resource 'process2.bpmn':")
             .contains("The process must contain at least one none start event.");
@@ -236,7 +236,7 @@ public class CreateDeploymentTest
                 .partitionId(Protocol.SYSTEM_PARTITION)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put(PROP_STATE, "CREATE_DEPLOYMENT")
+                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.emptyList())
                 .done()
@@ -244,7 +244,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
     }
 
@@ -260,7 +260,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage"))
             .contains("Failed to deploy resource 'invalid.bpmn':")
             .contains("Failed to read BPMN model");
@@ -283,7 +283,7 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("The condition 'foobar' is not valid");
     }
 
@@ -302,7 +302,7 @@ public class CreateDeploymentTest
                                     "simple-workflow.yaml");
 
         // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
         final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents("CREATED"));
         assertThat(workflowEvent.event())

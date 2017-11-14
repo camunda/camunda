@@ -65,11 +65,11 @@ public class CreateDeploymentTest
     public void shouldSendDeploymentRequestToSystemTopic()
     {
         // given
-        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, DEPLOYMENT_EVENT, "CREATE_DEPLOYMENT")
+        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, DEPLOYMENT_EVENT, "CREATE")
             .respondWith()
             .key(2L)
             .event()
-                .put("state", "DEPLOYMENT_CREATED")
+                .put("state", "CREATED")
                 .done()
             .register();
 
@@ -107,7 +107,7 @@ public class CreateDeploymentTest
             .respondWith()
             .key(2L)
             .event()
-                .put("state", "DEPLOYMENT_CREATED")
+                .put("state", "CREATED")
                 .put("deployedWorkflows", deployedWorkflows)
                 .done()
             .register();
@@ -122,7 +122,7 @@ public class CreateDeploymentTest
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
         assertThat(commandRequest.key()).isEqualTo(-1);
-        assertThat(commandRequest.getCommand()).containsEntry("state", "CREATE_DEPLOYMENT");
+        assertThat(commandRequest.getCommand()).containsEntry("state", "CREATE");
 
         assertThat(deployment.getMetadata().getKey()).isEqualTo(2L);
 
@@ -135,11 +135,11 @@ public class CreateDeploymentTest
     public void shouldRejectCreateDeployment()
     {
         // given
-        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE_DEPLOYMENT")
+        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE")
             .respondWith()
             .key(2L)
             .event()
-                .put("state", "DEPLOYMENT_REJECTED")
+                .put("state", "REJECTED")
                 .put("errorMessage", "foo")
                 .done()
             .register();
@@ -455,11 +455,11 @@ public class CreateDeploymentTest
 
     private void stubDeploymentRequest()
     {
-        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE_DEPLOYMENT")
+        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE")
             .respondWith()
             .key(2L)
             .event()
-                .put("state", "DEPLOYMENT_CREATED")
+                .put("state", "CREATED")
                 .done()
             .register();
     }

@@ -61,6 +61,8 @@ public class WorkflowVersions
 
     private void wrap(DirectBuffer topicName, DirectBuffer bpmnProcessId)
     {
+        buffer.setMemory(0, VALUE_LENGTH, (byte) 0);
+
         buffer.putBytes(BPMN_PROCESS_ID_OFFSET, bpmnProcessId, 0, bpmnProcessId.capacity());
         buffer.putBytes(TOPIC_NAME_OFFSET, topicName, 0, topicName.capacity());
     }

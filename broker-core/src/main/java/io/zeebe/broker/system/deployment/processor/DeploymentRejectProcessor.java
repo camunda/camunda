@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_REJECTED;
+import static io.zeebe.broker.workflow.data.DeploymentState.REJECTED;
 
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
@@ -35,7 +35,7 @@ public class DeploymentRejectProcessor implements TypedEventProcessor<Deployment
     @Override
     public void processEvent(TypedEvent<DeploymentEvent> event)
     {
-        event.getValue().setState(DEPLOYMENT_REJECTED);
+        event.getValue().setState(REJECTED);
 
         if (!event.getMetadata().hasRequestMetadata())
         {

@@ -282,7 +282,7 @@ public class ServiceTaskTest
     }
 
     @Test
-    public void shouldCompleteTasksFromMultipleProcesses()
+    public void shouldCompleteTasksFromMultipleProcesses() throws InterruptedException
     {
         // given
         workflowClient.deploy(clientRule.getDefaultTopic())
@@ -310,7 +310,7 @@ public class ServiceTaskTest
             .taskType("foo")
             .lockOwner("test")
             .lockTime(Duration.ofMinutes(5))
-            .handler((c, t) ->  c.complete(t).payload("{\"foo\":2}").execute())
+            .handler((c, t) -> c.complete(t).payload("{\"foo\":2}").execute())
             .open();
 
         // then

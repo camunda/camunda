@@ -21,6 +21,7 @@ public enum WorkflowState
 {
     CREATE,
     CREATED,
+    CREATE_REJECTED,
 
     DELETE,
     DELETED;

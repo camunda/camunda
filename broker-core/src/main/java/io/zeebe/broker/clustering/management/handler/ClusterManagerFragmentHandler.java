@@ -42,8 +42,6 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        // TODO verify the protocol version
-
         final int schemaId = messageHeaderDecoder.schemaId();
 
         if (InvitationResponseDecoder.SCHEMA_ID == schemaId)

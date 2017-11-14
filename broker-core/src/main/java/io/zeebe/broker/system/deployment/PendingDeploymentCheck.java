@@ -106,7 +106,12 @@ public class PendingDeploymentCheck implements Runnable
                     final int partitionId = response.getPartitionId();
                     final long deploymentKey = response.getDeploymentKey();
 
-                    pendingWorkflows.put(workflowKey, partitionId, PendingWorkflows.STATE_CREATED, deploymentKey);
+                    final PendingWorkflow pendingWorkflow = pendingWorkflows.get(workflowKey, partitionId);
+                    if (pendingWorkflow != null && pendingWorkflow.getState() == PendingWorkflows.STATE_CREATE)
+                    {
+                        // ignore response if pending workflow or deployment is already processed
+                        pendingWorkflows.put(workflowKey, partitionId, PendingWorkflows.STATE_CREATED, deploymentKey);
+                    }
                 }
 
                 // remove completed request
@@ -188,12 +193,12 @@ public class PendingDeploymentCheck implements Runnable
 
     private void writeEventForDistributedDeployment(final long deploymentKey)
     {
-        writeDeploymentEventWithState(deploymentKey, DeploymentState.DEPLOYMENT_DISTRIBUTED);
+        writeDeploymentEventWithState(deploymentKey, DeploymentState.DISTRIBUTED);
     }
 
     private void writeEventForTimedOutDeployment(final long deploymentKey)
     {
-        writeDeploymentEventWithState(deploymentKey, DeploymentState.DEPLOYMENT_TIMED_OUT);
+        writeDeploymentEventWithState(deploymentKey, DeploymentState.TIMED_OUT);
     }
 
     private void writeDeploymentEventWithState(final long deploymentKey, DeploymentState newState)

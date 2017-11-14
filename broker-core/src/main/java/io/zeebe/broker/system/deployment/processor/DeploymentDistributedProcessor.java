@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.DEPLOYMENT_CREATED;
+import static io.zeebe.broker.workflow.data.DeploymentState.CREATED;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -50,7 +50,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
 
         if (pendingDeployment != null)
         {
-            event.getValue().setState(DEPLOYMENT_CREATED);
+            event.getValue().setState(CREATED);
         }
 
         if (!event.getMetadata().hasRequestMetadata())
@@ -62,7 +62,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
     @Override
     public boolean executeSideEffects(TypedEvent<DeploymentEvent> event, TypedResponseWriter responseWriter)
     {
-        if (event.getValue().getState() == DEPLOYMENT_CREATED)
+        if (event.getValue().getState() == CREATED)
         {
             return responseWriter.write(event);
         }
@@ -75,7 +75,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
     @Override
     public long writeEvent(TypedEvent<DeploymentEvent> event, TypedStreamWriter writer)
     {
-        if (event.getValue().getState() == DEPLOYMENT_CREATED)
+        if (event.getValue().getState() == CREATED)
         {
             return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
@@ -91,7 +91,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
         final DeploymentEvent deploymentEvent = event.getValue();
         final long deploymentKey = event.getKey();
 
-        if (deploymentEvent.getState() == DEPLOYMENT_CREATED)
+        if (deploymentEvent.getState() == CREATED)
         {
             pendingDeployments.remove(deploymentKey);
 

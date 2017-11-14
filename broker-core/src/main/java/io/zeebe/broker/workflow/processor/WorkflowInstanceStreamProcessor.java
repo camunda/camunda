@@ -397,10 +397,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class WorkflowCreateEventProcessor implements EventProcessor
     {
+        private boolean isNewWorkflow;
+
         @Override
         public void processEvent()
         {
-            workflowEvent.setState(WorkflowState.CREATED);
+            isNewWorkflow = !workflowDeploymentCache.hasWorkflow(eventKey);
+
+            workflowEvent.setState(isNewWorkflow ? WorkflowState.CREATED : WorkflowState.CREATE_REJECTED);
         }
 
         @Override
@@ -435,7 +439,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, workflowEvent);
+            if (isNewWorkflow)
+            {
+                workflowDeploymentCache.addDeployedWorkflow(eventPosition, eventKey, workflowEvent);
+            }
         }
     }
 
@@ -643,7 +650,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .newWorkflowInstance(eventKey)
                 .setPosition(eventPosition)
                 .setActiveTokenCount(1)
-                .setActivityKey(-1L)
+                .setActivityInstanceKey(-1L)
+                .setWorkflowKey(workflowInstanceEvent.getWorkflowKey())
                 .write();
         }
     }
@@ -891,7 +899,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             workflowInstanceIndex
                 .get(workflowInstanceEvent.getWorkflowInstanceKey())
-                .setActivityKey(eventKey)
+                .setActivityInstanceKey(eventKey)
                 .write();
 
             activityInstanceMap
@@ -1120,7 +1128,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceIndex
                     .get(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .setActivityKey(-1L)
+                    .setActivityInstanceKey(-1L)
                     .write();
 
                 activityInstanceMap.remove(eventKey);

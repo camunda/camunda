@@ -36,7 +36,7 @@ import io.zeebe.util.StreamUtil;
 
 public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> implements CreateDeploymentCommand
 {
-    private final DeploymentEventImpl deploymentEvent = new DeploymentEventImpl(DeploymentEventType.CREATE_DEPLOYMENT.name());
+    private final DeploymentEventImpl deploymentEvent = new DeploymentEventImpl(DeploymentEventType.CREATE.name());
     private final List<DeploymentResource> resources = new ArrayList<>();
 
     private final BpmnModelApi bpmn = new BpmnModelApi();
@@ -153,7 +153,7 @@ public class CreateDeploymentCommandImpl extends CommandImpl<DeploymentEvent> im
     @Override
     public String getExpectedStatus()
     {
-        return DeploymentEventType.DEPLOYMENT_CREATED.name();
+        return DeploymentEventType.CREATED.name();
     }
 
     @Override

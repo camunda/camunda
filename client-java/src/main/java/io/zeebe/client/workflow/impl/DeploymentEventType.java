@@ -17,7 +17,8 @@ package io.zeebe.client.workflow.impl;
 
 public enum DeploymentEventType
 {
-    CREATE_DEPLOYMENT,
-    DEPLOYMENT_CREATED,
-    DEPLOYMENT_REJECTED;
+    CREATE,
+    CREATED,
+
+    REJECTED;
 }

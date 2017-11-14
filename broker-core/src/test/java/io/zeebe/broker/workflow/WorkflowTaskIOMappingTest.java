@@ -79,7 +79,7 @@ public class WorkflowTaskIOMappingTest
         final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains("Source mapping: JSON path '$.*' contains prohibited expression");
     }
@@ -100,7 +100,7 @@ public class WorkflowTaskIOMappingTest
         final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
@@ -227,7 +227,7 @@ public class WorkflowTaskIOMappingTest
 
         final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("REJECTED");
     }
 
     @Test
@@ -428,7 +428,7 @@ public class WorkflowTaskIOMappingTest
         final ExecuteCommandResponse response = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, definition);
 
         // then
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("REJECTED");
         assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
             .contains("Target mapping: root mapping is not allowed because it would override other mapping.");
     }
