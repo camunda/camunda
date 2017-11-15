@@ -1,16 +1,13 @@
 package org.camunda.optimize;
 
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 
 /**
  * @author Askar Akhmerov
  */
 public interface CamundaOptimize {
 
-  ImportJobExecutor getImportJobExecutor();
-
-  ImportServiceProvider getImportServiceProvider();
+  ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor();
 
   void startImportSchedulers();
 

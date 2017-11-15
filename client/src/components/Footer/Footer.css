@@ -10,4 +10,5 @@
   color: #777777;
   text-align: right;
   padding: 0 15px;
+  z-index: 99998;
 }

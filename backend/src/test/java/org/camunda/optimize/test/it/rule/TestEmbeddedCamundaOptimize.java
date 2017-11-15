@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
-import org.camunda.optimize.service.importing.provider.ImportServiceProvider;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -132,23 +131,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return testOptimizeInstance.getOptimizeApplicationContext();
   }
 
-  public ScheduleJobFactory getImportScheduleFactory() {
-    return getApplicationContext().getBean(ScheduleJobFactory.class);
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
   }
 
-  public ImportJobExecutor getImportJobExecutor() {
-    return getApplicationContext().getBean(ImportJobExecutor.class);
-  }
-
-  public void initializeSchema() {
-    ElasticSearchSchemaInitializer schemaInitializer =
-      getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
-    schemaInitializer.setInitialized(false);
-    schemaInitializer.initializeSchema();
-  }
-
-  public ImportServiceProvider getImportServiceProvider() {
-    return getApplicationContext().getBean(ImportServiceProvider.class);
+  public EngineImportJobExecutor getEngineImportJobExecutor() {
+    return getApplicationContext().getBean(EngineImportJobExecutor.class);
   }
 
   public ConfigurationService getConfigurationService() {
@@ -187,6 +175,13 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       .request()
       .post(Entity.json(entity));
   }
+
+  public void initializeSchema() {
+    ElasticSearchSchemaInitializer schemaInitializer =
+      getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
+    schemaInitializer.setInitialized(false);
+    schemaInitializer.initializeSchema();
+}
 
   public WebTarget target() {
     return getClient().target(getEmbeddedOptimizeEndpoint());

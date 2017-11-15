@@ -1,13 +1,12 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.EventDto;
+import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +37,13 @@ public class EventsWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public void importEvents(List<EventDto> events) throws Exception {
+  public void importEvents(List<FlowNodeEventDto> events) throws Exception {
     logger.debug("Writing [{}] events to elasticsearch", events.size());
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
-    Map<String, List<EventDto>> processInstanceToEvents = new HashMap<>();
-    for (EventDto e : events) {
+    Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
+    for (FlowNodeEventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
       }
@@ -53,7 +51,7 @@ public class EventsWriter {
       addEventRequest(eventBulkRequest, e);
     }
 
-    for (Map.Entry<String, List<EventDto>> entry : processInstanceToEvents.entrySet()) {
+    for (Map.Entry<String, List<FlowNodeEventDto>> entry : processInstanceToEvents.entrySet()) {
         addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
     }
     BulkResponse response = addEventToProcessInstanceBulkRequest.get();
@@ -63,7 +61,7 @@ public class EventsWriter {
     eventBulkRequest.get();
   }
 
-  private void addEventRequest(BulkRequestBuilder eventBulkRequest, EventDto e) {
+  private void addEventRequest(BulkRequestBuilder eventBulkRequest, FlowNodeEventDto e) {
     eventBulkRequest.add(
         esclient.prepareIndex(
             configurationService.getOptimizeIndex(),
@@ -75,7 +73,7 @@ public class EventsWriter {
 
   private void addEventsToProcessInstanceRequest(
     BulkRequestBuilder addEventToProcessInstanceBulkRequest,
-    List<EventDto> processEvents, String processInstanceId) throws IOException {
+    List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
 
     List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
     Map<String, Object> params = new HashMap<>();
@@ -93,7 +91,7 @@ public class EventsWriter {
         params
     );
 
-    EventDto e = getFirst(processEvents);
+    FlowNodeEventDto e = getFirst(processEvents);
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(e.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(e.getProcessDefinitionKey());
@@ -112,13 +110,13 @@ public class EventsWriter {
     );
   }
 
-  private EventDto getFirst(List<EventDto> processEvents) {
+  private FlowNodeEventDto getFirst(List<FlowNodeEventDto> processEvents) {
     return processEvents.get(0);
   }
 
-  private List<SimpleEventDto> getSimpleEventDtos(List<EventDto> processEvents) {
+  private List<SimpleEventDto> getSimpleEventDtos(List<FlowNodeEventDto> processEvents) {
     List<SimpleEventDto> simpleEvents = new ArrayList<>();
-    for (EventDto e : processEvents) {
+    for (FlowNodeEventDto e : processEvents) {
       SimpleEventDto simpleEventDto = new SimpleEventDto();
       simpleEventDto.setDurationInMs(e.getDurationInMs());
       simpleEventDto.setActivityId(e.getActivityId());

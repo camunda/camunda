@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
@@ -27,7 +27,7 @@ public class DefinitionBasedImportIndexWriter {
 
   public void importIndex(DefinitionBasedImportIndexDto importStartIndex, String typeIndexComesFrom) throws IOException {
     logger.debug("Writing definition based import index '{}' of type '{}' to elasticsearch",
-      importStartIndex.getCurrentDefinitionBasedImportIndex(), typeIndexComesFrom);
+      importStartIndex.getCurrentProcessDefinition().getDefinitionBasedImportIndex(), typeIndexComesFrom);
     esclient
       .prepareIndex(
         configurationService.getOptimizeIndex(),

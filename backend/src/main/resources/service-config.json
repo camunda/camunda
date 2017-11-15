@@ -246,15 +246,23 @@
     },
 
     /*
-    Number of threads being used to process the import jobs in the import
-    job queue
+    Number of threads being used to process the import jobs that are writing data to elasticsearch.
     */
-    "executorThreadCount": 2,
+    "elasticsearchJobExecutorThreadCount": 2,
     /*
-    Adjust the queue size of the import jobs created.
+    Adjust the queue size of the import jobs that store data to elasticsearch.
     A too large value might cause memory problems.
     */
-    "jobQueueMaxSize": 100,
+    "elasticsearchJobExecutorQueueSize": 100,
+    /*
+    Number of threads being used to process the import jobs that are fetching data from the engine.
+    */
+    "engineJobExecutorThreadCount": 1,
+    /*
+    Adjust the queue size of the import jobs that fetch data from the engine.
+    A too large value might cause memory problems.
+    */
+    "engineJobExecutorQueueSize": 100,
     /*
     The data is fetched from the engine in pages. Define
     maximum size or, to be precise, a range for the number
@@ -284,7 +292,11 @@
         start scheduling fetching tasks in increasing periods of time,
         controlled by "backoff" counter.
         */
-        "max": 5
+        "max": 5,
+        /*
+        Tells if the backoff is enabled of not.
+        */
+        "isEnabled": true
       },
       "pages": {
         "resetInterval": {
@@ -311,6 +323,14 @@
     The name of the import index type.
     */
     "indexType": "import-index",
+    /*
+    The name of the id set based import index type
+    */
+    "scrollImportIndexType" : "scroll-import-index",
+    /*
+    States how often the import index should be stored to Elasticsearch.
+    */
+    "importIndexStorageIntervalInSec" : 10,
     "writer": {
       /*
       Number of retries when there is a version conflict in Elasticsearch

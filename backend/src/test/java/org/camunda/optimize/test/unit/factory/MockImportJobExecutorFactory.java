@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.unit.factory;
 
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.job.ImportJob;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.FactoryBean;
 
@@ -18,25 +18,25 @@ import static org.mockito.Mockito.mock;
  *
  * @author Johannes Heinemann
  */
-public class MockImportJobExecutorFactory implements FactoryBean<ImportJobExecutor> {
+public class MockImportJobExecutorFactory implements FactoryBean<ElasticsearchImportJobExecutor> {
   @Override
-  public ImportJobExecutor getObject() throws Exception {
-    ImportJobExecutor importJobExecutor = mock(ImportJobExecutor.class);
+  public ElasticsearchImportJobExecutor getObject() throws Exception {
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = mock(ElasticsearchImportJobExecutor.class);
 
     // execute all import jobs immediately when committed
     Answer<Object> answer = invocationOnMock -> {
-      ImportJob importJob = invocationOnMock.getArgument(0);
-      importJob.run();
+      ElasticsearchImportJob elasticsearchImportJob = invocationOnMock.getArgument(0);
+      elasticsearchImportJob.run();
       return null;
     };
-    doAnswer(answer).when(importJobExecutor).executeImportJob(any());
+    doAnswer(answer).when(elasticsearchImportJobExecutor).executeImportJob(any());
 
-    return importJobExecutor;
+    return elasticsearchImportJobExecutor;
   }
 
   @Override
   public Class<?> getObjectType() {
-    return ImportJobExecutor.class;
+    return ElasticsearchImportJobExecutor.class;
   }
 
   @Override

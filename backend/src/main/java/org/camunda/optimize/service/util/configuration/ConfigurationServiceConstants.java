@@ -15,8 +15,10 @@ public interface ConfigurationServiceConstants {
   String CONFIGURED_ENGINES = "$.engines";
 
 
-  String MAX_JOB_QUEUE_SIZE = "$.import.jobQueueMaxSize";
-  String IMPORT_EXECUTOR_THREAD_COUNT = "$.import.executorThreadCount";
+  String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
+  String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
+  String ENGINE_MAX_JOB_QUEUE_SIZE = "$.import.engineJobExecutorQueueSize";
+  String ENGINE_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.engineJobExecutorThreadCount";
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
   String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.import.process-definition-ids-to-import";
 
@@ -44,6 +46,8 @@ public interface ConfigurationServiceConstants {
   String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
   String ELASTIC_SEARCH_USERS_TYPE = "$.es.users.type";
   String IMPORT_INDEX_TYPE = "$.import.indexType";
+  String SCROLL_IMPORT_INDEX_TYPE = "$.import.scrollImportIndexType";
+  String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
   String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.import.data.process-definition.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
   String REPORT_TYPE = "$.es.reportType";
@@ -70,6 +74,7 @@ public interface ConfigurationServiceConstants {
   String IMPORT_REST_INTERVAL_MS = "$.import.handler.pages.resetInterval.value";
   String IMPORT_RESET_INTERVAL_UNIT = "$.import.handler.pages.resetInterval.unit";
   String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
+  String IS_BACK_OFF_ENABLED = "$.import.handler.backoff.isEnabled";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";

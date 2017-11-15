@@ -31,13 +31,11 @@
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.test.unit.factory.MockSchemaInitializerFactory"/>
 
-  <bean id="importServiceProvider"  class="org.camunda.optimize.test.unit.factory.MockImportServiceProviderFactory"/>
-
   <bean id="indexHandlerProvider" class="org.mockito.Mockito" factory-method="mock">
     <constructor-arg value="org.camunda.optimize.service.importing.provider.IndexHandlerProvider"/>
   </bean>
 
-  <bean id="importJobExecutor" class="org.camunda.optimize.test.unit.factory.MockImportJobExecutorFactory" />
+  <bean id="elasticsearchImportJobExecutor" class="org.camunda.optimize.test.unit.factory.MockImportJobExecutorFactory" />
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

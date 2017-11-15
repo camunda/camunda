@@ -2,16 +2,16 @@ package org.camunda.optimize.dto.optimize.query;
 
 public class ProgressDto {
 
-  protected int progress;
+  protected long progress;
 
   /**
    * A number between 0 and 100 showing the progress.
    */
-  public int getProgress() {
+  public long getProgress() {
     return progress;
   }
 
-  public void setProgress(int progress) {
+  public void setProgress(long progress) {
     this.progress = progress;
   }
 }

@@ -66,8 +66,11 @@ public class ConfigurationService {
   private Integer engineImportMaxPageSize;
   private Long importHandlerWait;
   private Long maximumBackoff;
-  private Integer maxJobQueueSize;
-  private Integer importExecutorThreadCount;
+  private Boolean backoffEnabled;
+  private Integer elasticsearchJobExecutorQueueSize;
+  private Integer elasticsearchJobExecutorThreadCount;
+  private Integer engineJobExecutorQueueSize;
+  private Integer engineJobExecutorThreadCount;
   private String hpiEndpoint;
   private Long importRestIntervalMs;
   private Integer elasticsearchScrollTimeout;
@@ -75,6 +78,7 @@ public class ConfigurationService {
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
   private String importIndexType;
+  private String scrollImportIndexType;
   private String durationHeatmapTargetValueType;
   private String hviEndpoint;
   private String variableType;
@@ -95,12 +99,13 @@ public class ConfigurationService {
   private String reportType;
   private String dashboardType;
   private Long generalBackoff;
+  private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
   private String piIdTrackingType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
-  private Integer engineImportActivityInstanceMaxPageSize;
+  private Long engineImportActivityInstanceMaxPageSize;
   private Boolean defaultUserCreationEnabled;
   private String groupsEndpoint;
   private String importResetIntervalUnit;
@@ -349,6 +354,14 @@ public class ConfigurationService {
     return dateFormat;
   }
 
+  public int getImportIndexAutoStorageIntervalInSec() {
+    if (importIndexAutoStorageIntervalInSec == null) {
+      importIndexAutoStorageIntervalInSec =
+        jsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class);
+    }
+    return importIndexAutoStorageIntervalInSec;
+  }
+
   public int getEngineImportMaxPageSize() {
     if (engineImportMaxPageSize == null) {
       engineImportMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_MAX_PAGE_SIZE, Integer.class);
@@ -371,18 +384,39 @@ public class ConfigurationService {
     return maximumBackoff;
   }
 
-  public int getMaxJobQueueSize() {
-    if (maxJobQueueSize == null) {
-      maxJobQueueSize = jsonContext.read(ConfigurationServiceConstants.MAX_JOB_QUEUE_SIZE, Integer.class);
+  public Boolean isBackoffEnabled() {
+    if (backoffEnabled == null) {
+      backoffEnabled = jsonContext.read(ConfigurationServiceConstants.IS_BACK_OFF_ENABLED, Boolean.class);
     }
-    return maxJobQueueSize;
+    return backoffEnabled;
   }
 
-  public int getImportExecutorThreadCount() {
-    if (importExecutorThreadCount == null) {
-      importExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
+  public int getElasticsearchJobExecutorQueueSize() {
+    if (elasticsearchJobExecutorQueueSize == null) {
+      elasticsearchJobExecutorQueueSize = jsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE, Integer.class);
     }
-    return importExecutorThreadCount;
+    return elasticsearchJobExecutorQueueSize;
+  }
+
+  public int getEngineJobExecutorQueueSize() {
+    if (engineJobExecutorQueueSize == null) {
+      engineJobExecutorQueueSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_MAX_JOB_QUEUE_SIZE, Integer.class);
+    }
+    return engineJobExecutorQueueSize;
+  }
+
+  public int getElasticsearchJobExecutorThreadCount() {
+    if (elasticsearchJobExecutorThreadCount == null) {
+      elasticsearchJobExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
+    }
+    return elasticsearchJobExecutorThreadCount;
+  }
+
+  public int getEngineJobExecutorThreadCount() {
+    if (engineJobExecutorThreadCount == null) {
+      engineJobExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
+    }
+    return engineJobExecutorThreadCount;
   }
 
   public String getHistoricProcessInstanceEndpoint() {
@@ -432,6 +466,13 @@ public class ConfigurationService {
       importIndexType = jsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_TYPE);
     }
     return importIndexType;
+  }
+
+  public String getScrollImportIndexType() {
+    if (scrollImportIndexType == null) {
+      scrollImportIndexType = jsonContext.read(ConfigurationServiceConstants.SCROLL_IMPORT_INDEX_TYPE);
+    }
+    return scrollImportIndexType;
   }
 
   public String getDurationHeatmapTargetValueType() {
@@ -617,9 +658,9 @@ public class ConfigurationService {
     return engineImportProcessDefinitionMaxPageSize;
   }
 
-  public int getEngineImportActivityInstanceMaxPageSize() {
+  public long getEngineImportActivityInstanceMaxPageSize() {
     if (engineImportActivityInstanceMaxPageSize == null) {
-      engineImportActivityInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE);
+      engineImportActivityInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE, Long.class);
     }
     ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
     return engineImportActivityInstanceMaxPageSize;
@@ -862,6 +903,10 @@ public class ConfigurationService {
     this.elasticsearchUsersType = elasticsearchUsersType;
   }
 
+  public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
+    this.importIndexAutoStorageIntervalInSec = importIndexAutoStorageIntervalInSec;
+  }
+
   public void setAnalyzerName(String analyzerName) {
     this.analyzerName = analyzerName;
   }
@@ -898,12 +943,20 @@ public class ConfigurationService {
     this.maximumBackoff = maximumBackoff;
   }
 
-  public void setMaxJobQueueSize(Integer maxJobQueueSize) {
-    this.maxJobQueueSize = maxJobQueueSize;
+  public void setElasticsearchJobExecutorQueueSize(Integer elasticsearchJobExecutorQueueSize) {
+    this.elasticsearchJobExecutorQueueSize = elasticsearchJobExecutorQueueSize;
   }
 
-  public void setImportExecutorThreadCount(Integer importExecutorThreadCount) {
-    this.importExecutorThreadCount = importExecutorThreadCount;
+  public void setEngineJobExecutorQueueSize(Integer engineJobExecutorQueueSize) {
+    this.engineJobExecutorQueueSize = engineJobExecutorQueueSize;
+  }
+
+  public void setElasticsearchJobExecutorThreadCount(Integer elasticsearchJobExecutorThreadCount) {
+    this.elasticsearchJobExecutorThreadCount = elasticsearchJobExecutorThreadCount;
+  }
+
+  public void setEngineJobExecutorThreadCount(Integer engineJobExecutorThreadCount) {
+    this.engineJobExecutorThreadCount = engineJobExecutorThreadCount;
   }
 
   public String getHpiEndpoint() {
@@ -940,6 +993,10 @@ public class ConfigurationService {
 
   public void setImportIndexType(String importIndexType) {
     this.importIndexType = importIndexType;
+  }
+
+  public void setScrollImportIndexType(String scrollImportIndexType) {
+    this.scrollImportIndexType = scrollImportIndexType;
   }
 
   public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
@@ -1050,7 +1107,7 @@ public class ConfigurationService {
     this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
   }
 
-  public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
+  public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {
     this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
   }
 
@@ -1088,5 +1145,9 @@ public class ConfigurationService {
 
   public void setContainerHttpPort(Integer containerHttpPort) {
     this.containerHttpPort = containerHttpPort;
+  }
+
+  public void setBackoffEnabled(Boolean backoffEnabled) {
+    this.backoffEnabled = backoffEnabled;
   }
 }

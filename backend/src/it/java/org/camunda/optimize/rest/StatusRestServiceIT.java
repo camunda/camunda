@@ -2,9 +2,9 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class StatusRestServiceIT {
 
   public static final String ENGINE_ALIAS = "1";
@@ -40,24 +41,30 @@ public class StatusRestServiceIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  private EngineClientFactory engineClientFactory;
+  private Client mockedEngineClient;
   private ConfigurationService configurationService;
 
   @Before
   public void initClients() throws InvalidTokenException {
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    engineClientFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
-    for (String engine : configurationService.getConfiguredEngines().keySet()) {
-      engineClientFactory.getInstance(engine);
-    }
+  }
+
+  private void mockEngineClient() {
+    mockedEngineClient = Mockito.mock(Client.class);
+    StatusCheckingService statusCheckingService =
+      embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
+    statusCheckingService.setEngineClient(mockedEngineClient);
   }
 
   @After
   public void resetMocks() throws InvalidTokenException {
-    engineClientFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
-    for (String engine : configurationService.getConfiguredEngines().keySet()) {
-      Mockito.reset(engineClientFactory.getInstance(engine));
+    if (mockedEngineClient != null) {
+      Mockito.reset(mockedEngineClient);
     }
+    StatusCheckingService statusCheckingService =
+      embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
+    Client engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
+    statusCheckingService.setEngineClient(engineClient);
   }
 
   @Test
@@ -100,9 +107,10 @@ public class StatusRestServiceIT {
   @Test
   public void getConnectionStatusForMissingEngineConnection() throws Exception {
     // given
+    mockEngineClient();
     String errorMessage = "Error";
     Mockito.when(
-        engineClientFactory.getInstance(ENGINE_ALIAS).target(Mockito.anyString())
+        mockedEngineClient.target(Mockito.anyString())
     ).thenThrow(
         new RuntimeException(errorMessage)
     );
@@ -125,7 +133,7 @@ public class StatusRestServiceIT {
   @Test
   public void getImportProgressStatus() throws Exception {
     // given
-    int expectedCount = 0;
+    long expectedCount = 0L;
 
     // when
     Response response = embeddedOptimizeRule.target("status/import-progress")
@@ -143,8 +151,9 @@ public class StatusRestServiceIT {
   @Test
   public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws Exception {
     // given
+    mockEngineClient();
     String errorMessage = "Error";
-    Mockito.when(engineClientFactory.getInstance(ENGINE_ALIAS).target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
+    Mockito.when(mockedEngineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
     List<String> processDefinitionIdsToImport = new ArrayList<>();
     processDefinitionIdsToImport.add("test");
     configurationService.setProcessDefinitionIdsToImport(processDefinitionIdsToImport);

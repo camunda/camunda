@@ -70,16 +70,7 @@ public class ImportPerformanceTest {
     //trigger import
     logger.info("Starting import of engine data to Optimize...");
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.startImportScheduler();
-    embeddedOptimizeRule.getJobExecutor().startExecutingImportJobs();
-    //give importing time to warm up
-    Thread.sleep(TEN_SECONDS);
-    while (embeddedOptimizeRule.isImporting() || embeddedOptimizeRule.getProgressValue() < 99) {
-      Thread.sleep(TEN_SECONDS);
-      logger.info("current import progress [" + embeddedOptimizeRule.getProgressValue() + "%]");
-    }
-
-    embeddedOptimizeRule.getJobExecutor().stopExecutingImportJobs();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     LocalDateTime pointThree = LocalDateTime.now();
 

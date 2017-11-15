@@ -27,12 +27,10 @@
     </constructor-arg>
   </bean>
 
-  <bean id="engineClient"  class="org.camunda.optimize.rest.engine.EngineClientFactory"/>
-
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
+  <bean id="elasticsearchImportJobExecutor" class="org.camunda.optimize.service.es.ElasticsearchImportJobExecutor" />
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
