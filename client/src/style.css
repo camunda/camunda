@@ -23,3 +23,29 @@ input[type="password"] {
 main {
   padding: 15px;
 }
+
+/* Typography */
+/* TEMP Heading styles -> use global CSS reset?
+Use classes when more design work has been done */
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  /* margin: 0;
+  padding: 0;
+  border: 0; */
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+h1 {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+section h1 {
+  font-size: 1.5em;
+}
