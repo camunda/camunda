@@ -36,7 +36,7 @@ public class VariableInstanceFetcher
     pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
 
     List<HistoricVariableInstanceDto> entries = client
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .queryParam("deserializeValues", "false")
       .path(configurationService.getHistoricVariableInstanceEndpoint())
       .request(MediaType.APPLICATION_JSON)

@@ -30,7 +30,7 @@ public class UnfinishedProcessInstanceFetcher extends
     Map<String, Set<String>> pids = new HashMap<>();
     pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
     List<HistoricProcessInstanceDto> entries = client
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceEndpoint())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)

@@ -18,10 +18,14 @@ public class ProcessDefinitionCountFetcher {
 
   public Long fetchProcessDefinitionCount() {
     CountDto count = engineClient
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getProcessDefinitionCountEndpoint())
       .request()
       .get(CountDto.class);
     return count.getCount();
+  }
+
+  private String getEngineAlias() {
+    return configurationService.getConfiguredEngines().keySet().iterator().next();
   }
 }

@@ -36,7 +36,7 @@ public class ActivityInstanceFetcher
                                                                                 String processDefinitionId) {
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> entries = client
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricActivityInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)
       .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)

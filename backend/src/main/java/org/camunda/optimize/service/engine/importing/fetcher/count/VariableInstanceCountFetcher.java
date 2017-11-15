@@ -22,7 +22,7 @@ public class VariableInstanceCountFetcher {
   public Long fetchVariableInstanceCount() {
     long totalCount = 0;
     CountDto newCount = engineClient
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .queryParam("deserializeValues", "false")
       .path(configurationService.getHistoricVariableInstanceCountEndpoint())
       .request(MediaType.APPLICATION_JSON)
@@ -31,5 +31,9 @@ public class VariableInstanceCountFetcher {
       .readEntity(CountDto.class);
     totalCount += newCount.getCount();
     return totalCount;
+  }
+
+  private String getEngineAlias() {
+    return configurationService.getConfiguredEngines().keySet().iterator().next();
   }
 }

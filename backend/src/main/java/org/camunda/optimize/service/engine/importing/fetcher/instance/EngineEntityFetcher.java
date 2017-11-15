@@ -28,4 +28,8 @@ public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends Im
    */
   public abstract List<ENG> fetchEngineEntities(PAGE page);
 
+  protected String getEngineAlias() {
+    return configurationService.getConfiguredEngines().keySet().iterator().next();
+  }
+
 }

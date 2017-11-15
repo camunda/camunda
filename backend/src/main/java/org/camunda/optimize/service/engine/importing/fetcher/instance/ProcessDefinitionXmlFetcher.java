@@ -33,7 +33,7 @@ public class ProcessDefinitionXmlFetcher
     long requestStart = System.currentTimeMillis();
     for (ProcessDefinitionEngineDto engineDto : entries) {
       ProcessDefinitionXmlEngineDto xml = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
         .request(MediaType.APPLICATION_JSON)
         .get(ProcessDefinitionXmlEngineDto.class);

@@ -26,7 +26,7 @@ public class FinishedProcessInstanceCountFetcher {
     long totalCount = 0;
     for (String processDefinitionId : processDefinitionIds) {
       CountDto newCount = engineClient
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(configurationService.getHistoricProcessInstanceCountEndpoint())
         .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
         .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
@@ -36,5 +36,9 @@ public class FinishedProcessInstanceCountFetcher {
       totalCount += newCount.getCount();
     }
     return totalCount;
+  }
+
+  private String getEngineAlias() {
+    return configurationService.getConfiguredEngines().keySet().iterator().next();
   }
 }

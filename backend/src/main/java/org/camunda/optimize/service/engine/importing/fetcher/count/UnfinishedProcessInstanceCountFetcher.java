@@ -23,7 +23,7 @@ public class UnfinishedProcessInstanceCountFetcher {
   public Long fetchUnfinishedHistoricProcessInstanceCount() {
     long totalCount = 0;
     CountDto newCount = engineClient
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceCountEndpoint())
       .queryParam(INCLUDE_ONLY_UNFINISHED_INSTANCES, TRUE)
       .request()
@@ -31,5 +31,9 @@ public class UnfinishedProcessInstanceCountFetcher {
       .get(CountDto.class);
     totalCount += newCount.getCount();
     return totalCount;
+  }
+
+  private String getEngineAlias() {
+    return configurationService.getConfiguredEngines().keySet().iterator().next();
   }
 }

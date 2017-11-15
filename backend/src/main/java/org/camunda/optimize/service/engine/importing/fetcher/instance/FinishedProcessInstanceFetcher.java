@@ -35,7 +35,7 @@ public class FinishedProcessInstanceFetcher extends
                                                                                 String processDefinitionId) {
     long requestStart = System.currentTimeMillis();
     List<HistoricProcessInstanceDto> entries = client
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)
       .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)

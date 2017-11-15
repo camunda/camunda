@@ -31,7 +31,7 @@ public class ProcessDefinitionFetcher
                                                                   long maxPageSize) {
     long requestStart = System.currentTimeMillis();
     List<ProcessDefinitionEngineDto> entries = client
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine("1"))
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getProcessDefinitionEndpoint())
       .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
       .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
