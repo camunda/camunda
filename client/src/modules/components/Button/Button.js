@@ -5,11 +5,11 @@ import './Button.css';
 
 export default function Button(props) {
   if (props.tag === 'a') {
-    return (<Link className={(props.type ? 'Button Button--' + props.type : 'Button')} {...props}>
+    return (<Link {...props} className={'Button ' + (props.type ? ('Button--' + props.type) : '') + (props.className || '')}>
       {props.children}
     </Link>);
   } else {
-    return (<button className={(props.type ? 'Button Button--' + props.type : 'Button')} {...props}>
+    return (<button {...props} className={'Button ' + (props.type ? ('Button--' + props.type) : '') + (props.className || '')}>
       {props.children}
     </button>);
   }

@@ -59,6 +59,11 @@ it('does render the title as provided as a property', () => {
   expect(node.find('button')).toMatchSelector('button[title="' + titleText + '"]');
 });
 
+it('does merge and render classNames provided as a property', () => {
+  const node = mount(<Button className={'foo'} />);
+  expect(node.find('.Button')).toMatchSelector('.Button.foo');
+});
+
 it('executes a click handler as provided as a property', () => {
   const handler = jest.fn();
   const node = mount(<Button onClick={handler} />);
