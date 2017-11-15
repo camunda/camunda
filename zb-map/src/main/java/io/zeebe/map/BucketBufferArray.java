@@ -431,7 +431,7 @@ public class BucketBufferArray implements AutoCloseable
             {
                 setBucketDepth(bucketAddress, ABANDONED_BUCKET);
             }
-            nextBucketAddress = nextBucketAddress == 0 ? getBucketAddress(bucketBufferId, lastBucketOffset) : nextBucketAddress;
+            nextBucketAddress = getBucketAddress(bucketBufferId, lastBucketOffset);
         }
 
         return nextBucketAddress;
@@ -822,7 +822,7 @@ public class BucketBufferArray implements AutoCloseable
 
         for (int i = 0; i < realAddresses.length; i++)
         {
-            if (realAddresses[i] != 0)
+            if (realAddresses[i] != INVALID_ADDRESS)
             {
                 final int bucketCount = getBucketCount(i);
                 for (int j = 0; j < bucketCount; j++)
