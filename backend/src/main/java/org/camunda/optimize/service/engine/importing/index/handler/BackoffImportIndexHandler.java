@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -13,7 +14,7 @@ import java.util.Optional;
 public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   implements ImportIndexHandler<PAGE, INDEX> {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = 0L;
@@ -21,6 +22,17 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   @Autowired
   protected ConfigurationService configurationService;
+
+  @PostConstruct
+  private void initialize() {
+    try {
+      init();
+    } catch (Exception e) {
+      logger.error("Could not initialize index.", e);
+    }
+  }
+
+  protected abstract void init();
 
   @Override
   public Optional<PAGE> getNextPage() {

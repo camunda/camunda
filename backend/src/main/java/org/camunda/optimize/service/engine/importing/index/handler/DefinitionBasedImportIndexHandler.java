@@ -2,18 +2,15 @@ package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
-import org.camunda.optimize.dto.optimize.importing.DummyDefinitionImportInformation;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionInformationNotAvailable;
 import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInformation;
 import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +26,6 @@ import java.util.stream.Collectors;
 public abstract class DefinitionBasedImportIndexHandler
   extends BackoffImportIndexHandler<DefinitionBasedImportPage, DefinitionBasedImportIndexDto> {
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
   @Autowired
   protected DefinitionBasedImportIndexReader importIndexReader;
   @Autowired
@@ -38,16 +33,15 @@ public abstract class DefinitionBasedImportIndexHandler
   @Autowired
   protected ProcessDefinitionFetcher engineEntityFetcher;
 
-  protected List<DefinitionImportInformation> processDefinitionsToImport;
-  protected Set<DefinitionImportInformation> alreadyImportedProcessDefinitions;
+  protected List<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
+  protected Set<DefinitionImportInformation> alreadyImportedProcessDefinitions = new HashSet<>();
 
-  protected DefinitionImportInformation currentIndex;
+  protected DefinitionImportInformation currentIndex = new ProcessDefinitionInformationNotAvailable();
   protected Long totalEntitiesImported = 0L;
 
   protected String engineAlias = "1";
 
-  @PostConstruct
-  public void init() {
+  protected void init() {
     resetCurrentIndex();
     loadImportDefaults();
     readIndexFromElasticsearch();
@@ -149,12 +143,12 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   private void resetCurrentIndex() {
-    currentIndex = new DummyDefinitionImportInformation();
+    currentIndex = new ProcessDefinitionInformationNotAvailable();
   }
 
   private void moveToNextDefinitionToImport() {
     if (hasStillNewDefinitionsToImport()) {
-      if (!(currentIndex instanceof DummyDefinitionImportInformation)) {
+      if (!(currentIndex instanceof ProcessDefinitionInformationNotAvailable)) {
         alreadyImportedProcessDefinitions.add(currentIndex);
       }
       currentIndex = removeFirstItemFromProcessDefinitionsToImport();

@@ -10,6 +10,8 @@ import org.camunda.optimize.service.engine.importing.job.StoreIndexesEngineImpor
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,8 @@ import java.util.Optional;
 
 @Component
 public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactory {
+
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private ConfigurationService configurationService;
@@ -53,7 +57,12 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   public Optional<Runnable> getNextJob() {
     if (LocalDateTime.now().isAfter(dateUntilJobCreationIsBlocked)) {
       dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
-      return Optional.of(createStoreIndexJob());
+      try {
+        return Optional.of(createStoreIndexJob());
+      } catch (Exception e) {
+        logger.error("Could not create import job for storing index information!", e);
+        return Optional.empty();
+      }
     } else {
       return Optional.empty();
     }

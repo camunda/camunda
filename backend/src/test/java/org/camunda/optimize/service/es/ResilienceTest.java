@@ -40,8 +40,6 @@ import static org.junit.Assert.assertThat;
  *
  * @author Askar Akhmerov
  */
-// TODO: OPT-710
-@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class ResilienceTest {

@@ -43,6 +43,11 @@ public abstract class ScrollBasedImportIndexHandler
   @Autowired
   protected Client esclient;
 
+  @Override
+  protected void init() {
+    // nothing initialize here
+  }
+
   private Long maxEntityCount = 0L;
   private Long importIndex = 0L;
 

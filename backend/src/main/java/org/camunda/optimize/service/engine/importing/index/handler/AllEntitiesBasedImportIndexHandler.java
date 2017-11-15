@@ -4,14 +4,11 @@ import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportI
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -19,8 +16,6 @@ import java.util.OptionalDouble;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
   extends BackoffImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   protected ImportIndexReader importIndexReader;
@@ -31,8 +26,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   protected long importIndex = 0;
   protected long maxEntityCount = 0;
 
-  @PostConstruct
-  public void init() {
+  protected void init() {
     readIndexFromElasticsearch();
     updateMaxEntityCount();
   }
