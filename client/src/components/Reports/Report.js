@@ -140,7 +140,7 @@ export default class Report extends React.Component {
     const {loaded, redirect} = this.state;
 
     if(!loaded) {
-      return <div>loading...</div>;
+      return <div className='report-loading-indicator'>loading...</div>;
     }
 
     if(redirect) {

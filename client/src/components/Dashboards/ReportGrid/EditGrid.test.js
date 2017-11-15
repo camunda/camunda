@@ -37,7 +37,7 @@ const moveMock = jest.fn();
 it('should render add button', async () => {
   const node = mount(<EditGrid onReportSelected={selectionMock} onReportRemoved={removeMock} reports={[]}/>);
 
-  expect(node).toIncludeText('Add a report');
+  expect(node.find('.add-button--container')).toBePresent();
   expect(load).not.toHaveBeenCalled();
   expect(node).not.toIncludeText('Select a report from the list');
 });
@@ -69,7 +69,7 @@ it('should show modal on add click', async () => {
   const node = mount(<EditGrid onReportSelected={selectionMock} onReportRemoved={removeMock} reports={[]}/>);
 
   node.find('.add-button--container').simulate('click');
-  expect(node).toIncludeText('Select a report from the list');
+  expect(node.find('.report-selection-modal--modal')).toBePresent();
 });
 
 describe ('drag\'n\'drop', async () => {

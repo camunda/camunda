@@ -31,7 +31,7 @@ export default class Heatmap extends React.Component {
     }
 
     if(!xml) {
-      return <div>loading...</div>;
+      return <div className='heatmap-loading-indicator'>loading...</div>;
     }
 
     return <Diagram xml={xml}>

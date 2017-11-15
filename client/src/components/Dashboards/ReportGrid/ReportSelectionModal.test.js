@@ -38,7 +38,7 @@ it('should render select with reports', async () => {
   expect(load).toHaveBeenCalled();
   await node.instance().loadEntities();
 
-  expect(node).toIncludeText('Select a report from the list');
+  expect(node.find('select')).toBePresent();
   expect(node).toIncludeText('r1');
   expect(node).toIncludeText('r2');
 });

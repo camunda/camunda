@@ -70,7 +70,7 @@ beforeEach(() => {
 it('should display a loading indicator', () => {
   const node = mount(<Dashboard {...props} />);
 
-  expect(node).toIncludeText('loading');
+  expect(node.find('.dashboard-loading-indicator')).toBePresent();
 });
 
 it('should initially load data', () => {
@@ -96,7 +96,7 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  expect(node).toIncludeText('Edit');
+  expect(node.find('#edit')).toBePresent();
 });
 
 it('should remove a dashboard when delete button is clicked', () => {
@@ -126,9 +126,9 @@ describe('edit mode', async () => {
     const node = mount(<Dashboard {...props} />);
     node.setState({loaded: true});
 
-    expect(node).toIncludeText('Save');
-    expect(node).toIncludeText('Cancel');
-    expect(node).not.toIncludeText('Edit');
+    expect(node.find('#save')).toBePresent();
+    expect(node.find('#cancel')).toBePresent();
+    expect(node.find('#edit')).not.toBePresent();
   });
 
   it('should provide name edit input', async () => {

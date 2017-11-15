@@ -145,7 +145,7 @@ export default class Dashboard extends React.Component {
 
 
     if(!loaded) {
-      return <div>loading...</div>;
+      return <div className = 'dashboard-loading-indicator'>loading...</div>;
     }
 
     if(redirect) {

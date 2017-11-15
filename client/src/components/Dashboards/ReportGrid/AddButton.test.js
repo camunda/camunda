@@ -15,7 +15,7 @@ it('should render button text', async () => {
     onClick={showMock}
   />);
 
-  expect(node).toIncludeText('Add a report');
+  expect(node.find('.add-button--add-text')).toBePresent();
 });
 
 it('should callback on click', async () => {

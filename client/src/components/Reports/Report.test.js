@@ -58,7 +58,7 @@ beforeEach(() => {
 it('should display a loading indicator', () => {
   const node = mount(<Report {...props} />);
 
-  expect(node).toIncludeText('loading');
+  expect(node.find('.report-loading-indicator')).toBePresent();
 });
 
 it('should initially load data', () => {
@@ -84,7 +84,7 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  expect(node).toIncludeText('Edit');
+  expect(node.find('#edit')).toBePresent();
 });
 
 
@@ -181,9 +181,9 @@ describe('edit mode', async () => {
     const node = mount(<Report {...props} />);
     node.setState({loaded: true});
 
-    expect(node).toIncludeText('Save');
-    expect(node).toIncludeText('Cancel');
-    expect(node).not.toIncludeText('Edit');
+    expect(node.find('#save')).toBePresent();
+    expect(node.find('#cancel')).toBePresent();
+    expect(node.find('#edit')).not.toBePresent();
   });
 
   it('should provide name edit input', async () => {

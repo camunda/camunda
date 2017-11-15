@@ -40,4 +40,7 @@ it('does render the sections or logout button if the user is logged in', () => {
 
   expect(node).toIncludeText('Section');
   expect(node).toIncludeText('logout');
+  // commented code doesn't work, please take a look ([empty set])
+  // expect(node.find('.Section')).toBePresent();
+  // expect(node.find('.LogoutButton')).toBePresent();
 });

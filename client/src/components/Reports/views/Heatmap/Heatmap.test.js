@@ -23,7 +23,7 @@ it('should load the process definition xml', () => {
 it('should display a loading indication while loading', () => {
   const node = mount(<Heatmap process='a' data={data} />);
 
-  expect(node).toIncludeText('loading');
+  expect(node.find('.heatmap-loading-indicator')).toBePresent();
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
