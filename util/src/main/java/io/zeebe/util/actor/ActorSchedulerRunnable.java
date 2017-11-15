@@ -43,8 +43,8 @@ public class ActorSchedulerRunnable implements Runnable
     private final ActorRunner[] runners;
     private int nextRunner = 0;
 
-    private final long[][] durationsPerRunner;
-    private final long[] aggregatedRunnerDurations;
+    private final double[][] durationsPerRunner;
+    private final double[] aggregatedRunnerDurations;
 
     private final double imbalanceThreshold;
 
@@ -60,8 +60,8 @@ public class ActorSchedulerRunnable implements Runnable
         this.runners = runners;
         this.actorRefFactory = actorRefFactory;
 
-        this.durationsPerRunner = new long[runners.length][];
-        this.aggregatedRunnerDurations = new long[runners.length];
+        this.durationsPerRunner = new double[runners.length][];
+        this.aggregatedRunnerDurations = new double[runners.length];
 
         this.imbalanceThreshold = imbalanceThreshold;
 
@@ -148,15 +148,15 @@ public class ActorSchedulerRunnable implements Runnable
             final ActorRunner runner = runners[r];
             final List<ActorReferenceImpl> actors = runner.getActors();
 
-            int sum = 0;
-            durationsPerRunner[r] = new long[actors.size()];
+            double sum = 0;
+            durationsPerRunner[r] = new double[actors.size()];
 
             for (int a = 0; a < durationsPerRunner[r].length; a++)
             {
                 final ActorReferenceImpl actor = actors.get(a);
                 if (actor != null)
                 {
-                    final long duration = actor.getDuration();
+                    final double duration = actor.getDuration();
 
                     sum += duration;
                     durationsPerRunner[r][a] = duration;
@@ -183,7 +183,7 @@ public class ActorSchedulerRunnable implements Runnable
         return didBalance;
     }
 
-    private int[] sortRunnersByDuration(long[] runnerDurations)
+    private int[] sortRunnersByDuration(double[] runnerDurations)
     {
         // insert-sort
         final int[] sortedRunners = new int[runners.length];
@@ -191,7 +191,7 @@ public class ActorSchedulerRunnable implements Runnable
 
         for (int r = 1; r < runners.length; r++)
         {
-            final long duration = runnerDurations[r];
+            final double duration = runnerDurations[r];
 
             int i = r;
             while (i > 0 && runnerDurations[sortedRunners[i - 1]] > duration)
@@ -211,19 +211,19 @@ public class ActorSchedulerRunnable implements Runnable
 
         if (runners[high].getActors().size() > 1)
         {
-            final long durationDiff = aggregatedRunnerDurations[high] - aggregatedRunnerDurations[low];
+            final double durationDiff = aggregatedRunnerDurations[high] - aggregatedRunnerDurations[low];
             final double imbalance = durationDiff > 0 ? ((double) durationDiff / (aggregatedRunnerDurations[high] + aggregatedRunnerDurations[low])) : 0.0;
             if (imbalance >= imbalanceThreshold)
             {
                 // find a suitable actor to balance the workload
-                final long[] durations = durationsPerRunner[high];
+                final double[] durations = durationsPerRunner[high];
 
                 int actor = -1;
-                long actorDuration = -1;
+                double actorDuration = -1F;
 
                 for (int a = 0; a < durations.length; a++)
                 {
-                    final long duration = durations[a];
+                    final double duration = durations[a];
                     if (duration > actorDuration && duration <= durationDiff / 2)
                     {
                         actor = a;

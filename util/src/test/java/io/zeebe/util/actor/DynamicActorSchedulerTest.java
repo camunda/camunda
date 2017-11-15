@@ -68,7 +68,7 @@ public class DynamicActorSchedulerTest
 
         final ActorRunner[] runners = new ActorRunner[] {mockRunner1, mockRunner2};
 
-        scheduler = new ActorSchedulerRunnable(runners, t -> new ActorReferenceImpl(t, 16), 0.25, Duration.ofSeconds(10), Duration.ofSeconds(10));
+        scheduler = new ActorSchedulerRunnable(runners, t -> actorRefs[0], 0.25, Duration.ofSeconds(10), Duration.ofSeconds(10));
 
         actorRefs = new ActorReferenceImpl[5];
         for (int i = 0; i < 5; i++)
@@ -122,6 +122,39 @@ public class DynamicActorSchedulerTest
         actorRef.addDurationSample(90);
 
         assertThat(actorRef.getDuration()).isEqualTo(60);
+    }
+
+
+    @Test
+    public void shouldNotCalculateNegativeAvg()
+    {
+        final ActorReferenceImpl actorRef = actorRefs[0];
+
+        // when
+        actorRef.addDurationSample(800);
+        actorRef.addDurationSample(2);
+        actorRef.addDurationSample(2);
+        actorRef.addDurationSample(2);
+
+        // then
+        // the comments display the values which are calculate if the avg is an integer and not
+        // a floating point data type
+        assertThat(actorRef.getDuration()).isEqualTo(201.5); // 201
+
+        actorRef.addDurationSample(5);
+        assertThat(actorRef.getDuration()).isEqualTo(2.75); // 2.25
+
+        actorRef.addDurationSample(1);
+        assertThat(actorRef.getDuration()).isEqualTo(2.5); // 1.75
+
+        actorRef.addDurationSample(1);
+        assertThat(actorRef.getDuration()).isEqualTo(2.25); // 0.75
+
+        actorRef.addDurationSample(1);
+        assertThat(actorRef.getDuration()).isEqualTo(2); // -0.25
+
+        actorRef.addDurationSample(1);
+        assertThat(actorRef.getDuration()).isEqualTo(1); // was -1
     }
 
     @Test

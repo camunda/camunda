@@ -30,7 +30,7 @@ public class ActorReferenceImpl implements ActorReference
 
     private int nextDurationIndex = 0;
     private int durationSampleSize = 0;
-    private volatile long durationAvg = 0;
+    private volatile double durationAvg = 0;
 
 
     public ActorReferenceImpl(Actor actor, int durationSampleCount)
@@ -60,21 +60,21 @@ public class ActorReferenceImpl implements ActorReference
     {
         if (durationSampleSize < durationSamplesCapacity)
         {
-            durationAvg = (durationAvg * durationSampleSize + duration) / (durationSampleSize + 1);
+            durationAvg = (durationAvg * durationSampleSize + duration) / (double) (durationSampleSize + 1);
 
             durationSampleSize += 1;
         }
         else
         {
             final long oldestDuration = durationSamples[nextDurationIndex];
-            durationAvg = (durationAvg * durationSampleSize - oldestDuration + duration) / durationSampleSize;
+            durationAvg = (durationAvg * durationSampleSize - oldestDuration + duration) / (double) durationSampleSize;
         }
 
         durationSamples[nextDurationIndex] = duration;
         nextDurationIndex = next(nextDurationIndex, durationSamplesCapacity);
     }
 
-    public long getDuration()
+    public double getDuration()
     {
         return durationAvg;
     }
