@@ -29,8 +29,9 @@ public class EngineClientFactory implements FactoryBean<Client>, ConfigurationRe
     Client client = ClientBuilder.newClient();
     client.property(ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
     client.property(ClientProperties.READ_TIMEOUT, configurationService.getEngineReadTimeout());
-    if (configurationService.isEngineAuthenticationEnabled("1")) {
-      client.register(basicAccessAuthenticationFilterFactory.getInstance("1"));
+    String engineAlias = configurationService.getConfiguredEngines().keySet().iterator().next();
+    if (configurationService.isEngineAuthenticationEnabled(engineAlias)) {
+      client.register(basicAccessAuthenticationFilterFactory.getInstance(engineAlias));
     }
     client.register(optimizeObjectMapperProvider);
     return client;
