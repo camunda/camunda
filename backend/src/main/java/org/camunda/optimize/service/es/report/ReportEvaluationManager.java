@@ -8,11 +8,12 @@ import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
+import org.camunda.optimize.service.es.report.command.RawDataCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
-import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
-import org.camunda.optimize.service.es.report.command.RawDataCommand;
+import org.camunda.optimize.service.es.report.command.util.ReportDataUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -47,7 +48,7 @@ public class ReportEvaluationManager {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommand(reportData);
     ReportResultDto result = evaluationCommand.evaluate(commandContext);
-    result.copyReportDataProperties(reportData);
+    ReportDataUtil.copyReportData(reportData, result);
     return result;
   }
 

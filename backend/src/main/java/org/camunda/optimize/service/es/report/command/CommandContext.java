@@ -7,7 +7,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 
 public class CommandContext {
-  
+
   private Client esclient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
