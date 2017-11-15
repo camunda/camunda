@@ -95,18 +95,21 @@ public class CreateWorkflowInstanceTest
             .register();
 
         // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
-            .create(clientRule.getDefaultTopicName())
-            .bpmnProcessId("foo")
-            .payload(new ByteArrayInputStream(payload))
-            .execute();
+        for (int i = 0; i < 10_000_000; i++)
+        {
+            final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
+                                                                     .create(clientRule.getDefaultTopicName())
+                                                                     .bpmnProcessId("foo")
+                                                                     .payload(new ByteArrayInputStream(payload))
+                                                                     .execute();
 
-        // then
-        assertThat(workflowInstance).isNotNull();
-        assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
-        assertThat(workflowInstance.getVersion()).isEqualTo(1);
-        assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-        assertThat(workflowInstance.getPayload()).isEqualTo("{\"bar\":4}");
+            if (i % 100_000 == 0)
+            {
+                System.out.println("Iteration: " + i);
+            }
+
+        }
+
     }
 
     @Test

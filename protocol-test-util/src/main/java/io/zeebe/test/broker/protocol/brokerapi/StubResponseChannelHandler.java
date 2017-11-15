@@ -92,8 +92,8 @@ public class StubResponseChannelHandler implements ServerRequestHandler
             final ExecuteCommandRequest request = new ExecuteCommandRequest(remoteAddress, msgPackHelper);
 
             request.wrap(copy, 0, length);
-            commandRequests.add(request);
-            allRequests.add(request);
+//            commandRequests.add(request);
+//            allRequests.add(request);
 
             requestHandled = handleRequest(output, request, cmdRequestStubs, remoteAddress, requestId);
 
@@ -103,8 +103,8 @@ public class StubResponseChannelHandler implements ServerRequestHandler
             final ControlMessageRequest request = new ControlMessageRequest(remoteAddress, msgPackHelper);
 
             request.wrap(copy, 0, length);
-            controlMessageRequests.add(request);
-            allRequests.add(request);
+//            controlMessageRequests.add(request);
+//            allRequests.add(request);
 
             requestHandled = handleRequest(output, request, controlMessageStubs, remoteAddress, requestId);
         }
