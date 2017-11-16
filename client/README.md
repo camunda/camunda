@@ -51,6 +51,8 @@ Should create ``build`` folder with built application.
 yarn test
 ```
 
+### Problems with Mac
+
 If you’re running a Mac and `yarn test` fails with something like:
 
 ```
@@ -69,3 +71,21 @@ error Command failed with exit code 1.
 ```
 
 you can make the tests run by installing [watchman](https://facebook.github.io/watchman/docs/install.html).
+
+### Problems with Linux
+
+If you're running a Linux system and `yarn test` fails with something like:
+
+```
+fs.js:1378
+    throw error;
+    ^
+
+
+Waiting...Fatal error: watch ENOSPC
+    at _errnoException (util.js:1024:11)
+    at FSWatcher.start (fs.js:1376:19)
+    ....
+```
+then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
+
