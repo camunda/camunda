@@ -12,4 +12,6 @@ public interface CamundaOptimize {
   void startImportSchedulers();
 
   void disableImportSchedulers();
+
+  void enableImportSchedulers();
 }

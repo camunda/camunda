@@ -224,6 +224,13 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
+  @Override
+  public void enableImportSchedulers() {
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler.enable();
+    }
+  }
+
   protected ApplicationContext getOptimizeApplicationContext() {
     return jerseyCamundaOptimize.getApplicationContext();
   }

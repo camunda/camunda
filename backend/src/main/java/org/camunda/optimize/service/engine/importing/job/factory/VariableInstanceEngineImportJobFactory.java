@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.ws.rs.client.Client;
 import java.util.Optional;
 
 @Component
@@ -34,9 +33,6 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
   private ConfigurationService configurationService;
   @Autowired
   private ApplicationContext applicationContext;
-
-  @Autowired
-  private Client engineClient;
 
   @Autowired
   private org.elasticsearch.client.Client esClient;

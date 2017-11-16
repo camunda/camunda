@@ -116,10 +116,6 @@ public abstract class ScrollBasedImportIndexHandler
     if (hasNothingToImport()) {
       return OptionalDouble.empty();
     } else if (indexReachedMaxCount()) {
-      // todo
-      logger.debug("asodfas!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      logger.debug("MAX COUNT: {}", maxEntityCount);
-      logger.debug("Import Index: {}", importIndex);
       return OptionalDouble.of(100.0);
     } else {
       Long maxCount = Math.max(1, maxEntityCount);

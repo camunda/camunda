@@ -28,6 +28,11 @@ public class EngineImportJobScheduler extends Thread {
     isEnabled = false;
   }
 
+  public void enable() {
+    logger.debug("Scheduler was enabled and will soon start scheduling jobs");
+    isEnabled = true;
+  }
+
   @Override
   public void run() {
     while (isEnabled) {
