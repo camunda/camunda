@@ -1,0 +1,23 @@
+.DropdownOption,
+a.DropdownOption,
+button.DropdownOption {
+  display: block;
+  white-space: nowrap;
+  color: #333;
+  text-decoration: none;
+  padding: 6px 12px;
+  font-size: 1em;
+  background-color: white;
+  border: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 0;
+}
+
+.DropdownOption:hover,
+a.DropdownOption:hover,
+button.DropdownOption:hover {
+  background-color: #f2f2f2;
+  border: none;
+}

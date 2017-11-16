@@ -34,24 +34,6 @@
   margin: 0;
 }
 
-.Dropdown__menu-list a,
-.Dropdown__menu-list button {
-  display: block;
-  white-space: nowrap;
-  color: #333;
-  text-decoration: none;
-  padding: 6px 12px;
-  font-size: 1em;
-  background-color: white;
-  border: none;
-}
-
-.Dropdown__menu-list a:hover,
-.Dropdown__menu-list button:hover {
-  background-color: #f2f2f2;
-  border: none;
-}
-
 .Dropdown__caret {
   display: inline-block;
   width: 0;
@@ -61,12 +43,4 @@
   border-top: 4px dashed;
   border-right: 4px solid transparent;
   border-left: 4px solid transparent;
-}
-
-.Dropdown__menu-item .Button,
-.Dropdown__menu-item a.Button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border-radius: 0;
 }

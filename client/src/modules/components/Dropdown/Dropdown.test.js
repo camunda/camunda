@@ -7,6 +7,11 @@ jest.mock('components', () => {return {
   Button: ({children}) => <button>{children}</button>
 }});
 
+jest.mock('./DropdownOption', () => {return (props) => {
+    return <button className='DropdownOption'>{props.children}</button>;
+  }
+});
+
 it('should render without crashing', () => {
   mount(<Dropdown />);
 });
@@ -22,7 +27,7 @@ it('should display the child elements when clicking the trigger', () => {
     <Dropdown.Option>foo</Dropdown.Option>
   </Dropdown>);
 
-  node.find('.Button').simulate('click');
+  node.find('.Dropdown__button').simulate('click');
 
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
 })

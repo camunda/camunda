@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {Button} from 'components';
+import DropdownOption from './DropdownOption';
 
 import './Dropdown.css';
 
@@ -29,11 +30,11 @@ export default class Dropdown extends React.Component {
 
   render() {
     return (<div className={'Dropdown ' + (this.state.open ? 'is-open' : '')} ref={this.storeContainer} onClick={this.toggleOpen}>
-      <Button className="Button Dropdown__button" aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id}>{this.props.label} <span className='Dropdown__caret' /></Button>
+      <Button className="Dropdown__button" aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id}>{this.props.label} <span className='Dropdown__caret' /></Button>
       <div className="Dropdown__menu" aria-labelledby={this.props.id}>
         <ul className="Dropdown__menu-list">
           {React.Children.map(this.props.children,
-            (child, idx) => <li className="Dropdown__menu-item" key={idx}>{child}</li>
+            (child, idx) => <li key={idx}>{child}</li>
           )}
         </ul>
       </div>
@@ -49,4 +50,4 @@ export default class Dropdown extends React.Component {
   }
 }
 
-Dropdown.Option = Button;
+Dropdown.Option = DropdownOption;
