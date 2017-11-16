@@ -17,14 +17,14 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotPositionProvider;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.actor.ActorScheduler;
 
@@ -42,7 +42,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
     protected MetadataFilter customEventFilter;
     protected EventFilter customReprocessingEventFilter;
     protected boolean readOnly;
-    protected StreamProcessorErrorHandler errorHandler;
 
     protected final MetadataFilter versionFilter = (m) ->
     {
@@ -91,12 +90,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return this;
     }
 
-    public StreamProcessorService errorHandler(StreamProcessorErrorHandler errorHandler)
-    {
-        this.errorHandler = errorHandler;
-        return this;
-    }
-
     @Override
     public void start(ServiceStartContext ctx)
     {
@@ -120,11 +113,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
             reprocessingEventFilter = reprocessingEventFilter.and(customReprocessingEventFilter);
         }
 
-        if (errorHandler == null)
-        {
-            errorHandler = new DefaultStreamProcessorErrorHandler();
-        }
-
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
             .sourceStream(sourceStream)
             .targetStream(targetStream)
@@ -133,7 +121,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .actorScheduler(actorScheduler)
             .eventFilter(eventFilter)
             .reprocessingEventFilter(reprocessingEventFilter)
-            .errorHandler(errorHandler)
             .readOnly(readOnly)
             .build();
 
@@ -195,21 +182,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
             return metadataFilter.applies(metadata);
         }
 
-    }
-
-    protected static class DefaultStreamProcessorErrorHandler implements StreamProcessorErrorHandler
-    {
-        @Override
-        public boolean canHandle(Exception error)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onError(LoggedEvent failedEvent, Exception error)
-        {
-            return false;
-        }
     }
 
 }
