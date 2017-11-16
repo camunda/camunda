@@ -50,7 +50,8 @@ import io.zeebe.util.time.ClockUtil;
 @SuppressWarnings("rawtypes")
 public class RequestController implements BufferReader
 {
-    private static final long CMD_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    public static final int CMD_TIMEOUT_SECONDS = 5;
+    public static final long CMD_TIMEOUT = TimeUnit.SECONDS.toMillis(CMD_TIMEOUT_SECONDS);
 
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_FAILED = 1;
@@ -172,6 +173,16 @@ public class RequestController implements BufferReader
         return ErrorCode.PARTITION_NOT_FOUND == errorCode || ErrorCode.REQUEST_TIMEOUT == errorCode;
     }
 
+    protected Exception generateTimeoutException(String reason, Set<RemoteAddress> requestReceivers)
+    {
+        return new ClientException(
+                String.format("%s (timeout %d seconds). Request was: %s. Request receivers: %s",
+                        reason,
+                        CMD_TIMEOUT_SECONDS,
+                        currentRequestHandler.describeRequest(),
+                        requestReceivers));
+    }
+
     @Override
     public void wrap(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -221,9 +232,7 @@ public class RequestController implements BufferReader
 
             if (context.isRequestTimedOut())
             {
-                context.exception = new ClientException(
-                        "Cannot determine target partition for request (timeout). " +
-                            "Request was: " + currentRequestHandler.describeRequest(), context.exception);
+                context.exception = generateTimeoutException("Cannot determine target partition for request", context.contactedBrokers);
                 context.take(TRANSITION_FAILED);
             }
 
@@ -259,10 +268,7 @@ public class RequestController implements BufferReader
 
             if (context.isRequestTimedOut())
             {
-                context.exception = new ClientException(
-                        "Cannot execute request (timeout). " +
-                            "Request was: " + currentRequestHandler.describeRequest() +
-                            ". Contacted brokers: " + context.contactedBrokers.toString(), context.exception);
+                context.exception = generateTimeoutException("Cannot determine leader for partition", context.contactedBrokers);
                 context.take(TRANSITION_FAILED);
                 return 0;
             }
@@ -305,7 +311,7 @@ public class RequestController implements BufferReader
         }
 
     }
-    private static class AwaitTopologyRefreshState implements State<Context>
+    private class AwaitTopologyRefreshState implements State<Context>
     {
         @Override
         public int doWork(final Context context) throws Exception
@@ -327,6 +333,12 @@ public class RequestController implements BufferReader
                     context.take(TRANSITION_FAILED);
                 }
 
+                workCount += 1;
+            }
+            else if (context.isRequestTimedOut())
+            {
+                // exception is generated in the state that this transition returns to
+                context.take(TRANSITION_FAILED);
                 workCount += 1;
             }
 
@@ -366,6 +378,13 @@ public class RequestController implements BufferReader
                     request.close();
                 }
 
+                return 1;
+            }
+            else if (context.isRequestTimedOut())
+            {
+                context.exception = generateTimeoutException("No response received", context.contactedBrokers);
+                context.take(TRANSITION_FAILED);
+                request.close();
                 return 1;
             }
             else
@@ -507,8 +526,8 @@ public class RequestController implements BufferReader
 
     static class Context extends SimpleStateMachineContext
     {
-        public ClientRequest request;
-        protected Set<RemoteAddress> contactedBrokers = new HashSet<>();
+        ClientRequest request;
+        Set<RemoteAddress> contactedBrokers = new HashSet<>();
 
         CompletableFuture<Void> topologyRefreshFuture;
 

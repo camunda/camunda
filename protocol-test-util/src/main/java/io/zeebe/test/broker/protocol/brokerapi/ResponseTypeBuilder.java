@@ -15,33 +15,32 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class ResponseStub<R>
+public abstract class ResponseTypeBuilder<R>
 {
 
+    protected final Consumer<ResponseStub<R>> stubConsumer;
     protected final Predicate<R> activationFunction;
-    protected final MessageBuilder<R> responseWriter;
 
-    public ResponseStub(Predicate<R> activationFunction, MessageBuilder<R> responseWriter)
+    public ResponseTypeBuilder(
+            Consumer<ResponseStub<R>> stubConsumer,
+            Predicate<R> activationFunction)
     {
-        this.responseWriter = responseWriter;
         this.activationFunction = activationFunction;
+        this.stubConsumer = stubConsumer;
     }
 
-    public boolean applies(R request)
+    protected void respondWith(MessageBuilder<R> responseBuilder)
     {
-        return activationFunction.test(request);
+        final ResponseStub<R> responseStub = new ResponseStub<>(activationFunction, responseBuilder);
+        stubConsumer.accept(responseStub);
     }
 
-    public MessageBuilder<R> getResponseWriter()
+    public void doNotRespond()
     {
-        return responseWriter;
-    }
-
-    public boolean shouldRespond()
-    {
-        return responseWriter != null;
+        respondWith(null);
     }
 
 }

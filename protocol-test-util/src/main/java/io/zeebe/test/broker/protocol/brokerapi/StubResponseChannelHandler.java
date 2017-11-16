@@ -55,12 +55,12 @@ public class StubResponseChannelHandler implements ServerRequestHandler
 
     public void addExecuteCommandRequestStub(ResponseStub<ExecuteCommandRequest> stub)
     {
-        cmdRequestStubs.add(stub);
+        cmdRequestStubs.add(0, stub); // add to front such that more recent stubs override older ones
     }
 
     public void addControlMessageRequestStub(ResponseStub<ControlMessageRequest> stub)
     {
-        controlMessageStubs.add(stub);
+        controlMessageStubs.add(0, stub); // add to front such that more recent stubs override older ones
     }
 
     public List<ControlMessageRequest> getReceivedControlMessageRequests()
@@ -130,15 +130,23 @@ public class StubResponseChannelHandler implements ServerRequestHandler
         {
             if (stub.applies(request))
             {
-                final MessageBuilder<T> responseWriter = stub.getResponseWriter();
-                responseWriter.initializeFrom(request);
+                if (stub.shouldRespond())
+                {
+                    final MessageBuilder<T> responseWriter = stub.getResponseWriter();
+                    responseWriter.initializeFrom(request);
 
-                response.reset()
-                    .remoteAddress(requestSource)
-                    .requestId(requestId)
-                    .writer(responseWriter);
+                    response.reset()
+                        .remoteAddress(requestSource)
+                        .requestId(requestId)
+                        .writer(responseWriter);
 
-                return output.sendResponse(response);
+                    return output.sendResponse(response);
+                }
+                else
+                {
+                    // just ignore the request; this can be used to simulate requests that never return
+                    return true;
+                }
             }
         }
         return false;

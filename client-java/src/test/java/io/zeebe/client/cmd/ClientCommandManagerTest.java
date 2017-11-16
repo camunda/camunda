@@ -133,14 +133,17 @@ public class ClientCommandManagerTest
     }
 
     @Test
-    public void testTopicNotFoundResponse()
+    public void testPartitionNotFoundResponse()
     {
         // given
         stubPartitionNotFoundResponse();
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage(containsString("Cannot execute request (timeout)"));
+        exception.expectMessage(containsString("timeout 5 seconds"));
+        // when the partition is repeatedly not found, the client loops
+        // over refreshing the topology and making a request that fails and so on. The timeout
+        // kicks in at any point in that loop, so we cannot assert the exact error message any more specifically.
 
         // when
         createTaskCmd().execute();

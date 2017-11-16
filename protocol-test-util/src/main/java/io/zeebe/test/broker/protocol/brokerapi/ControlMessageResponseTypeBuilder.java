@@ -16,38 +16,32 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
-public class ErrorResponseBuilder<R>
+public class ControlMessageResponseTypeBuilder extends ResponseTypeBuilder<ControlMessageRequest>
 {
-    protected final Consumer<MessageBuilder<R>> registrationFunction;
-    protected final ErrorResponseWriter<R> commandResponseWriter;
+    protected MsgPackHelper msgPackConverter;
 
-    public ErrorResponseBuilder(
-            Consumer<MessageBuilder<R>> registrationFunction,
+    public ControlMessageResponseTypeBuilder(
+            Consumer<ResponseStub<ControlMessageRequest>> stubConsumer,
+            Predicate<ControlMessageRequest> activationFunction,
             MsgPackHelper msgPackConverter)
     {
-        this.registrationFunction = registrationFunction;
-        this.commandResponseWriter = new ErrorResponseWriter<>(msgPackConverter);
+        super(stubConsumer, activationFunction);
+        this.msgPackConverter = msgPackConverter;
     }
 
-    public ErrorResponseBuilder<R> errorCode(ErrorCode errorCode)
+    public ControlMessageResponseBuilder respondWith()
     {
-        this.commandResponseWriter.setErrorCode(errorCode);
-        return this;
+        return new ControlMessageResponseBuilder(this::respondWith, msgPackConverter);
     }
 
-    public ErrorResponseBuilder<R> errorData(String errorData)
+    public ErrorResponseBuilder<ControlMessageRequest> respondWithError()
     {
-        this.commandResponseWriter.setErrorData(errorData);
-        return this;
+        return new ErrorResponseBuilder<>(this::respondWith, msgPackConverter);
     }
 
-    public void register()
-    {
-        registrationFunction.accept(commandResponseWriter);
-    }
 
 }

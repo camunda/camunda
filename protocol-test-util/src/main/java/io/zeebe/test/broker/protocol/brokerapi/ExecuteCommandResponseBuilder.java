@@ -18,7 +18,6 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
@@ -26,18 +25,15 @@ import io.zeebe.test.util.collection.MapFactoryBuilder;
 public class ExecuteCommandResponseBuilder
 {
 
-    protected final Consumer<ResponseStub<ExecuteCommandRequest>> registrationFunction;
+    protected final Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction;
     protected final ExecuteCommandResponseWriter commandResponseWriter;
-    protected final Predicate<ExecuteCommandRequest> activationFunction;
 
     public ExecuteCommandResponseBuilder(
-            Consumer<ResponseStub<ExecuteCommandRequest>> registrationFunction,
-            MsgPackHelper msgPackConverter,
-            Predicate<ExecuteCommandRequest> activationFunction)
+            Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction,
+            MsgPackHelper msgPackConverter)
     {
         this.registrationFunction = registrationFunction;
         this.commandResponseWriter = new ExecuteCommandResponseWriter(msgPackConverter);
-        this.activationFunction = activationFunction;
         partitionId(r -> r.partitionId()); // default
     }
 
@@ -87,6 +83,6 @@ public class ExecuteCommandResponseBuilder
 
     public void register()
     {
-        registrationFunction.accept(new ResponseStub<>(activationFunction, commandResponseWriter));
+        registrationFunction.accept(commandResponseWriter);
     }
 }

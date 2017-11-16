@@ -170,11 +170,29 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot determine target partition for request (timeout). " +
+        exception.expectMessage("Cannot determine target partition for request (timeout 5 seconds). " +
                 "Request was: [ topic = foo, partition = any, event type = TASK ]");
 
         // when
         client.tasks().create(topic, "bar").execute();
+    }
+
+    @Test
+    public void shouldThrowExceptionOnTimeout()
+    {
+        // given
+        final TaskEventImpl baseEvent = Events.exampleTask();
+
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+            .doNotRespond();
+
+        // then
+        exception.expect(ClientException.class);
+        exception.expectMessage("No response received (timeout 5 seconds). " +
+                "Request was: [ topic = default-topic, partition = 99, event type = TASK ]");
+
+        // when
+        client.tasks().complete(baseEvent).execute();
     }
 
     @Test

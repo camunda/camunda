@@ -172,24 +172,26 @@ public class StubBrokerRule extends ExternalResource
         return eventType;
     }
 
-    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest()
+    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest()
     {
         return onExecuteCommandRequest((r) -> true);
     }
 
-    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(Predicate<ExecuteCommandRequest> activationFunction)
+    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(Predicate<ExecuteCommandRequest> activationFunction)
     {
-        return new ResponseBuilder<>(
-                new ExecuteCommandResponseBuilder(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction),
-                new ErrorResponseBuilder<>(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction));
+        return new ExecuteCommandResponseTypeBuilder(
+                channelHandler::addExecuteCommandRequestStub,
+                activationFunction,
+                msgPackHelper
+                );
     }
 
-    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(EventType eventType, String eventStatus)
+    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(EventType eventType, String eventStatus)
     {
         return onExecuteCommandRequest(ecr -> ecr.eventType() == eventType && eventStatus.equals(ecr.getCommand().get("state")));
     }
 
-    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(
+    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
             int partitionId,
             EventType eventType,
             String eventStatus)
@@ -200,16 +202,18 @@ public class StubBrokerRule extends ExternalResource
             eventStatus.equals(ecr.getCommand().get("state")));
     }
 
-    public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest()
+    public ControlMessageResponseTypeBuilder onControlMessageRequest()
     {
         return onControlMessageRequest((r) -> true);
     }
 
-    public ResponseBuilder<ControlMessageResponseBuilder, ErrorResponseBuilder<ControlMessageRequest>> onControlMessageRequest(Predicate<ControlMessageRequest> activationFunction)
+    public ControlMessageResponseTypeBuilder onControlMessageRequest(Predicate<ControlMessageRequest> activationFunction)
     {
-        return new ResponseBuilder<>(
-                new ControlMessageResponseBuilder(channelHandler::addControlMessageRequestStub, msgPackHelper, activationFunction),
-                new ErrorResponseBuilder<>(channelHandler::addControlMessageRequestStub, msgPackHelper, activationFunction));
+        return new ControlMessageResponseTypeBuilder(
+                channelHandler::addControlMessageRequestStub,
+                activationFunction,
+                msgPackHelper
+                );
     }
 
     public List<ControlMessageRequest> getReceivedControlMessageRequests()
@@ -232,15 +236,20 @@ public class StubBrokerRule extends ExternalResource
         return new SubscribedEventBuilder(msgPackHelper, transport);
     }
 
-    protected void stubTopologyRequest()
+    public void stubTopologyRequest()
     {
-        onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+        onTopologyRequest()
             .respondWith()
             .data()
                 .put("topicLeaders", r -> currentTopology.get().getTopicLeaders())
                 .put("brokers", r -> currentTopology.get().getBrokers())
                 .done()
             .register();
+    }
+
+    public ControlMessageResponseTypeBuilder onTopologyRequest()
+    {
+        return onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY);
     }
 
     public void addTopic(String topic, int partition)

@@ -17,7 +17,6 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
@@ -25,18 +24,15 @@ import io.zeebe.test.util.collection.MapFactoryBuilder;
 public class ControlMessageResponseBuilder
 {
 
-    protected final Consumer<ResponseStub<ControlMessageRequest>> registrationFunction;
+    protected final Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction;
     protected final ControlMessageResponseWriter responseWriter;
-    protected final Predicate<ControlMessageRequest> activationFunction;
 
     public ControlMessageResponseBuilder(
-            Consumer<ResponseStub<ControlMessageRequest>> registrationFunction,
-            MsgPackHelper msgPackConverter,
-            Predicate<ControlMessageRequest> activationFunction)
+            Consumer<MessageBuilder<ControlMessageRequest>> registrationFunction,
+            MsgPackHelper msgPackConverter)
     {
         this.registrationFunction = registrationFunction;
         this.responseWriter = new ControlMessageResponseWriter(msgPackConverter);
-        this.activationFunction = activationFunction;
     }
 
     public ControlMessageResponseBuilder respondWith()
@@ -58,6 +54,6 @@ public class ControlMessageResponseBuilder
 
     public void register()
     {
-        registrationFunction.accept(new ResponseStub<>(activationFunction, responseWriter));
+        registrationFunction.accept(responseWriter);
     }
 }
