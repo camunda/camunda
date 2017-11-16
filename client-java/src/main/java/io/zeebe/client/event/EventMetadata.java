@@ -35,7 +35,7 @@ public interface EventMetadata
 
     /**
      * @return the key of the event on this topic. Multiple events can have the same key if they
-     *   reflect state of the same logical entity. Keys are unique for the combination of topic and partition.
+     *   reflect state of the same logical entity. Keys are unique for the combination of topic, partition and entity type.
      */
     long getKey();
 
