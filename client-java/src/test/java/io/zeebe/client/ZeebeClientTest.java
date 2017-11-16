@@ -17,6 +17,7 @@ package io.zeebe.client;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,11 +29,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 
+import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.util.Events;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -48,6 +53,9 @@ public class ZeebeClientTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public TestName testContext = new TestName();
 
     protected ZeebeClientImpl client;
 
@@ -167,6 +175,40 @@ public class ZeebeClientTest
 
         // when
         client.tasks().create(topic, "bar").execute();
+    }
+
+    @Test
+    public void shouldIncludeCallingFrameInExceptionStacktrace()
+    {
+        // given
+        final TaskEventImpl baseEvent = Events.exampleTask();
+
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+            .respondWith()
+            .key(r -> r.key())
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "COMPLETE_REJECTED")
+              .done()
+            .register();
+
+        // when
+        try
+        {
+            client.tasks()
+                .complete(baseEvent)
+                .execute();
+            fail("should throw exception");
+        }
+        catch (ClientCommandRejectedException e)
+        {
+            // then
+            assertThat(e.getStackTrace()).anySatisfy(frame ->
+            {
+                assertThat(frame.getClassName()).isEqualTo(this.getClass().getName());
+                assertThat(frame.getMethodName()).isEqualTo(testContext.getMethodName());
+            });
+        }
     }
 
     protected TopicSubscription openSubscription()

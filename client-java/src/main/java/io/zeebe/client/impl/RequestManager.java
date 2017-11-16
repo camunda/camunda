@@ -19,11 +19,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import org.agrona.LangUtil;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.task.impl.ControlMessageRequest;
@@ -89,15 +88,8 @@ public class RequestManager implements Actor
     {
         final CompletableFuture<E> future = new CompletableFuture<>();
 
-        try
-        {
-            final RequestController ctrl = pooledCmds.take();
-            ctrl.configureCommandRequest(command, future);
-        }
-        catch (InterruptedException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
+        final RequestController ctrl = acquireRequestController();
+        ctrl.configureCommandRequest(command, future);
 
         return future;
     }
@@ -122,17 +114,22 @@ public class RequestManager implements Actor
     {
         final CompletableFuture<E> future = new CompletableFuture<>();
 
+        final RequestController ctrl = acquireRequestController();
+        ctrl.configureControlMessageRequest(controlMessage, future);
+
+        return future;
+    }
+
+    protected RequestController acquireRequestController()
+    {
         try
         {
-            final RequestController ctrl = pooledCmds.take();
-            ctrl.configureControlMessageRequest(controlMessage, future);
+            return pooledCmds.take();
         }
         catch (InterruptedException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new ClientException("Could not acquire request controller from pool", e);
         }
-
-        return future;
     }
 
     protected <E> E waitAndResolve(CompletableFuture<E> future)
@@ -143,11 +140,19 @@ public class RequestManager implements Actor
         }
         catch (final InterruptedException e)
         {
-            throw new RuntimeException("Interrupted while executing command");
+            throw new RuntimeException("Interrupted while waiting for command result", e);
         }
         catch (final ExecutionException e)
         {
-            throw (RuntimeException) e.getCause();
+            final Throwable cause = e.getCause();
+            if (cause instanceof ClientException)
+            {
+                throw ((ClientException) cause).newInCurrentContext();
+            }
+            else
+            {
+                throw new ClientException("Could not make request", e);
+            }
         }
     }
 

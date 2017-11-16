@@ -28,7 +28,12 @@ public class BrokerErrorException extends ClientException
 
     public BrokerErrorException(final ErrorCode errorCode, final String errorMessage)
     {
-        super(String.format(ERROR_MESSAGE_FORMAT, errorCode, errorMessage));
+        this(errorCode, errorMessage, null);
+    }
+
+    public BrokerErrorException(final ErrorCode errorCode, final String errorMessage, Throwable cause)
+    {
+        super(String.format(ERROR_MESSAGE_FORMAT, errorCode, errorMessage), cause);
 
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
@@ -42,5 +47,11 @@ public class BrokerErrorException extends ClientException
     public String getErrorMessage()
     {
         return errorMessage;
+    }
+
+    @Override
+    public ClientException newInCurrentContext()
+    {
+        return new BrokerErrorException(errorCode, errorMessage, this);
     }
 }

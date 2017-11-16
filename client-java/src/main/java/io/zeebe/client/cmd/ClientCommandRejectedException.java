@@ -26,4 +26,15 @@ public class ClientCommandRejectedException extends ClientException
     {
         super(errorMessage);
     }
+
+    public ClientCommandRejectedException(String errorMessage, Throwable cause)
+    {
+        super(errorMessage, cause);
+    }
+
+    @Override
+    public ClientException newInCurrentContext()
+    {
+        throw new ClientCommandRejectedException(getMessage(), this);
+    }
 }
