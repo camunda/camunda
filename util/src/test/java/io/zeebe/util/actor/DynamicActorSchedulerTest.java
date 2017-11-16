@@ -137,24 +137,22 @@ public class DynamicActorSchedulerTest
         actorRef.addDurationSample(2);
 
         // then
-        // the comments display the values which are calculate if the avg is an integer and not
-        // a floating point data type
-        assertThat(actorRef.getDuration()).isEqualTo(201.5); // 201
+        assertThat(actorRef.getDuration()).isEqualTo(201.5);
 
         actorRef.addDurationSample(5);
-        assertThat(actorRef.getDuration()).isEqualTo(2.75); // 2.25
+        assertThat(actorRef.getDuration()).isEqualTo(2.75);
 
         actorRef.addDurationSample(1);
-        assertThat(actorRef.getDuration()).isEqualTo(2.5); // 1.75
+        assertThat(actorRef.getDuration()).isEqualTo(2.5);
 
         actorRef.addDurationSample(1);
-        assertThat(actorRef.getDuration()).isEqualTo(2.25); // 0.75
+        assertThat(actorRef.getDuration()).isEqualTo(2.25);
 
         actorRef.addDurationSample(1);
-        assertThat(actorRef.getDuration()).isEqualTo(2); // -0.25
+        assertThat(actorRef.getDuration()).isEqualTo(2.0);
 
         actorRef.addDurationSample(1);
-        assertThat(actorRef.getDuration()).isEqualTo(1); // was -1
+        assertThat(actorRef.getDuration()).isEqualTo(1.0);
     }
 
     @Test
