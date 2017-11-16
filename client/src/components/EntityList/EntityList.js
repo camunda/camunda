@@ -76,11 +76,21 @@ export default class EntityList extends React.Component {
 
     const header = <h1>{this.props.label}s</h1>;
 
-    let table;
+    let list;
     if(loaded) {
-      table = <Table data={this.formatData(this.state.data)} />;
+      list = (<ul>
+        {this.formatData(this.state.data).map((row, idx) => {
+          return (<li key={idx}>
+            {row.map((cell, idx) => {
+              return (<span key={idx}>
+                {Table.renderCell(cell)}
+              </span>);
+            })}
+          </li>);
+        })}
+      </ul>);
     } else {
-      table = <div>loading...</div>;
+      list = <div>loading...</div>;
     }
 
     if(redirectToEntity !== false) {
@@ -89,7 +99,7 @@ export default class EntityList extends React.Component {
       return (<section>
         {createButton}
         {header}
-        {table}
+        {list}
         {this.props.children}
       </section>);
     }

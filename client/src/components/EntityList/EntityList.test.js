@@ -42,13 +42,9 @@ jest.mock('moment', () => (...params) => {
 
 jest.mock('components', () => {
   return {
-    Table: ({data}) => <table>
-      <tbody>
-      <tr>
-        <td>{JSON.stringify(data)}</td>
-      </tr>
-      </tbody>
-    </table>
+    Table: {
+      renderCell: cell => <span>{JSON.stringify(cell)}</span>
+    }
   }
 });
 
@@ -72,7 +68,7 @@ it('should only load the specified amount of results', () => {
   expect(load).toHaveBeenCalledWith('endpoint', '5', undefined);
 });
 
-it('should display a table with the results', () => {
+it('should display a list with the results', () => {
   const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
 
   node.setState({
@@ -83,6 +79,7 @@ it('should display a table with the results', () => {
   expect(node).toIncludeText(sampleEntity.name);
   expect(node).toIncludeText(sampleEntity.lastModifier);
   expect(node).toIncludeText('some date');
+  expect(node.find('ul')).toBePresent();
 });
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {

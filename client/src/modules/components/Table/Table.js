@@ -9,7 +9,7 @@ export default function Table({data}) {
         return (<tr key={idx}>
           {row.map((cell, idx) => {
             return (<td key={idx}>
-              {renderCell(cell)}
+              {Table.renderCell(cell)}
             </td>);
           })}
         </tr>);
@@ -18,7 +18,7 @@ export default function Table({data}) {
   </table>);
 }
 
-function renderCell(cell) {
+Table.renderCell = cell => {
   if(typeof cell !== 'object') {
     return cell;
   }
