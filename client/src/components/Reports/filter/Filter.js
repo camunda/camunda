@@ -4,6 +4,9 @@ import {Dropdown} from 'components';
 
 import {DateFilter, VariableFilter, NodeFilter} from './modals';
 
+import FilterList from './FilterList';
+import './Filter.css';
+
 export default class Filter extends React.Component {
   constructor(props) {
     super(props);
@@ -30,33 +33,21 @@ export default class Filter extends React.Component {
     }
   }
 
-  addFilter = ({type, data}) => {
-    const newFilter = (this.props.data && {...this.props.data}) || {};
-
-    switch(type) {
-      case 'date':
-        newFilter.dates = [{
-          type: 'start_date',
-          operator: '>=',
-          value: data.start
-        }, {
-          type: 'start_date',
-          operator: '<=',
-          value: data.end
-        }];
-        break;
-      default: return;
-    }
-
-    this.props.onChange('filter', newFilter);
-
+  addFilter = (...newFilters) => {
+    this.props.onChange('filter', [...this.props.data, ...newFilters]);
     this.closeModal();
+  }
+
+  deleteFilter = (...oldFilters) => {
+    this.props.onChange('filter', [...this.props.data.filter(filter => !oldFilters.includes(filter))]);
   }
 
   render() {
     const FilterModal = this.getFilterModal();
 
-    return (<div style={{display: 'inline-block'}}>
+    return (<div className='Filter'>
+      Filter:
+      <FilterList data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter'>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>

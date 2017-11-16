@@ -22,8 +22,16 @@ export default class DateFilter extends React.Component {
     this.props.addFilter({
       type: 'date',
       data: {
-        start: this.state.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        end: this.state.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
+        type: 'start_date',
+        operator: '>=',
+        value: this.state.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')
+      }
+    }, {
+      type: 'date',
+      data: {
+        type: 'start_date',
+        operator: '<=',
+        value: this.state.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
       }
     });
   }

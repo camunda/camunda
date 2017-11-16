@@ -1,0 +1,24 @@
+.FilterList {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.FilterList__item {
+  list-style-type: none;
+  display: inline-block;
+  margin: 0 .5em;
+  border: 1px solid lightgray;
+}
+
+.FilterList__itemConnector {
+  list-style-type: none;
+  display: inline-block;
+}
+
+.FilterList__deleteButton,
+.FilterList__deleteButton:hover,
+.FilterList__deleteButton:active {
+  border: 0;
+  border-radius: 0;
+}

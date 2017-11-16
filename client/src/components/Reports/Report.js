@@ -33,7 +33,7 @@ export default class Report extends React.Component {
       view: {operation: 'count', entity: 'processInstance'},
       groupBy: {type: 'none', unit: null},
       visualization: 'json',
-      filter: null
+      filter: []
     };
 
     this.setState({
@@ -103,11 +103,11 @@ export default class Report extends React.Component {
 
     return (
       <div>
-        <input id={'name'} type='text' onChange={this.updateName} value={name || ''}></input>
+        <input id='name' type='text' onChange={this.updateName} value={name || ''}></input>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
-          <Link id={'save'} className="Button" to={`/report/${this.id}`} onClick={this.save}>Save</Link>
-          <Link id={'cancel'} className="Button" to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+          <Link id='save' className="Button" to={`/report/${this.id}`} onClick={this.save}>Save</Link>
+          <Link id='cancel' className="Button" to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
           <ControlPanel {...data} onChange={this.updateReport} />
         </div>
 
@@ -124,7 +124,7 @@ export default class Report extends React.Component {
         <h1>{name}</h1>
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
-          <Link id={'edit'} className="Button" to={`/report/${this.id}/edit`}>Edit</Link>
+          <Link id='edit' className="Button" to={`/report/${this.id}/edit`}>Edit</Link>
           <button className="Button" onClick={this.deleteReport}>Delete</button>
         </div>
 
