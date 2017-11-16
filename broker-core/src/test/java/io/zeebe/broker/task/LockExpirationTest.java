@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +53,41 @@ public class LockExpirationTest
     }
 
     @Test
+    public void shouldExpireLockedTask() throws InterruptedException
+    {
+        // given
+        ClockUtil.setCurrentTime(Instant.now());
+
+        final String taskType = "foo";
+        final long taskKey1 = createTask(taskType);
+
+        final long lockTime = 1000L;
+
+        apiRule.openTaskSubscription(
+            apiRule.getDefaultPartitionId(),
+            taskType,
+            lockTime);
+
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+        apiRule.moveMessageStreamToTail();
+
+        // when expired
+        ClockUtil.addTime(Duration.ofSeconds(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL + 1));
+
+        // then locked again
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+
+        final List<SubscribedEvent> events = apiRule.topic()
+                                                     .receiveEvents(TestTopicClient.taskEvents())
+                                                     .limit(8)
+                                                     .collect(Collectors.toList());
+
+        assertThat(events).extracting(e -> e.key()).contains(taskKey1);
+        assertThat(events).extracting(e -> e.event().get("state"))
+                          .containsExactly("CREATE", "CREATED", "LOCK", "LOCKED", "EXPIRE_LOCK", "LOCK_EXPIRED", "LOCK", "LOCKED");
+    }
+
+    @Test
     public void shouldExpireMultipleLockedTasksAtOnce() throws InterruptedException
     {
         // given
@@ -71,19 +107,23 @@ public class LockExpirationTest
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2); // both tasks locked
         apiRule.moveMessageStreamToTail();
 
+        // when
         ClockUtil.addTime(Duration.ofSeconds(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL + 1));
 
-        // when
+        // then
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
-        // then
-        final List<SubscribedEvent> lockEvents = apiRule.subscribedEvents().limit(2).collect(Collectors.toList());
+        final List<SubscribedEvent> events = apiRule.topic()
+                                                    .receiveEvents(TestTopicClient.taskEvents())
+                                                    .limit(16)
+                                                    .collect(Collectors.toList());
 
-        assertThat(lockEvents).hasSize(2);
-
-        assertThat(lockEvents).extracting(e -> e.key()).contains(taskKey1, taskKey2);
-        assertThat(lockEvents).extracting(e -> e.event().get("state")).containsExactly("LOCKED", "LOCKED");
-
+        assertThat(events).extracting(e -> e.key()).contains(taskKey1, taskKey2);
+        assertThat(events).extracting(e -> e.event().get("state"))
+                          .containsExactlyInAnyOrder("CREATE", "CREATED", "CREATE", "CREATED",
+                                           "LOCK", "LOCK", "LOCKED", "LOCKED",
+                                           "EXPIRE_LOCK", "EXPIRE_LOCK", "LOCK_EXPIRED", "LOCK_EXPIRED",
+                                           "LOCK", "LOCKED", "LOCK", "LOCKED");
 
     }
 

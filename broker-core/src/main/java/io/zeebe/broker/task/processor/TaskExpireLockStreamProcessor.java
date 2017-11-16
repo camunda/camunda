@@ -18,10 +18,7 @@
 package io.zeebe.broker.task.processor;
 
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-
-import java.util.HashMap;
-import java.util.Iterator;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
@@ -33,17 +30,25 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.snapshot.SerializableWrapper;
+import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.ZbMapIterator;
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
+import io.zeebe.map.types.ByteArrayValueHandler;
+import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskExpireLockStreamProcessor implements StreamProcessor
 {
-    protected static final int INDEX_VALUE_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
+    protected static final int MAP_VALUE_MAX_LENGTH = SIZE_OF_LONG + SIZE_OF_LONG;
 
     protected final EventProcessor lockedEventProcessor = new LockedEventProcessor();
     protected final EventProcessor unlockEventProcessor = new UnlockEventProcessor();
@@ -51,9 +56,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     protected final Runnable checkLockExpirationCmd = new CheckLockExpirationCmd();
 
-    // TODO #161 - replace the map by a more efficient one
-    protected HashMap<Long, ExpirationTimeBucket> index = new HashMap<>();
-    protected SerializableWrapper<HashMap<Long, ExpirationTimeBucket>> indexSnapshot = new SerializableWrapper<>(index);
+    protected Long2BytesZbMap expirationMap = new Long2BytesZbMap(MAP_VALUE_MAX_LENGTH);
+    protected ZbMapSnapshotSupport<Long2BytesZbMap> mapSnapshotSupport = new ZbMapSnapshotSupport<>(expirationMap);
 
     protected DeferredCommandContext cmdQueue;
 
@@ -74,7 +78,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     @Override
     public SnapshotSupport getStateResource()
     {
-        return indexSnapshot;
+        return mapSnapshotSupport;
     }
 
     @Override
@@ -89,7 +93,13 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         targetLogStreamPartitionId = targetStream.getPartitionId();
 
         // restore map from snapshot
-        index = indexSnapshot.getObject();
+        expirationMap = mapSnapshotSupport.getZbMap();
+    }
+
+    @Override
+    public void onClose()
+    {
+        expirationMap.close();
     }
 
     public static MetadataFilter eventFilter()
@@ -130,6 +140,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     class LockedEventProcessor implements EventProcessor
     {
+        UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAP_VALUE_MAX_LENGTH]);
 
         @Override
         public void processEvent()
@@ -140,8 +151,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            final ExpirationTimeBucket expirationTimeBucket = new ExpirationTimeBucket(eventPosition, taskEvent.getLockTime());
-            index.put(eventKey, expirationTimeBucket);
+            buffer.putLong(0, eventPosition);
+            buffer.putLong(SIZE_OF_LONG, taskEvent.getLockTime());
+
+            expirationMap.put(eventKey, buffer);
         }
 
     }
@@ -158,7 +171,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            index.remove(eventKey);
+            expirationMap.remove(eventKey);
         }
 
     }
@@ -188,29 +201,55 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     class CheckLockExpirationCmd implements Runnable
     {
+        private final Long2BytesZbMapEntry entry = new Long2BytesZbMapEntry();
+        private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+
+        private int entryIndex = 0;
+        private final ExpandableArrayBuffer toRemoveEntries = new ExpandableArrayBuffer(1024 * SIZE_OF_LONG);
+
         @Override
         public void run()
         {
-            if (index.size() > 0)
+            final ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry> iterator = new ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry>(expirationMap, entry);
+
+            while (iterator.hasNext())
             {
-                final Iterator<Long> eventKeyIt = index.keySet().iterator();
+                iterator.next();
 
-                while (eventKeyIt.hasNext())
+                final long eventKey = entry.getKey();
+                final DirectBuffer value = entry.getValue();
+                buffer.wrap(value);
+
+                final long eventPosition = buffer.getLong(0);
+                final long lockExpirationTime = buffer.getLong(SIZE_OF_LONG);
+
+                if (lockExpired(lockExpirationTime))
                 {
-                    final long eventKey = eventKeyIt.next();
-                    final ExpirationTimeBucket expirationTimeBucket = index.get(eventKey);
-
-                    final long eventPosition = expirationTimeBucket.getEventPosition();
-                    final long lockExpirationTime = expirationTimeBucket.getExpirationTime();
-
-                    if (lockExpired(lockExpirationTime))
+                    final LoggedEvent taskLockedEvent = findEvent(eventPosition);
+                    final long position = writeLockExpireEvent(eventKey, taskLockedEvent);
+                    final boolean successfulWritten = position >= 0;
+                    if (successfulWritten)
                     {
-                        final LoggedEvent taskLockedEvent = findEvent(eventPosition);
-                        writeLockExpireEvent(eventKey, taskLockedEvent);
-                        eventKeyIt.remove();
+                        lastWrittenEventPosition = position;
+                        // add to remove entries
+                        toRemoveEntries.putLong(entryIndex++, eventKey);
                     }
                 }
             }
+
+            // iterate over the entries which should be removed
+            for (int i = 0; i < entryIndex; i++)
+            {
+                final long eventKey = toRemoveEntries.getLong(0);
+                if (eventKey > 0)
+                {
+                    expirationMap.remove(eventKey);
+                }
+            }
+
+            // reset
+            toRemoveEntries.setMemory(0, toRemoveEntries.capacity(), (byte) 0);
+            entryIndex = 0;
         }
 
         protected boolean lockExpired(long lockExpirationTime)
@@ -232,7 +271,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             }
         }
 
-        protected void writeLockExpireEvent(long eventKey, final LoggedEvent lockedEvent)
+        protected long writeLockExpireEvent(long eventKey, final LoggedEvent lockedEvent)
         {
             taskEvent.reset();
             lockedEvent.readValue(taskEvent);
@@ -252,10 +291,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
                     .valueWriter(taskEvent)
                     .tryWrite();
 
-            if (position >= 0)
-            {
-                lastWrittenEventPosition = position;
-            }
+            return position;
         }
     }
 
