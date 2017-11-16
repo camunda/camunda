@@ -96,9 +96,6 @@ public class StreamProcessorControllerTest
     @Mock
     private LoggedEvent mockTargetEvent;
 
-    @Mock
-    private StreamProcessorErrorHandler mockErrorHandler;
-
     private LogStreamFailureListener targetLogStreamFailureListener;
 
     protected ControllableEventFilter eventFilter;
@@ -130,8 +127,7 @@ public class StreamProcessorControllerTest
                 .snapshotPositionProvider(mockSnapshotPositionProvider)
                 .streamProcessorCmdQueue(streamProcessorCmdQueue)
                 .eventFilter(eventFilter)
-                .reprocessingEventFilter(reprocessingEventFilter)
-                .errorHandler(mockErrorHandler);
+                .reprocessingEventFilter(reprocessingEventFilter);
 
         when(mockTaskScheduler.schedule(any())).thenReturn(mockActorRef);
 
@@ -1282,13 +1278,11 @@ public class StreamProcessorControllerTest
      * <p>If you extend/change the behavior, please make sure the current behavior is maintained
      */
     @Test
-    public void shouldFailIfProcessingErrorIsNotHandled()
+    public void shouldFailIfProcessingErrorOccurs()
     {
         mockSourceLogStreamReader.addEvent(mockSourceEvent);
 
         doThrow(new RuntimeException("expected exception")).when(mockEventProcessor).executeSideEffects();
-
-        when(mockErrorHandler.canHandle(any())).thenReturn(false);
 
         open();
 
@@ -1309,7 +1303,7 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldFailIfReprocessingErrorIsNotHandled()
+    public void shouldFailIfReprocessingErrorOccures()
     {
         when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
         when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
@@ -1323,8 +1317,6 @@ public class StreamProcessorControllerTest
         final RuntimeException expectedException = new RuntimeException("expected exception");
         doThrow(expectedException).when(mockStreamProcessor).onEvent(mockSourceEvent);
 
-        when(mockErrorHandler.canHandle(any())).thenReturn(false);
-
         open();
         // -> recovery - no more events
         controller.doWork();
@@ -1338,99 +1330,6 @@ public class StreamProcessorControllerTest
         controller.doWork();
 
         assertThat(controller.isFailed()).isTrue();
-    }
-
-    @Test
-    public void shouldHandleProcessingError()
-    {
-        // given two events
-        mockSourceLogStreamReader.addEvent(mockSourceEvent);
-        final LoggedEvent secondEvent = eventAt(1L);
-        mockSourceLogStreamReader.addEvent(secondEvent);
-
-        final RuntimeException expectedException = new RuntimeException("expected exception");
-        doThrow(expectedException).when(mockEventProcessor).executeSideEffects();
-
-        when(mockErrorHandler.canHandle(any())).thenReturn(true);
-        when(mockErrorHandler.onError(any(), any())).thenReturn(true);
-
-        // when process the first event
-        open();
-
-        controller.doWork();
-        controller.doWork();
-        controller.doWork();
-
-        // then the occurred error is handled
-        verify(mockErrorHandler).onError(mockSourceEvent, expectedException);
-        assertThat(controller.isOpen()).isTrue();
-
-        // and continue with the second event
-        controller.doWork();
-        controller.doWork();
-
-        verify(mockStreamProcessor).onEvent(secondEvent);
-    }
-
-    @Test
-    public void shouldRetryUntilProcessingErrorIsHandled()
-    {
-        // given
-        mockSourceLogStreamReader.addEvent(mockSourceEvent);
-
-        final RuntimeException expectedException = new RuntimeException("expected exception");
-        doThrow(expectedException).when(mockEventProcessor).executeSideEffects();
-
-        when(mockErrorHandler.canHandle(any())).thenReturn(true);
-        when(mockErrorHandler.onError(any(), any())).thenReturn(false, true);
-
-        // when
-        open();
-
-        // -> open, processing, error handling
-        controller.doWork();
-        controller.doWork();
-        controller.doWork();
-        // -> retry
-        controller.doWork();
-
-        // then
-        verify(mockErrorHandler, times(2)).onError(mockSourceEvent, expectedException);
-        assertThat(controller.isOpen()).isTrue();
-    }
-
-    @Test
-    public void shouldHandleReprocessingError()
-    {
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
-        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
-
-        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
-        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
-
-        final LoggedEvent eventBefore = eventAt(2L);
-        mockSourceLogStreamReader.addEvent(eventBefore);
-
-        when(mockSourceEvent.getPosition()).thenReturn(3L);
-        mockSourceLogStreamReader.addEvent(mockSourceEvent);
-
-        final RuntimeException expectedException = new RuntimeException("expected exception");
-        doThrow(expectedException).when(mockStreamProcessor).onEvent(eventBefore);
-
-        when(mockErrorHandler.canHandle(any())).thenReturn(true);
-
-        open();
-        // -> recovery - no more events
-        controller.doWork();
-
-        // then the occurred error is handled
-        verify(mockErrorHandler).canHandle(expectedException);
-        assertThat(controller.isOpen()).isTrue();
-
-        verify(mockStreamProcessor).onEvent(mockSourceEvent);
-        verify(mockEventProcessor).processEvent();
-        verify(mockEventProcessor).updateState();
-        verify(mockStreamProcessor).afterEvent();
     }
 
     @Test

@@ -47,8 +47,6 @@ public class StreamProcessorBuilder
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
-    protected StreamProcessorErrorHandler errorHandler;
-
     protected DeferredCommandContext streamProcessorCmdQueue;
 
     protected boolean readOnly;
@@ -126,12 +124,6 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder errorHandler(StreamProcessorErrorHandler errorHandler)
-    {
-        this.errorHandler = errorHandler;
-        return this;
-    }
-
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
@@ -173,11 +165,6 @@ public class StreamProcessorBuilder
         {
             logStreamWriter = new LogStreamWriterImpl();
         }
-
-        if (errorHandler == null)
-        {
-            errorHandler = new DefaultErrorHandler();
-        }
     }
 
     public StreamProcessorController build()
@@ -209,23 +196,6 @@ public class StreamProcessorBuilder
         ctx.setReprocessingEventFilter(reprocessingEventFilter);
         ctx.setReadOnly(readOnly);
 
-        ctx.setErrorHandler(errorHandler);
-
         return new StreamProcessorController(ctx);
-    }
-
-    private static final class DefaultErrorHandler implements StreamProcessorErrorHandler
-    {
-        @Override
-        public boolean canHandle(Exception error)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onError(LoggedEvent failedEvent, Exception error)
-        {
-            return false;
-        }
     }
 }

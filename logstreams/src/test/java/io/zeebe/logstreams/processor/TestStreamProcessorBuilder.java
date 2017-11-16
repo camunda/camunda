@@ -15,12 +15,8 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPositionProvider;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.ActorScheduler;
 
@@ -89,12 +85,6 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     public TestStreamProcessorBuilder reprocessingEventFilter(EventFilter eventFilter)
     {
         return (TestStreamProcessorBuilder) super.reprocessingEventFilter(eventFilter);
-    }
-
-    @Override
-    public TestStreamProcessorBuilder errorHandler(StreamProcessorErrorHandler streamProcessorErrorHandler)
-    {
-        return (TestStreamProcessorBuilder) super.errorHandler(streamProcessorErrorHandler);
     }
 
     public TestStreamProcessorBuilder sourceLogStreamReader(LogStreamReader sourceLogStreamReader)

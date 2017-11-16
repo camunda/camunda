@@ -15,12 +15,8 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPositionProvider;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.ActorScheduler;
 
@@ -47,8 +43,6 @@ public class StreamProcessorContext
 
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
-
-    protected StreamProcessorErrorHandler streamProcessorErrorHandler;
 
     protected DeferredCommandContext streamProcessorCmdContext;
 
@@ -210,16 +204,6 @@ public class StreamProcessorContext
     public boolean isReadOnlyProcessor()
     {
         return isReadOnlyProcessor;
-    }
-
-    public void setErrorHandler(StreamProcessorErrorHandler streamProcessorErrorHandler)
-    {
-        this.streamProcessorErrorHandler = streamProcessorErrorHandler;
-    }
-
-    public StreamProcessorErrorHandler getErrorHandler()
-    {
-        return streamProcessorErrorHandler;
     }
 
 }
