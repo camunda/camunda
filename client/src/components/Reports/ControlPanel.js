@@ -72,20 +72,20 @@ export default class ControlPanel extends React.Component {
   render() {
     return <div>
       ProcessDefinition:
-      <select value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+      <select className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
         <option value='' disabled>Please select process instance</option>
         {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
       </select>
       View:
-      <select value={parseView(this.props.view)} onChange={this.changeView}>
+      <select className='Select' value={parseView(this.props.view)} onChange={this.changeView}>
         {renderOptions('view')}
       </select>
       Group By:
-      <select value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
+      <select className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
         {renderOptions('groupBy')}
       </select>
       Visualize as:
-      <select value={this.props.visualization} onChange={this.changeVisualization}>
+      <select className='Select' value={this.props.visualization} onChange={this.changeVisualization}>
         {renderOptions('visualizeAs')}
       </select>
       <Filter data={this.props.filter} onChange={this.props.onChange} />

@@ -42,7 +42,7 @@ export default class ReportSelectionModal extends React.Component {
         <div className='report-selection-modal--modal-content'>
           <span className='report-selection-modal--close' onClick={this.closeModal}>&times;</span>
           <p>Select a report from the list</p>
-          <select value={this.state.selectedReport} onChange={this.changeReport.bind(this)}>
+          <select className='Select' value={this.state.selectedReport} onChange={this.changeReport.bind(this)}>
             <option value=''>Please select report</option>
             {this.state.data.map(report => <option value={report.id} key={report.id}>{report.name}</option>)}
           </select>
