@@ -343,9 +343,4 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
         this.innerValue = innerValue;
     }
 
-    public void markAsModified()
-    {
-        modified = true;
-    }
-
 }
