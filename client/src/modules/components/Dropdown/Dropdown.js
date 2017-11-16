@@ -33,7 +33,7 @@ export default class Dropdown extends React.Component {
       <div className="Dropdown__menu" aria-labelledby={this.props.id}>
         <ul className="Dropdown__menu-list">
           {React.Children.map(this.props.children,
-            (child, idx) => <li key={idx}>{child}</li>
+            (child, idx) => <li className="Dropdown__menu-item" key={idx}>{child}</li>
           )}
         </ul>
       </div>

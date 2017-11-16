@@ -62,3 +62,11 @@
   border-right: 4px solid transparent;
   border-left: 4px solid transparent;
 }
+
+.Dropdown__menu-item .Button,
+.Dropdown__menu-item a.Button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 0;
+}
