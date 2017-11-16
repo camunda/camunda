@@ -46,9 +46,21 @@ import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.slf4j.Logger;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
+
+    public static final Logger LOG = Loggers.CLIENT_LOGGER;
+
+    public static final String VERSION;
+
+    static
+    {
+        final String version = ZeebeClient.class.getPackage().getImplementationVersion();
+        VERSION = version != null ? version : "development";
+    }
+
     protected final Properties initializationProperties;
 
     protected SocketAddress contactPoint;
@@ -74,6 +86,8 @@ public class ZeebeClientImpl implements ZeebeClient
 
     public ZeebeClientImpl(final Properties properties)
     {
+        LOG.info("Version: {}", VERSION);
+
         ClientProperties.setDefaults(properties);
         this.initializationProperties = properties;
 

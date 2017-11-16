@@ -33,6 +33,14 @@ public class Broker implements AutoCloseable
 {
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
+    public static final String VERSION;
+
+    static
+    {
+        final String version = Broker.class.getPackage().getImplementationVersion();
+        VERSION = version != null ? version : "development";
+    }
+
     protected final SystemContext brokerContext;
     protected boolean isClosed = false;
 
@@ -59,6 +67,8 @@ public class Broker implements AutoCloseable
 
     protected void start()
     {
+        LOG.info("Version: {}", VERSION);
+
         brokerContext.addComponent(new SystemComponent());
         brokerContext.addComponent(new TransportComponent());
         brokerContext.addComponent(new LogStreamsComponent());
