@@ -18,7 +18,7 @@ public abstract class EngineImportJob<ENG extends EngineDto, OPT extends Optimiz
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   private PAGE importPage;
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private MissingEntitiesFinder<ENG> missingActivityFinder;
   protected EngineEntityFetcher<ENG, PAGE> engineEntityFetcher;
 

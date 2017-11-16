@@ -2,6 +2,8 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Entity;
@@ -15,8 +17,13 @@ import java.util.Set;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_IDS;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UnfinishedProcessInstanceFetcher extends
   RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto, IdSetBasedImportPage> {
+
+  public UnfinishedProcessInstanceFetcher(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   public List<HistoricProcessInstanceDto> fetchEntities(IdSetBasedImportPage page) {

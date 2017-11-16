@@ -8,7 +8,6 @@ import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIn
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -28,9 +27,6 @@ public abstract class DefinitionBasedImportIndexHandler
 
   @Autowired
   protected DefinitionBasedImportIndexReader importIndexReader;
-  @Autowired
-  protected ConfigurationService configurationService;
-  @Autowired
   protected ProcessDefinitionFetcher engineEntityFetcher;
 
   protected List<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
@@ -39,7 +35,7 @@ public abstract class DefinitionBasedImportIndexHandler
   protected DefinitionImportInformation currentIndex = new ProcessDefinitionInformationNotAvailable();
   protected Long totalEntitiesImported = 0L;
 
-  protected String engineAlias = "1";
+  protected String engineAlias;
 
   protected void init() {
     resetCurrentIndex();

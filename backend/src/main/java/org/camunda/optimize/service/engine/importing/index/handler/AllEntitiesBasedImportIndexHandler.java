@@ -13,18 +13,15 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
   extends BackoffImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   @Autowired
   protected ImportIndexReader importIndexReader;
 
-  @Autowired
-  protected ConfigurationService configurationService;
-
   protected long importIndex = 0;
   protected long maxEntityCount = 0;
+  protected String engineAlias;
 
   protected void init() {
     readIndexFromElasticsearch();

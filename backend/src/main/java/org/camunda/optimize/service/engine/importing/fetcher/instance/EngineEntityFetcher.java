@@ -22,6 +22,12 @@ public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends Im
   @Autowired
   protected ConfigurationService configurationService;
 
+  protected String engineAlias;
+
+  public EngineEntityFetcher(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
   /**
    * Queries the engine to fetch the entities from there given a page,
    * which contains all the information of which chunk of data should be fetched.
@@ -29,7 +35,7 @@ public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends Im
   public abstract List<ENG> fetchEngineEntities(PAGE page);
 
   protected String getEngineAlias() {
-    return configurationService.getConfiguredEngines().keySet().iterator().next();
+    return engineAlias;
   }
 
 }

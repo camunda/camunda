@@ -2,6 +2,10 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
+import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.GenericType;
@@ -16,8 +20,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_ID;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionFetcher
   extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto, AllEntitiesBasedImportPage> {
+
+  public ProcessDefinitionFetcher(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   public List<ProcessDefinitionEngineDto> fetchEntities(AllEntitiesBasedImportPage page) {

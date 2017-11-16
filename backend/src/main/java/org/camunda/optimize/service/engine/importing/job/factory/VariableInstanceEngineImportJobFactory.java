@@ -10,32 +10,37 @@ import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImport
 import org.camunda.optimize.service.engine.importing.job.VariableInstanceEngineImportJob;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.VariableWriter;
+import org.camunda.optimize.service.util.EngineInstanceHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Optional;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceEngineImportJobFactory implements EngineImportJobFactory {
 
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private VariableInstanceImportIndexHandler importIndexHandler;
   private MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder;
-
-  @Autowired
   private VariableInstanceFetcher engineEntityFetcher;
 
+  @Autowired
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  @Autowired
+  private EngineInstanceHelper engineInstanceHelper;
 
   @Autowired
   private ConfigurationService configurationService;
-  @Autowired
-  private ApplicationContext applicationContext;
 
   @Autowired
-  private org.elasticsearch.client.Client esClient;
+  private Client esClient;
 
   @Autowired
   private VariableWriter variableWriter;
@@ -46,9 +51,16 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
   @Autowired
   private ImportIndexHandlerProvider provider;
 
+  protected String engineAlias;
+
+  public VariableInstanceEngineImportJobFactory(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
   @PostConstruct
   public void init(){
-    importIndexHandler = provider.getVariableInstanceImportIndexHandler();
+    importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineAlias);
+    engineEntityFetcher = engineInstanceHelper.getInstance(VariableInstanceFetcher.class, engineAlias);
     missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, getElasticsearchType());
   }
 

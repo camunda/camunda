@@ -2,7 +2,7 @@ package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
-import org.camunda.optimize.service.engine.importing.EngineImportBuilder;
+import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
@@ -11,6 +11,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
 import org.junit.rules.TestWatcher;
@@ -63,20 +64,26 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void storeImportIndexesToElasticsearch() {
-    StoreIndexesEngineImportJobFactory storeIndexesEngineImportJobFactory =
-      getApplicationContext().getBean(StoreIndexesEngineImportJobFactory.class);
-    storeIndexesEngineImportJobFactory.disableBlocking();
+    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+      StoreIndexesEngineImportJobFactory storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportJobFactory)
+              getApplicationContext().getBean(
+                  BeanHelper.getBeanName(StoreIndexesEngineImportJobFactory.class),
+                  engineAlias
+              );
+      storeIndexesEngineImportJobFactory.disableBlocking();
 
-    Runnable storeIndexesEngineImportJob =
-      storeIndexesEngineImportJobFactory.getNextJob().get();
+      Runnable storeIndexesEngineImportJob =
+          storeIndexesEngineImportJobFactory.getNextJob().get();
 
-    try {
-      getEngineImportJobExecutor().executeImportJob(storeIndexesEngineImportJob);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+      try {
+        getEngineImportJobExecutor().executeImportJob(storeIndexesEngineImportJob);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      makeSureAllScheduledJobsAreFinished();
     }
 
-    makeSureAllScheduledJobsAreFinished();
   }
 
   private void makeSureAllScheduledJobsAreFinished() {
@@ -117,8 +124,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  private EngineImportBuilder getImportSchedulerFactory() {
-    return getOptimize().getApplicationContext().getBean(EngineImportBuilder.class);
+  private EngineImportJobSchedulerFactory getImportSchedulerFactory() {
+    return getOptimize().getApplicationContext().getBean(EngineImportJobSchedulerFactory.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {
@@ -212,12 +219,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public List<Long> getImportIndexes() {
     List<Long> indexes = new LinkedList<>();
-    getIndexProvider()
-      .getAllEntitiesBasedHandlers()
-      .forEach(handler -> indexes.add(handler.getImportIndex()));
-    getIndexProvider()
-      .getDefinitionBasedHandlers()
-      .forEach(handler -> indexes.add(handler.getCurrentDefinitionBasedImportIndex()));
+
+    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+      getIndexProvider()
+          .getAllEntitiesBasedHandlers(engineAlias)
+          .forEach(handler -> indexes.add(handler.getImportIndex()));
+      getIndexProvider()
+          .getDefinitionBasedHandlers(engineAlias)
+          .forEach(handler -> indexes.add(handler.getCurrentDefinitionBasedImportIndex()));
+    }
+
     return indexes;
   }
 
@@ -268,9 +279,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
   public void updateImportIndex() {
-    for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers()) {
-      importIndexHandler.updateImportIndex();
+    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+      for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
+        importIndexHandler.updateImportIndex();
+      }
     }
+
   }
 
   private ImportIndexHandlerProvider getIndexProvider() {

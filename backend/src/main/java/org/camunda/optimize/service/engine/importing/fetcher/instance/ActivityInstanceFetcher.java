@@ -2,6 +2,8 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.GenericType;
@@ -19,8 +21,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.TRUE;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ActivityInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto, DefinitionBasedImportPage> {
+
+  public ActivityInstanceFetcher(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   public List<HistoricActivityInstanceEngineDto> fetchEntities(DefinitionBasedImportPage page) {

@@ -4,7 +4,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.service.engine.importing.EngineImportBuilder;
+import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -213,8 +213,8 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
-  private EngineImportBuilder getImportSchedulerFactory() {
-    return getOptimizeApplicationContext().getBean(EngineImportBuilder.class);
+  private EngineImportJobSchedulerFactory getImportSchedulerFactory() {
+    return getOptimizeApplicationContext().getBean(EngineImportJobSchedulerFactory.class);
   }
 
   @Override

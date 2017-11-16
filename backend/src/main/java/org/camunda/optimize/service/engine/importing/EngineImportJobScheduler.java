@@ -14,13 +14,15 @@ public class EngineImportJobScheduler extends Thread {
 
   private EngineImportJobExecutor executor;
   private List<EngineImportJobFactory> jobFactories;
+  private String engineAlias;
 
   private volatile boolean isEnabled = true;
 
   public EngineImportJobScheduler(EngineImportJobExecutor executor,
-                                  List<EngineImportJobFactory> jobFactories) {
+                                  List<EngineImportJobFactory> jobFactories, String engineAlias) {
     this.executor = executor;
     this.jobFactories = jobFactories;
+    this.engineAlias = engineAlias;
   }
 
   public void disable() {
@@ -43,16 +45,16 @@ public class EngineImportJobScheduler extends Thread {
 
   private List<Runnable> obtainNextJobRound() {
     return jobFactories
-      .stream()
-      .map(EngineImportJobFactory::getNextJob)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+        .stream()
+        .map(EngineImportJobFactory::getNextJob)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
   }
 
   public void scheduleUntilCantCreateNewJobs() {
     List<Runnable> currentImportRound = obtainNextJobRound();
-    while(!nothingToBeImported(currentImportRound)) {
+    while (!nothingToBeImported(currentImportRound)) {
       scheduleCurrentJobRound(currentImportRound);
       currentImportRound = obtainNextJobRound();
     }
@@ -60,7 +62,7 @@ public class EngineImportJobScheduler extends Thread {
 
   public void scheduleNextRound() {
     List<Runnable> currentImportRound = obtainNextJobRound();
-    if(nothingToBeImported(currentImportRound)) {
+    if (nothingToBeImported(currentImportRound)) {
       doBackoff();
     } else {
       scheduleCurrentJobRound(currentImportRound);
@@ -83,15 +85,15 @@ public class EngineImportJobScheduler extends Thread {
 
   private long calculateTimeToSleep() {
     long timeToSleepInMs = jobFactories
-      .stream()
-      .map(EngineImportJobFactory::getBackoffTimeInMs)
-      .min(Long::compare)
-      .orElse(0L);
+        .stream()
+        .map(EngineImportJobFactory::getBackoffTimeInMs)
+        .min(Long::compare)
+        .orElse(0L);
     return timeToSleepInMs;
   }
 
   private void scheduleCurrentJobRound(List<Runnable> currentImportJobRound) {
-    for (int ithJob=0; ithJob<currentImportJobRound.size(); ithJob++) {
+    for (int ithJob = 0; ithJob < currentImportJobRound.size(); ithJob++) {
       Runnable currentJob = currentImportJobRound.get(ithJob);
       try {
         executor.executeImportJob(currentJob);

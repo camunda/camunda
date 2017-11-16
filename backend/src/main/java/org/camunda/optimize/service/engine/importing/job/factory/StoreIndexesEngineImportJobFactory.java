@@ -13,6 +13,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactory {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
@@ -34,8 +37,14 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   @Autowired
   private ImportIndexWriter importIndexWriter;
 
+  @Autowired
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private LocalDateTime dateUntilJobCreationIsBlocked;
+  protected String engineAlias;
+
+  public StoreIndexesEngineImportJobFactory(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
 
   @PostConstruct
   public void init() {
@@ -83,7 +92,7 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
 
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
     List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
-    for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers()) {
+    for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias)) {
       allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
     }
     return allEntitiesBasedImportIndexes;
@@ -91,7 +100,7 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
 
   private List<DefinitionBasedImportIndexDto> getDefinitionBasedImportIndexes() {
     List<DefinitionBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
-    for (DefinitionBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getDefinitionBasedHandlers()) {
+    for (DefinitionBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias)) {
       allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
     }
     return allEntitiesBasedImportIndexes;

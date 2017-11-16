@@ -76,8 +76,8 @@ public class ImportProgressReporter {
       totalProgress += computedProgress;
       handlersWithData += computedProgressOptional.isPresent()? 1 : 0;
       logDebugStatement(importIndexHandler.getClass().getSimpleName(),
-        computedProgressOptional.isPresent(),
-        computedProgress);
+          computedProgressOptional.isPresent(),
+          computedProgress);
     }
     totalProgress = totalProgress/handlersWithData;
     totalProgress = Math.ceil(totalProgress);

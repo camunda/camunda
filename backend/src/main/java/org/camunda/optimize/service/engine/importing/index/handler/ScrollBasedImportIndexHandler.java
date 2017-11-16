@@ -28,7 +28,6 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
   extends BackoffImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
@@ -38,10 +37,9 @@ public abstract class ScrollBasedImportIndexHandler
   protected ImportIndexReader importIndexReader;
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   protected Client esclient;
+
+  protected String engineAlias;
 
   @Override
   protected void init() {

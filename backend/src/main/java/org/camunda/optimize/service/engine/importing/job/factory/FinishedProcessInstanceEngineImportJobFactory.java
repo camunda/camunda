@@ -3,37 +3,44 @@ package org.camunda.optimize.service.engine.importing.job.factory;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.FinishedProcessInstanceFetcher;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.engine.importing.job.FinishedProcessInstanceEngineImportJob;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
+import org.camunda.optimize.service.util.EngineInstanceHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Optional;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FinishedProcessInstanceEngineImportJobFactory implements EngineImportJobFactory {
 
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private FinishedProcessInstanceImportIndexHandler importIndexHandler;
   private MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder;
-
-  @Autowired
   private FinishedProcessInstanceFetcher engineEntityFetcher;
 
   @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ApplicationContext applicationContext;
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
   @Autowired
-  private org.elasticsearch.client.Client esClient;
+  private EngineInstanceHelper engineInstanceHelper;
+
+  @Autowired
+  private ConfigurationService configurationService;
+
+  @Autowired
+  private Client esClient;
 
   @Autowired
   private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
@@ -41,10 +48,16 @@ public class FinishedProcessInstanceEngineImportJobFactory implements EngineImpo
   @Autowired
   private ImportIndexHandlerProvider provider;
 
+  protected String engineAlias;
+
+  public FinishedProcessInstanceEngineImportJobFactory(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
   @PostConstruct
   public void init() {
-    importIndexHandler = provider.getFinishedProcessInstanceImportIndexHandler();
-    applicationContext.getAutowireCapableBeanFactory().autowireBean(importIndexHandler);
+    importIndexHandler = provider.getFinishedProcessInstanceImportIndexHandler(engineAlias);
+    engineEntityFetcher = engineInstanceHelper.getInstance(FinishedProcessInstanceFetcher.class, engineAlias);
     missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, configurationService.getProcessInstanceIdTrackingType());
   }
 

@@ -11,6 +11,10 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = 0L;
 
+  public RetryBackoffEngineEntityFetcher(String engineAlias) {
+    super(engineAlias);
+  }
+
   /**
    * Queries the engine to fetch the entities from there given a page,
    * which contains all the information of which chunk of data should be fetched.

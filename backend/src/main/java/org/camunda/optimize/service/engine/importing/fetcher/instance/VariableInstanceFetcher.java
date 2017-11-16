@@ -2,6 +2,8 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Entity;
@@ -19,8 +21,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_VARIABLE_TYPE_IN;
 
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto, IdSetBasedImportPage> {
+
+  public VariableInstanceFetcher(String engineAlias) {
+    super(engineAlias);
+  }
 
   @Override
   public List<HistoricVariableInstanceDto> fetchEntities(IdSetBasedImportPage page) {

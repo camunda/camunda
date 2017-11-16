@@ -24,7 +24,6 @@ public class ActivityInstanceEngineImportJob extends
                                          EngineEntityFetcher<HistoricActivityInstanceEngineDto,DefinitionBasedImportPage> engineEntityFetcher) {
     super(importPage, elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher);
     this.eventsWriter = eventsWriter;
-
   }
 
   @Override
