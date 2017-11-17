@@ -1,0 +1,28 @@
+.ButtonGroup {
+  display: flex;
+}
+
+.ButtonGroup .Button,
+.ButtonGroup a.Button {
+  flex: 1 0 auto;
+  border-radius: 0;
+  border-right-width: 0;
+}
+
+.ButtonGroup .Button:first-child,
+.ButtonGroup a.Button:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.ButtonGroup .Button:last-child,
+.ButtonGroup a.Button:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+  border-right-width: 1px;
+}
+
+.ButtonGroup .Button:focus,
+.ButtonGroup a.Button:focus {
+ /* TODO: box-shadow focus style */
+}
