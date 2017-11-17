@@ -113,18 +113,19 @@ public class LockExpirationTest
         // then
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
-        final List<SubscribedEvent> events = apiRule.topic()
+        final List<SubscribedEvent> expiredEvents = apiRule.topic()
                                                     .receiveEvents(TestTopicClient.taskEvents())
                                                     .limit(16)
                                                     .collect(Collectors.toList());
 
-        assertThat(events).extracting(e -> e.key()).contains(taskKey1, taskKey2);
-        assertThat(events).extracting(e -> e.event().get("state"))
-                          .containsExactlyInAnyOrder("CREATE", "CREATED", "CREATE", "CREATED",
-                                           "LOCK", "LOCK", "LOCKED", "LOCKED",
-                                           "EXPIRE_LOCK", "EXPIRE_LOCK", "LOCK_EXPIRED", "LOCK_EXPIRED",
-                                           "LOCK", "LOCKED", "LOCK", "LOCKED");
+        assertThat(expiredEvents)
+            .filteredOn(e -> e.event().get("state").equals("LOCKED"))
+            .hasSize(4)
+            .extracting(e -> e.key()).containsExactly(taskKey1, taskKey2, taskKey1, taskKey2);
 
+        assertThat(expiredEvents)
+            .filteredOn(e -> e.event().get("state").equals("LOCK_EXPIRED"))
+            .extracting(e -> e.key()).containsExactlyInAnyOrder(taskKey1, taskKey2);
     }
 
     protected long createTask(String type)

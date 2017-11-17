@@ -20,6 +20,8 @@ package io.zeebe.broker.task.processor;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import java.util.Iterator;
+
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
@@ -33,10 +35,7 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.map.ZbMapIterator;
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
-import io.zeebe.map.types.ByteArrayValueHandler;
-import io.zeebe.map.types.LongKeyHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -201,20 +200,19 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     class CheckLockExpirationCmd implements Runnable
     {
-        private final Long2BytesZbMapEntry entry = new Long2BytesZbMapEntry();
         private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+        private final ExpandableArrayBuffer toRemoveEntries = new ExpandableArrayBuffer(1024 * SIZE_OF_LONG);
 
         private int entryIndex = 0;
-        private final ExpandableArrayBuffer toRemoveEntries = new ExpandableArrayBuffer(1024 * SIZE_OF_LONG);
 
         @Override
         public void run()
         {
-            final ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry> iterator = new ZbMapIterator<LongKeyHandler, ByteArrayValueHandler, Long2BytesZbMapEntry>(expirationMap, entry);
+            final Iterator<Long2BytesZbMapEntry> iterator = expirationMap.iterator();
 
             while (iterator.hasNext())
             {
-                iterator.next();
+                final Long2BytesZbMapEntry entry = iterator.next();
 
                 final long eventKey = entry.getKey();
                 final DirectBuffer value = entry.getValue();
@@ -232,7 +230,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
                     {
                         lastWrittenEventPosition = position;
                         // add to remove entries
-                        toRemoveEntries.putLong(entryIndex++, eventKey);
+                        toRemoveEntries.putLong(entryIndex * SIZE_OF_LONG, eventKey);
+                        entryIndex++;
                     }
                 }
             }
@@ -240,7 +239,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             // iterate over the entries which should be removed
             for (int i = 0; i < entryIndex; i++)
             {
-                final long eventKey = toRemoveEntries.getLong(0);
+                final long eventKey = toRemoveEntries.getLong(i * SIZE_OF_LONG);
                 if (eventKey > 0)
                 {
                     expirationMap.remove(eventKey);
@@ -248,7 +247,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             }
 
             // reset
-            toRemoveEntries.setMemory(0, toRemoveEntries.capacity(), (byte) 0);
             entryIndex = 0;
         }
 
