@@ -12,7 +12,7 @@ const options = {
     {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
     {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
     {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
-    
+
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
@@ -105,7 +105,7 @@ export default class ControlPanel extends React.Component {
           </select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
-          <Filter data={this.props.filter} onChange={this.props.onChange} />
+          <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} />
         </li>
       </ul>
     </div>

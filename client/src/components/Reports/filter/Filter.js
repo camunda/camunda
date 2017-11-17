@@ -53,7 +53,7 @@ export default class Filter extends React.Component {
         <Dropdown.Option onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
       </Dropdown>
-      <FilterModal addFilter={this.addFilter} close={this.closeModal} />
+      <FilterModal addFilter={this.addFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId} />
     </div>);
   }
 }

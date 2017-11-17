@@ -28,9 +28,32 @@ export default class FilterList extends React.Component {
 
         i++;
       } else {
-        // create entry for other filter types
+        if(filter.type === 'variable') {
+          const {name, operator, values} = filter.data;
 
-        // TODO: Variables
+          list.push(<li key={i} className='FilterList__item'>
+            <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
+            <span className='FilterList__item-content'>
+              <span className='FilterList__variable-name'>{name}</span>
+                {operator === 'in' && ' is '}
+                {operator === 'not in' && (
+                  values.length === 1 ? ' is not ' : ' is neither '
+                )}
+                {operator === '<' && ' is less than '}
+                {operator === '>' && ' is greater than '}
+              {values.map((value, idx) => {
+                return <span key={idx}>
+                  <span className='FilterList__value'>{value.toString()}</span>
+                  {idx < values.length - 1 && (
+                    operator === 'not in' ? ' nor ' : ' or '
+                  )}
+                </span>
+              })}
+            </span>
+          </li>);
+        }
+
+
         // TODO: FlowNodes
       }
 

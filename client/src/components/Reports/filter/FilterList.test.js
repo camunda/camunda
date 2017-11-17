@@ -70,3 +70,48 @@ it('should remove both date filter parts for a date filter entry', () => {
   expect(spy.mock.calls[0][0]).toBe(data[0]);
   expect(spy.mock.calls[0][1]).toBe(data[1]);
 });
+
+it('should display a simple variable filter', () => {
+  const data = [{
+    type: 'variable',
+    data: {
+      name: 'varName',
+      operator: 'in',
+      values: ['varValue']
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('varName is varValue');
+});
+
+it('should combine multiple variable values with or', () => {
+  const data = [{
+    type: 'variable',
+    data: {
+      name: 'varName',
+      operator: 'in',
+      values: ['varValue', 'varValue2']
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('varName is varValue or varValue2');
+});
+
+it('should combine multiple variable names with neither/nor for the not in operator', () => {
+  const data = [{
+    type: 'variable',
+    data: {
+      name: 'varName',
+      operator: 'not in',
+      values: ['varValue', 'varValue2']
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('varName is neither varValue nor varValue2');
+});

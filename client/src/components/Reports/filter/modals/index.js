@@ -1,3 +1,3 @@
 export {DateFilter} from './date';
-export {default as VariableFilter} from './VariableFilter';
+export {VariableFilter} from './variable';
 export {default as NodeFilter} from './NodeFilter';
