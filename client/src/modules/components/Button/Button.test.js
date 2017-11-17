@@ -25,9 +25,9 @@ it('renders a <button> element by default', () => {
 });
 
 it('renders a <a> element when specified as a property', () => {
-  const type = 'a'
+  const tag = 'a'
 
-  const node = mount(<Button tag={type} />);
+  const node = mount(<Button tag={tag} />);
   expect(node.find('.Button')).toHaveTagName('Link');
 });
 
