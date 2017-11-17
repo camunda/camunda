@@ -36,7 +36,7 @@ freeStyleJob('camunda-optimize-release') {
       --settings=\${MAVEN_NEXUS_SETTINGS} \"-Darguments=--settings=\${MAVEN_NEXUS_SETTINGS} -DskipTests\" -B
     """.stripIndent())
     shell ('''#!/bin/bash -xe
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no jenkins_camunda_web@vm29.camunda.com 'mkdir -p /var/www/camunda/camunda.org/enterprise-release/optimize/${RELEASE_VERSION}/'
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no jenkins_camunda_web@vm29.camunda.com "mkdir -p /var/www/camunda/camunda.org/enterprise-release/optimize/${RELEASE_VERSION}/"
 for file in distro/target/*.{tar.gz,zip}; do
   scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${file} jenkins_camunda_web@vm29.camunda.com:/var/www/camunda/camunda.org/enterprise-release/optimize/${RELEASE_VERSION}/
 done
