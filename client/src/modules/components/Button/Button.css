@@ -35,7 +35,8 @@ a.Button[disabled="disabled"] {
   opacity: .65;
 }
 
-.Button--small {
+.Button--small,
+a.Button--small {
   font-size: .75em; /* 12px/16px */
   padding: 4px 8px;
 }
