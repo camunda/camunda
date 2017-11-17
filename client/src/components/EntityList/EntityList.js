@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Redirect} from 'react-router-dom';
 
-import {Table} from 'components';
+import {Table, Button} from 'components';
 
 import {load, create, remove} from './service';
 
@@ -71,7 +71,7 @@ export default class EntityList extends React.Component {
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
-      createButton = <button className='Button EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</button>;
+      createButton = <Button className='EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
     }
 
     const header = <h1>{this.props.label}s</h1>;

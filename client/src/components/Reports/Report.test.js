@@ -4,6 +4,10 @@ import {mount} from 'enzyme';
 import Report from './Report';
 import {getReportData, loadSingleReport, remove, saveReport} from './service';
 
+jest.mock('components', () => {return {
+  Button: props => <button {...props}>{props.children}</button>
+}});
+
 jest.mock('./service', () => {
   return {
     loadSingleReport: jest.fn(),

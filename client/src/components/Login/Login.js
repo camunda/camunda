@@ -4,7 +4,7 @@ import {getToken} from 'credentials';
 
 import {login} from './service';
 
-import {Message} from 'components';
+import {Message, Button} from 'components';
 
 import './Login.css';
 
@@ -63,7 +63,7 @@ export default class Login extends React.Component {
           <label className='Login__label'>Password</label>
           <input placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
         </div>
-        <button className="Button" type='submit' onClick={this.submit}>Login</button>
+        <Button type='submit' onClick={this.submit}>Login</Button>
       </form>
     );
   }

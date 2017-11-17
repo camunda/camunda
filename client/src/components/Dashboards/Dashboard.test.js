@@ -4,6 +4,10 @@ import {mount} from 'enzyme';
 import Dashboard from './Dashboard';
 import {loadDashboard, remove, update} from './service';
 
+jest.mock('components', () => {return {
+  Button: props => <button {...props}>{props.children}</button>
+}});
+
 jest.mock('../EntityList/service', () => {
   return {
     load: jest.fn(),

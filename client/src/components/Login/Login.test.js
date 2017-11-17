@@ -15,7 +15,8 @@ jest.mock('react-router-dom', () => {return {
   Redirect: ({to}) => {return <div>REDIRECT {to}</div>}
 }});
 jest.mock('components', () => {return {
-  Message: ({type}) => {return <div className={"Message Message--" + type}></div>}
+  Message: ({type}) => {return <div className={"Message Message--" + type}></div>},
+  Button: props => <button {...props}>{props.children}</button>
   }
 });
 

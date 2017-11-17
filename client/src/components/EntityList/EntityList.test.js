@@ -12,6 +12,7 @@ const sampleEntity = {
   lastModified: '2017-11-11T11:11:11.1111+0200',
 };
 
+
 jest.mock('./service', () => {
   return {
     load: jest.fn(),
@@ -44,7 +45,8 @@ jest.mock('components', () => {
   return {
     Table: {
       renderCell: cell => <span>{JSON.stringify(cell)}</span>
-    }
+    },
+    Button: props => <button {...props}>{props.children}</button>
   }
 });
 

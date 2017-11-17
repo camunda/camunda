@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
+import {Button} from 'components';
 import {loadDashboard, remove, update} from './service';
 import './Dashboard.css';
 import EditGrid from './ReportGrid/EditGrid';
@@ -48,7 +49,6 @@ export default class Dashboard extends React.Component {
   }
 
   updateName = evt => {
-
     this.setState({
       name : evt.target.value
     });
@@ -132,7 +132,7 @@ export default class Dashboard extends React.Component {
         <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
         <div>
           <Link id={'edit'} className="Button" to={`/dashboard/${this.id}/edit`}>Edit</Link>
-          <button className="Button" onClick={this.deleteDashboard}>Delete</button>
+          <Button onClick={this.deleteDashboard}>Delete</Button>
         </div>
       </div>
     )
