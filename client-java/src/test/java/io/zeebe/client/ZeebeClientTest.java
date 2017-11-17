@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.Before;
@@ -201,6 +203,41 @@ public class ZeebeClientTest
             fail("should throw exception");
         }
         catch (ClientCommandRejectedException e)
+        {
+            // then
+            assertThat(e.getStackTrace()).anySatisfy(frame ->
+            {
+                assertThat(frame.getClassName()).isEqualTo(this.getClass().getName());
+                assertThat(frame.getMethodName()).isEqualTo(testContext.getMethodName());
+            });
+        }
+    }
+
+    @Test
+    public void shouldIncludeCallingFrameInExceptionStacktraceOnAsyncRootCause() throws Exception
+    {
+        // given
+        final TaskEventImpl baseEvent = Events.exampleTask();
+
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+              .respondWith()
+              .key(r -> r.key())
+              .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "COMPLETE_REJECTED")
+              .done()
+              .register();
+
+        // when
+        try
+        {
+            client.tasks()
+                  .complete(baseEvent)
+                  .executeAsync().get();
+
+            fail("should throw exception");
+        }
+        catch (ExecutionException e)
         {
             // then
             assertThat(e.getStackTrace()).anySatisfy(frame ->
