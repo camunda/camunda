@@ -50,7 +50,7 @@ done
       absolute 15
     }
 
-    sshAgent ['camunda-jenkins-github-ssh','jenkins_camunda_web']
+    sshAgent('camunda-jenkins-github-ssh','jenkins_camunda_web')
 
     configFiles {
       mavenSettings('camunda-maven-settings') {
