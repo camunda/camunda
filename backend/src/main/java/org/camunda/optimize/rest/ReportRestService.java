@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.ReportEvaluationManager;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +85,7 @@ public class ReportRestService {
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
     updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
     try {
       reportWriter.updateReport(updatedReport);
       return Response.noContent().build();

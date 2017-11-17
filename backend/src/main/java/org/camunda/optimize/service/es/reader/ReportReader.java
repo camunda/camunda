@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionPersistenceDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -44,11 +46,27 @@ public class ReportReader {
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
-      return objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
+      ReportDefinitionPersistenceDto persistenceDto =
+        objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
+      return convertToOriginalForm(persistenceDto);
     } else {
       logger.error("Was not able to retrieve report with id [{}] from Elasticsearch.", reportId);
       throw new OptimizeException("Report does not exist!");
     }
+  }
+
+  private ReportDefinitionDto convertToOriginalForm(ReportDefinitionPersistenceDto persistenceDto) throws IOException {
+    ReportDefinitionDto original = new ReportDefinitionDto();
+    original.setId(persistenceDto.getId());
+    original.setName(persistenceDto.getName());
+    original.setOwner(persistenceDto.getOwner());
+    original.setCreated(persistenceDto.getCreated());
+    original.setLastModified(persistenceDto.getLastModified());
+    original.setLastModifier(persistenceDto.getLastModifier());
+    ReportDataDto reportData =
+      persistenceDto.getData() != null ? objectMapper.readValue(persistenceDto.getData(), ReportDataDto.class) : null;
+    original.setData(reportData);
+    return original;
   }
 
   public List<ReportDefinitionDto> getAllReports() throws IOException {
@@ -65,7 +83,9 @@ public class ReportReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         String responseAsString = hit.getSourceAsString();
-        reportRequests.add(objectMapper.readValue(responseAsString, ReportDefinitionDto.class));
+        ReportDefinitionPersistenceDto persistenceDto =
+          objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
+        reportRequests.add(convertToOriginalForm(persistenceDto));
       }
 
       scrollResp = esclient

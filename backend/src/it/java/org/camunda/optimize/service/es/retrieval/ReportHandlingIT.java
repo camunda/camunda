@@ -3,6 +3,13 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -22,7 +29,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -144,6 +153,68 @@ public class ReportHandlingIT {
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is("NewOwner"));
+  }
+
+  @Test
+  public void updateReportWithFilters() throws Exception {
+    // given
+    String id = createNewReport();
+    ReportDataDto reportData = new ReportDataDto();
+    reportData.setProcessDefinitionId("procdef-123");
+
+    reportData.getFilter().addAll(createDateFilter());
+    reportData.getFilter().addAll(createVariableFilter());
+    reportData.getFilter().addAll(createExecutedFlowNodeFilter());
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("shouldNotBeUpdated");
+    report.setLastModifier("shouldNotBeUpdatedManually");
+    report.setName("MyReport");
+    LocalDateTime shouldBeIgnoredDate = LocalDateTime.now().plusHours(1);
+    report.setCreated(shouldBeIgnoredDate);
+    report.setLastModified(shouldBeIgnoredDate);
+    report.setOwner("NewOwner");
+
+    // when
+    updateReport(id, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    assertThat(reports.size(), is(1));
+    ReportDefinitionDto newReport = reports.get(0);
+    assertThat(newReport.getData(), is(notNullValue()));
+    reportData = newReport.getData();
+    assertThat(reportData.getFilter().size(), is(3));
+  }
+
+  public List<FilterDto> createDateFilter() {
+    DateFilterDataDto date = new DateFilterDataDto();
+    date.setOperator("foo");
+    date.setType("bar");
+    date.setValue(new Date());
+
+    DateFilterDto dateFilterDto = new DateFilterDto();
+    dateFilterDto.setData(date);
+    return Collections.singletonList(dateFilterDto);
+  }
+
+  private List<FilterDto> createVariableFilter() {
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("foo");
+    data.setType("boolean");
+    data.setOperator("=");
+    data.setValues(Collections.singletonList("true"));
+
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    return Collections.singletonList(variableFilterDto);
+  }
+
+  private List<FilterDto> createExecutedFlowNodeFilter() {
+    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
+          .id("task1")
+          .build();
+    return new ArrayList<>(flowNodeFilter);
   }
 
   @Test

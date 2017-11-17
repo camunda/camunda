@@ -5,13 +5,23 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReportDefinitionUpdateDto {
+public class ReportDefinitionPersistenceDto {
 
+  protected String id;
   protected String name;
   protected LocalDateTime lastModified;
+  protected LocalDateTime created;
   protected String owner;
   protected String lastModifier;
-  protected ReportDataDto data;
+  protected String data;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getName() {
     return name;
@@ -23,6 +33,14 @@ public class ReportDefinitionUpdateDto {
 
   public LocalDateTime getLastModified() {
     return lastModified;
+  }
+
+  public LocalDateTime getCreated() {
+    return created;
+  }
+
+  public void setCreated(LocalDateTime created) {
+    this.created = created;
   }
 
   public void setLastModified(LocalDateTime lastModified) {
@@ -45,11 +63,11 @@ public class ReportDefinitionUpdateDto {
     this.lastModifier = lastModifier;
   }
 
-  public ReportDataDto getData() {
+  public String getData() {
     return data;
   }
 
-  public void setData(ReportDataDto data) {
+  public void setData(String data) {
     this.data = data;
   }
 }
