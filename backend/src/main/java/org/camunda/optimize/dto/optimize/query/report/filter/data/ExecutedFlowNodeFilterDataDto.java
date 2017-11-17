@@ -1,8 +1,8 @@
-package org.camunda.optimize.dto.optimize.query.flownode;
+package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
 import java.util.List;
 
-public class ExecutedFlowNodeFilterDto {
+public class ExecutedFlowNodeFilterDataDto implements FilterDataDto {
 
   protected String operator;
   protected List<String> values;

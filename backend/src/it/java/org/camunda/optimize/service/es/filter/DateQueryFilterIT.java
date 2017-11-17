@@ -2,10 +2,9 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.DateFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -24,9 +23,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
@@ -37,9 +34,9 @@ import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
-public class DateFilterIT {
+public class DateQueryFilterIT {
 
-  private Logger logger = LoggerFactory.getLogger(DateFilterIT.class);
+  private Logger logger = LoggerFactory.getLogger(DateQueryFilterIT.class);
 
   private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_ACTIVITY = "testActivity";
@@ -320,13 +317,7 @@ public class DateFilterIT {
     //when
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    FilterMapDto filter = new FilterMapDto();
-    List<DateFilterDto> dates = new ArrayList<>();
-    DateFilterDto dateFilter = new DateFilterDto();
-    dateFilter.setOperator("blah");
-    dates.add(dateFilter);
-    filter.setDates(dates);
-    dto.setFilter(filter);
+    DataUtilHelper.addDateFilter("blah", DateFilterDataDto.START_DATE, null, dto);
     assertThat(getResponse(dto).getStatus(),is(500));
   }
 

@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.retrieval;
 
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -23,6 +22,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -120,7 +120,7 @@ public class ReportHandlingIT {
     String id = createNewReport();
     ReportDataDto reportData = new ReportDataDto();
     reportData.setProcessDefinitionId("procdef-123");
-    reportData.setFilter(new FilterMapDto());
+    reportData.setFilter(Collections.emptyList());
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");

@@ -1,13 +1,14 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 
-import java.util.logging.Filter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReportDataDto {
 
   protected String processDefinitionId;
-  protected FilterMapDto filter;
+  protected List<FilterDto> filter = new ArrayList<>();
   protected ViewDto view;
   protected GroupByDto groupBy;
   protected String visualization;
@@ -21,11 +22,11 @@ public class ReportDataDto {
     this.processDefinitionId = processDefinitionId;
   }
 
-  public FilterMapDto getFilter() {
+  public List<FilterDto> getFilter() {
     return filter;
   }
 
-  public void setFilter(FilterMapDto filter) {
+  public void setFilter(List<FilterDto> filter) {
     this.filter = filter;
   }
 

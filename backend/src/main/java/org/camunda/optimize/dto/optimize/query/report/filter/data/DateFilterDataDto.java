@@ -1,11 +1,11 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
 import java.util.Date;
 
 /**
  * @author Askar Akhmerov
  */
-public class DateFilterDto {
+public class DateFilterDataDto implements FilterDataDto {
 
   public static String START_DATE = "start_date";
   public static String END_DATE = "end_date";

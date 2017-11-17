@@ -1,8 +1,8 @@
-package org.camunda.optimize.dto.optimize.query.variable;
+package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
 import java.util.List;
 
-public class VariableFilterDto {
+public class VariableFilterDataDto implements FilterDataDto {
 
   protected String name;
   protected String operator;

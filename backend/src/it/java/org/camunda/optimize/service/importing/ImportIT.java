@@ -6,11 +6,11 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
@@ -319,15 +319,15 @@ public class ImportIT  {
     //when
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(id);
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setName("stringVar");
-    variableFilterDto.setType("String");
-    variableFilterDto.setOperator(NOT_IN);
-    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
 
-    FilterMapDto filterMapDto = new FilterMapDto();
-    filterMapDto.getVariables().add(variableFilterDto);
-    dto.setFilter(filterMapDto);
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("stringVar");
+    data.setType("String");
+    data.setOperator(NOT_IN);
+    data.setValues(Collections.singletonList("aStringValue"));
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     HeatMapResponseDto heatMap = getHeatMapResponseDto(token, dto);
     //then

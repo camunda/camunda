@@ -1,15 +1,17 @@
 package org.camunda.optimize.service.util;
 
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-
-import java.util.List;
 
 /**
  * @author Askar Akhmerov
@@ -19,25 +21,27 @@ public class ValidationHelper {
   public static void validate(HeatMapQueryDto dto) throws OptimizeValidationException {
     ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dto.getProcessDefinitionId());
-    if (dto.getFilter() != null && dto.getFilter().getDates() != null) {
-      for (DateFilterDto date : dto.getFilter().getDates()) {
-        ensureNotEmpty("operator", date.getOperator());
-        ensureNotEmpty("type", date.getType());
-        ensureNotEmpty("value", date.getValue());
-      }
-    }
-    if (dto.getFilter() != null && dto.getFilter().getVariables() != null) {
-      for (VariableFilterDto variable : dto.getFilter().getVariables()) {
-        ensureNotEmpty("operator", variable.getOperator());
-        ensureNotEmpty("name", variable.getName());
-        ensureNotEmpty("type", variable.getType());
-        ensureNotEmpty("value", variable.getValues());
-      }
-    }
-    if (dto.getFilter() != null && dto.getFilter().getExecutedFlowNodes() != null) {
-      for (ExecutedFlowNodeFilterDto flowNodeFilter : dto.getFilter().getExecutedFlowNodes()) {
-        ensureNotEmpty("operator", flowNodeFilter.getOperator());
-        ensureNotEmpty("value", flowNodeFilter.getValues());
+    if (dto.getFilter() != null) {
+      for (FilterDto filterDto : dto.getFilter()) {
+        if (filterDto instanceof DateFilterDto) {
+          DateFilterDto dateFilterDto = (DateFilterDto) filterDto;
+          DateFilterDataDto dateFilterData = dateFilterDto.getData();
+          ensureNotEmpty("operator", dateFilterData.getOperator());
+          ensureNotEmpty("type", dateFilterData.getType());
+          ensureNotEmpty("value", dateFilterData.getValue());
+        } else if (filterDto instanceof VariableFilterDto) {
+          VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
+          VariableFilterDataDto variableFilterData = variableFilterDto.getData();
+          ensureNotEmpty("operator", variableFilterData.getOperator());
+          ensureNotEmpty("name", variableFilterData.getName());
+          ensureNotEmpty("type", variableFilterData.getType());
+          ensureNotEmpty("value", variableFilterData.getValues());
+        } else if (filterDto instanceof ExecutedFlowNodeFilterDto) {
+          ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
+          ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
+          ensureNotEmpty("operator", flowNodeFilterData.getOperator());
+          ensureNotEmpty("value", flowNodeFilterData.getValues());
+        }
       }
     }
   }
@@ -54,15 +58,9 @@ public class ValidationHelper {
     }
   }
 
-  public static void ensureNotEmptyList(String fieldName, List target) {
-    if (target == null || target.isEmpty()) {
-      throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
-    }
-  }
-
   public static void ensureGreaterThanZero(int value) {
-    if( value <= 0) {
-      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
+    if (value <= 0) {
+      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!");
     }
   }
 
@@ -73,25 +71,27 @@ public class ValidationHelper {
     ensureNotEmpty("view operation", viewDto.getOperation());
     ensureNotEmpty("visualization", dataDto.getVisualization());
     ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dataDto.getProcessDefinitionId());
-    if (dataDto.getFilter() != null && dataDto.getFilter().getDates() != null) {
-      for (DateFilterDto date : dataDto.getFilter().getDates()) {
-        ensureNotEmpty("date filter operator", date.getOperator());
-        ensureNotEmpty("date filter type", date.getType());
-        ensureNotEmpty("date filter value", date.getValue());
-      }
-    }
-    if (dataDto.getFilter() != null && dataDto.getFilter().getVariables() != null) {
-      for (VariableFilterDto variable : dataDto.getFilter().getVariables()) {
-        ensureNotEmpty("variable filter operator", variable.getOperator());
-        ensureNotEmpty("variable filter name", variable.getName());
-        ensureNotEmpty("variable filter type", variable.getType());
-        ensureNotEmpty("variable filter value", variable.getValues());
-      }
-    }
-    if (dataDto.getFilter() != null && dataDto.getFilter().getExecutedFlowNodes() != null) {
-      for (ExecutedFlowNodeFilterDto flowNodeFilter : dataDto.getFilter().getExecutedFlowNodes()) {
-        ensureNotEmpty("flow node filter operator", flowNodeFilter.getOperator());
-        ensureNotEmpty("flow node filter value", flowNodeFilter.getValues());
+    if (dataDto.getFilter() != null) {
+      for (FilterDto filterDto : dataDto.getFilter()) {
+        if (filterDto instanceof DateFilterDto) {
+          DateFilterDto dateFilterDto = (DateFilterDto) filterDto;
+          DateFilterDataDto dateFilterData = dateFilterDto.getData();
+          ensureNotEmpty("operator", dateFilterData.getOperator());
+          ensureNotEmpty("type", dateFilterData.getType());
+          ensureNotEmpty("value", dateFilterData.getValue());
+        } else if (filterDto instanceof VariableFilterDto) {
+          VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
+          VariableFilterDataDto variableFilterData = variableFilterDto.getData();
+          ensureNotEmpty("operator", variableFilterData.getOperator());
+          ensureNotEmpty("name", variableFilterData.getName());
+          ensureNotEmpty("type", variableFilterData.getType());
+          ensureNotEmpty("value", variableFilterData.getValues());
+        } else if (filterDto instanceof ExecutedFlowNodeFilterDto) {
+          ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
+          ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
+          ensureNotEmpty("operator", flowNodeFilterData.getOperator());
+          ensureNotEmpty("value", flowNodeFilterData.getValues());
+        }
       }
     }
   }
@@ -103,14 +103,8 @@ public class ValidationHelper {
   }
 
   public static void ensureGreaterThanZero(long value) {
-    if( value <= 0) {
-      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
-    }
-  }
-
-  public static <T> void ensureNotEmpty(T[] array) {
-    if (array == null || array.length == 0) {
-      throw new OptimizeValidationException("Array should not be empty!");
+    if (value <= 0) {
+      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!");
     }
   }
 }

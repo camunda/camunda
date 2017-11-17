@@ -2,11 +2,11 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -23,7 +23,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class ExecutedFlowNodeFilterIT {
+public class ExecutedFlowNodeQueryFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -436,13 +435,12 @@ public class ExecutedFlowNodeFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId("TestDefinition");
-    FilterMapDto filter = new FilterMapDto();
-    List<ExecutedFlowNodeFilterDto> executedFlowNodeFilter = new ArrayList<>();
-    ExecutedFlowNodeFilterDto flowNodeFilter = new ExecutedFlowNodeFilterDto();
+    ExecutedFlowNodeFilterDto executedFlowNodeFilter = new ExecutedFlowNodeFilterDto();
+    ExecutedFlowNodeFilterDataDto flowNodeFilter = new ExecutedFlowNodeFilterDataDto();
     flowNodeFilter.setValues(Collections.singletonList("foo"));
-    executedFlowNodeFilter.add(flowNodeFilter);
-    filter.setExecutedFlowNodes(executedFlowNodeFilter);
-    dto.setFilter(filter);
+    executedFlowNodeFilter.setData(flowNodeFilter);
+
+    dto.getFilter().add(executedFlowNodeFilter);
 
     // when
     Response response = getResponse(dto);
@@ -456,13 +454,12 @@ public class ExecutedFlowNodeFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId("TestDefinition");
-    FilterMapDto filter = new FilterMapDto();
-    List<ExecutedFlowNodeFilterDto> executedFlowNodeFilter = new ArrayList<>();
-    ExecutedFlowNodeFilterDto flowNodeFilter = new ExecutedFlowNodeFilterDto();
-    flowNodeFilter.setOperator("foo");
-    executedFlowNodeFilter.add(flowNodeFilter);
-    filter.setExecutedFlowNodes(executedFlowNodeFilter);
-    dto.setFilter(filter);
+    ExecutedFlowNodeFilterDto executedFlowNodeFilter = new ExecutedFlowNodeFilterDto();
+    ExecutedFlowNodeFilterDataDto flowNodeFilter = new ExecutedFlowNodeFilterDataDto();
+    flowNodeFilter.setValues(null);
+    executedFlowNodeFilter.setData(flowNodeFilter);
+
+    dto.getFilter().add(executedFlowNodeFilter);
 
     // when
     Response response = getResponse(dto);
@@ -480,9 +477,7 @@ public class ExecutedFlowNodeFilterIT {
                                                                List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
-    FilterMapDto mapDto = new FilterMapDto();
-    mapDto.setExecutedFlowNodes(executedFlowNodes);
-    dto.setFilter(mapDto);
+    dto.getFilter().addAll(executedFlowNodes);
     return dto;
   }
 

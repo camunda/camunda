@@ -1,4 +1,7 @@
-package org.camunda.optimize.dto.optimize.query.flownode;
+package org.camunda.optimize.dto.optimize.query.report.filter.util;
+
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,9 +46,11 @@ public class ExecutedFlowNodeFilterBuilder {
   }
 
   private void addNewFilter() {
+    ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
+    dataDto.setOperator(operator);
+    dataDto.setValues(new ArrayList<>(values));
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
-    executedFlowNodeFilterDto.setOperator(operator);
-    executedFlowNodeFilterDto.setValues(new ArrayList<>(values));
+    executedFlowNodeFilterDto.setData(dataDto);
     executedFlowNodes.add(executedFlowNodeFilterDto);
     values.clear();
     restoreDefaultOperator();

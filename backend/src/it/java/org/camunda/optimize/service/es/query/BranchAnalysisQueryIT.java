@@ -5,10 +5,11 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -507,12 +508,10 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    FilterMapDto mapDto = new FilterMapDto();
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id(TASK_ID_2)
+          .id("task1")
           .build();
-    mapDto.setExecutedFlowNodes(flowNodeFilter);
-    dto.setFilter(mapDto);
+    dto.getFilter().addAll(flowNodeFilter);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -534,15 +533,16 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
-  private FilterMapDto createVariableFilter() {
-    VariableFilterDto filter = new VariableFilterDto();
-    filter.setName("goToTask1");
-    filter.setType("boolean");
-    filter.setOperator("=");
-    filter.setValues(Collections.singletonList("true"));
-    FilterMapDto filterMapDto = new FilterMapDto();
-    filterMapDto.setVariables(Collections.singletonList(filter));
-    return filterMapDto;
+  private List<FilterDto> createVariableFilter() {
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("goToTask1");
+    data.setType("boolean");
+    data.setOperator("=");
+    data.setValues(Collections.singletonList("true"));
+
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    return Collections.singletonList(variableFilterDto);
   }
 
   @Test

@@ -2,15 +2,17 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.DateFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -25,7 +27,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -140,17 +141,15 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     assertThat(result.getResult(), is(1L));
   }
 
-  private FilterMapDto createDateFilter(String operator, String type, Date dateValue) {
-    FilterMapDto filter ;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
-
-    DateFilterDto date = new DateFilterDto();
+  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+    DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
     date.setValue(dateValue);
-    filter.getDates().add(date);
-    return filter;
+
+    DateFilterDto dateFilterDto = new DateFilterDto();
+    dateFilterDto.setData(date);
+    return Collections.singletonList(dateFilterDto);
   }
 
   @Test
@@ -173,15 +172,16 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     assertThat(result.getResult(), is(1L));
   }
 
-  private FilterMapDto createVariableFilter(String variableName) {
-    VariableFilterDto filter = new VariableFilterDto();
-    filter.setName(variableName);
-    filter.setType("boolean");
-    filter.setOperator("=");
-    filter.setValues(Collections.singletonList("true"));
-    FilterMapDto filterMapDto = new FilterMapDto();
-    filterMapDto.setVariables(Collections.singletonList(filter));
-    return filterMapDto;
+  private List<FilterDto> createVariableFilter(String variableName) {
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName(variableName);
+    data.setType("boolean");
+    data.setOperator("=");
+    data.setValues(Collections.singletonList("true"));
+
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    return Collections.singletonList(variableFilterDto);
   }
 
   @Test
@@ -198,12 +198,10 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    FilterMapDto mapDto = new FilterMapDto();
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
-    mapDto.setExecutedFlowNodes(flowNodeFilter);
-    reportData.setFilter(mapDto);
+    reportData.getFilter().addAll(flowNodeFilter);
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then

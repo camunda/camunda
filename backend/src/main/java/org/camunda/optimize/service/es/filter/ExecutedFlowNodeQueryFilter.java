@@ -1,8 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
@@ -20,24 +19,19 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
-public class ExecutedFlowNodeFilter implements QueryFilter {
+public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
 
-  private Logger logger = LoggerFactory.getLogger(ExecutedFlowNodeFilter.class);
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
-  public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    if (filter.getExecutedFlowNodes() != null) {
-      addExecutedFlowNodeFilters(query, filter.getExecutedFlowNodes());
-    }
-  }
-
-  private void addExecutedFlowNodeFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDto> flowNodeFilter) {
+  @Override
+  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter) {
     List<QueryBuilder> filters = query.filter();
-    for (ExecutedFlowNodeFilterDto executedFlowNode : flowNodeFilter) {
+    for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDto flowNodeFilter) {
+  private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (IN.equals(flowNodeFilter.getOperator())) {
       for (String value : flowNodeFilter.getValues()) {

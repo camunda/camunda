@@ -2,10 +2,11 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -30,14 +31,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.EQUALS;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.util.VariableHelper.BOOLEAN_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.DATE_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
@@ -50,7 +53,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
-public class VariableFilterIT {
+public class VariableQueryFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -172,7 +175,7 @@ public class VariableFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "aStringValue");
-    filter.getValues().add("anotherValue");
+    filter.getData().getValues().add("anotherValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -260,7 +263,7 @@ public class VariableFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "var", STRING_TYPE, "1");
-    filter.getValues().add("2");
+    filter.getData().getValues().add("2");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -389,7 +392,7 @@ public class VariableFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(IN, "var", variableType, "1");
-      filter.getValues().add("2");
+      filter.getData().getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -418,7 +421,7 @@ public class VariableFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(NOT_IN, "var", variableType, "1");
-      filter.getValues().add("2");
+      filter.getData().getValues().add("2");
       HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
@@ -586,7 +589,8 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", variableType, "1");
       VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", variableType, "10");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
+      List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
+      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
@@ -615,7 +619,8 @@ public class VariableFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", variableType, "2");
       VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", variableType, "2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
+      List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
+      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
       HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
       // then
@@ -633,7 +638,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(1));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -658,7 +663,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(1));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -683,7 +688,7 @@ public class VariableFilterIT {
     String nowMinusTwoSecondsAsString = sdf.format(nowMinusTwoSeconds);
     variables.put("var", nowMinusTwoSeconds);
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -707,7 +712,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(2));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -732,7 +737,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(2));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -758,7 +763,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(2));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -777,7 +782,7 @@ public class VariableFilterIT {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
     Date nowMinus2Seconds = nowDateMinusSeconds(2);
-    Date nowPlus10Seconds = nowDatePlusSeconds(10);
+    Date nowPlus10Seconds = nowDatePlus10Seconds();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDate());
     engineRule.startProcessInstance(processDefinitionId, variables);
@@ -791,7 +796,8 @@ public class VariableFilterIT {
     // when
     VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, sdf.format(nowMinus2Seconds));
     VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, sdf.format(nowPlus10Seconds));
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
+    List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -809,7 +815,7 @@ public class VariableFilterIT {
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDateMinusSeconds(2));
     engineRule.startProcessInstance(processDefinitionId, variables);
-    variables.put("var", nowDatePlusSeconds(10));
+    variables.put("var", nowDatePlus10Seconds());
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -817,7 +823,8 @@ public class VariableFilterIT {
     // when
     VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", DATE_TYPE, nowAsString);
     VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, nowAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{filter, filter2});
+    List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -830,15 +837,15 @@ public class VariableFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    FilterMapDto filter = new FilterMapDto();
-    List<VariableFilterDto> variables = new ArrayList<>();
-    VariableFilterDto variableFilter = new VariableFilterDto();
-    variableFilter.setOperator("foo");
-    variableFilter.setName("foo");
-    variableFilter.setType("foo");
-    variables.add(variableFilter);
-    filter.setVariables(variables);
-    dto.setFilter(filter);
+
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("foo");
+    data.setType("foo");
+    data.setOperator("foo");
+    data.setValues(null);
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
     Response response = getResponse(dto);
@@ -853,15 +860,15 @@ public class VariableFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    FilterMapDto filter = new FilterMapDto();
-    List<VariableFilterDto> variables = new ArrayList<>();
-    VariableFilterDto variableFilter = new VariableFilterDto();
-    variableFilter.setOperator("foo");
-    variableFilter.setName("foo");
-    variableFilter.setValues(Collections.singletonList("foo"));
-    variables.add(variableFilter);
-    filter.setVariables(variables);
-    dto.setFilter(filter);
+
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("foo");
+    data.setType(null);
+    data.setOperator("foo");
+    data.setValues(Collections.singletonList("foo"));
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
     Response response = getResponse(dto);
@@ -876,15 +883,15 @@ public class VariableFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    FilterMapDto filter = new FilterMapDto();
-    List<VariableFilterDto> variables = new ArrayList<>();
-    VariableFilterDto variableFilter = new VariableFilterDto();
-    variableFilter.setOperator("foo");
-    variableFilter.setType("foo");
-    variableFilter.setValues(Collections.singletonList("foo"));
-    variables.add(variableFilter);
-    filter.setVariables(variables);
-    dto.setFilter(filter);
+
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName(null);
+    data.setType("foo");
+    data.setOperator("foo");
+    data.setValues(Collections.singletonList("foo"));
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
     Response response = getResponse(dto);
@@ -899,15 +906,15 @@ public class VariableFilterIT {
     //given
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    FilterMapDto filter = new FilterMapDto();
-    List<VariableFilterDto> variables = new ArrayList<>();
-    VariableFilterDto variableFilter = new VariableFilterDto();
-    variableFilter.setName("foo");
-    variableFilter.setType("foo");
-    variableFilter.setValues(Collections.singletonList("foo"));
-    variables.add(variableFilter);
-    filter.setVariables(variables);
-    dto.setFilter(filter);
+
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("foo");
+    data.setType("foo");
+    data.setOperator(null);
+    data.setValues(Collections.singletonList("foo"));
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
     Response response = getResponse(dto);
@@ -930,20 +937,24 @@ public class VariableFilterIT {
     return new Date(System.currentTimeMillis() - nSecondsInMilliSecond);
   }
 
-  private Date nowDatePlusSeconds(int nSeconds) {
-    long nSecondsInMilliSecond = (nSeconds * 1000L);
+  private Date nowDatePlus10Seconds() {
+    long nSecondsInMilliSecond = (10 * 1000L);
     return new Date(System.currentTimeMillis() + nSecondsInMilliSecond);
   }
 
   private VariableFilterDto createVariableFilter(String operator, String variableName, String variableType, String variableValue) {
-    VariableFilterDto filter = new VariableFilterDto();
-    filter.setOperator(operator);
-    filter.setName(variableName);
-    filter.setType(variableType);
+
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName(variableName);
+    data.setType(variableType);
+    data.setOperator(operator);
     List<String> values = new ArrayList<>();
     values.add(variableValue);
-    filter.setValues(values);
-    return filter;
+    data.setValues(values);
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
   }
 
   private Object changeNumericValueToType(int value, String type) throws ParseException {
@@ -961,18 +972,13 @@ public class VariableFilterIT {
   }
 
   private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variable) {
-    return createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{variable});
+    return createHeatMapQueryWithVariableFilters(processDefinitionId, Collections.singletonList(variable));
   }
 
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilters(String processDefinitionId, VariableFilterDto[] variables) {
+  private HeatMapQueryDto createHeatMapQueryWithVariableFilters(String processDefinitionId, List<FilterDto> variables) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
-
-    FilterMapDto mapDto = new FilterMapDto();
-    for (VariableFilterDto variable : variables) {
-      mapDto.getVariables().add(variable);
-    }
-    dto.setFilter(mapDto);
+    dto.setFilter(variables);
     return dto;
   }
 

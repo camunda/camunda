@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.DateFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,7 +27,7 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LES
  * @author Askar Akhmerov
  */
 @Component
-public class DateFilter implements QueryFilter {
+public class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
 
   @Autowired
   private ConfigurationService configurationService;
@@ -40,14 +39,10 @@ public class DateFilter implements QueryFilter {
     formatter = new SimpleDateFormat(configurationService.getDateFormat());
   }
 
-  public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    this.addDateFilters(query, filter.getDates());
-  }
-
-  private void addDateFilters(BoolQueryBuilder query, List<DateFilterDto> dates) {
+  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates) {
     if (dates != null) {
       List<QueryBuilder> filters = query.filter();
-      for (DateFilterDto dateDto : dates) {
+      for (DateFilterDataDto dateDto : dates) {
         RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(mapTimeColumn(dateDto));
         queryDate = addBoundaries(queryDate, dateDto);
         filters.add(queryDate);
@@ -55,7 +50,7 @@ public class DateFilter implements QueryFilter {
     }
   }
 
-  private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateFilterDto dto) {
+  private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateFilterDataDto dto) {
 
     if (LESS_THAN.equalsIgnoreCase(dto.getOperator())) {
       queryDate.lt(formatter.format(dto.getValue()));
@@ -71,12 +66,12 @@ public class DateFilter implements QueryFilter {
     return queryDate;
   }
 
-  private String mapTimeColumn(DateFilterDto dateDto) {
+  private String mapTimeColumn(DateFilterDataDto dateDto) {
     String result = null;
-    if (DateFilterDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateFilterDataDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = ProcessInstanceType.START_DATE;
     }
-    if (DateFilterDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateFilterDataDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = ProcessInstanceType.END_DATE;
     }
     if (result == null) {

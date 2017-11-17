@@ -1,8 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
@@ -30,24 +29,21 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
-public class VariableFilter implements QueryFilter {
+public class VariableQueryFilter implements QueryFilter<VariableFilterDataDto> {
 
-  private Logger logger = LoggerFactory.getLogger(VariableFilter.class);
+  private Logger logger = LoggerFactory.getLogger(getClass());
 
-  public void addFilters(BoolQueryBuilder query, FilterMapDto filter) {
-    this.addVariableFilters(query, filter.getVariables());
-  }
-
-  private void addVariableFilters(BoolQueryBuilder query, List<VariableFilterDto> variables) {
+  @Override
+  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto> variables) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDto variable : variables) {
+      for (VariableFilterDataDto variable : variables) {
         filters.add(createFilterQueryBuilder(variable));
       }
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(VariableFilterDto dto) {
+  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     QueryBuilder queryBuilder = matchAllQuery();
     switch (dto.getType().toLowerCase()) {
       case "string":
@@ -71,7 +67,7 @@ public class VariableFilter implements QueryFilter {
     return queryBuilder;
   }
 
-  private QueryBuilder createStringQueryBuilder(VariableFilterDto dto) {
+  private QueryBuilder createStringQueryBuilder(VariableFilterDataDto dto) {
     if (dto.getOperator().equals(IN)) {
       return createEqualityMultiValueQueryBuilder(dto);
     } else if (dto.getOperator().equals(NOT_IN)) {
@@ -82,7 +78,7 @@ public class VariableFilter implements QueryFilter {
     return boolQuery();
   }
 
-  private BoolQueryBuilder createEqualityMultiValueQueryBuilder(VariableFilterDto dto) {
+  private BoolQueryBuilder createEqualityMultiValueQueryBuilder(VariableFilterDataDto dto) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     String variableFieldLabel = variableTypeToFieldLabel(dto.getType());
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
@@ -100,7 +96,7 @@ public class VariableFilter implements QueryFilter {
     return boolQueryBuilder;
   }
 
-  private BoolQueryBuilder createInequalityMultiValueQueryBuilder(VariableFilterDto dto) {
+  private BoolQueryBuilder createInequalityMultiValueQueryBuilder(VariableFilterDataDto dto) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     String variableFieldLabel = variableTypeToFieldLabel(dto.getType());
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
@@ -119,7 +115,7 @@ public class VariableFilter implements QueryFilter {
     return boolQueryBuilder;
   }
 
-  private QueryBuilder createNumericQueryBuilder(VariableFilterDto dto) {
+  private QueryBuilder createNumericQueryBuilder(VariableFilterDataDto dto) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (dto.getValues().size() < 1) {
       logger.error("Could not filter for variables! " +
@@ -161,7 +157,7 @@ public class VariableFilter implements QueryFilter {
     return resultQuery;
   }
 
-  private Object retrieveValue(VariableFilterDto dto) {
+  private Object retrieveValue(VariableFilterDataDto dto) {
     String value = dto.getValues().get(0);
     switch (dto.getType().toLowerCase()) {
       case "string":
@@ -182,11 +178,11 @@ public class VariableFilter implements QueryFilter {
     return value;
   }
 
-  private QueryBuilder createDateQueryBuilder(VariableFilterDto dto) {
+  private QueryBuilder createDateQueryBuilder(VariableFilterDataDto dto) {
     return createNumericQueryBuilder(dto);
   }
 
-  private QueryBuilder createBoolQueryBuilder(VariableFilterDto dto) {
+  private QueryBuilder createBoolQueryBuilder(VariableFilterDataDto dto) {
     QueryBuilder queryBuilder = matchAllQuery();
     if (dto.getOperator().equals(EQUALS)) {
       queryBuilder =

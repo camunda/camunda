@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.FilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-public interface QueryFilter {
+import java.util.List;
 
-  void addFilters(BoolQueryBuilder query, FilterMapDto filter);
+public interface QueryFilter<FILTER extends FilterDataDto> {
+
+  void addFilters(BoolQueryBuilder query, List<FILTER> filter);
 }

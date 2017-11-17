@@ -2,12 +2,12 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -25,7 +25,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +33,8 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.camunda.optimize.service.util.VariableHelper.STRING_TYPE;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
@@ -86,7 +86,7 @@ public class MixedFilterIT {
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    queryDto.getFilter().setExecutedFlowNodes(flowNodeFilter);
+    queryDto.getFilter().addAll(flowNodeFilter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
 
     // then
@@ -110,29 +110,22 @@ public class MixedFilterIT {
   }
 
   private VariableFilterDto createVariableFilter(String operator, String variableName, String variableType, String variableValue) {
-    VariableFilterDto filter = new VariableFilterDto();
-    filter.setName(variableName);
-    filter.setOperator(operator);
-    filter.setType(variableType);
-    List<String> values = new ArrayList<>();
-    values.add(variableValue);
-    filter.setValues(values);
-    return filter;
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName(variableName);
+    data.setType(variableType);
+    data.setOperator(operator);
+    data.setValues(Collections.singletonList(variableValue));
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setData(data);
+
+    return variableFilterDto;
   }
 
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variable) {
-    return createHeatMapQueryWithVariableFilters(processDefinitionId, new VariableFilterDto[]{variable});
-  }
-
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilters(String processDefinitionId, VariableFilterDto[] variables) {
+  private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variableFilter) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
 
-    FilterMapDto mapDto = new FilterMapDto();
-    for (VariableFilterDto variable : variables) {
-      mapDto.getVariables().add(variable);
-    }
+    dto.getFilter().add(variableFilter);
     dto.setProcessDefinitionId(processDefinitionId);
-    dto.setFilter(mapDto);
     return dto;
   }
 
