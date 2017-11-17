@@ -1,14 +1,16 @@
 package org.camunda.optimize.qa.performance.steps;
 
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import ru.yandex.qatools.allure.annotations.Step;
 
+import java.util.List;
+
 public class GetDurationGetHeatMapStep extends GetHeatMapStep {
 
-  public GetDurationGetHeatMapStep(FilterMapDto filter) {
+  public GetDurationGetHeatMapStep(List<FilterDto> filter) {
     super(filter);
   }
 

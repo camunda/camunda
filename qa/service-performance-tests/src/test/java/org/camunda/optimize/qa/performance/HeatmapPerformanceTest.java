@@ -1,18 +1,19 @@
 package org.camunda.optimize.qa.performance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.optimize.dto.optimize.query.DateFilterDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.flownode.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.steps.GetDurationGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
-import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,15 +28,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 
 public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
-  private FilterMapDto filter = new FilterMapDto();
+  protected List<FilterDto> filter = new ArrayList<>();
   private PerfTest test;
 
   @Before
   public void setUp() throws JsonProcessingException {
     super.setUp();
-    filter.setDates(new ArrayList<>());
-    filter.setVariables(new ArrayList<>());
-    filter.setExecutedFlowNodes(new ArrayList<>());
+    filter = new ArrayList<>();
     testBuilder = this.testBuilder
         .step(new HeatMapDataGenerationStep());
   }
@@ -61,12 +60,14 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     // given
     String operator = "<";
     String type = "start_date";
-    DateFilterDto date = new DateFilterDto();
+    DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
     date.setValue(new Date());
 
-    filter.getDates().add(date);
+    DateFilterDto dateFilterDto = new DateFilterDto();
+    dateFilterDto.setData(date);
+    filter.add(dateFilterDto);
 
     test = testBuilder
       .step(new GetFrequencyGetHeatMapStep(filter))
@@ -84,12 +85,15 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getFrequencyHeatmapWithVariableFilter() {
     // given
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("var");
+    data.setType("string");
+    data.setOperator(IN);
+    data.setValues(Collections.singletonList("aStringValue"));
+
     VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setName("var");
-    variableFilterDto.setType("string");
-    variableFilterDto.setOperator(IN);
-    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
-    filter.getVariables().add(variableFilterDto);
+    variableFilterDto.setData(data);
+    filter.add(variableFilterDto);
 
     test = testBuilder
       .step(new GetFrequencyGetHeatMapStep(filter))
@@ -111,7 +115,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
       ExecutedFlowNodeFilterBuilder.construct()
         .id("startEvent")
         .build();
-    filter.setExecutedFlowNodes(executedFlowNodes);
+    filter.addAll(executedFlowNodes);
 
     test = testBuilder
       .step(new GetFrequencyGetHeatMapStep(filter))
@@ -148,11 +152,14 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     String operator = "<";
     String type = "start_date";
 
-    DateFilterDto date = new DateFilterDto();
+    DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
     date.setValue(new Date());
-    filter.getDates().add(date);
+
+    DateFilterDto dateFilterDto = new DateFilterDto();
+    dateFilterDto.setData(date);
+    filter.add(dateFilterDto);
 
     test = testBuilder
         .step(new GetDurationGetHeatMapStep(filter))
@@ -170,12 +177,15 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   @Test
   public void getDurationHeatmapWithVariableFilter() {
     // given
+    VariableFilterDataDto data = new VariableFilterDataDto();
+    data.setName("var");
+    data.setType("string");
+    data.setOperator(IN);
+    data.setValues(Collections.singletonList("aStringValue"));
+
     VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setName("var");
-    variableFilterDto.setType("string");
-    variableFilterDto.setOperator(IN);
-    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
-    filter.getVariables().add(variableFilterDto);
+    variableFilterDto.setData(data);
+    filter.add(variableFilterDto);
 
     test = testBuilder
       .step(new GetDurationGetHeatMapStep(filter))
@@ -197,7 +207,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
       ExecutedFlowNodeFilterBuilder.construct()
         .id("startEvent")
         .build();
-    filter.setExecutedFlowNodes(executedFlowNodes);
+    filter.addAll(executedFlowNodes);
 
     test = testBuilder
       .step(new GetDurationGetHeatMapStep(filter))

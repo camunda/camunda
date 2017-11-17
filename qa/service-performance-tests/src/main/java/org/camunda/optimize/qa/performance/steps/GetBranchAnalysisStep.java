@@ -7,9 +7,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -20,15 +20,16 @@ import ru.yandex.qatools.allure.annotations.Step;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public class GetBranchAnalysisStep extends PerfTestStep {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
-  private FilterMapDto filter;
+  private List<FilterDto> filter;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  public GetBranchAnalysisStep(FilterMapDto filter) {
+  public GetBranchAnalysisStep(List<FilterDto> filter) {
     this.filter = filter;
   }
 

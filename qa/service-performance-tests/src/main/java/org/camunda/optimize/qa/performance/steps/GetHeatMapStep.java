@@ -7,9 +7,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.query.FilterMapDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -19,15 +19,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 abstract class GetHeatMapStep extends PerfTestStep {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
-  private FilterMapDto filter;
+  private List<FilterDto> filter;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  GetHeatMapStep(FilterMapDto filter) {
+  GetHeatMapStep(List<FilterDto> filter) {
     this.filter = filter;
   }
 
