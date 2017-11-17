@@ -27,21 +27,10 @@
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
-  <bean id="elasticsearchImportJobExecutor" class="org.camunda.optimize.service.es.ElasticsearchImportJobExecutor" />
-
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"
         factory-bean="objectMapperFactory"
   />
-
-  <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
-  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>
-  <bean id="durationHeatMapReader" class="org.camunda.optimize.service.es.reader.DurationHeatMapReader"/>
-  <bean id="branchAnalysisReader" class="org.camunda.optimize.service.es.reader.BranchAnalysisReader"/>
-  <bean id="statusCheckingService" class="org.camunda.optimize.service.status.StatusCheckingService"/>
-  <bean id="importProgressReporter" class="org.camunda.optimize.service.status.ImportProgressReporter"/>
-
-
 
 </beans>

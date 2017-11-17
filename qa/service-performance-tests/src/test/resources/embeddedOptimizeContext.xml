@@ -30,8 +30,6 @@
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="elasticsearchImportJobExecutor" class="org.camunda.optimize.service.es.ElasticsearchImportJobExecutor" />
-
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
   <bean id="objectMapper"
@@ -39,13 +37,6 @@
         factory-method="createDefaultMapper"
         factory-bean="objectMapperFactory"
   />
-
-  <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
-  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>
-  <bean id="durationHeatMapReader" class="org.camunda.optimize.service.es.reader.DurationHeatMapReader"/>
-  <bean id="correlationReader" class="org.camunda.optimize.service.es.reader.BranchAnalysisReader"/>
-  <bean id="statusCheckingService" class="org.camunda.optimize.service.status.StatusCheckingService"/>
-  <bean id="importProgressReporter" class="org.camunda.optimize.service.status.ImportProgressReporter"/>
 
 
 </beans>
