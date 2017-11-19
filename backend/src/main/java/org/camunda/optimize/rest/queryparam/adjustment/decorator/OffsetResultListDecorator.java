@@ -1,18 +1,16 @@
 package org.camunda.optimize.rest.queryparam.adjustment.decorator;
 
-import org.camunda.optimize.dto.optimize.query.util.SortableFields;
-
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 
-public class OffsetResultListDecorator extends AdjustedResultListDecorator {
+public class OffsetResultListDecorator<T> extends AdjustedResultListDecorator<T> {
 
-  public OffsetResultListDecorator(QueryParameterAdjustedResultList decoratedList) {
+  public OffsetResultListDecorator(QueryParameterAdjustedResultList<T> decoratedList) {
     super(decoratedList);
   }
 
   @Override
-  public <T extends SortableFields> List<T> adjustList() {
+  public List<T> adjustList() {
     List<T> resultList = decoratedList.adjustList();
     MultivaluedMap<String, String> queryParameters = decoratedList.getQueryParameters();
     if (queryParameters.containsKey("resultOffset")) {

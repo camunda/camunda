@@ -4,7 +4,6 @@ import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
@@ -14,7 +13,6 @@ import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
 import org.camunda.optimize.service.es.reader.DurationHeatmapTargetValueReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.reader.VariableReader;
 import org.camunda.optimize.service.es.writer.DurationHeatmapTargetValueWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,9 +57,6 @@ public class ProcessDefinitionRestService {
 
   @Autowired
   private DurationHeatmapTargetValueWriter targetValueWriter;
-
-  @Autowired
-  private VariableReader variableReader;
 
   /**
    * Retrieves all process definition stored in Optimize.
@@ -216,14 +211,6 @@ public class ProcessDefinitionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisDto getBranchAnalysis(BranchAnalysisQueryDto to) {
     return branchAnalysisReader.branchAnalysis(to);
-  }
-
-  @GET
-  @Path("/{id}/variables")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public List<GetVariablesResponseDto> getVariables(@PathParam("id") String processDefinitionId) {
-    return variableReader.getVariables(processDefinitionId);
   }
 
 }

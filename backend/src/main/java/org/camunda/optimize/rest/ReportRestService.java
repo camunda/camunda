@@ -104,7 +104,7 @@ public class ReportRestService {
     try {
       List<ReportDefinitionDto> reports = reportReader.getAllReports();
       MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      reports = QueryParamAdjustmentUtil.adjustResultListAccordingToQueryParameters(reports, queryParameters);
+      reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
       return Response.ok(reports, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       logger.error("Error while trying to fetch all stored reports from Elasticsearch", e);

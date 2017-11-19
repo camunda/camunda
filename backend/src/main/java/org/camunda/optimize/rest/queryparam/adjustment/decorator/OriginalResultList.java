@@ -1,11 +1,9 @@
 package org.camunda.optimize.rest.queryparam.adjustment.decorator;
 
-import org.camunda.optimize.dto.optimize.query.util.SortableFields;
-
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 
-public class OriginalResultList<T extends SortableFields> implements QueryParameterAdjustedResultList {
+public class OriginalResultList<T> implements QueryParameterAdjustedResultList<T> {
 
   private List<T> resultList;
   private MultivaluedMap<String, String> multivaluedMap;

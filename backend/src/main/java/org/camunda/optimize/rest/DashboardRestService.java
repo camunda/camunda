@@ -91,7 +91,7 @@ public class DashboardRestService {
     try {
       List<DashboardDefinitionDto> dashboards = dashboardReader.getAllDashboards();
       MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      dashboards = QueryParamAdjustmentUtil.adjustResultListAccordingToQueryParameters(dashboards, queryParameters);
+      dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
       return Response.ok(dashboards, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       return buildServerErrorResponse(e);

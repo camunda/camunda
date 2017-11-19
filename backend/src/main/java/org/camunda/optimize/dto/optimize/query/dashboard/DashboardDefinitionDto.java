@@ -1,11 +1,9 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
-import org.camunda.optimize.dto.optimize.query.util.SortableFields;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class DashboardDefinitionDto implements SortableFields {
+public class DashboardDefinitionDto {
 
   protected String id;
   protected String name;

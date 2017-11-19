@@ -2,15 +2,11 @@ package org.camunda.optimize.dto.optimize.query.report.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
-
 import org.camunda.optimize.dto.optimize.query.report.filter.data.FilterDataDto;
 
 /**
- * TODO: write that there is actually also a type field
- * @param <DATA>
+ * Abstract class that contains a hidden "type" field to distinguish, which
+ * filter type the jackson object mapper should transform the object to.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({

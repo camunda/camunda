@@ -1,10 +1,8 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
-import org.camunda.optimize.dto.optimize.query.util.SortableFields;
-
 import java.time.LocalDateTime;
 
-public class ReportDefinitionDto implements SortableFields {
+public class ReportDefinitionDto {
 
   protected String id;
   protected String name;

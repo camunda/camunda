@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.variable.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
@@ -249,11 +249,11 @@ public class ImportIT  {
     //when
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String procDefId = instanceDto.getDefinitionId();
-    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
+    List<VariableRetrievalDto> variablesResponseDtos =
+      embeddedOptimizeRule.target("variables/" + procDefId)
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<GetVariablesResponseDto>>(){});
+        .get(new GenericType<List<VariableRetrievalDto>>(){});
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));
@@ -278,11 +278,11 @@ public class ImportIT  {
     // when
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String procDefId = engineRule.getProcessDefinitionId();
-    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
+    List<VariableRetrievalDto> variablesResponseDtos =
+      embeddedOptimizeRule.target("variables/" + procDefId)
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<GetVariablesResponseDto>>(){});
+        .get(new GenericType<List<VariableRetrievalDto>>(){});
 
     //then
     assertThat(variablesResponseDtos.size(),is(0));
