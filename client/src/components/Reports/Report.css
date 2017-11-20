@@ -1,40 +1,40 @@
-.Dashboard__header {
+.Report__header {
   display: flex;
   margin-bottom: 32px;
 }
 
-.Dashboard__name-container {
+.Report__name-container {
   flex-grow: 1;
   padding-right: 48px;
 }
 
-.Dashboard__heading {
+.Report__heading {
   font-size: 2em;
   font-weight: bold;
   margin: 0;
 }
 
-.Dashboard__metadata {
+.Report__metadata {
   font-size: 14px;
   color: #666666;
   margin-top: 6px;
 }
 
-.Dashboard__name-input {
+.Report__name-input {
   font-size: 2em;
   width: 100%;
   font-weight: bold;
 }
 
-.Dashboard__tools {
+.Report__tools {
   flex-shrink: 0;
   margin-top: 8px;
 }
 
-.Dashboard__tool-button {
+.Report__tool-button {
   margin-right: 6px;
 }
 
-.Dashboard__tool-button:last-child {
+.Report__tool-button:last-child {
   margin-right: 0;
 }

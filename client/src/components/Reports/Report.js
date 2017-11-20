@@ -6,6 +6,8 @@ import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
 import ReportView from './ReportView';
 
+import './Report.css';
+
 export default class Report extends React.Component {
   constructor(props) {
     super(props);
@@ -102,14 +104,19 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
 
     return (
-      <div>
-        <input id='name' type='text' onChange={this.updateName} value={name || ''}></input>
-        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-        <div>
-          <Link id='save' className="Button" to={`/report/${this.id}`} onClick={this.save}>Save</Link>
-          <Link id='cancel' className="Button" to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
-          <ControlPanel {...data} onChange={this.updateReport} />
+      <div className='Report'>
+        <div className='Report__header'>
+          <div className='Report__name-container'>
+            <input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input'></input>
+            <div className='Report__metadata'>{moment(lastModified).format('lll')} | {lastModifier}</div>
+          </div>
+          <div className='Report__tools'>
+            <Link id='save' className='Button Report__tool-button' to={`/report/${this.id}`} onClick={this.save}>Save</Link>
+            <Link id='cancel' className='Button Report__tool-button' to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+          </div>
         </div>
+
+        <ControlPanel {...data} onChange={this.updateReport} />
 
         <ReportView data={reportResult} />
       </div>
@@ -120,12 +127,16 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, reportResult} = this.state;
 
     return (
-      <div>
-        <h1>{name}</h1>
-        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-        <div>
-          <Link id='edit' className="Button" to={`/report/${this.id}/edit`}>Edit</Link>
-          <button className="Button" onClick={this.deleteReport}>Delete</button>
+      <div className='Report'>
+        <div className='Report__header'>
+          <div className='Report__name-container'>
+            <h1 className='Report__name'>{name}</h1>
+            <div className='Report__metadata'>{moment(lastModified).format('lll')} | {lastModifier}</div>
+          </div>
+          <div className='Report__tools'>
+            <Link id='edit' className='Button Report__tool-button' to={`/report/${this.id}/edit`}>Edit</Link>
+            <button className='Button Report__tool-button' onClick={this.deleteReport}>Delete</button>
+          </div>
         </div>
 
         <ReportView data={reportResult} />

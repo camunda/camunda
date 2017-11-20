@@ -4,8 +4,9 @@ import {Link, Redirect} from 'react-router-dom';
 
 import {Button} from 'components';
 import {loadDashboard, remove, update} from './service';
-import './Dashboard.css';
 import EditGrid from './ReportGrid/EditGrid';
+
+import './Dashboard.css';
 
 export default class Dashboard extends React.Component {
   constructor(props) {
@@ -103,13 +104,15 @@ export default class Dashboard extends React.Component {
     const {name, lastModifier, lastModified} = state;
 
     return (
-      <div className='dashboard'>
-        <div className='navigation'>
-          <input type="text" id={'name'} onChange={this.updateName} value={name || ''}></input>
-          <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-          <div>
-            <Link id={'save'} className="Button" to={`/dashboard/${this.id}`} onClick={this.saveChanges.bind(this)}>Save</Link>
-            <Link id={'cancel'} className="Button" to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
+      <div className='Dashboard'>
+        <div className='Dashboard__header'>
+          <div className='Dashboard__name-container'>
+            <input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Dashboard__name-input'></input>
+            <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
+          </div>
+          <div className='Dashboard__tools'>
+            <Link id={'save'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}`} onClick={this.saveChanges.bind(this)}>Save</Link>
+            <Link id={'cancel'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
         <EditGrid
@@ -127,12 +130,16 @@ export default class Dashboard extends React.Component {
     const {name, lastModifier, lastModified} = state;
 
     return (
-      <div>
-        <h1>{name}</h1>
-        <div>{moment(lastModified).format('lll')} | {lastModifier}</div>
-        <div>
-          <Link id={'edit'} className="Button" to={`/dashboard/${this.id}/edit`}>Edit</Link>
-          <Button onClick={this.deleteDashboard}>Delete</Button>
+      <div className='Dashboard'>
+        <div className='Dashboard__header'>
+          <div className='Dashboard__name-container'>
+            <h1 className='Dashboard__heading'>{name}</h1>
+            <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
+          </div>
+          <div className='Dashboard__tools'>
+            <Link id={'edit'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
+            <Button onClick={this.deleteDashboard} className='Dashboard__tool-button'>Delete</Button>
+          </div>
         </div>
       </div>
     )
