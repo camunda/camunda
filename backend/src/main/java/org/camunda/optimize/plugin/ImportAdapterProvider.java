@@ -81,7 +81,7 @@ public class ImportAdapterProvider {
   private String fetchName(BeanDefinition beanDefinition) {
     String result = null;
     try {
-       result = ClassUtils.forName(beanDefinition.getBeanClassName()).getSimpleName();
+       result = ClassUtils.forName(beanDefinition.getBeanClassName(), this.getClass().getClassLoader()).getSimpleName();
     } catch (ClassNotFoundException e) {
       logger.error("error while loading plugin", e);
     }

@@ -1,9 +1,8 @@
 package org.camunda.optimize.test.it.rule;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -208,13 +207,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   private Client getClient() {
-    // register the default object mapper for serialization/deserialization ob objects
-    ObjectMapper mapper = getApplicationContext().getBean(ObjectMapper.class);
-    JacksonJaxbJsonProvider jsonProvider =new JacksonJaxbJsonProvider();
-    jsonProvider.setMapper(mapper);
+    // register the default object provider for serialization/deserialization ob objects
+    OptimizeObjectMapperProvider provider = getApplicationContext()
+        .getBean(OptimizeObjectMapperProvider.class);
 
     Client client = ClientBuilder.newClient()
-      .register(jsonProvider);
+      .register(provider);
     client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
     client.property(ClientProperties.READ_TIMEOUT,    10000);
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);

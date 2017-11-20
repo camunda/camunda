@@ -12,10 +12,22 @@
 
   <properties>
     <jetty.version>9.2.21.v20170120</jetty.version>
-    <jersy.version>2.25</jersy.version>
+    <jersey.version>2.26</jersey.version>
     <skip.elasticsearch>false</skip.elasticsearch>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
 
@@ -39,62 +51,36 @@
     <!-- JAX-RS -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-server</artifactId>
-      <version>${jersy.version}</version>
+      <artifactId>jersey-common</artifactId>
+      <version>${jersey.version}</version>
     </dependency>
+
     <dependency>
-      <groupId>org.glassfish.jersey.containers</groupId>
-      <artifactId>jersey-container-servlet-core</artifactId>
-      <version>${jersy.version}</version>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-entity-filtering</artifactId>
+      <version>${jersey.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.containers</groupId>
-      <artifactId>jersey-container-jetty-http</artifactId>
-      <version>${jersy.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>jetty-server</artifactId>
-          <groupId>org.eclipse.jetty</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
-      <version>${jersy.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>jackson-jaxrs-json-provider</artifactId>
-          <groupId>com.fasterxml.jackson.jaxrs</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-databind</artifactId>
-          <groupId>com.fasterxml.jackson.core</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-annotations</artifactId>
-          <groupId>com.fasterxml.jackson.core</groupId>
-        </exclusion>
-      </exclusions>
+      <version>${jersey.version}</version>
     </dependency>
 
     <!-- Jaxon -->
     <dependency>
       <groupId>com.fasterxml.jackson.jaxrs</groupId>
       <artifactId>jackson-jaxrs-json-provider</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
@@ -153,8 +139,8 @@
     <!--This adds transitive dependency on spring, to control version exclude and add explicit dependencies-->
     <dependency>
       <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-spring3</artifactId>
-      <version>${jersy.version}</version>
+      <artifactId>jersey-spring4</artifactId>
+      <version>${jersey.version}</version>
     </dependency>
 
     <dependency>

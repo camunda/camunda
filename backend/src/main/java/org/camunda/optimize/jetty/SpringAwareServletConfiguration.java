@@ -7,6 +7,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -48,8 +49,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
         .packages(optimizeRestPackage)
         .register(JacksonFeature.class);
 
-    ServletHolder jerseyServlet = new ServletHolder(new
-        org.glassfish.jersey.servlet.ServletContainer(application));
+    ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(application));
     jerseyServlet.setInitOrder(0);
     return jerseyServlet;
   }

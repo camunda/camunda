@@ -10,6 +10,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Component;
 
 import java.text.DateFormat;
@@ -35,20 +36,28 @@ public class ObjectMapperFactory {
    */
   public ObjectMapper createDefaultMapper() {
     if (result == null) {
-      result = new ObjectMapper();
-      result.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-      result.configure(SerializationFeature.INDENT_OUTPUT, true);
-      result.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-      result.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-      result.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-      DateFormat df = new SimpleDateFormat(configurationService.getDateFormat());
-      result.setDateFormat(df);
       JavaTimeModule javaTimeModule = new JavaTimeModule();
       javaTimeModule.addSerializer(LocalDateTime.class,
-        new LocalDateTimeSerializer(dateTimeFormatter));
+          new LocalDateTimeSerializer(dateTimeFormatter));
       javaTimeModule.addDeserializer(LocalDateTime.class,
-        new LocalDateTimeDeserializer(dateTimeFormatter));
-      result.registerModule(javaTimeModule);
+          new LocalDateTimeDeserializer(dateTimeFormatter));
+
+      DateFormat df = new SimpleDateFormat(configurationService.getDateFormat());
+
+      result = Jackson2ObjectMapperBuilder
+          .json()
+          .modules(javaTimeModule)
+          .featuresToDisable(
+              SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+              DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+              DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+          )
+          .featuresToEnable(
+              JsonParser.Feature.ALLOW_COMMENTS,
+              SerializationFeature.INDENT_OUTPUT
+          )
+          .dateFormat(df)
+          .build();
     }
     return result;
   }
