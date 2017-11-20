@@ -4,6 +4,7 @@ cfgHome=/usr/local/zeebe/conf/zeebe.cfg.toml
 cfgLog=/usr/local/zeebe/conf/log4j2.xml
 
 INITIAL_CONTACT_POINT=${INITIAL_CONTACT_POINT:-}
+ZEEBE_HOST=${ZEEBE_HOST:-$(hostname -i)}
 
 if [[ "$DEPLOY_ON_KUBERNETES" == "true" ]]; then
 
@@ -19,7 +20,7 @@ if [[ "$DEPLOY_ON_KUBERNETES" == "true" ]]; then
 
 else
 
-    sed -i "s/@DNSNAME@/$(hostname -i)/g" $cfgHome
+    sed -i "s/@DNSNAME@/${ZEEBE_HOST}/g" $cfgHome
 
     if [ -n "${INITIAL_CONTACT_POINT}" ]; then
         sed -i "s/@INITIAL_CONTACT_POINT@/initialContactPoints = \[\n\t\"${INITIAL_CONTACT_POINT}\"\n\]/g" $cfgHome
