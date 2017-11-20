@@ -17,14 +17,21 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import io.zeebe.broker.incident.data.*;
+import io.zeebe.broker.incident.data.ErrorType;
+import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
@@ -48,6 +55,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final Long2LongZbMap failedTaskMap;
 
     private final IncidentMap incidentMap;
+    private Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
     private final SnapshotSupport indexSnapshot;
 
@@ -72,9 +80,9 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private long eventKey;
     private long eventPosition;
+    private long sourceEventPosition;
 
     private LogStreamReader logStreamReader;
-    private LogStream targetStream;
 
     public IncidentStreamProcessor()
     {
@@ -98,8 +106,6 @@ public class IncidentStreamProcessor implements StreamProcessor
     public void onOpen(StreamProcessorContext context)
     {
         logStreamReader = new BufferedLogStreamReader(context.getSourceStream());
-
-        targetStream = context.getTargetStream();
     }
 
     @Override
@@ -126,6 +132,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
         eventKey = event.getKey();
         eventPosition = event.getPosition();
+        sourceEventPosition = event.getSourceEventPosition();
 
         sourceEventMetadata.reset();
         event.readMetadata(sourceEventMetadata);
@@ -185,17 +192,19 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             case PAYLOAD_UPDATED:
                 return payloadUpdatedProcessor;
-
-            case ACTIVITY_ACTIVATED:
-            case ACTIVITY_COMPLETED:
-            case GATEWAY_ACTIVATED:
-                return activityIncidentResolvedProcessor;
-
             case ACTIVITY_TERMINATED:
                 return activityTerminatedProcessor;
-
             default:
+            {
+                final long value = resolvingEvents.get(sourceEventPosition, -1);
+                if (value > 0)
+                {
+                    // resolved
+                    activityIncidentResolvedProcessor.setCurrentIncidentKey(value);
+                    return activityIncidentResolvedProcessor;
+                }
                 return null;
+            }
         }
     }
 
@@ -329,13 +338,13 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private final class ResolveIncidentProcessor implements EventProcessor
     {
-        private boolean isResolved;
+        private boolean onResolving;
         private LoggedEvent failureEvent;
 
         @Override
         public void processEvent()
         {
-            isResolved = false;
+            onResolving = false;
 
             incidentMap.wrapIncidentKey(eventKey);
 
@@ -349,7 +358,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 workflowInstanceEvent.setPayload(incidentEvent.getPayload());
 
-                isResolved = true;
+                onResolving = true;
             }
             else
             {
@@ -360,9 +369,9 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            long position = 0L;
+            final long position;
 
-            if (isResolved)
+            if (onResolving)
             {
                 targetEventMetadata.reset();
                 failureEvent.readMetadata(targetEventMetadata);
@@ -376,6 +385,8 @@ public class IncidentStreamProcessor implements StreamProcessor
                         .metadataWriter(targetEventMetadata)
                         .valueWriter(workflowInstanceEvent)
                         .tryWrite();
+
+                resolvingEvents.put(position, eventKey);
             }
             else
             {
@@ -387,7 +398,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            if (isResolved)
+            if (onResolving)
             {
                 incidentMap
                     .setState(STATE_RESOLVING)
@@ -468,42 +479,37 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final class ActivityIncidentResolvedProcessor implements EventProcessor
     {
         private boolean isResolved;
-        private long incidentKey;
+        private long currentIncidentKey;
 
         @Override
         public void processEvent()
         {
             isResolved = false;
 
-            incidentKey = activityInstanceMap.get(eventKey, -1L);
+            incidentMap.wrapIncidentKey(currentIncidentKey);
 
-            if (incidentKey > 0)
+            if (incidentMap.getState() == STATE_RESOLVING)
             {
-                incidentMap.wrapIncidentKey(incidentKey);
+                // incident is resolved when read next activity lifecycle event
+                final LoggedEvent incidentCreateEvent = findEvent(incidentMap.getIncidentEventPosition());
 
-                if (incidentMap.getState() == STATE_RESOLVING)
-                {
-                    // incident is resolved when read next activity lifecycle event
-                    final LoggedEvent incidentCreateEvent = findEvent(incidentMap.getIncidentEventPosition());
+                incidentEvent.reset();
+                incidentCreateEvent.readValue(incidentEvent);
 
-                    incidentEvent.reset();
-                    incidentCreateEvent.readValue(incidentEvent);
+                incidentEvent.setState(IncidentState.RESOLVED);
 
-                    incidentEvent.setState(IncidentState.RESOLVED);
-
-                    isResolved = true;
-                }
-                else
-                {
-                    throw new IllegalStateException("inconsistent incident map");
-                }
+                isResolved = true;
+            }
+            else
+            {
+                throw new IllegalStateException("inconsistent incident map");
             }
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return isResolved ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
+            return isResolved ? writeIncidentEvent(writer.key(currentIncidentKey)) : 0L;
         }
 
         @Override
@@ -511,9 +517,16 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isResolved)
             {
-                incidentMap.remove(incidentKey);
+                incidentMap.remove(currentIncidentKey);
                 activityInstanceMap.remove(incidentEvent.getActivityInstanceKey(), -1L);
+                resolvingEvents.remove(sourceEventPosition, -1);
+                currentIncidentKey = -1;
             }
+        }
+
+        public void setCurrentIncidentKey(long currentIncidentKey)
+        {
+            this.currentIncidentKey = currentIncidentKey;
         }
     }
 

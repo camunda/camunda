@@ -32,9 +32,14 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import org.agrona.MutableDirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class IncidentTest
@@ -509,6 +514,39 @@ public class IncidentTest
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
+                              .startEvent()
+                              .exclusiveGateway("xor")
+                              .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+                              .endEvent()
+                              .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+                              .endEvent()
+                              .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+
+        // then incident is created
+        testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
+
+        // when correct payload is used
+        updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
+
+        // then
+        testClient.receiveSingleEvent(incidentEvents("RESOLVE"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN"));
+        testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+    }
+
+    @Test
+    public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableWorkflow("workflow")
                           .startEvent()
                           .exclusiveGateway("xor")
                           .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
@@ -525,11 +563,23 @@ public class IncidentTest
 
         final SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
 
-        // when
+        // when not correct payload is used
+        updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 10).byteArray());
+
+        // then
+        testClient.receiveSingleEvent(incidentEvents("RESOLVE"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
+        testClient.receiveSingleEvent(incidentEvents("RESOLVE_FAILED"));
+
+        // when correct payload is used
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
 
         // then
+        testClient.receiveSingleEvent(incidentEvents("RESOLVE"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN"));
         testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED"));
         testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
     }
 
