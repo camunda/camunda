@@ -6,6 +6,8 @@ import {Table, Button} from 'components';
 
 import {load, create, remove} from './service';
 
+import './EntityList.css';
+
 export default class EntityList extends React.Component {
   constructor(props) {
     super(props);
@@ -44,8 +46,7 @@ export default class EntityList extends React.Component {
   formatData = data => data.map(({name, id, lastModified, lastModifier}) => {
     const entry = [
       {content: name, link: `/${this.props.api}/${id}`},
-      `Last modified at ${moment(lastModified).format('lll')}`,
-      `by ${lastModifier}`
+      `Last modified at ${moment(lastModified).format('lll')} by ${lastModifier}`
     ];
 
     if(this.props.operations.includes('delete')) {
@@ -74,15 +75,18 @@ export default class EntityList extends React.Component {
       createButton = <Button className='EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
     }
 
-    const header = <h1>{this.props.label}s</h1>;
+    const header = <h1 className='EntityList__heading'>{this.props.label}s</h1>;
 
     let list;
     if(loaded) {
-      list = (<ul>
+      list = (<ul className='EntityList__list'>
         {this.formatData(this.state.data).map((row, idx) => {
-          return (<li key={idx}>
+          return (<li key={idx} className='EntityList__item'>
             {row.map((cell, idx) => {
-              return (<span key={idx}>
+              return (<span key={idx} className={'EntityList__data'
+                + ((cell.content === 'Edit' || cell.content === 'Delete') ? ' EntityList__data--tool' : '')
+                + (idx === 0 ? ' EntityList__data--title' : '')
+                + (idx === 1 ? ' EntityList__data--metadata' : '')}>
                 {Table.renderCell(cell)}
               </span>);
             })}
@@ -96,9 +100,13 @@ export default class EntityList extends React.Component {
     if(redirectToEntity !== false) {
       return (<Redirect to={`/${this.props.api}/${redirectToEntity}/edit`} />);
     } else {
-      return (<section>
-        {createButton}
-        {header}
+      return (<section className='EntityList'>
+        <div className='EntityList__header'>
+          {header}
+          <div className='EntityList__tools'>
+            {createButton}
+          </div>
+        </div>
         {list}
         {this.props.children}
       </section>);

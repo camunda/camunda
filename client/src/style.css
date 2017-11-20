@@ -24,6 +24,7 @@ input[type="password"] {
 
 main {
   padding: 15px;
+
 }
 
 /* Typography */
@@ -46,6 +47,7 @@ h5 {
 h1 {
   font-size: 2em;
   font-weight: bold;
+  margin-bottom: .5em;
 }
 
 section h1 {
