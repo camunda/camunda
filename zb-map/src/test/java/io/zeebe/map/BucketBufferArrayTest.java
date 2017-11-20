@@ -907,7 +907,7 @@ public class BucketBufferArrayTest
     {
         // given
         final long bucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
-        final long firstoverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long firstOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
         final long secondOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
         final long thirdOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
 
@@ -918,8 +918,8 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBucketCount()).isEqualTo(4);
         assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
 
-        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstoverflowBucketAddress);
-        assertThat(bucketBufferArray.getBucketOverflowPointer(firstoverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstOverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(firstOverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
     }
 
     @Test
