@@ -103,4 +103,8 @@ public class EngineImportJobScheduler extends Thread {
       }
     }
   }
+
+  public boolean isEnabled() {
+    return this.isEnabled;
+  }
 }

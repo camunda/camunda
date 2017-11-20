@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing;
 
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.job.factory.ActivityInstanceEngineImportJobFactory;
 import org.camunda.optimize.service.engine.importing.job.factory.EngineImportJobFactory;
 import org.camunda.optimize.service.engine.importing.job.factory.FinishedProcessInstanceEngineImportJobFactory;
@@ -8,16 +9,19 @@ import org.camunda.optimize.service.engine.importing.job.factory.ProcessDefiniti
 import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
 import org.camunda.optimize.service.engine.importing.job.factory.UnfinishedProcessInstanceEngineImportJobFactory;
 import org.camunda.optimize.service.engine.importing.job.factory.VariableInstanceEngineImportJobFactory;
-import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.camunda.optimize.service.util.BeanHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class EngineImportJobSchedulerFactory {
+public class EngineImportJobSchedulerFactory implements ConfigurationReloadable {
 
   @Autowired
   private EngineImportJobExecutor engineImportJobExecutor;
@@ -26,7 +30,7 @@ public class EngineImportJobSchedulerFactory {
   private ConfigurationService configurationService;
 
   @Autowired
-  private EngineInstanceHelper engineInstanceHelper;
+  private BeanHelper beanHelper;
 
   private List<EngineImportJobScheduler> schedulers;
 
@@ -51,19 +55,19 @@ public class EngineImportJobSchedulerFactory {
     List<EngineImportJobFactory> factories = new ArrayList<>();
 
     factories.add(
-        engineInstanceHelper.getInstance(ActivityInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ActivityInstanceEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(FinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(FinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(ProcessDefinitionEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ProcessDefinitionEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(ProcessDefinitionXmlEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ProcessDefinitionXmlEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(StoreIndexesEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(StoreIndexesEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(UnfinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(UnfinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
     factories.add(
-        engineInstanceHelper.getInstance(VariableInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(VariableInstanceEngineImportJobFactory.class, engineAlias));
 
     return factories;
   }
@@ -74,5 +78,16 @@ public class EngineImportJobSchedulerFactory {
     }
 
     return schedulers;
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    if (schedulers != null) {
+      for (EngineImportJobScheduler oldScheduler : schedulers) {
+        oldScheduler.disable();
+      }
+      schedulers = this.buildSchedulers();
+    }
+
   }
 }

@@ -6,7 +6,7 @@ import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
 import java.util.List;
 
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAGE extends ImportPage>
-  extends EngineEntityFetcher<ENG, PAGE> {
+    extends EngineEntityFetcher<ENG, PAGE> {
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = 0L;
@@ -24,7 +24,7 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   @Override
   public List<ENG> fetchEngineEntities(PAGE page) {
     List<ENG> result = null;
-    while (result == null) {
+    while (result == null && backoffCounter < configurationService.getMaximumBackoff() ) {
       try {
         result = fetchEntities(page);
       } catch (Exception exception) {
@@ -51,7 +51,7 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   }
 
   private long calculateSleepTime() {
-    backoffCounter = Math.min(backoffCounter+1, configurationService.getMaximumBackoff());
+    backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
     long interval = configurationService.getImportHandlerWait();
     long sleepTimeInMs = interval * backoffCounter;
     return sleepTimeInMs;
@@ -59,13 +59,13 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
 
   private void logDebugSleepInformation(long sleepTime) {
     logger.debug(
-      "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
-      sleepTime
+        "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
+        sleepTime
     );
   }
 
   private void logError(Exception e) {
-    logger.error("Error during fetching of entities. Please check the connection!", e);
+    logger.error("Error during fetching of entities. Please check the connection with [{}]!", engineAlias, e);
   }
 
 }

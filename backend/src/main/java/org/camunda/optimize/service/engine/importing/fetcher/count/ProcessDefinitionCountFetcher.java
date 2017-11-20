@@ -1,31 +1,37 @@
 package org.camunda.optimize.service.engine.importing.fetcher.count;
 
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
 
 @Component
-public class ProcessDefinitionCountFetcher {
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public class ProcessDefinitionCountFetcher extends AbstractEngineAwareFetcher {
 
-  @Autowired
-  private Client engineClient;
 
-  @Autowired
-  private ConfigurationService configurationService;
+  public ProcessDefinitionCountFetcher(String engineAlias) {
+    super(engineAlias);
+  }
 
   public Long fetchProcessDefinitionCount() {
-    CountDto count = engineClient
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getProcessDefinitionCountEndpoint())
-      .request()
-      .get(CountDto.class);
-    return count.getCount();
+    long result = 0;
+    try {
+      CountDto count = getEngineClient()
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+          .path(configurationService.getProcessDefinitionCountEndpoint())
+          .request()
+          .get(CountDto.class);
+      result = count.getCount();
+    } catch (Exception e) {
+      logger.error("cant fetch PD count from [{}]", engineAlias, e);
+    }
+    return result;
   }
 
-  private String getEngineAlias() {
-    return configurationService.getConfiguredEngines().keySet().iterator().next();
-  }
 }

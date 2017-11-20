@@ -3,7 +3,7 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
-import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -21,7 +21,7 @@ public class ProcessDefinitionXmlFetcher
   private ProcessDefinitionFetcher processDefinitionFetcher;
 
   @Autowired
-  private EngineInstanceHelper engineInstanceHelper;
+  private BeanHelper beanHelper;
 
 
   public ProcessDefinitionXmlFetcher(String engineAlias) {
@@ -29,8 +29,8 @@ public class ProcessDefinitionXmlFetcher
   }
 
   @PostConstruct
-  private void init() {
-    processDefinitionFetcher = engineInstanceHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
+  public void init() {
+    processDefinitionFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
   }
 
   @Override
@@ -48,7 +48,7 @@ public class ProcessDefinitionXmlFetcher
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>(entries.size());
     long requestStart = System.currentTimeMillis();
     for (ProcessDefinitionEngineDto engineDto : entries) {
-      ProcessDefinitionXmlEngineDto xml = client
+      ProcessDefinitionXmlEngineDto xml = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(configurationService.getProcessDefinitionXmlEndpoint(engineDto.getId()))
         .request(MediaType.APPLICATION_JSON)

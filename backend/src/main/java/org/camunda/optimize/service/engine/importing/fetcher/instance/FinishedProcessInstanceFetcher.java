@@ -41,7 +41,7 @@ public class FinishedProcessInstanceFetcher extends
                                                                                 long maxPageSize,
                                                                                 String processDefinitionId) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> entries = client
+    List<HistoricProcessInstanceDto> entries = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.engine.importing.index.handler;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -23,6 +24,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
   protected long maxEntityCount = 0;
   protected String engineAlias;
 
+  public AllEntitiesBasedImportIndexHandler(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
   protected void init() {
     readIndexFromElasticsearch();
     updateMaxEntityCount();
@@ -30,7 +35,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(getElasticsearchImportIndexType());
+      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineAlias));
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
       maxEntityCount = storedIndex.get().getMaxEntityCount();
@@ -43,6 +48,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     indexToStore.setImportIndex(importIndex);
     indexToStore.setMaxEntityCount(maxEntityCount);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchImportIndexType());
+    indexToStore.setEngine(engineAlias);
     return indexToStore;
   }
 
@@ -60,7 +66,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     }
   }
 
-  private void updateMaxEntityCount() {
+  public void updateMaxEntityCount() {
     this.maxEntityCount = fetchMaxEntityCount();
   }
 
@@ -117,4 +123,8 @@ public abstract class AllEntitiesBasedImportIndexHandler
     importIndex = 0;
   }
 
+  @Override
+  public String getEngineAlias() {
+    return engineAlias;
+  }
 }

@@ -42,7 +42,7 @@ public class VariableInstanceFetcher
     Set<String> supportedVariableTypes = new HashSet<>(Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES));
     pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
 
-    List<HistoricVariableInstanceDto> entries = client
+    List<HistoricVariableInstanceDto> entries = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .queryParam("deserializeValues", "false")
       .path(configurationService.getHistoricVariableInstanceEndpoint())

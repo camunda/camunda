@@ -37,7 +37,7 @@ public class DefinitionBasedImportIndexReader {
         .prepareGet(
           configurationService.getOptimizeIndex(),
           configurationService.getProcessDefinitionImportIndexType(),
-          typeIndexComesFrom)
+          EsHelper.constructKey(typeIndexComesFrom, engineAlias))
         .setFetchSource(true)
         .get();
     } catch (Exception ignored) {}

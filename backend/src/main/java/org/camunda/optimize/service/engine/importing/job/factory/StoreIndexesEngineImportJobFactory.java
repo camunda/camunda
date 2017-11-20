@@ -92,17 +92,25 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
 
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
     List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
-    for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias)) {
-      allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
+
+    if (importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias) != null) {
+      for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias)) {
+        allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
+      }
     }
+
     return allEntitiesBasedImportIndexes;
   }
 
   private List<DefinitionBasedImportIndexDto> getDefinitionBasedImportIndexes() {
     List<DefinitionBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
-    for (DefinitionBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias)) {
-      allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
+
+    if (importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias) != null) {
+      for (DefinitionBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias)) {
+        allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
+      }
     }
+
     return allEntitiesBasedImportIndexes;
   }
 

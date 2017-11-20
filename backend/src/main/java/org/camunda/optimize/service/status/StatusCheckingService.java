@@ -2,6 +2,7 @@ package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.engine.ProcessEngineDto;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -28,7 +29,7 @@ public class StatusCheckingService {
   private ConfigurationService configurationService;
 
   @Autowired
-  private Client engineClient;
+  private EngineClientFactory engineClientFactory;
 
 
   public ConnectionStatusDto getConnectionStatus() {
@@ -47,7 +48,7 @@ public class StatusCheckingService {
     try {
       String endPoint = configurationService.getEngineRestApiEndpoint(engineAlias);
       String engineEndpoint = endPoint + "/engine";
-      Response response = engineClient
+      Response response = getEngineClient(engineAlias)
         .target(engineEndpoint)
         .request(MediaType.APPLICATION_JSON)
         .get();
@@ -58,6 +59,10 @@ public class StatusCheckingService {
       // do nothing
     }
     return isConnected;
+  }
+
+  private Client getEngineClient(String engineAlias) {
+    return engineClientFactory.getInstance(engineAlias);
   }
 
   private boolean engineWithEngineNameIsRunning(Response response, String engineName) {
@@ -84,7 +89,7 @@ public class StatusCheckingService {
     this.elasticsearchClient = elasticsearchClient;
   }
 
-  public void setEngineClient(Client engineClient) {
-    this.engineClient = engineClient;
+  public void setEngineClientFactory(EngineClientFactory engineClientFactory) {
+    this.engineClientFactory = engineClientFactory;
   }
 }

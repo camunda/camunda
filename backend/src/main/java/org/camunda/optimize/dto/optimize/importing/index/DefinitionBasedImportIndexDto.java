@@ -12,7 +12,6 @@ public class DefinitionBasedImportIndexDto implements ImportIndexDto {
   protected String esTypeIndexRefersTo;
   protected String engine;
 
-
   public DefinitionImportInformation getCurrentProcessDefinition() {
     return currentProcessDefinition;
   }

@@ -5,6 +5,15 @@ public class AllEntitiesBasedImportIndexDto implements ImportIndexDto {
   private long importIndex;
   private long maxEntityCount;
   private String esTypeIndexRefersTo;
+  private String engine;
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(String engine) {
+    this.engine = engine;
+  }
 
   public long getImportIndex() {
     return importIndex;

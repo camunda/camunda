@@ -3,19 +3,17 @@ package org.camunda.optimize.service.engine.importing.job.factory;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.engine.importing.job.ProcessDefinitionEngineImportJob;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +32,7 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
   @Autowired
-  private EngineInstanceHelper engineInstanceHelper;
+  private BeanHelper beanHelper;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -57,7 +55,7 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineAlias);
-    engineEntityFetcher = engineInstanceHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
+    engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
     missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, getElasticsearchType());
   }
 

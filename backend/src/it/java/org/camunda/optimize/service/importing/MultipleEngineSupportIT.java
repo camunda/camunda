@@ -42,7 +42,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class MultipleEngineSupportIT {
@@ -99,6 +98,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -118,6 +118,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     secondEngineRule.deployAndStartProcess(
       Bpmn.createExecutableProcess()
@@ -135,6 +136,8 @@ public class MultipleEngineSupportIT {
   public void importProgressReportWorksEvenIfOneEngineIsDown() throws OptimizeException {
     // given
     addNonExistingSecondEngineToConfiguration();
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(1l);
+    embeddedOptimizeRule.reloadConfiguration();
     defaultEngineRule.deployAndStartProcess(
       Bpmn.createExecutableProcess()
         .startEvent()
@@ -175,6 +178,7 @@ public class MultipleEngineSupportIT {
   public void connectionStatusCheckWithOneEngineDown() throws IOException, OptimizeException {
     // given
     addNonExistingSecondEngineToConfiguration();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // when
     Response response = embeddedOptimizeRule.target("status/connection")
@@ -201,6 +205,7 @@ public class MultipleEngineSupportIT {
     // when
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(configurationService.getProcessDefinitionXmlType())
@@ -240,6 +245,7 @@ public class MultipleEngineSupportIT {
     // when
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(configurationService.getProcessDefinitionType())
@@ -268,6 +274,7 @@ public class MultipleEngineSupportIT {
     // when
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(configurationService.getProcessInstanceType())
@@ -308,6 +315,7 @@ public class MultipleEngineSupportIT {
     // when
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(configurationService.getProcessInstanceType())
@@ -404,6 +412,7 @@ public class MultipleEngineSupportIT {
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -411,19 +420,22 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.startOptimize();
 
     // then
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(configurationService.getProcessDefinitionImportIndexType())
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
+
     List<String> allowedProcessDefinitionKeys = new ArrayList<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess2");
     allowedProcessDefinitionKeys.add("TestProcess2");
+
     assertThat(searchResponse.getHits().getTotalHits(), is(4L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionId = searchHit.getSource().get(PROCESS_DEFINITION_ID).toString();
+      String processDefinitionId = ((Map)searchHit.getSource().get("currentProcessDefinition")).get("processDefinitionId").toString();
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
@@ -452,6 +464,7 @@ public class MultipleEngineSupportIT {
 
   private void addSecondEngineToConfiguration() {
     addEngineToConfiguration("anotherEngine");
+    embeddedOptimizeRule.getIndexProvider().init();
     embeddedOptimizeRule.reloadConfiguration();
   }
 

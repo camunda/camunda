@@ -7,7 +7,7 @@ import javax.ws.rs.client.Client;
 
 public class SpyEngineClientFactory extends EngineClientFactory {
 
-  protected Client newInstance(String engineAlias) throws Exception {
-    return Mockito.spy(super.getObject());
+  protected Client newInstance(String engineAlias) {
+    return Mockito.spy(super.newInstance(engineAlias));
   }
 }

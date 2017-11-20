@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
+import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
@@ -104,10 +105,14 @@ public abstract class ScrollBasedImportIndexHandler
       .prepareUpdate(
         configurationService.getOptimizeIndex(),
         getElasticsearchTrackingType(),
-        getElasticsearchTrackingType())
+        getElasticsearchId())
       .setScript(updateScript)
       .setUpsert(newEntryIfAbsent)
       .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+  }
+
+  private String getElasticsearchId() {
+    return getElasticsearchTrackingType() + "-" + engineAlias;
   }
 
   public OptionalDouble computeProgress() {
@@ -149,7 +154,7 @@ public abstract class ScrollBasedImportIndexHandler
   @Override
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(getElasticsearchTrackingType());
+      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchTrackingType(), engineAlias));
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
       maxEntityCount = storedIndex.get().getMaxEntityCount();
@@ -164,4 +169,8 @@ public abstract class ScrollBasedImportIndexHandler
     updateMaxEntityCount();
   }
 
+  @Override
+  public String getEngineAlias() {
+    return engineAlias;
+  }
 }

@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
 import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -56,14 +58,21 @@ public class ImportIndexWriter {
         .prepareIndex(
           configurationService.getOptimizeIndex(),
           configurationService.getProcessDefinitionImportIndexType(),
-          importIndex.getEsTypeIndexRefersTo())
+          getId(importIndex)
+        )
         .setSource(
-          objectMapper.writeValueAsString(importIndex), XContentType.JSON);
+          objectMapper.writeValueAsString(importIndex),
+          XContentType.JSON
+        );
     } catch (JsonProcessingException e) {
       logger.error("Was not able to write definition based import index of type [{}] to Elasticsearch. Reason: {}",
         importIndex.getEsTypeIndexRefersTo(), e);
       return esclient.prepareIndex();
     }
+  }
+
+  private String getId(ImportIndexDto importIndex) {
+    return EsHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 
   private void addAllEntitiesBasedImportIndexesToBulk(BulkRequestBuilder bulkRequest,
@@ -83,11 +92,12 @@ public class ImportIndexWriter {
         .prepareIndex(
           configurationService.getOptimizeIndex(),
           configurationService.getImportIndexType(),
-          importIndex.getEsTypeIndexRefersTo())
+          getId(importIndex)
+        )
         .setSource(
           XContentFactory.jsonBuilder()
             .startObject()
-              .field(ImportIndexType.ENGINE, "1")
+              .field(ImportIndexType.ENGINE, importIndex.getEngine())
               .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
               .field(ImportIndexType.MAX_ENTITIES_COUNT, importIndex.getMaxEntityCount())
             .endObject()

@@ -197,12 +197,6 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
-    List<DefinitionImportInformation> result = new ArrayList<>();
-    result.addAll(this.retrieveDefinitionToImportFromEngine(this.engineAlias));
-    return result;
-  }
-
-  private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine(String engineAlias) {
     int currentStart = 0;
     long maxPageSize = configurationService.getEngineImportProcessDefinitionMaxPageSize();
     List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxPageSize);
@@ -337,5 +331,10 @@ public abstract class DefinitionBasedImportIndexHandler
         processDefinitionsToImport.add(definition);
       }
     }
+  }
+
+  @Override
+  public String getEngineAlias() {
+    return engineAlias;
   }
 }

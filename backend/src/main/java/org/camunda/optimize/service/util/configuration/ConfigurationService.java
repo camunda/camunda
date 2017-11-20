@@ -15,6 +15,7 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -1150,4 +1151,5 @@ public class ConfigurationService {
   public void setBackoffEnabled(Boolean backoffEnabled) {
     this.backoffEnabled = backoffEnabled;
   }
+
 }

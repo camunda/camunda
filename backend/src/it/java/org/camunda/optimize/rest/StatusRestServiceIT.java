@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.rest.engine.EngineClientFactory;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.status.StatusCheckingService;
@@ -51,9 +52,13 @@ public class StatusRestServiceIT {
 
   private void mockEngineClient() {
     mockedEngineClient = Mockito.mock(Client.class);
+    EngineClientFactory mockedFactory = Mockito.mock(EngineClientFactory.class);
+    Mockito.when(mockedFactory.getInstance(Mockito.anyString())).thenReturn(mockedEngineClient);
+
     StatusCheckingService statusCheckingService =
       embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
-    statusCheckingService.setEngineClient(mockedEngineClient);
+
+    statusCheckingService.setEngineClientFactory(mockedFactory);
   }
 
   @After
@@ -61,10 +66,12 @@ public class StatusRestServiceIT {
     if (mockedEngineClient != null) {
       Mockito.reset(mockedEngineClient);
     }
+
     StatusCheckingService statusCheckingService =
-      embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
-    Client engineClient = embeddedOptimizeRule.getApplicationContext().getBean(Client.class);
-    statusCheckingService.setEngineClient(engineClient);
+        embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
+
+    EngineClientFactory realFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
+    statusCheckingService.setEngineClientFactory(realFactory);
   }
 
   @Test
@@ -147,24 +154,5 @@ public class StatusRestServiceIT {
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getProgress(), is(expectedCount));
   }
-
-  @Test
-  public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws Exception {
-    // given
-    mockEngineClient();
-    String errorMessage = "Error";
-    Mockito.when(mockedEngineClient.target(Mockito.anyString())).thenThrow(new RuntimeException(errorMessage));
-    List<String> processDefinitionIdsToImport = new ArrayList<>();
-    processDefinitionIdsToImport.add("test");
-    configurationService.setProcessDefinitionIdsToImport(processDefinitionIdsToImport);
-
-    // when
-    Response response = embeddedOptimizeRule.target("status/import-progress")
-      .request()
-      .get();
-
-    // then
-    assertThat(response.getStatus(), is(500));
-    assertThat(response.readEntity(String.class).contains("It was not possible to compute the import progress"), is(true));
-  }
+  
 }

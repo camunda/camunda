@@ -27,15 +27,15 @@ public class ImportIndexReader {
   @Autowired
   private ConfigurationService configurationService;
 
-  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String typeIndexComesFrom) {
-    logger.debug("Fetching import index of type [{}]", typeIndexComesFrom);
+  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
+    logger.debug("Fetching import index of type [{}]", id);
     GetResponse getResponse = null;
     try {
       getResponse = esclient
         .prepareGet(
           configurationService.getOptimizeIndex(),
           configurationService.getImportIndexType(),
-          typeIndexComesFrom)
+          id)
         .setRealtime(false)
         .get();
     } catch (Exception ignored) {}
@@ -46,12 +46,12 @@ public class ImportIndexReader {
           objectMapper.readValue(getResponse.getSourceAsString(), AllEntitiesBasedImportIndexDto.class);
         return Optional.of(storedIndex);
       } catch (IOException e) {
-        logger.error("Was not able to retrieve import index of [{}]. Reason: {}", typeIndexComesFrom, e);
+        logger.error("Was not able to retrieve import index of [{}]. Reason: {}", id, e);
         return Optional.empty();
       }
     } else {
       logger.debug("Was not able to retrieve import index for type '{}' from Elasticsearch. " +
-        "Desired index does not exist.", typeIndexComesFrom);
+        "Desired index does not exist.", id);
       return Optional.empty();
     }
   }

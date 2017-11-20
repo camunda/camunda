@@ -10,12 +10,11 @@ import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImport
 import org.camunda.optimize.service.engine.importing.job.VariableInstanceEngineImportJob;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.VariableWriter;
-import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +33,7 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
   @Autowired
-  private EngineInstanceHelper engineInstanceHelper;
+  private BeanHelper beanHelper;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -60,7 +59,7 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
   @PostConstruct
   public void init(){
     importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineAlias);
-    engineEntityFetcher = engineInstanceHelper.getInstance(VariableInstanceFetcher.class, engineAlias);
+    engineEntityFetcher = beanHelper.getInstance(VariableInstanceFetcher.class, engineAlias);
     missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, getElasticsearchType());
   }
 

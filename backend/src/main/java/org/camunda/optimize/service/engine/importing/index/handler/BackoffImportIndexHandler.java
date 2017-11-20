@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,9 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   @Autowired
   protected ConfigurationService configurationService;
+
+  @Autowired
+  protected BeanHelper beanHelper;
 
   @PostConstruct
   private void initialize() {
@@ -53,7 +57,11 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     try {
       return getNextImportPage();
     } catch (Exception e) {
-      logger.error("Was not able to produce next page. Maybe a problem with the connection to the engine?", e);
+      logger.error(
+          "Was not able to produce next page. Maybe a problem with the connection to the engine [{}]?",
+          this.getEngineAlias(),
+          e
+      );
       return Optional.empty();
     }
   }

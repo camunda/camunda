@@ -1,7 +1,10 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
+import org.camunda.optimize.service.util.BeanHelper;
+import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -16,6 +19,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,13 +41,17 @@ import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
-  @Autowired
   private VariableInstanceCountFetcher variableInstanceCountFetcher;
-
   private String scrollId;
 
   public VariableInstanceImportIndexHandler(String engineAlias) {
     this.engineAlias = engineAlias;
+  }
+
+  @PostConstruct
+  public void init() {
+    variableInstanceCountFetcher = beanHelper.getInstance(VariableInstanceCountFetcher.class, this.engineAlias);
+    super.init();
   }
 
   @Override
@@ -121,7 +129,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     TermsLookup termsLookup = new TermsLookup(
       configurationService.getOptimizeIndex(),
       VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE,
-      VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE,
+      EsHelper.constructKey(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE, engineAlias),
       PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query

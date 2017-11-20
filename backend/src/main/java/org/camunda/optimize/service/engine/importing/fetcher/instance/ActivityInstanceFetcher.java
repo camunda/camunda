@@ -42,7 +42,7 @@ public class ActivityInstanceFetcher
                                                                                 long pageSize,
                                                                                 String processDefinitionId) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> entries = client
+    List<HistoricActivityInstanceEngineDto> entries = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricActivityInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)

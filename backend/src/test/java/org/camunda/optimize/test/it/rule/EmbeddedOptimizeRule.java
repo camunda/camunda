@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.ProgressDto;
 import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -51,10 +52,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     resetImportStartIndexes();
 
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-
-      scheduleImportAndWaitUntilIsFinished(scheduler);
-      // we need another round for the scroll based import index handlers
-      scheduleImportAndWaitUntilIsFinished(scheduler);
+      if (scheduler.isEnabled()) {
+        scheduleImportAndWaitUntilIsFinished(scheduler);
+        // we need another round for the scroll based import index handlers
+        scheduleImportAndWaitUntilIsFinished(scheduler);
+      }
     }
   }
 
@@ -280,14 +282,22 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    */
   public void updateImportIndex() {
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
-      for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
-        importIndexHandler.updateImportIndex();
+      if (getIndexProvider().getDefinitionBasedHandlers(engineAlias) != null) {
+        for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
+          importIndexHandler.updateImportIndex();
+        }
+      }
+
+      if (getIndexProvider().getAllEntitiesBasedHandlers(engineAlias) != null) {
+        for (AllEntitiesBasedImportIndexHandler importIndexHandler : getIndexProvider().getAllEntitiesBasedHandlers(engineAlias)) {
+          importIndexHandler.updateMaxEntityCount();
+        }
       }
     }
 
   }
 
-  private ImportIndexHandlerProvider getIndexProvider() {
+  public ImportIndexHandlerProvider getIndexProvider() {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
 }

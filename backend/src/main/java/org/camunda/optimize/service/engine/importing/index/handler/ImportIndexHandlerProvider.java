@@ -6,7 +6,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
-import org.camunda.optimize.service.util.EngineInstanceHelper;
+import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,109 +21,61 @@ import java.util.Map;
 public class ImportIndexHandlerProvider {
 
   @Autowired
-  private EngineInstanceHelper engineInstanceHelper;
+  private BeanHelper beanHelper;
 
   @Autowired
   private ConfigurationService configurationService;
 
-  private Map<String, List<AllEntitiesBasedImportIndexHandler>> allEntitiesBasedHandlersMap;
-  private Map<String, List<ScrollBasedImportIndexHandler>> scrollBasedHandlersMap;
-  private Map<String, List<DefinitionBasedImportIndexHandler>> definitionBasedHandlersMap;
-  private Map<String, Map<String, ImportIndexHandler>> allHandlersMap;
-
+  private Map <String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap;
 
   @PostConstruct
   public void init() {
-    allEntitiesBasedHandlersMap = new HashMap<>();
-    scrollBasedHandlersMap = new HashMap<>();
-    definitionBasedHandlersMap = new HashMap<>();
-    allHandlersMap = new HashMap<>();
-
+    engineImportIndexHandlerProviderMap = new HashMap<>();
     for (String engineAlias : configurationService.getConfiguredEngines().keySet()) {
-      Map<String, ImportIndexHandler> allHandlers = new HashMap<>();
-      allHandlers.put(ActivityImportIndexHandler.class.getSimpleName(), getActivityImportIndexHandler(engineAlias));
-      allHandlers.put(FinishedProcessInstanceImportIndexHandler.class.getSimpleName(), getFinishedProcessInstanceImportIndexHandler(engineAlias));
-      allHandlers.put(ProcessDefinitionImportIndexHandler.class.getSimpleName(), getProcessDefinitionImportIndexHandler(engineAlias));
-      allHandlers.put(ProcessDefinitionXmlImportIndexHandler.class.getSimpleName(), getProcessDefinitionXmlImportIndexHandler(engineAlias));
-      allHandlers.put(UnfinishedProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler(engineAlias));
-      allHandlers.put(VariableInstanceImportIndexHandler.class.getSimpleName(), getVariableInstanceImportIndexHandler(engineAlias));
-
-      allHandlersMap.put(engineAlias, allHandlers);
-
-      List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers = new ArrayList<>();
-      allEntitiesBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler(engineAlias));
-      allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler(engineAlias));
-
-      allEntitiesBasedHandlersMap.put(engineAlias, allEntitiesBasedHandlers);
-
-      List<ScrollBasedImportIndexHandler> scrollBasedHandlers= new ArrayList<>();
-      scrollBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler(engineAlias));
-      scrollBasedHandlers.add(getVariableInstanceImportIndexHandler(engineAlias));
-
-      scrollBasedHandlersMap.put(engineAlias, scrollBasedHandlers);
-
-      List<DefinitionBasedImportIndexHandler> definitionBasedHandlers = new ArrayList<>();
-      definitionBasedHandlers.add(getActivityImportIndexHandler(engineAlias));
-      definitionBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler(engineAlias));
-
-      definitionBasedHandlersMap.put(engineAlias, definitionBasedHandlers);
+      engineImportIndexHandlerProviderMap.put(
+          engineAlias,
+          beanHelper.getInstance(EngineImportIndexHandlerProvider.class, engineAlias)
+      );
     }
-
   }
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
-    return allEntitiesBasedHandlersMap.get(engineAlias);
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getAllEntitiesBasedHandlers();
   }
 
   public List<DefinitionBasedImportIndexHandler> getDefinitionBasedHandlers(String engineAlias) {
-    return definitionBasedHandlersMap.get(engineAlias);
-  }
-
-  protected <R, C extends Class<R>> R getImportIndexHandler (String engineAlias, C requiredType) {
-    R result;
-    if (isInstantiated(engineAlias, requiredType)) {
-      result = requiredType.cast(
-          allHandlersMap.get(engineAlias).get(requiredType.getSimpleName())
-      );
-    } else {
-      result = engineInstanceHelper.getInstance(requiredType, engineAlias);
-    }
-    return result;
-  }
-
-  protected boolean isInstantiated(String engineAlias, Class handlerClass) {
-    return allHandlersMap.get(engineAlias) != null && allHandlersMap.get(engineAlias).get(handlerClass.getSimpleName()) != null;
-  }
-
-  public ActivityImportIndexHandler getActivityImportIndexHandler(String engineAlias) {
-    return getImportIndexHandler(engineAlias, ActivityImportIndexHandler.class);
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getDefinitionBasedHandlers();
   }
 
   public FinishedProcessInstanceImportIndexHandler getFinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    return (FinishedProcessInstanceImportIndexHandler) getImportIndexHandler(engineAlias, FinishedProcessInstanceImportIndexHandler.class);
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getFinishedProcessInstanceImportIndexHandler();
   }
 
-  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
-    return (ProcessDefinitionImportIndexHandler) getImportIndexHandler(engineAlias, ProcessDefinitionImportIndexHandler.class);
-  }
-
-  public ProcessDefinitionXmlImportIndexHandler getProcessDefinitionXmlImportIndexHandler(String engineAlias) {
-    return (ProcessDefinitionXmlImportIndexHandler) getImportIndexHandler(engineAlias, ProcessDefinitionXmlImportIndexHandler.class);
+  public ActivityImportIndexHandler getActivityImportIndexHandler(String engineAlias) {
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getActivityImportIndexHandler();
   }
 
   public UnfinishedProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    return (UnfinishedProcessInstanceImportIndexHandler) getImportIndexHandler(engineAlias, UnfinishedProcessInstanceImportIndexHandler.class);
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getUnfinishedProcessInstanceImportIndexHandler();
   }
 
   public VariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler(String engineAlias) {
-    return (VariableInstanceImportIndexHandler) getImportIndexHandler(engineAlias, VariableInstanceImportIndexHandler.class);
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getVariableInstanceImportIndexHandler();
+  }
+
+  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getProcessDefinitionImportIndexHandler();
   }
 
   public List<ImportIndexHandler> getAllHandlers() {
     List<ImportIndexHandler> result = new ArrayList<>();
-    for (Map <String, ImportIndexHandler> handlerMap : allHandlersMap.values()) {
-      result.addAll(handlerMap.values());
+    for (EngineImportIndexHandlerProvider provider : engineImportIndexHandlerProviderMap.values()) {
+      result.addAll(provider.getAllHandlers());
     }
     return result;
+  }
+
+  public ProcessDefinitionXmlImportIndexHandler getProcessDefinitionXmlImportIndexHandler(String engineAlias) {
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getProcessDefinitionXmlImportIndexHandler();
   }
 }

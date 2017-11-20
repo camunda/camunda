@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.EngineDto;
+import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -12,20 +13,13 @@ import javax.ws.rs.client.Client;
 import java.util.List;
 
 @Component
-public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends ImportPage> {
+public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends ImportPage>
+    extends AbstractEngineAwareFetcher {
 
   public static final String UTF8 = "UTF-8";
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  protected Client client;
-  @Autowired
-  protected ConfigurationService configurationService;
-
-  protected String engineAlias;
 
   public EngineEntityFetcher(String engineAlias) {
-    this.engineAlias = engineAlias;
+    super(engineAlias);
   }
 
   /**
@@ -33,9 +27,5 @@ public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends Im
    * which contains all the information of which chunk of data should be fetched.
    */
   public abstract List<ENG> fetchEngineEntities(PAGE page);
-
-  protected String getEngineAlias() {
-    return engineAlias;
-  }
 
 }
