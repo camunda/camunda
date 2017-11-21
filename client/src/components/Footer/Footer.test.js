@@ -6,7 +6,15 @@ import {getConnectionStatus, getImportProgress} from './service';
 
 
 jest.mock('./service', () => {return {
-  getConnectionStatus: jest.fn(),
+  getConnectionStatus: jest.fn(() => {
+    return ({
+    "engineConnections" : {
+      "property1" : true,
+      "property2" : false
+    },
+    "connectedToElasticsearch" : true
+    })
+  }),
   getImportProgress: jest.fn()
 }});
 
