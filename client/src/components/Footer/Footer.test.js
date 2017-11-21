@@ -15,7 +15,11 @@ jest.mock('./service', () => {return {
     "connectedToElasticsearch" : true
     })
   }),
-  getImportProgress: jest.fn()
+  getImportProgress: jest.fn(() => {
+    return ({
+      "progress": 97
+    })
+  })
 }});
 
 it('renders without crashing', () => {
