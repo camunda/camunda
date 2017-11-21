@@ -2,10 +2,11 @@ import React from 'react';
 import { shallow } from 'enzyme';
 
 import Footer from './Footer';
-import {getImportProgress} from './service';
+import {getConnectionStatus, getImportProgress} from './service';
 
 
 jest.mock('./service', () => {return {
+  getConnectionStatus: jest.fn(),
   getImportProgress: jest.fn()
 }});
 
@@ -25,7 +26,17 @@ it('displays the import progress', () => {
   expect(node.find('.import-progress-footer')).toBePresent();
 });
 
+it('displays the connection status', () => {
+  const node = shallow(<Footer version='2.0.0'/>);
+  expect(node.find('.connection-status-footer')).toBePresent();
+});
+
 it('should load import progress', () => {
   shallow(<Footer version='2.0.0'/>);
   expect(getImportProgress).toBeCalled();
+});
+
+it('should load connection status', () => {
+  shallow(<Footer version='2.0.0'/>);
+  expect(getConnectionStatus).toBeCalled();
 });

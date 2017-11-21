@@ -5,3 +5,9 @@ export async function getImportProgress() {
 
   return await response.json();
 }
+
+export async function getConnectionStatus() {
+  const response = await get('/api/status/connection');
+
+  return await response.json();
+}
