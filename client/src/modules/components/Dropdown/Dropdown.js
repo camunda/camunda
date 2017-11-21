@@ -10,7 +10,7 @@ export default class Dropdown extends React.Component {
     super(props);
 
     this.state = {
-      open: false
+      open: false,
     };
   }
 
@@ -25,7 +25,39 @@ export default class Dropdown extends React.Component {
   }
 
   componentDidMount() {
+    const options = Array.from(document.getElementsByClassName('DropdownOption'));
+    const dropdownButton = document.getElementsByClassName('Dropdown__button')[0];
+
     document.body.addEventListener('click', this.close, true);
+
+    document.onkeydown = (evt) => {
+      evt = evt || window.event;
+      let selectedOption = options.indexOf(document.activeElement);
+
+      if((this.state.open === true) && (evt.keyCode === 40)) {
+        if(selectedOption === -1) {
+          options[0].focus();
+          selectedOption = options.indexOf(document.activeElement);
+        } else if (selectedOption < options.length - 1) {
+          options[selectedOption + 1].focus();
+          selectedOption = options.indexOf(document.activeElement);
+        }
+      }
+
+      if((this.state.open === true) && (evt.keyCode === 38) && (selectedOption !== -1)) {
+        if(selectedOption === 0) {
+          dropdownButton.focus();
+        } else {
+          options[selectedOption - 1].focus();
+          selectedOption = options.indexOf(document.activeElement);
+        }
+      }
+
+      if(evt.keyCode === 27) {
+        this.close({});
+      }
+
+    };
   }
 
   render() {
