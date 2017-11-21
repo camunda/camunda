@@ -8,6 +8,9 @@ def dockerHubUpload =
 '''\
 #!/bin/bash -xeu
 
+# clear docker host env set by jenkins job
+unset DOCKER_HOST
+
 VERSION=${RELEASE_VERSION}
 
 if [ "${RELEASE_VERSION}" = "SNAPSHOT" ]; then
@@ -26,9 +29,6 @@ docker login --username ${DOCKER_HUB_USERNAME} --password ${DOCKER_HUB_PASSWORD}
 docker push camunda/zeebe:${RELEASE_VERSION}
 
 if [ "${IS_LATEST}" = "true" ]; then
-    # to make sure we can tag latest, there were problems before
-    docker rmi camunda/zeebe:latest
-
     docker tag -f camunda/zeebe:${RELEASE_VERSION} camunda/zeebe:latest
     docker push camunda/zeebe:latest
 fi
