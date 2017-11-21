@@ -80,11 +80,15 @@ public class FinishedProcessInstanceWriter {
     }
     params.put(ProcessInstanceType.END_DATE, endDate);
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
+    params.put(ProcessInstanceType.DURATION, procInst.getDurationInMs());
 
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.startDate = params.startDate; ctx._source.endDate = params.endDate; ctx._source.engine = params.engine",
+      "ctx._source.startDate = params.startDate; " +
+        "ctx._source.endDate = params.endDate; " +
+        "ctx._source.durationInMs = params.durationInMs;" +
+        "ctx._source.engine = params.engine",
       params
     );
 

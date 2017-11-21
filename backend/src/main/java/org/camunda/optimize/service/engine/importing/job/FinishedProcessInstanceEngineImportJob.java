@@ -10,6 +10,7 @@ import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.FinishedProcessInstanceElasticsearchImportJob;
 
+import java.util.Date;
 import java.util.List;
 
 public class FinishedProcessInstanceEngineImportJob
@@ -39,8 +40,11 @@ public class FinishedProcessInstanceEngineImportJob
     processInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
     processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     processInstanceDto.setProcessInstanceId(engineEntity.getId());
-    processInstanceDto.setStartDate(engineEntity.getStartTime());
-    processInstanceDto.setEndDate(engineEntity.getEndTime());
+    Date startDate = engineEntity.getStartTime();
+    Date endDate = engineEntity.getEndTime();
+    processInstanceDto.setStartDate(startDate);
+    processInstanceDto.setEndDate(endDate);
+    processInstanceDto.setDurationInMs(endDate.getTime() - startDate.getTime());
     processInstanceDto.setEngine("1");
     return processInstanceDto;
   }

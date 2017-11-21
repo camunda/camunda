@@ -21,6 +21,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected String processInstanceId;
   protected Date startDate;
   protected Date endDate;
+  protected Long durationInMs;
   protected String engine;
   protected List<SimpleEventDto> events = new ArrayList<>();
 
@@ -107,6 +108,14 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   public void setEndDate(Date endDate) {
     this.endDate = endDate;
+  }
+
+  public Long getDurationInMs() {
+    return durationInMs;
+  }
+
+  public void setDurationInMs(Long durationInMs) {
+    this.durationInMs = durationInMs;
   }
 
   public List<SimpleEventDto> getEvents() {

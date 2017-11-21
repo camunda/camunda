@@ -68,6 +68,28 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+   public void changeProcessInstanceEndDate(String processInstanceId, LocalDateTime endDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_PROCINST " +
+      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(sql);
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void updateProcessInstanceEndDates(Map<String, LocalDateTime> processInstanceIdToEndDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_PROCINST " +
+      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(sql);
+    for (Map.Entry<String, LocalDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
+      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
   @Override
   protected void finished(Description description) {
     super.finished(description);

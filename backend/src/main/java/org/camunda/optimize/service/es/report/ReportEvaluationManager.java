@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
+import org.camunda.optimize.service.es.report.command.avg.AverageTotalProcessInstanceDurationCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.count.CountTotalProcessInstanceFrequencyCommand;
@@ -26,7 +27,9 @@ import java.io.IOException;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
@@ -64,6 +67,47 @@ public class ReportEvaluationManager {
         break;
       case VIEW_COUNT_OPERATION:
         evaluationCommand = extractEntityForCountOperation(reportData);
+        break;
+      case VIEW_AVERAGE_OPERATION:
+        evaluationCommand = extractEntityForAverageOperation(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractEntityForAverageOperation(ReportDataDto reportData) {
+   Command evaluationCommand = new NotSupportedCommand();
+    String entity = reportData.getView().getEntity();
+    ValidationHelper.ensureNotEmpty("view entity", entity);
+    switch (entity) {
+      case VIEW_PROCESS_INSTANCE_ENTITY:
+        evaluationCommand = extractPropertyForAverageProcessInstance(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractPropertyForAverageProcessInstance(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    String property = reportData.getView().getProperty();
+    ValidationHelper.ensureNotEmpty("view property", property);
+    switch (property) {
+      case VIEW_DURATION_PROPERTY:
+        evaluationCommand = extractGroupForAverageProcessInstanceDuration(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractGroupForAverageProcessInstanceDuration(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    GroupByDto groupBy = reportData.getGroupBy();
+    ValidationHelper.ensureNotNull("group by", groupBy);
+    String type = groupBy.getType();
+    ValidationHelper.ensureNotEmpty("group by type", type);
+    switch (type) {
+      case GROUP_BY_NONE_TYPE:
+        evaluationCommand = new AverageTotalProcessInstanceDurationCommand();
         break;
     }
     return evaluationCommand;

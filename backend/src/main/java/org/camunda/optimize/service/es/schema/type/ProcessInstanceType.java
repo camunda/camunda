@@ -11,6 +11,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
 
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
+  public static final String DURATION = "durationInMs";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
@@ -60,6 +61,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
             .startObject(END_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
+            .endObject()
+            .startObject(DURATION)
+              .field("type", "long")
             .endObject()
             .startObject(ENGINE)
               .field("type", "keyword")
