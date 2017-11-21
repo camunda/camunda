@@ -21,19 +21,22 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
-import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
+import io.zeebe.transport.SocketAddress;
+
 public class RaftConfiguration extends UnpackedObject
 {
-    private static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
     private static final DirectBuffer EMPTY_STRING = new UnsafeBuffer(0, 0);
 
     protected StringProperty topicNameProp = new StringProperty("topicName", "");
@@ -43,9 +46,10 @@ public class RaftConfiguration extends UnpackedObject
     protected StringProperty votedForHostProp = new StringProperty("votedForHost", "");
     protected IntegerProperty votedForPortProp = new IntegerProperty("votedForPort", 0);
 
-    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>("members",
-        new ArrayValue<>(),
-        new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()), new RaftConfigurationMember());
+    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
+        "members",
+        ArrayValue.emptyArray(),
+        new RaftConfigurationMember());
 
     public RaftConfiguration()
     {

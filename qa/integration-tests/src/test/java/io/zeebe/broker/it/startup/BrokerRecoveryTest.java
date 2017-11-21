@@ -99,7 +99,7 @@ public class BrokerRecoveryTest
         return TestFileUtil.readAsTextFileAndReplace(
                 BrokerRecoveryTest.class.getClassLoader().getResourceAsStream("recovery-broker.cfg.toml"),
                 StandardCharsets.UTF_8,
-                Collections.singletonMap("\\$\\{brokerFolder\\}", canonicallySeparatedPath));
+                Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
     }
 
     @After

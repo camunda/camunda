@@ -38,9 +38,7 @@ public class TypedEventStreamProcessorBuilder
     protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
     protected EnumMap<EventType, EnumMap> eventProcessors = new EnumMap<>(EventType.class);
-
-    protected List<Runnable> closeOperations = new ArrayList<>();
-
+    protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
     public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment)
     {
@@ -61,16 +59,23 @@ public class TypedEventStreamProcessorBuilder
         return this;
     }
 
-    public TypedEventStreamProcessorBuilder onClose(Runnable onClose)
+    public TypedEventStreamProcessorBuilder withListener(StreamProcessorLifecycleAware listener)
     {
-        this.closeOperations.add(onClose);
+        this.lifecycleListeners.add(listener);
         return this;
     }
 
     public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map)
     {
         this.stateResources.add(new ZbMapSnapshotSupport<>(map));
-        onClose(() -> map.close());
+        withListener(new StreamProcessorLifecycleAware()
+        {
+            @Override
+            public void onClose()
+            {
+                map.close();
+            }
+        });
         return this;
     }
 
@@ -98,7 +103,7 @@ public class TypedEventStreamProcessorBuilder
                 snapshotSupport,
                 environment.getOutput(),
                 eventProcessors,
-                environment.getEventRegistry(),
-                closeOperations);
+                lifecycleListeners,
+                environment.getEventRegistry());
     }
 }

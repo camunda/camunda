@@ -24,6 +24,8 @@ import io.zeebe.broker.clustering.gossip.Gossip;
 import io.zeebe.broker.clustering.handler.RequestTopologyHandler;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
+import io.zeebe.broker.system.log.RequestPartitionsMessageHandler;
+import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
@@ -42,6 +44,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
     protected final Injector<Gossip> gossipInjector = new Injector<>();
+    protected final Injector<SystemPartitionManager> systemPartitionManagerInjector = new Injector<>();
 
     protected final long controlMessageRequestTimeoutInMillis;
 
@@ -63,6 +66,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
         final Gossip gossip = gossipInjector.getValue();
+        final SystemPartitionManager systemPartitionManager = systemPartitionManagerInjector.getValue();
 
         final ServerOutput output = transport.getOutput();
 
@@ -71,7 +75,8 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
             new IncreaseTaskSubscriptionCreditsHandler(output, taskSubscriptionManager),
             new RemoveTaskSubscriptionHandler(output, taskSubscriptionManager),
             new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),
-            new RequestTopologyHandler(output, gossip)
+            new RequestTopologyHandler(output, gossip),
+            new RequestPartitionsMessageHandler(output, systemPartitionManager)
         );
 
         service = new ControlMessageHandlerManager(
@@ -124,5 +129,10 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     public Injector<Gossip> getGossipInjector()
     {
         return gossipInjector;
+    }
+
+    public Injector<SystemPartitionManager> getSystemPartitionManagerInjector()
+    {
+        return systemPartitionManagerInjector;
     }
 }

@@ -21,22 +21,39 @@ import java.time.Duration;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.deployment.PendingDeploymentCheck;
-import io.zeebe.broker.system.deployment.data.*;
+import io.zeebe.broker.system.deployment.data.PendingDeployments;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows;
+import io.zeebe.broker.system.deployment.data.TopicPartitions;
+import io.zeebe.broker.system.deployment.data.WorkflowVersions;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
-import io.zeebe.broker.system.deployment.processor.*;
+import io.zeebe.broker.system.deployment.processor.DeploymentCreateProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentDistributedProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentRejectProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentTimedOutProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentValidatedProcessor;
+import io.zeebe.broker.system.deployment.processor.PartitionCollector;
+import io.zeebe.broker.system.deployment.processor.WorkflowCreateProcessor;
+import io.zeebe.broker.system.deployment.processor.WorkflowDeleteProcessor;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
-import io.zeebe.broker.system.log.PartitionState;
-import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
@@ -80,7 +97,6 @@ public class DeploymentManager implements Service<DeploymentManager>
 
     private void installDeploymentStreamProcessor(final LogStream logStream, ServiceName<LogStream> serviceName)
     {
-        final TopicPartitions topicPartitions = new TopicPartitions();
         final WorkflowVersions workflowVersions = new WorkflowVersions();
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
@@ -91,17 +107,20 @@ public class DeploymentManager implements Service<DeploymentManager>
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
 
-        final TypedStreamProcessor streamProcessor = streamEnvironment.newStreamProcessor()
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicPartitions))
-            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATED, new TopicCreatedProcessor(topicPartitions))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(topicPartitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
+        final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();
+
+        final PartitionCollector partitionCollector = new PartitionCollector();
+        partitionCollector.registerWith(streamProcessorBuilder);
+        final TopicPartitions partitions = partitionCollector.getPartitions();
+
+        final TypedStreamProcessor streamProcessor = streamProcessorBuilder
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(topicPartitions, pendingDeployments, pendingWorkflows, workflowRequestMessageSender))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, workflowRequestMessageSender))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, streamEnvironment.buildStreamReader()))
             .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, workflowRequestMessageSender))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT, new DeploymentRejectProcessor(pendingDeployments))
-            .withStateResource(topicPartitions.getRawMap())
             .withStateResource(workflowVersions.getRawMap())
             .withStateResource(pendingDeployments.getRawMap())
             .withStateResource(pendingWorkflows.getRawMap())

@@ -36,6 +36,7 @@ import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.services.DispatcherSubscriptionNames;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.task.TaskQueueServiceNames;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
@@ -114,6 +115,7 @@ public class TransportComponent implements Component
             .dependency(TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
             .dependency(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
             .dependency(ClusterServiceNames.GOSSIP_SERVICE, controlMessageHandlerManagerService.getGossipInjector())
+            .dependency(SystemServiceNames.SYSTEM_LOG_MANAGER, controlMessageHandlerManagerService.getSystemPartitionManagerInjector())
             .install();
 
         context.addRequiredStartAction(replactionApiFuture);

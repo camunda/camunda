@@ -98,7 +98,7 @@ public class BrokerRestartTest
         return TestFileUtil.readAsTextFileAndReplace(
                 BrokerRestartTest.class.getClassLoader().getResourceAsStream("persistent-broker.cfg.toml"),
                 StandardCharsets.UTF_8,
-                Collections.singletonMap("\\$\\{brokerFolder\\}", canonicallySeparatedPath));
+                Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
     }
 
     @After

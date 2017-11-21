@@ -126,7 +126,7 @@ public class CreateTopicStreamProcessorTest
                 streamEnvironment.buildStreamReader(),
                 streamEnvironment.buildStreamWriter());
 
-        streamProcessor = SystemPartitionManager.buildSystemStreamProcessor(
+        streamProcessor = SystemPartitionManager.buildTopicCreationProcessor(
                 streamEnvironment,
                 partitionManager,
                 topicsIndex,

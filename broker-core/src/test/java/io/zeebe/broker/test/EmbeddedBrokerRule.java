@@ -19,6 +19,8 @@ package io.zeebe.broker.test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,12 +32,15 @@ import org.slf4j.Logger;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.topic.RequestPartitionsTest;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 
 public class EmbeddedBrokerRule extends ExternalResource
@@ -59,6 +64,17 @@ public class EmbeddedBrokerRule extends ExternalResource
     public EmbeddedBrokerRule(String configFileClasspathLocation)
     {
         this(() -> EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation));
+    }
+
+    public EmbeddedBrokerRule(String configFileClasspathLocation, Supplier<Map<String, String>> properties)
+    {
+        this(() ->
+        {
+            return TestFileUtil.readAsTextFileAndReplace(
+                    RequestPartitionsTest.class.getClassLoader().getResourceAsStream(configFileClasspathLocation),
+                    StandardCharsets.UTF_8,
+                    properties.get());
+        });
     }
 
     protected long startTime;
@@ -123,7 +139,7 @@ public class EmbeddedBrokerRule extends ExternalResource
             // this is required in the broker-test suite, because the client rule does not perform request retries
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
-                .dependency(SystemServiceNames.SYSTEM_PROCESSOR)
+                .dependency(SystemServiceNames.systemProcessorName(SystemPartitionManager.CREATE_TOPICS_PROCESSOR))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);

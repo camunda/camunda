@@ -99,7 +99,14 @@ public class ErrorResponse implements BufferReader
 
         final int failedRequestLength = bodyDecoder.failedRequestLength();
         final int failedRequestOffset = bodyDecoder.limit() + ErrorResponseDecoder.failedRequestHeaderLength();
-        failedRequestBuffer.wrap(responseBuffer, failedRequestOffset, failedRequestLength);
+        if (failedRequestLength > 0)
+        {
+            failedRequestBuffer.wrap(responseBuffer, failedRequestOffset, failedRequestLength);
+        }
+        else
+        {
+            failedRequestBuffer.wrap(0, 0);
+        }
         failedRequest = null;
     }
 

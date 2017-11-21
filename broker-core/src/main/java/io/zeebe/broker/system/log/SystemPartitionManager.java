@@ -18,21 +18,37 @@
 package io.zeebe.broker.system.log;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.deployment.processor.PartitionCollector;
 import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 
 public class SystemPartitionManager implements Service<SystemPartitionManager>
 {
+    public static final String CREATE_TOPICS_PROCESSOR = "create-topics";
+    public static final String COLLECT_PARTITIONS_PROCESSOR = "collect-partitions";
+
     private ServiceStartContext serviceContext;
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
@@ -47,9 +63,12 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd((name, stream) -> addSystemPartition(stream, name))
+        .onRemove((name, stream) -> removeSystemPartition(stream, name))
         .build();
 
     private ScheduledCommand command;
+
+    private AtomicReference<PartitionResponder> partitionResponderRef = new AtomicReference<>();
 
     public SystemPartitionManager(SystemConfiguration systemConfiguration)
     {
@@ -58,10 +77,45 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
+        final ServerOutput serverOutput = clientApiTransport.getOutput();
+
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, serverOutput);
+
+        installCreateTopicProcessor(serviceName, streamEnvironment);
+        installPartitionCollectorProcessor(serviceName, serverOutput, streamEnvironment);
+    }
+
+    private void installPartitionCollectorProcessor(
+            ServiceName<LogStream> logStreamName,
+            final ServerOutput serverOutput,
+            final TypedStreamEnvironment streamEnvironment)
+    {
+        final PartitionResponder partitionResponder = new PartitionResponder(serverOutput);
+        final TypedStreamProcessor streamProcessor = buildPartitionResponseProcessor(streamEnvironment, partitionResponder);
+
+        final StreamProcessorService streamProcessorService = new StreamProcessorService(
+            COLLECT_PARTITIONS_PROCESSOR,
+            StreamProcessorIds.SYSTEM_COLLECT_PARTITION_PROCESSOR_ID,
+            streamProcessor)
+            .eventFilter(streamProcessor.buildTypeFilter());
+
+        serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
+            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
+            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
+            .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
+            .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
+            .install();
+
+
+        partitionResponderRef.set(partitionResponder);
+    }
+
+    private void installCreateTopicProcessor(
+            ServiceName<LogStream> logStreamName,
+            final TypedStreamEnvironment streamEnvironment)
+    {
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
-
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
 
         final ResolvePendingPartitionsCommand cmd =
                 new ResolvePendingPartitionsCommand(
@@ -71,7 +125,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
                         streamEnvironment.buildStreamWriter());
 
         final TypedStreamProcessor streamProcessor =
-                buildSystemStreamProcessor(
+                buildTopicCreationProcessor(
                         streamEnvironment,
                         partitionManager,
                         topicsIndex,
@@ -80,20 +134,25 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(cmd), Duration.ofMillis(100));
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
-            "system",
-            StreamProcessorIds.SYSTEM_PROCESSOR_ID,
+            CREATE_TOPICS_PROCESSOR,
+            StreamProcessorIds.SYSTEM_CREATE_TOPIC_PROCESSOR_ID,
             streamProcessor)
             .eventFilter(streamProcessor.buildTypeFilter());
 
-        serviceContext.createService(SystemServiceNames.SYSTEM_PROCESSOR, streamProcessorService)
-            .dependency(serviceName, streamProcessorService.getSourceStreamInjector())
-            .dependency(serviceName, streamProcessorService.getTargetStreamInjector())
+        serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
+            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
+            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
     }
 
-    public static TypedStreamProcessor buildSystemStreamProcessor(
+    private void removeSystemPartition(LogStream stream, ServiceName<LogStream> name)
+    {
+        partitionResponderRef.set(null);
+    }
+
+    public static TypedStreamProcessor buildTopicCreationProcessor(
             TypedStreamEnvironment streamEnvironment,
             PartitionManager partitionManager,
             TopicsIndex topicsIndex,
@@ -115,6 +174,19 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .build();
     }
 
+    public static TypedStreamProcessor buildPartitionResponseProcessor(
+            TypedStreamEnvironment streamEnvironment,
+            PartitionResponder partitionResponder)
+    {
+        final PartitionCollector partitionCollector = new PartitionCollector(partitionResponder);
+
+        final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();
+        partitionCollector.registerWith(streamProcessorBuilder);
+        partitionResponder.registerWith(streamProcessorBuilder);
+
+        return streamProcessorBuilder.build();
+    }
+
     @Override
     public void start(ServiceStartContext startContext)
     {
@@ -131,6 +203,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         {
             command.cancel();
         }
+        partitionResponderRef.set(null);
     }
 
     @Override
@@ -138,6 +211,21 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     {
         return this;
     }
+
+    public CompletableFuture<Void> sendPartitions(int requestStream, long request)
+    {
+        final PartitionResponder responder = partitionResponderRef.get();
+
+        if (responder != null)
+        {
+            return responder.sendPartitions(requestStream, request);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
 
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
     {

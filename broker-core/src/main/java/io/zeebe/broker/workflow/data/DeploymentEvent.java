@@ -19,31 +19,28 @@ package io.zeebe.broker.workflow.data;
 
 import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
-import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeploymentEvent extends UnpackedObject
 {
-    protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
-
     private final EnumProperty<DeploymentState> stateProp = new EnumProperty<>(PROP_STATE, DeploymentState.class);
 
     private final StringProperty topicNameProp = new StringProperty("topicName");
 
-    private final ArrayProperty<DeploymentResource> resourcesProp = new ArrayProperty<DeploymentResource>(
+    private final ArrayProperty<DeploymentResource> resourcesProp = new ArrayProperty<>(
             "resources",
-            new ArrayValue<>(),
             new DeploymentResource());
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
             "deployedWorkflows",
-            new ArrayValue<>(),
-            new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
+            ArrayValue.emptyArray(),
             new DeployedWorkflow());
 
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");

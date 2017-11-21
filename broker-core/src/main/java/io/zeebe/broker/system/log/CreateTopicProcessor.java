@@ -23,6 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.SocketAddress;
@@ -46,7 +47,7 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
     }
 
     @Override
-    public void onOpen()
+    public void onOpen(TypedStreamProcessor streamProcessor)
     {
         this.topics.put(Protocol.SYSTEM_TOPIC_BUF, 0, -1); // ensure that the system topic cannot be created
     }
