@@ -21,15 +21,15 @@ import io.zeebe.msgpack.value.*;
 
 public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>> implements ValueArray<T>
 {
-    public ArrayProperty(String keyString, ArrayValue<T> value, T innerValue)
+    public ArrayProperty(String keyString, T innerValue)
     {
-        super(keyString, value);
+        super(keyString, new ArrayValue<T>());
         value.setInnerValue(innerValue);
     }
 
-    public ArrayProperty(String key, ArrayValue<T> value, ArrayValue<T> defaultValue, T innerValue)
+    public ArrayProperty(String key, ArrayValue<T> defaultValue, T innerValue)
     {
-        super(key, value, defaultValue);
+        super(key, new ArrayValue<T>(), defaultValue);
         value.setInnerValue(innerValue);
         defaultValue.setInnerValue(innerValue);
     }

@@ -15,18 +15,16 @@
  */
 package io.zeebe.msgpack;
 
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.msgpack.value.ArrayValue;
+import io.zeebe.msgpack.value.ValueArray;
+
 public class POJOArray extends UnpackedObject
 {
-    protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
-
     protected static final DirectBuffer NOT_EMPTY_ARRAY;
 
     static
@@ -54,15 +52,13 @@ public class POJOArray extends UnpackedObject
 
     public POJOArray()
     {
-        this.simpleArrayProp = new ArrayProperty<>("simpleArray", new ArrayValue<>(), new MinimalPOJO());
+        this.simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
 
         this.emptyDefaultArrayProp = new ArrayProperty<>("emptyDefaultArray",
-                new ArrayValue<>(),
-                new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
+                ArrayValue.emptyArray(),
                 new MinimalPOJO());
 
         this.notEmptyDefaultArrayProp = new ArrayProperty<>("notEmptyDefaultArray",
-                new ArrayValue<>(),
                 new ArrayValue<>(NOT_EMPTY_ARRAY, 0, NOT_EMPTY_ARRAY.capacity()),
                 new MinimalPOJO());
 

@@ -18,6 +18,7 @@ package io.zeebe.msgpack.value;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.DirectBuffer;
@@ -25,6 +26,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterator<T>
 {
+    private static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
+
     protected MsgPackReader elementReader = new MsgPackReader();
     protected MsgPackWriter elementWriter = new MsgPackWriter();
 
@@ -341,6 +344,11 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     public void setInnerValue(T innerValue)
     {
         this.innerValue = innerValue;
+    }
+
+    public static <T extends BaseValue> ArrayValue<T> emptyArray()
+    {
+        return new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity());
     }
 
 }
