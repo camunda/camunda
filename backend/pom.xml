@@ -483,13 +483,6 @@
 
         <dependency>
           <groupId>org.camunda.optimize</groupId>
-          <artifactId>engine-duration-adaption</artifactId>
-          <scope>test</scope>
-          <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-database-connection</artifactId>
           <scope>test</scope>
           <version>${project.version}</version>
@@ -614,10 +607,6 @@
                 <timeout>${cargo.timeout}</timeout>
                 <log>${tomcat.runtime}/logs/catalina.out</log>
                 <dependencies>
-                  <dependency>
-                    <groupId>org.camunda.optimize</groupId>
-                    <artifactId>engine-duration-adaption</artifactId>
-                  </dependency>
                   <dependency>
                     <groupId>org.camunda.optimize</groupId>
                     <artifactId>engine-database-connection</artifactId>
