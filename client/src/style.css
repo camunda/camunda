@@ -26,7 +26,19 @@ input[type="password"] {
 
 main {
   padding: 36px 20px 15px 20px;
+}
 
+a {
+  color: #00a8ff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #00a8ff;
 }
 
 /* TYPOGRAPHY */

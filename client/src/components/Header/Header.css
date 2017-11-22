@@ -30,6 +30,10 @@
   margin-right: 36px;
 }
 
+.Header__link:visited {
+  color: #333;
+}
+
 .Header__brand-logo {
   margin-right: .3em;
 }
