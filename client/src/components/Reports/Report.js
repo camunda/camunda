@@ -108,7 +108,7 @@ export default class Report extends React.Component {
         <div className='Report__header'>
           <div className='Report__name-container'>
             <input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input'></input>
-            <div className='Report__metadata'>{moment(lastModified).format('lll')} | {lastModifier}</div>
+            <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
             <Link id='save' className='Button Report__tool-button' to={`/report/${this.id}`} onClick={this.save}>Save</Link>
@@ -131,7 +131,7 @@ export default class Report extends React.Component {
         <div className='Report__header'>
           <div className='Report__name-container'>
             <h1 className='Report__name'>{name}</h1>
-            <div className='Report__metadata'>{moment(lastModified).format('lll')} | {lastModifier}</div>
+            <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
             <Link id='edit' className='Button Report__tool-button' to={`/report/${this.id}/edit`}>Edit</Link>

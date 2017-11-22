@@ -46,7 +46,7 @@ export default class EntityList extends React.Component {
   formatData = data => data.map(({name, id, lastModified, lastModifier}) => {
     const entry = [
       {content: name, link: `/${this.props.api}/${id}`},
-      `Last modified at ${moment(lastModified).format('lll')} by ${lastModifier}`
+      `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`
     ];
 
     if(this.props.operations.includes('delete')) {
