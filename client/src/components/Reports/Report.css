@@ -8,7 +8,7 @@
   padding-right: 48px;
 }
 
-.Report__heading {
+input.Report__heading {
   font-size: 2em;
   font-weight: bold;
   margin: 0;

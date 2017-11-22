@@ -1,16 +1,48 @@
 .Login {
   display: block;
   margin: 4rem auto;
-  padding: 1rem 3rem;
-  width: 40vw;
-  border: 1px solid lightgray;
+/*   padding: 1rem 3rem; */
+  width: 340px;
+}
+
+.Login__heading {
+  font-size: 1.5em;
+  font-weight: normal;
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.Login__heading:before {
+  color: #b5152b;
+  display: inline-block;
+  font-family: "bpmn";
+  font-style: normal;
+  font-weight: normal;
+  content: '\E831';
+  margin-right: .3em;
+}
+
+.Login__controls {
+  margin-bottom: 42px;
 }
 
 .Login__label {
   display: block;
-  font-variant: small-caps;
 }
 
 .Login__row {
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
+}
+
+input.Login__input {
+  display: block;
+  width: 100%;
+  padding: 8px 6px;
+}
+
+.Login__button {
+  display: block;
+  width: 100%;
+  font-size: 1em;
+  padding: 8px 14px 9px;
 }

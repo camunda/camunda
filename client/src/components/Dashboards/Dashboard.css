@@ -20,7 +20,7 @@
   margin-top: 6px;
 }
 
-.Dashboard__name-input {
+input.Dashboard__name-input {
   font-size: 2em;
   width: 100%;
   font-weight: bold;

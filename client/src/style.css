@@ -18,8 +18,10 @@ body {
 
 input[type="text"],
 input[type="password"] {
+  font-size: 1em;
   border: 1px solid lightgray;
-  padding: 4px;
+  padding: 4px 8px;
+  border-radius: 3px;
 }
 
 main {
@@ -27,7 +29,7 @@ main {
 
 }
 
-/* Typography */
+/* TYPOGRAPHY */
 /* TEMP Heading styles -> use global CSS reset?
 Use classes when more design work has been done */
 
@@ -50,4 +52,16 @@ h1 {
 
 section h1 {
   font-size: 1.5em;
+}
+
+/* UTILITIES */
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
 }

@@ -53,17 +53,19 @@ export default class Login extends React.Component {
 
     return (
       <form  className='Login'>
-        <h2>Login</h2>
-        {error ? (<Message type="error" message='Could not log you in. Please check your username and password.'/>) : ('')}
-        <div className='Login__row'>
-          <label className='Login__label' htmlFor='username'>Username</label>
-          <input type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
+        <h1 className="Login__heading">Camunda Optimize</h1>
+        {error ? (<Message type='error' message='Could not log you in. Please check your username and password.'/>) : ('')}
+        <div className='Login__controls'>
+          <div className='Login__row'>
+            <label className='Login__label visually-hidden' htmlFor='username'>Username</label>
+            <input className='Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
+          </div>
+          <div className='Login__row'>
+            <label className='Login__label visually-hidden' htmlFor='password'>Password</label>
+            <input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
+          </div>
         </div>
-        <div className='Login__row'>
-          <label className='Login__label' htmlFor='password'>Password</label>
-          <input placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
-        </div>
-        <Button type='submit' onClick={this.submit}>Login</Button>
+        <Button type='submit' onClick={this.submit} className='Button--primary Login__button'>Login</Button>
       </form>
     );
   }
