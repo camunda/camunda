@@ -10,6 +10,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
+import org.glassfish.jersey.client.ClientProperties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -97,6 +98,7 @@ public class ResilienceTest {
     while (!connectionStatusDto.isConnectedToElasticsearch()){
       try {
         connectionStatusDto = optimize.target("status/connection")
+          .property(ClientProperties.READ_TIMEOUT, 3000)
           .request()
           .get(ConnectionStatusDto.class);
       } catch (Exception e) {
