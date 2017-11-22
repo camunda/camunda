@@ -46,6 +46,45 @@ public class EngineDatabaseRule extends TestWatcher {
     }
   }
 
+  public void changeActivityDuration(String processInstanceId,
+                                     String activityId,
+                                     long duration) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET DURATION_ = ? WHERE " +
+      "PROC_INST_ID_ = ? AND " +
+      "ACT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(sql);
+    statement.setLong(1, duration);
+    statement.setString(2, processInstanceId);
+    statement.setString(3, activityId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeActivityDuration(String processInstanceId,
+                                     long duration) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET DURATION_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(sql);
+    statement.setLong(1, duration);
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeActivityDurationForProcessDefinition(String processDefinitionId,
+                                     long duration) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET DURATION_ = ? WHERE " +
+      "PROC_DEF_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(sql);
+    statement.setLong(1, duration);
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public void changeProcessInstanceStartDate(String processInstanceId, LocalDateTime startDate) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";

@@ -41,10 +41,6 @@
       </plugin>
 
       <plugin>
-        <class>org.camunda.bpm.platform.plugin.duration.adaption.HistoricActivityInstanceAdaptionPlugin</class>
-      </plugin>
-
-      <plugin>
         <class>org.camunda.bpm.platform.plugin.database.connection.DatabaseConnectionPlugin</class>
       </plugin>
 

@@ -1,11 +1,10 @@
-package org.camunda.optimize.service.es.report;
+package org.camunda.optimize.service.es.report.count;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -14,11 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,176 +28,163 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class AverageTotalProcessInstanceDurationReportEvaluationIT {
+public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   private static final String TEST_ACTIVITY = "testActivity";
+  private static final String TEST_ACTIVITY_2 = "testActivity_2";
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
 
     // given
-    LocalDateTime startDate = LocalDateTime.now();
-    LocalDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    NumberReportResultDto result = evaluateReport(reportData);
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
     assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    assertThat(result.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(result.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(result.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
-  }
-
-  @Test
-  public void reportEvaluationById() throws Exception {
-    // given
-    LocalDateTime startDate = LocalDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createAndStoreDefaultReportDefinition(processDefinitionId);
-
-    // when
-    NumberReportResultDto result = evaluateReportById(reportId);
-
-    // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
   }
 
   @Test
   public void evaluateReportForMultipleEvents() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    ProcessInstanceEngineDto processInstanceDto2 =
-      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    ProcessInstanceEngineDto processInstanceDto3 =
-      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    Map<String, LocalDateTime> startDatesToUpdate = new HashMap<>();
-    startDatesToUpdate.put(processInstanceDto.getId(), startDate);
-    startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
-    startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
-    engineDatabaseRule.updateProcessInstanceStartDates(startDatesToUpdate);
-    Map<String, LocalDateTime> endDatesToUpdate = new HashMap<>();
-    endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
-    endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
-    endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(3));
-    engineDatabaseRule.updateProcessInstanceEndDates(endDatesToUpdate);
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
+    engineRule.startProcessInstance(engineDto.getDefinitionId());
+    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    NumberReportResultDto result = evaluateReport(reportData);
+    ReportDataDto reportData = createDefaultReportData(engineDto.getDefinitionId());
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(2000L));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
   }
 
   @Test
-  public void noAvailableProcessInstancesReturnsZero() throws Exception {
-    // when
-    ReportDataDto reportData = createDefaultReportData("fooProcessDefinitionId");
-    NumberReportResultDto result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(0L));
-  }
-
-  @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void evaluateReportForMultipleEventsWithMultipleProcesses() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(3));
-    deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionId1 = instanceDto.getDefinitionId();
+    engineRule.startProcessInstance(processDefinitionId1);
+
+    instanceDto = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionId2 = instanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processInstanceDto.getDefinitionId());
-    NumberReportResultDto result = evaluateReport(reportData);
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId1);
+    MapReportResultDto result1 = evaluateReport(reportData);
+    reportData.setProcessDefinitionId(processDefinitionId2);
+    MapReportResultDto result2 = evaluateReport(reportData);
+
+    // then
+    assertThat(result1.getProcessDefinitionId(), is(processDefinitionId1));
+    assertThat(result1.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result1.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
+
+    assertThat(result2.getProcessDefinitionId(), is(processDefinitionId2));
+    assertThat(result2.getResult(), is(notNullValue()));
+    flowNodeIdToExecutionFrequency = result2.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
+  }
+
+  @Test
+  public void evaluateReportForMoreThenTenEvents() throws Exception {
+    // given
+    AbstractServiceTaskBuilder serviceTaskBuilder = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .serviceTask(TEST_ACTIVITY + 0)
+      .camundaExpression("${true}");
+    for (int i = 1; i < 11; i++) {
+      serviceTaskBuilder = serviceTaskBuilder
+        .serviceTask(TEST_ACTIVITY + i)
+        .camundaExpression("${true}");
+    }
+    BpmnModelInstance processModel =
+      serviceTaskBuilder.endEvent()
+        .done();
+
+    ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
+    String processDefinitionId = instanceDto.getDefinitionId();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(2000L));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(13));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY + 0), is(1L));
   }
 
   @Test
   public void dateFilterInReport() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
+    Date past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
     reportData.setFilter(createDateFilter("<", "start_date", past));
-    NumberReportResultDto result = evaluateReport(reportData);
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(0L));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
     reportData = createDefaultReportData(processDefinitionId);
@@ -208,7 +193,9 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
+    flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
   }
 
   public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
@@ -227,27 +214,27 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    LocalDateTime startDate = LocalDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    String processDefinitionId = processInstanceDto.getDefinitionId();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
+    String processDefinitionId = processInstance.getDefinitionId();
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    reportData.setFilter(createVariableFilter());
-    NumberReportResultDto result = evaluateReport(reportData);
+    reportData.setFilter(createVariableFilter("var"));
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getResult(), is(1000L));
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
   }
 
-  private List<FilterDto> createVariableFilter() {
+  private List<FilterDto> createVariableFilter(String variableName) {
     VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("var");
+    data.setName(variableName);
     data.setType("boolean");
     data.setOperator("=");
     data.setValues(Collections.singletonList("true"));
@@ -262,11 +249,8 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    LocalDateTime startDate = LocalDateTime.now();
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId, variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -278,10 +262,27 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
           .id("task1")
           .build();
     reportData.getFilter().addAll(flowNodeFilter);
-    NumberReportResultDto result = evaluateReport(reportData);
+    MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getResult(), is(1000L));
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(5));
+    assertThat(flowNodeIdToExecutionFrequency.get("task1" ), is(1L));
+    assertThat(flowNodeIdToExecutionFrequency.get("task2" ), is(nullValue()));
+  }
+
+  @Test
+  public void optimizeExceptionOnViewEntityIsNull() throws Exception {
+    // given
+    ReportDataDto dataDto = createDefaultReportData("123");
+    dataDto.getView().setEntity(null);
+
+    //when
+    Response response = evaluateReportAndReturnResponse(dataDto);
+
+    // then
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
@@ -357,7 +358,8 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
       .done();
-    return engineRule.deployProcessAndGetId(modelInstance);
+    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    return processDefinitionId;
   }
 
   private ReportDataDto createDefaultReportData(String processDefinitionId) {
@@ -365,21 +367,21 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     reportData.setProcessDefinitionId(processDefinitionId);
     reportData.setVisualization("heat");
     ViewDto view = new ViewDto();
-    view.setOperation(VIEW_AVERAGE_OPERATION);
-    view.setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
-    view.setProperty(VIEW_DURATION_PROPERTY);
+    view.setOperation(VIEW_COUNT_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_FREQUENCY_PROPERTY);
     reportData.setView(view);
     GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_NONE_TYPE);
+    groupByDto.setType(GROUP_BY_FLOW_NODE_TYPE);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  private NumberReportResultDto evaluateReport(ReportDataDto reportData) {
+  private MapReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(NumberReportResultDto.class);
+    return response.readEntity(MapReportResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
@@ -390,52 +392,5 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
       .post(Entity.json(reportData));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
-    String id = createNewReport();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(LocalDateTime.now());
-    report.setLastModified(LocalDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewReport() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("report")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private NumberReportResultDto evaluateReportById(String reportId) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(NumberReportResultDto.class);
-  }
 
 }

@@ -12,7 +12,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>engine-duration-adaption</module>
         <module>engine-purge</module>
         <module>engine-rest-secure</module>
         <module>import-performance-tests</module>

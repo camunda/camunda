@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
+import org.camunda.optimize.service.es.report.command.avg.AverageFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageTotalProcessInstanceDurationCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
@@ -37,7 +38,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 
 @Component
-public class ReportEvaluationManager {
+public class ReportEvaluator {
 
   @Autowired
   private ConfigurationService configurationService;
@@ -83,6 +84,34 @@ public class ReportEvaluationManager {
     switch (entity) {
       case VIEW_PROCESS_INSTANCE_ENTITY:
         evaluationCommand = extractPropertyForAverageProcessInstance(reportData);
+        break;
+      case VIEW_FLOW_NODE_ENTITY:
+        evaluationCommand = extractPropertyForAverageFlowNode(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractPropertyForAverageFlowNode(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    String property = reportData.getView().getProperty();
+    ValidationHelper.ensureNotEmpty("view property", property);
+    switch (property) {
+      case VIEW_DURATION_PROPERTY:
+        evaluationCommand = extractGroupForAverageFlowNodeDuration(reportData);
+        break;
+    }
+    return evaluationCommand;
+  }
+
+  private Command extractGroupForAverageFlowNodeDuration(ReportDataDto reportData) {
+    Command evaluationCommand = new NotSupportedCommand();
+    ValidationHelper.ensureNotNull("group by", reportData.getGroupBy());
+    String type = reportData.getGroupBy().getType();
+    ValidationHelper.ensureNotEmpty("group by type", type);
+    switch (type) {
+      case GROUP_BY_FLOW_NODE_TYPE:
+        evaluationCommand = new AverageFlowNodeDurationByFlowNodeCommand();
         break;
     }
     return evaluationCommand;

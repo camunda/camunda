@@ -8,7 +8,7 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.ReportEvaluationManager;
+import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
@@ -54,7 +54,7 @@ public class ReportRestService {
   private TokenService tokenService;
 
   @Autowired
-  private ReportEvaluationManager reportEvaluationManager;
+  private ReportEvaluator reportEvaluator;
 
   /**
    * Creates an empty report.
@@ -151,7 +151,7 @@ public class ReportRestService {
     ReportDefinitionDto reportDefinition = null;
     try {
       reportDefinition = reportReader.getReport(reportId);
-      ReportResultDto result = reportEvaluationManager.evaluate(reportDefinition.getData());
+      ReportResultDto result = reportEvaluator.evaluate(reportDefinition.getData());
       return Response.ok(result, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       String reportName = reportDefinition != null? reportDefinition.getName() : "unknown report";
@@ -176,7 +176,7 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response evaluateReport(ReportDataDto reportData) {
     try {
-      ReportResultDto result = reportEvaluationManager.evaluate(reportData);
+      ReportResultDto result = reportEvaluator.evaluate(reportData);
       return Response.ok(result, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       logger.error("Error during evaluation of an unsaved report", e);
