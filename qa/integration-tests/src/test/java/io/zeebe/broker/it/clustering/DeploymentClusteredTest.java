@@ -34,6 +34,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
@@ -81,6 +82,8 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/557
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldDeployWorkflowAndCreateInstances()
     {
         // given

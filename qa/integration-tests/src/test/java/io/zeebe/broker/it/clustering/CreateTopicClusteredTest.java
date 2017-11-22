@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.Timeout;
 
 import io.zeebe.broker.Broker;
@@ -75,6 +76,8 @@ public class CreateTopicClusteredTest
     }
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/558
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldReplicateNewTopic() throws InterruptedException
     {
         // given
