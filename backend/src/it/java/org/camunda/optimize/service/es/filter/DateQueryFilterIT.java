@@ -9,7 +9,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DataUtilHelper;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -211,7 +211,7 @@ public class DateQueryFilterIT {
     HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = LESS_THAN;
     type = "end_date";
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
+    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
 
     //when
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
@@ -225,7 +225,7 @@ public class DateQueryFilterIT {
     dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = LESS_THAN;
     type = "end_date";
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
+    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
     resultMap = getHeatMapResponseDto(dto);
@@ -317,7 +317,7 @@ public class DateQueryFilterIT {
     //when
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(TEST_DEFINITION);
-    DataUtilHelper.addDateFilter("blah", DateFilterDataDto.START_DATE, null, dto);
+    DateUtilHelper.addDateFilter("blah", DateFilterDataDto.START_DATE, null, dto);
     assertThat(getResponse(dto).getStatus(),is(500));
   }
 
@@ -335,7 +335,7 @@ public class DateQueryFilterIT {
     logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
-    DataUtilHelper.addDateFilter(operator, type, dateValue, dto);
+    DateUtilHelper.addDateFilter(operator, type, dateValue, dto);
     return dto;
   }
 

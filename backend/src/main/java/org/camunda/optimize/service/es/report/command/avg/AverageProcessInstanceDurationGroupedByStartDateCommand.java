@@ -1,8 +1,9 @@
-package org.camunda.optimize.service.es.report.command.count;
+package org.camunda.optimize.service.es.report.command.avg;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.util.ReportDataUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
@@ -12,24 +13,26 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportDataUtil.getDateHistogramInterval;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand {
+public class AverageProcessInstanceDurationGroupedByStartDateCommand extends ReportCommand {
 
-  public static final String DATE_HISTOGRAM_AGGREGATION = "agg";
+
+  private static final String AVG_DURATION = "avgDuration";
+  private static final String DATE_HISTOGRAM_AGGREGATION = "agg";
 
   @Override
   protected ReportResultDto evaluate() throws IOException, OptimizeException {
 
-    logger.debug("Evaluating count process instance frequency grouped by start date report " +
+    logger.debug("Evaluating average process instance duration grouped by start date report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
     BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
@@ -49,26 +52,34 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
     return mapResult;
   }
 
-  private AggregationBuilder createAggregation(String unit) throws OptimizeException {
-    DateHistogramInterval interval = getDateHistogramInterval(unit);
-    return AggregationBuilders
-      .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
-      .field(ProcessInstanceType.START_DATE)
-      .dateHistogramInterval(interval);
-  }
+  private Map<String, Long> processAggregations(Aggregations aggregations) {
 
-  Map<String, Long> processAggregations(Aggregations aggregations) {
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
     Map<String, Long> result = new HashMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
-      long docCount = entry.getDocCount();         // Doc count
       String formattedDate = key.toString(configurationService.getDateFormat());
-      result.put(formattedDate, docCount);
+
+      InternalAvg averageDuration = entry.getAggregations().get(AVG_DURATION);
+      long roundedDuration = Math.round(averageDuration.getValue());
+      result.put(formattedDate, roundedDuration);
     }
     return result;
+  }
+
+  private AggregationBuilder createAggregation(String unit) throws OptimizeException {
+    DateHistogramInterval interval = ReportDataUtil.getDateHistogramInterval(unit);
+    return AggregationBuilders
+      .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
+      .field(ProcessInstanceType.START_DATE)
+      .dateHistogramInterval(interval)
+      .subAggregation(
+        AggregationBuilders
+          .avg(AVG_DURATION)
+          .field(ProcessInstanceType.DURATION)
+      );
   }
 
   private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {

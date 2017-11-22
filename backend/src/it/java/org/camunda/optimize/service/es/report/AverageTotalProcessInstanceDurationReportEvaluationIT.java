@@ -2,8 +2,10 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -74,6 +76,32 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     String processDefinitionId = processInstanceDto.getDefinitionId();
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
     NumberReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(result.getView(), is(notNullValue()));
+    assertThat(result.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
+    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(result.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
+    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(1000L));
+  }
+
+  @Test
+  public void reportEvaluationById() throws Exception {
+    // given
+    LocalDateTime startDate = LocalDateTime.now();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionId = processInstanceDto.getDefinitionId();
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    String reportId = createAndStoreDefaultReportDefinition(processDefinitionId);
+
+    // when
+    NumberReportResultDto result = evaluateReportById(reportId);
 
     // then
     assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
@@ -362,5 +390,52 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
       .post(Entity.json(reportData));
   }
 
+  private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
+    String id = createNewReport();
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    report.setId(id);
+    report.setLastModifier("something");
+    report.setName("something");
+    report.setCreated(LocalDateTime.now());
+    report.setLastModified(LocalDateTime.now());
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+      embeddedOptimizeRule.target("report/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .put(Entity.json(updatedReport));
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private String createNewReport() {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+      embeddedOptimizeRule.target("report")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private NumberReportResultDto evaluateReportById(String reportId) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .get();
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(NumberReportResultDto.class);
+  }
 
 }

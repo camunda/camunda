@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.RawDataCommand;
+import org.camunda.optimize.service.es.report.command.avg.AverageProcessInstanceDurationGroupedByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.avg.AverageTotalProcessInstanceDurationCommand;
 import org.camunda.optimize.service.es.report.command.count.CountFlowNodeFrequencyByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.count.CountProcessInstanceFrequencyByStartDateCommand;
@@ -108,6 +109,10 @@ public class ReportEvaluationManager {
     switch (type) {
       case GROUP_BY_NONE_TYPE:
         evaluationCommand = new AverageTotalProcessInstanceDurationCommand();
+        break;
+      case GROUP_BY_START_DATE_TYPE:
+        ValidationHelper.ensureNotEmpty("group by unit", groupBy.getUnit());
+        evaluationCommand = new AverageProcessInstanceDurationGroupedByStartDateCommand();
         break;
     }
     return evaluationCommand;

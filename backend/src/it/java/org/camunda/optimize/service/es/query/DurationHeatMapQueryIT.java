@@ -9,7 +9,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DataUtilHelper;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -415,7 +415,7 @@ public class DurationHeatMapQueryIT {
     operator = LESS_THAN;
     type = "end_date";
     past = historicProcessInstance.getEndTime();
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 2000), dto);
+    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 2000), dto);
 
     //when
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
@@ -431,7 +431,7 @@ public class DurationHeatMapQueryIT {
     operator = LESS_THAN;
     type = "end_date";
     past = historicProcessInstance.getEndTime();
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
+    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
     resultMap = getHeatMapResponseDto(dto);
@@ -565,7 +565,7 @@ public class DurationHeatMapQueryIT {
     logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);
-    DataUtilHelper.addDateFilter(operator, type, dateValue, dto);
+    DateUtilHelper.addDateFilter(operator, type, dateValue, dto);
     return dto;
   }
 

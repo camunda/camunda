@@ -7,17 +7,12 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -51,7 +46,6 @@ public class AverageTotalProcessInstanceDurationCommand extends ReportCommand {
   }
 
   private long processAggregations(Aggregations aggregations) {
-    // todo check if not a number
     InternalAvg averageDuration = aggregations.get(AVG_DURATION);
     long roundedDuration = Math.round(averageDuration.getValue());
     return roundedDuration;

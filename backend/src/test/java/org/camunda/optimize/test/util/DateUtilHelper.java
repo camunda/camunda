@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author Askar Akhmerov
  */
-public class DataUtilHelper {
+public class DateUtilHelper {
 
   public static void addDateFilter(String operator, String type, Date dateValue, HeatMapQueryDto dto) {
     List<FilterDto> dateFilter = createDateFilter(operator, type, dateValue);

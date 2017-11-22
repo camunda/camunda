@@ -15,7 +15,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DataUtilHelper;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -264,7 +264,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DataUtilHelper.addDateFilter("<=", "start_date", now, dto);
+    DateUtilHelper.addDateFilter("<=", "start_date", now, dto);
     logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, "<=", "start_date", now);
 
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -298,7 +298,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DataUtilHelper.addDateFilter(">", "start_date", new Date(), dto);
+    DateUtilHelper.addDateFilter(">", "start_date", new Date(), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -332,7 +332,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DataUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
+    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -366,8 +366,8 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DataUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
-    DataUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInMs(-2000), dto);
+    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
+    DateUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInMs(-2000), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);

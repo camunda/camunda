@@ -12,7 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DataUtilHelper;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -82,7 +82,7 @@ public class MixedFilterIT {
     // when
     VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    DataUtilHelper.addDateFilter("<", "start_date", date, queryDto);
+    DateUtilHelper.addDateFilter("<", "start_date", date, queryDto);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
