@@ -1,8 +1,28 @@
 .Message {
+  font-size: .875em;
   background-color: #f2f2f2;
   padding: 8px;
   margin: 0;
-  color: red;
   border-radius: 3px;
   margin-bottom: 1em;
+  border: 1px solid #dddddd;
+}
+
+.Message--blue {
+  border: 1px solid #00a8ff;
+  background-color: #e6f6ff; /* Sass: lighten(#00a8ff, 45) */
+}
+
+.Message--red,
+.Message--danger,
+.Message--error {
+  border: 1px solid #B5152B;
+  background-color: #f9d0d5; /* Sass: lighten(#B5152B, 50) */
+}
+
+
+.Message--green,
+.Message--success {
+  border: 1px solid #00c364;
+  background-color: #c3ffe2; /* Sass: lighten(#00c364, 50) */
 }
