@@ -3,7 +3,7 @@ a.Button {
   color: #333;
   font-size: .875em; /* 14px/16px */
   user-select: none;
-  padding: 6px 12px 7px;
+  padding: 6px 12px;
   background-color: #f8f8f8;
   border: 1px solid #ccc;
   border-radius: 3px;
@@ -42,28 +42,55 @@ a.Button--small {
 }
 
 
-/* TODO: (New design: do not use red for primary buttons / semantics) */
 .Button--primary,
-a.button--primary {
+a.Button--primary {
   color: white;
   font-weight: bold;
-  /* background-color: #49a7f8; */
-  background-color: #B5152E;
-  border: 1px solid #9e1226;
+  color: white;
+  background-color: #00a8ff;
+  border: 1px solid #00a8ff;
+}
+
+.Button--primary:hover,
+a.Button--primary:hover {
+  color: white;
+  background-color: #008fe6;  /* #00a8ff -> darken 10% */
+  border: 1px solid #008fe6;
 }
 
 .Button--danger,
 a.Button--danger {
   color: white;
-  background-color: #B5152E;
-  border: 1px solid #9e1226;
+  background-color: #B5152B;
+  border: 1px solid #B5152B;
 }
 
-.Button--primary:hover,
-a.Button--primary:hover,
 .Button--danger:hover,
 a.Button--danger:hover {
   color: white;
-  background-color: #871020;
-  border: 1px solid #670c19;
+  background-color: #9C0012; /* #B5152B -> darken 10% */
+  border: 1px solid #9C0012;
+}
+
+.Button--green,
+a.Button--green {
+  color: white;
+  background-color: #00c364;
+  border: 1px solid #00c364;
+}
+
+.Button--primary--green,
+a.Button--primary--green {
+  font-weight: bold;
+  color: white;
+  background-color: #00c364;
+  border: 1px solid #00c364;
+}
+
+.Button--green:hover,
+a.Button--green:hover,
+.Button--primary--green:hover,
+a.Button--primary--green:hover {
+  color: white;
+  background-color: #00AA4B; /* #00c364 -> darken 10% */
 }

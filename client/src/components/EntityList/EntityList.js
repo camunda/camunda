@@ -72,7 +72,7 @@ export default class EntityList extends React.Component {
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
-      createButton = <Button className='EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
+      createButton = <Button className='Button--green EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
     }
 
     const header = <h1 className='EntityList__heading'>{this.props.label}s</h1>;
