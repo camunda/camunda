@@ -74,3 +74,7 @@
   flex-grow: 0;
   flex-shrink: 0;
 }
+
+.EntityList__editLink {
+  font-size: .875em;
+}

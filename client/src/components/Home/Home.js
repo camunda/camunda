@@ -13,7 +13,7 @@ export default function Home() {
       sortBy={'lastModified'}
       operations={['edit']}>
 
-      <Link to='/dashboards'>View all Dashboards...</Link>
+      <Link to='/dashboards' className='small'>View all Dashboards…</Link>
 
     </EntityList>,
     <EntityList
@@ -24,7 +24,7 @@ export default function Home() {
       sortBy={'lastModified'}
       operations={['edit']}>
 
-      <Link to='/reports'>View all Reports...</Link>
+      <Link to='/reports' className='small'>View all Reports…</Link>
 
     </EntityList>
   ];
