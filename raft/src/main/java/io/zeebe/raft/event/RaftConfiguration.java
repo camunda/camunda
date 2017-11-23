@@ -17,19 +17,16 @@ package io.zeebe.raft.event;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class RaftConfiguration extends UnpackedObject
 {
-    protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
-
     protected RaftConfigurationMember raftConfigurationMember = new RaftConfigurationMember();
-    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>("members", new ArrayValue<>(),
-        new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()), raftConfigurationMember);
+    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
+        "members",
+        ArrayValue.emptyArray(),
+        raftConfigurationMember);
 
     public RaftConfiguration()
     {
