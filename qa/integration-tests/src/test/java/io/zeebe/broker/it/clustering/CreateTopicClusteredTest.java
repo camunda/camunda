@@ -56,6 +56,8 @@ public class CreateTopicClusteredTest
     public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/561
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldCreateTopic()
     {
         // given
