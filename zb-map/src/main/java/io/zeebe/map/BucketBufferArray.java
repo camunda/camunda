@@ -325,7 +325,11 @@ public class BucketBufferArray implements AutoCloseable
 
     public boolean addBlock(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler)
     {
-        // TODO note if add block with bucket count 0 we should allocate new bucket or throw exception
+        final int bucketBufferId = (int) (bucketAddress >> 32);
+        if (getBucketCount(bucketBufferId) == 0)
+        {
+            throw new IllegalStateException("No bucket in buffer " + bucketBufferId + ", need to allocate new bucket!");
+        }
 
         int bucketFillCount = getBucketFillCount(bucketAddress);
         boolean canAddRecord = bucketFillCount < maxBucketBlockCount;
@@ -596,7 +600,12 @@ public class BucketBufferArray implements AutoCloseable
         if (bucketOverflowPointer != 0)
         {
             setBucketOverflowPointer(bucketBefore, getBucketOverflowPointer(bucketOverflowPointer));
+            setBucketOverflowPointer(bucketOverflowPointer, 0);
         }
+//        else
+//        {
+//            setBucketOverflowPointer(bucketBefore, bucketOverflowPointer);
+//        }
     }
 
 
@@ -711,10 +720,6 @@ public class BucketBufferArray implements AutoCloseable
 
             // remove from this block (compacts this block)
             removeBlockFromBucket(bucketAddress, blockOffset);
-
-
-
-            // TODO remove overflow buckets
         }
     }
 

@@ -1568,6 +1568,37 @@ public class ZbMapTest
         assertThat(zbMap.getBucketBufferArray().realAddresses.length).isEqualTo(32);
     }
 
+    @Test
+    public void shouldNotRemoveRecursivelyTheFirstBucket()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+        for (int i = 0; i < 32 + 1; i++)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        // when
+        for (int i = 31; i >= 0; i--)
+        {
+            removeValue(zbMap, i);
+        }
+        removeValue(zbMap, 32);
+
+        // then
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+
+        // when
+        putValue(zbMap, 1, 1);
+        removeValue(zbMap, 1);
+
+        // then
+        assertThat(zbMap.getBucketBufferArray().getBucketBufferCount()).isEqualTo(1);
+        assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
+    }
+
     private int maxRecordPerBlockForLong2Longmap()
     {
         return (Integer.MAX_VALUE - BUCKET_DATA_OFFSET - BUCKET_DATA_OFFSET * ALLOCATION_FACTOR) / (getBlockLength(SIZE_OF_LONG, SIZE_OF_LONG) * ALLOCATION_FACTOR);

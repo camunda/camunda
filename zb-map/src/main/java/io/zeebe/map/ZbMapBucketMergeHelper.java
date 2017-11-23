@@ -208,37 +208,34 @@ final class ZbMapBucketMergeHelper
         int bucketId = bucketBufferArrayRef.getBucketId(bucketAddress);
         int depth = bucketBufferArrayRef.getBucketDepth(bucketAddress);
 
-        if (splitWasCalledAtLeastOnce(bucketId, depth))
+        long newLastBucketAddress = bucketAddress;
+        while (splitWasCalledAtLeastOnce(bucketId, depth) && newLastBucketAddress > 0)
         {
-            long newLastBucketAddress = bucketAddress;
-            while (newLastBucketAddress > 0)
+            if (depth == ABANDONED_BUCKET)
             {
-                if (depth == ABANDONED_BUCKET)
+                newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
+            }
+            else if (depth == BucketBufferArray.OVERFLOW_BUCKET)
+            {
+                newLastBucketAddress = tryMergeOverflowBucket(bucketAddress, newBucketFillCount, bucketId);
+            }
+            else
+            {
+                final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
+                if (bucketOverflowPointer != 0)
                 {
-                    newLastBucketAddress = tryRemoveAbandonedBucketWithoutMerge(bucketAddress);
-                }
-                else if (depth == BucketBufferArray.OVERFLOW_BUCKET)
-                {
-                    newLastBucketAddress = tryMergeOverflowBucket(bucketAddress, newBucketFillCount, bucketId);
+                    newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
                 }
                 else
                 {
-                    final long bucketOverflowPointer = bucketBufferArrayRef.getBucketOverflowPointer(bucketAddress);
-                    if (bucketOverflowPointer != 0)
-                    {
-                        newLastBucketAddress = tryMergeBucketWhichHasOverflowBucket(bucketAddress, bucketOverflowPointer);
-                    }
-                    else
-                    {
-                        newLastBucketAddress = tryMergeSplitBucket(bucketAddress, newBucketFillCount, depth, bucketId);
-                    }
+                    newLastBucketAddress = tryMergeSplitBucket(bucketAddress, newBucketFillCount, depth, bucketId);
                 }
-                newBucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
-
-                bucketAddress = newLastBucketAddress;
-                bucketId = bucketBufferArrayRef.getBucketId(newLastBucketAddress);
-                depth = bucketBufferArrayRef.getBucketDepth(newLastBucketAddress);
             }
+            newBucketFillCount = bucketBufferArrayRef.getBucketFillCount(newLastBucketAddress);
+
+            bucketAddress = newLastBucketAddress;
+            bucketId = bucketBufferArrayRef.getBucketId(newLastBucketAddress);
+            depth = bucketBufferArrayRef.getBucketDepth(newLastBucketAddress);
         }
     }
 

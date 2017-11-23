@@ -269,6 +269,25 @@ public class BucketBufferArrayTest
     }
 
     @Test
+    public void shouldThrowExceptionOnAddBlockIfNoBucketWasAllocated()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long firstBucketAddress = 4;
+
+        // expect
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage("No bucket in buffer 0, need to allocate new bucket!");
+
+        // when
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(firstBucketAddress, keyHandler, valueHandler);
+    }
+
+
+    @Test
     public void shouldCreateBlock()
     {
         // given
@@ -325,6 +344,26 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
         assertThat(bucketBufferArray.getBucketFillCount(newBucketAddress)).isEqualTo(0);
         assertThat(bucketBufferArray.getBucketLength(newBucketAddress)).isEqualTo(BUCKET_DATA_OFFSET);
+    }
+
+    @Test
+    public void shouldThrowExceptionOnAddBlockAfterRemoveBucket()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final LongValueHandler valueHandler = new LongValueHandler();
+        final long newBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
+        bucketBufferArray.removeBucket(newBucketAddress);
+
+        // expect
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage("No bucket in buffer 0, need to allocate new bucket!");
+
+        // when
+        keyHandler.theKey = 10;
+        valueHandler.theValue = 0xFF;
+        bucketBufferArray.addBlock(newBucketAddress, keyHandler, valueHandler);
     }
 
     @Test
