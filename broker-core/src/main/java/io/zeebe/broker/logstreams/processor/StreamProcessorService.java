@@ -164,6 +164,11 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return streamProcessorController;
     }
 
+    public String getName()
+    {
+        return name;
+    }
+
     protected static class MetadataEventFilter implements EventFilter
     {
 

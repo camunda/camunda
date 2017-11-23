@@ -18,13 +18,18 @@
 package io.zeebe.broker.transport.clientapi;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
+import org.agrona.sbe.MessageDecoderFlyweight;
 
+import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.TransportMessage;
@@ -36,6 +41,8 @@ public class BufferingServerOutput implements ServerOutput
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorDecoder = new ErrorResponseDecoder();
+
+    protected final MsgPackHelper msgPackDecoder = new MsgPackHelper();
 
     protected List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
 
@@ -61,12 +68,25 @@ public class BufferingServerOutput implements ServerOutput
 
     public ErrorResponseDecoder getAsErrorResponse(int index)
     {
+        return getAs(index, errorDecoder);
+    }
+
+    protected <T extends MessageDecoderFlyweight> T getAs(int index, T decoder)
+    {
         final DirectBuffer sentResponse = sentResponses.get(index);
         final int offset = TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseHeaderDescriptor.HEADER_LENGTH;
         headerDecoder.wrap(sentResponse, offset);
 
-        errorDecoder.wrap(sentResponse, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        decoder.wrap(sentResponse, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        return errorDecoder;
+        return decoder;
+    }
+
+    public Map<String, Object> getAsControlMessageData(int index)
+    {
+        final ControlMessageResponseDecoder decoder = getAs(index, new ControlMessageResponseDecoder());
+        final UnsafeBuffer dataBuf = new UnsafeBuffer(new byte[decoder.dataLength()]);
+        decoder.getData(dataBuf, 0, dataBuf.capacity());
+        return msgPackDecoder.readMsgPack(new DirectBufferInputStream(dataBuf));
     }
 }

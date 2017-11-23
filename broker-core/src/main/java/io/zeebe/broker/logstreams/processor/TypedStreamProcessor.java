@@ -17,15 +17,22 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
@@ -41,6 +48,7 @@ public class TypedStreamProcessor implements StreamProcessor
     protected final SnapshotSupport snapshotSupport;
     protected final ServerOutput output;
     protected final EnumMap<EventType, EnumMap> eventProcessors;
+    protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
     protected final EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry;
@@ -50,23 +58,24 @@ public class TypedStreamProcessor implements StreamProcessor
     protected DelegatingEventProcessor eventProcessorWrapper;
 
     private DeferredCommandContext cmdQueue;
-    protected final List<Runnable> closeOperations;
 
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
             ServerOutput output,
             EnumMap<EventType, EnumMap> eventProcessors,
-            EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry,
-            List<Runnable> closeOperations)
+            List<StreamProcessorLifecycleAware> lifecycleListeners,
+            EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry)
     {
         this.snapshotSupport = snapshotSupport;
         this.output = output;
         this.eventProcessors = eventProcessors;
+        eventProcessors.values().forEach(p -> this.lifecycleListeners.addAll(p.values()));
+        this.lifecycleListeners.addAll(lifecycleListeners);
+
         this.eventCache = new EnumMap<>(EventType.class);
 
         eventRegistry.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
         this.eventRegistry = eventRegistry;
-        this.closeOperations = closeOperations;
     }
 
     @Override
@@ -79,15 +88,14 @@ public class TypedStreamProcessor implements StreamProcessor
                 context.getTargetStream(),
                 eventRegistry);
 
-        eventProcessors.values().forEach(p -> p.values().forEach(e -> ((TypedEventProcessor) e).onOpen()));
-
         cmdQueue = context.getStreamProcessorCmdQueue();
+        lifecycleListeners.forEach(e -> e.onOpen(this));
     }
 
     @Override
     public void onClose()
     {
-        closeOperations.forEach(r -> r.run());
+        lifecycleListeners.forEach(e -> e.onClose());
         cmdQueue = null;
     }
 
@@ -138,6 +146,18 @@ public class TypedStreamProcessor implements StreamProcessor
         if (cmdQueue != null)
         {
             cmdQueue.runAsync(runnable);
+        }
+    }
+
+    public <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action)
+    {
+        if (cmdQueue != null)
+        {
+            return cmdQueue.runAsync(action);
+        }
+        else
+        {
+            return null;
         }
     }
 

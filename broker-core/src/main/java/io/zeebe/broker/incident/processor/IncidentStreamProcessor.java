@@ -115,6 +115,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         activityInstanceMap.close();
         failedTaskMap.close();
         incidentMap.close();
+        resolvingEvents.close();
 
         logStreamReader.close();
     }

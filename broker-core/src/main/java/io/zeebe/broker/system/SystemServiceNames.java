@@ -36,7 +36,6 @@ public class SystemServiceNames
     public static final ServiceName<ScheduledExecutor> EXECUTOR_SERVICE = ServiceName.newServiceName("broker.executor", ScheduledExecutor.class);
 
     public static final ServiceName<SystemPartitionManager> SYSTEM_LOG_MANAGER = ServiceName.newServiceName("broker.system.log", SystemPartitionManager.class);
-    public static final ServiceName<StreamProcessorController> SYSTEM_PROCESSOR = ServiceName.newServiceName("broker.system.log.processor", StreamProcessorController.class);
 
     public static final ServiceName<PartitionManager> PARTITION_MANAGER_SERVICE = ServiceName.newServiceName("broker.system.partition.manager", PartitionManager.class);
 
@@ -44,4 +43,8 @@ public class SystemServiceNames
     public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE = ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
     public static final ServiceName<StreamProcessorController> DEPLOYMENT_PROCESSOR = ServiceName.newServiceName("broker.system.deployment.processor", StreamProcessorController.class);
 
+    public static ServiceName<StreamProcessorController> systemProcessorName(String processorName)
+    {
+        return ServiceName.newServiceName("broker.system.log.processor." + processorName, StreamProcessorController.class);
+    }
 }

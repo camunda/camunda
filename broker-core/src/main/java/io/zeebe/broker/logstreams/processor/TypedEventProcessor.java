@@ -20,7 +20,7 @@ package io.zeebe.broker.logstreams.processor;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.msgpack.UnpackedObject;
 
-public interface TypedEventProcessor<T extends UnpackedObject>
+public interface TypedEventProcessor<T extends UnpackedObject> extends StreamProcessorLifecycleAware
 {
     /**
      * @see EventProcessor#processEvent()
@@ -47,10 +47,6 @@ public interface TypedEventProcessor<T extends UnpackedObject>
      * @see EventProcessor#updateState()
      */
     default void updateState(TypedEvent<T> event)
-    {
-    }
-
-    default void onOpen()
     {
     }
 }

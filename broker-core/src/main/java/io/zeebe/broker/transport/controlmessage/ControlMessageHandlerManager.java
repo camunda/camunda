@@ -22,13 +22,15 @@ import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CON
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
@@ -37,6 +39,7 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.actor.Actor;
@@ -52,6 +55,8 @@ import io.zeebe.util.time.ClockUtil;
 
 public class ControlMessageHandlerManager implements Actor
 {
+    public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected static final String NAME = "control.message.handler";
 
     protected static final int TRANSITION_DEFAULT = 0;
@@ -297,6 +302,8 @@ public class ControlMessageHandlerManager implements Actor
 
             if (future.isDone())
             {
+                logExceptionIfAny(future);
+
                 context.take(TRANSITION_DEFAULT);
             }
             else if (hasTimeout(startTime))
@@ -309,6 +316,22 @@ public class ControlMessageHandlerManager implements Actor
                 // TODO: proper backpressure
 
                 context.take(TRANSITION_DEFAULT);
+            }
+        }
+
+        private void logExceptionIfAny(final CompletableFuture<Void> future) throws InterruptedException
+        {
+            if (future.isCompletedExceptionally())
+            {
+                try
+                {
+                    future.get();
+                }
+                catch (ExecutionException e)
+                {
+                    LOG.error("Could not process control message request successfully. A response may not be sent.",
+                            e.getCause());
+                }
             }
         }
 

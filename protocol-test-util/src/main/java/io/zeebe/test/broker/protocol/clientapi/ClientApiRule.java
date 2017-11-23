@@ -56,11 +56,18 @@ public class ClientApiRule extends ExternalResource
 
     private ActorScheduler scheduler;
 
-    protected int defaultPartitionId;
+    protected int defaultPartitionId = -1;
+    protected boolean createDefaultTopic = true;
 
     public ClientApiRule()
     {
         this("localhost", 51015);
+    }
+
+    public ClientApiRule(boolean createDefaultTopic)
+    {
+        this();
+        this.createDefaultTopic = createDefaultTopic;
     }
 
     public ClientApiRule(String host, int port)
@@ -91,8 +98,11 @@ public class ClientApiRule extends ExternalResource
         msgPackHelper = new MsgPackHelper();
         streamAddress = transport.registerRemoteAddress(brokerAddress);
 
-        createTopic(DEFAULT_TOPIC_NAME, 1);
-        defaultPartitionId = getSinglePartitionId(DEFAULT_TOPIC_NAME);
+        if (createDefaultTopic)
+        {
+            createTopic(DEFAULT_TOPIC_NAME, 1);
+            defaultPartitionId = getSinglePartitionId(DEFAULT_TOPIC_NAME);
+        }
     }
 
     @Override
