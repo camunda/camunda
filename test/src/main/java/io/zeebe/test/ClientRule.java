@@ -24,6 +24,7 @@ import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import org.junit.rules.ExternalResource;
 
+
 public class ClientRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC = "default-topic";
