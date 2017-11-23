@@ -27,7 +27,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
 
 
   private static final String AVG_DURATION = "avgDuration";
-  private static final String DATE_HISTOGRAM_AGGREGATION = "agg";
+  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
   protected ReportResultDto evaluate() throws IOException, OptimizeException {

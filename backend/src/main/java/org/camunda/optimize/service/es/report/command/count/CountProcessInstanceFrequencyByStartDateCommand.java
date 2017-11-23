@@ -24,7 +24,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand {
 
-  public static final String DATE_HISTOGRAM_AGGREGATION = "agg";
+  public static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
   protected ReportResultDto evaluate() throws IOException, OptimizeException {
