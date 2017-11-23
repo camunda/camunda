@@ -20,6 +20,16 @@ a.Button:hover {
   transition: background-color .3s, border-color .3s;
 }
 
+.Button[disabled]:hover,
+.Button[disabled="disabled"]:hover,
+a.Button[disabled]:hover,
+a.Button[disabled="disabled"]:hover {
+  color: #333;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+}
+
+
 .Button:active,
 a.Button:active {
   color: #111;
@@ -58,6 +68,16 @@ a.Button--primary:hover {
   border: 1px solid #008fe6;
 }
 
+.Button--primary[disabled]:hover,
+.Button--primary[disabled="disabled"]:hover,
+a.Button--primary[disabled]:hover,
+a.Button--primary[disabled="disabled"]:hover {
+  color: white;
+  background-color: #00a8ff;
+  border: 1px solid #00a8ff;
+
+}
+
 .Button--danger,
 a.Button--danger {
   color: white;
@@ -72,6 +92,15 @@ a.Button--danger:hover {
   border: 1px solid #9C0012;
 }
 
+.Button--danger[disabled]:hover,
+.Button--danger[disabled="disabled"]:hover,
+a.Button--danger[disabled]:hover,
+a.Button--danger[disabled="disabled"]:hover {
+  color: white;
+  background-color: #B5152B;
+  border: 1px solid #B5152B;
+}
+
 .Button--green,
 a.Button--green {
   color: white;
@@ -79,18 +108,18 @@ a.Button--green {
   border: 1px solid #00c364;
 }
 
-.Button--primary--green,
-a.Button--primary--green {
-  font-weight: bold;
+.Button--green:hover,
+a.Button--green:hover {
+  color: white;
+  background-color: #00AA4B; /* #00c364 -> darken 10% */
+  border: 1px solid #00AA4B;
+}
+
+.Button--green[disabled]:hover,
+.Button--green[disabled="disabled"]:hover,
+a.Button--green[disabled]:hover,
+a.Button--green[disabled="disabled"]:hover {
   color: white;
   background-color: #00c364;
   border: 1px solid #00c364;
-}
-
-.Button--green:hover,
-a.Button--green:hover,
-.Button--primary--green:hover,
-a.Button--primary--green:hover {
-  color: white;
-  background-color: #00AA4B; /* #00c364 -> darken 10% */
 }
