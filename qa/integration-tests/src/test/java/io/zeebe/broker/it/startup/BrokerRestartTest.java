@@ -48,6 +48,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.*;
 
 public class BrokerRestartTest
@@ -225,6 +226,8 @@ public class BrokerRestartTest
     }
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/567
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldDeployNewWorkflowVersionAfterRestart()
     {
         // given
