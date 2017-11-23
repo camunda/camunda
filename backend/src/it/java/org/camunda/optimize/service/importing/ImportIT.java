@@ -15,6 +15,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -157,30 +158,29 @@ public class ImportIT  {
     allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
   }
 
-//  TODO: OPT-708
-//  @Test
-//  public void allEventFieldDataOfImportIsAvailableWithAuthentication() throws Exception {
-//    //given
-//    EngineConfiguration engineConfiguration = embeddedOptimizeRule
-//      .getConfigurationService().getConfiguredEngines().get("1");
-//    engineConfiguration.getAuthentication().setEnabled(true);
-//    engineConfiguration.getAuthentication().setPassword("demo");
-//    engineConfiguration.getAuthentication().setUser("demo");
-//    engineConfiguration.setRest("http://localhost:48080/engine-rest-secure");
-//    engineRule.addUser("demo", "demo");
-//    embeddedOptimizeRule.reloadConfiguration();
-//    deployAndStartSimpleServiceTask();
-//
-//    //when
-//    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-//    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-//
-//    //then
-//    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
-//
-//    engineConfiguration.getAuthentication().setEnabled(false);
-//    engineConfiguration.setRest("http://localhost:48080/engine-rest");
-//  }
+  @Test
+  public void allEventFieldDataOfImportIsAvailableWithAuthentication() throws Exception {
+    //given
+    EngineConfiguration engineConfiguration = embeddedOptimizeRule
+      .getConfigurationService().getConfiguredEngines().get("1");
+    engineConfiguration.getAuthentication().setEnabled(true);
+    engineConfiguration.getAuthentication().setPassword("demo");
+    engineConfiguration.getAuthentication().setUser("demo");
+    engineConfiguration.setRest("http://localhost:48080/engine-rest-secure");
+    engineRule.addUser("demo", "demo");
+    embeddedOptimizeRule.reloadConfiguration();
+    deployAndStartSimpleServiceTask();
+
+    //when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
+
+    engineConfiguration.getAuthentication().setEnabled(false);
+    engineConfiguration.setRest("http://localhost:48080/engine-rest");
+  }
 
   @Test
   public void unfinishedActivitiesAreNotSkippedDuringImport() throws OptimizeException {
