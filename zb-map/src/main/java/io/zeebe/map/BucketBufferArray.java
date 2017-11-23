@@ -325,31 +325,46 @@ public class BucketBufferArray implements AutoCloseable
 
     public boolean addBlock(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler)
     {
-        final int bucketFillCount = getBucketFillCount(bucketAddress);
-        final boolean canAddRecord = bucketFillCount < maxBucketBlockCount;
+        // TODO note if add block with bucket count 0 we should allocate new bucket or throw exception
+
+        int bucketFillCount = getBucketFillCount(bucketAddress);
+        boolean canAddRecord = bucketFillCount < maxBucketBlockCount;
 
         if (canAddRecord)
         {
-            final int blockOffset = getBucketLength(bucketAddress);
-
-            final long blockAddress = getBlockAddress(bucketAddress, blockOffset);
-
-            keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
-            valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
-
-            setBucketFillCount(bucketAddress, bucketFillCount + 1);
-            setBlockCount(getBlockCount() + 1);
+            addBlockToBucket(bucketAddress, keyHandler, valueHandler, bucketFillCount);
         }
         else
         {
-            final long overflowBucketAddress = getBucketOverflowPointer(bucketAddress);
-            if (overflowBucketAddress > 0)
+            long overflowBucketAddress = getBucketOverflowPointer(bucketAddress);
+            while (overflowBucketAddress > 0 && !canAddRecord)
             {
-                return addBlock(overflowBucketAddress, keyHandler, valueHandler);
+                bucketAddress = overflowBucketAddress;
+                overflowBucketAddress = getBucketOverflowPointer(bucketAddress);
+
+                bucketFillCount = getBucketFillCount(bucketAddress);
+                canAddRecord = bucketFillCount < maxBucketBlockCount;
+                if (canAddRecord)
+                {
+                    addBlockToBucket(bucketAddress, keyHandler, valueHandler, bucketFillCount);
+                }
             }
         }
 
         return canAddRecord;
+    }
+
+    private void addBlockToBucket(long bucketAddress, KeyHandler keyHandler, ValueHandler valueHandler, int bucketFillCount)
+    {
+        final int blockOffset = getBucketLength(bucketAddress);
+
+        final long blockAddress = getBlockAddress(bucketAddress, blockOffset);
+
+        keyHandler.writeKey(blockAddress + BLOCK_KEY_OFFSET);
+        valueHandler.writeValue(getBlockValueOffset(blockAddress, maxKeyLength));
+
+        setBucketFillCount(bucketAddress, bucketFillCount + 1);
+        setBlockCount(getBlockCount() + 1);
     }
 
     public int removeBlock(long bucketAddress, int blockOffset)
@@ -450,6 +465,7 @@ public class BucketBufferArray implements AutoCloseable
         setBucketCount(bucketBufferId, bucketCount - 1);
         setBucketCount(totalBucketCount - 1);
         int lastBucketOffset = bucketCount == 1 ? 0 : BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 2) * maxBucketLength);
+
 
         final boolean bufferIsEmpty = (bucketCount - 1) == 0;
         if (bufferIsEmpty)
@@ -554,18 +570,18 @@ public class BucketBufferArray implements AutoCloseable
 
     public long overflow(long bucketAddress)
     {
-        final long currentOverflowBucketAddress = getBucketOverflowPointer(bucketAddress);
-        if (currentOverflowBucketAddress > 0)
+        long currentOverflowBucketAddress = getBucketOverflowPointer(bucketAddress);
+        while (currentOverflowBucketAddress > 0)
         {
-            return overflow(currentOverflowBucketAddress);
+            bucketAddress = currentOverflowBucketAddress;
+            currentOverflowBucketAddress = getBucketOverflowPointer(bucketAddress);
         }
-        else
-        {
-            final int bucketId = getBucketId(bucketAddress);
-            final long overflowBucketAddress = allocateNewBucket(bucketId, OVERFLOW_BUCKET);
-            setBucketOverflowPointer(bucketAddress, overflowBucketAddress);
-            return overflowBucketAddress;
-        }
+
+
+        final int bucketId = getBucketId(bucketAddress);
+        final long overflowBucketAddress = allocateNewBucket(bucketId, OVERFLOW_BUCKET);
+        setBucketOverflowPointer(bucketAddress, overflowBucketAddress);
+        return overflowBucketAddress;
     }
 
     public void removeOverflowBucket(long bucketAddress, long overflowBucket)
