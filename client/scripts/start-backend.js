@@ -15,13 +15,25 @@ const engineInitPromise = engine.init().catch(error => {
   shell.exit(0);
 });
 
+let offlineMode = false;
+process.argv.forEach(function (val, index, array) {
+  if (val === '--o') {
+    offlineMode = true;
+  }
+});
+
 const mvnCwd = path.resolve(__dirname, '..', '..');
 
 if (!process.env.FAST_BUILD) {
-  const mvnCleanPackage = runWithColor('mvn clean package -DskipTests', 'maven', chalk.green, {
+  const onlineModeMavenCmd = 'mvn clean package -DskipTests';
+
+  const offlineModeMavenCmd = 'mvn clean package -o -DskipTests';
+  const mvnCleanPackageCmd = offlineMode ? offlineModeMavenCmd : onlineModeMavenCmd;
+
+  const mvnCleanPackage = runWithColor(mvnCleanPackageCmd,'maven',chalk.green,{
     cwd: mvnCwd
   });
-
+  
   mvnCleanPackage.on('close', startBackend);
 } else {
   startBackend(0);
