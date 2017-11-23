@@ -18,7 +18,6 @@
 package io.zeebe.broker.event;
 
 import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.logstreams.log.LogStream.*;
 import static io.zeebe.test.util.BufferAssert.*;
 
 import java.util.Arrays;
@@ -44,6 +43,7 @@ import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 
@@ -433,6 +433,8 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/560
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldCloseSubscriptionOnTransportChannelClose()
     {
         // given
