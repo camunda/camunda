@@ -1,0 +1,41 @@
+.ControlPanel {
+  background-color: #f4f4f4;
+  margin-bottom: 24px;
+  border: 1px solid #dfdfdf;
+}
+
+.ControlPanel {
+  display: inline-block;
+  border-radius: 8px;
+  &:after {
+    display: table;
+    clear: both;
+    content: "";
+  }
+  *zoom: 1;
+}
+
+.ControlPanel__list {
+  /* Reset defaults */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: inline-block;
+}
+
+.ControlPanel__item {
+  float: left;
+  padding: 12px 20px 18px;
+}
+
+.ControlPanel__item--filter {
+  display: inline;
+}
+
+.ControlPanel__label {
+  color: #626262;
+  font-size: .875em;
+  display: block;
+  margin-bottom: 8px;
+}

@@ -8,7 +8,19 @@
   list-style-type: none;
   display: inline-block;
   margin: 0 .5em;
-  border: 1px solid lightgray;
+  border: 1px solid #ccc;
+  background-color: white;
+  border-radius: 3px;
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+}
+
+.FilterList__item-content {
+  padding: 0 4px;
+  font-size: .875em;
 }
 
 .FilterList__itemConnector {
@@ -21,4 +33,5 @@
 .FilterList__deleteButton:active {
   border: 0;
   border-radius: 0;
+  border-right: 1px solid #ccc;
 }

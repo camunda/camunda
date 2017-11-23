@@ -3,6 +3,8 @@ import React from 'react';
 import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
 
+import './ControlPanel.css';
+
 const options = {
   view: [
     {key: 'count_processInstance', label: 'Count Process Instance Frequency'},
@@ -70,25 +72,37 @@ export default class ControlPanel extends React.Component {
   }
 
   render() {
-    return <div>
-      ProcessDefinition:
-      <select className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-        <option value='' disabled>Please select process instance</option>
-        {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
-      </select>
-      View:
-      <select className='Select' value={parseView(this.props.view)} onChange={this.changeView}>
-        {renderOptions('view')}
-      </select>
-      Group By:
-      <select className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
-        {renderOptions('groupBy')}
-      </select>
-      Visualize as:
-      <select className='Select' value={this.props.visualization} onChange={this.changeVisualization}>
-        {renderOptions('visualizeAs')}
-      </select>
-      <Filter data={this.props.filter} onChange={this.props.onChange} />
+    return <div className='ControlPanel'>
+      <ul className='ControlPanel__list'>
+        <li className='ControlPanel__item'>
+          <label htmlFor='process-definition' className='ControlPanel__label'>ProcessDefinition</label>
+          <select name='process-definition' className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+            <option value='' disabled>Please select process instance</option>
+            {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
+          </select>
+        </li>
+        <li className='ControlPanel__item'>
+          <label htmlFor='view' className='ControlPanel__label'>View</label>
+          <select name='view' className='Select' value={parseView(this.props.view)} onChange={this.changeView}>
+            {renderOptions('view')}
+          </select>
+        </li>
+        <li className='ControlPanel__item'>
+          <label htmlFor='group-by' className='ControlPanel__label'>Group By</label>
+          <select name='group-by' className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
+            {renderOptions('groupBy')}
+          </select>
+        </li>
+        <li className='ControlPanel__item'>
+          <label htmlFor='visualize-as' className='ControlPanel__label'>Visualize as</label>
+          <select name='visualize-as' className='Select' value={this.props.visualization} onChange={this.changeVisualization}>
+            {renderOptions('visualizeAs')}
+          </select>
+        </li>
+        <li className='ControlPanel__item ControlPanel__item--filter'>
+          <Filter data={this.props.filter} onChange={this.props.onChange} />
+        </li>
+      </ul>
     </div>
   }
 }

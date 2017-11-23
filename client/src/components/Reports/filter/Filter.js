@@ -46,7 +46,7 @@ export default class Filter extends React.Component {
     const FilterModal = this.getFilterModal();
 
     return (<div className='Filter'>
-      Filter:
+      <label className='ControlPanel__label'>Filter</label> {/* TODO: decide what element the label’s for attribute should point to, add for attr */}
       <FilterList data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter'>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>

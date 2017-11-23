@@ -18,10 +18,12 @@ export default class FilterList extends React.Component {
 
         list.push(<li key={i} className='FilterList__item'>
           <Button onClick={() => this.props.deleteFilter(filter, nextFilter)} className='FilterList__deleteButton'>×</Button>
-          Start Date between
-          {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
-          and
-          {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>{' '}
+          <span className='FilterList__item-content'>
+            Start Date between
+            {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
+            and
+            {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>{' '}
+          </span>
         </li>);
 
         i++;
@@ -42,4 +44,3 @@ export default class FilterList extends React.Component {
     </ul>
   }
 }
-
