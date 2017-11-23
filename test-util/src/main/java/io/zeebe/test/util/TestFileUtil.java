@@ -23,7 +23,10 @@ import java.util.regex.Matcher;
 public class TestFileUtil
 {
 
-    public static InputStream readAsTextFileAndReplace(InputStream inputStream, Charset charset, Map<String, String> replacements)
+    /**
+     * Ant-style property substitution
+     */
+    public static InputStream readAsTextFileAndReplace(InputStream inputStream, Charset charset, Map<String, String> properties)
     {
         final String fileContent;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset)))
@@ -34,10 +37,10 @@ public class TestFileUtil
             {
                 String replacingLine = line;
 
-                for (Map.Entry<String, String> replacement : replacements.entrySet())
+                for (Map.Entry<String, String> replacement : properties.entrySet())
                 {
-                    replacingLine = replacingLine.replaceAll(replacement.getKey(),
-                            Matcher.quoteReplacement(replacement.getValue()));
+                    final String property = "\\$\\{" + replacement.getKey() + "\\}";
+                    replacingLine = replacingLine.replaceAll(property, Matcher.quoteReplacement(replacement.getValue()));
                 }
 
                 sb.append(replacingLine);
