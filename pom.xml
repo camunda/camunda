@@ -22,6 +22,7 @@
     <module>protocol-test-util</module>
     <module>samples</module>
     <module>dist</module>
+    <module>test</module>
   </modules>
 
   <repositories>
