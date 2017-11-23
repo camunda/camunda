@@ -55,4 +55,16 @@ public final class StringUtil
         return new String(bytes, charset);
     }
 
+    public static String formatStackTrace(StackTraceElement[] trace)
+    {
+        final StringBuilder sb = new StringBuilder();
+        for (StackTraceElement element : trace)
+        {
+            sb.append("\t");
+            sb.append(element.toString());
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
 }

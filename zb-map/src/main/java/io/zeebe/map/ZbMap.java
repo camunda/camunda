@@ -26,6 +26,8 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
+import io.zeebe.util.StringUtil;
+
 /**
  * Simple map data structure using extensible hashing.
  * Data structure is not threadsafe.
@@ -62,7 +64,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      */
     public static final int DEFAULT_BLOCK_COUNT = 16;
 
-    private static final String FINALIZER_WARNING = "ZbMap is being garbage collected but is not closed.\n" +
+    private static final String FINALIZER_WARNING = "ZbMap {} is being garbage collected but is not closed.\n" +
         "This means that the object is being de-referenced but the close() method has not been called.\n" +
         "ZbMap allocates memory off the heap which is not reclaimed unless close() is invoked.\n";
 
@@ -144,6 +146,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
      */
     public ZbMap(int initialTableSize, int minBlockCount, int maxKeyLength, int maxValueLength)
     {
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("Creating map {} in context: \n{}",  System.identityHashCode(this), StringUtil.formatStackTrace(Thread.currentThread().getStackTrace()));
+        }
+
         this.keyHandler = createKeyHandlerInstance(maxKeyLength);
         this.splitKeyHandler = createKeyHandlerInstance(maxKeyLength);
         this.valueHandler = createValueHandlerInstance(maxValueLength);
@@ -214,7 +221,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     {
         if (!isClosed.get())
         {
-            LOG.error(FINALIZER_WARNING);
+            LOG.error(FINALIZER_WARNING, System.identityHashCode(this));
         }
 
     }
