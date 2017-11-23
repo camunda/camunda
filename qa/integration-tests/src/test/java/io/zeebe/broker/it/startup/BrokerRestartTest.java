@@ -228,7 +228,8 @@ public class BrokerRestartTest
     }
 
     @Test
-    @Category(UnstableTest.class)
+    // FIXME: https://github.com/zeebe-io/zeebe/issues/567
+    @Category(io.zeebe.UnstableTest.class)
     public void shouldDeployNewWorkflowVersionAfterRestart()
     {
         // given
