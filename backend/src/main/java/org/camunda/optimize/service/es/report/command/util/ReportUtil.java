@@ -1,6 +1,8 @@
 package org.camunda.optimize.service.es.report.command.util;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.slf4j.Logger;
@@ -12,16 +14,18 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_WEEK;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
 
-public class ReportDataUtil {
+public class ReportUtil {
 
-  private static Logger logger = LoggerFactory.getLogger(ReportDataUtil.class);
+  private static Logger logger = LoggerFactory.getLogger(ReportUtil.class);
 
-  public static void copyReportData(ReportDataDto from, ReportDataDto to) {
-    to.setProcessDefinitionId(from.getProcessDefinitionId());
-    to.setView(from.getView());
-    to.setGroupBy(from.getGroupBy());
-    to.setFilter(from.getFilter());
-    to.setVisualization(from.getVisualization());
+  public static void copyReportData(ReportDataDto from, ReportResultDto to) {
+    ReportDataDto reportDataDto = new ReportDataDto();
+    reportDataDto.setProcessDefinitionId(from.getProcessDefinitionId());
+    reportDataDto.setView(from.getView());
+    reportDataDto.setGroupBy(from.getGroupBy());
+    reportDataDto.setFilter(from.getFilter());
+    reportDataDto.setVisualization(from.getVisualization());
+    to.setData(reportDataDto);
   }
 
   public static DateHistogramInterval getDateHistogramInterval(String interval) throws OptimizeException {
@@ -43,4 +47,12 @@ public class ReportDataUtil {
   }
 
 
+  public static void copyMetaData(ReportDefinitionDto from, ReportResultDto to) {
+    to.setId(from.getId());
+    to.setName(from.getName());
+    to.setOwner(from.getOwner());
+    to.setCreated(from.getCreated());
+    to.setLastModifier(from.getLastModifier());
+    to.setLastModified(from.getLastModified());
+  }
 }

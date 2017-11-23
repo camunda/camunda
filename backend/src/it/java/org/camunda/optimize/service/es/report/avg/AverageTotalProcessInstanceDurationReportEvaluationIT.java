@@ -78,12 +78,13 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }
@@ -104,12 +105,13 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     NumberReportResultDto result = evaluateReportById(reportId);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }

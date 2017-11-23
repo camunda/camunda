@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command.avg;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
-import org.camunda.optimize.service.es.report.command.util.ReportDataUtil;
+import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
@@ -70,7 +70,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
   }
 
   private AggregationBuilder createAggregation(String unit) throws OptimizeException {
-    DateHistogramInterval interval = ReportDataUtil.getDateHistogramInterval(unit);
+    DateHistogramInterval interval = ReportUtil.getDateHistogramInterval(unit);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .field(ProcessInstanceType.START_DATE)

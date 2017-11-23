@@ -69,12 +69,13 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_COUNT_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1L));
   }
@@ -165,16 +166,16 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    reportData.setFilter(createVariableFilter("var"));
+    reportData.setFilter(createVariableFilter());
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(1L));
   }
 
-  private List<FilterDto> createVariableFilter(String variableName) {
+  private List<FilterDto> createVariableFilter() {
     VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName(variableName);
+    data.setName("var");
     data.setType("boolean");
     data.setOperator("=");
     data.setValues(Collections.singletonList("true"));

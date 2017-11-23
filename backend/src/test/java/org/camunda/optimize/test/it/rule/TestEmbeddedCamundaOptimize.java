@@ -33,6 +33,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
+  public static final String DEFAULT_USERNAME = "admin";
+  public static final String DEFAULT_PASSWORT = "admin";
 
   private static String authenticationToken;
   private Properties properties;
@@ -166,8 +168,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private Response authenticateAdminRequest() {
     CredentialsDto entity = new CredentialsDto();
-    entity.setUsername("admin");
-    entity.setPassword("admin");
+    entity.setUsername(DEFAULT_USERNAME);
+    entity.setPassword(DEFAULT_PASSWORT);
 
     return target()
       .path("authentication")

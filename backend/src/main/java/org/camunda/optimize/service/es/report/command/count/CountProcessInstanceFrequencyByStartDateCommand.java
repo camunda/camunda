@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportDataUtil.getDateHistogramInterval;
+import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

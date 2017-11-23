@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -10,6 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -29,6 +32,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -38,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -239,6 +245,30 @@ public class ReportHandlingIT {
   }
 
   @Test
+  public void reportEvaluationReturnsMetaData() throws Exception {
+    // given
+    String reportId = createNewReport();
+    ReportDataDto reportData = createDefaultReportData();
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    report.setName("name");
+    LocalDateTime now = LocalDateTime.now();
+    report.setOwner("owner");
+    updateReport(reportId, report);
+
+    // when
+    ReportResultDto result = evaluateRawDataReportById(reportId);
+
+    // then
+    assertThat(result.getId(), is(reportId));
+    assertThat(result.getName(), is("name"));
+    assertThat(result.getOwner(), is("owner"));
+    assertThat(result.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(result.getLastModifier(), is(DEFAULT_USERNAME));
+    assertThat(result.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+  }
+
+  @Test
   public void resultListIsSortedByLastModified() throws IOException {
     // given
     String id1 = createNewReport();
@@ -381,6 +411,24 @@ public class ReportHandlingIT {
     assertThat(response.getStatus(), is(204));
   }
 
+  private ReportDataDto createDefaultReportData() {
+    ReportDataDto reportData = new ReportDataDto();
+    reportData.setProcessDefinitionId("fooProcessDefinitionId");
+    reportData.setVisualization("table");
+    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
+    return reportData;
+  }
+
+  private RawDataReportResultDto evaluateRawDataReportById(String reportId) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .get();
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(RawDataReportResultDto.class);
+  }
 
   private List<ReportDefinitionDto> getAllReports() throws IOException {
     return getAllReportsWithQueryParam(new HashMap<>());

@@ -69,9 +69,10 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -98,9 +99,10 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReportById(reportId);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -144,9 +146,10 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(2));
     Set<String> expectedProcessInstanceIds = new HashSet<>();
@@ -182,9 +185,10 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -211,7 +215,8 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processDefinitionId));
@@ -232,9 +237,10 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(0));
 
@@ -244,9 +250,10 @@ public class RawDataReportEvaluationIT {
     result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -285,19 +292,20 @@ public class RawDataReportEvaluationIT {
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    reportData.setFilter(createVariableFilter("var"));
+    reportData.setFilter(createVariableFilter());
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
   }
 
-  private List<FilterDto> createVariableFilter(String variableName) {
+  private List<FilterDto> createVariableFilter() {
     VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName(variableName);
+    data.setName("var");
     data.setType("boolean");
     data.setOperator("=");
     data.setValues(Collections.singletonList("true"));
@@ -328,7 +336,8 @@ public class RawDataReportEvaluationIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));

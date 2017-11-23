@@ -151,7 +151,7 @@ public class ReportRestService {
     ReportDefinitionDto reportDefinition = null;
     try {
       reportDefinition = reportReader.getReport(reportId);
-      ReportResultDto result = reportEvaluator.evaluate(reportDefinition.getData());
+      ReportResultDto result = reportEvaluator.evaluate(reportDefinition);
       return Response.ok(result, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
       String reportName = reportDefinition != null? reportDefinition.getName() : "unknown report";

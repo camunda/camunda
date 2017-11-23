@@ -84,13 +84,14 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_COUNT_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(result.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
+    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -164,13 +165,14 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     MapReportResultDto result = evaluateReportById(reportId);
 
     // then
-    assertThat(result.getProcessDefinitionId(), is(processDefinitionId));
-    assertThat(result.getView(), is(notNullValue()));
-    assertThat(result.getView().getOperation(), is(VIEW_COUNT_OPERATION));
-    assertThat(result.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
-    assertThat(result.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
-    assertThat(result.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(result.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
+    assertThat(resultReportDataDto.getGroupBy().getUnit(), is(DATE_UNIT_DAY));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -451,7 +453,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
     // when
     ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
-    reportData.setFilter(createVariableFilter("var"));
+    reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -459,9 +461,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(1));
   }
 
-  private List<FilterDto> createVariableFilter(String variableName) {
+  private List<FilterDto> createVariableFilter() {
     VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName(variableName);
+    data.setName("var");
     data.setType("boolean");
     data.setOperator("=");
     data.setValues(Collections.singletonList("true"));

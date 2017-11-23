@@ -1,12 +1,10 @@
 package org.camunda.optimize.service.es.report.command;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataVariableDto;
-import org.camunda.optimize.service.es.report.command.util.ReportDataUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -58,7 +56,7 @@ public class RawDataCommand extends ReportCommand {
     } while (scrollResp.getHits().getHits().length != 0 && rawData.size() < RAW_DATA_LIMIT);
     rawData = cutRawDataSizeToMaxSize(rawData);
 
-    return createResult(reportData, rawData);
+    return createResult(rawData);
   }
 
   private RawDataProcessInstanceDto convertToRawDataEntry(ProcessInstanceDto processInstanceDto) {
@@ -95,10 +93,8 @@ public class RawDataCommand extends ReportCommand {
     return rawData;
   }
 
-  private RawDataReportResultDto createResult(ReportDataDto reportData,
-                                              List<RawDataProcessInstanceDto> rawDataResult) {
+  private RawDataReportResultDto createResult(List<RawDataProcessInstanceDto> rawDataResult) {
     RawDataReportResultDto result = new RawDataReportResultDto();
-    ReportDataUtil.copyReportData(reportData, result);
     result.setResult(rawDataResult);
     return result;
   }
