@@ -90,7 +90,7 @@ public class ReportRestService {
       reportWriter.updateReport(updatedReport);
       return Response.noContent().build();
     } catch (Exception e) {
-      logger.error("error in REST API invocation",e);
+      logger.error("Error while updating report",e);
       return buildServerErrorResponse(e);
     }
   }

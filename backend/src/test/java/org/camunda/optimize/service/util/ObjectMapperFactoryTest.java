@@ -25,7 +25,7 @@ public class ObjectMapperFactoryTest {
   private ObjectMapper underTest;
 
   @Test
-  public void testSerialization () throws Exception{
+  public void testDateSerialization() throws Exception{
     DateHolder instance = new DateHolder();
     instance.setDate(LocalDateTime.now());
     String s = underTest.writeValueAsString(instance);
