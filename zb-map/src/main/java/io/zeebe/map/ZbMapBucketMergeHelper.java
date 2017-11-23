@@ -381,7 +381,7 @@ final class ZbMapBucketMergeHelper
         long newLastBucketAddress = 0;
 
         if (parentBucketDepth == depth &&
-            bucketBufferArrayRef.isBucketRemoveable(bucketAddress) &&
+            bucketBufferArrayRef.isBucketRemovable(bucketAddress) &&
             isMergableWithParentBucket(parentBucketAddress, newBucketFillCount))
         {
             // merging

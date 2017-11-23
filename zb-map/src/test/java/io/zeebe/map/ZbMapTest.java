@@ -1599,6 +1599,52 @@ public class ZbMapTest
         assertThat(zbMap.getBucketBufferArray().getBucketCount()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldNotMergeChildBucketWhichHasOverflow()
+    {
+        // given
+        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+        zbMap.setMaxTableSize(2);
+
+        for (int i = 0; i < 93 * 2; i += 2)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        for (int i = 1; i < 17; i += 2)
+        {
+            putValue(zbMap, i, i);
+        }
+
+        // First Buffer
+        // Bucket 0 [0, 2, 4] -> overflow
+        // Bucket 1 [1, 3, 5] -> O1
+        // [...] 30 overflow buckets of Bucket 0
+        //
+        // Second Buffer
+        // Overflow-1 [7, 9, 11] -> O2
+        // Overflow-2 [13, 15, -]
+
+        // when removing the overflow buckets of bucket 0
+        for (int i = 93 * 2; i >= 6; i -= 2)
+        {
+            removeValue(zbMap, i);
+        }
+        // and removing values in Bucket 1 and Bucket 0
+        removeValue(zbMap, 1);
+        removeValue(zbMap, 3);
+        removeValue(zbMap, 2);
+        removeValue(zbMap, 4);
+
+        // then merge should not triggered, because Bucket 1 has overflow buckets
+        assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+
+        for (int i = 5; i < 17; i += 2)
+        {
+            assertThat(getValue(zbMap, i, -1)).isEqualTo(i);
+        }
+    }
     private int maxRecordPerBlockForLong2Longmap()
     {
         return (Integer.MAX_VALUE - BUCKET_DATA_OFFSET - BUCKET_DATA_OFFSET * ALLOCATION_FACTOR) / (getBlockLength(SIZE_OF_LONG, SIZE_OF_LONG) * ALLOCATION_FACTOR);

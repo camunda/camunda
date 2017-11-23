@@ -391,14 +391,14 @@ public class BucketBufferArray implements AutoCloseable
         return newBucketFillCount;
     }
 
-    public boolean isBucketRemoveable(long bucketAddress)
+    public boolean isBucketRemovable(long bucketAddress)
     {
         final int bucketBufferId = (int) (bucketAddress >> 32);
         final int bucketOffset = (int) bucketAddress;
         final int bucketCount = getBucketCount(bucketBufferId);
 
         final int lastBucketOffset = BUCKET_BUFFER_HEADER_LENGTH + ((bucketCount - 1) * maxBucketLength);
-        return lastBucketOffset == bucketOffset;
+        return lastBucketOffset == bucketOffset && getBucketOverflowPointer(bucketAddress) == 0;
     }
 
     /**
@@ -602,10 +602,6 @@ public class BucketBufferArray implements AutoCloseable
             setBucketOverflowPointer(bucketBefore, getBucketOverflowPointer(bucketOverflowPointer));
             setBucketOverflowPointer(bucketOverflowPointer, 0);
         }
-//        else
-//        {
-//            setBucketOverflowPointer(bucketBefore, bucketOverflowPointer);
-//        }
     }
 
 

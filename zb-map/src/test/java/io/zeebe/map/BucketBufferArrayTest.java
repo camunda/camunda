@@ -959,6 +959,7 @@ public class BucketBufferArrayTest
 
         assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstOverflowBucketAddress);
         assertThat(bucketBufferArray.getBucketOverflowPointer(firstOverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(secondOverflowBucketAddress)).isEqualTo(0);
     }
 
     @Test
@@ -982,7 +983,7 @@ public class BucketBufferArrayTest
     {
         // given
         final long bucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
-        final long firstoverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
+        final long firstOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
         final long secondOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
         final long thirdOverflowBucketAddress = bucketBufferArray.overflow(bucketAddress);
 
@@ -994,8 +995,8 @@ public class BucketBufferArrayTest
         assertThat(bucketBufferArray.getBucketCount()).isEqualTo(4);
         assertThat(bucketBufferArray.getBlockCount()).isEqualTo(0);
 
-        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstoverflowBucketAddress);
-        assertThat(bucketBufferArray.getBucketOverflowPointer(firstoverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(bucketAddress)).isEqualTo(firstOverflowBucketAddress);
+        assertThat(bucketBufferArray.getBucketOverflowPointer(firstOverflowBucketAddress)).isEqualTo(thirdOverflowBucketAddress);
     }
 
     @Test
@@ -1108,9 +1109,68 @@ public class BucketBufferArrayTest
     }
 
     @Test
+    public void shouldReturnTrueIfIsRemovableBucket()
+    {
+        // given
+
+        // when
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
+        // then
+        assertThat(bucketBufferArray.isBucketRemovable(firstBucketAddress)).isTrue();
+    }
+
+    @Test
+    public void shouldReturnTrueIfIsRemovableBucketAfterOtherBucketsAreRemoved()
+    {
+        // given
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        for (int i = 1; i < 32; i++)
+        {
+            bucketAddresses.add(bucketBufferArray.allocateNewBucket(i, i));
+        }
+
+        // when
+        Collections.reverse(bucketAddresses);
+        for (Long addr : bucketAddresses)
+        {
+            bucketBufferArray.removeBucket(addr);
+        }
+
+        // then
+        assertThat(bucketBufferArray.isBucketRemovable(firstBucketAddress)).isTrue();
+    }
+
+    @Test
+    public void shouldReturnFalseIfIsRemovableBucketAfterOtherBucketsAreRemovedButHasOverflowBucketInOtherBuffer()
+    {
+        // given
+        final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
+
+        final List<Long> bucketAddresses = new ArrayList<>();
+        for (int i = 1; i < 32; i++)
+        {
+            bucketAddresses.add(bucketBufferArray.allocateNewBucket(i, i));
+        }
+        bucketBufferArray.overflow(firstBucketAddress);
+
+        // when
+        Collections.reverse(bucketAddresses);
+        for (Long addr : bucketAddresses)
+        {
+            bucketBufferArray.removeBucket(addr);
+        }
+
+        // then
+        assertThat(bucketBufferArray.isBucketRemovable(firstBucketAddress)).isFalse();
+    }
+
+    @Test
     public void shouldRemoveIfLastBucket()
     {
-        // give
+        // given
         final long firstBucketAddress = bucketBufferArray.allocateNewBucket(1, 1);
         final long lastBucketAddress = bucketBufferArray.allocateNewBucket(2, 2);
 
