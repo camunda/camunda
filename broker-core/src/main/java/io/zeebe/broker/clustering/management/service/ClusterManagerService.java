@@ -43,7 +43,7 @@ public class ClusterManagerService implements Service<ClusterManager>
     }
 
     private final ServiceGroupReference<Raft> raftGroupReference = ServiceGroupReference.<Raft>create()
-            .onAdd((name, raft) -> clusterManager.addRaft(raft))
+            .onAdd((name, raft) -> clusterManager.addRaft(name, raft))
             .onRemove((name, raft) -> clusterManager.removeRaft(raft))
             .build();
 

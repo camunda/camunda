@@ -250,7 +250,7 @@ public class ClusterManager implements Actor
         activeRequestControllers.add(requestController);
     }
 
-    public void addRaft(final Raft raft)
+    public void addRaft(final ServiceName<Raft> raftServiceName, final Raft raft)
     {
         // this must be determined before we cross the async boundary to avoid race conditions
         final boolean isRaftCreator = raft.getMemberSize() == 0;
@@ -259,7 +259,7 @@ public class ClusterManager implements Actor
         {
             context.getLocalPeer().addRaft(raft);
             rafts.add(raft);
-            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raft, serviceContainer));
+            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer));
 
             if (isRaftCreator)
             {

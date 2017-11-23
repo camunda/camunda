@@ -45,7 +45,7 @@ public class StartLogStreamServiceController
 
     private final StateMachine<Context> stateMachine;
 
-    public StartLogStreamServiceController(final Raft raft, final ServiceContainer serviceContainer)
+    public StartLogStreamServiceController(final ServiceName<Raft> raftServiceName, final Raft raft, final ServiceContainer serviceContainer)
     {
         final State<Context> startLogStreamService = new StartLogStreamServiceState();
         final State<Context> awaitStartLogStreamService = new AwaitServiceFutureState();
@@ -54,7 +54,7 @@ public class StartLogStreamServiceController
         final State<Context> awaitStopLogStreamService = new AwaitServiceFutureState();
         final State<Context> closed = new ClosedState();
 
-        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft, serviceContainer))
+        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raftServiceName, raft, serviceContainer))
             .initialState(closed)
             .from(closed).take(TRANSITION_OPEN).to(startLogStreamService)
             .from(closed).take(TRANSITION_CLOSE).to(closed)
@@ -110,6 +110,7 @@ public class StartLogStreamServiceController
                        .createService(serviceName, service)
                        .dependency(ACTOR_SCHEDULER_SERVICE)
                        .dependency(CLUSTER_MANAGER_SERVICE)
+                       .dependency(context.raftServiceName)
                        .group(streamGroup)
                        .install();
 
@@ -237,13 +238,15 @@ public class StartLogStreamServiceController
     {
 
         private final Raft raft;
+        private final ServiceName<Raft> raftServiceName;
         private final ServiceContainer serviceContainer;
         private final ServiceName<LogStream> serviceName;
         private CompletableFuture<Void> serviceFuture;
 
-        Context(final StateMachine<Context> stateMachine, final Raft raft, final ServiceContainer serviceContainer)
+        Context(final StateMachine<Context> stateMachine, final ServiceName<Raft> raftServiceName, final Raft raft, final ServiceContainer serviceContainer)
         {
             super(stateMachine);
+            this.raftServiceName = raftServiceName;
             this.raft = raft;
             this.serviceContainer = serviceContainer;
             this.serviceName = logStreamServiceName(raft.getLogStream().getLogName());
