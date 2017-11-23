@@ -8,6 +8,8 @@
     "chart.js": "^2.7.1",
     "heatmap.js": "^2.0.5",
     "moment": "^2.19.1",
+    "node-sass-chokidar": "^0.0.3",
+    "npm-run-all": "^4.1.2",
     "object.values": "^1.0.4",
     "react": "^16.0.0",
     "react-date-range": "^0.9.4",
@@ -17,8 +19,12 @@
     "string.prototype.includes": "^1.0.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build-css": "node-sass-chokidar src/ -o src/",
+    "watch-css": "npm run build-css && node-sass-chokidar src/ -o src/ --watch --recursive",
+    "start-js": "react-scripts start",
+    "start": "npm-run-all -p watch-css start-js",
+    "build-js": "react-scripts build",
+    "build": "npm-run-all build-css build-js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
