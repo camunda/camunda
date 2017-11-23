@@ -47,6 +47,7 @@
         <validValue name="INCREASE_TASK_SUBSCRIPTION_CREDITS">2</validValue>
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REQUEST_TOPOLOGY">4</validValue>
+        <validValue name="REQUEST_PARTITIONS">5</validValue>
     </enum>
 
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
