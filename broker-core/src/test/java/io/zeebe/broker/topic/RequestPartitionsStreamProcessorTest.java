@@ -126,7 +126,7 @@ public class RequestPartitionsStreamProcessorTest
         // given
         final String topicName = "foo";
         final int partition1 = 1;
-        final int partition2 = 1;
+        final int partition2 = 2;
 
         streams.newEvent(STREAM_NAME)
             .event(partitionCreated(topicName, partition1))
