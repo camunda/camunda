@@ -20,9 +20,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +37,6 @@ import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.util.time.ClockUtil;
 
 public class CompleteTaskTest
 {
@@ -61,13 +58,6 @@ public class CompleteTaskTest
     public void setUp()
     {
         this.client = clientRule.getClient().tasks();
-        ClockUtil.setCurrentTime(Instant.now());
-    }
-
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
     }
 
     @Test

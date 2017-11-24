@@ -235,8 +235,7 @@ public class RequestController implements BufferReader
                 context.exception = generateTimeoutException("Cannot determine target partition for request", context.contactedBrokers);
                 context.take(TRANSITION_FAILED);
             }
-
-            if (targetPartition < 0) // there is no suitable partition
+            else if (targetPartition < 0) // there is no suitable partition
             {
                 context.take(TRANSITION_REFRESH_TOPOLOGY);
             }

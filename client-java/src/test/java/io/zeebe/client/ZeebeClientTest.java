@@ -25,26 +25,31 @@ import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.impl.TaskEventImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.util.Events;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
+
+import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.impl.TaskEventImpl;
+import io.zeebe.client.impl.RequestController;
+import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.util.Events;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
 
 public class ZeebeClientTest
 {
@@ -262,6 +267,64 @@ public class ZeebeClientTest
                 assertThat(frame.getMethodName()).isEqualTo(testContext.getMethodName());
             });
         }
+    }
+
+    @Test
+    public void shouldThrottleTopologyRefreshRequestsWhenTopicPartitionCannotBeDetermined()
+    {
+        // when
+        try
+        {
+            client.tasks()
+                .create("non-existing-topic", "baz")
+                .execute();
+            fail("should not succeed");
+        }
+        catch (Exception e)
+        {
+            // expected
+        }
+
+        // +2 (one for the extra request when client is started)
+        final long expectedMaximumTopologyRequests =
+                (RequestController.CMD_TIMEOUT / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+        final long actualTopologyRequests = broker
+            .getReceivedControlMessageRequests()
+            .stream()
+            .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+            .count();
+
+        assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
+    }
+
+    @Test
+    public void shouldThrottleTopologyRefreshRequestsWhenPartitionLeaderCannotBeDetermined()
+    {
+        // when
+        final int nonExistingPartition = 999;
+
+        final TaskEventImpl taskEvent = new TaskEventImpl("CREATED", new MsgPackConverter());
+        taskEvent.setPartitionId(nonExistingPartition);
+
+        try
+        {
+            client.tasks().complete(taskEvent).execute();
+            fail("should not succeed");
+        }
+        catch (Exception e)
+        {
+            // expected
+        }
+
+        // +2 (one for the extra request when client is started)
+        final long expectedMaximumTopologyRequests = (RequestController.CMD_TIMEOUT / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+        final long actualTopologyRequests = broker
+            .getReceivedControlMessageRequests()
+            .stream()
+            .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
+            .count();
+
+        assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
     }
 
     protected TopicSubscription openSubscription()

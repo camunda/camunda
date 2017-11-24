@@ -33,7 +33,16 @@ import io.zeebe.util.time.ClockUtil;
 
 public class ClientTopologyManager implements Actor
 {
-    public static final long REFRESH_INTERVAL = Duration.ofSeconds(10).toMillis();
+    /**
+     * Interval in which the topology is refreshed even if the client is idle
+     */
+    public static final long MAX_REFRESH_INTERVAL_MILLIS = Duration.ofSeconds(10).toMillis();
+
+    /**
+     * Shortest possible interval in which the topology is refreshed,
+     * even if the client is constantly making new requests that require topology refresh
+     */
+    public static final long MIN_REFRESH_INTERVAL_MILLIS = 300;
 
     protected final DeferredCommandContext commandContext = new DeferredCommandContext();
 
@@ -44,7 +53,8 @@ public class ClientTopologyManager implements Actor
     private ClientTransport transport;
     protected RemoteAddress topologyEndpoint;
 
-    protected long nextRequestTimestamp = 0L;
+    protected long nextLatestPossibleRequestTimestamp = 0L;
+    protected long nextEarliestPossibleRequestTimestamp = 0L;
 
     public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
     {
@@ -80,6 +90,7 @@ public class ClientTopologyManager implements Actor
         {
             if (shouldRefreshTopology() && !clientTopologyController.isRequestInProgress())
             {
+                recordTopologyRefreshAttempt();
                 clientTopologyController.triggerRefresh(topologyEndpoint);
                 workCount++;
             }
@@ -128,13 +139,13 @@ public class ClientTopologyManager implements Actor
 
     protected boolean shouldRefreshTopology()
     {
-        return nextRequestTimestamp < ClockUtil.getCurrentTimeInMillis() || !refreshFutures.isEmpty();
+        final long now = ClockUtil.getCurrentTimeInMillis();
+        return nextLatestPossibleRequestTimestamp < now ||
+                (!refreshFutures.isEmpty() && nextEarliestPossibleRequestTimestamp < now);
     }
 
     protected void onNewTopology(TopologyResponse topologyResponse)
     {
-        recordTopologyRefreshAttempt();
-
         final TopologyImpl topology = new TopologyImpl();
         topology.update(topologyResponse, transport);
         this.topology = topology;
@@ -145,13 +156,14 @@ public class ClientTopologyManager implements Actor
 
     protected void failRefreshFutures(Exception e)
     {
-        recordTopologyRefreshAttempt();
         refreshFutures.forEach(f -> f.completeExceptionally(e));
         refreshFutures.clear();
     }
 
     protected void recordTopologyRefreshAttempt()
     {
-        nextRequestTimestamp = ClockUtil.getCurrentTimeInMillis() + REFRESH_INTERVAL;
+        final long now = ClockUtil.getCurrentTimeInMillis();
+        nextLatestPossibleRequestTimestamp = now + MAX_REFRESH_INTERVAL_MILLIS;
+        nextEarliestPossibleRequestTimestamp = now + MIN_REFRESH_INTERVAL_MILLIS;
     }
 }
