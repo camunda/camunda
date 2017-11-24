@@ -20,7 +20,13 @@ import java.time.Instant;
 
 public class ClockUtil
 {
-    private static volatile long currentTime = -1;
+    private static volatile long currentTime;
+    private static volatile long currentOffset;
+
+    static
+    {
+        reset();
+    }
 
     public static void setCurrentTime(long currentTime)
     {
@@ -39,40 +45,52 @@ public class ClockUtil
 
     public static void addTime(Duration durationToAdd)
     {
-        if (!usesManipulatedTime())
+        if (usesPointInTime())
         {
-            throw new RuntimeException("Time not initialized");
+            currentTime += durationToAdd.toMillis();
         }
-
-        ClockUtil.currentTime += durationToAdd.toMillis();
+        else
+        {
+            currentOffset += durationToAdd.toMillis();
+        }
     }
 
     public static void reset()
     {
         ClockUtil.currentTime = -1;
+        ClockUtil.currentOffset = 0;
     }
 
     public static long getCurrentTimeInMillis()
     {
-        if (usesManipulatedTime())
+        if (usesPointInTime())
         {
             return currentTime;
         }
-        return System.currentTimeMillis();
+        else
+        {
+            long now = System.currentTimeMillis();
+            if (usesOffset())
+            {
+                now = now + currentOffset;
+            }
+            return now;
+        }
     }
 
     public static Instant getCurrentTime()
     {
-        if (usesManipulatedTime())
-        {
-            return Instant.ofEpochMilli(currentTime);
-        }
-        return Instant.now();
+        return Instant.ofEpochMilli(getCurrentTimeInMillis());
     }
 
-    protected static boolean usesManipulatedTime()
+    protected static boolean usesPointInTime()
     {
         return currentTime > 0;
+    }
+
+    protected static boolean usesOffset()
+    {
+        return currentOffset > 0;
     }
 
 }
