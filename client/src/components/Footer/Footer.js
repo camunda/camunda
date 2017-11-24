@@ -1,4 +1,6 @@
 import React from 'react';
+import {StatusBar} from 'components';
+
 import './Footer.css';
 
 import {getImportProgress, getConnectionStatus} from './service';
@@ -10,7 +12,7 @@ export default class Footer extends React.Component {
     super(props);
 
     this.state = {
-      connectionStatus: null,
+      engineConnections: null,
       importProgress: null,
       titleString: ""
     };
@@ -19,56 +21,70 @@ export default class Footer extends React.Component {
   }
 
   loadImportProgress = async () => {
-    let response = await getImportProgress();
-    let importProgress = response.progress;
+    const response = await getImportProgress();
+    const importProgress = response.progress;
 
     this.setState({importProgress});
   }
 
   loadConnectionStatus = async () => {
     const response = await getConnectionStatus();
-
-    let connectionStatus = true;
-    let titleString = "";
-
-    Object.keys(response.engineConnections).forEach((v) => {
-      if (response.engineConnections[v] === false){
-        connectionStatus = false;
-        titleString += `Missing connection to ${v}\n`;
-      } else {
-        titleString += `Connected to ${v}\n`;
-      }
-    });
-
-    if(!response.connectedToElasticsearch) {
-      connectionStatus = false;
-      titleString += "Missing connection to Elasticsearch"
-    } else {
-      titleString += `Connected to Elasticsearch`;
-    }
-
-    (connectionStatus) ? connectionStatus = "✅" : connectionStatus = "❌";
-
-    this.setState({connectionStatus, titleString});
+    this.setState({engineConnections: response.engineConnections, connectedToElasticsearch: response.connectedToElasticsearch});
   }
 
   componentDidMount() {
-    setInterval(() => {
+    this.refreshIntervalHandle = setInterval(() => {
       this.loadImportProgress();
       this.loadConnectionStatus();
     }, 5000);
   }
 
+  componentWillUnmount() {
+    clearInterval(this.refreshIntervalHandle);
+  }
+
 
 
   render() {
+    let statusFragment = '';
+
+    if(this.state.importProgress !== null && this.state.importProgress < 100) {
+      statusFragment = (
+        <div className='Footer__import-status'>
+          <StatusBar height='6px' status={this.state.importProgress} title='Import status'/>
+        </div>
+      );
+    }
+
+    let connectionFragment = '';
+    if(this.state.engineConnections !== null) {
+      connectionFragment = (
+        <ul className='Footer__connect-status'>
+          {Object.keys(this.state.engineConnections).map((key) => {
+            return (<li key={key} className={'Footer__connect-status-item' + (this.state.engineConnections[key] ? ' is-connected' : '')}>{key}</li>)
+          })}
+          <li className={'Footer__connect-status-item' + (this.state.connectedToElasticsearch ? ' is-connected' : '')}>Elasticsearch</li>
+        </ul>
+      );
+
+    }
+
     return (
       <footer className='Footer'>
-        <span className='import-progress-footer'>Import progress is {this.state.importProgress}%  </span>
-        <span className='connection-status-footer' title={this.state.titleString}>{this.state.connectionStatus}  </span>
-        © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
+
+        {statusFragment}
+
+        <div className='Footer__content'>
+
+          {connectionFragment}
+
+          <div className='Footer__colophon'>
+            © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
+          </div>
+
+        </div>
+
       </footer>
     );
   }
 }
-

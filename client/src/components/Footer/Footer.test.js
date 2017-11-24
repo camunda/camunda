@@ -1,5 +1,5 @@
 import React from 'react';
-import { shallow } from 'enzyme';
+import { shallow, mount } from 'enzyme';
 
 import Footer from './Footer';
 import {getConnectionStatus, getImportProgress} from './service';
@@ -22,6 +22,12 @@ jest.mock('./service', () => {return {
   })
 }});
 
+jest.mock('components', () => {return {
+  StatusBar: props => <div className='StatusBar' {...props}></div>
+}});
+
+
+
 it('renders without crashing', () => {
   shallow(<Footer />);
 });
@@ -33,19 +39,43 @@ it('includes the version number provided as property', () => {
   expect(node).toIncludeText(version);
 });
 
-it('displays the import progress', () => {
-  const node = shallow(<Footer version='2.0.0'/>);
-  expect(node.find('.import-progress-footer')).toBePresent();
+it('displays the import status if it is less than 100', () => {
+  const node = mount(<Footer />);
+
+  node.setState({
+    importProgress: 50
+  })
+
+  expect(node.find('.Footer__import-status')).toBePresent();
 });
 
-it('displays the connection status', () => {
-  const node = shallow(<Footer version='2.0.0'/>);
-  expect(node.find('.connection-status-footer')).toBePresent();
+
+it('does not display the import status if it is 100', () => {
+  const node = mount(<Footer />);
+
+  node.setState({
+    importProgress: 100
+  })
+
+  expect(node.find('.Footer__import-status')).not.toBePresent();
 });
+
 
 it('should load import progress', () => {
   shallow(<Footer version='2.0.0'/>);
   expect(getImportProgress).toBeCalled();
+});
+
+it('displays the connection status', () => {
+  const node = mount(<Footer version='2.0.0'/>);
+
+  node.setState({
+    engineConnections: {
+      engine1: true
+    }
+  })
+
+  expect(node.find('.Footer__connect-status')).toBePresent();
 });
 
 it('should load connection status', () => {
