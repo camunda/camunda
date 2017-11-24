@@ -88,7 +88,7 @@ public class EngineImportJobScheduler extends Thread {
         .stream()
         .map(EngineImportJobFactory::getBackoffTimeInMs)
         .min(Long::compare)
-        .orElse(0L);
+        .orElse(5000L);
     return timeToSleepInMs;
   }
 

@@ -112,7 +112,7 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   private String getElasticsearchId() {
-    return getElasticsearchTrackingType() + "-" + engineAlias;
+    return EsHelper.constructKey(getElasticsearchTrackingType(), engineAlias);
   }
 
   public OptionalDouble computeProgress() {
@@ -154,7 +154,7 @@ public abstract class ScrollBasedImportIndexHandler
   @Override
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchTrackingType(), engineAlias));
+      importIndexReader.getImportIndex(getElasticsearchId());
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
       maxEntityCount = storedIndex.get().getMaxEntityCount();
@@ -163,10 +163,21 @@ public abstract class ScrollBasedImportIndexHandler
 
   @Override
   public void resetImportIndex() {
+    logger.debug("Resetting import index");
     super.resetImportIndex();
     resetScroll();
+    resetElasticsearchTrackingType();
     importIndex = 0L;
     updateMaxEntityCount();
+  }
+
+  private void resetElasticsearchTrackingType() {
+    esclient.
+      prepareDelete(configurationService.getOptimizeIndex(),
+        getElasticsearchTrackingType(),
+        getElasticsearchId()
+        )
+      .get();
   }
 
   @Override

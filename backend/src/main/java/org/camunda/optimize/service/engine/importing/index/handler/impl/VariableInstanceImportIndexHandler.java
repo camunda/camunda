@@ -1,9 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -14,7 +12,6 @@ import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -61,7 +58,9 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
 
   @Override
   public long fetchMaxEntityCount() {
-    return variableInstanceCountFetcher.fetchVariableInstanceCount();
+    // here the import index is based on process instances and therefore
+    // we need to fetch the maximum number of process instances
+    return variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
   }
 
   @Override

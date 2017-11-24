@@ -1,9 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -12,7 +10,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -25,7 +22,6 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PR
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
-import static org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType.VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
@@ -139,7 +135,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
 
   @Override
   protected String getElasticsearchTrackingType() {
-    return UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE + "-" + engineAlias;
+    return UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
   }
 
 }

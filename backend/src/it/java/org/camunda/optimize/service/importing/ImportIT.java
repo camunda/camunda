@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -90,6 +91,21 @@ public class ImportIT  {
 
     // when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+
+    // then
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
+  }
+
+  @Test
+  public void variableImportProgressIsCalculatedCorrectly() throws Exception {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    IntStream.range(0, 15).forEach(i -> variables.put("var"+i, i));
+    deployAndStartSimpleServiceTaskWithVariables(variables);
+
+    // when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
@@ -394,7 +410,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void restartImportCycleImportsNewEngineData() throws Exception {
+  public void importProgressIfUnfinishedProcessInstancesGetFinished() throws Exception {
     // given
     deployAndStartSimpleUserTask();
     deployAndStartSimpleUserTask();
@@ -403,7 +419,6 @@ public class ImportIT  {
 
     // when
     deployAndStartSimpleUserTask();
-//    embeddedOptimizeRule.restartImportCycle();
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
