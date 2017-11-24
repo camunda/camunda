@@ -10,10 +10,14 @@ jest.mock('./views', () => {return {
 }});
 
 it('should display a number if visualization is number', () => {
-  const node = mount(<ReportView data={{
-    visualization: 'number',
+  const report = {
+    data: {
+      visualization: 'number'
+    },
     result: 1234
-  }} />);
+  }
+
+  const node = mount(<ReportView report={report} />);
 
   expect(node).toIncludeText('Number: 1234');
 });
@@ -28,10 +32,14 @@ it('should display a json if visualization is json', () => {
 });
 
 it('should provide an errorMessage property to the component', () => {
-  const node = mount(<ReportView data={{
-    visualization: 'number',
+  const report = {
+    data: {
+      visualization: 'number'
+    },
     result: 1234
-  }} />);
+  }
+
+  const node = mount(<ReportView report={report}/>);
 
   expect(node.find(Number)).toHaveProp('errorMessage');
 });

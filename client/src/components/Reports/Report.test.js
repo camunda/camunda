@@ -110,12 +110,6 @@ it('should redirect to the report list on report deletion', async () => {
   expect(node).toIncludeText('REDIRECT to /reports');
 });
 
-it('should initially evaluate the report', () => {
-  mount(<Report {...props} />);
-
-  expect(getReportData).toHaveBeenCalled();
-});
-
 it('should contain a ReportView with the report evaluation result', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
@@ -150,6 +144,7 @@ it('should update the report', async () => {
 it('should evaluate the report after updating', async () => {
   const node = mount(<Report {...props} />);
 
+  node.state().data = {processDefinitionId : 'test id'};
   getReportData.mockClear();
   await node.instance().updateReport('visualization', 'customTestVis');
 
