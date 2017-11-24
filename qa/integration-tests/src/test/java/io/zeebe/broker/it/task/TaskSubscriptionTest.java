@@ -353,7 +353,7 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
 
         // when
-        ClockUtil.setCurrentTime(Instant.now().plus(Duration.ofMinutes(5)));
+        ClockUtil.addTime(Duration.ofMinutes(5));
 
         // then
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);

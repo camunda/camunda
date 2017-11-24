@@ -15,7 +15,9 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.*;
+import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,10 +25,17 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
@@ -37,7 +46,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.*;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -47,9 +58,6 @@ import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.time.ClockUtil;
-import org.junit.*;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.*;
 
 public class BrokerRestartTest
 {
@@ -360,11 +368,7 @@ public class BrokerRestartTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker(() ->
-        {
-            final Instant now = ClockUtil.getCurrentTime();
-            ClockUtil.setCurrentTime(now.plusSeconds(60));
-        });
+        restartBroker(() -> ClockUtil.addTime(Duration.ofSeconds(60)));
 
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
         recordingTaskHandler.clear();
