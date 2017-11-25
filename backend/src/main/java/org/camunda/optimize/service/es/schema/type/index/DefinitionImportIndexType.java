@@ -11,6 +11,7 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
 
   public static final String TOTAL_ENTITIES_IMPORTED = "totalEntitiesImported";
   public static final String ALREADY_IMPORTED_PROCESS_DEFINITIONS = "alreadyImportedProcessDefinitions";
+  public static final String PROCESS_DEFINITIONS_TO_IMPORT = "processDefinitionsToImport";
   public static final String CURRENT_PROCESS_DEFINITION = "currentProcessDefinition";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String DEFINITION_BASED_IMPORT_INDEX = "definitionBasedImportIndex";
@@ -25,7 +26,7 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    return xContentBuilder
+    XContentBuilder newBuilder = xContentBuilder
       .startObject(ENGINE)
         .field("type", "keyword")
       .endObject()
@@ -37,31 +38,35 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(CURRENT_PROCESS_DEFINITION)
         .field("type", "nested")
-        .startObject("properties")
-          .startObject(PROCESS_DEFINITION_ID)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(DEFINITION_BASED_IMPORT_INDEX)
-            .field("type", "long")
-          .endObject()
-          .startObject(MAX_ENTITY_COUNT)
-            .field("type", "long")
-          .endObject()
+        .startObject("properties");
+          addNestedDefinitionInformation(newBuilder)
         .endObject()
       .endObject()
       .startObject(ALREADY_IMPORTED_PROCESS_DEFINITIONS)
         .field("type", "nested")
-        .startObject("properties")
-          .startObject(PROCESS_DEFINITION_ID)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(DEFINITION_BASED_IMPORT_INDEX)
-            .field("type", "long")
-          .endObject()
-          .startObject(MAX_ENTITY_COUNT)
-            .field("type", "long")
-          .endObject()
+        .startObject("properties");
+          addNestedDefinitionInformation(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(PROCESS_DEFINITIONS_TO_IMPORT)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedDefinitionInformation(newBuilder)
+        .endObject()
+      .endObject();
+    return newBuilder;
+  }
+
+  private XContentBuilder addNestedDefinitionInformation(XContentBuilder builder) throws IOException {
+    return builder
+      .startObject(PROCESS_DEFINITION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(DEFINITION_BASED_IMPORT_INDEX)
+        .field("type", "long")
+      .endObject()
+      .startObject(MAX_ENTITY_COUNT)
+        .field("type", "long")
       .endObject();
   }
 }

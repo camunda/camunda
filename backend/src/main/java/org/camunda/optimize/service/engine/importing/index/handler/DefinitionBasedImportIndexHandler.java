@@ -70,8 +70,7 @@ public abstract class DefinitionBasedImportIndexHandler
     if (dto.isPresent()) {
       DefinitionBasedImportIndexDto loadedImportIndex = dto.get();
       alreadyImportedProcessDefinitions = new HashSet<>(loadedImportIndex.getAlreadyImportedProcessDefinitions());
-      processDefinitionsToImport.removeAll(loadedImportIndex.getAlreadyImportedProcessDefinitions());
-      processDefinitionsToImport.remove(loadedImportIndex.getCurrentProcessDefinition());
+      processDefinitionsToImport = loadedImportIndex.getProcessDefinitionsToImport();
       currentIndex = loadedImportIndex.getCurrentProcessDefinition();
       totalEntitiesImported = loadedImportIndex.getTotalEntitiesImported();
     }
@@ -261,6 +260,7 @@ public abstract class DefinitionBasedImportIndexHandler
     indexToStore.setTotalEntitiesImported(totalEntitiesImported);
     indexToStore.setCurrentProcessDefinition(currentIndex);
     indexToStore.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
+    indexToStore.setProcessDefinitionsToImport(processDefinitionsToImport);
     indexToStore.setEngine(this.engineAlias);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchType());
     return indexToStore;

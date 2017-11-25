@@ -97,6 +97,10 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
       for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias)) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
+
+      importIndexHandlerProvider
+        .getAllScrollBasedHandlers(engineAlias)
+        .forEach(handler -> allEntitiesBasedImportIndexes.add(handler.createIndexInformationForStoring()));
     }
 
     return allEntitiesBasedImportIndexes;

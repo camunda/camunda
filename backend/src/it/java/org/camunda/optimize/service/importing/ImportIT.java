@@ -149,6 +149,24 @@ public class ImportIT  {
   }
 
   @Test
+  public void importProgressAfterRestartStaysTheSame() throws Exception {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
+    deployAndStartSimpleServiceTask();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    long firstImportProgress = embeddedOptimizeRule.getProgressValue();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+
+    // then
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(firstImportProgress));
+  }
+
+  @Test
   public void allProcessDefinitionXmlFieldDataOfImportIsAvailable() throws Exception {
     //given
     deployAndStartSimpleServiceTask();

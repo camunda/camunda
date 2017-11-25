@@ -29,8 +29,8 @@ public abstract class AllEntitiesBasedImportIndexHandler
   }
 
   protected void init() {
-    readIndexFromElasticsearch();
     updateMaxEntityCount();
+    readIndexFromElasticsearch();
   }
 
   public void readIndexFromElasticsearch() {

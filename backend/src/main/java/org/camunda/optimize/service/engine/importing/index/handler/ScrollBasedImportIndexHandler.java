@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
@@ -13,8 +12,6 @@ import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,7 +41,7 @@ public abstract class ScrollBasedImportIndexHandler
 
   @Override
   protected void init() {
-    // nothing initialize here
+    readIndexFromElasticsearch();
   }
 
   private Long maxEntityCount = 0L;
@@ -148,6 +145,7 @@ public abstract class ScrollBasedImportIndexHandler
     importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTrackingType());
     importIndexDto.setMaxEntityCount(maxEntityCount);
     importIndexDto.setImportIndex(importIndex);
+    importIndexDto.setEngine(engineAlias);
     return importIndexDto;
   }
 

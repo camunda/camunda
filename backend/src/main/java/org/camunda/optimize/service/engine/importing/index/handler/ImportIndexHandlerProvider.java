@@ -47,6 +47,10 @@ public class ImportIndexHandlerProvider {
     return engineImportIndexHandlerProviderMap.get(engineAlias).getDefinitionBasedHandlers();
   }
 
+  public List<ScrollBasedImportIndexHandler> getAllScrollBasedHandlers(String engineAlias) {
+    return engineImportIndexHandlerProviderMap.get(engineAlias).getScrollBasedHandlers();
+  }
+
   public FinishedProcessInstanceImportIndexHandler getFinishedProcessInstanceImportIndexHandler(String engineAlias) {
     return engineImportIndexHandlerProviderMap.get(engineAlias).getFinishedProcessInstanceImportIndexHandler();
   }

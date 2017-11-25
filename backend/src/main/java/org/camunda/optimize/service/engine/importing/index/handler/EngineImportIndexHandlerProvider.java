@@ -74,6 +74,10 @@ public class EngineImportIndexHandlerProvider {
     return definitionBasedHandlers;
   }
 
+  public List<ScrollBasedImportIndexHandler> getScrollBasedHandlers() {
+    return scrollBasedHandlers;
+  }
+
   /**
    * Instantiate index handler for given engine if it has not been instantiated yet.
    * otherwise return already existing instance.

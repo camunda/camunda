@@ -9,6 +9,7 @@ public class DefinitionBasedImportIndexDto implements ImportIndexDto {
   protected DefinitionImportInformation currentProcessDefinition;
   protected long totalEntitiesImported;
   protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
+  protected List<DefinitionImportInformation> processDefinitionsToImport;
   protected String esTypeIndexRefersTo;
   protected String engine;
 
@@ -27,6 +28,14 @@ public class DefinitionBasedImportIndexDto implements ImportIndexDto {
   public void setAlreadyImportedProcessDefinitions(List<DefinitionImportInformation>
                                                      alreadyImportedProcessDefinitions) {
     this.alreadyImportedProcessDefinitions = alreadyImportedProcessDefinitions;
+  }
+
+  public List<DefinitionImportInformation> getProcessDefinitionsToImport() {
+    return processDefinitionsToImport;
+  }
+
+  public void setProcessDefinitionsToImport(List<DefinitionImportInformation> processDefinitionsToImport) {
+    this.processDefinitionsToImport = processDefinitionsToImport;
   }
 
   public long getTotalEntitiesImported() {
