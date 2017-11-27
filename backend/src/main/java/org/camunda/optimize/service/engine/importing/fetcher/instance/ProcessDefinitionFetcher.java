@@ -39,7 +39,7 @@ public class ProcessDefinitionFetcher
                                                                   long maxPageSize) {
 
     List<ProcessDefinitionEngineDto> entries = new ArrayList<>();
-    try {
+
       long requestStart = System.currentTimeMillis();
       entries = getEngineClient()
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -59,9 +59,7 @@ public class ProcessDefinitionFetcher
           entries.size(),
           requestEnd - requestStart
       );
-    } catch (Exception e) {
-      logger.error("can't fetch PD from [{}]", this.engineAlias, e);
-    }
+
 
 
     return entries;

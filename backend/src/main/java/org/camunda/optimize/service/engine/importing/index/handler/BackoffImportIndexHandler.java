@@ -29,11 +29,9 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   @PostConstruct
   private void initialize() {
-    try {
-      init();
-    } catch (Exception e) {
-      logger.error("Could not initialize index.", e);
-    }
+
+    init();
+
   }
 
   protected abstract void init();

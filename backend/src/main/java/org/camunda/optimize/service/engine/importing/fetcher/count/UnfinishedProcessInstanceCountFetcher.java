@@ -24,18 +24,15 @@ public class UnfinishedProcessInstanceCountFetcher extends AbstractEngineAwareFe
 
   public Long fetchUnfinishedHistoricProcessInstanceCount() {
     long totalCount = 0;
-    try {
-      CountDto newCount = getEngineClient()
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-          .path(configurationService.getHistoricProcessInstanceCountEndpoint())
-          .queryParam(INCLUDE_ONLY_UNFINISHED_INSTANCES, TRUE)
-          .request()
-          .acceptEncoding(UTF8)
-          .get(CountDto.class);
-      totalCount += newCount.getCount();
-    } catch (Exception e) {
-      logger.error("can't fetch count from [{}]", this.engineAlias, e);
-    }
+
+    CountDto newCount = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+        .queryParam(INCLUDE_ONLY_UNFINISHED_INSTANCES, TRUE)
+        .request()
+        .acceptEncoding(UTF8)
+        .get(CountDto.class);
+    totalCount += newCount.getCount();
 
     return totalCount;
   }

@@ -25,7 +25,7 @@ import java.util.Properties;
 /**
  * This class is wrapper around the embedded optimize to ensure
  * only one instance is used for all tests. Also makes sure the
- * configuration is reset after each test.
+ * configuration is reloadConfiguration after each test.
  *
  * @author Askar Akhmerov
  */

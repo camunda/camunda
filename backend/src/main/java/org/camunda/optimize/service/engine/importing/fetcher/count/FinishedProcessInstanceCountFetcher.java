@@ -26,21 +26,19 @@ public class FinishedProcessInstanceCountFetcher extends AbstractEngineAwareFetc
 
   public Long fetchFinishedHistoricProcessInstanceCount(List<String> processDefinitionIds) {
     long totalCount = 0;
-    try {
-      for (String processDefinitionId : processDefinitionIds) {
-        CountDto newCount = getEngineClient()
-            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-            .path(configurationService.getHistoricProcessInstanceCountEndpoint())
-            .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-            .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-            .request()
-            .acceptEncoding(UTF8)
-            .get(CountDto.class);
-        totalCount += newCount.getCount();
-      }
-    } catch (Exception e) {
-      logger.error("Cant fetch PI count from [{}]", engineAlias, e);
+
+    for (String processDefinitionId : processDefinitionIds) {
+      CountDto newCount = getEngineClient()
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+          .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+          .request()
+          .acceptEncoding(UTF8)
+          .get(CountDto.class);
+      totalCount += newCount.getCount();
     }
+
 
     return totalCount;
   }

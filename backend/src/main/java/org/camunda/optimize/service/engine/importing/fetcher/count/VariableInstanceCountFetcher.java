@@ -21,17 +21,15 @@ public class VariableInstanceCountFetcher extends AbstractEngineAwareFetcher {
 
   public Long fetchTotalProcessInstanceCountIfVariablesAreAvailable() {
     long totalCount = 0;
-    try {
-      CountDto newCount = getEngineClient()
-            .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-            .path(configurationService.getHistoricProcessInstanceCountEndpoint())
-            .request()
-            .acceptEncoding(UTF8)
-            .get(CountDto.class);
-      totalCount += newCount.getCount();
-    } catch (Exception e) {
-      logger.error("cant fetch entity count from [{}]", engineAlias, e);
-    }
+
+    CountDto newCount = getEngineClient()
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+          .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+          .request()
+          .acceptEncoding(UTF8)
+          .get(CountDto.class);
+    totalCount += newCount.getCount();
+
     long totalVariableInstances = fetchTotalVariableInstanceCount();
     if (totalVariableInstances == 0L) {
       totalCount = 0L;
@@ -41,19 +39,17 @@ public class VariableInstanceCountFetcher extends AbstractEngineAwareFetcher {
 
   private long fetchTotalVariableInstanceCount() {
     long totalCount = 0;
-    try {
-      CountDto newCount = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .queryParam("deserializeValues", "false")
-        .path(configurationService.getHistoricVariableInstanceCountEndpoint())
-        .request(MediaType.APPLICATION_JSON)
-        .acceptEncoding(UTF8)
-        .get()
-        .readEntity(CountDto.class);
-      totalCount += newCount.getCount();
-    } catch (Exception e) {
-      logger.error("cant fetch entity count from [{}]", engineAlias, e);
-    }
+
+    CountDto newCount = getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .queryParam("deserializeValues", "false")
+      .path(configurationService.getHistoricVariableInstanceCountEndpoint())
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get()
+      .readEntity(CountDto.class);
+    totalCount += newCount.getCount();
+
     return totalCount;
   }
 

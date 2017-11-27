@@ -15,8 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class EngineClientFactory extends AbstractParametrizedFactory<Client, String>
-    implements ConfigurationReloadable {
+public class EngineClientFactory extends AbstractParametrizedFactory<Client, String> {
 
   @Autowired
   protected OptimizeObjectMapperProvider optimizeObjectMapperProvider;
@@ -40,8 +39,10 @@ public class EngineClientFactory extends AbstractParametrizedFactory<Client, Str
     return client;
   }
 
-  @Override
-  public void reloadConfiguration(ApplicationContext context) {
+  /**
+   * This method is used for testing purposes at the moment.
+   */
+  public void reloadConfiguration() {
     for (Map.Entry<String, Client> e : instances.entrySet()) {
       e.getValue().close();
     }

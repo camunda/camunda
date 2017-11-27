@@ -463,8 +463,8 @@ public class MultipleEngineSupportIT {
   }
 
   private void addSecondEngineToConfiguration() {
-    addEngineToConfiguration("anotherEngine");
-    embeddedOptimizeRule.getIndexProvider().init();
+    String anotherEngine = "anotherEngine";
+    addEngineToConfiguration(anotherEngine);
     embeddedOptimizeRule.reloadConfiguration();
   }
 

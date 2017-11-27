@@ -302,7 +302,7 @@
       "pages": {
         "resetInterval": {
           /*
-          Chronological unit used to calculate index reset due date.
+          Chronological unit used to calculate index reloadConfiguration due date.
           Possible values are:
 
           Seconds, Minutes, Hours, HalfDays, Days, Weeks, Months

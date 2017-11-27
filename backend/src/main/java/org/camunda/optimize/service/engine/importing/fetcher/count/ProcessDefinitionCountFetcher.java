@@ -21,16 +21,14 @@ public class ProcessDefinitionCountFetcher extends AbstractEngineAwareFetcher {
 
   public Long fetchProcessDefinitionCount() {
     long result = 0;
-    try {
-      CountDto count = getEngineClient()
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-          .path(configurationService.getProcessDefinitionCountEndpoint())
-          .request()
-          .get(CountDto.class);
-      result = count.getCount();
-    } catch (Exception e) {
-      logger.error("cant fetch PD count from [{}]", engineAlias, e);
-    }
+
+    CountDto count = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(configurationService.getProcessDefinitionCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    result = count.getCount();
+
     return result;
   }
 
