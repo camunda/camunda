@@ -11,7 +11,8 @@ jest.mock('react-router-dom', () => { return {
   Link: ({children}) => {return <a>{children}</a>}
 }});
 jest.mock('./LogoutButton', () => {return () => <div>logout</div>});
-jest.mock('./Section', () => {return () => <div>Section</div>});
+jest.mock('./HeaderNav', () => {return () => <div>HeaderNav</div>});
+jest.mock('./HeaderNavItem', () => {return () => <div>HeaderNavItem</div>});
 
 it('renders without crashing', () => {
   shallow(<Header />);
@@ -24,21 +25,20 @@ it('includes the name provided as property', () => {
   expect(node).toIncludeText(name);
 });
 
-it('does not render the sections or logout button if the user is not logged in', () => {
+it('does not render the navigation or logout button if the user is not logged in', () => {
   getToken.mockReturnValue(false);
 
   const node = mount(<Header />);
 
-  expect(node).not.toIncludeText('Section');
+  expect(node).not.toIncludeText('HeaderNav');
   expect(node).not.toIncludeText('logout');
 });
 
-it('does render the navigation, its sections and the logout button if the user is logged in', () => {
+it('does render the navigation and the logout button if the user is logged in', () => {
   getToken.mockReturnValue(true);
 
   const node = mount(<Header />);
 
-  expect(node.find('.Header__nav')).toBePresent();
-  expect(node).toIncludeText('Section');
+  expect(node).toIncludeText('HeaderNav');
   expect(node).toIncludeText('logout');
 });

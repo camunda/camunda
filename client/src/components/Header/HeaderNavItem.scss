@@ -1,0 +1,17 @@
+.HeaderNav__item {
+  display: inline-block;
+  margin-right: .75em;
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  a {
+    color: #888;
+  }
+
+  &.active a {
+    color: #333;
+  }
+
+}

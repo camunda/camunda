@@ -46,18 +46,3 @@
   font-weight: normal;
   content: '\E831';
 }
-
-.Header__nav {
-  margin: 0;
-  padding: 0;
-  flex-grow: 1;
-}
-
-.Header__nav li {
-  display: inline-block;
-  margin-right: .75em;
-}
-
-.Header__nav li:last-child {
-  margin-right: 0;
-}

@@ -1,8 +1,9 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
+import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
-import Section from './Section';
+import HeaderNavItem from './HeaderNavItem';
 
 import {getToken} from 'credentials';
 
@@ -16,10 +17,10 @@ export default function Header({name}) {
         <span>{name}</span>
       </Link>
       {(getToken() &&
-        <ul role='navigation' className='Header__nav'>
-          <Section name='Dashboards' linksTo='/dashboards' active='/dashboard' />
-          <Section name='Reports' linksTo='/reports' active='/report' />
-        </ul>
+        <HeaderNav>
+          <HeaderNavItem name='Dashboards' linksTo='/dashboards' active='/dashboard' />
+          <HeaderNavItem name='Reports' linksTo='/reports' active='/report' />
+        </HeaderNav>
       )}
       {(getToken() &&
         <LogoutButton />
