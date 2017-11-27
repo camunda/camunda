@@ -32,6 +32,15 @@ it('should use the provided type for the ChartRenderer', () => {
   expect(ChartRenderer.mock.calls[0][1].type).toBe('visualization_type');
 });
 
+it('should change type for the ChartRenderer if props were updated', () => {
+  ChartRenderer.mockReset();
+
+  const chart = mount(<Chart data={{foo: 123}} type='visualization_type' />);
+  chart.setProps({type: "new_visualization_type"})
+
+  expect(ChartRenderer.mock.calls[1][1].type).toBe('new_visualization_type');
+});
+
 it('should not display an error message if data is valid', () => {
   const node = mount(<Chart data={{foo: 123}} errorMessage='Error' />);
 
