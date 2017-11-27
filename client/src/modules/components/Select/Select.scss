@@ -4,10 +4,17 @@
   height: 2.15em;
   background-color: #f8f8f8;
   border-color: #ccc;
-}
 
-.Select[disabled],
-.Select[disabled="disabled"] {
-  opacity: .65;
-  cursor: not-allowed;
+  &:focus {
+    outline: none;
+    border: 1px solid #00a8ff;
+    box-shadow: 0 0 5px rgba(#00a8ff, 1);
+  }
+
+  &[disabled],
+  &[disabled="disabled"] {
+    opacity: .65;
+    cursor: not-allowed;
+  }
+
 }

@@ -20,6 +20,13 @@ a.Button:hover {
   transition: background-color .3s, border-color .3s;
 }
 
+.Button:focus,
+a.Button:focus {
+  outline: none;
+  border: 1px solid #00a8ff;
+  box-shadow: 0 0 5px rgba(#00a8ff, 1);
+}
+
 .Button[disabled]:hover,
 .Button[disabled="disabled"]:hover,
 a.Button[disabled]:hover,
@@ -59,6 +66,11 @@ a.Button--primary {
   color: white;
   background-color: #00a8ff;
   border: 1px solid #00a8ff;
+}
+
+.Button--primary:focus,
+a.Button--primary:focus {
+  border: 1px solid darken(#00a8ff, 12);
 }
 
 .Button--primary:hover,
