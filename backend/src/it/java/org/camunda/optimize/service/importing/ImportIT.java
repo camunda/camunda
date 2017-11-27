@@ -223,7 +223,7 @@ public class ImportIT  {
         .startEvent()
         .userTask()
         .endEvent()
-      .done();
+        .done();
     engineRule.deployAndStartProcess(processModel);
     deployAndStartSimpleServiceTask();
 
@@ -234,6 +234,37 @@ public class ImportIT  {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      List events = (List) searchHitFields.getSource().get(EVENTS);
+      assertThat(events.size(), is(3));
+    }
+  }
+
+  @Test
+  public void unfinishedProcessesIndexedAfterFinish() throws OptimizeException {
+    // given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+        .startEvent()
+        .userTask()
+        .endEvent()
+        .done();
+    engineRule.deployAndStartProcess(processModel);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+
+    //then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      List events = (List) searchHitFields.getSource().get(EVENTS);
+      assertThat(events.size(), is(1));
+    }
+
+    // when
+    engineRule.finishAllUserTasks();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSource().get(EVENTS);
       assertThat(events.size(), is(3));
