@@ -39,20 +39,15 @@ import org.junit.rules.RuleChain;
  */
 public class LargeWorkflowTest
 {
-    public static final int CREATION_TIMES = 10_000_000;
+    public static final int CREATION_TIMES = 1_000_000;
     public static final URL PATH = LargeWorkflowTest.class.getResource("");
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(PATH.getPath()));
     public ClientRule clientRule = new ClientRule();
-    //    public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule)
                                           .around(clientRule);
-    //        .around(eventRecorder);
-
-    //    @Rule
-    //    public ExpectedException exception = ExpectedException.none();
 
     protected static InputStream brokerConfig(String path)
     {

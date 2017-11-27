@@ -19,19 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Properties;
 
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.ClientProperties;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.BrokerErrorException;
+import io.zeebe.client.event.TaskEvent;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.event.TaskEvent;
 
 /**
  * Tests the entire cycle of task creation, polling and completion as a smoke test for when something gets broken
@@ -43,11 +42,11 @@ public class TaskQueueTest
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule(() ->
-                                                  {
-                                                        Properties p = new Properties();
-                                                        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
-                                                        return p;
-                                                  }, true);
+    {
+        final Properties p = new Properties();
+        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+        return p;
+    }, true);
 
     @Rule
     public RuleChain ruleChain = RuleChain
