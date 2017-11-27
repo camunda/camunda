@@ -28,6 +28,12 @@
   border: 1px solid #adadad;
 }
 
+.Dropdown__button:focus {
+  outline: none;
+  border: 1px solid #00a8ff;
+  box-shadow: 0 0 5px rgba(#00a8ff, 1);
+}
+
 .Dropdown__menu-list {
   list-style: none;
   padding: 0;

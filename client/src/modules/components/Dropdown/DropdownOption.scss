@@ -13,11 +13,14 @@ button.DropdownOption {
   width: 100%;
   text-align: left;
   border-radius: 0;
-}
 
-.DropdownOption:hover,
-a.DropdownOption:hover,
-button.DropdownOption:hover {
-  background-color: #f2f2f2;
-  border: none;
+  &:hover {
+    background-color: #f2f2f2;
+    border: none;
+  }
+
+  &:focus {
+    box-shadow: inset 0 0 2px 2px rgba(#00a8ff, 1);
+    border: none;
+  }
 }
