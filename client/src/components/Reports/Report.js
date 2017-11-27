@@ -144,7 +144,7 @@ export default class Report extends React.Component {
       <div className='Report'>
         <div className='Report__header'>
           <div className='Report__name-container'>
-            <input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input'></input>
+            <input id='name' type='text' onChange={this.updateName} value={name || ''} className='Input Report__name-input'></input>
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>

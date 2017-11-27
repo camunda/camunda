@@ -1,13 +1,20 @@
 .Input[type="text"],
 .Input[type="password"] {
   color: #333;
+  border: 1px solid lightgray;
   font-size: .875em;
   padding: 4px 6px;
-}
+  border-radius: 3px;
 
-.Input[type="text"][disabled],
-.Input[type="text"][disabled="disabled"],
-.Input[type="password"][disabled],
-.Input[type="password"][disabled="disabled"] {
-  cursor: not-allowed;
+  &:focus {
+    outline: none;
+    border: 1px solid #00a8ff;
+    box-shadow: 0 0 5px rgba(#00a8ff, 1);
+  }
+
+  &[disabled],
+  &[disabled="disabled"] {
+    cursor: not-allowed;
+  }
+
 }

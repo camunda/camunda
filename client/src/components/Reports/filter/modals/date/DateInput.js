@@ -28,7 +28,7 @@ export default class DateInput extends React.PureComponent {
   render() {
     return <input type="text"
                   ref={this.props.reference}
-                  className={'DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')}
+                  className={'Input DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')}
                   value={this.state.stringDate}
                   onClick={this.onClick}
                   onChange={this.onInputChange} />;

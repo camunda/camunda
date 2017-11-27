@@ -107,7 +107,7 @@ export default class Dashboard extends React.Component {
       <div className='Dashboard'>
         <div className='Dashboard__header'>
           <div className='Dashboard__name-container'>
-            <input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Dashboard__name-input'></input>
+            <input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Input Dashboard__name-input'></input>
             <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Dashboard__tools'>
