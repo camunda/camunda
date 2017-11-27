@@ -207,7 +207,8 @@ public class CommandRequestHandler implements RequestResponseHandler
         final EventMetadata eventMetadata = event.getMetadata();
         return "[ topic = " + eventMetadata.getTopicName() +
                 ", partition = " + (event.hasValidPartitionId() ? eventMetadata.getPartitionId() : "any") +
-                ", event type = " + eventMetadata.getType().name() + " ]";
+                ", event type = " + eventMetadata.getType().name() +
+                ", state = " + event.getState() + " ]";
     }
 
 }
