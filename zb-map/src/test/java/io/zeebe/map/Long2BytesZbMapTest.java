@@ -244,11 +244,12 @@ public class Long2BytesZbMapTest
     public void shouldUseOverflowToPutValue()
     {
         // given
-        map.setMaxTableSize(16);
+        map = new Long2BytesZbMap(2, 1, VALUE_LENGTH);
+        map.setMaxTableSize(2);
         map.put(0, VALUE);
 
         // when
-        map.put(16, ANOTHER_VALUE);
+        map.put(2, ANOTHER_VALUE);
 
         // then overflow happens
 
@@ -260,15 +261,16 @@ public class Long2BytesZbMapTest
         final DirectBuffer value = map.get(0);
         assertThat(value).isEqualTo(VALUE);
 
-        final DirectBuffer value2 = map.get(16);
+        final DirectBuffer value2 = map.get(2);
         assertThat(value2).isEqualTo(ANOTHER_VALUE);
 
     }
 
     @Test
-    public void shouldUseOverflowOnCollisionIfMapIsNotFilled()
+    public void shouldUseOverflowOnCollisionIfMapSizeIsReached()
     {
         // given
+        map.setMaxTableSize(16);
         map.put(0L, VALUE);
 
         // when

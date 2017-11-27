@@ -34,9 +34,9 @@ public class LongKeyHandler implements KeyHandler
     }
 
     @Override
-    public long keyHashCode()
+    public int keyHashCode()
     {
-        return Long.hashCode(theKey);
+        return (int) (theKey ^ ((theKey >>> 32) ^ ((theKey >>> 8) ^ ((theKey >> 3)))));
     }
 
     @Override

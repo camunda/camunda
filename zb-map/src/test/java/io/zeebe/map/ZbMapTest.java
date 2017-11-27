@@ -38,7 +38,7 @@ public class ZbMapTest
     public static final long MISSING_VALUE = 0;
     public static final int DATA_COUNT = 100_000;
 
-    private ZbMap<LongKeyHandler, LongValueHandler> zbMap;
+    private ZbMap<SimpleLongKeyHandler, LongValueHandler> zbMap;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -46,10 +46,20 @@ public class ZbMapTest
     public static class EvenOddKeyHandler extends LongKeyHandler
     {
         @Override
-        public long keyHashCode()
+        public int keyHashCode()
         {
             return (int) theKey & 1;
         }
+    }
+
+    public static class SimpleLongKeyHandler extends LongKeyHandler
+    {
+        @Override
+        public int keyHashCode()
+        {
+            return Long.hashCode(theKey);
+        }
+
     }
 
     @After
@@ -68,7 +78,7 @@ public class ZbMapTest
         zbMap.put();
     }
 
-    public static long getValue(ZbMap<LongKeyHandler, LongValueHandler> zbMap, long key, long missingValue)
+    public static long getValue(ZbMap<? extends LongKeyHandler, LongValueHandler> zbMap, long key, long missingValue)
     {
         zbMap.keyHandler.theKey = key;
         zbMap.valueHandler.theValue = missingValue;
@@ -76,7 +86,7 @@ public class ZbMapTest
         return zbMap.valueHandler.theValue;
     }
 
-    public static boolean removeValue(ZbMap<LongKeyHandler, LongValueHandler> zbMap, long key)
+    public static boolean removeValue(ZbMap<? extends LongKeyHandler, LongValueHandler> zbMap, long key)
     {
         zbMap.keyHandler.theKey = key;
         return zbMap.remove();
@@ -86,7 +96,7 @@ public class ZbMapTest
     public void shouldIncreaseHashTable()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -120,7 +130,7 @@ public class ZbMapTest
     public void shouldShrinkHashTable()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         for (int i = 0; i < 64; i++)
@@ -145,8 +155,9 @@ public class ZbMapTest
     public void shouldNotShrinkHashTableUnderLargestBucketId()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(128);
 
         // when
         putValue(zbMap, 0, 0);
@@ -194,7 +205,7 @@ public class ZbMapTest
     public void shouldNotShrinkHashTableUnderInitSize()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         for (int i = 0; i < 64; i++)
@@ -216,7 +227,7 @@ public class ZbMapTest
     public void shouldNotShrinkHashTable()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(32, 16, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(32, 16, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         putValue(zbMap, 1, 1);
 
@@ -237,7 +248,7 @@ public class ZbMapTest
         final int tableSize = 3;
 
         // when
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(tableSize, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // then zbMap size is set to next power of two
@@ -259,7 +270,7 @@ public class ZbMapTest
     public void shouldPutLargeBunchOfData()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -281,7 +292,7 @@ public class ZbMapTest
     public void shouldPutAndRemoveLargeBunchOfData()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -307,7 +318,7 @@ public class ZbMapTest
     public void shouldPutRemoveAndPutLargeBunchOfData()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         for (int i = 0; i < DATA_COUNT; i++)
         {
@@ -342,7 +353,7 @@ public class ZbMapTest
     public void shouldUseOverflowToAddMoreElements()
     {
         // given entries which all have the same bucket id
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         zbMap.setMaxTableSize(8);
         for (int i = 0; i < 4; i++)
@@ -366,8 +377,10 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBuckets()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(16);
+
         putValue(zbMap, 0, 0);
         // split, split, split -> overflow
         putValue(zbMap, 8, 8);
@@ -392,8 +405,10 @@ public class ZbMapTest
     public void shouldDistributeEntriesFromOverflowBucketsToNewBucketWhichAgainOverflows()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(16, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(16);
+
         putValue(zbMap, 0, 0);
         // split until bucket id 8 then overflows
         putValue(zbMap, 16, 16);
@@ -407,6 +422,7 @@ public class ZbMapTest
         putValue(zbMap, 8, 8);
 
         // when next value should be added which goes in the first bucket
+        zbMap.setMaxTableSize(64);
         putValue(zbMap, 80, 80);
 
         // then table is resized, new bucket with id 16 is created during split
@@ -433,7 +449,7 @@ public class ZbMapTest
         // the last buckets get no values - so they will be always free
         // after adding 3 entries we have buckets = entries + 2 (the plus are the free one)
         // this means the load factor of 0.6 will be reached 4/6 = 0.666...
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(4, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         zbMap.setMaxTableSize(4);
         for (int i = 0; i < 3; i++)
@@ -467,7 +483,7 @@ public class ZbMapTest
     public void shouldUseOverflowToAddManyEntriesEvenIfMaxTableSizeIsReached()
     {
         // given
-        final ZbMap<LongKeyHandler, LongValueHandler> zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        final ZbMap<SimpleLongKeyHandler, LongValueHandler> zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         zbMap.setMaxTableSize(512);
 
@@ -525,7 +541,7 @@ public class ZbMapTest
     public void shouldOnlyUpdateEntry()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         // when
@@ -643,8 +659,9 @@ public class ZbMapTest
     @Test
     public void shouldMergeOverflowBuckets()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0);
         putValue(zbMap, 32, 32);
@@ -684,8 +701,9 @@ public class ZbMapTest
     @Test
     public void shouldMergeOverflowBucketInBetween()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0);
         putValue(zbMap, 32, 32);
@@ -728,8 +746,9 @@ public class ZbMapTest
     @Test
     public void shouldRemoveEmptyOverflowBucketOnBlockRemoveOfParentOverflowBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0);
         putValue(zbMap, 32, 32);
@@ -778,8 +797,9 @@ public class ZbMapTest
     @Test
     public void shouldRemoveEmptyOverflowBucketOnBlockRemoveOfOriginalBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0);
         putValue(zbMap, 32, 32);
@@ -828,8 +848,9 @@ public class ZbMapTest
     @Test
     public void shouldNotMergeOverflowBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0xFF);
         putValue(zbMap, 8, 0xFF);
@@ -869,8 +890,9 @@ public class ZbMapTest
     @Test
     public void shouldNotMergeOverflowBucketEvenIfLastBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0xFF);
         putValue(zbMap, 8, 0xFF);
@@ -910,9 +932,10 @@ public class ZbMapTest
     @Test
     public void shouldRelocateBlocksOfOverflowBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
+        zbMap.setMaxTableSize(8);
 
         putValue(zbMap, 0, 0xFF);
         putValue(zbMap, 8, 0xFF);
@@ -961,7 +984,7 @@ public class ZbMapTest
     @Test
     public void shouldRelocateBlocksOfOverflowBucketAndRemoveOverflowBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
 
@@ -996,7 +1019,7 @@ public class ZbMapTest
     @Test
     public void shouldMergeRecursivelyAndRemoveOverflowBucketFromOverflowBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
 
@@ -1056,7 +1079,7 @@ public class ZbMapTest
     @Test
     public void shouldMergeRecursivelyAndRemoveOverflowBucketFromOriginalBucket()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
 
@@ -1115,7 +1138,7 @@ public class ZbMapTest
     public void shouldMergeChildBucket()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1158,7 +1181,7 @@ public class ZbMapTest
     public void shouldMergeBucketsWhenEmpty()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0);
@@ -1195,7 +1218,7 @@ public class ZbMapTest
     public void shouldMergeParentWithChildBucket()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0);
@@ -1243,7 +1266,7 @@ public class ZbMapTest
     public void shouldMergeParentWithChildBucketsRecursively()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0);
@@ -1292,7 +1315,7 @@ public class ZbMapTest
     @Test
     public void shouldMergeBuckets()
     {
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0);
@@ -1338,7 +1361,7 @@ public class ZbMapTest
     public void shouldNotMergeOnDifferentDepths()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1375,7 +1398,7 @@ public class ZbMapTest
     public void shouldNotMergeIfNotLastBucket()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1412,7 +1435,7 @@ public class ZbMapTest
     public void shouldNotMergeIfNotHalfFull()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1442,7 +1465,7 @@ public class ZbMapTest
     public void shouldNotMergeIfParentBucketAfterMergeIsLessThenFull()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1471,7 +1494,7 @@ public class ZbMapTest
     public void shouldNotMergeIfOnlyOneBucket()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 3, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1490,7 +1513,7 @@ public class ZbMapTest
     public void shouldNotMergeBuckets()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 2, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         putValue(zbMap, 0, 0xFF);
@@ -1531,7 +1554,7 @@ public class ZbMapTest
     public void shouldPutAndRemoveRandomValues()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 4, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
 
         final Set<Long> values = new HashSet<>();
@@ -1572,7 +1595,7 @@ public class ZbMapTest
     public void shouldNotRemoveRecursivelyTheFirstBucket()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(8, 1, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         for (int i = 0; i < 32 + 1; i++)
         {
@@ -1603,7 +1626,7 @@ public class ZbMapTest
     public void shouldNotMergeChildBucketWhichHasOverflow()
     {
         // given
-        zbMap = new ZbMap<LongKeyHandler, LongValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG)
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 3, SIZE_OF_LONG, SIZE_OF_LONG)
         { };
         zbMap.setMaxTableSize(2);
 

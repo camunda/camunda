@@ -54,7 +54,7 @@ public class ByteArrayKeyHandler implements KeyHandler
     }
 
     @Override
-    public long keyHashCode()
+    public int keyHashCode()
     {
         int result = 1;
 

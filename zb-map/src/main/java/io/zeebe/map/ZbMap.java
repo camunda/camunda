@@ -22,11 +22,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.zeebe.util.StringUtil;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
-
-import io.zeebe.util.StringUtil;
 
 /**
  * Simple map data structure using extensible hashing.
@@ -42,11 +41,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 {
     private static final int KEY_HANDLER_IDX = 0;
     private static final int VALUE_HANDLER_IDX = 1;
-
-    /**
-     * The load factor which is used to determine if the hash table should be increased or overflow should be used.
-     */
-    private static final float LOAD_FACTOR_OVERFLOW_LIMIT = 0.6F;
 
     /**
      * The shrink limit which is used to indicate, whether the hash table should be shrinked or not, see {@link #tryShrinkHashTable()}.
@@ -87,7 +81,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     protected int maxTableSize;
     protected final int initialTableSize;
-    protected double loadFactorOverflowLimit;
 
     protected ZbMapBucketMergeHelper bucketMergeHelper;
 
@@ -157,7 +150,6 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
         this.maxTableSize = MAX_TABLE_SIZE;
         this.initialTableSize = ensureTableSizeIsPowerOfTwo(initialTableSize);
-        this.loadFactorOverflowLimit = LOAD_FACTOR_OVERFLOW_LIMIT;
 
         this.hashTable = new HashTable(this.initialTableSize);
         this.bucketBufferArray = new BucketBufferArray(minBlockCount, maxKeyLength, maxValueLength);
@@ -437,10 +429,9 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         }
         else
         {
-            final float loadFactor = bucketBufferArray.getLoadFactor();
+
             final int newTableSize = hashTable.getCapacity() << 1;
-            if (loadFactor < loadFactorOverflowLimit ||
-                newTableSize > maxTableSize)
+            if (newTableSize > maxTableSize)
             {
                 bucketBufferArray.overflow(filledBucketAddress);
             }
