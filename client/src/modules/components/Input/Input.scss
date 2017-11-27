@@ -1,5 +1,7 @@
 .Input[type="text"],
-.Input[type="password"] {
+.Input[type="password"],
+.Input[type="email"],
+textarea {
   color: #333;
   border: 1px solid lightgray;
   font-size: .875em;
