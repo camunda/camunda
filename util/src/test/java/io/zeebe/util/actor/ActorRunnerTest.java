@@ -21,6 +21,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +57,11 @@ public class ActorRunnerTest
 
         executorService = Executors.newSingleThreadExecutor();
 
-        actorRunner = new ActorRunner(BASE_ITERATIONS_PER_ACTOR, mockIdleStrategy, mockErrorHandler, Duration.ofNanos(0));
+        actorRunner = new ActorRunner(BASE_ITERATIONS_PER_ACTOR,
+                mockIdleStrategy,
+                mockErrorHandler,
+                Duration.ofNanos(0),
+                new HashMap<>());
     }
 
     @After

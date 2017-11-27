@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,7 +69,13 @@ public class DynamicActorSchedulerTest
 
         final ActorRunner[] runners = new ActorRunner[] {mockRunner1, mockRunner2};
 
-        scheduler = new ActorSchedulerRunnable(runners, t -> actorRefs[0], 0.25, Duration.ofSeconds(10), Duration.ofSeconds(10));
+        scheduler = new ActorSchedulerRunnable(
+            runners,
+            t -> actorRefs[0],
+            0.25,
+            Duration.ofSeconds(10),
+            Duration.ofSeconds(10),
+            new HashMap<>());
 
         actorRefs = new ActorReferenceImpl[5];
         for (int i = 0; i < 5; i++)
