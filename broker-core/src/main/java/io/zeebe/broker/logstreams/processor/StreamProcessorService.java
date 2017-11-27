@@ -17,10 +17,13 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.time.Duration;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotPositionProvider;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
@@ -117,6 +120,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .sourceStream(sourceStream)
             .targetStream(targetStream)
             .snapshotStorage(snapshotStorage)
+            .snapshotPolicy(new TimeBasedSnapshotPolicy(Duration.ofMinutes(15)))
             .snapshotPositionProvider(snapshotPositionProvider)
             .actorScheduler(actorScheduler)
             .eventFilter(eventFilter)
