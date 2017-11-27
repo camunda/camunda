@@ -50,7 +50,7 @@ import io.zeebe.util.time.ClockUtil;
 @SuppressWarnings("rawtypes")
 public class RequestController implements BufferReader
 {
-    public static final int CMD_TIMEOUT_SECONDS = 5;
+    public static final int CMD_TIMEOUT_SECONDS = 15;
     public static final long CMD_TIMEOUT = TimeUnit.SECONDS.toMillis(CMD_TIMEOUT_SECONDS);
 
     protected static final int TRANSITION_DEFAULT = 0;
