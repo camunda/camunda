@@ -410,10 +410,15 @@ public class StreamProcessorController implements Actor
         SnapshotWriter snapshotWriter = null;
         try
         {
-            snapshotWriter = snapshotStorage.createSnapshot(streamProcessorContext.getName(), eventPosition);
+            final long start = System.currentTimeMillis();
+            final String name = streamProcessorContext.getName();
+            LOG.info("Write snapshot for stream processor {} at event position {}.", name, eventPosition);
+
+            snapshotWriter = snapshotStorage.createSnapshot(name, eventPosition);
 
             snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
             snapshotWriter.commit();
+            LOG.info("Creation of snapshot {} took {} ms.", name, System.currentTimeMillis() - start);
             context.setSnapshotPosition(eventPosition);
         }
         catch (Exception e)

@@ -15,7 +15,11 @@
  */
 package io.zeebe.logstreams.impl.snapshot.fs;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.util.FileUtil;
+import org.agrona.BitUtil;
+import org.agrona.LangUtil;
+import org.slf4j.Logger;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,14 +28,12 @@ import java.io.OutputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 
-import org.agrona.BitUtil;
-import org.agrona.LangUtil;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.util.FileUtil;
+import static io.zeebe.util.StringUtil.getBytes;
 
 
 public class FsSnapshotWriter implements SnapshotWriter
 {
+    public static final Logger LOG = io.zeebe.logstreams.impl.Loggers.LOGSTREAMS_LOGGER;
     protected final FsSnapshotStorageConfiguration config;
     protected final File dataFile;
     protected final File checksumFile;
@@ -95,6 +97,7 @@ public class FsSnapshotWriter implements SnapshotWriter
 
             if (lastSnapshot != null)
             {
+                LOG.info("Delete last snapshot file {}.", lastSnapshot.getDataFile());
                 lastSnapshot.delete();
             }
         }
