@@ -226,7 +226,8 @@
         The name of the process instance (pi) tracking type that is used
         to find pi’s that were already imported.
         */
-        "idTrackingType": "process-instance-id-tracking",
+        "finishedIdTrackingType": "finished-process-instance-id-tracking",
+        "unfinishedIdTrackingType": "unfinished-process-instance-id-tracking",
         /*
         The name of the process instance type.
         */

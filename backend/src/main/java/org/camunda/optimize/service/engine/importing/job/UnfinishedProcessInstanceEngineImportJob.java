@@ -22,8 +22,11 @@ public class UnfinishedProcessInstanceEngineImportJob
                                                   IdSetBasedImportPage importIndex,
                                                   ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                   MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
-                                                  EngineEntityFetcher<HistoricProcessInstanceDto, IdSetBasedImportPage> engineEntityFetcher) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher);
+                                                  EngineEntityFetcher<HistoricProcessInstanceDto,
+                                                  IdSetBasedImportPage> engineEntityFetcher,
+                                                  String engineAlias
+                                                  ) {
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineAlias);
     this.unfinishedProcessInstanceWriter = unfinishedProcessInstanceWriter;
   }
 
@@ -43,7 +46,7 @@ public class UnfinishedProcessInstanceEngineImportJob
     processInstanceDto.setProcessInstanceId(engineEntity.getId());
     processInstanceDto.setStartDate(engineEntity.getStartTime());
     processInstanceDto.setEndDate(null);
-    processInstanceDto.setEngine("1");
+    processInstanceDto.setEngine(engineAlias);
     return processInstanceDto;
   }
 

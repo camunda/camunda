@@ -39,7 +39,8 @@ public interface ConfigurationServiceConstants {
   String OPTIMIZE_INDEX = "$.es.index";
   String EVENT_TYPE = "$.import.data.activity-instance.elasticsearchType";
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
-  String PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.idTrackingType";
+  String FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.finishedIdTrackingType";
+  String UNFINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE = "$.import.data.process-instance.unfinishedIdTrackingType";
   String VARIABLE_TYPE = "$.import.data.variable.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";

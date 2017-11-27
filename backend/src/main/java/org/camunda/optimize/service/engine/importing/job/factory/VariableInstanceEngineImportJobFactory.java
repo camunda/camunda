@@ -60,7 +60,11 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
   public void init(){
     importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineAlias);
     engineEntityFetcher = beanHelper.getInstance(VariableInstanceFetcher.class, engineAlias);
-    missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, getElasticsearchType());
+    missingEntitiesFinder = new MissingEntitiesFinder<>(
+        configurationService,
+        esClient,
+        configurationService.getVariableType()
+    );
   }
 
   @Override
@@ -82,12 +86,10 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
         idSetBasedImportPage,
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
-        engineEntityFetcher)
+        engineEntityFetcher,
+        engineAlias
+      )
     );
-  }
-
-  public String getElasticsearchType() {
-    return configurationService.getVariableType();
   }
 
 

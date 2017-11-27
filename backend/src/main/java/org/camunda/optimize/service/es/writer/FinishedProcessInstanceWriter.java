@@ -64,7 +64,7 @@ public class FinishedProcessInstanceWriter {
     processInstanceIdTrackerBulkRequest.add(
         esclient.prepareIndex(
             configurationService.getOptimizeIndex(),
-            configurationService.getProcessInstanceIdTrackingType(),
+            configurationService.getFinishedProcessInstanceIdTrackingType(),
             dto.getProcessInstanceId())
             .setSource(Collections.emptyMap())
     );

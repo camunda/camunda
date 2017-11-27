@@ -56,7 +56,11 @@ public class FinishedProcessInstanceEngineImportJobFactory implements EngineImpo
   public void init() {
     importIndexHandler = provider.getFinishedProcessInstanceImportIndexHandler(engineAlias);
     engineEntityFetcher = beanHelper.getInstance(FinishedProcessInstanceFetcher.class, engineAlias);
-    missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, configurationService.getProcessInstanceIdTrackingType());
+    missingEntitiesFinder = new MissingEntitiesFinder<>(
+        configurationService,
+        esClient,
+        configurationService.getFinishedProcessInstanceIdTrackingType()
+    );
   }
 
   @Override
@@ -72,17 +76,15 @@ public class FinishedProcessInstanceEngineImportJobFactory implements EngineImpo
         definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
-        engineEntityFetcher)
+        engineEntityFetcher,
+        engineAlias
+      )
     );
   }
 
   @Override
   public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
-  public String getElasticsearchType() {
-    return configurationService.getProcessInstanceType();
   }
 
 

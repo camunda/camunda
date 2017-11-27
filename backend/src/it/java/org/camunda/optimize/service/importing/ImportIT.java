@@ -43,10 +43,12 @@ import java.util.Map.Entry;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
@@ -256,6 +258,8 @@ public class ImportIT  {
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSource().get(EVENTS);
       assertThat(events.size(), is(1));
+      Object date = searchHitFields.getSource().get(END_DATE);
+      assertThat(date, is(nullValue()));
     }
 
     // when
@@ -266,8 +270,8 @@ public class ImportIT  {
     // then
     idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSource().get(EVENTS);
-      assertThat(events.size(), is(3));
+      Object date = searchHitFields.getSource().get(END_DATE);
+      assertThat(date, is(notNullValue()));
     }
   }
 

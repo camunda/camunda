@@ -56,7 +56,11 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
   public void init() {
     importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineAlias);
     engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
-    missingEntitiesFinder = new MissingEntitiesFinder<>(configurationService, esClient, getElasticsearchType());
+    missingEntitiesFinder = new MissingEntitiesFinder<>(
+        configurationService,
+        esClient,
+        configurationService.getProcessDefinitionType()
+    );
   }
 
   @Override
@@ -77,12 +81,10 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
         definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
-        engineEntityFetcher)
+        engineEntityFetcher,
+        engineAlias
+      )
     );
-  }
-
-  public String getElasticsearchType() {
-    return configurationService.getProcessDefinitionType();
   }
 
 

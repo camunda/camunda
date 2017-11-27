@@ -17,20 +17,23 @@ public abstract class EngineImportJob<ENG extends EngineDto, OPT extends Optimiz
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  private PAGE importPage;
+  protected PAGE importPage;
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private MissingEntitiesFinder<ENG> missingActivityFinder;
+  protected MissingEntitiesFinder<ENG> missingActivityFinder;
   protected EngineEntityFetcher<ENG, PAGE> engineEntityFetcher;
+  protected String engineAlias;
 
   public EngineImportJob(PAGE importPage,
                          ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                          MissingEntitiesFinder<ENG> missingActivityFinder,
-                         EngineEntityFetcher<ENG, PAGE> engineEntityFetcher
+                         EngineEntityFetcher<ENG, PAGE> engineEntityFetcher,
+                         String engineAlias
                          ) {
     this.importPage = importPage;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.missingActivityFinder = missingActivityFinder;
     this.engineEntityFetcher = engineEntityFetcher;
+    this.engineAlias = engineAlias;
   }
 
   @Override

@@ -15,7 +15,6 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,7 +102,8 @@ public class ConfigurationService {
   private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
-  private String piIdTrackingType;
+  private String finishedPiIdTrackingType;
+  private String unfinishedPiIdTrackingType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -115,6 +115,7 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
+  private Object unfinishedProcessInstanceIdTrackingType;
 
   public ConfigurationService() {
     this((String[]) null);
@@ -637,11 +638,18 @@ public class ConfigurationService {
     return variableImportPluginBasePackages;
   }
 
-  public String getProcessInstanceIdTrackingType() {
-    if (piIdTrackingType == null) {
-      piIdTrackingType = jsonContext.read(ConfigurationServiceConstants.PROCESS_INSTANCE_ID_TRACKING_TYPE);
+  public String getFinishedProcessInstanceIdTrackingType() {
+    if (finishedPiIdTrackingType == null) {
+      finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
     }
-    return piIdTrackingType;
+    return finishedPiIdTrackingType;
+  }
+
+  public String getUnfinishedProcessInstanceIdTrackingType() {
+    if (unfinishedPiIdTrackingType == null) {
+      unfinishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.UNFINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
+    }
+    return unfinishedPiIdTrackingType;
   }
 
   public int getNumberOfRetriesOnConflict() {
@@ -1092,12 +1100,12 @@ public class ConfigurationService {
     this.samplerInterval = samplerInterval;
   }
 
-  public String getPiIdTrackingType() {
-    return piIdTrackingType;
+  public String getFinishedPiIdTrackingType() {
+    return finishedPiIdTrackingType;
   }
 
-  public void setPiIdTrackingType(String piIdTrackingType) {
-    this.piIdTrackingType = piIdTrackingType;
+  public void setFinishedPiIdTrackingType(String finishedPiIdTrackingType) {
+    this.finishedPiIdTrackingType = finishedPiIdTrackingType;
   }
 
   public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {
@@ -1151,5 +1159,6 @@ public class ConfigurationService {
   public void setBackoffEnabled(Boolean backoffEnabled) {
     this.backoffEnabled = backoffEnabled;
   }
+
 
 }

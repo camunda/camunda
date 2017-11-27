@@ -7,11 +7,11 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class ProcessInstanceIdTrackingType extends StrictTypeMappingCreator {
+public class UnfinishedProcessInstanceIdTrackingType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getProcessInstanceIdTrackingType();
+    return configurationService.getUnfinishedProcessInstanceIdTrackingType();
   }
 
   @Override

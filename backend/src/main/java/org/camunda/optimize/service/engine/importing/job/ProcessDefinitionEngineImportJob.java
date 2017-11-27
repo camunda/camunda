@@ -21,8 +21,10 @@ public class ProcessDefinitionEngineImportJob extends
                                           AllEntitiesBasedImportPage importIndex,
                                           ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                           MissingEntitiesFinder<ProcessDefinitionEngineDto> missingEntitiesFinder,
-                                          EngineEntityFetcher<ProcessDefinitionEngineDto,AllEntitiesBasedImportPage> engineEntityFetcher) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher);
+                                          EngineEntityFetcher<ProcessDefinitionEngineDto,AllEntitiesBasedImportPage> engineEntityFetcher,
+                                          String engineAlias
+                                          ) {
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher,engineAlias);
     this.processDefinitionWriter = processDefinitionWriter;
 
   }
@@ -42,7 +44,7 @@ public class ProcessDefinitionEngineImportJob extends
     optimizeDto.setKey(engineEntity.getKey());
     optimizeDto.setId(engineEntity.getId());
     optimizeDto.setVersion(engineEntity.getVersion());
-    optimizeDto.setEngine("1");
+    optimizeDto.setEngine(engineAlias);
     return optimizeDto;
   }
 

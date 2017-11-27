@@ -62,7 +62,11 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
   public void init() {
     activityImportIndexHandler = provider.getActivityImportIndexHandler(engineAlias);
     engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineAlias);
-    missingActivityFinder = new MissingEntitiesFinder<>(configurationService, esClient, configurationService.getEventType());
+    missingActivityFinder = new MissingEntitiesFinder<>(
+        configurationService,
+        esClient,
+        configurationService.getEventType()
+    );
   }
 
   public Optional<Runnable> getNextJob() {
@@ -73,7 +77,9 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
         definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingActivityFinder,
-        engineEntityFetcher)
+        engineEntityFetcher,
+        engineAlias
+      )
     );
   }
 

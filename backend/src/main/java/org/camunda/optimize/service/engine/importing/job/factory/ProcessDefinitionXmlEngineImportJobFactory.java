@@ -82,7 +82,9 @@ public class ProcessDefinitionXmlEngineImportJobFactory implements EngineImportJ
         definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
-        engineEntityFetcher)
+        engineEntityFetcher,
+        engineAlias
+      )
     );
   }
 

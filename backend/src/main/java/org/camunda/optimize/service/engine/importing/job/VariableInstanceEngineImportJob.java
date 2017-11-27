@@ -29,8 +29,11 @@ public class VariableInstanceEngineImportJob extends
                                          IdSetBasedImportPage importIndex,
                                          ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                          MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder,
-                                         EngineEntityFetcher<HistoricVariableInstanceDto, IdSetBasedImportPage> engineEntityFetcher) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher);
+                                         EngineEntityFetcher<HistoricVariableInstanceDto,
+                                         IdSetBasedImportPage> engineEntityFetcher,
+                                         String engineAlias
+  ) {
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineAlias);
     this.variableWriter = variableWriter;
     this.importAdapterProvider = importAdapterProvider;
   }
