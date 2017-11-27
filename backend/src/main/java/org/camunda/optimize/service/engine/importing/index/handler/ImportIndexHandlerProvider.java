@@ -34,6 +34,10 @@ public class ImportIndexHandlerProvider {
 
   private Map <String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
 
+  /**
+   * NOTE: this method has to be invoked at least once before providers for engine can be requested.
+   * @param engineAlias
+   */
   public void init(String engineAlias) {
     engineImportIndexHandlerProviderMap.put(
         engineAlias,

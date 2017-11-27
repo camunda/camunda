@@ -29,9 +29,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   @PostConstruct
   private void initialize() {
-
     init();
-
   }
 
   protected abstract void init();

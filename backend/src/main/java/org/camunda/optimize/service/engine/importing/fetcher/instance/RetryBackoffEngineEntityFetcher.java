@@ -24,7 +24,7 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   @Override
   public List<ENG> fetchEngineEntities(PAGE page) {
     List<ENG> result = null;
-    while (result == null && backoffCounter < configurationService.getMaximumBackoff() ) {
+    while (result == null) {
       try {
         result = fetchEntities(page);
       } catch (Exception exception) {
