@@ -3,10 +3,14 @@ import { mount } from 'enzyme';
 
 import ButtonGroup from './ButtonGroup';
 
-jest.mock('components', () => {return {
-  Button: ({children}) => <button>{children}</button>
-}});
-
 it('should render without crashing', () => {
   mount(<ButtonGroup />);
+});
+
+it('should render its children', () => {
+  const node = mount(<ButtonGroup>
+    <button></button>
+  </ButtonGroup>)
+
+expect(node.find('button')).toBePresent();
 });
