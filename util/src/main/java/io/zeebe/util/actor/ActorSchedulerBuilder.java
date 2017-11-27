@@ -15,9 +15,15 @@
  */
 package io.zeebe.util.actor;
 
-import static io.zeebe.util.EnsureUtil.*;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.util.EnsureUtil.ensureNotNullOrGreaterThan;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -25,6 +31,7 @@ import java.util.function.Supplier;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.slf4j.MDC;
 
 public final class ActorSchedulerBuilder
 {
@@ -40,6 +47,7 @@ public final class ActorSchedulerBuilder
 
     private Duration durationSamplePeriod = Duration.ofMillis(1);
     private int durationSampleCount = 128;
+    private Map<String, String> diagnosticContext = new HashMap<>();
 
     public ActorSchedulerBuilder name(String name)
     {
@@ -101,6 +109,15 @@ public final class ActorSchedulerBuilder
         return this;
     }
 
+    /**
+     * Made available to loggers via SLF4J {@link MDC} concept.
+     */
+    public ActorSchedulerBuilder diagnosticProperty(String key, String value)
+    {
+        this.diagnosticContext.put(key, value);
+        return this;
+    }
+
     public ActorScheduler build()
     {
         ensureNotNull("name", name);
@@ -115,13 +132,13 @@ public final class ActorSchedulerBuilder
         ensureNotNullOrGreaterThan("scheduler initial backoff", schedulerInitialBackoff, Duration.ofNanos(0));
         ensureNotNullOrGreaterThan("scheduler max backoff", schedulerMaxBackoff, schedulerInitialBackoff);
 
-        final Supplier<ActorRunner> runnerFactory = () -> new ActorRunner(baseIterationsPerActor, runnerIdleStrategy, runnerErrorHandler, durationSamplePeriod);
+        final Supplier<ActorRunner> runnerFactory = () -> new ActorRunner(baseIterationsPerActor, runnerIdleStrategy, runnerErrorHandler, durationSamplePeriod, diagnosticContext);
         final Function<Actor, ActorReferenceImpl> actorRefFactory = task -> new ActorReferenceImpl(task, durationSampleCount);
 
         final ActorScheduler actorScheduler;
         if (threadCount > 1)
         {
-            final Function<ActorRunner[], ActorSchedulerRunnable> schedulerFactory = runners -> new ActorSchedulerRunnable(runners, actorRefFactory, imbalanceRunnerThreshold, schedulerInitialBackoff, schedulerMaxBackoff);
+            final Function<ActorRunner[], ActorSchedulerRunnable> schedulerFactory = runners -> new ActorSchedulerRunnable(runners, actorRefFactory, imbalanceRunnerThreshold, schedulerInitialBackoff, schedulerMaxBackoff, diagnosticContext);
 
             actorScheduler = new DynamicActorSchedulerImpl(name, threadCount, runnerFactory, schedulerFactory);
         }

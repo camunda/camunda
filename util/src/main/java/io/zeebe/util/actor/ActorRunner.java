@@ -18,11 +18,13 @@ package io.zeebe.util.actor;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import io.zeebe.util.DeferredCommandContext;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
+import org.slf4j.MDC;
 
 /**
  * Invokes the given actors in a loop. The amount of invocations depends on the
@@ -52,17 +54,40 @@ public class ActorRunner implements Runnable
     private volatile boolean shouldClose = false;
 
     private long lastSampleTime = -1;
+    private final Map<String, String> diagnosticContext;
 
-    public ActorRunner(int baseIterationsPerActor, IdleStrategy idleStrategy, ErrorHandler errorHandler, Duration samplePeriod)
+    public ActorRunner(
+            int baseIterationsPerActor,
+            IdleStrategy idleStrategy,
+            ErrorHandler errorHandler,
+            Duration samplePeriod,
+            Map<String, String> diagnosticContext)
     {
         this.baseIterationsPerActor = baseIterationsPerActor;
         this.idleStrategy = idleStrategy;
         this.errorHandler = errorHandler;
         this.samplePeriod = samplePeriod.toNanos();
+        this.diagnosticContext = diagnosticContext;
     }
 
     @Override
     public void run()
+    {
+        final Map<String, String> currentContext = MDC.getCopyOfContextMap();
+        MDC.setContextMap(diagnosticContext);
+
+        try
+        {
+            doWorkUntilClose();
+        }
+        finally
+        {
+            MDC.setContextMap(currentContext);
+        }
+
+    }
+
+    private void doWorkUntilClose()
     {
         do
         {

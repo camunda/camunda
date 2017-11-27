@@ -18,8 +18,11 @@ package io.zeebe.util.actor;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
+
+import org.slf4j.MDC;
 
 /**
  * The scheduler tries to balance the workload between the given runners
@@ -50,12 +53,18 @@ public class ActorSchedulerRunnable implements Runnable
 
     private final long maxBackoff;
     private final long initialBackoff;
+    private final Map<String, String> diagnosticContext;
 
     private long waitTime;
     private long nextSchedulingTime = -1;
 
-    public ActorSchedulerRunnable(ActorRunner[] runners, Function<Actor, ActorReferenceImpl> actorRefFactory, double imbalanceThreshold,
-            Duration initialBackoff, Duration maxBackoff)
+    public ActorSchedulerRunnable(
+            ActorRunner[] runners,
+            Function<Actor, ActorReferenceImpl> actorRefFactory,
+            double imbalanceThreshold,
+            Duration initialBackoff,
+            Duration maxBackoff,
+            Map<String, String> diagnosticContext)
     {
         this.runners = runners;
         this.actorRefFactory = actorRefFactory;
@@ -64,6 +73,7 @@ public class ActorSchedulerRunnable implements Runnable
         this.aggregatedRunnerDurations = new double[runners.length];
 
         this.imbalanceThreshold = imbalanceThreshold;
+        this.diagnosticContext = diagnosticContext;
 
         this.initialBackoff = initialBackoff.toMillis();
         this.maxBackoff = maxBackoff.toMillis();
@@ -95,6 +105,22 @@ public class ActorSchedulerRunnable implements Runnable
 
     @Override
     public void run()
+    {
+        final Map<String, String> currentContext = MDC.getCopyOfContextMap();
+        MDC.setContextMap(diagnosticContext);
+
+        try
+        {
+            doWorkUntilClosed();
+        }
+        finally
+        {
+            MDC.setContextMap(currentContext);
+        }
+
+    }
+
+    private void doWorkUntilClosed()
     {
         while (!closed)
         {
