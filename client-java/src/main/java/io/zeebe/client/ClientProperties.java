@@ -65,6 +65,11 @@ public class ClientProperties
      */
     public static final String CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD = "zeebe.client.channel.keepalive";
 
+    /**
+     * The request timeout in seconds.
+     */
+    public static final String CLIENT_REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
+
     public static void setDefaults(Properties properties)
     {
         properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");
@@ -73,5 +78,6 @@ public class ClientProperties
         properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "2");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
+        properties.putIfAbsent(CLIENT_REQUEST_TIMEOUT_SEC, "15");
     }
 }

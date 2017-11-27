@@ -17,6 +17,9 @@ package io.zeebe.broker.it.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Properties;
+
+import io.zeebe.client.ClientProperties;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +42,12 @@ public class TaskQueueTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-    public ClientRule clientRule = new ClientRule();
+    public ClientRule clientRule = new ClientRule(() ->
+                                                  {
+                                                        Properties p = new Properties();
+                                                        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+                                                        return p;
+                                                  }, true);
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -50,7 +58,7 @@ public class TaskQueueTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public Timeout testTimeout = Timeout.seconds(20);
+    public Timeout testTimeout = Timeout.seconds(15);
 
 
     @Test
@@ -75,7 +83,7 @@ public class TaskQueueTest
         final ZeebeClient client = clientRule.getClient();
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot determine target partition for request (timeout 15 seconds). " +
+        thrown.expectMessage("Cannot determine target partition for request (timeout 3 seconds). " +
                 "Request was: [ topic = unknown-topic, partition = any, event type = TASK, state = CREATE ]");
 
         client.tasks().create("unknown-topic", "foo")

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -56,14 +55,15 @@ public class ClientTopologyManager implements Actor
     protected long nextLatestPossibleRequestTimestamp = 0L;
     protected long nextEarliestPossibleRequestTimestamp = 0L;
 
-    public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, final SocketAddress... initialBrokers)
+    public ClientTopologyManager(final ClientTransport transport, final ObjectMapper objectMapper, long requestTimeout, final SocketAddress... initialBrokers)
     {
         this.transport = transport;
         this.clientTopologyController = new ClientTopologyController(
                 transport,
                 objectMapper,
                 this::onNewTopology,
-                this::failRefreshFutures);
+                this::failRefreshFutures,
+                requestTimeout);
         this.topology = new TopologyImpl();
 
         for (SocketAddress socketAddress : initialBrokers)

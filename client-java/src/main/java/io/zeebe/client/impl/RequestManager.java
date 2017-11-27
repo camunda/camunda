@@ -47,7 +47,8 @@ public class RequestManager implements Actor
             final ClientTopologyManager topologyManager,
             RequestDispatchStrategy dispatchStrategy,
             ObjectMapper objectMapper,
-            int capacity)
+            int capacity,
+            long requestTimeout)
     {
         this.transport = transport;
         this.topologyManager = topologyManager;
@@ -64,7 +65,8 @@ public class RequestManager implements Actor
                 topologyManager,
                 objectMapper,
                 dispatchStrategy,
-                ctrl -> pooledCmds.add(ctrl));
+                ctrl -> pooledCmds.add(ctrl),
+                requestTimeout);
             this.commandControllers[i] = controller;
             this.pooledCmds.add(controller);
         }

@@ -17,17 +17,14 @@ package io.zeebe.client.clustering.impl;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.agrona.DirectBuffer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.ControlMessageRequestHandler;
 import io.zeebe.client.impl.Loggers;
-import io.zeebe.client.impl.RequestController;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientOutput;
@@ -39,6 +36,7 @@ import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.WaitState;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
 
 public class ClientTopologyController
 {
@@ -57,16 +55,19 @@ public class ClientTopologyController
     protected final Consumer<Exception> failureCallback;
 
     protected final ControlMessageRequestHandler requestHandler;
+    private final long requestTimeout;
 
     public ClientTopologyController(
             final ClientTransport clientTransport,
             final ObjectMapper objectMapper,
             final Consumer<TopologyResponse> successCallback,
-            final Consumer<Exception> failureCallback)
+            final Consumer<Exception> failureCallback,
+            long requestTimeout)
     {
         output = clientTransport.getOutput();
         this.requestHandler = new ControlMessageRequestHandler(objectMapper);
         requestHandler.configure(new RequestTopologyCmdImpl(null));
+        this.requestTimeout = TimeUnit.SECONDS.toMillis(requestTimeout);
 
         stateMachine = StateMachine.builder(Context::new)
             .initialState(initState)
@@ -112,7 +113,7 @@ public class ClientTopologyController
             int workCount = 0;
 
             final ClientRequest request = output.sendRequest(context.remoteAddress, requestHandler);
-            context.timeout = ClockUtil.getCurrentTimeInMillis() + RequestController.CMD_TIMEOUT;
+            context.timeout = ClockUtil.getCurrentTimeInMillis() + requestTimeout;
             if (request != null)
             {
                 workCount++;
@@ -160,7 +161,7 @@ public class ClientTopologyController
                 Loggers.CLIENT_LOGGER.debug("Topology request timed out");
                 try
                 {
-                    failureCallback.accept(new ClientException("Topology request timed out (" + RequestController.CMD_TIMEOUT_SECONDS + " seconds)"));
+                    failureCallback.accept(new ClientException("Topology request timed out (" + requestTimeout + " seconds)"));
                 }
                 finally
                 {

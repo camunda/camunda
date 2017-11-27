@@ -50,8 +50,6 @@ import io.zeebe.util.time.ClockUtil;
 @SuppressWarnings("rawtypes")
 public class RequestController implements BufferReader
 {
-    public static final int CMD_TIMEOUT_SECONDS = 15;
-    public static final long CMD_TIMEOUT = TimeUnit.SECONDS.toMillis(CMD_TIMEOUT_SECONDS);
 
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_FAILED = 1;
@@ -92,12 +90,15 @@ public class RequestController implements BufferReader
 
     protected final RequestDispatchStrategy requestDispatchStrategy;
 
+    public final long cmdTimeout;
+
     public RequestController(
             final ClientTransport transport,
             final ClientTopologyManager topologyManager,
             final ObjectMapper objectMapper,
             RequestDispatchStrategy requestDispatchStrategy,
-            Consumer<RequestController> closeConsumer)
+            Consumer<RequestController> closeConsumer,
+            long requestTimeout)
     {
         this.transport = transport;
         this.topologyManager = topologyManager;
@@ -105,6 +106,7 @@ public class RequestController implements BufferReader
         this.commandRequestHandler = new CommandRequestHandler(objectMapper);
         this.controlMessageHandler = new ControlMessageRequestHandler(objectMapper);
         this.requestDispatchStrategy = requestDispatchStrategy;
+        this.cmdTimeout = TimeUnit.SECONDS.toMillis(requestTimeout);
 
         stateMachine = StateMachine.<Context>builder(Context::new)
             .initialState(closedState)
@@ -178,7 +180,7 @@ public class RequestController implements BufferReader
         return new ClientException(
                 String.format("%s (timeout %d seconds). Request was: %s. Request receivers: %s",
                         reason,
-                        CMD_TIMEOUT_SECONDS,
+                        TimeUnit.MILLISECONDS.toSeconds(cmdTimeout),
                         currentRequestHandler.describeRequest(),
                         requestReceivers));
     }
@@ -493,7 +495,7 @@ public class RequestController implements BufferReader
             if (isConfigured)
             {
                 context.reset();
-                context.timeout = ClockUtil.getCurrentTimeInMillis() + CMD_TIMEOUT;
+                context.timeout = ClockUtil.getCurrentTimeInMillis() + cmdTimeout;
 
                 final int targetPartition = currentRequestHandler.getTargetPartition();
 

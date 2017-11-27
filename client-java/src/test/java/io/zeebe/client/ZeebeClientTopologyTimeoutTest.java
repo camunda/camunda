@@ -50,7 +50,10 @@ public class ZeebeClientTopologyTimeoutTest
 
     protected ZeebeClient buildClient()
     {
-        final ZeebeClient client = ZeebeClient.create(new Properties());
+        final Properties properties = new Properties();
+        properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "1");
+
+        final ZeebeClient client = ZeebeClient.create(properties);
         closeables.manage(client);
         return client;
     }
@@ -75,8 +78,8 @@ public class ZeebeClientTopologyTimeoutTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot determine leader for partition (timeout 5 seconds). " +
-                "Request was: [ topic = default-topic, partition = 99, event type = TASK ]");
+        exception.expectMessage("Cannot determine leader for partition (timeout 1 seconds). " +
+                "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
 
         // when
         client.tasks().complete(baseEvent).execute();
@@ -86,7 +89,7 @@ public class ZeebeClientTopologyTimeoutTest
     public void shouldRetryTopologyRequestAfterTimeout()
     {
         // given
-        final int topologyTimeoutSeconds = 5;
+        final int topologyTimeoutSeconds = 1;
 
         ClockUtil.pinCurrentTime();
         broker.onTopologyRequest().doNotRespond();

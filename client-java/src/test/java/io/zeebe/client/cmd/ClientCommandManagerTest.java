@@ -22,7 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import java.util.List;
+import java.util.Properties;
 
+import io.zeebe.client.ClientProperties;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +53,12 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 public class ClientCommandManagerTest
 {
 
-    public ClientRule clientRule = new ClientRule();
+    public ClientRule clientRule = new ClientRule(() ->
+    {
+        final Properties p = new Properties();
+        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+        return p;
+    });
     public StubBrokerRule broker = new StubBrokerRule();
 
     @Rule
@@ -140,7 +147,7 @@ public class ClientCommandManagerTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage(containsString("timeout 5 seconds"));
+        exception.expectMessage(containsString("timeout 3 seconds"));
         // when the partition is repeatedly not found, the client loops
         // over refreshing the topology and making a request that fails and so on. The timeout
         // kicks in at any point in that loop, so we cannot assert the exact error message any more specifically.

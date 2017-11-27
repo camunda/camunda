@@ -16,6 +16,7 @@
 package io.zeebe.client.impl;
 
 import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static io.zeebe.client.ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC;
 import static io.zeebe.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
 
 import java.util.Properties;
@@ -144,7 +145,9 @@ public class ZeebeClientImpl implements ZeebeClient
 
         final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
 
-        topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
+        final long requestTimeout = Long.parseLong(properties.getProperty(CLIENT_REQUEST_TIMEOUT_SEC));
+
+        topologyManager = new ClientTopologyManager(transport, objectMapper, requestTimeout, contactPoint);
 
         subscriptionManager = new SubscriptionManager(
                 this,
@@ -152,7 +155,7 @@ public class ZeebeClientImpl implements ZeebeClient
                 prefetchCapacity);
         transport.registerChannelListener(subscriptionManager);
 
-        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests);
+        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests, requestTimeout);
 
         commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
         topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);

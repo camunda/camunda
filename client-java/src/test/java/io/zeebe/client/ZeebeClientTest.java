@@ -24,13 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import java.util.concurrent.TimeUnit;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -38,7 +32,6 @@ import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.event.impl.TaskEventImpl;
-import io.zeebe.client.impl.RequestController;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.Events;
@@ -50,6 +43,12 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 
 public class ZeebeClientTest
 {
@@ -67,7 +66,10 @@ public class ZeebeClientTest
     @Before
     public void setUp()
     {
-        client = (ZeebeClientImpl) ZeebeClient.create(new Properties());
+        final Properties properties = new Properties();
+        properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+
+        client = (ZeebeClientImpl) ZeebeClient.create(properties);
         broker.stubTopicSubscriptionApi(0);
     }
 
@@ -175,8 +177,8 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot determine target partition for request (timeout 5 seconds). " +
-                "Request was: [ topic = foo, partition = any, event type = TASK ]");
+        exception.expectMessage("Cannot determine target partition for request (timeout 3 seconds). " +
+                "Request was: [ topic = foo, partition = any, event type = TASK, state = CREATE ]");
 
         // when
         client.tasks().create(topic, "bar").execute();
@@ -193,8 +195,8 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("No response received (timeout 5 seconds). " +
-                "Request was: [ topic = default-topic, partition = 99, event type = TASK ]");
+        exception.expectMessage("No response received (timeout 3 seconds). " +
+                "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
 
         // when
         client.tasks().complete(baseEvent).execute();
@@ -286,8 +288,11 @@ public class ZeebeClientTest
         }
 
         // +2 (one for the extra request when client is started)
+        final long requestTimeout = Long.parseLong(client.getInitializationProperties()
+                                            .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
+        final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
         final long expectedMaximumTopologyRequests =
-                (RequestController.CMD_TIMEOUT / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
@@ -317,7 +322,10 @@ public class ZeebeClientTest
         }
 
         // +2 (one for the extra request when client is started)
-        final long expectedMaximumTopologyRequests = (RequestController.CMD_TIMEOUT / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+        final long requestTimeout = Long.parseLong(client.getInitializationProperties()
+                                                         .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
+        final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
+        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
