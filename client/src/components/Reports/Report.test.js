@@ -71,6 +71,12 @@ it('should initially load data', () => {
   expect(loadSingleReport).toHaveBeenCalled();
 });
 
+it('should initially evaluate the report', () => {
+  mount(<Report {...props} />);
+
+  expect(getReportData).toHaveBeenCalled();
+});
+
 it('should display the key properties of a report', () => {
   const node = mount(<Report {...props} />);
 
@@ -144,7 +150,11 @@ it('should update the report', async () => {
 it('should evaluate the report after updating', async () => {
   const node = mount(<Report {...props} />);
 
-  node.state().data = {processDefinitionId : 'test id'};
+  node.setState({data: {
+    processDefinitionId : 'test id'
+    }
+  });
+
   getReportData.mockClear();
   await node.instance().updateReport('visualization', 'customTestVis');
 

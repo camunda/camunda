@@ -26,12 +26,12 @@ export default class Report extends React.Component {
     this.loadReport();
   }
 
-  initializeReport = async () => {
+  initializeReport = () => {
     return ({
-      processDefinitionId: 'Please select process instance',
-      view: {operation: 'Please select a value', entity: 'processInstance', property: 'frequency'},
-      groupBy: {type: 'Please select a value', unit: null},
-      visualization: 'Please select a value',
+      processDefinitionId: '',
+      view: {operation: '', entity: '', property: ''},
+      groupBy: {type: '', unit: null},
+      visualization: '',
       filter: []
     });
   }
@@ -39,26 +39,17 @@ export default class Report extends React.Component {
   loadReport = async () => {
     const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
 
+    const reportResult = await getReportData(this.id);
     let stateData;
-    let reportResult;
-
-    if (data) {
-      stateData = data;
-      try {
-        reportResult = await getReportData(this.id);
-      } catch(error) {
-        reportResult = null;
-      }
-    } else {
-      stateData = await this.initializeReport();
-      reportResult = null;
+    if(!data) {
+      stateData = this.initializeReport();
     }
 
     this.setState({
       name,
       lastModifier,
       lastModified,
-      data: stateData,
+      data: stateData || data,
       originalData: stateData,
       reportResult,
       loaded: true,
@@ -99,14 +90,7 @@ export default class Report extends React.Component {
     this.setState({data});
 
     if(data.processDefinitionId) {
-
-      let reportResult;
-      try {
-        reportResult = await getReportData(data);
-      } catch(error) {
-        reportResult = null;
-      }
-
+      const reportResult = await getReportData(data);
       this.setState({reportResult});
     }
   }
@@ -124,12 +108,7 @@ export default class Report extends React.Component {
   }
 
   cancel = async () => {
-    let reportResult;
-    try {
-      reportResult = await getReportData(this.id);
-    } catch(e) {
-      reportResult = null;
-    }
+    const reportResult = await getReportData(this.id);
     this.setState({
       name : this.state.originalName,
       data: {...this.state.originalData},
@@ -139,7 +118,6 @@ export default class Report extends React.Component {
 
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
-
     return (
       <div className='Report'>
         <div className='Report__header'>

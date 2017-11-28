@@ -23,10 +23,14 @@ it('should display a number if visualization is number', () => {
 });
 
 it('should display a json if visualization is json', () => {
-  const node = mount(<ReportView data={{
-    visualization: 'json',
+  const report = {
+    data: {
+      visualization: 'json'
+    },
     result: 1234
-  }} />);
+  }
+
+  const node = mount(<ReportView report={report}/>);
 
   expect(node).toIncludeText('JSON');
 });

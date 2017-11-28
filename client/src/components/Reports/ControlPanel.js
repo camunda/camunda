@@ -7,10 +7,10 @@ import './ControlPanel.css';
 
 const options = {
   view: [
-    {key: 'count_processInstance', label: 'Count Process Instance Frequency'},
-    {key: 'count_flowNode', label: 'Count Flow Node Frequency'},
-    {key: 'avg_processInstance', label: 'Average Process Instance Duration'},
-    {key: 'avg_flowNode', label: 'Average Flow Node Duration'}
+    {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
+    {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
+    {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
+    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
@@ -57,8 +57,7 @@ export default class ControlPanel extends React.Component {
   }
   changeView = evt => {
     const data = evt.target.value.split('_');
-    const property = (data[0] === 'count') ? 'frequency' : 'duration';
-    this.props.onChange('view', {operation: data[0], entity: data[1], property});
+    this.props.onChange('view', {operation: data[0], entity: data[1], property: data[2]});
   }
   changeGroup = evt => {
     const data = evt.target.value.split('_');
@@ -111,8 +110,8 @@ export default class ControlPanel extends React.Component {
   }
 }
 
-function parseView({operation, entity}) {
-  return `${operation}_${entity}`;
+function parseView({operation, entity, property}) {
+  return `${operation}_${entity}_${property}`;
 }
 function parseGroup({type, unit}) {
   return `${type}_${unit}`;

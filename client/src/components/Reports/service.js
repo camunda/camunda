@@ -18,12 +18,19 @@ export async function loadProcessDefinitions() {
 
 export async function getReportData(query) {
   let response;
-  if(typeof query !== 'object') {
-    // evaluate saved report
-    response = await get(`/api/report/${query}/evaluate`);
-  } else {
-    // evaluate unsaved report
-    response = await post('/api/report/evaluate', query);
+
+  try {
+    if(typeof query !== 'object') {
+      // evaluate saved report
+      response = await get(`/api/report/${query}/evaluate`);
+    } else {
+      // evaluate unsaved report
+      response = await post('/api/report/evaluate', query);
+    }
+  } catch(e) {
+    const error = await e.json();
+    console.log(error);
+    return null;
   }
 
   return await response.json();

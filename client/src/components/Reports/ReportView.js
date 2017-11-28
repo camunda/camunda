@@ -9,8 +9,7 @@ export default class ReportView extends React.Component {
     let config;
 
     if (this.props.report) {
-      const {data} = this.props.report;
-      const result = this.props.report.result;
+     const {data, result} = this.props.report;
 
       switch(data.visualization) {
         case 'number':
@@ -42,10 +41,9 @@ export default class ReportView extends React.Component {
           }; break;
       }
     } else {
-      config = {
-        component: Json,
-        props: {data: null}
-      };
+      return (
+        <p>Cannot display data. Choose another visualization.</p>
+      );
     }
 
     config.props.errorMessage = 'Cannot display data. Choose another visualization.';
