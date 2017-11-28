@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -16,7 +16,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -41,11 +44,14 @@ public class RawDataCommand extends ReportCommand {
       .get();
 
     List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
+    Set<String> allVariableNames = new HashSet<>();
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         ProcessInstanceDto processInstanceDto =
           objectMapper.readValue(hit.getSourceAsString(), ProcessInstanceDto.class);
-        RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto);
+        Map<String, Object> variables = getVariables(processInstanceDto);
+        allVariableNames.addAll(variables.keySet());
+        RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);
         rawData.add(dataEntry);
       }
 
@@ -54,12 +60,22 @@ public class RawDataCommand extends ReportCommand {
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .get();
     } while (scrollResp.getHits().getHits().length != 0 && rawData.size() < RAW_DATA_LIMIT);
+    ensureEveryRawDataInstanceContainsAllVariableNames(rawData, allVariableNames);
     rawData = cutRawDataSizeToMaxSize(rawData);
 
     return createResult(rawData);
   }
 
-  private RawDataProcessInstanceDto convertToRawDataEntry(ProcessInstanceDto processInstanceDto) {
+  private void ensureEveryRawDataInstanceContainsAllVariableNames(List<RawDataProcessInstanceDto> rawData,
+                                                                  Set<String> allVariableNames ) {
+    rawData
+      .forEach(data -> allVariableNames
+        .forEach(varName -> data.getVariables().putIfAbsent(varName, ""))
+      );
+  }
+
+  private RawDataProcessInstanceDto convertToRawDataEntry(ProcessInstanceDto processInstanceDto,
+                                                          Map<String, Object> variables) {
     RawDataProcessInstanceDto rawDataInstance = new RawDataProcessInstanceDto();
     rawDataInstance.setProcessInstanceId(processInstanceDto.getProcessInstanceId());
     rawDataInstance.setProcessDefinitionId(processInstanceDto.getProcessDefinitionId());
@@ -68,15 +84,15 @@ public class RawDataCommand extends ReportCommand {
     rawDataInstance.setEndDate(convertDate(processInstanceDto.getEndDate()));
     rawDataInstance.setEngineName(processInstanceDto.getEngine());
 
-    List<RawDataVariableDto> variables =
-      processInstanceDto
-      .obtainAllVariables()
-      .stream()
-      .map(var -> new RawDataVariableDto(var.getName(), var.getValue()))
-      .collect(Collectors.toList());
-
     rawDataInstance.setVariables(variables);
     return rawDataInstance;
+  }
+
+  private Map<String, Object> getVariables(ProcessInstanceDto processInstanceDto) {
+    return processInstanceDto
+    .obtainAllVariables()
+    .stream()
+    .collect(Collectors.toMap(VariableInstanceDto::getName, VariableInstanceDto::getValue));
   }
 
   private LocalDateTime convertDate(Date date) {

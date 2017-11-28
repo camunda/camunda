@@ -1,7 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.result.raw;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 public class RawDataProcessInstanceDto {
 
@@ -11,7 +11,7 @@ public class RawDataProcessInstanceDto {
   protected LocalDateTime startDate;
   protected LocalDateTime endDate;
   protected String engineName;
-  protected List<RawDataVariableDto> variables;
+  protected Map<String, Object> variables;
 
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -61,11 +61,11 @@ public class RawDataProcessInstanceDto {
     this.engineName = engineName;
   }
 
-  public List<RawDataVariableDto> getVariables() {
+  public Map<String, Object> getVariables() {
     return variables;
   }
 
-  public void setVariables(List<RawDataVariableDto> variables) {
+  public void setVariables(Map<String, Object> variables) {
     this.variables = variables;
   }
 
@@ -79,8 +79,17 @@ public class RawDataProcessInstanceDto {
       result = result && startDate.equals(other.startDate);
       result = result && endDate.equals(other.endDate);
       result = result && engineName.equals(other.engineName);
-      for (RawDataVariableDto variable : variables) {
-        result = result && other.variables.contains(variable);
+      Map<String, Object> otherVariables = other.variables;
+      for (Map.Entry<String, Object> nameToValue : variables.entrySet()) {
+        result = result && otherVariables.containsKey(nameToValue.getKey());
+        if (otherVariables.containsKey(nameToValue.getKey())) {
+          if (otherVariables.get(nameToValue.getKey()) == null) {
+            result = result && nameToValue.getValue() == null;
+          } else {
+            result = result && otherVariables.get(nameToValue.getKey()).equals(nameToValue.getValue());
+          }
+        }
+
       }
       return result;
     }

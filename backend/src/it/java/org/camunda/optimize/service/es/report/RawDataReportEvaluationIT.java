@@ -194,11 +194,42 @@ public class RawDataReportEvaluationIT {
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processDefinitionId));
     rawDataProcessInstanceDto.getVariables().
-      forEach(var -> {
-          assertThat(variables.keySet().contains(var.getName()), is(true));
-          assertThat(variables.get(var.getName()), is(notNullValue()));
+      forEach((varName, varValue) -> {
+          assertThat(variables.keySet().contains(varName), is(true));
+          assertThat(variables.get(varName), is(notNullValue()));
         }
       );
+  }
+
+  @Test
+  public void variablesOfOneProcessInstanceAreAddedToOther() throws Exception {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("varName1", "value1");
+
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    String processDefinitionId = processInstance.getDefinitionId();
+    variables.clear();
+    variables.put("varName2", "value2");
+    engineRule.startProcessInstance(processDefinitionId, variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(2));
+    result.getResult().forEach(
+      rawDataProcessInstanceDto1 -> {
+        assertThat(rawDataProcessInstanceDto1.getVariables().keySet().size(), is(2));
+        assertThat(rawDataProcessInstanceDto1.getVariables().values().contains(""), is(true));
+      }
+    );
   }
 
   @Test
