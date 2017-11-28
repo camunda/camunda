@@ -1,3 +1,5 @@
+$modal-padding-h: 20px;
+
 .Modal {
   position: fixed;
   left: 0;
@@ -19,29 +21,61 @@
   margin: 0 0 0 -475px;
 
   border-radius: 3px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, .45);
 }
 
 .Modal__header {
   font-size: 1.4em;
   border-bottom: 1px solid lightgray;
-  padding: 0.6em;
-  font-weight: 600;
+  padding: 12px $modal-padding-h 0;
+  position: relative;
 }
 
-.Modal__closeBtn {
-  color: #aaa;
-  float: right;
-  font-weight: bold;
+.Modal__heading {
+  font-size: 1.25em;
+  padding-right: 36px;
+}
+
+.Modal__close-button {
+  border: none;
+  border-radius: 0;
+  position: absolute;
+  top: 16px;
+  right: 16px;
   cursor: pointer;
+  width: 24px;
+  height: 24px;
+  background-image: url(./close-x.svg);
+  background-position: center;
+  background-repeat: none;
+  background-size: cover;
+  opacity: .85;
+  border-radius: 3px;
+  
+  &:hover {
+    opacity: 1;
+  }
+  
+  &:focus {
+    outline: none;
+    border: 1px solid #00a8ff;
+    box-shadow: 0 0 5px rgba(#00a8ff, 1);
+  }
+  
 }
 
 .Modal__content {
-  padding: 0.6em;
+  padding: 12px $modal-padding-h 18px;
 }
 
 .Modal__actions {
   background: #f9fafb;
-  padding: 0.6em;
+  padding: 12px $modal-padding-h;
   border-top: 1px solid lightgray;
   text-align: right;
+  
+  .Button + .Button {
+    margin-left: 12px;
+  }
+  
 }

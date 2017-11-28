@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+
 import './Modal.css';
 
 export default class Modal extends React.Component {
@@ -65,8 +66,8 @@ export default class Modal extends React.Component {
 
 Modal.Header = function({children}) {
   return (<div className='Modal__header'>
-    {children}
-    <span className='Modal__closeBtn' onClick={evt => evt.nativeEvent.isCloseEvent = true}>&times;</span>
+    <h1 className='Modal__heading'>{children}</h1>
+    <button className='Modal__close-button' onClick={evt => evt.nativeEvent.isCloseEvent = true}></button>
   </div>);
 }
 
