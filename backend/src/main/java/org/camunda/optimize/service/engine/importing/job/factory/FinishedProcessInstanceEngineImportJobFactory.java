@@ -82,10 +82,5 @@ public class FinishedProcessInstanceEngineImportJobFactory implements EngineImpo
     );
   }
 
-  @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
 
 }

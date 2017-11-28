@@ -18,7 +18,7 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
   private ActivityInstanceCountFetcher engineCountFetcher;
 
   public ActivityImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+    super(engineAlias);
   }
 
   @Override

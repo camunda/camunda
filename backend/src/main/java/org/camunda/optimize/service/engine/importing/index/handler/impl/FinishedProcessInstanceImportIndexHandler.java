@@ -18,7 +18,7 @@ public class FinishedProcessInstanceImportIndexHandler extends DefinitionBasedIm
   private FinishedProcessInstanceCountFetcher engineCountFetcher;
 
   public FinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+    super(engineAlias);
   }
 
   @Override

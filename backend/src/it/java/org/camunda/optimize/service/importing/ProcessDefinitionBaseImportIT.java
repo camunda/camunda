@@ -40,7 +40,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.fail;
 
-@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ProcessDefinitionBaseImportIT {
@@ -107,6 +106,7 @@ public class ProcessDefinitionBaseImportIT {
     // given
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -186,8 +186,6 @@ public class ProcessDefinitionBaseImportIT {
 
     //when
     embeddedOptimizeRule.scheduleImport();
-    //first full round
-    fullImportRound();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -222,17 +220,6 @@ public class ProcessDefinitionBaseImportIT {
 
     //when
     embeddedOptimizeRule.scheduleImport();
-    //first full round
-    fullImportRound();
-
-    //second full round
-    fullImportRound();
-
-    //third full round
-    fullImportRound();
-    
-    //forth full round
-    fullImportRound();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -349,11 +336,9 @@ public class ProcessDefinitionBaseImportIT {
     embeddedOptimizeRule.resetImportStartIndexes();
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
-    embeddedOptimizeRule.scheduleImport();
 
     // when
-    fullImportRound();
-    fullImportRound();
+    embeddedOptimizeRule.scheduleImport();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));

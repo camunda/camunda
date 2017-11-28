@@ -52,6 +52,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -540,7 +541,7 @@ public class ImportIT  {
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), lessThan(secondsRoundIndexes.get(i)));
+      assertThat(firstRoundIndexes.get(i), lessThanOrEqualTo(secondsRoundIndexes.get(i)));
     }
   }
 

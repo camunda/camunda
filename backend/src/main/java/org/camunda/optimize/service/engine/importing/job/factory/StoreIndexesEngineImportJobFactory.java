@@ -52,11 +52,6 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   }
 
   @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
-  @Override
   public long getBackoffTimeInMs() {
     long backoffTime = LocalDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
     backoffTime = Math.max(0, backoffTime);

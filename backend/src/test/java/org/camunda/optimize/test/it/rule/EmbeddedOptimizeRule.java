@@ -41,6 +41,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   /**
    * Schedule import of all entities, execute all available jobs sequentially
    * until nothing more exists in scheduler queue.
+   *
+   * NOTE: this will not store indexes in the ES.
    */
   public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
 

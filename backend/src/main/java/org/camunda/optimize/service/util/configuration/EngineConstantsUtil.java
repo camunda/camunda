@@ -10,6 +10,7 @@ public class EngineConstantsUtil {
   public static final String INCLUDE_VARIABLE_TYPE_IN = "variableTypeIn";
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String PROCESS_DEFINITION_ID_IN = "processDefinitionIdIn";
   public static final String ID = "id";
 
   public static final String INCLUDE_ONLY_FINISHED_INSTANCES = "finished";

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -17,7 +18,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlFetcher
-  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto, AllEntitiesBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto, DefinitionBasedImportPage> {
   private ProcessDefinitionFetcher processDefinitionFetcher;
 
   @Autowired
@@ -34,11 +35,11 @@ public class ProcessDefinitionXmlFetcher
   }
 
   @Override
-  public List<ProcessDefinitionXmlEngineDto> fetchEntities(AllEntitiesBasedImportPage page) {
+  protected List<ProcessDefinitionXmlEngineDto> fetchEntities(DefinitionBasedImportPage page) {
     return fetchProcessDefinitionXmls(page);
   }
 
-  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(AllEntitiesBasedImportPage importIndex) {
+  public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(DefinitionBasedImportPage importIndex) {
     List<ProcessDefinitionEngineDto> entries =
       processDefinitionFetcher.fetchEngineEntities(importIndex);
     return fetchAllXmls(entries);

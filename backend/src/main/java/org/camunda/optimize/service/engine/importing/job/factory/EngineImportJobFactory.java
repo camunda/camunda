@@ -11,6 +11,4 @@ public interface EngineImportJobFactory {
   Optional<Runnable> getNextJob();
 
   long getBackoffTimeInMs();
-
-  void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor);
 }

@@ -6,6 +6,7 @@ import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDef
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.engine.importing.job.ProcessDefinitionEngineImportJob;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
@@ -64,17 +65,12 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
   }
 
   @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
-  @Override
   public long getBackoffTimeInMs() {
     return importIndexHandler.getBackoffTimeInMs();
   }
 
   public Optional<Runnable> getNextJob() {
-    Optional<AllEntitiesBasedImportPage> page = importIndexHandler.getNextPage();
+    Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
     return page.map(
       definitionBasedImportPage -> new ProcessDefinitionEngineImportJob(
         processDefinitionWriter,

@@ -430,10 +430,14 @@ public class MultipleEngineSupportIT {
     List<String> allowedProcessDefinitionKeys = new ArrayList<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess1");
+    allowedProcessDefinitionKeys.add("TestProcess1");
+    allowedProcessDefinitionKeys.add("TestProcess1");
+    allowedProcessDefinitionKeys.add("TestProcess2");
+    allowedProcessDefinitionKeys.add("TestProcess2");
     allowedProcessDefinitionKeys.add("TestProcess2");
     allowedProcessDefinitionKeys.add("TestProcess2");
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(4L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(8L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionId = ((Map)searchHit.getSource().get("currentProcessDefinition")).get("processDefinitionId").toString();
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);

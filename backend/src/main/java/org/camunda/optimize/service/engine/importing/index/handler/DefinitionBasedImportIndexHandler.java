@@ -37,6 +37,10 @@ public abstract class DefinitionBasedImportIndexHandler
 
   protected String engineAlias;
 
+  public DefinitionBasedImportIndexHandler(String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
   protected void init() {
     resetCurrentIndex();
     loadImportDefaults();
@@ -198,7 +202,10 @@ public abstract class DefinitionBasedImportIndexHandler
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
     int currentStart = 0;
     long maxPageSize = configurationService.getEngineImportProcessDefinitionMaxPageSize();
-    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxPageSize);
+    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(
+        currentStart,
+        maxPageSize
+    );
 
     HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
@@ -322,12 +329,17 @@ public abstract class DefinitionBasedImportIndexHandler
     addPossiblyNewDefinitionsFromEngineToImportList();
   }
 
-  private void addPossiblyNewDefinitionsFromEngineToImportList(){
+  private void addPossiblyNewDefinitionsFromEngineToImportList() {
     List<DefinitionImportInformation> engineList = retrieveDefinitionsToImport();
     for (DefinitionImportInformation definition : engineList) {
-      if(!processDefinitionsToImport.contains(definition) &&
-        !currentIndex.getProcessDefinitionId().equals(definition.getProcessDefinitionId()) &&
-        !new ArrayList<>(alreadyImportedProcessDefinitions).contains(definition)) {
+      boolean notImportedAndNew = !processDefinitionsToImport.contains(definition) &&
+          !currentIndex.getProcessDefinitionId().equals(definition.getProcessDefinitionId()) &&
+          !new ArrayList<>(alreadyImportedProcessDefinitions).contains(definition);
+      if (notImportedAndNew && configurationService.areProcessDefinitionsToImportDefined()) {
+        notImportedAndNew =
+            configurationService.getProcessDefinitionIdsToImport().contains(definition.getProcessDefinitionId());
+      }
+      if (notImportedAndNew) {
         processDefinitionsToImport.add(definition);
       }
     }

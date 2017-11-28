@@ -64,11 +64,6 @@ public class UnfinishedProcessInstanceEngineImportJobFactory implements EngineIm
   }
 
   @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
-  @Override
   public long getBackoffTimeInMs() {
     return importIndexHandler.getBackoffTimeInMs();
   }

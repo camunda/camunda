@@ -1,9 +1,8 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.service.engine.importing.fetcher.count.ProcessDefinitionCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
+import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -12,7 +11,7 @@ import javax.annotation.PostConstruct;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionXmlImportIndexHandler extends AllEntitiesBasedImportIndexHandler {
+public class ProcessDefinitionXmlImportIndexHandler extends DefinitionBasedImportIndexHandler {
 
   private ProcessDefinitionCountFetcher engineCountFetcher;
 
@@ -23,22 +22,28 @@ public class ProcessDefinitionXmlImportIndexHandler extends AllEntitiesBasedImpo
 
   @PostConstruct
   public void init() {
+    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineAlias);
     engineCountFetcher = beanHelper.getInstance(ProcessDefinitionCountFetcher.class, this.engineAlias);
     super.init();
   }
 
   @Override
-  protected String getElasticsearchImportIndexType() {
-    return configurationService.getProcessDefinitionXmlType();
-  }
-
-  @Override
-  protected long fetchMaxEntityCount() {
-    return engineCountFetcher.fetchProcessDefinitionCount();
+  protected long fetchMaxEntityCountForDefinition(String processDefinitionId) {
+    return engineCountFetcher.fetchProcessDefinitionCount(processDefinitionId);
   }
 
   @Override
   protected long getMaxPageSize() {
     return configurationService.getEngineImportProcessDefinitionXmlMaxPageSize();
+  }
+
+  @Override
+  protected long fetchMaxEntityCountForAllDefinitions() {
+    return engineCountFetcher.fetchProcessDefinitionCount(getAllProcessDefinitions());
+  }
+
+  @Override
+  protected String getElasticsearchType() {
+    return configurationService.getProcessDefinitionXmlType();
   }
 }

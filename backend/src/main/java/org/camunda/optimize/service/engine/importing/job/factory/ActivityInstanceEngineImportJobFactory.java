@@ -82,9 +82,4 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
       )
     );
   }
-
-  @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
 }

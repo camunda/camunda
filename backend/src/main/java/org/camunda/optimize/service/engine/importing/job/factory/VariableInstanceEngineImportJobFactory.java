@@ -72,11 +72,6 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
     return importIndexHandler.getBackoffTimeInMs();
   }
 
-  @Override
-  public void setElasticsearchImportExecutor(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-  }
-
   public Optional<Runnable> getNextJob() {
     Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
     return page.map(
