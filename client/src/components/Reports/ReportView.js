@@ -37,7 +37,11 @@ export default class ReportView extends React.Component {
         default:
           config = {
             component: Json,
-            props: {data}
+            props: {data : {
+              data,
+              result
+              }
+            }
           }; break;
       }
     } else {

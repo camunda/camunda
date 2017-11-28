@@ -40,16 +40,13 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
 
     const reportResult = await getReportData(this.id);
-    let stateData;
-    if(!data) {
-      stateData = this.initializeReport();
-    }
+    const stateData = data || this.initializeReport();
 
     this.setState({
       name,
       lastModifier,
       lastModified,
-      data: stateData || data,
+      data: stateData,
       originalData: stateData,
       reportResult,
       loaded: true,

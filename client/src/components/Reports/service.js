@@ -28,8 +28,6 @@ export async function getReportData(query) {
       response = await post('/api/report/evaluate', query);
     }
   } catch(e) {
-    const error = await e.json();
-    console.log(error);
     return null;
   }
 
