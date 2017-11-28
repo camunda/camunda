@@ -3,7 +3,6 @@ import {Link} from 'react-router-dom';
 
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
-import HeaderNavItem from './HeaderNavItem';
 
 import {getToken} from 'credentials';
 
@@ -18,8 +17,8 @@ export default function Header({name}) {
       </Link>
       {(getToken() &&
         <HeaderNav>
-          <HeaderNavItem name='Dashboards' linksTo='/dashboards' active='/dashboard' />
-          <HeaderNavItem name='Reports' linksTo='/reports' active='/report' />
+          <HeaderNav.Item name='Dashboards' linksTo='/dashboards' active='/dashboard' />
+          <HeaderNav.Item name='Reports' linksTo='/reports' active='/report' />
         </HeaderNav>
       )}
       {(getToken() &&

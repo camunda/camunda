@@ -1,4 +1,5 @@
 import React from 'react';
+import HeaderNavItem from './HeaderNavItem';
 
 import './HeaderNav.css';
 
@@ -9,3 +10,5 @@ export default function HeaderNav(props) {
     </ul>
   );
 }
+
+HeaderNav.Item = HeaderNavItem;

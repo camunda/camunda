@@ -11,8 +11,12 @@ jest.mock('react-router-dom', () => { return {
   Link: ({children}) => {return <a>{children}</a>}
 }});
 jest.mock('./LogoutButton', () => {return () => <div>logout</div>});
-jest.mock('./HeaderNav', () => {return () => <div>HeaderNav</div>});
-jest.mock('./HeaderNavItem', () => {return () => <div>HeaderNavItem</div>});
+jest.mock('./HeaderNav', () => {
+  const HeaderNav = () => <div>HeaderNav</div>;
+  HeaderNav.Item = () => <div>HeaderNavItem</div>;
+  return HeaderNav;
+});
+
 
 it('renders without crashing', () => {
   shallow(<Header />);
