@@ -46,6 +46,10 @@ export default class Chart extends React.Component {
   }
 
   createNewChart = (data, type) => {
+    if(this.chart) {
+      this.chart.destroy();
+    }
+
     this.chart = new ChartRenderer(this.container, {
       type,
       data: {

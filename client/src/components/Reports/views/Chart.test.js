@@ -4,7 +4,9 @@ import {mount} from 'enzyme';
 import Chart from './Chart';
 import ChartRenderer from 'chart.js';
 
-jest.mock('chart.js', () => jest.fn());
+jest.mock('chart.js', () => jest.fn(() => {return {
+  destroy: jest.fn()
+}}));
 
 it('should construct a Chart', () => {
   mount(<Chart data={{foo: 123}} />);
@@ -25,7 +27,7 @@ it('should display an error message if no data is provided', () => {
 });
 
 it('should use the provided type for the ChartRenderer', () => {
-  ChartRenderer.mockReset();
+  ChartRenderer.mockClear();
 
   mount(<Chart data={{foo: 123}} type='visualization_type' />);
 
@@ -33,7 +35,7 @@ it('should use the provided type for the ChartRenderer', () => {
 });
 
 it('should change type for the ChartRenderer if props were updated', () => {
-  ChartRenderer.mockReset();
+  ChartRenderer.mockClear();
 
   const chart = mount(<Chart data={{foo: 123}} type='visualization_type' />);
   chart.setProps({type: "new_visualization_type"})
