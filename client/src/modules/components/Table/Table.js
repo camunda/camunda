@@ -1,5 +1,6 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
+import {Button} from 'components';
 
 export default function Table({data}) {
   return (<table>
@@ -30,6 +31,6 @@ Table.renderCell = cell => {
   }
 
   if(cell.onClick) {
-    return (<button onClick={cell.onClick} className={cell.className}>{cell.content}</button>);
+    return (<Button onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
   }
 }

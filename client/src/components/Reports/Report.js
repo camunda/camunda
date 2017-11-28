@@ -1,6 +1,8 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
+import {Button} from 'components';
+
 
 import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
@@ -146,7 +148,7 @@ export default class Report extends React.Component {
           </div>
           <div className='Report__tools'>
             <Link id='edit' className='Button Report__tool-button' to={`/report/${this.id}/edit`}>Edit</Link>
-            <button className='Button Report__tool-button' onClick={this.deleteReport}>Delete</button>
+            <Button className='Report__tool-button' onClick={this.deleteReport}>Delete</Button>
           </div>
         </div>
 

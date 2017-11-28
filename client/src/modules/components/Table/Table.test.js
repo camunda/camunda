@@ -7,6 +7,12 @@ jest.mock('react-router-dom', () => { return {
   Link: ({children}) => {return <a>{children}</a>}
 }});
 
+jest.mock('components', () => {
+  return {
+    Button: props => <button {...props}>{props.children}</button>
+  }
+});
+
 it('should render without crashing', () => {
   mount(<Table data={[[]]} />);
 });
