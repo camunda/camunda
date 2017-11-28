@@ -6,4 +6,4 @@ export {Dropdown} from './Dropdown';
 export {Input} from './Input';
 export {Select} from './Select';
 export {ButtonGroup} from './ButtonGroup';
-export {StatusBar} from './StatusBar';
+export {ProgressBar} from './ProgressBar';

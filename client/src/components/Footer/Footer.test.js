@@ -23,7 +23,7 @@ jest.mock('./service', () => {return {
 }});
 
 jest.mock('components', () => {return {
-  StatusBar: props => <div className='StatusBar' {...props}></div>
+  ProgressBar: props => <div className='ProgressBar' {...props}></div>
 }});
 
 

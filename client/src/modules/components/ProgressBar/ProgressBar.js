@@ -1,8 +1,8 @@
 import React from 'react';
 
-import './StatusBar.css';
+import './ProgressBar.css';
 
-export default function StatusBar(props) {
+export default function ProgressBar(props) {
   /* Allow for passing in a height prop and merge it with any additonal style props: */
   const style = props.style || {};
   style.height = props.height;
@@ -13,8 +13,8 @@ export default function StatusBar(props) {
   const title = props.title ? props.title + ' ' : '';
 
   return (
-    <div {...props} className={'StatusBar ' + (props.className || '')} style={style} title={title + props.status + '%'} >
-      <div className='StatusBar__indicator' style={indicatorStyle}></div>
+    <div {...props} className={'ProgressBar ' + (props.className || '')} style={style} title={title + props.status + '%'} >
+      <div className='ProgressBar__indicator' style={indicatorStyle}></div>
     </div>
   );
 }

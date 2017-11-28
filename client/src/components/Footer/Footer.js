@@ -1,5 +1,5 @@
 import React from 'react';
-import {StatusBar} from 'components';
+import {ProgressBar} from 'components';
 
 import './Footer.css';
 
@@ -14,7 +14,7 @@ export default class Footer extends React.Component {
     this.state = {
       engineConnections: null,
       importProgress: null,
-      titleString: ""
+      connectedToElasticsearch: null
     };
     this.loadConnectionStatus();
     this.loadImportProgress();
@@ -23,13 +23,12 @@ export default class Footer extends React.Component {
   loadImportProgress = async () => {
     const response = await getImportProgress();
     const importProgress = response.progress;
-
     this.setState({importProgress});
   }
 
   loadConnectionStatus = async () => {
-    const response = await getConnectionStatus();
-    this.setState({engineConnections: response.engineConnections, connectedToElasticsearch: response.connectedToElasticsearch});
+    const {engineConnections, connectedToElasticsearch} = await getConnectionStatus();
+    this.setState({engineConnections, connectedToElasticsearch});
   }
 
   componentDidMount() {
@@ -43,32 +42,32 @@ export default class Footer extends React.Component {
     clearInterval(this.refreshIntervalHandle);
   }
 
-
-
   render() {
+    const {importProgress, engineConnections, connectedToElasticsearch} = this.state;
+    
     let statusFragment = '';
 
-    if(this.state.importProgress !== null && this.state.importProgress < 100) {
+    if(importProgress !== null && importProgress < 100) {
       statusFragment = (
         <div className='Footer__import-status'>
-          <StatusBar height='6px' status={this.state.importProgress} title='Import status'/>
+          <ProgressBar height='6px' status={importProgress} title='Import status'/>
         </div>
       );
     }
-
+    
     let connectionFragment = '';
     
-    if(this.state.engineConnections !== null) {
+    if(engineConnections !== null) {
       connectionFragment = (
         <ul className='Footer__connect-status'>
-          {Object.keys(this.state.engineConnections).map((key) => {
-            return (<li key={key} className={'Footer__connect-status-item' + (this.state.engineConnections[key] ? ' is-connected' : '')} title={key + (this.state.engineConnections[key] ? ' is connected' : ' is not connected')} >{key}</li>)
+          {Object.keys(engineConnections).map((key) => {
+            return (<li key={key} className={'Footer__connect-status-item' + (engineConnections[key] ? ' is-connected' : '')} title={key + (engineConnections[key] ? ' is connected' : ' is not connected')} >{key}</li>)
           })}
-          <li className={'Footer__connect-status-item' + (this.state.connectedToElasticsearch ? ' is-connected' : '')} title={'Elasticsearch ' + (this.state.connectedToElasticsearch ? 'is connected' : 'is not connected')}>Elasticsearch</li>
+          <li className={'Footer__connect-status-item' + (connectedToElasticsearch ? ' is-connected' : '')} title={'Elasticsearch ' + (connectedToElasticsearch ? 'is connected' : 'is not connected')}>Elasticsearch</li>
         </ul>
       );
-
     }
+    
 
     return (
       <footer className='Footer'>
