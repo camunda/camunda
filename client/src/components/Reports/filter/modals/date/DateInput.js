@@ -30,7 +30,9 @@ export default class DateInput extends React.PureComponent {
                   ref={this.props.reference}
                   className={'Input DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')}
                   value={this.state.stringDate}
+                  onFocus={this.props.onFocus}
                   onClick={this.onClick}
+                  onKeyDown={this.onKeyDown}
                   onChange={this.onInputChange} />;
   }
 
@@ -38,6 +40,12 @@ export default class DateInput extends React.PureComponent {
     // onClick property is optional, so there need to be safeguard
     if (typeof this.props.onClick === 'function') {
       this.props.onClick(event);
+    }
+  }
+
+  onKeyDown = ({key}) => {
+    if(key === 'Enter') {
+      this.props.onSubmit();
     }
   }
 

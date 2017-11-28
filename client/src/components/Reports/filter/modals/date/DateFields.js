@@ -40,6 +40,8 @@ export default class DateFields extends React.PureComponent {
             className={'DateInput__start' + (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')}
             format={this.props.format}
             onDateChange={this.setStartDate}
+            onFocus={() => {this.setState({currentlySelectedField: 'startDate'})}}
+            onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
             date={this.props.startDate} />
         <span>to</span>
@@ -48,6 +50,8 @@ export default class DateFields extends React.PureComponent {
             reference={this.saveEndDateField}
             format={this.props.format}
             onDateChange={this.setEndDate}
+            onFocus={() => {this.setState({currentlySelectedField: 'endDate'})}}
+            onSubmit={this.submitEnd}
             onClick={this.toggleDateRangeForEnd}
             date={this.props.endDate} />
       </div>
@@ -67,6 +71,16 @@ export default class DateFields extends React.PureComponent {
         )
       }
     </center>;
+  }
+
+  submitStart = () => {
+    this.setState({currentlySelectedField: 'endDate'});
+    document.querySelector('.DateInput__end').focus();
+  }
+
+  submitEnd = () => {
+    this.hidePopup();
+    document.querySelector('.DateInput__end').blur();
   }
 
   closeOnEscape = event => {

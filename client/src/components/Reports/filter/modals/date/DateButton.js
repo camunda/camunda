@@ -72,6 +72,7 @@ function getDateRange(type) {
       const end = new Date();
 
       start.setDate(1);
+      end.setDate(1);
       end.setMonth(end.getMonth() + 1);
       end.setDate(0);
       return {start, end};
