@@ -105,3 +105,31 @@ it('should set aria-labelledby on the menu as provided as a prop', () => {
 
   expect(node.find('.Dropdown__menu')).toMatchSelector('.Dropdown__menu[aria-labelledby="my-dropdown"]');
 })
+
+it('should close after pressing Esc', () => {
+  const node = mount(<Dropdown label='Click me'>
+    <Dropdown.Option>foo</Dropdown.Option>
+    <Dropdown.Option>bar</Dropdown.Option>
+  </Dropdown>);
+
+  node.setState({open: true});
+
+  node.simulate('keyDown', {key: 'Escape', keyCode: 27, which: 27});
+
+  expect(node.state('open')).toBe(false);
+});
+
+it('should change focus after pressing an arrow key', () => {
+
+  const node = mount(<Dropdown label='Click me'>
+    <Dropdown.Option>foo</Dropdown.Option>
+    <Dropdown.Option>bar</Dropdown.Option>
+  </Dropdown>);
+
+  node.find('button').first().getDOMNode().focus();
+
+  node.simulate('keyDown', {key: 'ArrowDown'});
+  expect(document.activeElement.textContent).toBe("foo");
+  node.simulate('keyDown', {key: 'ArrowDown'});
+  expect(document.activeElement.textContent).toBe("bar");
+});

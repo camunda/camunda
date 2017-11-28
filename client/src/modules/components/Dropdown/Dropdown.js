@@ -8,10 +8,15 @@ import './Dropdown.css';
 export default class Dropdown extends React.Component {
   constructor(props) {
     super(props);
-
+    this.options = [];
     this.state = {
       open: false,
     };
+    this.setChildrenRefs();
+  }
+
+  setChildrenRefs = () => {
+
   }
 
   toggleOpen = () => {
@@ -25,52 +30,58 @@ export default class Dropdown extends React.Component {
   }
 
   componentDidMount() {
-    const options = Array.from(document.getElementsByClassName('DropdownOption'));
-    const dropdownButton = document.getElementsByClassName('Dropdown__button')[0];
-
     document.body.addEventListener('click', this.close, true);
-
-    document.onkeydown = (evt) => {
-      evt = evt || window.event;
-      let selectedOption = options.indexOf(document.activeElement);
-
-      if((this.state.open === true) && (evt.keyCode === 40)) {
-        if(selectedOption === -1) {
-          options[0].focus();
-          selectedOption = options.indexOf(document.activeElement);
-        } else if (selectedOption < options.length - 1) {
-          options[selectedOption + 1].focus();
-          selectedOption = options.indexOf(document.activeElement);
-        }
-      }
-
-      if((this.state.open === true) && (evt.keyCode === 38) && (selectedOption !== -1)) {
-        if(selectedOption === 0) {
-          dropdownButton.focus();
-        } else {
-          options[selectedOption - 1].focus();
-          selectedOption = options.indexOf(document.activeElement);
-        }
-      }
-
-      if(evt.keyCode === 27) {
-        this.close({});
-      }
-
-    };
   }
 
+  handleKeyPress = evt => {
+   if(evt.key !== 'Tab') {
+     evt.preventDefault();
+   }
+   if(evt.key === 'Escape') {
+     this.close({});
+   } else {
+     const dropdownButton = this.container.children[0];
+     const options = this.options;
+
+     if(options[0] !== dropdownButton) {
+       options.unshift(dropdownButton);
+     }
+
+     evt = evt || window.event;
+     let selectedOption = options.indexOf(document.activeElement);
+
+     if( (evt.key === 'ArrowDown')) {
+       selectedOption++;
+       selectedOption = Math.min(selectedOption, options.length-1);
+     }
+
+     if( (evt.key === 'ArrowUp')) {
+       selectedOption --;
+       selectedOption = Math.max(selectedOption, 0);
+     }
+     options[selectedOption].focus();
+   }
+ }
+
   render() {
-    return (<div className={'Dropdown ' + (this.state.open ? 'is-open' : '')} ref={this.storeContainer} onClick={this.toggleOpen}>
+
+
+    return (<div className={'Dropdown ' + (this.state.open ? 'is-open' : '')} ref={this.storeContainer} onClick={this.toggleOpen} onKeyDown={this.handleKeyPress}>
       <Button className="Dropdown__button" aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id}>{this.props.label} <span className='Dropdown__caret' /></Button>
       <div className="Dropdown__menu" aria-labelledby={this.props.id}>
         <ul className="Dropdown__menu-list">
           {React.Children.map(this.props.children,
-            (child, idx) => <li key={idx}>{child}</li>
+            (child, idx) => <li ref={this.optionRef} key={idx}>{child}</li>
           )}
         </ul>
       </div>
     </div>);
+  }
+
+
+
+  optionRef = option => {
+    this.options.push(option.children[0])
   }
 
   storeContainer = node => {
