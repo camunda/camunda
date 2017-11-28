@@ -1,17 +1,23 @@
 .HeaderNav__item {
   display: inline-block;
   margin-right: .75em;
+  height: 100%;
 
   &:last-child {
     margin-right: 0;
   }
 
   a {
-    color: #888;
+    color: #666;
   }
 
-  &.active a {
-    color: #333;
+  &.active {
+    border-bottom: 3px solid #B5152B;
+
+    a {
+      color: #333;
+    }
+
   }
 
 }
