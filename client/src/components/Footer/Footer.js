@@ -57,13 +57,14 @@ export default class Footer extends React.Component {
     }
 
     let connectionFragment = '';
+    
     if(this.state.engineConnections !== null) {
       connectionFragment = (
         <ul className='Footer__connect-status'>
           {Object.keys(this.state.engineConnections).map((key) => {
-            return (<li key={key} className={'Footer__connect-status-item' + (this.state.engineConnections[key] ? ' is-connected' : '')}>{key}</li>)
+            return (<li key={key} className={'Footer__connect-status-item' + (this.state.engineConnections[key] ? ' is-connected' : '')} title={key + (this.state.engineConnections[key] ? ' is connected' : ' is not connected')} >{key}</li>)
           })}
-          <li className={'Footer__connect-status-item' + (this.state.connectedToElasticsearch ? ' is-connected' : '')}>Elasticsearch</li>
+          <li className={'Footer__connect-status-item' + (this.state.connectedToElasticsearch ? ' is-connected' : '')} title={'Elasticsearch ' + (this.state.connectedToElasticsearch ? 'is connected' : 'is not connected')}>Elasticsearch</li>
         </ul>
       );
 
