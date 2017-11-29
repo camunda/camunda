@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -92,7 +94,7 @@ public class RawDataCommand extends ReportCommand {
     return processInstanceDto
     .obtainAllVariables()
     .stream()
-    .collect(Collectors.toMap(VariableInstanceDto::getName, VariableInstanceDto::getValue));
+    .collect(Collectors.toMap(VariableInstanceDto::getName, VariableInstanceDto::getValue, (a,b) -> a, TreeMap::new));
   }
 
   private LocalDateTime convertDate(Date date) {

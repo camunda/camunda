@@ -30,6 +30,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -226,8 +228,14 @@ public class RawDataReportEvaluationIT {
     assertThat(result.getResult().size(), is(2));
     result.getResult().forEach(
       rawDataProcessInstanceDto1 -> {
-        assertThat(rawDataProcessInstanceDto1.getVariables().keySet().size(), is(2));
-        assertThat(rawDataProcessInstanceDto1.getVariables().values().contains(""), is(true));
+        Map<String, Object> vars = rawDataProcessInstanceDto1.getVariables();
+        assertThat(vars.keySet().size(), is(2));
+        assertThat(vars.values().contains(""), is(true));
+        // ensure is ordered
+        List<String> actual = new ArrayList<>(vars.keySet());
+        List<String> expected = new ArrayList<>(vars.keySet());
+        Collections.sort(expected);
+        assertThat(actual, contains(expected.toArray()));
       }
     );
   }
