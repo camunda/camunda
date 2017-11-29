@@ -40,40 +40,41 @@ export default class DateFilter extends React.Component {
     return (<Modal open={true} onClose={this.props.close} className='DateFilter__modal'>
       <Modal.Header>Start Date Filter</Modal.Header>
       <Modal.Content>
-        <span>Select beginning and end dates for filter</span>
-        <DateFields format='YYYY-MM-DD'
+        <div className='DateFilter__inputs'>
+          <label className='DateFilter__input-label'>Select start and end dates to filter by:</label>
+          <DateFields format='YYYY-MM-DD'
                     onDateChange={this.onDateChange}
                     startDate={this.state.startDate}
                     endDate={this.state.endDate} />
-        <div>
-          <span>Frequently Used:</span>
-          <p className='DateFilter__buttonRow'>
+        </div>
+        <div className='DateFilter__buttons'>
+          <div className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.TODAY,
               DateButton.YESTERDAY,
               DateButton.PAST7,
               DateButton.PAST30
             ])}
-          </p>
-          <p className='DateFilter__buttonRow'>
+          </div>
+          <div className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.THIS_WEEK,
               DateButton.THIS_MONTH,
               DateButton.THIS_YEAR
             ])}
-          </p>
-          <p className='DateFilter__buttonRow'>
+          </div>
+          <div className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.LAST_WEEK,
               DateButton.LAST_MONTH,
               DateButton.LAST_YEAR
             ])}
-          </p>
+          </div>
         </div>
       </Modal.Content>
       <Modal.Actions>
-        <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' onClick={this.createFilter}>Create Filter</Button>
+        <Button onClick={this.props.close}>Cancel</Button>
+        <Button type='primary' onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>
     );

@@ -2,6 +2,28 @@
   width: 650px;
 }
 
+.DateFilter__inputs {
+  margin-bottom: 36px;
+}
+
+.DateFilter__buttons {
+  margin-bottom: 12px;
+}
+
+.DateFilter__input-label {
+  font-size: .875em;
+  color: #626264;
+  display: block;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
 .DateFilter__buttonRow {
   display: flex;
+  margin-bottom: 24px;
+  
+  &:last-child {
+  margin-bottom: 0; 
+  }
+  
 }

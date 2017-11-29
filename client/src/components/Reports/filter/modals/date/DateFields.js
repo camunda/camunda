@@ -34,7 +34,7 @@ export default class DateFields extends React.PureComponent {
   }
 
   render() {
-    return <center className="DateFields">
+    return <div className="DateFields">
       <div className='DateFields__inputContainer'>
         <DateInput
             className={'DateInput__start' + (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')}
@@ -44,7 +44,7 @@ export default class DateFields extends React.PureComponent {
             onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
             date={this.props.startDate} />
-        <span>to</span>
+        <span className='DateFields__divider'>to</span>
         <DateInput
             className={'DateInput__end' + (this.isFieldSelected('endDate') ? ' DateInput__start--highlight' : '')}
             reference={this.saveEndDateField}
@@ -70,7 +70,7 @@ export default class DateFields extends React.PureComponent {
           </div>
         )
       }
-    </center>;
+    </div>;
   }
 
   submitStart = () => {

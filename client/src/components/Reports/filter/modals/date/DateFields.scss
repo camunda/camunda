@@ -1,5 +1,6 @@
 .DateFields {
   position: relative;
+  margin-bottom: 12px;
 }
 
 .DateFields__inputContainer {
@@ -51,4 +52,13 @@
 }
 .DateFields__range--right::after {
   right: 0;
+}
+
+.DateFields__divider {
+  color: #626262;
+  padding: 8px 12px 0;
+  vertical-align: baseline;
+  background-color: #fafafa;
+  border-top: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
 }
