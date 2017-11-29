@@ -4,21 +4,22 @@
   width: 340px;
 }
 
+.Header__brand-logo {
+  display: inline-block;
+  margin-right: .3em;
+  width: 21px;
+  height: 23px;
+  background-image: url('./camunda.svg');
+  background-repeat: no-repeat;
+  background-size: 21px;
+  vertical-align: middle;
+}
+
 .Login__heading {
   font-size: 1.5em;
   font-weight: normal;
   margin-bottom: 36px;
   text-align: center;
-}
-
-.Login__heading:before {
-  color: #b5152b;
-  display: inline-block;
-  font-family: "bpmn";
-  font-style: normal;
-  font-weight: normal;
-  content: '\E831';
-  margin-right: .3em;
 }
 
 .Login__controls {
