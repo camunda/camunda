@@ -12,11 +12,6 @@ export default class Dropdown extends React.Component {
     this.state = {
       open: false,
     };
-    this.setChildrenRefs();
-  }
-
-  setChildrenRefs = () => {
-
   }
 
   toggleOpen = () => {
@@ -81,7 +76,9 @@ export default class Dropdown extends React.Component {
 
 
   optionRef = option => {
-    this.options.push(option.children[0])
+    if(option) {
+      this.options.push(option.children[0]);
+    }
   }
 
   storeContainer = node => {
