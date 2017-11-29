@@ -481,6 +481,11 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
+        }
+
+        @Override
+        public void updateState()
+        {
             final long incidentKey = sourceEventMetadata.getIncidentKey();
             if (incidentKey > 0)
             {
