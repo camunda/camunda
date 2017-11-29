@@ -13,6 +13,9 @@ export default class Modal extends React.Component {
   componentDidMount() {
     document.body.appendChild(this.el);
     this.fixPositioning();
+    if(this.container) {
+      this.container.focus();
+    }
   }
 
   componentWillUnmount() {
@@ -43,13 +46,21 @@ export default class Modal extends React.Component {
     }
   }
 
+  handleKeyPress = evt => {
+    if(evt.key === 'Escape') {
+      const handler = this.props.onClose;
+      handler && handler();
+    }
+  }  
+
   render() {
     const {open, children} = this.props;
 
     if(open) {
       return ReactDOM.createPortal(
         <div className='Modal' onClick={this.onBackdropClick}>
-          <div className={`Modal__container ${this.props.className || ''}`} ref={this.storeContainer} onClick={this.catchClick}>
+          <div className={`Modal__container ${this.props.className || ''}`} tabIndex="-1" ref={this.storeContainer} 
+                onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
             {children}
           </div>
         </div>,

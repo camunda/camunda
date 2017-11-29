@@ -33,8 +33,14 @@ export default class DateFields extends React.PureComponent {
     document.removeEventListener('keydown', this.closeOnEscape);
   }
 
+  handleKeyPress = evt => {
+    if (this.state.popupOpen && evt.key === 'Escape' ) {
+      evt.stopPropagation();
+    }
+  }
+
   render() {
-    return <div className="DateFields">
+    return <div className="DateFields" onKeyDown={this.handleKeyPress}>
       <div className='DateFields__inputContainer'>
         <DateInput
             className={'DateInput__start' + (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')}
