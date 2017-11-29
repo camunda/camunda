@@ -166,7 +166,7 @@ public class ZeebeClientImpl implements ZeebeClient
     @Override
     public void disconnect()
     {
-        subscriptionManager.closeAllSubscriptions();
+        subscriptionManager.closeAllSubscribers();
         transport.closeAllChannels().join();
     }
 

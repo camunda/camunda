@@ -38,13 +38,13 @@ public class TopicClientImpl implements TopicsClient
     @Override
     public TopicSubscriptionBuilder newSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newTopicSubscription(this, topicName);
+        return client.getSubscriptionManager().newTopicSubscription(client, topicName);
     }
 
     @Override
     public PollableTopicSubscriptionBuilder newPollableSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newPollableTopicSubscription(this, topicName);
+        return client.getSubscriptionManager().newPollableTopicSubscription(client, topicName);
     }
 
     @Override

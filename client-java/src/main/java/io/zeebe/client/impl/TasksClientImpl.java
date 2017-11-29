@@ -68,13 +68,13 @@ public class TasksClientImpl implements TasksClient
     @Override
     public TaskSubscriptionBuilder newTaskSubscription(String topic)
     {
-        return client.getSubscriptionManager().newTaskSubscription(this, topic);
+        return client.getSubscriptionManager().newTaskSubscription(client, topic);
     }
 
     @Override
     public PollableTaskSubscriptionBuilder newPollableTaskSubscription(String topic)
     {
-        return client.getSubscriptionManager().newPollableTaskSubscription(this, topic);
+        return client.getSubscriptionManager().newPollableTaskSubscription(client, topic);
     }
 
     public CreateTaskSubscriptionCommandImpl createTaskSubscription(int partitionId)

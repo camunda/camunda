@@ -83,6 +83,7 @@ public class SubscribedEventCollector implements ClientMessageHandler
 
         if (templateId == SubscribedEventDecoder.TEMPLATE_ID)
         {
+
             subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
             final SubscriptionType subscriptionType = subscribedEventDecoder.subscriptionType();

@@ -54,14 +54,16 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
 
         if (partitionId != Protocol.SYSTEM_PARTITION)
         {
-            sendErrorResponse("Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION, buffer, requestStreamId, requestId);
+            sendErrorResponse(ErrorCode.REQUEST_PROCESSING_FAILURE, "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION, buffer, requestStreamId, requestId);
             return CompletableFuture.completedFuture(null);
         }
 
         final CompletableFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
         if (handlerFuture == null)
         {
-            sendErrorResponse("System partition processor not available", buffer, requestStreamId, requestId);
+            // it is important that partition not found is returned here to signal a client that it may have addressed a broker
+            // that appeared as the system partition leader but is not (yet) able to respond
+            sendErrorResponse(ErrorCode.PARTITION_NOT_FOUND, "System partition processor not available", buffer, requestStreamId, requestId);
             return CompletableFuture.completedFuture(null);
         }
         else
@@ -70,9 +72,9 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
         }
     }
 
-    protected void sendErrorResponse(String message, DirectBuffer request, int requestStream, long requestId)
+    protected void sendErrorResponse(ErrorCode errorCode, String message, DirectBuffer request, int requestStream, long requestId)
     {
-        errorWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        errorWriter.errorCode(errorCode)
             .errorMessage(message)
             .failedRequest(request, 0, request.capacity())
             .tryWriteResponse(requestStream, requestId);

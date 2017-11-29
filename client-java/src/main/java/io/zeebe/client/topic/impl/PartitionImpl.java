@@ -45,4 +45,15 @@ public class PartitionImpl implements Partition
         this.topic = topic;
     }
 
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("PartitionImpl [id=");
+        builder.append(id);
+        builder.append(", topic=");
+        builder.append(topic);
+        builder.append("]");
+        return builder.toString();
+    }
 }

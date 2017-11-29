@@ -570,7 +570,12 @@ public class BrokerRecoveryTest
         onStop.run();
 
         brokerRule.startBroker();
-        eventRecorder.startRecordingEvents();
+        doRepeatedly(() ->
+        {
+            eventRecorder.startRecordingEvents();
+            return true;
+        }).until(t -> t == Boolean.TRUE, e -> e == null);
+        // this can fail immediately after restart due to https://github.com/zeebe-io/zeebe/issues/590
     }
 
 }

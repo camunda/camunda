@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+
 
 public class Topology
 {
@@ -39,6 +41,11 @@ public class Topology
     {
         topicLeaders.add(topicLeader);
         return this;
+    }
+
+    public Topology addLeader(StubBrokerRule broker, String topic, int partition)
+    {
+        return addTopic(new TopicLeader(broker.getHost(), broker.getPort(), topic, partition));
     }
 
     public List<TopicLeader> getTopicLeaders()

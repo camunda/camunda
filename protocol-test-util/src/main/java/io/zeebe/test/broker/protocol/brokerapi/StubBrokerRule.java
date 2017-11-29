@@ -19,10 +19,13 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.junit.rules.ExternalResource;
@@ -245,6 +248,26 @@ public class StubBrokerRule extends ExternalResource
                 .put("brokers", r -> currentTopology.get().getBrokers())
                 .done()
             .register();
+
+        // assuming that topology and partitions request are consistent
+        onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_PARTITIONS && r.partitionId() == Protocol.SYSTEM_PARTITION)
+            .respondWith()
+            .data()
+                .put("partitions", r ->
+                {
+                    final Topology topology = currentTopology.get();
+                    final List<Map<String, Object>> partitions = new ArrayList<>();
+                    for (TopicLeader leader : topology.getTopicLeaders())
+                    {
+                        final Map<String, Object> partition = new HashMap<>();
+                        partition.put("topic", leader.getTopicName());
+                        partition.put("id", leader.getPartitionId());
+                        partitions.add(partition);
+                    }
+                    return partitions;
+                })
+                .done()
+            .register();
     }
 
     public ControlMessageResponseTypeBuilder onTopologyRequest()
@@ -352,6 +375,26 @@ public class StubBrokerRule extends ExternalResource
             .push(remote);
     }
 
+    public void pushTopicEvent(RemoteAddress remote, Consumer<SubscribedEventBuilder> eventConfig)
+    {
+        final SubscribedEventBuilder builder = newSubscribedEvent()
+            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
+
+        // defaults that the config can override
+        builder.partitionId(1);
+        builder.key(0);
+        builder.position(0);
+        builder.eventType(EventType.RAFT_EVENT);
+        builder.subscriberKey(0);
+        builder.partitionId(TEST_PARTITION_ID);
+        builder.event().done();
+
+        eventConfig.accept(builder);
+
+        builder.push(remote);
+
+    }
+
     public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String taskType)
     {
         newSubscribedEvent()
@@ -370,5 +413,15 @@ public class StubBrokerRule extends ExternalResource
                 .put("state", "LOCKED")
                 .done()
             .push(remote);
+    }
+
+    public String getHost()
+    {
+        return host;
+    }
+
+    public int getPort()
+    {
+        return port;
     }
 }

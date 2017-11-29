@@ -26,18 +26,18 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 
-public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Actor
+public class EventAcquisition implements SubscribedEventHandler, Actor
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     protected final String name;
-    protected final EventSubscriptions<T> subscriptions;
+    protected final EventSubscribers subscribers;
     protected DeferredCommandContext asyncContext = new DeferredCommandContext();
 
-    public EventAcquisition(String name, EventSubscriptions<T> subscriptions)
+    public EventAcquisition(String name, EventSubscribers subscriptions)
     {
         this.name = name;
-        this.subscriptions = subscriptions;
+        this.subscribers = subscriptions;
     }
 
     @Override
@@ -50,7 +50,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     public int doWork() throws Exception
     {
         int workCount = asyncContext.doWork();
-        workCount += subscriptions.maintainState();
+        workCount += subscribers.maintainState();
         return workCount;
     }
 
@@ -58,12 +58,29 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     public boolean onEvent(long subscriberKey, GeneralEventImpl event)
     {
         final EventMetadata eventMetadata = event.getMetadata();
-        final T subscription = subscriptions.getSubscription(eventMetadata.getPartitionId(), subscriberKey);
+        EventSubscriber subscriber = subscribers.getSubscriber(eventMetadata.getPartitionId(), subscriberKey);
 
-        if (subscription != null && subscription.isOpen())
+        if (subscriber == null)
         {
-            event.setTopicName(subscription.getTopicName());
-            return subscription.addEvent(event);
+            if (subscribers.isAnySubscriberOpening())
+            {
+                // avoids a race condition when a subscribe request is in progress and we haven't activated the subscriber
+                // yet, but we already receive an event from the broker
+                // in this case, we postpone the event
+                return false;
+            }
+            else
+            {
+                // fetch a second time as the subscriber may have opened (and registered) between the first #getSubscriptions
+                // invocation and the check for opening subscribers
+                subscriber = subscribers.getSubscriber(eventMetadata.getPartitionId(), subscriberKey);
+            }
+        }
+
+        if (subscriber != null && subscriber.isOpen())
+        {
+            event.setTopicName(subscriber.getTopicName());
+            return subscriber.addEvent(event);
         }
         else
         {
@@ -72,27 +89,44 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
     }
 
-    public void activateSubscription(T subscription)
+    public void activateSubscriber(EventSubscriber subscriber)
     {
-        this.subscriptions.activate(subscription);
+        this.subscribers.activate(subscriber);
     }
 
-    public void stopManageSubscription(T subscription)
+    public void addSubscriber(EventSubscriber subscriber)
     {
-        this.subscriptions.remove(subscription);
+        this.subscribers.addSubscriber(subscriber);
     }
 
-    public CompletableFuture<T> registerSubscriptionAsync(T subscription)
+    public void deactivateSubscriber(EventSubscriber subscriber)
+    {
+        this.subscribers.deactivate(subscriber);
+    }
+
+    public void removeSubscriber(EventSubscriber subscriber)
+    {
+        this.subscribers.removeSubscriber(subscriber);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void stopManageGroup(EventSubscriberGroup subscription)
+    {
+        this.subscribers.removeGroup(subscription);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public CompletableFuture<Void> registerSubscriptionAsync(EventSubscriberGroup subscription)
     {
         return asyncContext.runAsync((future) ->
         {
-            subscriptions.add(subscription);
+            subscribers.addGroup(subscription);
         });
     }
 
     public void reopenSubscriptionsForRemoteAsync(RemoteAddress remoteAddress)
     {
-        asyncContext.runAsync(() -> subscriptions.reopenSubscriptionsForRemote(remoteAddress));
+        asyncContext.runAsync(() -> subscribers.reopenSubscribersForRemote(remoteAddress));
     }
 
 }

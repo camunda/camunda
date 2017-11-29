@@ -19,6 +19,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,12 +37,16 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.impl.TopicSubscriptionImpl;
+import io.zeebe.client.event.impl.TopicSubscriber;
+import io.zeebe.client.event.impl.TopicSubscriberGroup;
+import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
+import io.zeebe.client.task.impl.subscription.EventSubscriberGroup;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.Conditions;
 import io.zeebe.test.util.TestUtil;
@@ -160,7 +165,7 @@ public class TopicSubscriptionTest
 
         // when
         clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtPosition(654L)
+            .startAtPosition(clientRule.getDefaultPartitionId(), 654L)
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -275,8 +280,7 @@ public class TopicSubscriptionTest
         broker.pushTopicEvent(clientAddress, 123L, 1L, 2L);
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
-        assertThat(subscription.isOpen()).isFalse();
+        waitUntil(() -> !subscription.isOpen());
         Thread.sleep(1000L); // wait an extra second as we might receive more events if this feature is broken
 
         assertThat(handler.getRecordedEvents()).hasSize(3);
@@ -400,7 +404,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
         final ControllableHandler handler = new ControllableHandler();
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
+        final TopicSubscriberGroup subscription = (TopicSubscriberGroup) clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -412,7 +416,7 @@ public class TopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.isWaiting());
 
         // when
-        final CompletableFuture<TopicSubscriptionImpl> closeFuture = subscription.closeAsync();
+        final CompletableFuture<?> closeFuture = subscription.closeAsync();
 
         // then
         Thread.sleep(1000L);
@@ -446,7 +450,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
+        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
             .startAtHeadOfTopic()
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
@@ -878,6 +882,54 @@ public class TopicSubscriptionTest
 
         // when
         client.topics().newSubscription("");
+    }
+
+    @Test
+    public void shouldCloseSubscriptionWhileOpeningSubscriber()
+    {
+        // given
+        final int subscriberKey = 123;
+
+        broker.stubTopicSubscriptionApi(0L);
+        final ResponseController responseController = broker.onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
+            .respondWith()
+            .key(subscriberKey)
+            .event()
+                .allOf((r) -> r.getCommand())
+                .put("state", "SUBSCRIBED")
+                .done()
+            .registerControlled();
+
+        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) client.topics().newSubscription(clientRule.getDefaultTopicName())
+            .handler(DO_NOTHING)
+            .name("foo");
+
+        final TopicSubscriberGroup subscriberGroup = builder
+            .buildSubscriberGroup();
+
+        subscriberGroup.openAsync();
+        waitUntil(() ->
+            broker.getReceivedCommandRequests().stream()
+                .filter(r -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("state")))
+                .count() == 1);
+
+        final CompletableFuture<EventSubscriberGroup<TopicSubscriber>> closeFuture = subscriberGroup.closeAsync();
+
+        // when
+        responseController.unblockNextResponse();
+
+        // then
+        waitUntil(() -> subscriberGroup.isClosed());
+
+        assertThat(closeFuture).isCompleted();
+
+        final Optional<ControlMessageRequest> closeRequest = broker.getReceivedControlMessageRequests().stream()
+            .filter(c -> c.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .findFirst();
+
+        assertThat(closeRequest).isPresent();
+        final ControlMessageRequest request = closeRequest.get();
+        assertThat(request.getData()).containsEntry("subscriberKey", subscriberKey);
     }
 
     protected void assertMetadata(Event actualEvent, long expectedKey, long expectedPosition,

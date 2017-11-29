@@ -24,6 +24,7 @@ public class ErrorResponseBuilder<R>
 {
     protected final Consumer<MessageBuilder<R>> registrationFunction;
     protected final ErrorResponseWriter<R> commandResponseWriter;
+    protected Runnable callback = null;
 
     public ErrorResponseBuilder(
             Consumer<MessageBuilder<R>> registrationFunction,
@@ -48,6 +49,17 @@ public class ErrorResponseBuilder<R>
     public void register()
     {
         registrationFunction.accept(commandResponseWriter);
+    }
+
+    /**
+     * Blocks before responding; continues sending the response only when {@link ResponseController#unblockNextResponse()} is called.
+     */
+    public ResponseController registerControlled()
+    {
+        final ResponseController controller = new ResponseController();
+        final NotifyingMessageBuilder<R> notifyingBuilder = new NotifyingMessageBuilder<>(commandResponseWriter, controller::waitForNextJoin);
+        registrationFunction.accept(notifyingBuilder);
+        return controller;
     }
 
 }

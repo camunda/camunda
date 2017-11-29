@@ -63,6 +63,11 @@ public class RecordingTaskHandler implements TaskHandler
         return handledTasks;
     }
 
+    public int numHandledTasks()
+    {
+        return handledTasks.size();
+    }
+
     public void clear()
     {
         handledTasks.clear();

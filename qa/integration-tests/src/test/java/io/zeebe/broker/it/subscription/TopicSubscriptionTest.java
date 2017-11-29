@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -47,6 +48,9 @@ import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.event.UniversalEventHandler;
+import io.zeebe.client.task.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionTest
@@ -207,7 +211,7 @@ public class TopicSubscriptionTest
         // when
         clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .handler(subscription2Handler)
-            .startAtPosition(secondTaskEventPosition)
+            .startAtPosition(clientRule.getDefaultPartition(), secondTaskEventPosition)
             .name("another" + SUBSCRIPTION_NAME)
             .open();
 
@@ -226,7 +230,7 @@ public class TopicSubscriptionTest
         // given
         clientRule.topics().newSubscription(clientRule.getDefaultTopic())
             .handler(recordingHandler)
-            .startAtPosition(Long.MAX_VALUE)
+            .startAtPosition(clientRule.getDefaultPartition(), Long.MAX_VALUE)
             .name(SUBSCRIPTION_NAME)
             .open();
 
@@ -497,7 +501,7 @@ public class TopicSubscriptionTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Exception while opening subscription");
+        exception.expectMessage("Could not open subscription");
 
         // when
         clientRule.topics().newSubscription(clientRule.getDefaultTopic())
@@ -638,6 +642,57 @@ public class TopicSubscriptionTest
 
         // then
         waitUntil(() -> recordingHandler.numRecordedEvents() > subscriptionCapacity);
+    }
+
+    @Test
+    public void shouldReceiveEventsFromMultiplePartitions()
+    {
+        // given
+        final String topicName = "pasta al forno";
+        final int numPartitions = 2;
+        client.topics().create(topicName, numPartitions).execute();
+
+        final Topics topics = client.topics().getTopics().execute();
+        final Topic topic = topics.getTopics().stream()
+            .filter(t -> t.getName().equals(topicName))
+            .findFirst()
+            .get();
+
+        final Integer[] partitionIds = topic.getPartitions().stream()
+                .mapToInt(p -> p.getId())
+                .boxed()
+                .toArray(Integer[]::new);
+
+        createTaskOnPartition(topicName, partitionIds[0]);
+        createTaskOnPartition(topicName, partitionIds[1]);
+
+        final List<Integer> receivedPartitionIds = new ArrayList<>();
+
+        // when
+        client.topics().newSubscription(topicName)
+            .handler(recordingHandler)
+            .taskEventHandler(e ->
+            {
+                if ("CREATE".equals(e.getState()))
+                {
+                    receivedPartitionIds.add(e.getMetadata().getPartitionId());
+                }
+            })
+            .startAtHeadOfTopic()
+            .name("foo")
+            .open();
+
+        // then
+        waitUntil(() -> receivedPartitionIds.size() == numPartitions);
+
+        assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
+    }
+
+    protected void createTaskOnPartition(String topic, int partition)
+    {
+        final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
+        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.execute();
     }
 
 }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.event.impl;
 
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
@@ -23,16 +24,16 @@ import io.zeebe.util.EnsureUtil;
 
 public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscriptionBuilder
 {
-    protected TopicSubscriptionImplBuilder implBuilder;
+    protected TopicSubscriberGroupBuilder implBuilder;
 
     public PollableTopicSubscriptionBuilderImpl(
-            TopicClientImpl client,
+            ZeebeClient client,
             ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            EventAcquisition acquisition,
             int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
+        implBuilder = new TopicSubscriberGroupBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
     }
 
     @Override
@@ -40,22 +41,15 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
     {
         EnsureUtil.ensureNotNull("name", implBuilder.getName());
 
-        final TopicSubscriptionImpl subscription = implBuilder.build();
+        final TopicSubscriberGroup subscription = implBuilder.build();
         subscription.open();
         return subscription;
     }
 
     @Override
-    public PollableTopicSubscriptionBuilder partitionId(int partition)
+    public PollableTopicSubscriptionBuilder startAtPosition(int partitionId, long position)
     {
-        implBuilder.partitionId(partition);
-        return this;
-    }
-
-    @Override
-    public PollableTopicSubscriptionBuilder startAtPosition(long position)
-    {
-        implBuilder.startPosition(position);
+        implBuilder.startPosition(partitionId, position);
         return this;
     }
 

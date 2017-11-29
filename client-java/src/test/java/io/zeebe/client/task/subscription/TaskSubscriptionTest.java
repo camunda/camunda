@@ -52,7 +52,6 @@ import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
-import io.zeebe.client.task.impl.subscription.TaskSubscriptionImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -126,7 +125,6 @@ public class TaskSubscriptionTest
                 entry("lockDuration", 10000),
                 entry("taskType", "bar"),
                 entry("credits", 456));
-        assertThat(((TaskSubscriptionImpl) subscription).getSubscriberKey()).isEqualTo(123L);
     }
 
     @Test
@@ -325,13 +323,13 @@ public class TaskSubscriptionTest
         // given
         broker.onControlMessageRequest(r -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .respondWithError()
-            .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorData("does not compute")
             .register();
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Exception while opening subscription");
+        exception.expectMessage("Could not open subscription");
 
         // when
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())

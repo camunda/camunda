@@ -15,77 +15,40 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
+import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 
 import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
-import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
-import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.client.task.impl.CreateTaskSubscriptionCommandImpl;
 
-public class TaskSubscriptionImpl
-    extends EventSubscription<TaskSubscriptionImpl>
-    implements TaskSubscription, PollableTaskSubscription
+public class TaskSubscriber extends EventSubscriber
 {
     protected static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
 
-    protected final TaskHandler taskHandler;
     protected final TasksClientImpl taskClient;
-
-    protected final String taskType;
-    protected final long lockTime;
-    protected final String lockOwner;
+    protected final TaskSubscriptionSpec subscription;
 
     protected MsgPackMapper msgPackMapper;
 
-    public TaskSubscriptionImpl(
+    public TaskSubscriber(
             TasksClientImpl client,
-            String topic,
+            TaskSubscriptionSpec subscription,
             int partition,
-            TaskHandler taskHandler,
-            String taskType,
-            long lockTime,
-            String lockOwner,
-            int capacity,
             MsgPackMapper msgPackMapper,
-            EventAcquisition<TaskSubscriptionImpl> acqusition)
+            EventAcquisition acqusition)
     {
-        super(topic, partition, capacity, acqusition);
+        super(partition, subscription.getCapacity(), acqusition);
         this.taskClient = client;
-        this.taskHandler = taskHandler;
-        this.taskType = taskType;
-        this.lockTime = lockTime;
-        this.lockOwner = lockOwner;
+        this.subscription = subscription;
         this.msgPackMapper = msgPackMapper;
     }
 
-    public String getTaskType()
-    {
-        return taskType;
-    }
-
-    public long getLockTime()
-    {
-        return lockTime;
-    }
-
-    public String getLockOwner()
-    {
-        return lockOwner;
-    }
-
-
-    @Override
-    public int poll()
-    {
-        return poll(taskHandler);
-    }
-
-    @Override
-    public int poll(TaskHandler taskHandler)
+    public int pollEvents(TaskHandler taskHandler)
     {
         int polledEvents = pollEvents((e) ->
         {
@@ -118,12 +81,6 @@ public class TaskSubscriptionImpl
     }
 
     @Override
-    public boolean isManagedSubscription()
-    {
-        return taskHandler != null;
-    }
-
-    @Override
     protected void requestEventSourceReplenishment(int eventsProcessed)
     {
         taskClient.increaseSubscriptionCredits(partitionId)
@@ -133,7 +90,7 @@ public class TaskSubscriptionImpl
     }
 
     @Override
-    public EventSubscriptionCreationResult requestNewSubscription()
+    public Future<? extends EventSubscriptionCreationResult> requestNewSubscription()
     {
         final CreateTaskSubscriptionCommandImpl cmd;
         if (partitionId >= 0)
@@ -142,14 +99,14 @@ public class TaskSubscriptionImpl
         }
         else
         {
-            cmd = taskClient.createTaskSubscription(topic);
+            cmd = taskClient.createTaskSubscription(subscription.getTopic());
         }
 
-        return cmd.taskType(taskType)
-                .lockDuration(lockTime)
-                .lockOwner(lockOwner)
+        return cmd.taskType(subscription.getTaskType())
+                .lockDuration(subscription.getLockTime())
+                .lockOwner(subscription.getLockOwner())
                 .initialCredits(capacity)
-                .execute();
+                .executeAsync();
     }
 
     @Override
@@ -161,6 +118,13 @@ public class TaskSubscriptionImpl
     @Override
     public String toString()
     {
-        return "TaskSubscriptionImpl [taskType=" + taskType + ", subscriberKey=" + subscriberKey + "]";
+        return "TaskSubscriber[topic=" + subscription.getTopic() + ", partition=" + partitionId +
+                ", taskType=" + subscription.getTaskType() + ", subscriberKey=" + subscriberKey + "]";
+    }
+
+    @Override
+    public String getTopicName()
+    {
+        return subscription.getTopic();
     }
 }

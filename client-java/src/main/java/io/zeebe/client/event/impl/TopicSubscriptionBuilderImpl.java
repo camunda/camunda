@@ -15,8 +15,18 @@
  */
 package io.zeebe.client.event.impl;
 
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.event.*;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.event.IncidentEventHandler;
+import io.zeebe.client.event.RaftEventHandler;
+import io.zeebe.client.event.TaskEventHandler;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.TopicSubscriptionBuilder;
+import io.zeebe.client.event.UniversalEventHandler;
+import io.zeebe.client.event.WorkflowEventHandler;
+import io.zeebe.client.event.WorkflowInstanceEventHandler;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
@@ -31,26 +41,19 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     protected IncidentEventHandler incidentEventHandler;
     protected RaftEventHandler raftEventHandler;
 
-    protected final TopicSubscriptionImplBuilder builder;
+    protected final TopicSubscriberGroupBuilder builder;
     protected final MsgPackMapper msgPackMapper;
 
     public TopicSubscriptionBuilderImpl(
-            TopicClientImpl client,
+            ZeebeClient client,
             ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            EventAcquisition acquisition,
             MsgPackMapper msgPackMapper,
             int prefetchCapacity)
     {
-        builder = new TopicSubscriptionImplBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
+        builder = new TopicSubscriberGroupBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
         this.msgPackMapper = msgPackMapper;
-    }
-
-    @Override
-    public TopicSubscriptionBuilder partitionId(int partition)
-    {
-        builder.partitionId(partition);
-        return this;
     }
 
     @Override
@@ -98,18 +101,23 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     @Override
     public TopicSubscription open()
     {
+        final TopicSubscriberGroup subscription = buildSubscriberGroup();
+        subscription.open();
+        return subscription;
+    }
+
+    public TopicSubscriberGroup buildSubscriberGroup()
+    {
         EnsureUtil.ensureNotNull("name", builder.getName());
         if (defaultEventHandler == null && taskEventHandler == null && wfEventHandler == null && wfInstanceEventHandler == null && incidentEventHandler == null
                 && raftEventHandler == null)
         {
-            throw new RuntimeException("at least one handler must be set");
+            throw new ClientException("at least one handler must be set");
         }
 
         builder.handler(this::dispatchEvent);
 
-        final TopicSubscriptionImpl subscription = builder.build();
-        subscription.open();
-        return subscription;
+        return builder.build();
     }
 
     protected void dispatchEvent(GeneralEventImpl event) throws Exception
@@ -153,9 +161,9 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     }
 
     @Override
-    public TopicSubscriptionBuilder startAtPosition(long position)
+    public TopicSubscriptionBuilder startAtPosition(int partitionId, long position)
     {
-        builder.startPosition(position);
+        builder.startPosition(partitionId, position);
         return this;
     }
 

@@ -65,13 +65,6 @@ public interface TaskSubscriptionBuilder
     TaskSubscriptionBuilder handler(TaskHandler handler);
 
     /**
-     * TEMPORARY: Defines the partition to subscribe to.
-     * If no partition id is set, opens a subscription to the single existing partition. An exception
-     * is thrown if there is no such partition.
-     */
-    TaskSubscriptionBuilder partitionId(int partition);
-
-    /**
      * Opens a new {@link PollableTaskSubscription}. Begins receiving
      * tasks from that point on.
      */

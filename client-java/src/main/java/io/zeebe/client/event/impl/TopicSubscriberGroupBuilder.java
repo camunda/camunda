@@ -15,30 +15,33 @@
  */
 package io.zeebe.client.event.impl;
 
+import org.agrona.collections.Long2LongHashMap;
+
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.task.impl.subscription.EventAcquisition;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 
-public class TopicSubscriptionImplBuilder
+public class TopicSubscriberGroupBuilder
 {
-    protected final TopicClientImpl client;
+    protected final ZeebeClient client;
     protected final ClientTopologyManager topologyManager;
 
     protected final String topic;
-    protected int partitionId;
     protected CheckedConsumer<GeneralEventImpl> handler;
-    protected long startPosition;
-    protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
+    protected final EventAcquisition acquisition;
     protected String name;
     protected final int prefetchCapacity;
     protected boolean forceStart;
+    protected long defaultStartPosition;
+    protected final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
 
-    public TopicSubscriptionImplBuilder(
-            TopicClientImpl client,
+    public TopicSubscriberGroupBuilder(
+            ZeebeClient client,
             ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            EventAcquisition acquisition,
             int prefetchCapacity)
     {
         EnsureUtil.ensureNotNull("topic", topic);
@@ -47,47 +50,46 @@ public class TopicSubscriptionImplBuilder
         this.client = client;
         this.topologyManager = topologyManager;
         this.topic = topic;
-        this.partitionId = -1;
         this.acquisition = acquisition;
         this.prefetchCapacity = prefetchCapacity;
         startAtTailOfTopic();
     }
 
-    public TopicSubscriptionImplBuilder handler(CheckedConsumer<GeneralEventImpl> handler)
+    public TopicSubscriberGroupBuilder handler(CheckedConsumer<GeneralEventImpl> handler)
     {
         this.handler = handler;
         return this;
     }
 
-    public TopicSubscriptionImplBuilder partitionId(int partitionId)
+    public TopicSubscriberGroupBuilder startPosition(int partitionId, long startPosition)
     {
-        this.partitionId = partitionId;
+        this.startPositions.put(partitionId, startPosition);
         return this;
     }
 
-    public TopicSubscriptionImplBuilder startPosition(long startPosition)
+    protected TopicSubscriberGroupBuilder defaultStartPosition(long position)
     {
-        this.startPosition = startPosition;
+        this.defaultStartPosition = position;
         return this;
     }
 
-    public TopicSubscriptionImplBuilder startAtTailOfTopic()
+    public TopicSubscriberGroupBuilder startAtTailOfTopic()
     {
-        return startPosition(-1L);
+        return defaultStartPosition(-1L);
     }
 
-    public TopicSubscriptionImplBuilder startAtHeadOfTopic()
+    public TopicSubscriberGroupBuilder startAtHeadOfTopic()
     {
-        return startPosition(0L);
+        return defaultStartPosition(0L);
     }
 
-    public TopicSubscriptionImplBuilder forceStart()
+    public TopicSubscriberGroupBuilder forceStart()
     {
         this.forceStart = true;
         return this;
     }
 
-    public TopicSubscriptionImplBuilder name(String name)
+    public TopicSubscriberGroupBuilder name(String name)
     {
         this.name = name;
         return this;
@@ -103,21 +105,22 @@ public class TopicSubscriptionImplBuilder
         return name;
     }
 
-    public TopicSubscriptionImpl build()
+    public TopicSubscriberGroup build()
     {
-        final TopicSubscriptionImpl subscription = new TopicSubscriptionImpl(
-                client,
+        final TopicSubscriptionSpec subscription = new TopicSubscriptionSpec(
                 topic,
-                partitionId,
                 handler,
-                prefetchCapacity,
-                startPosition,
+                defaultStartPosition,
+                startPositions,
                 forceStart,
                 name,
-                acquisition);
+                prefetchCapacity);
 
-        this.acquisition.registerSubscriptionAsync(subscription);
+        final TopicSubscriberGroup subscriberGroup = new TopicSubscriberGroup(
+                client,
+                acquisition,
+                subscription);
 
-        return subscription;
+        return subscriberGroup;
     }
 }

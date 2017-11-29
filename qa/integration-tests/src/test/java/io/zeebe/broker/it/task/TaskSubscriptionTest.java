@@ -40,6 +40,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.task.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.time.ClockUtil;
 
@@ -508,6 +511,59 @@ public class TaskSubscriptionTest
 
         // then
         TestUtil.waitUntil(() -> taskHandler.getHandledTasks().size() > subscriptionCapacity);
+    }
+
+    @Test
+    public void shouldReceiveTasksFromMultiplePartitions()
+    {
+        // given
+        final String topicName = "gyros";
+        final int numPartitions = 2;
+
+        final ZeebeClient client = clientRule.getClient();
+        client.topics().create(topicName, numPartitions).execute();
+
+        final Topics topics = client.topics().getTopics().execute();
+        final Topic topic = topics.getTopics().stream()
+            .filter(t -> t.getName().equals(topicName))
+            .findFirst()
+            .get();
+
+        final Integer[] partitionIds = topic.getPartitions().stream()
+                .mapToInt(p -> p.getId())
+                .boxed()
+                .toArray(Integer[]::new);
+
+        final String taskType = "foooo";
+
+        final RecordingTaskHandler handler = new RecordingTaskHandler();
+
+        createTaskOnPartition(client, topicName, partitionIds[0], taskType);
+        createTaskOnPartition(client, topicName, partitionIds[1], taskType);
+
+        // when
+        client.tasks().newTaskSubscription(topicName)
+            .handler(handler)
+            .lockOwner("foo")
+            .lockTime(Duration.ofSeconds(30))
+            .taskType(taskType)
+            .open();
+
+        // then
+        waitUntil(() -> handler.getHandledTasks().size() == 2);
+
+        final Integer[] receivedPartitionIds = handler.getHandledTasks().stream()
+            .map(t -> t.getMetadata().getPartitionId())
+            .toArray(Integer[]::new);
+
+        assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
+    }
+
+    protected void createTaskOnPartition(ZeebeClient client, String topic, int partition, String type)
+    {
+        final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, type);
+        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.execute();
     }
 
 }

@@ -85,4 +85,15 @@ public class ExecuteCommandResponseBuilder
     {
         registrationFunction.accept(commandResponseWriter);
     }
+
+    /**
+     * Blocks before responding; continues sending the response only when {@link ResponseController#unblockNextResponse()} is called.
+     */
+    public ResponseController registerControlled()
+    {
+        final ResponseController controller = new ResponseController();
+        final NotifyingMessageBuilder<ExecuteCommandRequest> notifyingBuilder = new NotifyingMessageBuilder<>(commandResponseWriter, controller::waitForNextJoin);
+        registrationFunction.accept(notifyingBuilder);
+        return controller;
+    }
 }

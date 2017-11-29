@@ -28,27 +28,31 @@ public interface PollableTopicSubscriptionBuilder
 {
 
     /**
-     * Defines the position at which to start receiving events from.
+     * <p>Defines the position at which to start receiving events from a specific partition.
      * A <code>position</code> greater than the current tail position
-     * of the topic is equivalent to starting at the tail position. In this case,
+     * of the partition is equivalent to starting at the tail position. In this case,
      * events with a lower position than the supplied position may be received.
      *
+     * @param partitionId the partition the start position applies to. Corresponds to the partition ID
+     *   accessible via {@link EventMetadata#getPartitionId()}.
      * @param position the position in the topic at which to start receiving events from
      * @return this builder
      */
-    PollableTopicSubscriptionBuilder startAtPosition(long position);
+    PollableTopicSubscriptionBuilder startAtPosition(int partitionId, long position);
 
     /**
-     * Same as invoking {@link #startAtPosition(long)} with the topic's current tail position.
+     * <p>Starts subscribing at the current tails of all of the partitions belonging to the topic.
      * In particular, it is guaranteed that this subscription does not receive any event that
      * was receivable before this subscription is opened.
+     *
+     * <p>Start position can be overridden per partition via {@link #startAtPosition(int, long)}.
      *
      * @return this builder
      */
     PollableTopicSubscriptionBuilder startAtTailOfTopic();
 
     /**
-     * Same as invoking {@link #startAtPosition(long)} with <code>position = 0</code>.
+     * Same as invoking {@link #startAtTailOfTopic} but subscribes at the beginning of all partitions.
      *
      * @return this builder
      */
@@ -90,13 +94,6 @@ public interface PollableTopicSubscriptionBuilder
      * @return this builder
      */
     PollableTopicSubscriptionBuilder forcedStart();
-
-    /**
-     * TEMPORARY: Defines the partition to subscribe to.
-     * If no partition id is set, opens a subscription to the single existing partition. An exception
-     * is thrown if there is no such partition.
-     */
-    PollableTopicSubscriptionBuilder partitionId(int partition);
 
     /**
      * Opens a new topic subscription with the defined parameters.

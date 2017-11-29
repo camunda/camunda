@@ -13,31 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.task.impl.subscription;
+package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.util.actor.Actor;
+import java.util.concurrent.CyclicBarrier;
 
-public class SubscriptionExecutor implements Actor
+public class ResponseController
 {
-    public static final String ROLE_NAME = "subscription-executor";
 
-    protected final EventSubscribers subscriptions;
+    protected CyclicBarrier barrier = new CyclicBarrier(2); // two parties: broker thread responding and test thread signalling
 
-    public SubscriptionExecutor(EventSubscribers subscriptions)
+    /**
+     * Unblocks the sender for sending this response. If the sender is not yet blocked, the calling thread
+     * is blocked until then.
+     */
+    public void unblockNextResponse()
     {
-        this.subscriptions = subscriptions;
+        waitForNextJoin();
     }
 
-    @Override
-    public int doWork() throws Exception
+    protected void waitForNextJoin()
     {
-        return subscriptions.pollManagedSubscribers();
+        try
+        {
+            barrier.await();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
-
-    @Override
-    public String name()
-    {
-        return ROLE_NAME;
-    }
-
 }
