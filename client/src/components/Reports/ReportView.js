@@ -2,7 +2,7 @@ import React from 'react';
 
 import {ErrorBoundary} from '../ErrorBoundary';
 
-import {Number, Json, TableView, Heatmap, Chart} from './views';
+import {Number, Json, Table, Heatmap, Chart} from './views';
 
 export default class ReportView extends React.Component {
   render() {
@@ -19,7 +19,7 @@ export default class ReportView extends React.Component {
           }; break;
         case 'table':
           config = {
-            component: TableView,
+            component: Table,
             props: {data: result}
           }; break;
         case 'heat':

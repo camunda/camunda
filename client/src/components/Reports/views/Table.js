@@ -1,10 +1,8 @@
 import React from 'react';
 
 import {Table as TableRenderer} from 'components';
-import { read } from 'fs';
-import { encode } from 'punycode';
 
-export default function TableView({data, errorMessage}) {
+export default function Table({data, errorMessage}) {
   if(!data || typeof data !== 'object') {
     return <p>{errorMessage}</p>;
   }
@@ -15,16 +13,20 @@ export default function TableView({data, errorMessage}) {
 function formatData(data) {
   if (data.length) {
     // raw data
-    let header = Object.keys(data[0]).filter(entry => entry !== 'variables');
-    const variableNames = Object.keys(data[0].variables).map(varName => `Variable: ${varName}`);
-    Array.prototype.push.apply(header,variableNames);
+    const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
+    const rawVariableNames = Object.keys(data[0].variables);
+  
     const body = data.map(instance => {
-      let row = Object.values(instance).filter(h => typeof h !== 'object' || h === null);
-      const variableValues = Object.values(instance.variables);
-      Array.prototype.push.apply(row, variableValues);
+      let row = processInstanceProps.map(entry => instance[entry]);
+      const variableValues = rawVariableNames.map(entry => instance.variables[entry]);
+      row.push(...variableValues);
       row = row.map(entry => entry === null ? '': entry.toString());
       return row;
     });
+
+    const variableNames = rawVariableNames.map(varName => `Variable: ${varName}`);
+    const header = processInstanceProps;
+    header.push(...variableNames)
 
     return [
       header,

@@ -7,11 +7,12 @@ import './ControlPanel.css';
 
 const options = {
   view: [
+    {key: 'rawData_ignored_ignored', label: 'Raw Data'},
     {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
     {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
     {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
-    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'},
-    {key: 'rawData_ignored_ignored', label: 'Raw Data'}
+    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
+    
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},

@@ -1,14 +1,14 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import TableView from './TableView';
+import Table from './Table';
 
 jest.mock('components', () => {return {
   Table: ({data}) => <div>{JSON.stringify(data)}</div>
 }});
 
 it('should display data for key-value pairs', () => {
-  const node = mount(<TableView data={{
+  const node = mount(<Table data={{
     a: 1,
     b: 2,
     c: 3
@@ -23,7 +23,7 @@ it('should display data for key-value pairs', () => {
 });
 
 it('should display data for a list of objects', () => {
-  const node = mount(<TableView data={[
+  const node = mount(<Table data={[
     {prop1: 'foo', prop2: 'bar', variables : {innerProp: 'bla'}},
     {prop1: 'asdf', prop2: 'ghjk', variables : {innerProp: 'ruvnvr'}}
   ]} />);
@@ -35,7 +35,7 @@ it('should display data for a list of objects', () => {
 });
 
 it('should display variables for a list of objects with variables', () => {
-  const node = mount(<TableView data={[
+  const node = mount(<Table data={[
     {prop1: 'foo', prop2: 'bar', variables : {innerProp: 'bla'}},
     {prop1: 'asdf', prop2: 'ghjk', variables : {innerProp: 'ruvnvr'}}
   ]} />);
@@ -45,7 +45,7 @@ it('should display variables for a list of objects with variables', () => {
 });
 
 it('should display error if no variables available', () => {
-  const node = mount(<TableView data={[
+  const node = mount(<Table data={[
     {prop1: 'foo', prop2: 'bar', variables : {}}
   ]} />);
 
@@ -55,7 +55,7 @@ it('should display error if no variables available', () => {
 });
 
 it('should display object properties for a list of objects', () => {
-  const node = mount(<TableView data={[
+  const node = mount(<Table data={[
     {prop1: 'foo', prop2: 'bar', variables : {innerProp: 'bla'}},
     {prop1: 'asdf', prop2: 'ghjk', variables : {innerProp: 'ruvnvr'}}
   ]} />);
@@ -65,25 +65,25 @@ it('should display object properties for a list of objects', () => {
 });
 
 it('should display an error message for a non-object result (single number)', () => {
-  const node = mount(<TableView data={7} errorMessage='Error' />);
+  const node = mount(<Table data={7} errorMessage='Error' />);
 
   expect(node).toIncludeText('Error');
 });
 
 it('should display an error message if no data is provided', () => {
-  const node = mount(<TableView errorMessage='Error' />);
+  const node = mount(<Table errorMessage='Error' />);
 
   expect(node).toIncludeText('Error');
 });
 
 it('should display an error message if data is null', () => {
-  const node = mount(<TableView data={null} errorMessage='Error'/>);
+  const node = mount(<Table data={null} errorMessage='Error'/>);
 
   expect(node).toIncludeText('Error');
 });
 
 it('should not display an error message if data is valid', () => {
-  const node = mount(<TableView data={[
+  const node = mount(<Table data={[
     {prop1: 'foo', prop2: 'bar', variables : {innerProp: 'bla'}},
     {prop1: 'asdf', prop2: 'ghjk', variables : {innerProp: 'ruvnvr'}}
   ]} errorMessage='Error' />);
