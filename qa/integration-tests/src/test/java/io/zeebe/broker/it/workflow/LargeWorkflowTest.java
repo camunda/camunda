@@ -21,13 +21,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.startup.BrokerRestartTest;
+import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.TestFileUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +45,13 @@ public class LargeWorkflowTest
     public static final URL PATH = LargeWorkflowTest.class.getResource("");
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(PATH.getPath()));
-    public ClientRule clientRule = new ClientRule();
+    public ClientRule clientRule = new ClientRule(() ->
+    {
+        final Properties p = new Properties();
+        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "180");
+
+        return p;
+    }, true);
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule)
@@ -82,7 +90,7 @@ public class LargeWorkflowTest
                            .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
                            .execute();
 
-            if (i % 100_000 == 0)
+            if (i % (CREATION_TIMES / 10) == 0)
             {
                 System.out.println("Iteration: " + i);
             }
@@ -90,9 +98,27 @@ public class LargeWorkflowTest
     }
 
     @Test
-    public void shouldCreateAndCompleteWorkflowInstances()
+    public void shouldCreateAndCompleteWorkflowInstances() throws InterruptedException
     {
         final WorkflowsClient workflowService = clientRule.workflows();
+
+        final AtomicLong completed = new AtomicLong(0);
+
+        clientRule.tasks()
+                  .newTaskSubscription(clientRule.getDefaultTopic())
+                  .taskType("reserveOrderItems")
+                  .lockOwner("stocker")
+                  .lockTime(Duration.ofMinutes(5))
+                  .handler((tasksClient, task) -> {
+                      final long c = completed.incrementAndGet();
+                      tasksClient.complete(task)
+                                 .payload("{ \"orderStatus\": \"RESERVED\" }")
+                                 .execute();
+                      if (c % CREATION_TIMES == 0)
+                      {
+                          System.out.println("Completed: " + c);
+                      }
+                  }).open();
 
         // when
         for (int i = 0; i < CREATION_TIMES; i++)
@@ -104,17 +130,9 @@ public class LargeWorkflowTest
                            .executeAsync();
         }
 
-        // then
-        final TaskSubscription reserveOrderSubscription = clientRule.tasks()
-                                                                    .newTaskSubscription(clientRule.getDefaultTopic())
-                                                                    .taskType("reserveOrderItems")
-                                                                    .lockOwner("stocker")
-                                                                    .lockTime(Duration.ofMinutes(5))
-                                                                    .handler((tasksClient, task) -> {
-                                                                        tasksClient.complete(task)
-                                                                                   .payload("{ \"orderStatus\": \"RESERVED\" }")
-                                                                                   .execute();
-                                                                    })
-                                                                    .open();
+        while (completed.get() < CREATION_TIMES * 10)
+        {
+            Thread.sleep(1000);
+        }
     }
 }

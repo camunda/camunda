@@ -449,7 +449,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     {
         try
         {
-            LOGGER.debug("{} handling event {}", this, event);
+            LOGGER.trace("{} handling event {}", this, event);
         }
         catch (Exception e)
         {

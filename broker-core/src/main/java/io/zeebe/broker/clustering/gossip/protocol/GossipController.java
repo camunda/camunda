@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.gossip.GossipContext;
@@ -243,10 +244,12 @@ public class GossipController
             try (InputStream is = peers.toInputStream())
             {
                 StreamUtil.write(file, is, messageDigest);
+                Loggers.CLUSTERING_LOGGER.info("Write Gossip snapshot.");
             }
             catch (final IOException e)
             {
                 // ignore
+                Loggers.CLUSTERING_LOGGER.error("Gossip snapshot failed!", e);
             }
 
             lastStorage = now;

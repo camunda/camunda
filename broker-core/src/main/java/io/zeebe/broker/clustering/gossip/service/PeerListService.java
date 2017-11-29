@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
@@ -95,6 +96,7 @@ public class PeerListService implements Service<PeerList>
             }
             catch (final IOException e)
             {
+                Loggers.CLUSTERING_LOGGER.error("Cannot read stored peers.", e);
                 // ignore
             }
 
