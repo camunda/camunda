@@ -17,8 +17,8 @@ import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -56,7 +56,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
 
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
-    Map<String, Long> result = new HashMap<>();
+    Map<String, Long> result = new TreeMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key

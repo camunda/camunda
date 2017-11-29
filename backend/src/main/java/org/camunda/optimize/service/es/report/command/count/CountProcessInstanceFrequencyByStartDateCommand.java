@@ -15,8 +15,8 @@ import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -60,7 +60,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
   Map<String, Long> processAggregations(Aggregations aggregations) {
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
-    Map<String, Long> result = new HashMap<>();
+    Map<String, Long> result = new TreeMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key

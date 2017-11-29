@@ -5,11 +5,13 @@ import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -41,6 +43,7 @@ public class RawDataCommand extends ReportCommand {
       .setTypes(configurationService.getProcessInstanceType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
+      .addSort(ProcessInstanceType.START_DATE, SortOrder.ASC)
       .setFetchSource(null,  EVENTS)
       .setSize(1000)
       .get();

@@ -20,6 +20,9 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -35,6 +38,7 @@ import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -179,6 +183,50 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.containsValue(1L), is(true));
+  }
+
+  @Test
+  public void resultIsSortedInAscendingOrder() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto processInstanceDto2 =  engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), LocalDateTime.now().minusDays(2));
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(1));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String processDefinitionId = processInstanceDto.getDefinitionId();
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    assertThat(new ArrayList<>(resultMap.keySet()), isInAscendingOrdering());
+  }
+
+  private Matcher<? super List<String>> isInAscendingOrdering()
+  {
+    return new TypeSafeMatcher<List<String>>()
+    {
+      @Override
+      public void describeTo (Description description)
+      {
+        description.appendText("The given list should be sorted in ascending order!");
+      }
+
+      @Override
+      protected boolean matchesSafely (List<String> item)
+      {
+        for(int i = 0 ; i < item.size() -1; i++) {
+          if(item.get(i).compareTo(item.get(i+1)) > 0) return false;
+        }
+        return true;
+      }
+    };
   }
   
   @Test

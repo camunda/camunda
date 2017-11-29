@@ -18,7 +18,11 @@ import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportRe
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -53,10 +57,11 @@ public class RawDataReportEvaluationIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
   public void reportEvaluationForOneProcessInstance() throws Exception {
@@ -201,6 +206,49 @@ public class RawDataReportEvaluationIT {
           assertThat(variables.get(varName), is(notNullValue()));
         }
       );
+  }
+
+  @Test
+  public void resultShouldBeOrderAccordingToStartDate() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    String processDefinitionId = processInstance.getDefinitionId();
+    ProcessInstanceEngineDto processInstanceDto2 =  engineRule.startProcessInstance(processDefinitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), LocalDateTime.now().minusDays(2));
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineRule.startProcessInstance(processDefinitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(1));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    // then
+    List<RawDataProcessInstanceDto> rawDataList = result.getResult();
+    assertThat(rawDataList, isInAscendingOrdering());
+  }
+
+  private Matcher<? super List<RawDataProcessInstanceDto>> isInAscendingOrdering()
+  {
+    return new TypeSafeMatcher<List<RawDataProcessInstanceDto>>()
+    {
+      @Override
+      public void describeTo (Description description)
+      {
+        description.appendText("The given list should be sorted in ascending order!");
+      }
+
+      @Override
+      protected boolean matchesSafely (List<RawDataProcessInstanceDto> items)
+      {
+        for(int i = 0 ; i < items.size() -1; i++) {
+          if(items.get(i).getStartDate().isAfter(items.get(i+1).getStartDate())) return false;
+        }
+        return true;
+      }
+    };
   }
 
   @Test

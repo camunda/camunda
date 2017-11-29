@@ -20,6 +20,9 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -35,6 +38,7 @@ import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -164,6 +168,54 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     assertThat(resultMap.containsKey(expectedStringYesterday), is(true));
     assertThat(resultMap.get(expectedStringYesterday), is(1000L));
+  }
+
+  @Test
+  public void resultIsSortedInAscendingOrder() throws Exception {
+    // given
+    LocalDateTime startDate = LocalDateTime.now();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, -2L, 3L);
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 1L);
+
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String processDefinitionId = processInstanceDto.getDefinitionId();
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    assertThat(new ArrayList<>(resultMap.keySet()), isInAscendingOrdering());
+  }
+
+  private Matcher<? super List<String>> isInAscendingOrdering()
+  {
+    return new TypeSafeMatcher<List<String>>()
+    {
+      @Override
+      public void describeTo (Description description)
+      {
+        description.appendText("The given list should be sorted in ascending order!");
+      }
+
+      @Override
+      protected boolean matchesSafely (List<String> item)
+      {
+        for(int i = 0 ; i < item.size() -1; i++) {
+          if(item.get(i).compareTo(item.get(i+1)) > 0) return false;
+        }
+        return true;
+      }
+    };
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,
