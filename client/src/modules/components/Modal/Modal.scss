@@ -73,6 +73,8 @@ $modal-padding-h: 20px;
   padding: 12px $modal-padding-h;
   border-top: 1px solid lightgray;
   text-align: right;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
   
   .Button + .Button {
     margin-left: 12px;
