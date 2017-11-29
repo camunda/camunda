@@ -7,7 +7,7 @@ export default function Table({data, errorMessage}) {
     return <p>{errorMessage}</p>;
   }
 
-  return <TableRenderer data={formatData(data)} />;
+  return <TableRenderer {...formatData(data)} />;
 }
 
 function formatData(data) {
@@ -25,18 +25,16 @@ function formatData(data) {
     });
 
     const variableNames = rawVariableNames.map(varName => `Variable: ${varName}`);
-    const header = processInstanceProps;
-    header.push(...variableNames)
+    const head = processInstanceProps;
+    head.push(...variableNames)
 
-    return [
-      header,
-      ...body
-    ];
+    return {head, body};
   } else {
     // normal two-dimensional data
-    return Object.keys(data).map(key => [
+    const body = Object.keys(data).map(key => [
       key,
       data[key]
     ]);
+    return {body};
   }
 }

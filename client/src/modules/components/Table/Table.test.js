@@ -14,11 +14,22 @@ jest.mock('components', () => {
 });
 
 it('should render without crashing', () => {
-  mount(<Table data={[[]]} />);
+  mount(<Table {...{head: [], body: [], foot: []}} />);
 });
 
+it('shoud display header'), () => {
+  const node = mount(<Table head={['x', 'y', 'z']} body={[
+    ['a', 'b', 'c'],
+    ['a', 'b', 'c'],
+    ['a', 'b', 'c']
+  ]} />);
+
+  expect(node.find('thead')).toBePresent();
+  expect(node.find('thead').find('tr')).toHaveLength(3);
+}
+
 it('should display a row for each entry in the data array', () => {
-  const node = mount(<Table data={[
+  const node = mount(<Table body={[
     ['a', 'b', 'c'],
     ['a', 'b', 'c'],
     ['a', 'b', 'c']
@@ -28,14 +39,14 @@ it('should display a row for each entry in the data array', () => {
 });
 
 it('should draw the content of plain text cells', () => {
-  const node = mount(<Table data={[['cell']]} />);
+  const node = mount(<Table body={[['cell']]} />);
 
   expect(node).toIncludeText('cell');
 });
 
 it('should draw a button when an onclick handler is given', () => {
   const spy = jest.fn();
-  const node = mount(<Table data={[[{content: 'cell', onClick: spy}]]} />);
+  const node = mount(<Table body={[[{content: 'cell', onClick: spy}]]} />);
 
   expect(node.find('button')).toBePresent();
   expect(node.find('button')).toIncludeText('cell');
@@ -43,7 +54,7 @@ it('should draw a button when an onclick handler is given', () => {
 
 it('should call the onclick handler when clicking on the button', () => {
   const spy = jest.fn();
-  const node = mount(<Table data={[[{content: 'cell', onClick: spy}]]} />);
+  const node = mount(<Table body={[[{content: 'cell', onClick: spy}]]} />);
 
   node.find('button').simulate('click');
 
@@ -51,20 +62,20 @@ it('should call the onclick handler when clicking on the button', () => {
 });
 
 it('should draw a link when providing a link property', () => {
-  const node = mount(<Table data={[[{content: 'cell', link: '/newRoute'}]]} />);
+  const node = mount(<Table body={[[{content: 'cell', link: '/newRoute'}]]} />);
 
   expect(node.find('a')).toBePresent();
   expect(node.find('a')).toIncludeText('cell');
 });
 
 it('should render apply the className to buttons', () => {
-  const node = mount(<Table data={[[{content: 'cell', onClick: jest.fn(), className: 'buttonClass'}]]} />);
+  const node = mount(<Table body={[[{content: 'cell', onClick: jest.fn(), className: 'buttonClass'}]]} />);
 
   expect(node.find('.buttonClass')).toBePresent();
 });
 
 it('should render apply the className to links', () => {
-  const node = mount(<Table data={[[{content: 'cell', link: '/newRoute', className: 'linkClass'}]]} />);
+  const node = mount(<Table body={[[{content: 'cell', link: '/newRoute', className: 'linkClass'}]]} />);
 
   expect(node.find('.linkClass')).toBePresent();
 });

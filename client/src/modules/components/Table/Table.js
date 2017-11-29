@@ -2,21 +2,28 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 import {Button} from 'components';
 
-export default function Table({data}) {
+export default function Table({head, body, foot}) {
   return (<table>
-    <thead></thead>
+    <thead>{Table.renderRow(head, 0)}</thead>
     <tbody>
-      {data.map((row, idx) => {
-        return (<tr key={idx}>
-          {row.map((cell, idx) => {
-            return (<td key={idx}>
-              {Table.renderCell(cell)}
-            </td>);
-          })}
-        </tr>);
+      {body.map((row, idx) => {
+        return Table.renderRow(row, idx);
       })}
     </tbody>
+    <tfoot>{Table.renderRow(foot, 0)}</tfoot>
   </table>);
+}
+
+Table.renderRow = (row, idx) => {
+  if (row) {
+    return (<tr key={idx}>
+      {row.map((cell, idx) => {
+        return (<td key={idx}>
+          {Table.renderCell(cell)}
+        </td>);
+      })}
+    </tr>);
+  }
 }
 
 Table.renderCell = cell => {

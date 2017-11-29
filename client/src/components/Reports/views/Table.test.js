@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import Table from './Table';
 
 jest.mock('components', () => {return {
-  Table: ({data}) => <div>{JSON.stringify(data)}</div>
+  Table: ({head, body}) => <div>{JSON.stringify({head, body})}</div>
 }});
 
 it('should display data for key-value pairs', () => {
