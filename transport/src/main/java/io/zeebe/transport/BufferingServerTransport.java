@@ -17,12 +17,8 @@ package io.zeebe.transport;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.transport.impl.RemoteAddressList;
-import io.zeebe.transport.impl.ServerReceiveHandler;
-import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.dispatcher.*;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.ActorContext;
 
 public class BufferingServerTransport extends ServerTransport
@@ -60,7 +56,13 @@ public class BufferingServerTransport extends ServerTransport
         @Override
         public int poll()
         {
-            return subscription.poll(fragmentHandler, Integer.MAX_VALUE);
+            return poll(Integer.MAX_VALUE);
+        }
+
+        @Override
+        public int poll(int maxCount)
+        {
+            return subscription.poll(fragmentHandler, maxCount);
         }
     }
 

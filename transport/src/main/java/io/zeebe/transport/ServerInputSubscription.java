@@ -18,4 +18,6 @@ package io.zeebe.transport;
 public interface ServerInputSubscription
 {
     int poll();
+
+    int poll(int maxCount);
 }
