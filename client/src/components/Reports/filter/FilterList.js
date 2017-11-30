@@ -35,7 +35,7 @@ export default class FilterList extends React.Component {
             <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
             <span className='FilterList__item-content'>
               <span className='FilterList__variable-name'>{name}</span>
-                {operator === 'in' && ' is '}
+                {(operator === 'in' || operator === '=') && ' is '}
                 {operator === 'not in' && (
                   values.length === 1 ? ' is not ' : ' is neither '
                 )}

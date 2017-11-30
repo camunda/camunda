@@ -62,7 +62,7 @@ export default class VariableFilter extends React.Component {
 
     this.setState({
       selectedVariableIdx: value,
-      operator: 'in',
+      operator: variable.type === 'Boolean' ? '=' : 'in',
       values,
       availableValues: [],
       valuesAreComplete: false
@@ -88,13 +88,13 @@ export default class VariableFilter extends React.Component {
             })}
           </Select>
           <div className='VariableFilter__operatorButtons'>
-            {selectedVariableIdx !== -1 && this.renderOperatorButtons(
+            {this.variableIsSelected() && this.renderOperatorButtons(
               variables[selectedVariableIdx].type,
               operator
             )}
           </div>
           <div className='VariableFilter__valueFields'>
-            {selectedVariableIdx !== -1 && this.renderValueFields(
+            {this.variableIsSelected() && this.renderValueFields(
               variables[selectedVariableIdx].type,
               availableValues,
               values
@@ -110,17 +110,29 @@ export default class VariableFilter extends React.Component {
     );
   }
 
+  variableIsSelected = () => {
+    return this.state.selectedVariableIdx !== -1;
+  }
+
   createFilter = evt => {
     evt.preventDefault();
 
     const variable = this.state.variables[this.state.selectedVariableIdx];
+
+    let values;
+    if(variable.type === 'String' || variable.type === 'Boolean') {
+      values = this.state.values;
+    } else {
+      values = this.state.values.filter(value => value);
+    }
+
     this.props.addFilter({
       type: 'variable',
       data: {
         name: variable.name,
         type: variable.type,
         operator: this.state.operator,
-        values: this.state.values
+        values
       }
     });
   }
@@ -173,8 +185,8 @@ export default class VariableFilter extends React.Component {
         <Button key='!=' onClick={this.selectOperator} operator='not in' className={this.state.operator === 'not in' ? 'VariableFilter__operatorButton--active' : ''}>is not</Button>
       ];
       case 'Boolean': return [
-        <Button key='true' onClick={this.selectOperator} operator='in' className={this.state.values[0] === true ? 'VariableFilter__operatorButton--active' : ''} value={true}>is true</Button>,
-        <Button key='false' onClick={this.selectOperator} operator='in' className={this.state.values[0] === false ? 'VariableFilter__operatorButton--active' : ''} value={false}>is false</Button>
+        <Button key='true' onClick={this.selectOperator} operator='=' className={this.state.values[0] === true ? 'VariableFilter__operatorButton--active' : ''} value={true}>is true</Button>,
+        <Button key='false' onClick={this.selectOperator} operator='=' className={this.state.values[0] === false ? 'VariableFilter__operatorButton--active' : ''} value={false}>is false</Button>
       ];
       default: return [
         <Button key='=' onClick={this.selectOperator} className={this.state.operator === 'in' ? 'VariableFilter__operatorButton--active' : ''} operator='in'>is</Button>,
