@@ -78,7 +78,7 @@ export default class ControlPanel extends React.Component {
     return <div className='ControlPanel'>
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item'>
-          <label htmlFor='process-definition' className='ControlPanel__label'>ProcessDefinition</label>
+          <label htmlFor='process-definition' className='ControlPanel__label'>Process definition</label>
           <select name='process-definition' className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
             {addSelectionOption()}
             {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
@@ -92,7 +92,7 @@ export default class ControlPanel extends React.Component {
           </select>
         </li>
         <li className='ControlPanel__item'>
-          <label htmlFor='group-by' className='ControlPanel__label'>Group By</label>
+          <label htmlFor='group-by' className='ControlPanel__label'>Group by</label>
           <select name='group-by' className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
             {renderOptions('groupBy')}
