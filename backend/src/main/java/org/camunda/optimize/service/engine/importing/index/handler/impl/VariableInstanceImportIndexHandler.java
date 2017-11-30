@@ -60,7 +60,20 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
   public long fetchMaxEntityCount() {
     // here the import index is based on process instances and therefore
     // we need to fetch the maximum number of process instances
-    return variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
+    Long result ;
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
+      SearchResponse response = esclient
+          .prepareSearch(configurationService.getOptimizeIndex())
+          .setTypes(configurationService.getProcessInstanceType())
+          .setQuery(QueryBuilders.matchAllQuery())
+          .setSize(0) // Don't return any documents, we don't need them.
+          .get();
+      result = response.getHits().getTotalHits();
+    } else {
+      result = variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
+    }
+
+    return result;
   }
 
   @Override

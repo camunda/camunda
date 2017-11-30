@@ -92,7 +92,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   public long getBackoffTimeInMs() {
 
-    long backoffTime = configurationService.isBackoffEnabled() ? LocalDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0;
+    long backoffTime =  LocalDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS);
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
   }

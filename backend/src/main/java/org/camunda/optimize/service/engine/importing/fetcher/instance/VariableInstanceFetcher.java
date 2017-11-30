@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableInstanceFetcher
+public class  VariableInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto, IdSetBasedImportPage> {
 
   public VariableInstanceFetcher(String engineAlias) {
