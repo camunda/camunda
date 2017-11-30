@@ -2,7 +2,7 @@ import React from 'react';
 
 import {loadProcessDefinitionXml} from './service';
 
-import Diagram from './Diagram';
+import {BPMNDiagram} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 export default class Heatmap extends React.Component {
@@ -34,8 +34,8 @@ export default class Heatmap extends React.Component {
       return <div className='heatmap-loading-indicator'>loading...</div>;
     }
 
-    return <Diagram xml={xml}>
+    return <BPMNDiagram xml={xml}>
       <HeatmapOverlay data={data} />
-    </Diagram>;
+    </BPMNDiagram>;
   }
 }

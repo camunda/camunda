@@ -115,3 +115,31 @@ it('should combine multiple variable names with neither/nor for the not in opera
 
   expect(node).toIncludeText('varName is neither varValue nor varValue2');
 });
+
+it('should display a simple flow node filter', () => {
+  const data = [{
+    type: 'executedFlowNodes',
+    data: {
+      operator: 'in',
+      values: ['flowNode']
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('executed flow node flowNode');
+});
+
+it('should display a flow node filter with multiple selected nodes', () => {
+  const data = [{
+    type: 'executedFlowNodes',
+    data: {
+      operator: 'in',
+      values: ['flowNode1', 'flowNode2']
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('executed flow node flowNode1 or flowNode2');
+});

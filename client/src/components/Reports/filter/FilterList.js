@@ -53,8 +53,21 @@ export default class FilterList extends React.Component {
           </li>);
         }
 
+        if(filter.type === 'executedFlowNodes') {
+          const {values} = filter.data;
 
-        // TODO: FlowNodes
+          list.push(<li key={i} className='FilterList__item'>
+            <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
+            <span className='FilterList__item-content'>
+              executed flow node {values.map((value, idx) => {
+                return <span key={idx}>
+                  <span className='FilterList__value'>{value.toString()}</span>
+                  {idx < values.length - 1 && ' or '}
+                </span>
+              })}
+            </span>
+          </li>);
+        }
       }
 
       if(i < this.props.data.length - 1) {

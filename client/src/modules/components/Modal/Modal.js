@@ -55,7 +55,7 @@ export default class Modal extends React.Component {
       const handler = this.props.onClose;
       handler && handler();
     }
-  }  
+  }
 
   render() {
     const {open, children} = this.props;
@@ -63,7 +63,7 @@ export default class Modal extends React.Component {
     if(open) {
       return ReactDOM.createPortal(
         <div className='Modal' onClick={this.onBackdropClick}>
-          <div className={`Modal__container ${this.props.className || ''}`} tabIndex="-1" ref={this.storeContainer} 
+          <div className={`Modal__container ${this.props.className || ''}`} tabIndex="-1" ref={this.storeContainer}
                 onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
             {children}
           </div>

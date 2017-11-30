@@ -8,7 +8,9 @@ jest.mock('./service', () => {return {
   loadProcessDefinitionXml: jest.fn()
 }});
 
-jest.mock('./Diagram', () => props => <div>Diagram {props.children}</div>);
+jest.mock('components', () => {return {
+  BPMNDiagram: props => <div>Diagram {props.children}</div>
+}});
 jest.mock('./HeatmapOverlay', () => props => <div>HeatmapOverlay</div>);
 
 const diagramXml = 'some diagram XML';

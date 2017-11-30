@@ -2,7 +2,9 @@ import React from 'react';
 
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
-export default class Diagram extends React.Component {
+import './BPMNDiagram.css';
+
+export default class BPMNDiagram extends React.Component {
   constructor(props) {
     super(props);
 
@@ -22,7 +24,7 @@ export default class Diagram extends React.Component {
   }
 
   render() {
-    return <div style={{width: '100%', height: '400px'}} ref={this.storeContainer}>
+    return <div className='BPMNDiagram' style={this.props.style} ref={this.storeContainer}>
       {this.state.loaded && this.props.children && React.cloneElement(this.props.children, { viewer: this.viewer })}
     </div>;
   }
