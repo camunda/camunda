@@ -30,6 +30,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.startup.BrokerRestartTest;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.task.TaskHandler;
 import io.zeebe.test.util.TestFileUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,7 +42,7 @@ import org.junit.rules.RuleChain;
  */
 public class LargeWorkflowTest
 {
-    public static final int CREATION_TIMES = 1_000_000;
+    public static final int CREATION_TIMES = 100_000;
     public static final URL PATH = LargeWorkflowTest.class.getResource("");
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(PATH.getPath()));
@@ -131,6 +132,51 @@ public class LargeWorkflowTest
         }
 
         while (completed.get() < CREATION_TIMES * 10)
+        {
+            Thread.sleep(1000);
+        }
+    }
+
+
+    @Test
+    public void shouldCreateAndCompleteWorkflowInstancesWithFortyTasks() throws InterruptedException
+    {
+        final WorkflowsClient workflowService = clientRule.workflows();
+
+        final AtomicLong completed = new AtomicLong(0);
+
+        final TaskHandler taskHandler = (tasksClient, task) -> {
+            final long c = completed.incrementAndGet();
+            tasksClient.complete(task)
+                       .payload("{ \"orderStatus\": \"RESERVED\" }")
+                       .execute();
+            if (c % CREATION_TIMES == 0)
+            {
+                System.out.println("Completed: " + c);
+            }
+        };
+
+        for (int i = 0; i < 40; i++)
+        {
+            clientRule.tasks()
+                      .newTaskSubscription(clientRule.getDefaultTopic())
+                      .taskType("reserveOrderItems" + i)
+                      .lockOwner("stocker")
+                      .lockTime(Duration.ofMinutes(5))
+                      .handler(taskHandler).open();
+        }
+
+        // when
+        for (int i = 0; i < CREATION_TIMES; i++)
+        {
+            workflowService.create(clientRule.getDefaultTopic())
+                           .bpmnProcessId("extended-order-process")
+                           .latestVersion()
+                           .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
+                           .executeAsync();
+        }
+
+        while (completed.get() < CREATION_TIMES * 40)
         {
             Thread.sleep(1000);
         }
