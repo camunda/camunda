@@ -29,7 +29,7 @@ public abstract class ControlMessageRequest<R> implements Request<R>
     protected final ControlMessageType type;
     protected final String targetTopic;
     protected int targetPartition;
-    protected final Class<R> responseClass;
+    protected final Class<? extends R> responseClass;
 
     protected final RequestManager client;
 
@@ -37,7 +37,7 @@ public abstract class ControlMessageRequest<R> implements Request<R>
      * Constructor for requests addressing a specific partition
      */
     public ControlMessageRequest(RequestManager client, ControlMessageType type,
-            int targetPartition, Class<R> responseClass)
+            int targetPartition, Class<? extends R> responseClass)
     {
         this(client, type, null, targetPartition, responseClass);
     }
@@ -46,7 +46,7 @@ public abstract class ControlMessageRequest<R> implements Request<R>
      * Constructor for requests addressing a specific topic, but unspecified partition
      */
     public ControlMessageRequest(RequestManager client, ControlMessageType type,
-            String targetTopic, Class<R> responseClass)
+            String targetTopic, Class<? extends R> responseClass)
     {
         this(client, type, targetTopic, -1, responseClass);
     }
@@ -54,13 +54,13 @@ public abstract class ControlMessageRequest<R> implements Request<R>
     /**
      * Constructor for requests addressing any broker
      */
-    public ControlMessageRequest(RequestManager client, ControlMessageType type, Class<R> responseClass)
+    public ControlMessageRequest(RequestManager client, ControlMessageType type, Class<? extends R> responseClass)
     {
         this(client, type, null, -1, responseClass);
     }
 
     private ControlMessageRequest(RequestManager client, ControlMessageType type,
-            String targetTopic, int targetPartition, Class<R> responseClass)
+            String targetTopic, int targetPartition, Class<? extends R> responseClass)
     {
         this.client = client;
         this.type = type;
@@ -93,7 +93,7 @@ public abstract class ControlMessageRequest<R> implements Request<R>
     }
 
     @JsonIgnore
-    public Class<R> getResponseClass()
+    public Class<? extends R> getResponseClass()
     {
         return responseClass;
     }

@@ -21,7 +21,9 @@ import io.zeebe.client.event.Event;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.topic.Topics;
 import io.zeebe.client.topic.impl.CreateTopicCommandImpl;
+import io.zeebe.client.topic.impl.GetPartitionsRequestImpl;
 
 
 public class TopicClientImpl implements TopicsClient
@@ -64,6 +66,12 @@ public class TopicClientImpl implements TopicsClient
     public AcknowledgeSubscribedEventCommandImpl acknowledgeEvent(String topicName, int partitionId)
     {
         return new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), topicName, partitionId);
+    }
+
+    @Override
+    public Request<Topics> getTopics()
+    {
+        return new GetPartitionsRequestImpl(client.getCommandManager());
     }
 
 }

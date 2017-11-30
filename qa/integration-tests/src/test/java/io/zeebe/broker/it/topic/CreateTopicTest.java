@@ -17,8 +17,11 @@ package io.zeebe.broker.it.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +34,9 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.topic.Partition;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
 
 public class CreateTopicTest
 {
@@ -77,6 +83,28 @@ public class CreateTopicTest
         // then
         assertThat(bar.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATED");
         assertThat(foo.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATED");
+    }
+
+    @Test
+    public void shouldRequestTopics()
+    {
+        // given
+        final TopicsClient topics = clientRule.topics();
+        topics.create("foo", 2).execute();
+
+        // when
+        final Topics returnedTopics = clientRule.topics().getTopics().execute();
+
+        // then
+        assertThat(returnedTopics.getTopics()).hasSize(2);
+        final Map<String, List<Partition>> topicsByName =
+                returnedTopics.getTopics()
+                    .stream()
+                    .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
+
+        assertThat(topicsByName.get("foo")).hasSize(2);
+        assertThat(topicsByName.get(ClientRule.DEFAULT_TOPIC)).hasSize(1);
+
     }
 
 }

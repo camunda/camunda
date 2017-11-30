@@ -20,6 +20,7 @@ import io.zeebe.client.event.Event;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
+import io.zeebe.client.topic.Topics;
 
 /**
  * Provides operations related to any topic.
@@ -50,5 +51,12 @@ public interface TopicsClient
      * Creates a new topic with the given name and number of partitions.
      */
     Request<Event> create(String topicName, int partitions);
+
+    /**
+     * Requests all topics. Can be used to inspect which topics and partitions have been created.
+     */
+    Request<Topics> getTopics();
+
+
 
 }
