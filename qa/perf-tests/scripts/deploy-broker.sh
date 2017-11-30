@@ -21,6 +21,7 @@ ssh ${REMOTE_USERNAME}@${REMOTE_HOST} /bin/bash <<-EOF
     chmod +x ./broker
     # use external ip for client interface
     sed -i "s/0.0.0.0/${REMOTE_HOST}/g" ../conf/zeebe.cfg.toml
+    export ZEEBE_LOG_LEVEL=debug
     JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000" nohup ./broker &> log.txt &
     echo \$! > broker.pid
 EOF

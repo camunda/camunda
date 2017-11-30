@@ -1,5 +1,10 @@
 # Default Zeebe Config File. Used if no config file is provided to the broker.
 
+# Global configuration --------------------------------
+
+[global]
+# useTempDirectory = true
+
 # Networking configuration ----------------------------
 
 [network]
@@ -21,33 +26,20 @@ host = "localhost"
 port = 51017
 receiveBufferSize = 16
 
-[network.gossip]
-peersStorageFile = "../data/gossip-state.data"
-
-[network.management]
-metaDirectory = "../data/meta"
-
 # System Configuration --------------------------------
 
 [threading]
-# numberOfThreads = 2
-maxIdleTimeMs = 10
+numberOfThreads = 2
+maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
-
-[metrics]
-countersFileName = "../data/counters.data"
 
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-logDirectories = [ "../data/logstreams" ]
-indexDirectory = "../data/index"
 
-[snapshot]
-snapshotDirectory = "../data/index/snapshots"
+# Workflow Configuration ------------------------------------------
 
-# Topic Subscriptions ------------------------------------------
-
-[subscriptions]
-snapshotDirectory = "../data/snapshots/subscriptions"
+[workflow]
+cacheSize = 1024
+maxPayloadSize = 4096
