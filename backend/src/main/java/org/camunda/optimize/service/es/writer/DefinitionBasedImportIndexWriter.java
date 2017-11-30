@@ -30,7 +30,7 @@ public class DefinitionBasedImportIndexWriter {
       importStartIndex.getCurrentProcessDefinition().getDefinitionBasedImportIndex(), typeIndexComesFrom);
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
         configurationService.getProcessDefinitionImportIndexType(),
         EsHelper.constructKey(typeIndexComesFrom, importStartIndex.getEngine()))
       .setSource(

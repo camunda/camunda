@@ -60,7 +60,7 @@ public class DashboardWriter {
 
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
         configurationService.getDashboardType(),
         id
       )
@@ -84,9 +84,10 @@ public class DashboardWriter {
     updateDto.setReports(dashboard.getReports());
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
         configurationService.getDashboardType(),
-        dashboard.getId())
+        dashboard.getId()
+      )
       .setDoc(objectMapper.writeValueAsString(updateDto), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
@@ -106,10 +107,11 @@ public class DashboardWriter {
   public void deleteDashboard(String dashboardId) {
     logger.debug("Deleting dashboard with id [{}]");
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(),
+      configurationService.getOptimizeIndex(configurationService.getDashboardType()),
       configurationService.getDashboardType(),
-      dashboardId)
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+      dashboardId
+    )
+    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+    .get();
   }
 }

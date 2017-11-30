@@ -20,8 +20,8 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator{
   private Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
 
   @Override
-  public String getSource() {
-    String source = "";
+  public XContentBuilder getSource() {
+    XContentBuilder source = null;
     try {
         XContentBuilder content = jsonBuilder()
           .startObject()
@@ -48,9 +48,9 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator{
               .endObject()
             .endArray()
           .endObject();
-      source = content.string();
+      source = content;
     } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex() +
+      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex(getType()) +
         "' , type '" + getType() + "'!";
       logger.error(message, e);
     }

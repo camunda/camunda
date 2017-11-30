@@ -55,8 +55,7 @@ public class ProcessDefinitionReader {
     }
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(types.toArray(new String[types.size()]))
+        .prepareSearch(configurationService.getOptimizeIndex(types))
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setSize(20)
@@ -91,8 +90,8 @@ public class ProcessDefinitionReader {
   }
 
   private void addPartialDefinition(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
-    String id = hit.getSource().get(ProcessDefinitionType.PROCESS_DEFINITION_ID).toString();
-    String xml = hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
+    String id = hit.getSourceAsMap().get(ProcessDefinitionType.PROCESS_DEFINITION_ID).toString();
+    String xml = hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
     if (definitionsResult.containsKey(id)) {
       definitionsResult.get(id).setBpmn20Xml(xml);
     } else {
@@ -116,7 +115,7 @@ public class ProcessDefinitionReader {
 
   public String getProcessDefinitionXml(String processDefinitionId) {
     GetResponse response = esclient.prepareGet(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
         configurationService.getProcessDefinitionXmlType(),
         processDefinitionId)
         .get();
@@ -152,7 +151,7 @@ public class ProcessDefinitionReader {
   public Map<String, String> getProcessDefinitionsXml(List<String> ids) {
     Map<String, String> result = new HashMap<>();
     SearchResponse scrollResp = esclient.prepareSearch(
-        configurationService.getOptimizeIndex())
+        configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
         .setTypes(configurationService.getProcessDefinitionXmlType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(QueryBuilders.termsQuery(ProcessDefinitionXmlType.ID, ids))
@@ -162,8 +161,8 @@ public class ProcessDefinitionReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         result.put(
-            hit.getSource().get(ProcessDefinitionXmlType.ID).toString(),
-            hit.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString()
+            hit.getSourceAsMap().get(ProcessDefinitionXmlType.ID).toString(),
+            hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString()
         );
       }
       scrollResp = esclient

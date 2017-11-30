@@ -50,7 +50,8 @@ public class MissingEntriesFinderIT {
   private void allDocumentsInElasticsearchAreNew() {
     QueryBuilder qb = matchAllQuery();
 
-    SearchResponse idsResp = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse idsResp = elasticSearchRule.getClient()
+      .prepareSearch()
       .setTypes()
       .setQuery(qb)
       .setVersion(true)

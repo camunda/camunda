@@ -207,7 +207,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
       .setTypes(configurationService.getProcessDefinitionXmlType())
       .setQuery(matchAllQuery())
       .setSize(100)
@@ -219,7 +220,7 @@ public class MultipleEngineSupportIT {
     allowedProcessDefinitionKeys.add("TestProcess2");
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionId = (String) searchHit.getSource().get(PROCESS_DEFINITION_ID);
+      String processDefinitionId = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_ID);
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
@@ -227,13 +228,14 @@ public class MultipleEngineSupportIT {
   }
 
   private String getKeyForProcessDefinitionId(String processDefinitionId) {
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionType()))
       .setTypes(configurationService.getProcessDefinitionType())
       .setQuery(termQuery(PROCESS_DEFINITION_ID, processDefinitionId))
       .setSize(100)
       .get();
     assertThat(searchResponse.getHits().getTotalHits(), is(1L));
-    return (String) searchResponse.getHits().getHits()[0].getSource().get(PROCESS_DEFINITION_KEY);
+    return (String) searchResponse.getHits().getHits()[0].getSourceAsMap().get(PROCESS_DEFINITION_KEY);
   }
 
   @Test
@@ -247,7 +249,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionType()))
       .setTypes(configurationService.getProcessDefinitionType())
       .setQuery(matchAllQuery())
       .setSize(100)
@@ -259,7 +262,7 @@ public class MultipleEngineSupportIT {
     allowedProcessDefinitionKeys.add("TestProcess2");
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionKey = (String) searchHit.getSource().get(PROCESS_DEFINITION_KEY);
+      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
     }
@@ -276,7 +279,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(matchAllQuery())
       .setSize(100)
@@ -293,12 +297,12 @@ public class MultipleEngineSupportIT {
   private void assertImportResults(SearchResponse searchResponse, Set<String> allowedProcessDefinitionKeys) {
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionKey = (String) searchHit.getSource().get(ProcessInstanceType.PROCESS_DEFINITION_KEY);
+      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(ProcessInstanceType.PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
-      List events = (List) searchHit.getSource().get(EVENTS);
+      List events = (List) searchHit.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
-      List stringVariables = (List) searchHit.getSource().get(STRING_VARIABLES);
+      List stringVariables = (List) searchHit.getSourceAsMap().get(STRING_VARIABLES);
       //NOTE: independent from process definition
       assertThat(stringVariables.size(), is(1));
     }
@@ -317,7 +321,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(matchAllQuery())
       .setSize(100)
@@ -421,7 +426,7 @@ public class MultipleEngineSupportIT {
 
     // then
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()))
       .setTypes(configurationService.getProcessDefinitionImportIndexType())
       .setQuery(matchAllQuery())
       .setSize(100)
@@ -439,7 +444,7 @@ public class MultipleEngineSupportIT {
 
     assertThat(searchResponse.getHits().getTotalHits(), is(8L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionId = ((Map)searchHit.getSource().get("currentProcessDefinition")).get("processDefinitionId").toString();
+      String processDefinitionId = ((Map)searchHit.getSourceAsMap().get("currentProcessDefinition")).get("processDefinitionId").toString();
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);

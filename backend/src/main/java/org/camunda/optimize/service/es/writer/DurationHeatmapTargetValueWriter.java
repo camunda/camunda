@@ -37,7 +37,7 @@ public class DurationHeatmapTargetValueWriter {
     );
     esclient
       .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getDurationHeatmapTargetValueType()),
           configurationService.getDurationHeatmapTargetValueType(),
           dto.getProcessDefinitionId()
       )

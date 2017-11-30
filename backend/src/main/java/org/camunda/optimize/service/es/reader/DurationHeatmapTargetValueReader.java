@@ -37,7 +37,11 @@ public class DurationHeatmapTargetValueReader {
     dto.setTargetValues(Collections.emptyMap());
     try {
       GetResponse response = esclient
-        .prepareGet(configurationService.getOptimizeIndex(), configurationService.getDurationHeatmapTargetValueType(), processDefinitionId)
+        .prepareGet(
+            configurationService.getOptimizeIndex(configurationService.getDurationHeatmapTargetValueType()),
+            configurationService.getDurationHeatmapTargetValueType(),
+            processDefinitionId
+        )
         .get();
 
       Map<String, Object> responseMap = response.getSourceAsMap();

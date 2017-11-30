@@ -244,11 +244,26 @@ public class ConfigurationService {
     return elasticSearchPort;
   }
 
-  public String getOptimizeIndex() {
+  protected String getOptimizeIndex() {
     if (optimizeIndex == null) {
       optimizeIndex = jsonContext.read(ConfigurationServiceConstants.OPTIMIZE_INDEX);
     }
     return optimizeIndex;
+  }
+
+  public String getOptimizeIndex(String type) {
+    String original = this.getOptimizeIndex() + "-" + type;
+    return original.toLowerCase();
+  }
+
+  public String[] getOptimizeIndex(ArrayList<String> types) {
+    String[] result = new String[types.size()];
+    int i = 0;
+    for (String type : types) {
+      result[i] = this.getOptimizeIndex(type);
+      i = i + 1;
+    }
+    return result;
   }
 
   public String getHistoricActivityInstanceEndpoint() {
@@ -1159,6 +1174,7 @@ public class ConfigurationService {
   public void setBackoffEnabled(Boolean backoffEnabled) {
     this.backoffEnabled = backoffEnabled;
   }
+
 
 
 }

@@ -68,7 +68,7 @@ public class LicenseManager {
 
     IndexResponse response = esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getLicenseType()),
         configurationService.getLicenseType(),
         licenseDocumentId
       )
@@ -92,9 +92,10 @@ public class LicenseManager {
   public String retrieveStoredOptimizeLicense() throws InvalidLicenseException {
     GetResponse response = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getLicenseType()),
         configurationService.getLicenseType(),
-        licenseDocumentId)
+        licenseDocumentId
+      )
       .get();
 
     String licenseAsString;

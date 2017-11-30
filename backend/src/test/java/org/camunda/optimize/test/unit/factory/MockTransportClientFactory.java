@@ -10,6 +10,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.mockito.AdditionalMatchers;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -38,7 +39,7 @@ public class MockTransportClientFactory implements FactoryBean<Client> {
   public Client getObject() throws Exception {
     Client transportClientMock = mock(Client.class);
     SearchRequestBuilder optimizeSearchRequestBuilder = mock(SearchRequestBuilder.class);
-    when(transportClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(optimizeSearchRequestBuilder);
+    when(transportClientMock.prepareSearch(Mockito.anyString())).thenReturn(optimizeSearchRequestBuilder);
 
     setUpSearchRequestBuilderForAuthenticationTest(optimizeSearchRequestBuilder);
     setUpSearchRequestBuilderForImportTests(optimizeSearchRequestBuilder);
@@ -68,9 +69,8 @@ public class MockTransportClientFactory implements FactoryBean<Client> {
 
   private SearchResponse setUpSearchResponse() {
     SearchResponse responseWithOneHit = mock(SearchResponse.class);
-    SearchHits searchHitsMock = mock(SearchHits.class);
-    when(searchHitsMock.getTotalHits()).thenReturn(1L);
-    when(searchHitsMock.totalHits()).thenReturn(1L);
+    SearchHit[] hits = null;
+    SearchHits searchHitsMock = new SearchHits(hits,1,0);
     when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
     return responseWithOneHit;
   }
@@ -89,11 +89,9 @@ public class MockTransportClientFactory implements FactoryBean<Client> {
 
   private SearchResponse createImportTestSearchResponse() {
     SearchResponse responseWithOneHit = mock(SearchResponse.class);
-    SearchHits searchHitsMock = mock(SearchHits.class);
     SearchHit[] searchHits = {};
-    when(searchHitsMock.getTotalHits()).thenReturn(0L);
+    SearchHits searchHitsMock = new SearchHits(searchHits, 0, 0);
     when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
-    when(searchHitsMock.getHits()).thenReturn(searchHits);
     return responseWithOneHit;
   }
 

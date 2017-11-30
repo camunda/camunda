@@ -52,12 +52,12 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
 
   private void deleteDefaultUserIfExist() {
     client.prepareDelete(
-      configurationService.getOptimizeIndex(),
+      configurationService.getOptimizeIndex(configurationService.getElasticSearchUsersType()),
       configurationService.getElasticSearchUsersType(),
       configurationService.getDefaultUser()
     )
-      .setRefreshPolicy(IMMEDIATE)
-      .get();
+    .setRefreshPolicy(IMMEDIATE)
+    .get();
   }
 
   private void addDefaultUser() {
@@ -68,7 +68,7 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
     try {
       client
         .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getElasticSearchUsersType()),
           configurationService.getElasticSearchUsersType(),
           configurationService.getDefaultUser()
         )
@@ -83,13 +83,15 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   public boolean authenticate(CredentialsDto credentialsDto) {
     this.initialize();
     boolean authenticated = true;
-    SearchResponse response = client.prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(configurationService.getElasticSearchUsersType())
-        .setQuery(QueryBuilders.boolQuery()
-            .must(termQuery("username" , credentialsDto.getUsername()))
-            .must(termQuery("password" , credentialsDto.getPassword()))
-        )
-        .get();
+    SearchResponse response = client.prepareSearch(
+        configurationService.getOptimizeIndex(configurationService.getElasticSearchUsersType())
+    )
+    .setTypes(configurationService.getElasticSearchUsersType())
+    .setQuery(QueryBuilders.boolQuery()
+        .must(termQuery("username", credentialsDto.getUsername()))
+        .must(termQuery("password", credentialsDto.getPassword()))
+    )
+    .get();
     if (response.getHits().getTotalHits() <= 0) {
       authenticated = false;
     }

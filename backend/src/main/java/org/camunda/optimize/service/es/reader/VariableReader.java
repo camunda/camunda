@@ -10,6 +10,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -55,7 +56,7 @@ public class VariableReader {
 
     SearchRequestBuilder requestBuilder =
       esclient
-          .prepareSearch(configurationService.getOptimizeIndex())
+          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query);
     addVariableAggregation(requestBuilder);
@@ -95,7 +96,7 @@ public class VariableReader {
             .subAggregation(
               terms(NAMES_AGGREGATION)
                 .field(getNestedVariableNameFieldLabel(variableFieldLabel))
-                .order(Terms.Order.term(true))
+                .order(BucketOrder.key(true))
             )
         );
     }
@@ -111,7 +112,7 @@ public class VariableReader {
     String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
     SearchResponse response =
       esclient
-          .prepareSearch(configurationService.getOptimizeIndex())
+          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query)
           .addAggregation(getVariableValueAggregation(name, variableFieldLabel))
@@ -136,7 +137,7 @@ public class VariableReader {
     TermsAggregationBuilder variableValuesAgg =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
-        .order(Terms.Order.term(true));
+        .order(BucketOrder.key(true));
     if (variableFieldLabel.equals(DATE_VARIABLES)) {
       variableValuesAgg.format(configurationService.getDateFormat());
     }

@@ -25,7 +25,8 @@
 
     <jackson.version>2.9.0</jackson.version>
     <camunda.engine.version>7.7.0</camunda.engine.version>
-    <elasticsearch.version>5.4.0</elasticsearch.version>
+    <log4j.version>2.9.1</log4j.version>
+    <elasticsearch.version>6.0.0</elasticsearch.version>
     <elasticsearch.plugin.version>5.7</elasticsearch.plugin.version>
     <spring.version>4.3.4.RELEASE</spring.version>
     <mockito.version>2.2.0</mockito.version>

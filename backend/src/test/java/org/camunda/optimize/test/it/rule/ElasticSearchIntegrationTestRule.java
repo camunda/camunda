@@ -6,11 +6,13 @@ import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
+import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
@@ -67,7 +69,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     try {
       esclient =
           new PreBuiltTransportClient(Settings.EMPTY)
-              .addTransportAddress(new InetSocketTransportAddress(
+              .addTransportAddress(new TransportAddress(
                   InetAddress.getByName(properties.getProperty("camunda.optimize.es.host")),
                   Integer.parseInt(properties.getProperty("camunda.optimize.es.port"))
               ));
@@ -143,7 +145,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void refreshOptimizeIndexInElasticsearch() {
     try {
       esclient.admin().indices()
-          .prepareRefresh(this.getOptimizeIndex())
+          .prepareRefresh()
           .get();
     } catch (IndexNotFoundException e) {
       //nothing to do
@@ -172,7 +174,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     } catch (JsonProcessingException e) {
       logger.error("Unable to add an entry to elasticsearch", e);
     }
-    esclient.prepareIndex(this.getOptimizeIndex(), type, id)
+    esclient.prepareIndex(this.getOptimizeIndex(type), type, id)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // necessary because otherwise I can't search for the entry immediately
       .setSource(json, XContentType.JSON)
       .get();
@@ -188,7 +190,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
     esclient
       .prepareIndex(
-        getOptimizeIndex(),
+        getOptimizeIndex(getUserType()),
         getUserType(),
         "1"
       )
@@ -210,11 +212,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void deleteOptimizeIndex() {
-    esclient
-      .admin()
-      .indices()
-      .prepareDelete(getOptimizeIndex())
-      .get();
+    GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
+    for (String indexName : indexes.getIndices()) {
+      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+          .refresh(true)
+          .filter(matchAllQuery())
+          .source(indexName)
+          .execute()
+          .actionGet();
+    }
   }
 
   public void cleanAndVerify() {
@@ -223,21 +229,21 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    String indexName = properties.getProperty("camunda.optimize.es.index");
-    boolean exists = esclient.admin().indices()
-        .prepareExists(indexName)
-        .execute().actionGet().isExists();
-    refreshOptimizeIndexInElasticsearch();
-
-    if (exists) {
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-          .refresh(true)
-          .filter(matchAllQuery())
-          .source(indexName)
-          .execute()
-          .actionGet();
-
+    GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
+    for (String indexName : indexes.getIndices()) {
+      try {
+        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+            .refresh(true)
+            .filter(matchAllQuery())
+            .source(indexName)
+            .execute()
+            .actionGet();
+      } catch (Exception e) {
+        //nothing to do
+        logger.error("can't clean index [{}]", indexName, e);
+      }
     }
+
   }
 
   private String getUserType() {
@@ -247,7 +253,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private void assureElasticsearchIsClean() {
     try {
       SearchResponse response = esclient
-          .prepareSearch(this.getOptimizeIndex())
+          .prepareSearch()
           .setQuery(matchAllQuery())
           .get();
       Long hits = response.getHits().getTotalHits();
@@ -261,8 +267,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return esclient;
   }
 
-  public String getOptimizeIndex() {
+  protected String getOptimizeIndex() {
     return properties.getProperty("camunda.optimize.es.index");
+  }
+
+  public String getOptimizeIndex(String type) {
+    String original = this.getOptimizeIndex() + "-" + type;
+    return original.toLowerCase();
   }
 
   public String getProcessDefinitionType() {

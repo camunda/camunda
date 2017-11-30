@@ -13,6 +13,7 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsRespon
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.mapper.StrictDynamicMappingException;
 import org.elasticsearch.indices.TypeMissingException;
 import org.junit.Before;
@@ -110,11 +111,11 @@ public class SchemaInitializerIT {
 
   private void assertTypeExists(String type) {
     GetMappingsResponse response = transportClient.admin().indices()
-        .prepareGetMappings(configurationService.getOptimizeIndex())
+        .prepareGetMappings(configurationService.getOptimizeIndex(type))
         .get();
 
     boolean containsType = response.mappings()
-        .get(configurationService.getOptimizeIndex())
+        .get(configurationService.getOptimizeIndex(type))
         .containsKey(type);
     assertThat(containsType, is(true));
   }
@@ -137,14 +138,14 @@ public class SchemaInitializerIT {
 
   private void assertThatNewFieldExists() {
     GetFieldMappingsResponse response = transportClient.admin().indices()
-        .prepareGetFieldMappings(configurationService.getOptimizeIndex())
+        .prepareGetFieldMappings(configurationService.getOptimizeIndex(configurationService.getEventType()))
         .setTypes(configurationService.getEventType())
         .setFields(MyUpdatedEventType.MY_NEW_FIELD)
         .get();
 
     FieldMappingMetaData fieldEntry =
         response.fieldMappings(
-            configurationService.getOptimizeIndex(),
+            configurationService.getOptimizeIndex(configurationService.getEventType()),
             configurationService.getEventType(),
             MyUpdatedEventType.MY_NEW_FIELD
         );
@@ -158,7 +159,7 @@ public class SchemaInitializerIT {
     schemaInitializer.initializeSchema();
 
     // then an exception is thrown
-    thrown.expect(TypeMissingException.class);
+    thrown.expect(IndexNotFoundException.class);
 
     // when I add a document to an unknown type
     FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();

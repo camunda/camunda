@@ -37,7 +37,7 @@ public class ReportReader {
     logger.debug("Fetching report with id [{}]", reportId);
     GetResponse getResponse = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getReportType()),
         configurationService.getReportType(),
         reportId
       )
@@ -72,7 +72,7 @@ public class ReportReader {
   public List<ReportDefinitionDto> getAllReports() throws IOException {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportType()))
       .setTypes(configurationService.getReportType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())

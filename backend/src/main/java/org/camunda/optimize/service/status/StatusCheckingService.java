@@ -76,7 +76,7 @@ public class StatusCheckingService {
       ClusterHealthResponse getResponse = elasticsearchClient
         .admin()
         .cluster()
-        .prepareHealth(configurationService.getOptimizeIndex())
+        .prepareHealth()
         .get();
       isConnected = getResponse.status().getStatus() == 200 && getResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {

@@ -138,9 +138,10 @@ public class VariableWriter {
     if (newEntryIfAbsent != null) {
       addVariablesToProcessInstanceBulkRequest.add(esclient
           .prepareUpdate(
-              configurationService.getOptimizeIndex(),
+              configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
               configurationService.getProcessInstanceType(),
-              processInstanceId)
+              processInstanceId
+          )
           .setScript(updateScript)
           .setUpsert(newEntryIfAbsent, XContentType.JSON)
           .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
@@ -217,7 +218,7 @@ public class VariableWriter {
     String variableId = variable.getId();
     variableBulkRequest.add(esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getVariableType()),
         configurationService.getVariableType(),
         variableId
       )

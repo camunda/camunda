@@ -73,7 +73,8 @@ public class ReportHandlingIT {
     // then
     GetResponse response =
       elasticSearchRule.getClient()
-        .prepareGet(elasticSearchRule.getOptimizeIndex(),
+        .prepareGet(
+          elasticSearchRule.getOptimizeIndex(elasticSearchRule.getReportType()),
           elasticSearchRule.getReportType(),
           id
         )

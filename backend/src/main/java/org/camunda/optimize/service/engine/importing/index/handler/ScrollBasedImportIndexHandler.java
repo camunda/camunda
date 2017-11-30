@@ -100,7 +100,7 @@ public abstract class ScrollBasedImportIndexHandler
 
     return esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(getElasticsearchTrackingType()),
         getElasticsearchTrackingType(),
         getElasticsearchId())
       .setScript(updateScript)
@@ -171,7 +171,7 @@ public abstract class ScrollBasedImportIndexHandler
 
   private void resetElasticsearchTrackingType() {
     esclient.
-      prepareDelete(configurationService.getOptimizeIndex(),
+      prepareDelete(configurationService.getOptimizeIndex(getElasticsearchTrackingType()),
         getElasticsearchTrackingType(),
         getElasticsearchId()
         )

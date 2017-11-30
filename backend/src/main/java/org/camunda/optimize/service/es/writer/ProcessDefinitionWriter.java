@@ -6,12 +6,15 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeD
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class ProcessDefinitionWriter {
@@ -32,11 +35,11 @@ public class ProcessDefinitionWriter {
       String id = procDef.getId();
       bulkRequest.add(esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
           configurationService.getProcessDefinitionType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(procDef)));
+        .setSource(objectMapper.convertValue(procDef, Map.class)));
     }
 
     bulkRequest.execute().get();
@@ -49,11 +52,11 @@ public class ProcessDefinitionWriter {
       String id = xml.getId();
       bulkRequest.add(esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
           configurationService.getProcessDefinitionXmlType(),
           id
         )
-        .setSource(objectMapper.writeValueAsString(xml)));
+        .setSource(objectMapper.convertValue(xml, Map.class)));
     }
 
     bulkRequest.execute().get();

@@ -33,7 +33,7 @@ public class ImportIndexReader {
     try {
       getResponse = esclient
         .prepareGet(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getImportIndexType()),
           configurationService.getImportIndexType(),
           id)
         .setRealtime(false)

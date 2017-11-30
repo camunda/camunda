@@ -38,7 +38,7 @@ public class AverageFlowNodeDurationByFlowNodeCommand extends ReportCommand {
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)

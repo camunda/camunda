@@ -19,8 +19,6 @@
       </includes>
       <unpackOptions>
         <excludes>
-          <exclude>**/bin/elasticsearch</exclude>
-          <exclude>**/bin/elasticsearch.bat</exclude>
           <exclude>**/config/jvm.options</exclude>
         </excludes>
       </unpackOptions>
@@ -73,14 +71,6 @@
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
-    </file>
-    <file>
-      <source>src/config/elasticsearch</source>
-      <outputDirectory>server/elasticsearch-${elasticsearch.version}/bin/</outputDirectory>
-    </file>
-    <file>
-      <source>src/config/elasticsearch.bat</source>
-      <outputDirectory>server/elasticsearch-${elasticsearch.version}/bin/</outputDirectory>
     </file>
     <file>
       <source>src/config/jvm.options</source>

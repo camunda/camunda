@@ -46,9 +46,11 @@ public class DurationHeatmapTargetValueIT {
 
     // then
     GetResponse response = elasticSearchRule.getClient()
-      .prepareGet(elasticSearchRule.getOptimizeIndex(),
-          elasticSearchRule.getDurationHeatmapTargetValueType(),
-        PROCESS_DEFINITION_ID)
+      .prepareGet(
+        elasticSearchRule.getOptimizeIndex(elasticSearchRule.getDurationHeatmapTargetValueType()),
+        elasticSearchRule.getDurationHeatmapTargetValueType(),
+        PROCESS_DEFINITION_ID
+      )
       .get();
 
     assertThat(response.isExists(), is(true));

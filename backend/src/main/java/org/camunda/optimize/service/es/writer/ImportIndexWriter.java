@@ -56,7 +56,7 @@ public class ImportIndexWriter {
     try {
       return esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
           configurationService.getProcessDefinitionImportIndexType(),
           getId(importIndex)
         )
@@ -90,7 +90,7 @@ public class ImportIndexWriter {
     try {
       return esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getImportIndexType()),
           configurationService.getImportIndexType(),
           getId(importIndex)
         )

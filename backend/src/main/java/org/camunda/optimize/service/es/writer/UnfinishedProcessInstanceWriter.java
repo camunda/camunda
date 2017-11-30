@@ -63,11 +63,13 @@ public class UnfinishedProcessInstanceWriter {
   private void addProcessInstanceIdTrackingRequest(BulkRequestBuilder processInstanceIdTrackerBulkRequest, ProcessInstanceDto dto) {
     processInstanceIdTrackerBulkRequest.add(
         esclient.prepareIndex(
-            configurationService.getOptimizeIndex(),
+            configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()),
             configurationService.getUnfinishedProcessInstanceIdTrackingType(),
-            dto.getProcessInstanceId())
-            .setSource(Collections.emptyMap())
+            dto.getProcessInstanceId()
+        )
+        .setSource(Collections.emptyMap())
     );
+    logger.debug("writing to [{}]", configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()));
   }
 
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {
@@ -87,7 +89,7 @@ public class UnfinishedProcessInstanceWriter {
 
     bulkRequest.add(esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
         configurationService.getProcessInstanceType(),
         processInstanceId)
       .setScript(updateScript)

@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +30,45 @@ public class ElasticSearchSchemaManager {
     mappings.add(mapping);
   }
 
+  //TODO:better implementation?
   public boolean schemaAlreadyExists() {
     IndicesExistsResponse response = esclient
       .admin()
       .indices()
-      .prepareExists(configurationService.getOptimizeIndex())
+      .prepareExists(configurationService.getOptimizeIndex(mappings.get(0).getType()))
       .get();
     return response.isExists();
+  }
+
+
+  /**
+   * NOTE: create one index per type
+   *
+   * https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
+   *
+   */
+  public void createOptimizeIndex() {
+    Settings indexSettings = null;
+    for (TypeMappingCreator mapping : mappings) {
+      try {
+        indexSettings = buildSettings();
+      } catch (IOException e) {
+        logger.error("Could not create settings!", e);
+      }
+      CreateIndexRequestBuilder createIndexRequestBuilder = esclient
+          .admin()
+          .indices()
+          .prepareCreate(configurationService.getOptimizeIndex(mapping.getType()))
+          .setSettings(indexSettings);
+
+      createIndexRequestBuilder = createIndexRequestBuilder.addMapping(
+          mapping.getType(),
+          mapping.getSource()
+      );
+      createIndexRequestBuilder
+        .get();
+      esclient.admin().indices().prepareRefresh().get();
+    }
   }
 
   public void updateMappings() {
@@ -43,20 +77,14 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  public void createOptimizeIndex() {
-    Settings indexSettings = null;
-    try {
-      indexSettings = buildSettings();
-    } catch (IOException e) {
-      logger.error("Could not create settings!", e);
-    }
+  private void createSingleSchema(String type, XContentBuilder content) {
     esclient
-      .admin()
+        .admin()
         .indices()
-          .prepareCreate(configurationService.getOptimizeIndex())
-          .setSettings(indexSettings)
-      .get();
-    esclient.admin().indices().prepareRefresh().get();
+        .preparePutMapping(configurationService.getOptimizeIndex(type))
+        .setType(type)
+        .setSource(content)
+        .get();
   }
 
   private Settings buildSettings() throws IOException {
@@ -80,16 +108,6 @@ public class ElasticSearchSchemaManager {
       .endObject()
       .string(), XContentType.JSON)
     .build();
-  }
-
-  private void createSingleSchema(String type, String content) {
-    esclient
-      .admin()
-      .indices()
-      .preparePutMapping(configurationService.getOptimizeIndex())
-      .setType(type)
-      .setSource(content, XContentType.JSON)
-      .get();
   }
 
   public Client getEsclient() {

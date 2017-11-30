@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.FinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
+import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType;
@@ -64,6 +65,9 @@ public class ElasticSearchSchemaInitializer {
   private FinishedProcessInstanceIdTrackingType finishedProcessInstanceIdTrackingType;
 
   @Autowired
+  private UnfinishedProcessInstanceIdTrackingType unfinishedProcessInstanceIdTrackingType;
+
+  @Autowired
   private UnfinishedProcessInstanceTrackingType unfinishedProcessInstanceTrackingType;
 
   @Autowired
@@ -98,6 +102,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(eventType);
     schemaManager.addMapping(finishedProcessInstanceIdTrackingType);
     schemaManager.addMapping(unfinishedProcessInstanceTrackingType);
+    schemaManager.addMapping(unfinishedProcessInstanceIdTrackingType);
     schemaManager.addMapping(variableProcessInstanceTrackingType);
     schemaManager.addMapping(variableType);
     schemaManager.addMapping(processDefinitionType);

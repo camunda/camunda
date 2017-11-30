@@ -63,7 +63,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     Long result ;
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       SearchResponse response = esclient
-          .prepareSearch(configurationService.getOptimizeIndex())
+          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(QueryBuilders.matchAllQuery())
           .setSize(0) // Don't return any documents, we don't need them.
@@ -111,7 +111,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex())
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
         .setTypes(configurationService.getProcessInstanceType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
@@ -133,13 +133,13 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     esclient
       .admin()
       .indices()
-      .prepareRefresh(configurationService.getOptimizeIndex())
+      .prepareRefresh()
       .get();
   }
 
   private QueryBuilder buildBasicQuery() {
     TermsLookup termsLookup = new TermsLookup(
-      configurationService.getOptimizeIndex(),
+      configurationService.getOptimizeIndex(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE),
       VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE,
       EsHelper.constructKey(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE, engineAlias),
       PROCESS_INSTANCE_IDS);

@@ -87,3 +87,4 @@
 #
 #action.destructive_requires_name: true
 path.repo: ["./_snapshots/es_it_repository"]
+action.auto_create_index: 0

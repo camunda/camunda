@@ -153,7 +153,7 @@ public class ProcessDefinitionBaseImportIT {
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSource().get(EVENTS);
+      List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
     }
   }
@@ -171,7 +171,7 @@ public class ProcessDefinitionBaseImportIT {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
-    List events = (List) hit.getSource().get(EVENTS);
+    List events = (List) hit.getSourceAsMap().get(EVENTS);
     assertThat(events.size(), is(1));
   }
 
@@ -192,7 +192,7 @@ public class ProcessDefinitionBaseImportIT {
 
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      assertThat(searchHitFields.getSource().get("processDefinitionId"), is(latestPd));
+      assertThat(searchHitFields.getSourceAsMap().get("processDefinitionId"), is(latestPd));
     }
 
   }
@@ -227,7 +227,7 @@ public class ProcessDefinitionBaseImportIT {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
       assertThat(idsResp.getHits().totalHits, is((long) ids.size()));
-      assertThat((String) searchHitFields.getSource().get("processDefinitionId"), isIn(ids));
+      assertThat((String) searchHitFields.getSourceAsMap().get("processDefinitionId"), isIn(ids));
     }
     configurationService.setEngineImportProcessInstanceMaxPageSize(oldPageSize);
   }
@@ -259,7 +259,8 @@ public class ProcessDefinitionBaseImportIT {
   private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
     QueryBuilder qb = matchAllQuery();
 
-    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    return elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(elasticsearchType))
       .setTypes(elasticsearchType)
       .setQuery(qb)
       .setSize(100)

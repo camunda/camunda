@@ -12,7 +12,7 @@ PID_FILE=$BASEDIR/run/$PROGRAM.pid
 
 if [[ $1 != "standalone" ]]; then
 	echo "Starting Elasticsearch...";
-	exec /bin/sh "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
+	exec /bin/bash "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
 
     RETRIES=6
     SLEEP_TIME=10

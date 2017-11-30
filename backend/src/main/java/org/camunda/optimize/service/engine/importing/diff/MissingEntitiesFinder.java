@@ -64,7 +64,7 @@ public class MissingEntitiesFinder<ENG extends EngineDto> {
 
     Set<String> idsAlreadyAddedToOptimize = new HashSet<>();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex())
+        .prepareSearch(configurationService.getOptimizeIndex(elasticseachType))
         .setTypes(elasticseachType)
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(qb)

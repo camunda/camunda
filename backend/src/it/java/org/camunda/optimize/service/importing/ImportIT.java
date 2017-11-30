@@ -238,7 +238,7 @@ public class ImportIT  {
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSource().get(EVENTS);
+      List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
     }
   }
@@ -257,9 +257,9 @@ public class ImportIT  {
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSource().get(EVENTS);
+      List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(1));
-      Object date = searchHitFields.getSource().get(END_DATE);
+      Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(nullValue()));
     }
 
@@ -271,7 +271,7 @@ public class ImportIT  {
     // then
     idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      Object date = searchHitFields.getSource().get(END_DATE);
+      Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(notNullValue()));
     }
   }
@@ -295,7 +295,7 @@ public class ImportIT  {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
-    List events = (List) hit.getSource().get(EVENTS);
+    List events = (List) hit.getSourceAsMap().get(EVENTS);
     assertThat(events.size(), is(1));
   }
 
@@ -656,7 +656,7 @@ public class ImportIT  {
 
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (Entry searchHitField : searchHit.getSource().entrySet()) {
+      for (Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
         String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
           ". Should actually have a value!";
         assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
@@ -671,7 +671,7 @@ public class ImportIT  {
   private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
     QueryBuilder qb = matchAllQuery();
 
-    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex(elasticsearchType))
       .setTypes(elasticsearchType)
       .setQuery(qb)
       .setSize(100)

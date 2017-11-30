@@ -370,8 +370,6 @@ public class VariableQueryFilterIT {
 
   private void resetIndexesAndClean() {
     embeddedOptimizeRule.resetImportStartIndexes();
-
-    elasticSearchRule.cleanAndVerify();
   }
 
   @Test

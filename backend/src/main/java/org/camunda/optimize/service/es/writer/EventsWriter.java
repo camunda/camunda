@@ -64,10 +64,11 @@ public class EventsWriter {
   private void addEventRequest(BulkRequestBuilder eventBulkRequest, FlowNodeEventDto e) {
     eventBulkRequest.add(
         esclient.prepareIndex(
-            configurationService.getOptimizeIndex(),
+            configurationService.getOptimizeIndex(configurationService.getEventType()),
             configurationService.getEventType(),
-            e.getId())
-            .setSource(Collections.emptyMap())
+            e.getId()
+        )
+        .setSource(Collections.emptyMap())
     );
   }
 
@@ -101,9 +102,10 @@ public class EventsWriter {
 
     addEventToProcessInstanceBulkRequest.add(esclient
         .prepareUpdate(
-            configurationService.getOptimizeIndex(),
+            configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
             configurationService.getProcessInstanceType(),
-            processInstanceId)
+            processInstanceId
+        )
         .setScript(updateScript)
         .setUpsert(newEntryIfAbsent, XContentType.JSON)
         .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())

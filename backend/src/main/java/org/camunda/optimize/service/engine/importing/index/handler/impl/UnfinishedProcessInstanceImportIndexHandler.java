@@ -88,7 +88,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex())
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
         .setTypes(configurationService.getProcessInstanceType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
@@ -109,13 +109,13 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     esclient
       .admin()
       .indices()
-      .prepareRefresh(configurationService.getOptimizeIndex())
+      .prepareRefresh()
       .get();
   }
 
   private QueryBuilder buildBasicQuery() {
     TermsLookup termsLookup = new TermsLookup(
-      configurationService.getOptimizeIndex(),
+      configurationService.getOptimizeIndex(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE),
       UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE,
       EsHelper.constructKey(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE, engineAlias),
       PROCESS_INSTANCE_IDS);

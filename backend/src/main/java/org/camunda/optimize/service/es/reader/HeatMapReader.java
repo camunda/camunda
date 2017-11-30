@@ -47,7 +47,7 @@ public abstract class HeatMapReader {
     result.setFlowNodes(flowNodes);
 
     SearchRequestBuilder srb = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setFetchSource(false);
 

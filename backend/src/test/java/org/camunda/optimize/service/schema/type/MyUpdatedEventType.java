@@ -28,8 +28,8 @@ public class MyUpdatedEventType implements TypeMappingCreator{
   }
 
   @Override
-  public String getSource() {
-    String source = null;
+  public XContentBuilder getSource() {
+    XContentBuilder source = null;
     try {
       XContentBuilder content = jsonBuilder()
         .startObject()
@@ -39,9 +39,9 @@ public class MyUpdatedEventType implements TypeMappingCreator{
             .endObject()
           .endObject()
         .endObject();
-      source = content.string();
+      source = content;
     } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex() +
+      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex(getType()) +
         "' , type '" + getType() + "'!";
       logger.error(message, e);
     }

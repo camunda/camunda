@@ -4,7 +4,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +38,15 @@ public class TransportClientFactory implements FactoryBean <Client> {
               .put("client.transport.ping_timeout", configurationService.getElasticsearchConnectionTimeout(), TimeUnit.MILLISECONDS)
               .put("client.transport.nodes_sampler_interval", configurationService.getSamplerInterval(), TimeUnit.MILLISECONDS)
               .build())
-            .addTransportAddress(new InetSocketTransportAddress(
+            .addTransportAddress(new TransportAddress(
                 InetAddress.getByName(configurationService.getElasticSearchHost()),
                 configurationService.getElasticSearchPort()
                 ));
         instance = new SchemaInitializingClient(internalClient);
         elasticSearchSchemaInitializer.useClient(internalClient, configurationService);
         instance.setElasticSearchSchemaInitializer(elasticSearchSchemaInitializer);
+        //
+        elasticSearchSchemaInitializer.initializeSchema();
       } catch (Exception e) {
         logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
       }

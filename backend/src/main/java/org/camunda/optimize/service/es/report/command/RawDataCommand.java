@@ -39,7 +39,7 @@ public class RawDataCommand extends ReportCommand {
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)

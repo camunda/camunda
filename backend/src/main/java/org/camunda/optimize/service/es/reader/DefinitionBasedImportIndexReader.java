@@ -35,7 +35,7 @@ public class DefinitionBasedImportIndexReader {
     try {
       getResponse = esclient
         .prepareGet(
-          configurationService.getOptimizeIndex(),
+          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
           configurationService.getProcessDefinitionImportIndexType(),
           EsHelper.constructKey(typeIndexComesFrom, engineAlias))
         .setFetchSource(true)
@@ -51,8 +51,13 @@ public class DefinitionBasedImportIndexReader {
         return Optional.empty();
       }
     } else {
-      logger.debug("Was not able to retrieve definition based import index " +
-        "for type [{}] from elasticsearch.", typeIndexComesFrom);
+      logger.debug(
+        "Was not able to retrieve definition based import index from [{}] " +
+        "for type [{}] and engine [{}] from elasticsearch.",
+          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
+          typeIndexComesFrom,
+          engineAlias
+      );
       return Optional.empty();
     }
     return Optional.of(dto);

@@ -60,7 +60,7 @@ public class ReportWriter {
 
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getReportType()),
         configurationService.getReportType(),
         id
       )
@@ -79,9 +79,10 @@ public class ReportWriter {
     ReportDefinitionPersistenceDto persistenceDto = convertToElasticsearchFormat(updatedReport);
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getReportType()),
         configurationService.getReportType(),
-        updatedReport.getId())
+        updatedReport.getId()
+      )
       .setDoc(objectMapper.writeValueAsString(persistenceDto), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
@@ -113,11 +114,12 @@ public class ReportWriter {
   public void deleteReport(String reportId) {
     logger.debug("Deleting report with id [{}]");
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(),
+      configurationService.getOptimizeIndex(configurationService.getReportType()),
       configurationService.getReportType(),
-      reportId)
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+      reportId
+    )
+    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+    .get();
   }
 
 }

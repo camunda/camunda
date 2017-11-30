@@ -35,7 +35,7 @@ public class DashboardReader {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(),
+        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
         configurationService.getDashboardType(),
         dashboardId
       )
@@ -54,7 +54,7 @@ public class DashboardReader {
   public List<DashboardDefinitionDto> getAllDashboards() throws IOException {
     logger.debug("Fetching all available dashboards");
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardType()))
       .setTypes(configurationService.getDashboardType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())

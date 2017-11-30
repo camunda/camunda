@@ -58,7 +58,7 @@ public class DashboardHandlingIT {
     // then
     GetResponse response =
       elasticSearchRule.getClient()
-        .prepareGet(elasticSearchRule.getOptimizeIndex(),
+        .prepareGet(elasticSearchRule.getOptimizeIndex(elasticSearchRule.getDashboardType()),
           elasticSearchRule.getDashboardType(),
           id
         )

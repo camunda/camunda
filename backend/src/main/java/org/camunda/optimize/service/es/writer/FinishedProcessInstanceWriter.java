@@ -54,7 +54,7 @@ public class FinishedProcessInstanceWriter {
     BulkResponse response = processInstanceBulkRequest.get();
     if (response.hasFailures()) {
       logger.warn("There were failures while writing process instances with message: {}",
-        response.buildFailureMessage()
+          response.buildFailureMessage()
       );
     }
     processInstanceIdTrackerBulkRequest.get();
@@ -63,10 +63,11 @@ public class FinishedProcessInstanceWriter {
   private void addProcessInstanceIdTrackingRequest(BulkRequestBuilder processInstanceIdTrackerBulkRequest, ProcessInstanceDto dto) {
     processInstanceIdTrackerBulkRequest.add(
         esclient.prepareIndex(
-            configurationService.getOptimizeIndex(),
+            configurationService.getOptimizeIndex(configurationService.getFinishedProcessInstanceIdTrackingType()),
             configurationService.getFinishedProcessInstanceIdTrackingType(),
-            dto.getProcessInstanceId())
-            .setSource(Collections.emptyMap())
+            dto.getProcessInstanceId()
+        )
+        .setSource(Collections.emptyMap())
     );
   }
 
@@ -83,25 +84,26 @@ public class FinishedProcessInstanceWriter {
     params.put(ProcessInstanceType.DURATION, procInst.getDurationInMs());
 
     Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.startDate = params.startDate; " +
-        "ctx._source.endDate = params.endDate; " +
-        "ctx._source.durationInMs = params.durationInMs;" +
-        "ctx._source.engine = params.engine",
-      params
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.startDate = params.startDate; " +
+            "ctx._source.endDate = params.endDate; " +
+            "ctx._source.durationInMs = params.durationInMs;" +
+            "ctx._source.engine = params.engine",
+        params
     );
 
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     bulkRequest.add(esclient
-      .prepareUpdate(
-        configurationService.getOptimizeIndex(),
-        configurationService.getProcessInstanceType(),
-        processInstanceId)
-      .setScript(updateScript)
-      .setUpsert(newEntryIfAbsent, XContentType.JSON)
-      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
+        .prepareUpdate(
+            configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+            configurationService.getProcessInstanceType(),
+            processInstanceId
+        )
+        .setScript(updateScript)
+        .setUpsert(newEntryIfAbsent, XContentType.JSON)
+        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
 
   }

@@ -39,18 +39,15 @@
 
 ## optimizations
 
-# disable calls to System#gc
--XX:+DisableExplicitGC
-
 # pre-touch memory pages used by the JVM during initialization
 -XX:+AlwaysPreTouch
 
 ## basic
 
-# force the server VM (remove on 32-bit client JVMs)
+# force the server VM
 -server
 
-# explicitly set the stack size (reduce to 320k on 32-bit client JVMs)
+# explicitly set the stack size
 -Xss1m
 
 # set to headless, just in case
@@ -62,8 +59,9 @@
 # use our provided JNA always versus the system one
 -Djna.nosys=true
 
-# use old-style file permissions on JDK9
--Djdk.io.permissionsUseCanonicalPath=true
+# turn off a JDK optimization that throws away stack traces for common
+# exceptions because stack traces are important for debugging
+-XX:-OmitStackTraceInFastThrow
 
 # flags to configure Netty
 -Dio.netty.noUnsafe=true
@@ -73,7 +71,6 @@
 # log4j 2
 -Dlog4j.shutdownHookEnabled=false
 -Dlog4j2.disable.jmx=true
--Dlog4j.skipJansi=true
 
 ## heap dumps
 
@@ -83,7 +80,7 @@
 
 # specify an alternative path for heap dumps
 # ensure the directory exists and has sufficient space
-#-XX:HeapDumpPath=${heap.dump.path}
+#-XX:HeapDumpPath=/heap/dump/path
 
 ## GC logging
 
@@ -104,11 +101,3 @@
 #-XX:+UseGCLogFileRotation
 #-XX:NumberOfGCLogFiles=32
 #-XX:GCLogFileSize=128M
-
-# Elasticsearch 5.0.0 will throw an exception on unquoted field names in JSON.
-# If documents were already indexed with unquoted fields in a previous version
-# of Elasticsearch, some operations may throw errors.
-#
-# WARNING: This option will be removed in Elasticsearch 6.0.0 and is provided
-# only for migration purposes.
-#-Delasticsearch.json.allow_unquoted_field_names=true
