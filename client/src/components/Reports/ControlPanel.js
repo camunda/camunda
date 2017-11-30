@@ -69,6 +69,7 @@ export default class ControlPanel extends React.Component {
 
     this.props.onChange('groupBy', {type, unit});
   }
+
   changeVisualization = evt => {
     this.props.onChange('visualization', evt.target.value);
   }
@@ -79,28 +80,28 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item'>
           <label htmlFor='process-definition' className='ControlPanel__label'>ProcessDefinition</label>
           <select name='process-definition' className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-            <option value=''>Please select process instance</option>
+            {addSelectionOption()}
             {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
           </select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='view' className='ControlPanel__label'>View</label>
           <select name='view' className='Select' value={parseView(this.props.view)} onChange={this.changeView}>
-            <option value=''>Please select a value</option>
+            {addSelectionOption()}
             {renderOptions('view')}
           </select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='group-by' className='ControlPanel__label'>Group By</label>
           <select name='group-by' className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
-            <option value=''>Please select a value</option>
+            {addSelectionOption()}
             {renderOptions('groupBy')}
           </select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='visualize-as' className='ControlPanel__label'>Visualize as</label>
           <select name='visualize-as' className='Select' value={this.props.visualization} onChange={this.changeVisualization}>
-            <option value=''>Please select a value</option>
+            {addSelectionOption()}
             {renderOptions('visualizeAs')}
           </select>
         </li>
@@ -110,6 +111,10 @@ export default class ControlPanel extends React.Component {
       </ul>
     </div>
   }
+}
+
+function addSelectionOption() {
+  return <option value=''>Please select a value...</option>;
 }
 
 function parseView({operation, entity, property}) {

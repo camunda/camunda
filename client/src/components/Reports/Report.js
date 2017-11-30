@@ -50,12 +50,10 @@ export default class Report extends React.Component {
       lastModified,
       data: stateData,
       originalData: stateData,
-      reportResult,
+      reportResult: reportResult || {data: stateData},
       loaded: true,
       originalName: name
-    });
-
-    this.save();
+    }, this.save);
   }
 
   deleteReport = async evt => {
@@ -88,10 +86,35 @@ export default class Report extends React.Component {
 
     this.setState({data});
 
-    if(data.processDefinitionId) {
-      const reportResult = await getReportData(data);
-      this.setState({reportResult});
+    let reportResult;
+    if(this.areAllFieldsSelected(data)) {
+      reportResult = await getReportData(data);
+    } 
+    if (!reportResult) {
+      reportResult = {data};
     }
+    this.setState({reportResult});
+  }
+
+  areAllFieldsSelected = (data) => {
+    const {processDefinitionId, view, groupBy, visualization} = data;
+    return this.isNotEmpty(processDefinitionId) && 
+    (this.allRemainingFieldsAreSelected(view.operation, groupBy.type, visualization) || 
+    this.rawDataCombinationIsSelected(view.operation, visualization));
+  }
+
+  allRemainingFieldsAreSelected = (operation, type, visualization) => {
+    return this.isNotEmpty(operation) &&
+    this.isNotEmpty(type) &&
+    this.isNotEmpty(visualization);
+  }
+
+  rawDataCombinationIsSelected = (operation, visualization) => {
+    return operation === 'rawData' && this.isNotEmpty(visualization);
+  }
+
+  isNotEmpty = str => {
+    return str !== null && str.length > 0;
   }
 
   save = async evt => {

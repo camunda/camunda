@@ -142,6 +142,7 @@ it('should not contain a Control Panel in non-edit mode', () => {
 it('should update the report', async () => {
   const node = mount(<Report {...props} />);
 
+  await node.instance().loadReport();
   await node.instance().updateReport('visualization', 'customTestVis');
 
   expect(node.state().data.visualization).toBe('customTestVis');
@@ -151,7 +152,14 @@ it('should evaluate the report after updating', async () => {
   const node = mount(<Report {...props} />);
 
   node.setState({data: {
-    processDefinitionId : 'test id'
+    processDefinitionId : 'test id',
+    view : {
+      operation: 'foo'
+    },
+    groupBy : {
+      type: 'bar'
+    },
+    visualization: 'number'
     }
   });
 
