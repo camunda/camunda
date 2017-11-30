@@ -74,8 +74,11 @@ export default class Modal extends React.Component {
     return null;
   }
 
-  componentDidUpdate() {
-    this.setFocus();
+  componentDidUpdate(prevProps) {
+    if(!prevProps.open && this.props.open) {
+      this.setFocus();
+    }
+
     this.fixPositioning();
   }
 }
