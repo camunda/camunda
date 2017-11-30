@@ -13,9 +13,7 @@ export default class Modal extends React.Component {
   componentDidMount() {
     document.body.appendChild(this.el);
     this.fixPositioning();
-    if(this.container) {
-      this.container.focus();
-    }
+    this.setFocus();
   }
 
   componentWillUnmount() {
@@ -30,6 +28,12 @@ export default class Modal extends React.Component {
     if(this.container) {
       this.container.style.marginTop = -this.container.clientHeight / 2 + 'px';
       this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
+    }
+  }
+
+  setFocus = () => {
+    if(this.container && this.props.open) {
+      this.container.focus();
     }
   }
 
@@ -71,6 +75,7 @@ export default class Modal extends React.Component {
   }
 
   componentDidUpdate() {
+    this.setFocus();
     this.fixPositioning();
   }
 }
