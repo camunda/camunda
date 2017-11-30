@@ -87,8 +87,15 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
         }
 
         // can only write the header after we have written the message, as we don't know the length beforehand
-        final short commandLength = (short)out.position();
-        serializedMessage.putShort(messageHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
+//        final short commandLength = (short)out.position();
+//        serializedMessage.putShort(messageHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
+
+
+        final int commandLength = out.position();
+
+        //        serializedCommand.putShort(commandHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
+        serializedMessage.putByte(messageHeaderOffset, (byte) (commandLength));
+        serializedMessage.putByte(messageHeaderOffset + 1, (byte) (commandLength >>> 8));
 
         serializedMessageLength = serializedMessageOffset + out.position();
     }
