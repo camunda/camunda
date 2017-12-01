@@ -51,9 +51,11 @@ export default class NodeFilter extends React.Component {
       <Modal.Header>New Flownode Filter</Modal.Header>
       <Modal.Content>
         {this.state.xml && (
-          <BPMNDiagram xml={this.state.xml}>
-            <ClickBehavior onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
-          </BPMNDiagram>
+          <div className='NodeFilter__diagram-container'>
+            <BPMNDiagram xml={this.state.xml}>
+              <ClickBehavior onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
+            </BPMNDiagram>
+          </div>
         )}
       </Modal.Content>
       <Modal.Actions>

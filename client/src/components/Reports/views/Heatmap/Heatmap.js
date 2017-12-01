@@ -5,6 +5,8 @@ import {loadProcessDefinitionXml} from './service';
 import {BPMNDiagram} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
+import './Heatmap.css';
+
 export default class Heatmap extends React.Component {
   constructor(props) {
     super(props);
@@ -34,8 +36,10 @@ export default class Heatmap extends React.Component {
       return <div className='heatmap-loading-indicator'>loading...</div>;
     }
 
-    return <BPMNDiagram xml={xml}>
-      <HeatmapOverlay data={data} />
-    </BPMNDiagram>;
+    return (<div className='Heatmap'>
+      <BPMNDiagram xml={xml}>
+        <HeatmapOverlay data={data} />
+      </BPMNDiagram>
+    </div>);
   }
 }

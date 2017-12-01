@@ -16,6 +16,9 @@ $modal-padding-h: 20px;
   top: 50%;
   left: 50%;
 
+  display: flex;
+  flex-direction: column;
+
   /* TODO: make responsive */
   width: 950px;
   margin: 0 0 0 -475px;
@@ -51,21 +54,23 @@ $modal-padding-h: 20px;
   background-size: cover;
   opacity: .85;
   border-radius: 3px;
-  
+
   &:hover {
     opacity: 1;
   }
-  
+
   &:focus {
     outline: none;
     border: 1px solid #00a8ff;
     box-shadow: 0 0 5px rgba(#00a8ff, 1);
   }
-  
+
 }
 
 .Modal__content {
   padding: 18px $modal-padding-h 18px;
+  flex-grow: 1;
+  position: relative;
 }
 
 .Modal__actions {
@@ -75,9 +80,9 @@ $modal-padding-h: 20px;
   text-align: right;
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;
-  
+
   .Button + .Button {
     margin-left: 12px;
   }
-  
+
 }
