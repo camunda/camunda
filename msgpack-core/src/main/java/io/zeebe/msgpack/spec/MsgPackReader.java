@@ -159,7 +159,7 @@ public class MsgPackReader
                 break;
 
             case BIN16:
-                length = buffer.getShort(offset, BYTE_ORDER);
+                length = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
                 offset += SIZE_OF_SHORT;
                 break;
 

@@ -84,6 +84,11 @@ public class MsgPackReadingTest
                 doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Short.MAX_VALUE))
             },
             {
+                "bin 16 (> 32768)",
+                given((b) -> b.add(0xc5, 0xFF, 0xFF)),
+                doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo((1 << 16) - 1))
+            },
+            {
                 "bin 32",
                 given((b) -> b.add(0xc6, 0x7f, 0xff, 0xff, 0xff)),
                 doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Integer.MAX_VALUE))
