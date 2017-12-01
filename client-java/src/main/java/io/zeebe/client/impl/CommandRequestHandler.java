@@ -112,11 +112,8 @@ public class CommandRequestHandler implements RequestResponseHandler
         }
 
         // can only write the header after we have written the command, as we don't know the length beforehand
-        final int commandLength = out.position();
-
-//        serializedCommand.putShort(commandHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
-        serializedCommand.putByte(commandHeaderOffset, (byte) (commandLength));
-        serializedCommand.putByte(commandHeaderOffset + 1, (byte) (commandLength >>> 8));
+        final short commandLength = (short) out.position();
+        serializedCommand.putShort(commandHeaderOffset, commandLength, java.nio.ByteOrder.LITTLE_ENDIAN);
 
         serializedCommandLength = serializedCommandOffset + out.position();
     }

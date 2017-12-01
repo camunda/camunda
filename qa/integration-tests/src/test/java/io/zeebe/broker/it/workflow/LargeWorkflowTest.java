@@ -74,7 +74,6 @@ public class LargeWorkflowTest
 
         workflowService.deploy(clientRule.getDefaultTopic())
                        .addResourceFromClasspath("workflows/extended-order-process.bpmn")
-                       .addResourceFromClasspath("workflows/forty-task-process.bpmn")
                        .execute();
     }
 
@@ -171,7 +170,7 @@ public class LargeWorkflowTest
         for (int i = 0; i < CREATION_TIMES; i++)
         {
             workflowService.create(clientRule.getDefaultTopic())
-                           .bpmnProcessId("forty-task-process")
+                           .bpmnProcessId("extended-order-process")
                            .latestVersion()
                            .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
                            .executeAsync();
