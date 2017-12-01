@@ -1,7 +1,8 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal} from 'components';
+import {Button, Modal, Input} from 'components';
 
 import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
@@ -159,7 +160,7 @@ export default class Report extends React.Component {
       <div className='Report'>
         <div className='Report__header'>
           <div className='Report__name-container'>
-            <input id='name' type='text' onChange={this.updateName} value={name || ''} className='Input Report__name-input'></input>
+            <Input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input'></Input>
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
@@ -195,8 +196,8 @@ export default class Report extends React.Component {
         <Modal open={true} onClose={this.closeModal}>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-              <input ref={this.textArea} readOnly value={document.URL}></input>
-              <button id='copy-text-button' onClick={this.copyText}>Copy</button>
+              <Input ref={this.textArea} readOnly value={document.URL}></Input>
+              <Button id='copy-text-button' onClick={this.copyText}>Copy</Button>
           </Modal.Content>
           <Modal.Actions>
             <Button id="close-shareModal-button" onClick={this.closeModal}>Close</Button>
@@ -214,18 +215,25 @@ export default class Report extends React.Component {
   }
 
   copyText = () => {
-    this.state.modalText.select();
+    const {modalText} = this.state;
+    
+    ReactDOM.findDOMNode(modalText).select();
     document.execCommand("Copy");
+  }
+
+  componentDidUpdate = () => {
+    const {modalVisible, modalText} = this.state;
+
+    if(modalVisible && modalText) {
+      ReactDOM.findDOMNode(modalText).select();
+    }
+
   }
 
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {loaded, redirect, modalVisible, modalText} = this.state;
-
-    if(modalVisible && modalText) {
-      modalText.select();
-    }
+    const {loaded, redirect} = this.state;
 
     if(!loaded) {
       return <div className='report-loading-indicator'>loading...</div>;

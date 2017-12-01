@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button} from 'components';
+import {Button, Input} from 'components';
 import {loadDashboard, remove, update} from './service';
 import EditGrid from './ReportGrid/EditGrid';
 
@@ -107,7 +107,7 @@ export default class Dashboard extends React.Component {
       <div className='Dashboard'>
         <div className='Dashboard__header'>
           <div className='Dashboard__name-container'>
-            <input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Input Dashboard__name-input'></input>
+            <Input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Dashboard__name-input'></Input>
             <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Dashboard__tools'>

@@ -4,7 +4,7 @@ import {getToken} from 'credentials';
 
 import {login} from './service';
 
-import {Message, Button} from 'components';
+import {Message, Button, Input} from 'components';
 
 import './Login.css';
 
@@ -61,11 +61,11 @@ export default class Login extends React.Component {
         <div className='Login__controls'>
           <div className='Login__row'>
             <label className='Login__label visually-hidden' htmlFor='username'>Username</label>
-            <input className='Input Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
+            <Input className='Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
           </div>
           <div className='Login__row'>
             <label className='Login__label visually-hidden' htmlFor='password'>Password</label>
-            <input className='Input Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
+            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
           </div>
         </div>
         <Button type='submit' onClick={this.submit} className='Button--primary Login__button'>Login</Button>

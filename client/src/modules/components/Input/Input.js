@@ -2,8 +2,10 @@ import React from 'react';
 
 import './Input.css';
 
-export default function Input(props) {
-  return (<input type='text' {...props} className={'Input ' + props.className} >
-    {props.children}
-  </input>);
+export default class Input extends React.PureComponent {
+  render() {
+    return (<input type='text' {...this.props} className={'Input ' + this.props.className} >
+      {this.props.children}
+    </input>);
+  }
 }
