@@ -1,3 +1,6 @@
+@import "shared-styles.scss";
+
+
 .ControlPanel {
   background-color: #f4f4f4;
   margin-bottom: 24px;
@@ -5,14 +8,9 @@
 }
 
 .ControlPanel {
+  @include clearfix();
   display: inline-block;
   border-radius: 8px;
-  &:after {
-    display: table;
-    clear: both;
-    content: "";
-  }
-  *zoom: 1;
 }
 
 .ControlPanel__list {
