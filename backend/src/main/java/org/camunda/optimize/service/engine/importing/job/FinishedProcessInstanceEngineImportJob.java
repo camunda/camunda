@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.job;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -24,9 +25,9 @@ public class FinishedProcessInstanceEngineImportJob
                                                 MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
                                                 EngineEntityFetcher<HistoricProcessInstanceDto,
                                                 DefinitionBasedImportPage> engineEntityFetcher,
-                                                String engineAlias
+                                                EngineContext engineContext
                                                 ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineAlias);
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.finishedProcessInstanceWriter = finishedProcessInstanceWriter;
   }
 
@@ -48,7 +49,7 @@ public class FinishedProcessInstanceEngineImportJob
     processInstanceDto.setStartDate(startDate);
     processInstanceDto.setEndDate(endDate);
     processInstanceDto.setDurationInMs(endDate.getTime() - startDate.getTime());
-    processInstanceDto.setEngine(this.engineAlias);
+    processInstanceDto.setEngine(this.engineContext.getEngineAlias());
     return processInstanceDto;
   }
 

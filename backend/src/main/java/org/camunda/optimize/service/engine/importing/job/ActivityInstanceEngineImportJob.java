@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.job;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -23,9 +24,9 @@ public class ActivityInstanceEngineImportJob extends
                                          MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
                                          EngineEntityFetcher<HistoricActivityInstanceEngineDto,
                                          DefinitionBasedImportPage> engineEntityFetcher,
-                                         String engineAlias
+                                         EngineContext engineContext
   ) {
-    super(importPage, elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher, engineAlias);
+    super(importPage, elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher, engineContext);
     this.eventsWriter = eventsWriter;
   }
 

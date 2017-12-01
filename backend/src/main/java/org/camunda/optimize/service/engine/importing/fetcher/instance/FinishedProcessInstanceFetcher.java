@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -25,8 +26,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class FinishedProcessInstanceFetcher extends
   RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto, DefinitionBasedImportPage> {
 
-  public FinishedProcessInstanceFetcher(String engineAlias) {
-    super(engineAlias);
+  public FinishedProcessInstanceFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.util.EsHelper;
@@ -41,13 +42,13 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
   private VariableInstanceCountFetcher variableInstanceCountFetcher;
   private String scrollId;
 
-  public VariableInstanceImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public VariableInstanceImportIndexHandler(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
-    variableInstanceCountFetcher = beanHelper.getInstance(VariableInstanceCountFetcher.class, this.engineAlias);
+    variableInstanceCountFetcher = beanHelper.getInstance(VariableInstanceCountFetcher.class, this.engineContext);
     super.init();
   }
 
@@ -141,7 +142,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     TermsLookup termsLookup = new TermsLookup(
       configurationService.getOptimizeIndex(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE),
       VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE,
-      EsHelper.constructKey(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE, engineAlias),
+      EsHelper.constructKey(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE, engineContext.getEngineAlias()),
       PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query

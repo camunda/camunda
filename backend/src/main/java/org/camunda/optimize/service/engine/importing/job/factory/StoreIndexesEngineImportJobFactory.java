@@ -3,6 +3,7 @@ package org.camunda.optimize.service.engine.importing.job.factory;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
 import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -40,10 +41,10 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   @Autowired
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private LocalDateTime dateUntilJobCreationIsBlocked;
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
-  public StoreIndexesEngineImportJobFactory(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public StoreIndexesEngineImportJobFactory(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @PostConstruct
@@ -88,13 +89,14 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
     List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias) != null) {
-      for (AllEntitiesBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineAlias)) {
+    if (importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias()) != null) {
+      for (AllEntitiesBasedImportIndexHandler importIndexHandler :
+          importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
 
       importIndexHandlerProvider
-        .getAllScrollBasedHandlers(engineAlias)
+        .getAllScrollBasedHandlers(engineContext.getEngineAlias())
         .forEach(handler -> allEntitiesBasedImportIndexes.add(handler.createIndexInformationForStoring()));
     }
 
@@ -104,8 +106,9 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   private List<DefinitionBasedImportIndexDto> getDefinitionBasedImportIndexes() {
     List<DefinitionBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias) != null) {
-      for (DefinitionBasedImportIndexHandler importIndexHandler : importIndexHandlerProvider.getDefinitionBasedHandlers(engineAlias)) {
+    if (importIndexHandlerProvider.getDefinitionBasedHandlers(engineContext.getEngineAlias()) != null) {
+      for (DefinitionBasedImportIndexHandler importIndexHandler :
+          importIndexHandlerProvider.getDefinitionBasedHandlers(engineContext.getEngineAlias())) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
     }

@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionInformationNotAvailable;
 import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInformation;
 import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
@@ -35,10 +36,10 @@ public abstract class DefinitionBasedImportIndexHandler
   protected DefinitionImportInformation currentIndex = new ProcessDefinitionInformationNotAvailable();
   protected Long totalEntitiesImported = 0L;
 
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
-  public DefinitionBasedImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public DefinitionBasedImportIndexHandler(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   protected void init() {
@@ -70,7 +71,7 @@ public abstract class DefinitionBasedImportIndexHandler
   @Override
   public void readIndexFromElasticsearch() {
     Optional<DefinitionBasedImportIndexDto> dto =
-      importIndexReader.getImportIndex(getElasticsearchType(), engineAlias);
+      importIndexReader.getImportIndex(getElasticsearchType(), engineContext.getEngineAlias());
     if (dto.isPresent()) {
       DefinitionBasedImportIndexDto loadedImportIndex = dto.get();
       alreadyImportedProcessDefinitions = new HashSet<>(loadedImportIndex.getAlreadyImportedProcessDefinitions());
@@ -268,7 +269,7 @@ public abstract class DefinitionBasedImportIndexHandler
     indexToStore.setCurrentProcessDefinition(currentIndex);
     indexToStore.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
     indexToStore.setProcessDefinitionsToImport(processDefinitionsToImport);
-    indexToStore.setEngine(this.engineAlias);
+    indexToStore.setEngine(this.engineContext.getEngineAlias());
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchType());
     return indexToStore;
   }
@@ -346,7 +347,7 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   @Override
-  public String getEngineAlias() {
-    return engineAlias;
+  public EngineContext getEngineContext() {
+    return engineContext;
   }
 }

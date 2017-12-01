@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.count;
 
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,8 @@ public class ActivityInstanceCountFetcher extends AbstractEngineAwareFetcher {
   @Autowired
   private ConfigurationService configurationService;
 
-  public ActivityInstanceCountFetcher(String engineAlias) {
-    super(engineAlias);
+  public ActivityInstanceCountFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   public Long fetchHistoricActivityInstanceCount(List<String> processDefinitionIds) {

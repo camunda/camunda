@@ -31,7 +31,6 @@
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
-  <bean id="engineClientFactory"  class="org.camunda.optimize.test.it.factory.SpyEngineClientFactory"/>
   <bean id="tokenService"  class="org.camunda.optimize.test.it.factory.SpyTokenServiceFactory"/>
 
   <bean id="transportClient"  class="org.camunda.optimize.test.it.factory.SpyTransportClientFactory"/>

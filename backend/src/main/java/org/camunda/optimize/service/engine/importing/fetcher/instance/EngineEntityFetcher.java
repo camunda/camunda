@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.EngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -18,8 +19,8 @@ public abstract class EngineEntityFetcher<ENG extends EngineDto, PAGE extends Im
 
   public static final String UTF8 = "UTF-8";
 
-  public EngineEntityFetcher(String engineAlias) {
-    super(engineAlias);
+  public EngineEntityFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   /**

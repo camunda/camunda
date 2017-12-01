@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
-import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
@@ -8,15 +8,9 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,26 +18,23 @@ import java.util.Map;
 
 @Component
 public class ImportIndexHandlerProvider {
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private BeanHelper beanHelper;
-
-  @Autowired
-  private EngineClientFactory engineClientFactory;
 
   private Map <String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
 
   /**
    * NOTE: this method has to be invoked at least once before providers for engine can be requested.
-   * @param engineAlias
+   * @param engineContext
    */
-  public void init(String engineAlias) {
+  public void init(EngineContext engineContext) {
     engineImportIndexHandlerProviderMap.put(
-        engineAlias,
-        beanHelper.getInstance(EngineImportIndexHandlerProvider.class, engineAlias)
+        engineContext.getEngineAlias(),
+        beanHelper.getInstance(EngineImportIndexHandlerProvider.class, engineContext)
     );
   }
+
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
     List<AllEntitiesBasedImportIndexHandler> result = new ArrayList<>();
@@ -135,7 +126,6 @@ public class ImportIndexHandlerProvider {
   }
 
   public void reloadConfiguration() {
-    engineClientFactory.reloadConfiguration();
     this.engineImportIndexHandlerProviderMap = new HashMap<>();
   }
 }

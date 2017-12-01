@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.engine.importing;
 
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.job.factory.ActivityInstanceEngineImportJobFactory;
 import org.camunda.optimize.service.engine.importing.job.factory.EngineImportJobFactory;
@@ -11,7 +13,6 @@ import org.camunda.optimize.service.engine.importing.job.factory.UnfinishedProce
 import org.camunda.optimize.service.engine.importing.job.factory.VariableInstanceEngineImportJobFactory;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,31 +30,25 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
   private EngineImportJobExecutor engineImportJobExecutor;
 
   @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
   private ImportIndexHandlerProvider importIndexHandlerProvider;
 
   @Autowired
   private BeanHelper beanHelper;
+  @Autowired
+  private EngineContextFactory engineContextFactory;
 
   private List<EngineImportJobScheduler> schedulers;
 
 
   public List<EngineImportJobScheduler> buildSchedulers() {
     List<EngineImportJobScheduler> result = new ArrayList<>();
-    for (String engineAlias : this.configurationService.getConfiguredEngines().keySet()) {
+    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
-        List<EngineImportJobFactory> factories = createFactoryList(engineAlias);
-        EngineImportJobScheduler scheduler =
-            new EngineImportJobScheduler(
-                engineImportJobExecutor,
-                factories,
-                engineAlias
-            );
+        List<EngineImportJobFactory> factories = createFactoryList(engineContext);
+        EngineImportJobScheduler scheduler = new EngineImportJobScheduler(engineImportJobExecutor, factories);
         result.add(scheduler);
       } catch (Exception e) {
-        logger.error("Can't create scheduler for engine [{}]", engineAlias, e);
+        logger.error("Can't create scheduler for engine [{}]", engineContext, e);
       }
 
     }
@@ -61,24 +56,24 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
     return result;
   }
 
-  private List<EngineImportJobFactory> createFactoryList(String engineAlias) {
+  private List<EngineImportJobFactory> createFactoryList(EngineContext engineContext) {
     List<EngineImportJobFactory> factories = new ArrayList<>();
-    importIndexHandlerProvider.init(engineAlias);
+    importIndexHandlerProvider.init(engineContext);
 
     factories.add(
-        beanHelper.getInstance(ActivityInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ActivityInstanceEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(FinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(FinishedProcessInstanceEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(ProcessDefinitionEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ProcessDefinitionEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(ProcessDefinitionXmlEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(ProcessDefinitionXmlEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(StoreIndexesEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(StoreIndexesEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(UnfinishedProcessInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(UnfinishedProcessInstanceEngineImportJobFactory.class, engineContext));
     factories.add(
-        beanHelper.getInstance(VariableInstanceEngineImportJobFactory.class, engineAlias));
+        beanHelper.getInstance(VariableInstanceEngineImportJobFactory.class, engineContext));
 
     return factories;
   }
@@ -98,7 +93,7 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
         oldScheduler.disable();
       }
     }
-
+    engineContextFactory.init();
     importIndexHandlerProvider.reloadConfiguration();
     schedulers = this.buildSchedulers();
   }

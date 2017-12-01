@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -25,8 +26,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class  VariableInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto, IdSetBasedImportPage> {
 
-  public VariableInstanceFetcher(String engineAlias) {
-    super(engineAlias);
+  public VariableInstanceFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   @Override

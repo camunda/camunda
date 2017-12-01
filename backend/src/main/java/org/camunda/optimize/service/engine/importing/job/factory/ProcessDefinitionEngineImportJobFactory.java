@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.job.factory;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -47,16 +48,16 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
   @Autowired
   private ImportIndexHandlerProvider provider;
 
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
-  public ProcessDefinitionEngineImportJobFactory(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public ProcessDefinitionEngineImportJobFactory(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
-    importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineAlias);
-    engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
+    importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
+    engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineContext);
     missingEntitiesFinder = new MissingEntitiesFinder<>(
         configurationService,
         esClient,
@@ -78,7 +79,7 @@ public class ProcessDefinitionEngineImportJobFactory implements EngineImportJobF
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
         engineEntityFetcher,
-        engineAlias
+        engineContext
       )
     );
   }

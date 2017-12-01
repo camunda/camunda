@@ -2,7 +2,8 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.status.StatusCheckingService;
@@ -22,6 +23,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,22 +45,21 @@ public class StatusRestServiceIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private Client mockedEngineClient;
-  private ConfigurationService configurationService;
-
-  @Before
-  public void initClients() throws InvalidTokenException {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
-  }
 
   private void mockEngineClient() {
     mockedEngineClient = Mockito.mock(Client.class);
-    EngineClientFactory mockedFactory = Mockito.mock(EngineClientFactory.class);
-    Mockito.when(mockedFactory.getInstance(Mockito.anyString())).thenReturn(mockedEngineClient);
+    EngineContextFactory mockedFactory = Mockito.mock(EngineContextFactory.class);
+    List<EngineContext> list = new ArrayList<>();
+    EngineContext context = new EngineContext();
+    context.setEngineAlias(ENGINE_ALIAS);
+    context.setEngineClient(mockedEngineClient);
+    list.add(context);
+    Mockito.when(mockedFactory.getConfiguredEngines()).thenReturn(list);
 
     StatusCheckingService statusCheckingService =
       embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
 
-    statusCheckingService.setEngineClientFactory(mockedFactory);
+    statusCheckingService.setEngineContextFactory(mockedFactory);
   }
 
   @After
@@ -70,8 +71,8 @@ public class StatusRestServiceIT {
     StatusCheckingService statusCheckingService =
         embeddedOptimizeRule.getApplicationContext().getBean(StatusCheckingService.class);
 
-    EngineClientFactory realFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineClientFactory.class);
-    statusCheckingService.setEngineClientFactory(realFactory);
+    EngineContextFactory realFactory = embeddedOptimizeRule.getApplicationContext().getBean(EngineContextFactory.class);
+    statusCheckingService.setEngineContextFactory(realFactory);
   }
 
   @Test

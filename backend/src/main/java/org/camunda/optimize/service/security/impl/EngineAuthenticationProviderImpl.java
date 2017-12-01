@@ -2,8 +2,9 @@ package org.camunda.optimize.service.security.impl;
 
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.engine.GroupInfoDto;
-import org.camunda.optimize.dto.optimize.query.EngineCredentialsDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -22,29 +22,37 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
  * @author Askar Akhmerov
  */
 @Component("engineAuthenticationProvider")
-public class EngineAuthenticationProviderImpl implements AuthenticationProvider<EngineCredentialsDto> {
+public class EngineAuthenticationProviderImpl implements AuthenticationProvider<CredentialsDto> {
   private static final Logger logger = LoggerFactory.getLogger(EngineAuthenticationProviderImpl.class);
 
   @Autowired
-  private EngineClientFactory engineClientFactory;
+  private EngineContextFactory engineContextFactory;
 
   @Autowired
   private ConfigurationService configurationService;
 
-  public boolean authenticate(EngineCredentialsDto credentialsDto) {
-    boolean isAuthenticated = performAuthenticationCheck(credentialsDto);
-    boolean isAuthorized = true;
-    if(configurationService.isAuthorizationCheckNecessary(credentialsDto.getEngineAlias())) {
-      isAuthorized = performAuthorizationCheck(credentialsDto);
+  public boolean authenticate(CredentialsDto credentialsDto) {
+    boolean result = false;
+    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+      boolean isAuthenticated = performAuthenticationCheck(credentialsDto, engineContext);
+      boolean isAuthorized = true;
+      if (configurationService.isAuthorizationCheckNecessary(engineContext.getEngineAlias())) {
+        isAuthorized = performAuthorizationCheck(credentialsDto, engineContext);
+      }
+      if (isAuthenticated && isAuthorized) {
+        result = true;
+        break;
+      }
     }
-    return isAuthenticated && isAuthorized;
+    return result;
   }
 
-  private boolean performAuthorizationCheck(EngineCredentialsDto credentialsDto) {
+  private boolean performAuthorizationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
     boolean isAuthorized = false;
+
     try {
-      Response response = getEngineClient(credentialsDto)
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
+      Response response = engineContext.getEngineClient()
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
           .queryParam(USER_ID, credentialsDto.getUsername())
           .path(configurationService.getGetGroupsEndpoint())
           .request(MediaType.APPLICATION_JSON)
@@ -52,31 +60,29 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
 
       if (response.getStatus() == 200) {
         GroupInfoDto responseEntity = response.readEntity(GroupInfoDto.class);
-        isAuthorized = responseEntity.containsGroup(configurationService.getOptimizeAccessGroupId(credentialsDto.getEngineAlias()));
+        isAuthorized = responseEntity.containsGroup(configurationService.getOptimizeAccessGroupId(engineContext.getEngineAlias()));
       }
 
     } catch (Exception e) {
       logger.warn("Connection to engine cannot be established", e.getMessage());
       if (logger.isDebugEnabled()) {
         logger.debug("Engine endpoint: ["
-            + configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias())
+            + configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias())
             + "] with path ["
             + configurationService.getGetGroupsEndpoint()
             + "]", e);
       }
     }
+
     return isAuthorized;
   }
 
-  private Client getEngineClient(EngineCredentialsDto credentialsDto) {
-    return engineClientFactory.getInstance(credentialsDto.getEngineAlias());
-  }
 
-  private boolean performAuthenticationCheck(EngineCredentialsDto credentialsDto) {
+  private boolean performAuthenticationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
     boolean authenticated = false;
     try {
-      Response response = getEngineClient(credentialsDto)
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias()))
+      Response response = engineContext.getEngineClient()
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
           .path(configurationService.getUserValidationEndpoint())
           .request(MediaType.APPLICATION_JSON)
           .post(Entity.json(credentialsDto));
@@ -90,7 +96,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider<
       logger.warn("Connection to engine cannot be established", e.getMessage());
       if (logger.isDebugEnabled()) {
         logger.debug("Engine endpoint: ["
-            + configurationService.getEngineRestApiEndpointOfCustomEngine(credentialsDto.getEngineAlias())
+            + configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias())
             + "] with path ["
             + configurationService.getUserValidationEndpoint()
             + "]", e);

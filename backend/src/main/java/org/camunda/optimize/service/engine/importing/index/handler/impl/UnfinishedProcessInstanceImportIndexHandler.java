@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.util.EsHelper;
@@ -33,13 +34,13 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
   private UnfinishedProcessInstanceCountFetcher unfinishedProcessInstanceCountFetcher;
   private String scrollId;
 
-  public UnfinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public UnfinishedProcessInstanceImportIndexHandler(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
-    unfinishedProcessInstanceCountFetcher = beanHelper.getInstance(UnfinishedProcessInstanceCountFetcher.class, this.engineAlias);
+    unfinishedProcessInstanceCountFetcher = beanHelper.getInstance(UnfinishedProcessInstanceCountFetcher.class, this.engineContext);
     super.init();
   }
 
@@ -117,7 +118,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     TermsLookup termsLookup = new TermsLookup(
       configurationService.getOptimizeIndex(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE),
       UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE,
-      EsHelper.constructKey(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE, engineAlias),
+      EsHelper.constructKey(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE, engineContext.getEngineAlias()),
       PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query

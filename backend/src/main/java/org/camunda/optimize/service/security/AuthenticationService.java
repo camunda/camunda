@@ -20,19 +20,10 @@ public class AuthenticationService {
   private AuthenticationProvider engineAuthenticationProvider;
 
   @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
   private TokenService tokenService;
 
   public String authenticateUser(CredentialsDto credentials) throws UnauthorizedUserException {
-    boolean authorizedInEngine = false;
-    for (String engine : configurationService.getConfiguredEngines().keySet()) {
-      authorizedInEngine = configurationService.isEngineConnected(engine) && engineAuthenticationProvider.authenticate(new EngineCredentialsDto(credentials, engine));
-      if (authorizedInEngine) {
-        break;
-      }
-    }
+    boolean authorizedInEngine = engineAuthenticationProvider.authenticate(credentials);
 
     if (!authorizedInEngine && !elasticAuthenticationProvider.authenticate(credentials)) {
       throw new UnauthorizedUserException("Can't authorize user [" + credentials.getUsername() + "]");

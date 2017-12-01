@@ -39,7 +39,7 @@ public class ImportProgressReporter {
       handlersWithData += computedProgressOptional.isPresent() ? 1 : 0;
       logDebugStatement(
           importIndexHandler.getClass().getSimpleName(),
-          importIndexHandler.getEngineAlias(),
+          importIndexHandler.getEngineContext().getEngineAlias(),
           computedProgressOptional.isPresent(),
           computedProgress
       );

@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.count;
 
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -17,8 +18,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class ProcessDefinitionCountFetcher extends AbstractEngineAwareFetcher {
 
 
-  public ProcessDefinitionCountFetcher(String engineAlias) {
-    super(engineAlias);
+  public ProcessDefinitionCountFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   public Long fetchProcessDefinitionCount(List<String> allProcessDefinitions) {

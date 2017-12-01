@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.job;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
@@ -23,9 +24,9 @@ public class ProcessDefinitionXmlEngineImportJob extends
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder,
       EngineEntityFetcher<ProcessDefinitionXmlEngineDto, DefinitionBasedImportPage> engineEntityFetcher,
-      String engineAlias
+      EngineContext engineContext
   ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineAlias);
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.processDefinitionWriter = processDefinitionWriter;
 
   }
@@ -43,7 +44,7 @@ public class ProcessDefinitionXmlEngineImportJob extends
     ProcessDefinitionXmlOptimizeDto optimizeDto = new ProcessDefinitionXmlOptimizeDto();
     optimizeDto.setBpmn20Xml(engineEntity.getBpmn20Xml());
     optimizeDto.setId(engineEntity.getId());
-    optimizeDto.setEngine(engineAlias);
+    optimizeDto.setEngine(engineContext.getEngineAlias());
     return optimizeDto;
   }
 

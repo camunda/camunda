@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
@@ -29,15 +30,15 @@ public class EngineImportIndexHandlerProvider {
   @Autowired
   private BeanHelper beanHelper;
 
-  private final String engineAlias;
+  private final EngineContext engineContext;
 
   private List<AllEntitiesBasedImportIndexHandler>  allEntitiesBasedHandlers;
   private List<ScrollBasedImportIndexHandler>       scrollBasedHandlers;
   private List<DefinitionBasedImportIndexHandler>   definitionBasedHandlers;
   private Map<String, ImportIndexHandler>           allHandlers;
 
-  public EngineImportIndexHandlerProvider(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public EngineImportIndexHandlerProvider(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @PostConstruct
@@ -62,7 +63,6 @@ public class EngineImportIndexHandlerProvider {
 
     definitionBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
     definitionBasedHandlers.add(getProcessDefinitionImportIndexHandler());
-
   }
 
 
@@ -82,20 +82,20 @@ public class EngineImportIndexHandlerProvider {
    * Instantiate index handler for given engine if it has not been instantiated yet.
    * otherwise return already existing instance.
    *
-   * @param engineAlias - engine alias for instantiation
+   * @param engineContext - engine alias for instantiation
    * @param requiredType - type of index handler
    * @param <R> - Index handler instance
    * @param <C> - Class signature of required index handler
    * @return
    */
-  protected <R, C extends Class<R>> R getImportIndexHandlerInstance(String engineAlias, C requiredType) {
+  protected <R, C extends Class<R>> R getImportIndexHandlerInstance(EngineContext engineContext, C requiredType) {
     R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(
           allHandlers.get(requiredType.getSimpleName())
       );
     } else {
-      result = beanHelper.getInstance(requiredType, engineAlias);
+      result = beanHelper.getInstance(requiredType, engineContext);
     }
     return result;
   }
@@ -105,27 +105,27 @@ public class EngineImportIndexHandlerProvider {
   }
 
   public ActivityImportIndexHandler getActivityImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, ActivityImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, ActivityImportIndexHandler.class);
   }
 
   public FinishedProcessInstanceImportIndexHandler getFinishedProcessInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, FinishedProcessInstanceImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, FinishedProcessInstanceImportIndexHandler.class);
   }
 
   public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, ProcessDefinitionImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, ProcessDefinitionImportIndexHandler.class);
   }
 
   public ProcessDefinitionXmlImportIndexHandler getProcessDefinitionXmlImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, ProcessDefinitionXmlImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, ProcessDefinitionXmlImportIndexHandler.class);
   }
 
   public UnfinishedProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, UnfinishedProcessInstanceImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, UnfinishedProcessInstanceImportIndexHandler.class);
   }
 
   public VariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineAlias, VariableInstanceImportIndexHandler.class);
+    return getImportIndexHandlerInstance(engineContext, VariableInstanceImportIndexHandler.class);
   }
 
   public List<ImportIndexHandler> getAllHandlers() {

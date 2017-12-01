@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
 
 import java.util.Optional;
@@ -39,5 +40,5 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    */
   void resetImportIndex();
 
-  String getEngineAlias();
+  EngineContext getEngineContext();
 }

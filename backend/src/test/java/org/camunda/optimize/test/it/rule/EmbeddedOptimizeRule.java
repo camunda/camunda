@@ -2,6 +2,8 @@ package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
@@ -68,12 +70,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void storeImportIndexesToElasticsearch() {
-    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+    for (EngineContext engineContext : getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines()) {
       StoreIndexesEngineImportJobFactory storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportJobFactory)
-              getApplicationContext().getBean(
-                  BeanHelper.getBeanName(StoreIndexesEngineImportJobFactory.class),
-                  engineAlias
-              );
+          getApplicationContext().getBean(
+              BeanHelper.getBeanName(StoreIndexesEngineImportJobFactory.class),
+              engineContext
+          );
       storeIndexesEngineImportJobFactory.disableBlocking();
 
       Runnable storeIndexesEngineImportJob =

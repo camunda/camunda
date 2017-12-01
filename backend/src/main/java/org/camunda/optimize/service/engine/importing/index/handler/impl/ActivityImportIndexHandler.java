@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.ActivityInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
@@ -17,14 +18,14 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
 
   private ActivityInstanceCountFetcher engineCountFetcher;
 
-  public ActivityImportIndexHandler(String engineAlias) {
-    super(engineAlias);
+  public ActivityImportIndexHandler(EngineContext engineContext) {
+    super(engineContext);
   }
 
   @Override
   protected void init() {
-    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineAlias);
-    this.engineCountFetcher = beanHelper.getInstance(ActivityInstanceCountFetcher.class, this.engineAlias);
+    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineContext);
+    this.engineCountFetcher = beanHelper.getInstance(ActivityInstanceCountFetcher.class, this.engineContext);
     super.init();
   }
 

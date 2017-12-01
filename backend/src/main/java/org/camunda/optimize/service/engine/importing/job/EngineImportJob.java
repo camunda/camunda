@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.job;
 
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
@@ -21,19 +22,19 @@ public abstract class EngineImportJob<ENG extends EngineDto, OPT extends Optimiz
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected MissingEntitiesFinder<ENG> missingActivityFinder;
   protected EngineEntityFetcher<ENG, PAGE> engineEntityFetcher;
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
   public EngineImportJob(PAGE importPage,
                          ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                          MissingEntitiesFinder<ENG> missingActivityFinder,
                          EngineEntityFetcher<ENG, PAGE> engineEntityFetcher,
-                         String engineAlias
+                         EngineContext engineContext
                          ) {
     this.importPage = importPage;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.missingActivityFinder = missingActivityFinder;
     this.engineEntityFetcher = engineEntityFetcher;
-    this.engineAlias = engineAlias;
+    this.engineContext = engineContext;
   }
 
   @Override

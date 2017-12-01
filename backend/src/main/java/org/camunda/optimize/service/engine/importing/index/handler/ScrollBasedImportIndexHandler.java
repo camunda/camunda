@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
@@ -37,7 +38,7 @@ public abstract class ScrollBasedImportIndexHandler
   @Autowired
   protected Client esclient;
 
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
   @Override
   protected void init() {
@@ -109,7 +110,7 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   private String getElasticsearchId() {
-    return EsHelper.constructKey(getElasticsearchTrackingType(), engineAlias);
+    return EsHelper.constructKey(getElasticsearchTrackingType(), engineContext.getEngineAlias());
   }
 
   public OptionalDouble computeProgress() {
@@ -145,7 +146,7 @@ public abstract class ScrollBasedImportIndexHandler
     importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTrackingType());
     importIndexDto.setMaxEntityCount(maxEntityCount);
     importIndexDto.setImportIndex(importIndex);
-    importIndexDto.setEngine(engineAlias);
+    importIndexDto.setEngine(engineContext.getEngineAlias());
     return importIndexDto;
   }
 
@@ -179,7 +180,7 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   @Override
-  public String getEngineAlias() {
-    return engineAlias;
+  public EngineContext getEngineContext() {
+    return engineContext;
   }
 }

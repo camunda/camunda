@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.count;
 
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,8 @@ import static org.camunda.optimize.service.engine.importing.fetcher.instance.Eng
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceCountFetcher extends AbstractEngineAwareFetcher {
 
-  public VariableInstanceCountFetcher(String engineAlias) {
-    super(engineAlias);
+  public VariableInstanceCountFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   public Long fetchTotalProcessInstanceCountIfVariablesAreAvailable() {

@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.engine.importing.fetcher;
 
-import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,22 +15,19 @@ public abstract class AbstractEngineAwareFetcher {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected String engineAlias;
-
-  @Autowired
-  protected EngineClientFactory engineClientFactory;
+  protected EngineContext engineContext;
   @Autowired
   protected ConfigurationService configurationService;
 
-  public AbstractEngineAwareFetcher(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public AbstractEngineAwareFetcher(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   public Client getEngineClient() {
-    return engineClientFactory.getInstance(this.getEngineAlias());
+    return engineContext.getEngineClient();
   }
 
   public String getEngineAlias() {
-    return engineAlias;
+    return engineContext.getEngineAlias();
   }
 }

@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.util.BeanHelper;
@@ -25,13 +26,13 @@ public class ProcessDefinitionXmlFetcher
   private BeanHelper beanHelper;
 
 
-  public ProcessDefinitionXmlFetcher(String engineAlias) {
-    super(engineAlias);
+  public ProcessDefinitionXmlFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   @PostConstruct
   public void init() {
-    processDefinitionFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineAlias);
+    processDefinitionFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineContext);
   }
 
   @Override

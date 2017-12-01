@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
@@ -31,9 +32,9 @@ public class VariableInstanceEngineImportJob extends
                                          MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder,
                                          EngineEntityFetcher<HistoricVariableInstanceDto,
                                          IdSetBasedImportPage> engineEntityFetcher,
-                                         String engineAlias
+                                         EngineContext engineContext
   ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineAlias);
+    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.variableWriter = variableWriter;
     this.importAdapterProvider = importAdapterProvider;
   }

@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.job.factory;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -46,11 +47,11 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
   @Autowired
   private ImportIndexHandlerProvider provider;
 
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
 
-  public ActivityInstanceEngineImportJobFactory (String engineAlias) {
-    this.engineAlias = engineAlias;
+  public ActivityInstanceEngineImportJobFactory (EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   @Override
@@ -60,8 +61,8 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
 
   @PostConstruct
   public void init() {
-    activityImportIndexHandler = provider.getActivityImportIndexHandler(engineAlias);
-    engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineAlias);
+    activityImportIndexHandler = provider.getActivityImportIndexHandler(engineContext.getEngineAlias());
+    engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineContext);
     missingActivityFinder = new MissingEntitiesFinder<>(
         configurationService,
         esClient,
@@ -78,7 +79,7 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
         elasticsearchImportJobExecutor,
         missingActivityFinder,
         engineEntityFetcher,
-        engineAlias
+        engineContext
       )
     );
   }

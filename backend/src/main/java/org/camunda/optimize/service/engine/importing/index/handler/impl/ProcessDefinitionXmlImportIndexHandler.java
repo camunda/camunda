@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.ProcessDefinitionCountFetcher;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
@@ -15,15 +16,14 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionBasedImpor
 
   private ProcessDefinitionCountFetcher engineCountFetcher;
 
-  public ProcessDefinitionXmlImportIndexHandler(String engineAlias) {
-    super(engineAlias);
-    this.engineAlias = engineAlias;
+  public ProcessDefinitionXmlImportIndexHandler(EngineContext engineContext) {
+    super(engineContext);
   }
 
   @PostConstruct
   public void init() {
-    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineAlias);
-    engineCountFetcher = beanHelper.getInstance(ProcessDefinitionCountFetcher.class, this.engineAlias);
+    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineContext);
+    engineCountFetcher = beanHelper.getInstance(ProcessDefinitionCountFetcher.class, engineContext);
     super.init();
   }
 

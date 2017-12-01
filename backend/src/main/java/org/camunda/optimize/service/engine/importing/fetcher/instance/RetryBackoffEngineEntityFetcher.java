@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.EngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
 
 import java.util.List;
@@ -11,8 +12,8 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = 0L;
 
-  public RetryBackoffEngineEntityFetcher(String engineAlias) {
-    super(engineAlias);
+  public RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
+    super(engineContext);
   }
 
   /**
@@ -65,7 +66,7 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
   }
 
   private void logError(Exception e) {
-    logger.error("Error during fetching of entities. Please check the connection with [{}]!", engineAlias, e);
+    logger.error("Error during fetching of entities. Please check the connection with [{}]!", engineContext.getEngineAlias(), e);
   }
 
 }

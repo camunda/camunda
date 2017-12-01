@@ -55,7 +55,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     } catch (Exception e) {
       logger.error(
           "Was not able to produce next page. Maybe a problem with the connection to the engine [{}]?",
-          this.getEngineAlias(),
+          this.getEngineContext(),
           e
       );
       return Optional.empty();

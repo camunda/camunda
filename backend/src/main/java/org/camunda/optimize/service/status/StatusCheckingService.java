@@ -2,15 +2,14 @@ package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.engine.ProcessEngineDto;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
-import org.camunda.optimize.rest.engine.EngineClientFactory;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -29,40 +28,36 @@ public class StatusCheckingService {
   private ConfigurationService configurationService;
 
   @Autowired
-  private EngineClientFactory engineClientFactory;
+  private EngineContextFactory engineContextFactory;
 
 
   public ConnectionStatusDto getConnectionStatus() {
     ConnectionStatusDto status = new ConnectionStatusDto();
     status.setConnectedToElasticsearch(isConnectedToElasticSearch());
     Map<String, Boolean> engineConnections = new HashMap<>();
-    for (Map.Entry<String,EngineConfiguration> e : configurationService.getConfiguredEngines().entrySet()) {
-      engineConnections.put(e.getKey(), isConnectedToEngine(e.getKey()));
+    for (EngineContext e : engineContextFactory.getConfiguredEngines()) {
+      engineConnections.put(e.getEngineAlias(), isConnectedToEngine(e));
     }
     status.setEngineConnections(engineConnections);
     return status;
   }
 
-  private boolean isConnectedToEngine(String engineAlias) {
+  private boolean isConnectedToEngine(EngineContext engineContext) {
     boolean isConnected = false;
     try {
-      String endPoint = configurationService.getEngineRestApiEndpoint(engineAlias);
+      String endPoint = configurationService.getEngineRestApiEndpoint(engineContext.getEngineAlias());
       String engineEndpoint = endPoint + "/engine";
-      Response response = getEngineClient(engineAlias)
+      Response response = engineContext.getEngineClient()
         .target(engineEndpoint)
         .request(MediaType.APPLICATION_JSON)
         .get();
       boolean hasCorrectResponseCode = response.getStatus() == 200;
-      boolean engineIsRunning = engineWithEngineNameIsRunning(response, configurationService.getEngineName(engineAlias));
+      boolean engineIsRunning = engineWithEngineNameIsRunning(response, configurationService.getEngineName(engineContext.getEngineAlias()));
       isConnected = hasCorrectResponseCode && engineIsRunning;
     } catch (Exception ignored) {
       // do nothing
     }
     return isConnected;
-  }
-
-  private Client getEngineClient(String engineAlias) {
-    return engineClientFactory.getInstance(engineAlias);
   }
 
   private boolean engineWithEngineNameIsRunning(Response response, String engineName) {
@@ -85,11 +80,12 @@ public class StatusCheckingService {
     return isConnected;
   }
 
-  public void setElasticsearchClient(org.elasticsearch.client.Client elasticsearchClient) {
-    this.elasticsearchClient = elasticsearchClient;
+
+  public EngineContextFactory getEngineContextFactory() {
+    return engineContextFactory;
   }
 
-  public void setEngineClientFactory(EngineClientFactory engineClientFactory) {
-    this.engineClientFactory = engineClientFactory;
+  public void setEngineContextFactory(EngineContextFactory engineContextFactory) {
+    this.engineContextFactory = engineContextFactory;
   }
 }

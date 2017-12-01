@@ -14,15 +14,13 @@ public class EngineImportJobScheduler extends Thread {
 
   private EngineImportJobExecutor executor;
   private List<EngineImportJobFactory> jobFactories;
-  private String engineAlias;
 
   private volatile boolean isEnabled = true;
 
   public EngineImportJobScheduler(EngineImportJobExecutor executor,
-                                  List<EngineImportJobFactory> jobFactories, String engineAlias) {
+                                  List<EngineImportJobFactory> jobFactories) {
     this.executor = executor;
     this.jobFactories = jobFactories;
-    this.engineAlias = engineAlias;
   }
 
   public void disable() {

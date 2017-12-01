@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
@@ -22,10 +23,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   protected long importIndex = 0;
   protected long maxEntityCount = 0;
-  protected String engineAlias;
+  protected EngineContext engineContext;
 
-  public AllEntitiesBasedImportIndexHandler(String engineAlias) {
-    this.engineAlias = engineAlias;
+  public AllEntitiesBasedImportIndexHandler(EngineContext engineContext) {
+    this.engineContext = engineContext;
   }
 
   protected void init() {
@@ -35,7 +36,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineAlias));
+      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineContext.getEngineAlias()));
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
       maxEntityCount = storedIndex.get().getMaxEntityCount();
@@ -48,7 +49,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     indexToStore.setImportIndex(importIndex);
     indexToStore.setMaxEntityCount(maxEntityCount);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchImportIndexType());
-    indexToStore.setEngine(engineAlias);
+    indexToStore.setEngine(engineContext.getEngineAlias());
     return indexToStore;
   }
 
@@ -124,7 +125,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  public String getEngineAlias() {
-    return engineAlias;
+  public EngineContext getEngineContext() {
+    return engineContext;
   }
 }
