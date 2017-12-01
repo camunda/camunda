@@ -4,7 +4,14 @@ import {mount} from 'enzyme';
 import Report from './Report';
 import {getReportData, loadSingleReport, remove, saveReport} from './service';
 
-jest.mock('components', () => {return {
+jest.mock('components', () =>{
+  const Modal = props => <div id='Modal'>{props.children}</div>;
+  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
+  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
+  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+
+  return {
+  Modal,
   Button: props => <button {...props}>{props.children}</button>
 }});
 
@@ -102,7 +109,7 @@ it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  node.find('button').simulate('click');
+  node.find('#delete').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -111,7 +118,7 @@ it('should redirect to the report list on report deletion', async () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  await node.find('button').simulate('click');
+  await node.find('#delete').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });
@@ -188,6 +195,36 @@ it('should save a changed report', async () => {
   node.instance().save();
 
   expect(saveReport).toHaveBeenCalled();
+});
+
+it('should show a modal on share button click', () => {
+  const node = mount(<Report {...props} />);
+  node.setState({loaded: true});
+
+
+  node.find('#share').first().simulate('click');
+
+  expect(node.find('#Modal')).toBePresent();
+});
+
+it('should hide the modal on close button click', () => {
+  const node = mount(<Report {...props} />);
+  node.setState({loaded: true});
+
+  node.find('#share').first().simulate('click');
+  node.find('#close-shareModal-button').first().simulate('click');
+
+  expect(node.find('#Modal')).not.toBePresent();
+});
+
+it('should copy the text in the input field of modal on copy button click', () => {
+  const node = mount(<Report {...props} />);
+  node.setState({loaded: true});
+  node.find('#share').first().simulate('click');
+
+  node.find('#copy-text-button').first().simulate('click');
+
+  expect(document.execCommand).toHaveBeenCalled();
 });
 
 describe('edit mode', async () => {

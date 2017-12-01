@@ -1,8 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button} from 'components';
-
+import {Button, Modal} from 'components';
 
 import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
@@ -22,7 +21,9 @@ export default class Report extends React.Component {
       lastModifier: null,
       loaded: false,
       redirect: false,
-      originalName: null
+      originalName: null,
+      modalVisible: false,
+      modalText: null
     };
 
     this.loadReport();
@@ -89,7 +90,7 @@ export default class Report extends React.Component {
     let reportResult;
     if(this.areAllFieldsSelected(data)) {
       reportResult = await getReportData(data);
-    } 
+    }
     if (!reportResult) {
       reportResult = {data};
     }
@@ -98,8 +99,8 @@ export default class Report extends React.Component {
 
   areAllFieldsSelected = (data) => {
     const {processDefinitionId, view, groupBy, visualization} = data;
-    return this.isNotEmpty(processDefinitionId) && 
-    (this.allRemainingFieldsAreSelected(view.operation, groupBy.type, visualization) || 
+    return this.isNotEmpty(processDefinitionId) &&
+    (this.allRemainingFieldsAreSelected(view.operation, groupBy.type, visualization) ||
     this.rawDataCombinationIsSelected(view.operation, visualization));
   }
 
@@ -138,6 +139,20 @@ export default class Report extends React.Component {
     });
   }
 
+  showModal = () => {
+    this.setState({
+      modalVisible: true
+    });
+  }
+
+  closeModal = () => {
+    this.setState({
+      modalVisible: false,
+      modalText: null
+    });
+  }
+
+
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
@@ -171,20 +186,46 @@ export default class Report extends React.Component {
           </div>
           <div className='Report__tools'>
             <Link id='edit' className='Button Report__tool-button' to={`/report/${this.id}/edit`}>Edit</Link>
-            <Button className='Report__tool-button' onClick={this.deleteReport}>Delete</Button>
+            <Button id='delete' className='Report__tool-button' onClick={this.deleteReport}>Delete</Button>
+            <Button id='share' onClick={this.showModal} className='Report__tool-button'>Share</Button>
           </div>
         </div>
+        {
+          (this.state && this.state.modalVisible) ?
+        <Modal open={true} onClose={this.closeModal}>
+          <Modal.Header>Share {this.state.name}</Modal.Header>
+          <Modal.Content>
+              <input ref={this.textArea} readOnly value={document.URL}></input>
+              <button id='copy-text-button' onClick={this.copyText}>Copy</button>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button id="close-shareModal-button" onClick={this.closeModal}>Close</Button>
+          </Modal.Actions>
+        </Modal> : ''
+        }
 
         <ReportView report={reportResult} />
       </div>
     )
   }
 
+  textArea = modalText => {
+    this.setState({modalText});
+  }
+
+  copyText = () => {
+    this.state.modalText.select();
+    document.execCommand("Copy");
+  }
 
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {loaded, redirect} = this.state;
+    const {loaded, redirect, modalVisible, modalText} = this.state;
+
+    if(modalVisible && modalText) {
+      modalText.select();
+    }
 
     if(!loaded) {
       return <div className='report-loading-indicator'>loading...</div>;

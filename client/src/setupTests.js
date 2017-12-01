@@ -13,4 +13,6 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock
 
+document.execCommand = jest.fn();
+
 objectValuesShim();
