@@ -25,6 +25,12 @@ $modal-padding-h: 20px;
 
   border-radius: 3px;
   box-shadow: 0 0 8px rgba(0, 0, 0, .45);
+  
+  /* remove focus styles since modal receives focus when opened  */
+  &:focus {
+    outline: none;
+  }
+  
 }
 
 .Modal__header {
@@ -54,6 +60,7 @@ $modal-padding-h: 20px;
   background-size: cover;
   opacity: .85;
   border-radius: 3px;
+  background-color: transparent;
 
   &:hover {
     opacity: 1;
