@@ -10,3 +10,5 @@ export {ProgressBar} from './ProgressBar';
 export {BPMNDiagram} from './BPMNDiagram';
 export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
+export {ReportView} from './ReportView';
+export {ErrorBoundary} from './ErrorBoundary';

@@ -15,7 +15,8 @@ jest.mock('components', () =>{
   Button: props => <button {...props}>{props.children}</button>,
   Input: props => <input id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
   ControlGroup: props => <div {...props}>{props.children}</div>,
-  CopyToClipboard: () => <div></div>
+  CopyToClipboard: () => <div></div>,
+  ReportView: () => <div>ReportView</div>
 }});
 
 jest.mock('./service', () => {
@@ -47,10 +48,6 @@ jest.mock('moment', () => () => {
 jest.mock('./ControlPanel', () => {
   return () => <div>ControlPanel</div>
 });
-jest.mock('./ReportView', () => {
-  return () => <div>ReportView</div>
-});
-
 
 const props = {
   match: {params: {id: '1'}}

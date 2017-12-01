@@ -9,14 +9,6 @@ jest.mock('components', () => {return {
   Input: props => <input {...props}/>
 }});
 
-jest.mock('../EntityList/service', () => {
-  return {
-    load: jest.fn(),
-    remove: jest.fn(),
-    create: jest.fn()
-  }
-});
-
 jest.mock('./service', () => {
   return {
     loadDashboard: jest.fn(),
@@ -41,6 +33,8 @@ jest.mock('moment', () => () => {
     format: () => 'some date'
   }
 });
+
+jest.mock('./DashboardBuilder', () => () => <div>DashboardBuilder</div>);
 
 const props = {
   match: {params: {id: '1'}}
@@ -175,17 +169,4 @@ describe('edit mode', async () => {
     node.find('a#cancel').simulate('click');
     expect(node).toHaveState('name', 'test name');
   });
-
-  it('should reset reports on cancel', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(<Dashboard {...props} />);
-    node.setState({loaded: true, name: 'test name', originalName: 'test name'});
-
-    await node.instance().load();
-    expect(node.instance().state.reports.length).toEqual(2);
-    node.instance().handleReportSelection(sampleDashboard.reports[1], {x: 0, y:0}, {width:2, height: 2});
-    expect(node.instance().state.reports.length).toEqual(3);
-    node.find('a#cancel').simulate('click');
-    expect(node.instance().state.reports.length).toEqual(2);
-  })
 });

@@ -4,7 +4,8 @@ import {Link, Redirect} from 'react-router-dom';
 
 import {Button, Input} from 'components';
 import {loadDashboard, remove, update} from './service';
-import EditGrid from './ReportGrid/EditGrid';
+
+import DashboardBuilder from './DashboardBuilder';
 
 import './Dashboard.css';
 
@@ -30,14 +31,15 @@ export default class Dashboard extends React.Component {
 
   load = async () => {
     const {name, lastModifier, lastModified, reports} = await loadDashboard(this.id);
+
     this.setState({
-      name,
       lastModifier,
       lastModified,
       loaded: true,
+      name,
       originalName: name,
-      reports: reports ? reports : [],
-      originalReports: reports ? JSON.parse(JSON.stringify(reports)) : []
+      reports: reports || [],
+      originalReports: reports || []
     });
   }
 
@@ -63,41 +65,15 @@ export default class Dashboard extends React.Component {
 
     this.setState({
       originalName: this.state.name,
-      originalReports: JSON.parse(JSON.stringify(this.state.reports))
+      originalReports: this.state.reports
     });
   }
 
   cancelChanges = async () => {
     this.setState({
       name : this.state.originalName,
-      reports: JSON.parse(JSON.stringify(this.state.originalReports))
+      reports: this.state.originalReports
     });
-  }
-
-  handleReportSelection = (report, position, dimensions) => {
-    let reports = JSON.parse(JSON.stringify(this.state.reports));
-    reports.push({
-      id : report.id,
-      dimensions: dimensions,
-      position: position,
-      name: report.name
-    });
-    this.setState({reports: reports});
-  }
-
-  handleReportRemoval = (report) => {
-    console.log('removing report [' + report.id + '] from dashboard')
-  }
-
-  handleReportMove = (oldReport, newReport) => {
-    let reports = JSON.parse(JSON.stringify(this.state.reports));
-
-    for (let i = 0; i < reports.length; i++) {
-      if (reports[i].position.x === oldReport.position.x && reports[i].position.y === oldReport.position.y) {
-        reports[i] = newReport;
-      }
-    }
-    this.setState({reports: reports});
   }
 
   renderEditMode = (state) => {
@@ -115,12 +91,7 @@ export default class Dashboard extends React.Component {
             <Link id={'cancel'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <EditGrid
-            reports={state.reports}
-            onReportSelected={this.handleReportSelection.bind(this)}
-            onReportRemoved={this.handleReportRemoval.bind(this)}
-            onReportMoved={this.handleReportMove.bind(this)}
-        />
+        <DashboardBuilder />
       </div>
     )
   }

@@ -17,9 +17,10 @@ import {
   Dashboards,
   Reports,
   Report,
-  Dashboard,
-  ErrorBoundary
+  Dashboard
 } from './components';
+
+import {ErrorBoundary} from 'components';
 
 ReactDOM.render(<Router>
   <div>

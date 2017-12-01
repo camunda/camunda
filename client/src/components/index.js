@@ -5,4 +5,3 @@ export {Login} from './Login';
 export {PrivateRoute} from './PrivateRoute';
 export {Dashboards, Dashboard} from './Dashboards';
 export {Reports, Report} from './Reports';
-export {ErrorBoundary} from './ErrorBoundary';

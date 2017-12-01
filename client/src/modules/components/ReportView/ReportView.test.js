@@ -9,6 +9,10 @@ jest.mock('./views', () => {return {
   Json: props => <div>JSON: {JSON.stringify(props.data)}</div>
 }});
 
+jest.mock('components', () => {return {
+  ErrorBoundary: (props) => <div>{props.children}</div>
+}});
+
 it('should display a number if visualization is number', () => {
   const report = {
     data: {

@@ -1,11 +1,10 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
+import {Button, Modal, Input, ControlGroup, CopyToClipboard, ReportView} from 'components';
 
 import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
-import ReportView from './ReportView';
 
 import './Report.css';
 

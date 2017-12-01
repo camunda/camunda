@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {ErrorBoundary} from '../ErrorBoundary';
+import {ErrorBoundary} from 'components';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
 

@@ -21,7 +21,7 @@ export default class Chart extends React.Component {
       return <p>{errorMessage}</p>;
     }
 
-    return (<div style={{height: '400px', width: '600px'}}>
+    return (<div style={{height: '100%', width: '100%'}}>
       <canvas ref={this.storeContainer} />
     </div>);
   }
@@ -62,7 +62,9 @@ export default class Chart extends React.Component {
       options: {
         legend: {
           display: type === 'pie'
-        }
+        },
+        responsive: true,
+        maintainAspectRatio: false
       }
     });
   }
