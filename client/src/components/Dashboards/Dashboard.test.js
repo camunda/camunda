@@ -5,7 +5,8 @@ import Dashboard from './Dashboard';
 import {loadDashboard, remove, update} from './service';
 
 jest.mock('components', () => {return {
-  Button: props => <button {...props}>{props.children}</button>
+  Button: props => <button {...props}>{props.children}</button>,
+  Input: props => <input {...props}/>
 }});
 
 jest.mock('../EntityList/service', () => {

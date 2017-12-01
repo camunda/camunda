@@ -65,7 +65,7 @@ export default class Login extends React.Component {
           </div>
           <div className='Login__row'>
             <label className='Login__label visually-hidden' htmlFor='password'>Password</label>
-            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' ref={input => this.passwordField = input} />
+            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} name='password' type='password' reference={input => this.passwordField = input} />
           </div>
         </div>
         <Button type='submit' onClick={this.submit} className='Button--primary Login__button'>Login</Button>

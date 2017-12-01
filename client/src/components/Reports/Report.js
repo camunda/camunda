@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import {Button, Modal, Input} from 'components';
@@ -196,7 +195,7 @@ export default class Report extends React.Component {
         <Modal open={true} onClose={this.closeModal}>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-              <Input ref={this.textArea} readOnly value={document.URL}></Input>
+              <Input reference={this.textArea} readOnly value={document.URL}></Input>
               <Button id='copy-text-button' onClick={this.copyText}>Copy</Button>
           </Modal.Content>
           <Modal.Actions>
@@ -211,21 +210,17 @@ export default class Report extends React.Component {
   }
 
   textArea = modalText => {
-    this.setState({modalText});
+    this.modalText = modalText;
   }
 
   copyText = () => {
-    const {modalText} = this.state;
-    
-    ReactDOM.findDOMNode(modalText).select();
+    this.modalText.select();
     document.execCommand("Copy");
   }
 
   componentDidUpdate = () => {
-    const {modalVisible, modalText} = this.state;
-
-    if(modalVisible && modalText) {
-      ReactDOM.findDOMNode(modalText).select();
+    if(this.state.modalVisible && this.modalText) {
+      this.modalText.select();
     }
 
   }

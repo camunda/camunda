@@ -16,7 +16,8 @@ jest.mock('react-router-dom', () => {return {
 }});
 jest.mock('components', () => {return {
   Message: ({type}) => {return <div className={"Message Message--" + type}></div>},
-  Button: props => <button {...props}>{props.children}</button>
+  Button: props => <button {...props}>{props.children}</button>,
+  Input: props => <input onChange={props.onChange} type={props.type} name={props.name} value={props.value}/>
   }
 });
 
@@ -39,6 +40,8 @@ it('should update the state from the input fields', () => {
   const input = 'asdf'
   const field = 'username';
 
+  node.instance().passwordField = document.createElement('input');
+
   node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name:field}});
 
   expect(node).toHaveState(field, input);
@@ -46,6 +49,8 @@ it('should update the state from the input fields', () => {
 
 it('should display the error message if there is an error', () => {
   const node = mount(<Login />);
+
+  node.instance().passwordField = document.createElement('input');
 
   node.setState({error: true});
 
@@ -55,6 +60,8 @@ it('should display the error message if there is an error', () => {
 
 it('should call the login function when submitting the form', async () => {
   const node = mount(<Login />);
+
+  node.instance().passwordField = document.createElement('input');
 
   const username = 'david';
   const password = 'dennis';
@@ -89,6 +96,8 @@ it('should redirect to home after login if no previous page is given', async () 
 it('should set the error property on failed login', async () => {
   const node = mount(<Login />);
 
+  node.instance().passwordField = document.createElement('input');
+
   login.mockReturnValueOnce(false);
 
   await node.find('button').simulate('click');
@@ -98,6 +107,8 @@ it('should set the error property on failed login', async () => {
 
 it('should clear the error state after user input', () => {
   const node = mount(<Login />);
+
+  node.instance().passwordField = document.createElement('input');
 
   node.setState({error: true});
 

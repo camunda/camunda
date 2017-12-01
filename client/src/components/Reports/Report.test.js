@@ -12,7 +12,8 @@ jest.mock('components', () =>{
 
   return {
   Modal,
-  Button: props => <button {...props}>{props.children}</button>
+  Button: props => <button {...props}>{props.children}</button>,
+  Input: props => <input id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>
 }});
 
 jest.mock('./service', () => {
@@ -220,7 +221,11 @@ it('should hide the modal on close button click', () => {
 it('should copy the text in the input field of modal on copy button click', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
+
+
   node.find('#share').first().simulate('click');
+
+  node.instance().modalText = document.createElement('input');
 
   node.find('#copy-text-button').first().simulate('click');
 
