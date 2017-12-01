@@ -17,11 +17,13 @@
  */
 package io.zeebe.broker.topic;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -82,6 +84,23 @@ public class RequestPartitionsStreamProcessorTest
 
         partitionResponder = new PartitionResponder(output);
         streamProcessor = SystemPartitionManager.buildPartitionResponseProcessor(streamEnvironment, partitionResponder);
+    }
+
+    @Test
+    public void shouldCompleteFutureWhenSendingPartitions()
+    {
+        // given
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        // when
+        final CompletableFuture<Void> future = doRepeatedly(() -> partitionResponder.sendPartitions(1, 2)).until(f -> f != null);
+
+        // then
+        waitUntil(() -> future.isDone());
+        assertThat(future).isCompleted();
+        assertThat(output.getSentResponses()).hasSize(1);
+
     }
 
     @Test

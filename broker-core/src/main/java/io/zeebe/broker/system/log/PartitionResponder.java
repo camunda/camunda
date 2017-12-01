@@ -54,6 +54,8 @@ public class PartitionResponder implements IntObjectBiConsumer<DirectBuffer>, St
                 responseWriter
                     .dataWriter(responseContent)
                     .tryWriteResponse(requestStreamId, requestId);
+
+                f.complete(null);
             });
         }
         else
