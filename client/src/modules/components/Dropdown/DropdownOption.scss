@@ -23,4 +23,13 @@ button.DropdownOption {
     box-shadow: inset 0 0 2px 2px rgba(#00a8ff, 1);
     border: none;
   }
+  
+  &[disabled],
+  &[disabled="disabled"] {
+    &:hover {
+      background-color: #fff;
+      border: none;
+    }
+  }
+  
 }
