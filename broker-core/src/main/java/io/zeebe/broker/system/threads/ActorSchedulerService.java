@@ -74,6 +74,8 @@ public class ActorSchedulerService implements Service<ActorScheduler>
         availableThreads = numberOfThreads;
         brokerIdleStrategy = cfg.idleStrategy;
         maxIdleTimeMs = cfg.maxIdleTimeMs;
+
+        LOG.info("Created {}", this);
     }
 
     @Override
@@ -122,4 +124,14 @@ public class ActorSchedulerService implements Service<ActorScheduler>
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "ActorSchedulerService{" +
+            "availableThreads=" + availableThreads +
+            ", brokerIdleStrategy=" + brokerIdleStrategy +
+            ", maxIdleTimeMs=" + maxIdleTimeMs +
+            ", brokerId='" + brokerId + '\'' +
+            '}';
+    }
 }
