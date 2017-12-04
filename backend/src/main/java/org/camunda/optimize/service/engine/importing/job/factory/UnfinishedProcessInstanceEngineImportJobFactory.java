@@ -23,29 +23,16 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UnfinishedProcessInstanceEngineImportJobFactory implements EngineImportJobFactory {
+public class UnfinishedProcessInstanceEngineImportJobFactory
+    extends EngineImportJobFactoryImpl<UnfinishedProcessInstanceImportIndexHandler>
+    implements EngineImportJobFactory {
 
-  private UnfinishedProcessInstanceImportIndexHandler importIndexHandler;
   private MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder;
   private UnfinishedProcessInstanceFetcher engineEntityFetcher;
 
   @Autowired
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-
-  @Autowired
-  private BeanHelper beanHelper;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private Client esClient;
-
-  @Autowired
   private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
 
-  @Autowired
-  private ImportIndexHandlerProvider provider;
 
   protected EngineContext engineContext;
 

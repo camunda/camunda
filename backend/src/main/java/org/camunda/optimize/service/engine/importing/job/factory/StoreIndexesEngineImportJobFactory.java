@@ -27,19 +27,15 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactory {
+public class StoreIndexesEngineImportJobFactory
+    extends EngineImportJobFactoryImpl
+    implements EngineImportJobFactory {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ImportIndexHandlerProvider importIndexHandlerProvider;
-  @Autowired
   private ImportIndexWriter importIndexWriter;
 
-  @Autowired
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private LocalDateTime dateUntilJobCreationIsBlocked;
   protected EngineContext engineContext;
 
@@ -89,13 +85,13 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
     List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias()) != null) {
+    if (provider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias()) != null) {
       for (AllEntitiesBasedImportIndexHandler importIndexHandler :
-          importIndexHandlerProvider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())) {
+          provider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
 
-      importIndexHandlerProvider
+      provider
         .getAllScrollBasedHandlers(engineContext.getEngineAlias())
         .forEach(handler -> allEntitiesBasedImportIndexes.add(handler.createIndexInformationForStoring()));
     }
@@ -106,9 +102,9 @@ public class StoreIndexesEngineImportJobFactory implements EngineImportJobFactor
   private List<DefinitionBasedImportIndexDto> getDefinitionBasedImportIndexes() {
     List<DefinitionBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (importIndexHandlerProvider.getDefinitionBasedHandlers(engineContext.getEngineAlias()) != null) {
+    if (provider.getDefinitionBasedHandlers(engineContext.getEngineAlias()) != null) {
       for (DefinitionBasedImportIndexHandler importIndexHandler :
-          importIndexHandlerProvider.getDefinitionBasedHandlers(engineContext.getEngineAlias())) {
+          provider.getDefinitionBasedHandlers(engineContext.getEngineAlias())) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
     }

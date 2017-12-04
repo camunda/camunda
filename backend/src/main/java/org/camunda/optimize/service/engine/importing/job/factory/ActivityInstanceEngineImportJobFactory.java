@@ -23,29 +23,16 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFactory {
+public class ActivityInstanceEngineImportJobFactory
+    extends EngineImportJobFactoryImpl<ActivityImportIndexHandler>
+    implements EngineImportJobFactory {
 
-  private ActivityImportIndexHandler activityImportIndexHandler;
   private MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder;
   private ActivityInstanceFetcher engineEntityFetcher;
 
-  @Autowired
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-
-  @Autowired
-  private BeanHelper beanHelper;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private Client esClient;
 
   @Autowired
   private EventsWriter eventsWriter;
-
-  @Autowired
-  private ImportIndexHandlerProvider provider;
 
   protected EngineContext engineContext;
 
@@ -56,12 +43,12 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
 
   @Override
   public long getBackoffTimeInMs() {
-    return activityImportIndexHandler.getBackoffTimeInMs();
+    return importIndexHandler.getBackoffTimeInMs();
   }
 
   @PostConstruct
   public void init() {
-    activityImportIndexHandler = provider.getActivityImportIndexHandler(engineContext.getEngineAlias());
+    importIndexHandler = provider.getActivityImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineContext);
     missingActivityFinder = new MissingEntitiesFinder<>(
         configurationService,
@@ -71,7 +58,7 @@ public class ActivityInstanceEngineImportJobFactory implements EngineImportJobFa
   }
 
   public Optional<Runnable> getNextJob() {
-    Optional<DefinitionBasedImportPage> page = activityImportIndexHandler.getNextPage();
+    Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
     return page.map(
       definitionBasedImportPage -> new ActivityInstanceEngineImportJob(
         eventsWriter,

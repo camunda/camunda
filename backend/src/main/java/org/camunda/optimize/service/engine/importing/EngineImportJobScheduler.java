@@ -17,8 +17,10 @@ public class EngineImportJobScheduler extends Thread {
 
   private volatile boolean isEnabled = true;
 
-  public EngineImportJobScheduler(EngineImportJobExecutor executor,
-                                  List<EngineImportJobFactory> jobFactories) {
+  public EngineImportJobScheduler(
+      EngineImportJobExecutor executor,
+                                  List<EngineImportJobFactory> jobFactories
+  ) {
     this.executor = executor;
     this.jobFactories = jobFactories;
   }
@@ -87,6 +89,7 @@ public class EngineImportJobScheduler extends Thread {
         .map(EngineImportJobFactory::getBackoffTimeInMs)
         .min(Long::compare)
         .orElse(5000L);
+
     return timeToSleepInMs;
   }
 

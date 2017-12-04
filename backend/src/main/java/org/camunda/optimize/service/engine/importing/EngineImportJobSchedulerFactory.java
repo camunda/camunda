@@ -45,7 +45,10 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         List<EngineImportJobFactory> factories = createFactoryList(engineContext);
-        EngineImportJobScheduler scheduler = new EngineImportJobScheduler(engineImportJobExecutor, factories);
+        EngineImportJobScheduler scheduler = new EngineImportJobScheduler(
+            engineImportJobExecutor,
+            factories
+        );
         result.add(scheduler);
       } catch (Exception e) {
         logger.error("Can't create scheduler for engine [{}]", engineContext, e);

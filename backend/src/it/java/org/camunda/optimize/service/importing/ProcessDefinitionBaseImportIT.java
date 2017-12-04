@@ -232,13 +232,6 @@ public class ProcessDefinitionBaseImportIT {
     configurationService.setEngineImportProcessInstanceMaxPageSize(oldPageSize);
   }
 
-  private void fullImportRound() throws OptimizeException {
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-  }
-
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, String expectedProcessDefinitionId) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 

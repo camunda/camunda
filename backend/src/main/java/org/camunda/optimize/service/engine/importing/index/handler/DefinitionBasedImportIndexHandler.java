@@ -280,10 +280,6 @@ public abstract class DefinitionBasedImportIndexHandler
     loadImportDefaults();
   }
 
-  public String getCurrentProcessDefinitionId() {
-    return currentIndex.getProcessDefinitionId();
-  }
-
   public Long getCurrentDefinitionBasedImportIndex() {
     return currentIndex.getDefinitionBasedImportIndex();
   }
@@ -310,20 +306,6 @@ public abstract class DefinitionBasedImportIndexHandler
 
   private void resetAlreadyImportedProcessDefinitions() {
     alreadyImportedProcessDefinitions = new HashSet<>(processDefinitionsToImport.size());
-  }
-
-  /**
-   * Resets the process definitions to import, but keeps the relative indexes
-   * from every respective process definition. Thus, we are not importing
-   * all the once again, but starting from the last point we stopped at.
-   */
-  public void restartImportCycle() {
-    if(!hasStillNewDefinitionsToImport()) {
-      logger.debug("Restarting import cycle for type [{}]", getElasticsearchType());
-      processDefinitionsToImport.addAll(alreadyImportedProcessDefinitions);
-      addPossiblyNewDefinitionsFromEngineToImportList();
-      alreadyImportedProcessDefinitions = new HashSet<>();
-    }
   }
 
   public void updateImportIndex() {

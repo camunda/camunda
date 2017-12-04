@@ -24,32 +24,18 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableInstanceEngineImportJobFactory implements EngineImportJobFactory {
+public class VariableInstanceEngineImportJobFactory
+    extends EngineImportJobFactoryImpl<VariableInstanceImportIndexHandler>
+    implements EngineImportJobFactory {
 
-  private VariableInstanceImportIndexHandler importIndexHandler;
   private MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder;
   private VariableInstanceFetcher engineEntityFetcher;
-
-  @Autowired
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-
-  @Autowired
-  private BeanHelper beanHelper;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private Client esClient;
 
   @Autowired
   private VariableWriter variableWriter;
 
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
-
-  @Autowired
-  private ImportIndexHandlerProvider provider;
 
   protected EngineContext engineContext;
 
@@ -83,7 +69,7 @@ public class VariableInstanceEngineImportJobFactory implements EngineImportJobFa
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,
         engineEntityFetcher,
-          engineContext
+        engineContext
       )
     );
   }

@@ -18,7 +18,8 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   private static final long STARTING_BACKOFF = 0;
-  private long backoffCounter = 0L;
+  private long errorRetryBackoffCounter = STARTING_BACKOFF;
+  private long noDataBackoffCounter = STARTING_BACKOFF;
   private LocalDateTime dateUntilPaginationIsBlocked = LocalDateTime.MIN;
 
   @Autowired
@@ -71,9 +72,9 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   private void calculateNewDateUntilIsBlocked() {
     if (configurationService.isBackoffEnabled()) {
-      backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
+      errorRetryBackoffCounter = Math.min(errorRetryBackoffCounter + 1, configurationService.getMaximumBackoff());
       long interval = configurationService.getImportHandlerWait();
-      long sleepTimeInMs = interval * backoffCounter;
+      long sleepTimeInMs = interval * errorRetryBackoffCounter;
       dateUntilPaginationIsBlocked = LocalDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
       logDebugSleepInformation(sleepTimeInMs);
     }
@@ -90,15 +91,26 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     return dateUntilPaginationIsBlocked.isBefore(LocalDateTime.now());
   }
 
+  /**
+   * Method is invoked by scheduler once no more jobs are created by factories
+   * associated with import process from specific engine
+   *
+   * @return time to sleep for import process of an engine in general
+   */
   public long getBackoffTimeInMs() {
-
-    long backoffTime =  LocalDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS);
-    backoffTime = Math.max(0, backoffTime);
+    long backoffTime = STARTING_BACKOFF;
+    noDataBackoffCounter = Math.min(noDataBackoffCounter + 1, configurationService.getMaximumBackoff());
+    if (noDataBackoffCounter == configurationService.getMaximumBackoff()) {
+      this.resetImportIndex();
+    } else {
+      backoffTime = configurationService.isBackoffEnabled() ? LocalDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0;
+      backoffTime = Math.max(0, backoffTime);
+    }
     return backoffTime;
   }
 
   public void resetBackoff() {
-    this.backoffCounter = STARTING_BACKOFF;
+    this.errorRetryBackoffCounter = STARTING_BACKOFF;
   }
 
   @Override

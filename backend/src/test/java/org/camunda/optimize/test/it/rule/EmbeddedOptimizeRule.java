@@ -41,7 +41,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
 
   /**
-   * Schedule import of all entities, execute all available jobs sequentially
+   * 1. Reset import start indexes
+   *
+   * 2. Schedule import of all entities, execute all available jobs sequentially
    * until nothing more exists in scheduler queue.
    *
    * NOTE: this will not store indexes in the ES.
@@ -113,14 +115,21 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   /**
    * Execute one round\job using import scheduler infrastructure
    *
-   * NOTE: this method does not invoke scheduling of jobs
+   * NOTE: this method does not reset indexes.
+   * NOTE: exceptions due to backoff will be ignored
    */
   public void importEngineEntitiesRound() throws OptimizeException {
     getElasticsearchImportJobExecutor().startExecutingImportJobs();
 
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.scheduleNextRound();
+      try {
+        scheduler.scheduleNextRound();
+      } catch (ArithmeticException e) {
+        //happens due to backoff - nothing to do
+      }
     }
+
+    this.makeSureAllScheduledJobsAreFinished();
 
   }
 

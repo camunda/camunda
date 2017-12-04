@@ -625,6 +625,72 @@ public class ImportIT  {
     assertThat(heatMap.getFlowNodes().size(), is(5));
   }
 
+  @Test
+  public void importProgressContinuesAfterResetOnceNewDataAppears() throws Exception {
+    ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
+    ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
+    engineRule.waitForAllProcessesToFinish();
+    long initialBackoff = embeddedOptimizeRule.getConfigurationService().getMaximumBackoff();
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
+    embeddedOptimizeRule.reloadConfiguration();
+
+    this.fullImportRound();
+
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    HeatMapResponseDto heatMap = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + process1.getDefinitionId() + "/" + "heatmap/frequency")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(HeatMapResponseDto.class);
+    assertThat(heatMap.getPiCount(), is(1L));
+
+    heatMap = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + process2.getDefinitionId() + "/" + "heatmap/frequency")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(HeatMapResponseDto.class);
+    assertThat(heatMap.getPiCount(), is(1L));
+
+
+
+    //when
+    ProcessInstanceEngineDto targetProcess = process2;
+    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(targetProcess.getDefinitionId());
+    assertThat(targetProcess.getId(), is(not(process3.getId())));
+    assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
+
+    engineRule.waitForAllProcessesToFinish();
+
+    this.fullImportRound();
+
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+
+    heatMap = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + targetProcess.getDefinitionId() + "/" + "heatmap/frequency")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(HeatMapResponseDto.class);
+
+    //then
+    assertThat(heatMap.getPiCount(), is(2L));
+
+    //after
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
+    embeddedOptimizeRule.reloadConfiguration();
+  }
+
+  private void fullImportRound() throws OptimizeException {
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+    embeddedOptimizeRule.importEngineEntitiesRound();
+  }
+
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
