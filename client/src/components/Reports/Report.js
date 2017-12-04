@@ -88,7 +88,7 @@ export default class Report extends React.Component {
     this.setState({data});
 
     let reportResult;
-    if(this.areAllFieldsSelected(data)) {
+    if(this.allFieldsAreSelected(data)) {
       reportResult = await getReportData(data);
     }
     if (!reportResult) {
@@ -97,14 +97,16 @@ export default class Report extends React.Component {
     this.setState({reportResult});
   }
 
-  areAllFieldsSelected = (data) => {
+  allFieldsAreSelected = (data) => {
     const {processDefinitionId, view, groupBy, visualization} = data;
     return this.isNotEmpty(processDefinitionId) &&
-    (this.allRemainingFieldsAreSelected(view.operation, groupBy.type, visualization) ||
+    (this.viewGroupbyAndVisualizationFieldsAreSelected(view, groupBy, visualization) ||
     this.rawDataCombinationIsSelected(view.operation, visualization));
   }
 
-  allRemainingFieldsAreSelected = (operation, type, visualization) => {
+  viewGroupbyAndVisualizationFieldsAreSelected = (view, groupBy, visualization) => {
+    const operation = view.operation;
+    const type = groupBy.type;
     return this.isNotEmpty(operation) &&
     this.isNotEmpty(type) &&
     this.isNotEmpty(visualization);
