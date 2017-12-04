@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -100,10 +101,12 @@ public class LargeWorkflowTest
     }
 
     @Test
-    public void shouldCreateAndCompleteWorkflowInstances() throws InterruptedException
+    public void shouldCreateAndCompleteWorkflowInstances() throws Exception
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
+        final int taskCount = 10;
+        final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
 
         clientRule.tasks()
@@ -120,6 +123,11 @@ public class LargeWorkflowTest
                       {
                           System.out.println("Completed: " + c);
                       }
+
+                      if (c >= CREATION_TIMES * taskCount)
+                      {
+                          finished.complete(null);
+                      }
                   }).open();
 
         // when
@@ -132,18 +140,18 @@ public class LargeWorkflowTest
                            .executeAsync();
         }
 
-        while (completed.get() < CREATION_TIMES * 10)
-        {
-            Thread.sleep(1000);
-        }
+        // wait for task completion
+        finished.get();
     }
 
 
     @Test
-    public void shouldCreateAndCompleteWorkflowInstancesWithFortyTasks() throws InterruptedException
+    public void shouldCreateAndCompleteWorkflowInstancesWithFortyTasks() throws Exception
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
+        final int taskCount = 40;
+        final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
 
         final TaskHandler taskHandler = (tasksClient, task) -> {
@@ -154,6 +162,11 @@ public class LargeWorkflowTest
             if (c % CREATION_TIMES == 0)
             {
                 System.out.println("Completed: " + c);
+            }
+
+            if (c >= CREATION_TIMES * taskCount)
+            {
+                finished.complete(null);
             }
         };
 
@@ -177,9 +190,8 @@ public class LargeWorkflowTest
                            .executeAsync();
         }
 
-        while (completed.get() < CREATION_TIMES * 40)
-        {
-            Thread.sleep(1000);
-        }
+        // wait for task completion
+        finished.get();
     }
+
 }
