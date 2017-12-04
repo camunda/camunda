@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input} from 'components';
+import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
 
 import {loadSingleReport, remove, getReportData, saveReport} from './service';
 import ControlPanel from './ControlPanel';
@@ -194,11 +194,12 @@ export default class Report extends React.Component {
         </div>
         {
           (this.state && this.state.modalVisible) ?
-        <Modal open={true} onClose={this.closeModal}>
+        <Modal open={true} onClose={this.closeModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-              <Input reference={this.textArea} readOnly value={document.URL}></Input>
-              <Button id='copy-text-button' onClick={this.copyText}>Copy</Button>
+            <ControlGroup>
+              <CopyToClipboard value={document.URL} />
+            </ControlGroup>
           </Modal.Content>
           <Modal.Actions>
             <Button id="close-shareModal-button" onClick={this.closeModal}>Close</Button>
@@ -209,22 +210,6 @@ export default class Report extends React.Component {
         <ReportView report={reportResult} />
       </div>
     )
-  }
-
-  textArea = modalText => {
-    this.modalText = modalText;
-  }
-
-  copyText = () => {
-    this.modalText.select();
-    document.execCommand("Copy");
-  }
-
-  componentDidUpdate = () => {
-    if(this.state.modalVisible && this.modalText) {
-      this.modalText.select();
-    }
-
   }
 
   render() {

@@ -1,1 +1,1 @@
-export {default as Controlgroup} from './ControlGroup';
+export {default as ControlGroup} from './ControlGroup';
