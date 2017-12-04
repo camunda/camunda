@@ -15,13 +15,19 @@ export default class Chart extends React.Component {
   }
 
   render() {
-    const {data, errorMessage} = this.props;
+    const {data} = this.props;
+    let {errorMessage} = this.props;
 
     if(!data || typeof data !== 'object') {
-      return <p>{errorMessage}</p>;
+      // show error message
+      this.destroyChart();
+    } else {
+      // show chart
+      errorMessage = '';
     }
 
     return (<div style={{height: '100%', width: '100%'}}>
+      <p>{errorMessage}</p>
       <canvas ref={this.storeContainer} />
     </div>);
   }
@@ -36,19 +42,23 @@ export default class Chart extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const oldType = this.props.type;
     const newType = nextProps.type;
     const data = nextProps.data;
 
-    if( oldType !== newType) {
-      this.createNewChart(data, newType);
+    if(!data || typeof data !== 'object') {
+      return;
+    }
+    this.createNewChart(data, newType);
+  }
+
+  destroyChart = () => {
+    if(this.chart) {
+      this.chart.destroy();
     }
   }
 
   createNewChart = (data, type) => {
-    if(this.chart) {
-      this.chart.destroy();
-    }
+    this.destroyChart();
 
     this.chart = new ChartRenderer(this.container, {
       type,

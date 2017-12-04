@@ -48,3 +48,26 @@ it('should not display an error message if data is valid', () => {
 
   expect(node).not.toIncludeText('Error');
 });
+
+it('should destroy chart if no data is provided', () => {
+  const node = mount(<Chart errorMessage='Error' />);
+  
+  expect(node.chart).toBe(undefined);
+});
+
+it('should render chart even if type does not change', () => {
+  ChartRenderer.mockClear();
+  
+  const chart = mount(<Chart data={{foo: 123}} type='visualization_type' />);
+  chart.setProps({type: "visualization_type"})
+
+  expect(ChartRenderer.mock.calls[1][1].type).toBe('visualization_type');
+});
+
+it('should display an error message if there was data and the second time no data is provided', () => {
+  const node = mount(<Chart data={{foo: 123}} errorMessage='Error' />);
+
+  node.setProps({data: null});
+  
+  expect(node).toIncludeText('Error');
+});
