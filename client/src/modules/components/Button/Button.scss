@@ -61,29 +61,33 @@ a.Button--small {
 
 .Button--primary,
 a.Button--primary {
-  color: white;
   font-weight: bold;
+}
+
+
+.Button--blue,
+a.Button--blue {
   color: white;
   background-color: #00a8ff;
   border: 1px solid #00a8ff;
 }
 
-.Button--primary:focus,
-a.Button--primary:focus {
+.Button--blue:focus,
+a.Button--blue:focus {
   border: 1px solid darken(#00a8ff, 12);
 }
 
-.Button--primary:hover,
-a.Button--primary:hover {
+.Button--blue:hover,
+a.Button--blue:hover {
   color: white;
   background-color: #008fe6;  /* #00a8ff -> darken 10% */
   border: 1px solid #008fe6;
 }
 
-.Button--primary[disabled]:hover,
-.Button--primary[disabled="disabled"]:hover,
-a.Button--primary[disabled]:hover,
-a.Button--primary[disabled="disabled"]:hover {
+.Button--blue[disabled]:hover,
+.Button--blue[disabled="disabled"]:hover,
+a.Button--blue[disabled]:hover,
+a.Button--blue[disabled="disabled"]:hover {
   color: white;
   background-color: #00a8ff;
   border: 1px solid #00a8ff;
