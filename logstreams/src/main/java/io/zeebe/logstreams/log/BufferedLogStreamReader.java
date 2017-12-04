@@ -346,12 +346,8 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
         if (ioBuffer.remaining() < requiredCapacity)
         {
             final int pos = ioBuffer.position();
-
-            allocatedBuffer.close();
-
-            allocatedBuffer = bufferAllocator.allocate(pos + requiredCapacity);
-            final ByteBuffer newBuffer = allocatedBuffer.getRawBuffer();
-
+            final AllocatedBuffer newAllocatedBuffer = bufferAllocator.allocate(pos + requiredCapacity);
+            final ByteBuffer newBuffer = newAllocatedBuffer.getRawBuffer();
             if (pos > 0)
             {
                 // copy remaining data
@@ -362,7 +358,10 @@ public class BufferedLogStreamReader implements LogStreamReader, CloseableSilent
             newBuffer.limit(newBuffer.capacity());
             newBuffer.position(pos);
 
+            allocatedBuffer.close();
+            allocatedBuffer = newAllocatedBuffer;
             ioBuffer = newBuffer;
+            buffer.wrap(ioBuffer);
         }
     }
 
