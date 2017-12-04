@@ -1,0 +1,32 @@
+.Table {
+  table-layout: auto;
+  border-collapse: collapse;
+  font-size: .875em;
+  
+  thead { 
+    td {
+      vertical-align: bottom;
+      color: #626262;
+      border-bottom: 1px solid #ccc;
+    }
+  }
+  
+  tr:nth-child(even) {
+    td {
+      background-color: #fafafa;
+    }
+  }
+  
+  td {
+    border-bottom: 1px solid #f0f0f0;
+    padding: .4em .6em;
+  }
+  
+}
+
+
+/* wrap table in div.Table__wrapper for an elegant x-scroll solution: */
+.Table__wrapper  {
+  width: 100%;
+  overflow-x: auto;
+}

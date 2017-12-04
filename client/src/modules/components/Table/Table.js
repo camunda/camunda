@@ -2,8 +2,10 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 import {Button} from 'components';
 
+import './Table.css';
+
 export default function Table({head, body, foot}) {
-  return (<table>
+  return (<table className='Table'>
     <thead>{Table.renderRow(head, 0)}</thead>
     <tbody>
       {body.map((row, idx) => {

@@ -7,7 +7,11 @@ export default function Table({data, errorMessage}) {
     return <p>{errorMessage}</p>;
   }
 
-  return <TableRenderer {...formatData(data)} />;
+  return (
+    <div className='Table__wrapper'>
+      <TableRenderer {...formatData(data)} />
+    </div>
+  );
 }
 
 function formatData(data) {
