@@ -214,7 +214,13 @@ public class FsLogSegment
         {
             try
             {
-                newSize += fileChannel.write(block, newSize);
+                final int writtenBytes = fileChannel.write(block, newSize);
+                if (writtenBytes == 0)
+                {
+                    LOG.error("Failed to write block!");
+                    return -1;
+                }
+                newSize += writtenBytes;
             }
             catch (Exception e)
             {
