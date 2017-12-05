@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.Client;
@@ -30,12 +31,17 @@ public class ElasticSearchSchemaManager {
     mappings.add(mapping);
   }
 
-  //TODO:better implementation?
   public boolean schemaAlreadyExists() {
+    String[] optimizeIndex = new String [mappings.size()];
+    int i = 0;
+    for (TypeMappingCreator creator : mappings) {
+      optimizeIndex[i] = configurationService.getOptimizeIndex(creator.getType());
+      i = ++i;
+    }
     IndicesExistsResponse response = esclient
       .admin()
       .indices()
-      .prepareExists(configurationService.getOptimizeIndex(mappings.get(0).getType()))
+      .prepareExists(optimizeIndex)
       .get();
     return response.isExists();
   }
@@ -55,18 +61,23 @@ public class ElasticSearchSchemaManager {
       } catch (IOException e) {
         logger.error("Could not create settings!", e);
       }
-      CreateIndexRequestBuilder createIndexRequestBuilder = esclient
-          .admin()
-          .indices()
-          .prepareCreate(configurationService.getOptimizeIndex(mapping.getType()))
-          .setSettings(indexSettings);
+      try {
+        CreateIndexRequestBuilder createIndexRequestBuilder = esclient
+            .admin()
+            .indices()
+            .prepareCreate(configurationService.getOptimizeIndex(mapping.getType()))
+            .setSettings(indexSettings);
 
-      createIndexRequestBuilder = createIndexRequestBuilder.addMapping(
-          mapping.getType(),
-          mapping.getSource()
-      );
-      createIndexRequestBuilder
-        .get();
+        createIndexRequestBuilder = createIndexRequestBuilder.addMapping(
+            mapping.getType(),
+            mapping.getSource()
+        );
+        createIndexRequestBuilder
+            .get();
+      } catch (ResourceAlreadyExistsException e) {
+        logger.warn("Index for type [{}] already exists", mapping.getType());
+      }
+
       esclient.admin().indices().prepareRefresh().get();
     }
   }
