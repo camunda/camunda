@@ -8,9 +8,7 @@ export default function Table({data, errorMessage}) {
   }
 
   return (
-    <div className='Table__wrapper'>
-      <TableRenderer {...formatData(data)} />
-    </div>
+    <TableRenderer {...formatData(data)} />
   );
 }
 
@@ -19,7 +17,7 @@ function formatData(data) {
     // raw data
     const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
     const rawVariableNames = Object.keys(data[0].variables);
-  
+
     const body = data.map(instance => {
       let row = processInstanceProps.map(entry => instance[entry]);
       const variableValues = rawVariableNames.map(entry => instance.variables[entry]);
