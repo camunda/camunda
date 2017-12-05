@@ -71,7 +71,7 @@
       /*
       A base URL that will be used for connections to the Camunda Engine REST API.
       */
-      "rest": "http://localhost:8080/engine-rest",
+      "rest": "http://localhost:48080/engine-rest",
       "authentication": {
         /*
         With the specified group id, only engine users that are part of the

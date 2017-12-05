@@ -203,10 +203,15 @@ public abstract class DefinitionBasedImportIndexHandler
   private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine() {
     int currentStart = 0;
     long maxPageSize = configurationService.getEngineImportProcessDefinitionMaxPageSize();
-    List<ProcessDefinitionEngineDto> currentPage = engineEntityFetcher.fetchProcessDefinitions(
-        currentStart,
-        maxPageSize
-    );
+    List<ProcessDefinitionEngineDto> currentPage = null;
+    try {
+      currentPage = engineEntityFetcher.fetchProcessDefinitions(
+          currentStart,
+          maxPageSize
+      );
+    } catch (Exception e) {
+      logger.error("can't read initial PD list from the engine [{}]", this.engineContext.getEngineAlias(), e);
+    }
 
     HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
