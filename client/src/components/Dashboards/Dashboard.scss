@@ -1,3 +1,6 @@
+@import "shared-styles.scss";
+
+
 .Dashboard__header {
   display: flex;
   margin-bottom: 32px;
@@ -24,6 +27,12 @@
   font-size: 2em;
   width: 100%;
   font-weight: bold;
+  
+  @include placeholder {
+    font-weight: normal;
+    color: #bdbdbd;
+  }
+  
 }
 
 .Dashboard__tools {
