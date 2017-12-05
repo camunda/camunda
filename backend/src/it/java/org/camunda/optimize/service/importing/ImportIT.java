@@ -47,11 +47,11 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EN
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 
@@ -125,11 +125,11 @@ public class ImportIT  {
 
     // then
     // ( 100 (variable) +
-    //   100 (process definitions) +
-    //   100 (process definition xmls) +
+    //   50 (process definitions) +
+    //   50 (process definition xmls) +
     //    50 (finished process instances) +
-    //    50 (activity instances) ) / 5 = 80
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(80L));
+    //    50 (activity instances) ) / 5 = 60
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(60L));
   }
 
   @Test
@@ -625,13 +625,13 @@ public class ImportIT  {
     assertThat(heatMap.getFlowNodes().size(), is(5));
   }
 
-  private void deployAndStartSimpleServiceTask() {
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
-    deployAndStartSimpleServiceTaskWithVariables(variables);
+    return deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
-  private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
         .startEvent()
@@ -639,7 +639,7 @@ public class ImportIT  {
           .camundaExpression("${true}")
         .endEvent()
       .done();
-    engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void deployAndStartSimpleUserTask() {

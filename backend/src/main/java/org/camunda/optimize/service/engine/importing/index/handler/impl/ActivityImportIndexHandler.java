@@ -46,6 +46,10 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    return engineCountFetcher.fetchHistoricActivityInstanceCount(getAllProcessDefinitions());
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
+      return engineCountFetcher.fetchHistoricActivityInstanceCount(getAllProcessDefinitions());
+    } else {
+      return engineCountFetcher.fetchAllHistoricActivityInstanceCount();
+    }
   }
 }

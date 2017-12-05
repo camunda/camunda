@@ -39,7 +39,11 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionBasedImpor
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    return engineCountFetcher.fetchProcessDefinitionCount(getAllProcessDefinitions());
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
+      return engineCountFetcher.fetchProcessDefinitionCount(getAllProcessDefinitions());
+    } else {
+      return engineCountFetcher.fetchAllProcessDefinitionCount();
+    }
   }
 
   @Override

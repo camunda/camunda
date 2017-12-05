@@ -46,6 +46,10 @@ public class FinishedProcessInstanceImportIndexHandler extends DefinitionBasedIm
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    return engineCountFetcher.fetchFinishedHistoricProcessInstanceCount(getAllProcessDefinitions());
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
+      return engineCountFetcher.fetchFinishedHistoricProcessInstanceCount(getAllProcessDefinitions());
+    } else {
+      return engineCountFetcher.fetchAllFinishedHistoricProcessInstanceCount();
+    }
   }
 }

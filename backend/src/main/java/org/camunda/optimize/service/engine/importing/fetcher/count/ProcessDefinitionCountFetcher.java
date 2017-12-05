@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.PROCESS_DEFINITION_ID_IN;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -42,5 +41,15 @@ public class ProcessDefinitionCountFetcher extends AbstractEngineAwareFetcher {
     List<String> listWrapped = new ArrayList<>();
     listWrapped.add(processDefinitionId);
     return fetchProcessDefinitionCount(listWrapped);
+  }
+
+  public long fetchAllProcessDefinitionCount() {
+    CountDto count = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(configurationService.getProcessDefinitionCountEndpoint())
+        .request()
+        .get(CountDto.class);
+
+    return count.getCount();
   }
 }
