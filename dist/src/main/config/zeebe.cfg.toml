@@ -30,7 +30,7 @@ receiveBufferSize = 16
 
 [threading]
 #numberOfThreads = 2
-maxIdleTimeMs = 100
+maxIdleTimeMs = 10
 idleStrategy = "BACKOFF"
 
 # Log Configuration -----------------------------------
