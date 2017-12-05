@@ -141,7 +141,7 @@ public class Application
 
         final DeploymentEvent deployment = client.workflows()
             .deploy(TOPIC)
-            .resourceFromClasspath("order-process.bpmn")
+            .addResourceFromClasspath("order-process.bpmn")
             .execute();
 
         final int version = deployment.getDeployedWorkflows().get(0).getVersion();
