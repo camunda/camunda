@@ -16,15 +16,10 @@
 package io.zeebe.client;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -40,13 +35,8 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportListener;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.transport.*;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
@@ -275,17 +265,12 @@ public class ZeebeClientTest
     public void shouldThrottleTopologyRefreshRequestsWhenTopicPartitionCannotBeDetermined()
     {
         // when
-        try
+        assertThatThrownBy(() ->
         {
             client.tasks()
                 .create("non-existing-topic", "baz")
                 .execute();
-            fail("should not succeed");
-        }
-        catch (Exception e)
-        {
-            // expected
-        }
+        });
 
         // +2 (one for the extra request when client is started)
         final long requestTimeout = Long.parseLong(client.getInitializationProperties()
@@ -311,15 +296,10 @@ public class ZeebeClientTest
         final TaskEventImpl taskEvent = new TaskEventImpl("CREATED", new MsgPackConverter());
         taskEvent.setPartitionId(nonExistingPartition);
 
-        try
+        assertThatThrownBy(() ->
         {
             client.tasks().complete(taskEvent).execute();
-            fail("should not succeed");
-        }
-        catch (Exception e)
-        {
-            // expected
-        }
+        });
 
         // +2 (one for the extra request when client is started)
         final long requestTimeout = Long.parseLong(client.getInitializationProperties()
