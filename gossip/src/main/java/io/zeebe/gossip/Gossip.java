@@ -15,44 +15,112 @@
  */
 package io.zeebe.gossip;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.gossip.dissemination.DisseminationComponent;
+import io.zeebe.gossip.failuredetection.*;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
+import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
-public class Gossip implements Actor, ServerMessageHandler, ServerRequestHandler
+public class Gossip implements Actor, GossipController
 {
+    private final Logger logger;
 
-    private final SocketAddress socketAddress;
-    private final GossipConfiguration configuration;
-    private final BufferingServerTransport serverTransport;
-    private final ClientTransport clientTransport;
+    private final SubscriptionController subscriptionController;
+    private final PingController failureDetectionController;
+    private final MembershipList memberList;
 
-    public Gossip(final SocketAddress socketAddress, final GossipConfiguration configuration, final BufferingServerTransport serverTransport, final ClientTransport clientTransport)
+    private final PingReqEventHandler pingReqController;
+    private final JoinController joinController;
+    private final SuspictionController suspictionController;
+
+    private final DeferredCommandContext deferredCommands = new DeferredCommandContext();
+
+    public Gossip(
+            final SocketAddress socketAddress,
+            final BufferingServerTransport serverTransport,
+            final ClientTransport clientTransport,
+            final GossipConfiguration configuration)
     {
-        this.socketAddress = socketAddress;
-        this.configuration = configuration;
-        this.serverTransport = serverTransport;
-        this.clientTransport = clientTransport;
+        this.logger = Loggers.getLogger(socketAddress);
+
+        memberList = new MembershipList(socketAddress, configuration);
+        final DisseminationComponent disseminationComponent = new DisseminationComponent(configuration, memberList);
+
+        final GossipEventFactory gossipEventFactory = new GossipEventFactory(memberList, disseminationComponent);
+
+        final GossipEventSender gossipEventSender = new GossipEventSender(logger, clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
+
+        final GossipContext context = new GossipContext(logger, configuration, memberList, disseminationComponent, serverTransport, clientTransport, gossipEventSender, gossipEventFactory);
+
+        failureDetectionController = new PingController(context);
+
+        final PingEventHandler pingMessageHandler = new PingEventHandler(context);
+        pingReqController = new PingReqEventHandler(context);
+        final SyncRequestEventHandler syncRequestHandler = new SyncRequestEventHandler(context);
+
+        final GossipRequestHandler requestHandler = new GossipRequestHandler(context, gossipEventFactory);
+        requestHandler.registerGossipEventConsumer(GossipEventType.PING, pingMessageHandler);
+        requestHandler.registerGossipEventConsumer(GossipEventType.PING_REQ, pingReqController);
+        requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
+
+        joinController = new JoinController(context);
+        suspictionController = new SuspictionController(context);
+
+        subscriptionController = new SubscriptionController(serverTransport, requestHandler);
+    }
+
+    @Override
+    public CompletableFuture<Void> join(List<SocketAddress> contactPoints)
+    {
+        // TODO complete future when joined
+        return deferredCommands.runAsync(future -> joinController.join(contactPoints));
+    }
+
+    @Override
+    public CompletableFuture<Void> leave()
+    {
+        // TODO leave gossip cluster
+        return null;
     }
 
     @Override
     public int doWork() throws Exception
     {
-        // TODO: implement
-        return 0;
+        int workCount = 0;
+
+        workCount += deferredCommands.doWork();
+        workCount += joinController.doWork();
+        workCount += subscriptionController.doWork();
+        workCount += failureDetectionController.doWork();
+        workCount += pingReqController.doWork();
+        workCount += suspictionController.doWork();
+
+        return workCount;
     }
 
     @Override
-    public boolean onMessage(final ServerOutput output, final RemoteAddress remoteAddress, final DirectBuffer buffer, final int offset, final int length)
+    public int getPriority(long now)
     {
-        // TODO: implement
-        return false;
+        return PRIORITY_HIGH;
     }
 
     @Override
-    public boolean onRequest(final ServerOutput output, final RemoteAddress remoteAddress, final DirectBuffer buffer, final int offset, final int length, final long requestId)
+    public void addMembershipListener(GossipMembershipListener listener)
     {
-        // TODO: implement
-        return false;
+        deferredCommands.runAsync(() -> memberList.addListener(listener));
     }
+
+    @Override
+    public void removeMembershipListener(GossipMembershipListener listener)
+    {
+        deferredCommands.runAsync(() -> memberList.removeListener(listener));
+    }
+
 }

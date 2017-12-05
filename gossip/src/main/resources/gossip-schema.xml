@@ -1,26 +1,63 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
-	package="io.zeebe.clustering.gossip" id="3" version="1"
-	semanticVersion="0.1.0" description="Zeebe Management Gossip Protocol" byteOrder="littleEndian">
+  package="io.zeebe.clustering.gossip" id="3" version="1"
+  semanticVersion="0.1.0" description="Zeebe Management Gossip Protocol"
+  byteOrder="littleEndian">
 
-    <types>
-        <composite name="messageHeader"
-            description="Message identifiers and length of message root">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="templateId" primitiveType="uint16" />
-            <type name="schemaId" primitiveType="uint16" />
-            <type name="version" primitiveType="uint16" />
-        </composite>
+  <types>
+    <composite name="messageHeader"
+      description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="templateId" primitiveType="uint16" />
+      <type name="schemaId" primitiveType="uint16" />
+      <type name="version" primitiveType="uint16" />
+    </composite>
 
-        <composite name="varDataEncoding">
-            <type name="length" primitiveType="uint16" />
-            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
-        </composite>
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16" />
+      <type name="varData" primitiveType="uint8" length="0"
+        characterEncoding="UTF-8" />
+    </composite>
 
-        <composite name="groupSizeEncoding">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
-        </composite>
-    </types>
+    <composite name="groupSizeEncoding">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+    </composite>
+
+    <enum name="gossipEventType" encodingType="uint8" description="type of the Gossip event">
+      <validValue name="PING">0</validValue>
+      <validValue name="ACK">1</validValue>
+      <validValue name="PING_REQ">2</validValue>
+      <validValue name="SYNC_REQUEST">3</validValue>
+      <validValue name="SYNC_RESPONSE">4</validValue>
+    </enum>
+
+    <enum name="membershipEventType" encodingType="uint8" description="type of membership event">
+      <validValue name="SUSPECT">1</validValue>
+      <validValue name="ALIVE">2</validValue>
+      <validValue name="CONFIRM">3</validValue>
+      <validValue name="JOIN">0</validValue>
+      <validValue name="LEAVE">4</validValue>
+    </enum>
+
+  </types>
+
+  <sbe:message name="GossipEvent" id="0" description="ping probe request">
+    <field name="eventType" id="0" type="gossipEventType" />
+    <field name="senderGossipEpoch" id="1" type="uint64" />    <!-- do it need the gossip term? -->
+    <field name="senderGossipHeartbeat" id="2" type="uint64" />
+    <group name="membershipEvents" id="3" dimensionType="groupSizeEncoding">
+      <field name="eventType" id="4" type="membershipEventType" />  
+      <field name="gossipEpoch" id="5" type="uint64" />
+      <field name="gossipHeartbeat" id="6" type="uint64" />
+      <data name="address" id="7" type="varDataEncoding" />
+    </group>
+    <group name="customEvents" id="8" dimensionType="groupSizeEncoding"> <!-- here, we need a gossip term -->
+      <field name="eventType" id="9" type="uint32" />
+      <data name="payload" id="10" type="varDataEncoding" />
+    </group>
+    <data name="sender" id="11" type="varDataEncoding" />
+    <data name="probeMember" id="12" type="varDataEncoding" />    
+  </sbe:message>
 
 </sbe:messageSchema>

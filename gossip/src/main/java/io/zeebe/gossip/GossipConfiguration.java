@@ -18,16 +18,44 @@ package io.zeebe.gossip;
 public class GossipConfiguration
 {
 
-    private int retransmissionMultiplier = 3;
+    private int retransmissionMultiplier = 5;
 
-    private int probeInterval = 100;
+    private int probeInterval = 1_000;
     private int probeTimeout = 500;
     private int probeIndirectNodes = 3;
+    private int probeIndirectTimeout = 1_000;
 
     private int syncInterval = 10;
     private int syncNode = 1000;
+    private int syncTimeout = 3_000;
 
-    private int suspicionTimeout = 1000;
+    private int suspicionMultiplier = 5;
+
+    private int joinTimeout = 1_000;
+    private int joinInterval = 5_000;
+
+
+    public int getJoinTimeout()
+    {
+        return joinTimeout;
+    }
+
+    public GossipConfiguration joinTimeout(int joinTimeout)
+    {
+        this.joinTimeout = joinTimeout;
+        return this;
+    }
+
+    public int getJoinInterval()
+    {
+        return joinInterval;
+    }
+
+    public GossipConfiguration joinInterval(int joinInterval)
+    {
+        this.joinInterval = joinInterval;
+        return this;
+    }
 
     /**
      * @return The multiplier for the number of retransmissions of a gossip message.
@@ -101,6 +129,28 @@ public class GossipConfiguration
         return this;
     }
 
+    public int getProbeIndirectTimeout()
+    {
+        return probeIndirectTimeout;
+    }
+
+    public GossipConfiguration probeIndirectTimeout(int probeIndirectTimeout)
+    {
+        this.probeIndirectTimeout = probeIndirectTimeout;
+        return this;
+    }
+
+    public int getSyncTimeout()
+    {
+        return syncTimeout;
+    }
+
+    public GossipConfiguration syncTimeout(int syncTimeout)
+    {
+        this.syncTimeout = syncTimeout;
+        return this;
+    }
+
     /**
      * @return the interval of syncs between nodes in milliseconds
      */
@@ -135,20 +185,16 @@ public class GossipConfiguration
         return this;
     }
 
-    /**
-     * @return the interval until a suspected nodes is declared dead
-     */
-    public int getSuspicionTimeout()
+
+    public int getSuspicionMultiplier()
     {
-        return suspicionTimeout;
+        return suspicionMultiplier;
     }
 
-    /**
-     * The interval until a suspected nodes is declared dead.
-     */
-    public GossipConfiguration setSuspicionTimeout(final int suspicionTimeout)
+
+    public GossipConfiguration setSuspicionMultiplier(final int suspicionMultiplier)
     {
-        this.suspicionTimeout = suspicionTimeout;
+        this.suspicionMultiplier = suspicionMultiplier;
         return this;
     }
 
@@ -157,7 +203,7 @@ public class GossipConfiguration
     {
         return "GossipConfiguration{" + "retransmitMultiplier=" + retransmissionMultiplier + ", probeInterval=" + probeInterval +
             ", probeTimeout=" + probeTimeout + ", probeIndirectNodes=" + probeIndirectNodes + ", syncInterval=" + syncInterval +
-            ", syncNode=" + syncNode + ", suspicionTimeout=" + suspicionTimeout + '}';
+            ", syncNode=" + syncNode + ", suspicionMultiplier=" + suspicionMultiplier + '}';
     }
 
 }
