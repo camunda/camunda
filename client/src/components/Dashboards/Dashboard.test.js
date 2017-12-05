@@ -5,10 +5,10 @@ import Dashboard from './Dashboard';
 import {loadDashboard, remove, update} from './service';
 
 jest.mock('components', () => {
-  const Modal = props => <div id='Modal'>{props.children}</div>;
-  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
-  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
-  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+  const Modal = props => <div>{props.children}</div>;
+  Modal.Header = props => <div>{props.children}</div>;
+  Modal.Content = props => <div>{props.children}</div>;
+  Modal.Actions = props => <div>{props.children}</div>;
 
   return {
     Modal,
@@ -105,14 +105,14 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  expect(node.find('#edit')).toBePresent();
+  expect(node.find('.Dashboard__edit-button')).toBePresent();
 });
 
 it('should remove a dashboard when delete button is clicked', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('#delete').first().simulate('click');
+  node.find('.Dashboard__delete-button').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -121,7 +121,7 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  await node.find('#delete').first().simulate('click');
+  await node.find('.Dashboard__delete-button').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /dashboards');
 });
@@ -131,19 +131,19 @@ it('should show a modal on share button click', () => {
 
   node.setState({loaded: true});
 
-  node.find('#share').first().simulate('click');
+  node.find('.Dashboard__share-button').first().simulate('click');
 
-  expect(node.find('#Modal')).toBePresent();
+  expect(node.find('.Dashboard__share-modal')).toHaveProp('open', true);
 });
 
 it('should hide the modal on close button click', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('#share').first().simulate('click');
-  node.find('#close-shareModal-button').first().simulate('click');
+  node.find('.Dashboard__share-button').first().simulate('click');
+  node.find('.Dashboard__close-share-modal-button').first().simulate('click');
 
-  expect(node.find('#Modal')).not.toBePresent();
+  expect(node.find('.Dashboard__share-modal')).toHaveProp('open', false);
 });
 
 
@@ -155,9 +155,9 @@ describe('edit mode', async () => {
     const node = mount(<Dashboard {...props} />);
     node.setState({loaded: true});
 
-    expect(node.find('#save')).toBePresent();
-    expect(node.find('#cancel')).toBePresent();
-    expect(node.find('#edit')).not.toBePresent();
+    expect(node.find('.Dashboard__save-button')).toBePresent();
+    expect(node.find('.Dashboard__cancel-button')).toBePresent();
+    expect(node.find('.Dashboard__edit-button')).not.toBePresent();
   });
 
   it('should provide name edit input', async () => {
@@ -173,7 +173,7 @@ describe('edit mode', async () => {
     const node = mount(<Dashboard {...props} />);
     node.setState({loaded: true, name: 'test name'});
 
-    node.find('a#save').simulate('click');
+    node.find('.Dashboard__save-button').simulate('click');
 
     expect(update).toHaveBeenCalled();
   });
@@ -196,7 +196,7 @@ describe('edit mode', async () => {
     const input = 'asdf';
     node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
-    node.find('a#cancel').simulate('click');
+    node.find('.Dashboard__cancel-button').simulate('click');
     expect(node).toHaveState('name', 'test name');
   });
 
