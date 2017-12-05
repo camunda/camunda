@@ -67,12 +67,13 @@ public class DeleteOnCloseTest
         log.close();
 
         // then
-        assertThat(logFolder.listFiles().length).isGreaterThan(0);
+        final File[] files = logFolder.listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files.length).isGreaterThan(0);
     }
 
     @Test
-    @Ignore
-    public void shouldDeleteOnCloseIfSet() throws InterruptedException, ExecutionException
+    public void shouldDeleteOnCloseIfSet()
     {
         final File logFolder = tempFolder.getRoot();
 
@@ -88,6 +89,8 @@ public class DeleteOnCloseTest
         log.close();
 
         // then
-        assertThat(logFolder.listFiles().length).isEqualTo(0);
+        final File[] files = logFolder.listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files.length).isEqualTo(0);
     }
 }

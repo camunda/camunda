@@ -217,7 +217,7 @@ public class FsLogSegment
                 final int writtenBytes = fileChannel.write(block, newSize);
                 if (writtenBytes == 0)
                 {
-                    LOG.error("Failed to write block!");
+                    LOG.warn("Unable to temporary write more bytes to file channel");
                     return -1;
                 }
                 newSize += writtenBytes;
