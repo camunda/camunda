@@ -146,7 +146,8 @@ public class MultipleEngineSupportIT {
     );
 
     // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.scheduleImport();
+    embeddedOptimizeRule.scheduleImport();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then

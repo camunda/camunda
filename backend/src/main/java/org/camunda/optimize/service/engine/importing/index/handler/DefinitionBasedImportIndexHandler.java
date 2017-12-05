@@ -125,7 +125,12 @@ public abstract class DefinitionBasedImportIndexHandler
 
   @Override
   public OptionalDouble computeProgress() {
-    long totalEntityCount = fetchMaxEntityCountForAllDefinitions();
+    long totalEntityCount = 0;
+    try {
+      totalEntityCount = fetchMaxEntityCountForAllDefinitions();
+    } catch (Exception e) {
+      //nothing to do error has been already reported before
+    }
     boolean hasNothingToImport = totalEntityCount == 0L;
     boolean allEntitiesHaveBeenImported = totalEntitiesImported >= totalEntityCount;
     if (hasNothingToImport) {

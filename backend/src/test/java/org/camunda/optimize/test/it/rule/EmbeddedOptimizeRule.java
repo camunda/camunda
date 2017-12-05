@@ -55,7 +55,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     engineImportJobExecutor.startExecutingImportJobs();
     elasticsearchImportJobExecutor.startExecutingImportJobs();
 
-    resetImportStartIndexes();
+    try {
+      resetImportStartIndexes();
+    } catch (Exception e) {
+      //nothing to do
+    }
 
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
@@ -86,7 +90,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       try {
         getEngineImportJobExecutor().executeImportJob(storeIndexesEngineImportJob);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error("interrupted while persisting data", e);
       }
 
       makeSureAllScheduledJobsAreFinished();
@@ -108,7 +112,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       synchronizationObject.countDown();
       synchronizationObject.await();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      logger.error("interrupted while synchronizing", e);
     }
   }
 
