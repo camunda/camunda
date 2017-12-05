@@ -1,0 +1,19 @@
+---
+container:
+  host: 0.0.0.0
+  ports:
+    http: 8090
+engines:
+  '1':
+    name: default
+    rest: http://localhost:8080/engine-rest
+    authentication:
+      accessGroup: ''
+      enabled: false
+      password: ''
+      user: ''
+    enabled: true
+es:
+  host: localhost
+  index: optimize
+  port: 9300

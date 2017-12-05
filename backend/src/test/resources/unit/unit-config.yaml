@@ -1,0 +1,14 @@
+---
+import:
+  handler:
+    backoff:
+      interval: 50
+      value: 10
+      max: 3
+    pages:
+      resetInterval:
+        unit: Millis
+        value: 100
+es:
+  sampler:
+    interval: 100

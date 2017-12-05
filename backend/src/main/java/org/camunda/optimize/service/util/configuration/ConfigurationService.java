@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -37,7 +38,7 @@ public class ConfigurationService {
   private static final String ENGINE_REST_PATH = "/engine/";
   private final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
 
-  private static final String[] DEFAULT_LOCATIONS = { "service-config.json", "environment-config.json" };
+  private static final String[] DEFAULT_LOCATIONS = { "service-config.yaml", "environment-config.yaml" };
   private ObjectMapper objectMapper;
   private HashMap defaults = null;
   private ReadContext jsonContext;
@@ -140,7 +141,7 @@ public class ConfigurationService {
   }
 
   public void initFromStreams(List<InputStream> sources) {
-    objectMapper = new ObjectMapper();
+    objectMapper = new ObjectMapper(new YAMLFactory());
     objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS,true);
     //read default values from the first location
     try {

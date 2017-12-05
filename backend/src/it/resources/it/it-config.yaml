@@ -1,0 +1,21 @@
+---
+engines:
+  '1':
+    name: default
+    rest: http://localhost:48080/engine-rest
+    authentication:
+      accessGroup: ''
+      enabled: false
+      password: ''
+      user: ''
+    enabled: true
+import:
+  data:
+    process-definition-xml:
+      pageSize:
+        max: 30
+  elasticsearchJobExecutorThreadCount: 1
+  engineJobExecutorThreadCount: 1
+  handler:
+    backoff:
+      isEnabled: false

@@ -23,8 +23,8 @@
   <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">
     <constructor-arg>
       <list>
-        <value>service-config.json</value>
-        <value>it/it-config.json</value>
+        <value>service-config.yaml</value>
+        <value>it/it-config.yaml</value>
       </list>
     </constructor-arg>
   </bean>

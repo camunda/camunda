@@ -1,0 +1,4 @@
+---
+auth:
+  token:
+    lifeMin: 10
