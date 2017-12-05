@@ -15,19 +15,16 @@ export default class Chart extends React.Component {
   }
 
   render() {
-    const {data} = this.props;
-    let {errorMessage} = this.props;
+    const {data, errorMessage} = this.props;
 
+    let errorMessageFragment = null;
     if(!data || typeof data !== 'object') {
-      // show error message
       this.destroyChart();
-    } else {
-      // show chart
-      errorMessage = '';
+      errorMessageFragment = <p>{errorMessage}</p>;
     }
 
     return (<div style={{height: '100%', width: '100%'}}>
-      <p>{errorMessage}</p>
+      {errorMessageFragment}
       <canvas ref={this.storeContainer} />
     </div>);
   }
