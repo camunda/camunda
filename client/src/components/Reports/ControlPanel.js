@@ -1,4 +1,5 @@
 import React from 'react';
+import {Select} from 'components';
 
 import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
@@ -79,31 +80,31 @@ export default class ControlPanel extends React.Component {
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item'>
           <label htmlFor='process-definition' className='ControlPanel__label'>Process definition</label>
-          <select name='process-definition' className='Select' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+          <Select name='process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
             {addSelectionOption()}
-            {this.state.availableDefinitions.map(definition => <option value={definition.id} key={definition.id}>{definition.id}</option>)}
-          </select>
+            {this.state.availableDefinitions.map(definition => <Select.Option value={definition.id} key={definition.id}>{definition.id}</Select.Option>)}
+          </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='view' className='ControlPanel__label'>View</label>
-          <select name='view' className='Select' value={parseView(this.props.view)} onChange={this.changeView}>
+          <Select name='view' value={parseView(this.props.view)} onChange={this.changeView}>
             {addSelectionOption()}
             {renderOptions('view')}
-          </select>
+          </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='group-by' className='ControlPanel__label'>Group by</label>
-          <select name='group-by' className='Select' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
+          <Select name='group-by' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
             {renderOptions('groupBy')}
-          </select>
+          </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='visualize-as' className='ControlPanel__label'>Visualize as</label>
-          <select name='visualize-as' className='Select' value={this.props.visualization} onChange={this.changeVisualization}>
+          <Select name='visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
             {renderOptions('visualizeAs')}
-          </select>
+          </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
           <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} />
@@ -114,7 +115,7 @@ export default class ControlPanel extends React.Component {
 }
 
 function addSelectionOption() {
-  return <option value=''>Please select a value...</option>;
+  return <Select.Option value=''>Please select a value...</Select.Option>;
 }
 
 function parseView({operation, entity, property}) {
@@ -125,5 +126,5 @@ function parseGroup({type, unit}) {
 }
 
 function renderOptions(prop) {
-  return options[prop].map(({key, label}) => <option key={key} value={key}>{label}</option>);
+  return options[prop].map(({key, label}) => <Select.Option key={key} value={key}>{label}</Select.Option>);
 }
