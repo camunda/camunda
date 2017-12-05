@@ -152,6 +152,10 @@ public class MultipleEngineSupportIT {
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
+
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(5l);
   }
 
   @Test
