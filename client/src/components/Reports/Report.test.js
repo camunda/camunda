@@ -5,10 +5,10 @@ import Report from './Report';
 import {getReportData, loadSingleReport, remove, saveReport} from './service';
 
 jest.mock('components', () =>{
-  const Modal = props => <div id='Modal'>{props.children}</div>;
-  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
-  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
-  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+  const Modal = props => <div {...props}>{props.children}</div>;
+  Modal.Header = props => <div>{props.children}</div>;
+  Modal.Content = props => <div>{props.children}</div>;
+  Modal.Actions = props => <div>{props.children}</div>;
 
   return {
     Modal,
@@ -102,7 +102,7 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  expect(node.find('#edit')).toBePresent();
+  expect(node.find('.Report__edit-button')).toBePresent();
 });
 
 
@@ -110,7 +110,7 @@ it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  node.find('#delete').first().simulate('click');
+  node.find('.Report__delete-button').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -119,7 +119,7 @@ it('should redirect to the report list on report deletion', async () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-  await node.find('#delete').first().simulate('click');
+  await node.find('.Report__delete-button').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });
@@ -203,19 +203,18 @@ it('should show a modal on share button click', () => {
   node.setState({loaded: true});
 
 
-  node.find('#share').first().simulate('click');
+  node.find('.Report__share-button').first().simulate('click');
 
-  expect(node.find('#Modal')).toBePresent();
+  expect(node.find('.Report__share-modal').first()).toHaveProp('open', true);
 });
 
 it('should hide the modal on close button click', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, modalVisible: true});
 
-  node.find('#share').first().simulate('click');
-  node.find('#close-shareModal-button').first().simulate('click');
+  node.find('.Report__close-share-modal-button').first().simulate('click');
 
-  expect(node.find('#Modal')).not.toBePresent();
+  expect(node.find('.Report__share-modal').first()).toHaveProp('open', false);
 });
 
 describe('edit mode', async () => {
@@ -226,9 +225,9 @@ describe('edit mode', async () => {
     const node = mount(<Report {...props} />);
     node.setState({loaded: true});
 
-    expect(node.find('#save')).toBePresent();
-    expect(node.find('#cancel')).toBePresent();
-    expect(node.find('#edit')).not.toBePresent();
+    expect(node.find('.Report__save-button')).toBePresent();
+    expect(node.find('.Report__cancel-button')).toBePresent();
+    expect(node.find('.Report__edit-button')).not.toBePresent();
   });
 
   it('should provide name edit input', async () => {
@@ -244,7 +243,7 @@ describe('edit mode', async () => {
     const node = mount(<Report {...props} />);
     node.setState({loaded: true, name: 'test name'});
 
-    node.find('a#save').simulate('click');
+    node.find('.Report__save-button').simulate('click');
 
     expect(saveReport).toHaveBeenCalled();
   });
@@ -282,7 +281,7 @@ describe('edit mode', async () => {
     const input = 'asdf';
     await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
 
-    await node.find('a#cancel').simulate('click');
+    await node.find('.Report__cancel-button').simulate('click');
     expect(spy).toHaveBeenCalled();
     expect(node).toHaveState('name', 'name');
   });

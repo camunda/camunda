@@ -21,8 +21,7 @@ export default class Report extends React.Component {
       loaded: false,
       redirect: false,
       originalName: null,
-      modalVisible: false,
-      modalText: null
+      modalVisible: false
     };
 
     this.loadReport();
@@ -148,8 +147,7 @@ export default class Report extends React.Component {
 
   closeModal = () => {
     this.setState({
-      modalVisible: false,
-      modalText: null
+      modalVisible: false
     });
   }
 
@@ -164,8 +162,8 @@ export default class Report extends React.Component {
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
-            <Link id='save' className='Button Report__tool-button' to={`/report/${this.id}`} onClick={this.save}>Save</Link>
-            <Link id='cancel' className='Button Report__tool-button' to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
+            <Link className='Button Report__tool-button Report__save-button' to={`/report/${this.id}`} onClick={this.save}>Save</Link>
+            <Link className='Button Report__tool-button Report__cancel-button' to={`/report/${this.id}`} onClick={this.cancel}>Cancel</Link>
           </div>
         </div>
 
@@ -176,7 +174,7 @@ export default class Report extends React.Component {
   }
 
   renderViewMode = () => {
-    const {name, lastModifier, lastModified, reportResult} = this.state;
+    const {name, lastModifier, lastModified, reportResult, modalVisible} = this.state;
 
     return (
       <div className='Report'>
@@ -186,14 +184,12 @@ export default class Report extends React.Component {
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
-            <Link id='edit' className='Button Report__tool-button' to={`/report/${this.id}/edit`}>Edit</Link>
-            <Button id='delete' className='Report__tool-button' onClick={this.deleteReport}>Delete</Button>
-            <Button id='share' onClick={this.showModal} className='Report__tool-button'>Share</Button>
+            <Link className='Button Report__tool-button Report__edit-button' to={`/report/${this.id}/edit`}>Edit</Link>
+            <Button className='Report__tool-button Report__delete-button' onClick={this.deleteReport}>Delete</Button>
+            <Button onClick={this.showModal} className='Report__tool-button Report__share-button'>Share</Button>
           </div>
         </div>
-        {
-          (this.state && this.state.modalVisible) ?
-        <Modal open={true} onClose={this.closeModal} className='Report__share-modal'>
+        <Modal open={modalVisible} onClose={this.closeModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
             <ControlGroup>
@@ -201,11 +197,9 @@ export default class Report extends React.Component {
             </ControlGroup>
           </Modal.Content>
           <Modal.Actions>
-            <Button id="close-shareModal-button" onClick={this.closeModal}>Close</Button>
+            <Button className="Report__close-share-modal-button" onClick={this.closeModal}>Close</Button>
           </Modal.Actions>
-        </Modal> : ''
-        }
-
+        </Modal>
         <ReportView report={reportResult} />
       </div>
     )
