@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -43,7 +42,7 @@ public class RawDataCommand extends ReportCommand {
       .setTypes(configurationService.getProcessInstanceType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
-      .addSort(ProcessInstanceType.START_DATE, SortOrder.ASC)
+      .addSort(ProcessInstanceType.START_DATE, SortOrder.DESC)
       .setFetchSource(null,  EVENTS)
       .setSize(1000)
       .get();

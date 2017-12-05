@@ -227,10 +227,10 @@ public class RawDataReportEvaluationIT {
 
     // then
     List<RawDataProcessInstanceDto> rawDataList = result.getResult();
-    assertThat(rawDataList, isInAscendingOrdering());
+    assertThat(rawDataList, isInDescendingOrdering());
   }
 
-  private Matcher<? super List<RawDataProcessInstanceDto>> isInAscendingOrdering()
+  private Matcher<? super List<RawDataProcessInstanceDto>> isInDescendingOrdering()
   {
     return new TypeSafeMatcher<List<RawDataProcessInstanceDto>>()
     {
@@ -243,8 +243,8 @@ public class RawDataReportEvaluationIT {
       @Override
       protected boolean matchesSafely (List<RawDataProcessInstanceDto> items)
       {
-        for(int i = 0 ; i < items.size() -1; i++) {
-          if(items.get(i).getStartDate().isAfter(items.get(i+1).getStartDate())) return false;
+        for(int i = (items.size()-1) ; i > 0 ; i--) {
+          if(items.get(i).getStartDate().isAfter(items.get(i-1).getStartDate())) return false;
         }
         return true;
       }
