@@ -3,37 +3,36 @@
 
 .ControlPanel {
   background-color: #f4f4f4;
-  margin-bottom: 24px;
+  border-radius: 8px;
   border: 1px solid #dfdfdf;
+  padding: 12px 12px 0 12px;
 }
 
-.ControlPanel {
-  @include clearfix();
-  display: inline-block;
-  border-radius: 8px;
-}
 
 .ControlPanel__list {
-  /* Reset defaults */
   list-style: none;
   margin: 0;
   padding: 0;
-
-  display: inline-block;
+  display: inline;
 }
 
 .ControlPanel__item {
-  float: left;
-  padding: 12px 20px 18px;
+  display: inline-block;
+  position: relative;
+  padding-top: 22px;
+  padding-right: 20px;
+  margin-bottom: 24px;
 }
 
 .ControlPanel__item--filter {
   display: inline;
+  padding-top: 27px;
 }
 
 .ControlPanel__label {
   color: #626262;
   font-size: .875em;
-  display: block;
-  margin-bottom: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
 }

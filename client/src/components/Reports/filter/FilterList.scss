@@ -7,13 +7,18 @@
 .FilterList__item {
   list-style-type: none;
   display: inline-block;
-  margin: 0 .5em;
+  margin-bottom: 20px;
   border: 1px solid #ccc;
   background-color: white;
   border-radius: 3px;
+  background: #fbfbfb;
 
   &:first-child {
     margin-left: 0;
+  }
+  
+  &:last-child {
+    margin-right: 20px;
   }
 
 }
@@ -26,6 +31,7 @@
 .FilterList__itemConnector {
   list-style-type: none;
   display: inline-block;
+  margin: 0 .5em;
 }
 
 .FilterList__deleteButton,

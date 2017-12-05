@@ -46,9 +46,9 @@ export default class Filter extends React.Component {
     const FilterModal = this.getFilterModal();
 
     return (<div className='Filter'>
-      <label className='ControlPanel__label'>Filter</label> {/* TODO: decide what element the label’s for attribute should point to, add for attr */}
+  <label className='ControlPanel__label' htmlFor='filter'>Filter</label>
       <FilterList data={this.props.data} deleteFilter={this.deleteFilter} />
-      <Dropdown label='Add Filter'>
+      <Dropdown label='Add Filter' name='filter' className='Filter__dropdown'>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
