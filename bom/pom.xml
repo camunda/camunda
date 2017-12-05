@@ -29,6 +29,7 @@
     <version.zb-service-container>${project.version}</version.zb-service-container>
     <version.zb-transport>${project.version}</version.zb-transport>
     <version.zb-util>${project.version}</version.zb-util>
+    <version.zeebe-test>${project.version}</version.zeebe-test>
 
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
@@ -137,6 +138,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zb-util</artifactId>
         <version>${version.zb-util}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-test</artifactId>
+        <version>${version.zeebe-test}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
