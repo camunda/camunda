@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import io.zeebe.client.TasksClient;
+import io.zeebe.client.TopicsClient;
+import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.clustering.impl.TopologyResponse;
@@ -34,12 +37,17 @@ public class ClientRule extends ExternalResource
 
     protected final Properties properties;
 
-    public ClientRule(final boolean createDefaultTopic)
+    public ClientRule()
     {
-        this(() -> new Properties(), createDefaultTopic);
+        this(true);
     }
 
-    public ClientRule(Supplier<Properties> propertiesProvider, boolean createDefaultTopic)
+    public ClientRule(final boolean createDefaultTopic)
+    {
+        this(Properties::new, createDefaultTopic);
+    }
+
+    public ClientRule(final Supplier<Properties> propertiesProvider, final boolean createDefaultTopic)
     {
         this.properties = propertiesProvider.get();
         this.createDefaultTopic = createDefaultTopic;
@@ -50,8 +58,33 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
+    public TopicsClient topics()
+    {
+        return client.topics();
+    }
+
+    public TasksClient tasks()
+    {
+        return client.tasks();
+    }
+
+    public WorkflowsClient workflows()
+    {
+        return client.workflows();
+    }
+
+    public String getDefaultTopic()
+    {
+        return DEFAULT_TOPIC;
+    }
+
+    public int getDefaultPartition()
+    {
+        return defaultPartition;
+    }
+
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         client = ZeebeClient.create(properties);
 
@@ -69,7 +102,7 @@ public class ClientRule extends ExternalResource
         defaultPartition = -1;
         final List<TopicLeader> leaders = topology.getTopicLeaders();
 
-        for (TopicLeader leader : leaders)
+        for (final TopicLeader leader : leaders)
         {
             if (DEFAULT_TOPIC.equals(leader.getTopicName()))
             {
@@ -88,16 +121,6 @@ public class ClientRule extends ExternalResource
     {
         client.close();
         client = null;
-    }
-
-    public String getDefaultTopic()
-    {
-        return DEFAULT_TOPIC;
-    }
-
-    public int getDefaultPartition()
-    {
-        return defaultPartition;
     }
 
 }

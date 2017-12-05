@@ -38,7 +38,7 @@ public class WorkflowTest
         topic = testRule.getDefaultTopic();
 
         client.workflows().deploy(topic)
-                .resourceFromClasspath("process.bpmn")
+                .addResourceFromClasspath("process.bpmn")
                 .execute();
     }
 
@@ -57,7 +57,7 @@ public class WorkflowTest
             .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .open();
 
-        testRule.waitUntilWorklowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
+        testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
     }
 
 }

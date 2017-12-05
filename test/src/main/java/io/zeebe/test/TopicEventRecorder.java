@@ -50,7 +50,7 @@ public class TopicEventRecorder extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         startRecordingEvents();
     }
@@ -67,8 +67,8 @@ public class TopicEventRecorder extends ExternalResource
 
         subscription = client.newSubscription(topicName)
             .name(SUBSCRIPTION_NAME)
-            .taskEventHandler(t -> taskEvents.add(t))
-            .workflowInstanceEventHandler(wf -> wfInstanceEvents.add(wf))
+            .taskEventHandler(taskEvents::add)
+            .workflowInstanceEventHandler(wfInstanceEvents::add)
             .open();
     }
 
@@ -78,7 +78,7 @@ public class TopicEventRecorder extends ExternalResource
         subscription = null;
     }
 
-    private <T> Optional<T> getLastEvent(Stream<T> eventStream)
+    private <T> Optional<T> getLastEvent(final Stream<T> eventStream)
     {
         final List<T> events = eventStream.collect(Collectors.toList());
 

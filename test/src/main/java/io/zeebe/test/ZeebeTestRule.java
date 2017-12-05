@@ -39,10 +39,10 @@ public class ZeebeTestRule extends ExternalResource
 
     public ZeebeTestRule()
     {
-        this(() -> null, () -> new Properties());
+        this(() -> null, Properties::new);
     }
 
-    public ZeebeTestRule(Supplier<InputStream> configSupplier, Supplier<Properties> propertiesProvider)
+    public ZeebeTestRule(final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider)
     {
         brokerRule = new EmbeddedBrokerRule(configSupplier);
         clientRule = new ClientRule(propertiesProvider, true);
@@ -56,7 +56,7 @@ public class ZeebeTestRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         brokerRule.before();
         clientRule.before();
@@ -71,7 +71,7 @@ public class ZeebeTestRule extends ExternalResource
         brokerRule.after();
     }
 
-    public void waitUntilWorklowInstanceCompleted(long key)
+    public void waitUntilWorkflowInstanceCompleted(final long key)
     {
         waitUntil(() -> !topicEventRecorder.getWorkflowInstanceEvents(wfInstanceKey(key)).isEmpty(), "no workflow instance found with key " + key);
 
@@ -82,7 +82,7 @@ public class ZeebeTestRule extends ExternalResource
         }, "workflow instance is not completed");
     }
 
-    public void waitUntilTaskCompleted(long key)
+    public void waitUntilTaskCompleted(final long key)
     {
         waitUntil(() -> !topicEventRecorder.getTaskEvents(taskKey(key)).isEmpty(), "no task found with key " + key);
 
@@ -93,7 +93,7 @@ public class ZeebeTestRule extends ExternalResource
         }, "task is not completed");
     }
 
-    public void printWorkflowInstanceEvents(long key)
+    public void printWorkflowInstanceEvents(final long key)
     {
         topicEventRecorder.getWorkflowInstanceEvents(wfInstanceKey(key)).forEach(event ->
         {
@@ -101,7 +101,7 @@ public class ZeebeTestRule extends ExternalResource
         });
     }
 
-    private void waitUntil(BooleanSupplier condition, String failureMessage)
+    private void waitUntil(final BooleanSupplier condition, final String failureMessage)
     {
         final long timeout = Instant.now().plus(Duration.ofSeconds(5)).toEpochMilli();
 
@@ -116,13 +116,13 @@ public class ZeebeTestRule extends ExternalResource
         }
     }
 
-    private void sleep(int millies)
+    private void sleep(final int millis)
     {
         try
         {
-            Thread.sleep(millies);
+            Thread.sleep(millis);
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             // ignore
         }

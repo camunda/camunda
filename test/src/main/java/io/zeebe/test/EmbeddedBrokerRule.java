@@ -32,14 +32,14 @@ public class EmbeddedBrokerRule extends ExternalResource
         this(() -> null);
     }
 
-    public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)
+    public EmbeddedBrokerRule(final Supplier<InputStream> configSupplier)
     {
         this.configSupplier = configSupplier;
     }
 
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         startBroker();
     }
@@ -51,7 +51,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         {
             broker.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             throw new IllegalStateException(e);
         }
@@ -76,7 +76,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         {
             Thread.sleep(1000);
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             // ignore
         }
