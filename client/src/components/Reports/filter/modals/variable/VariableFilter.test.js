@@ -18,7 +18,8 @@ jest.mock('components', () => {
   Modal,
   Select,
   Button: props => <button {...props}>{props.children}</button>,
-  Input: props => <input {...props}/>
+  Input: props => <input {...props}/>,
+  ControlGroup: props => <div>{props.children}</div>
 }});
 
 jest.mock('./service', () => {

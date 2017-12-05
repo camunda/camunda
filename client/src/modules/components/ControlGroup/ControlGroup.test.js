@@ -20,3 +20,9 @@ it('should render additonal classNames', () => {
 
   expect(node.find('.ControlGroup.bar')).toBePresent();
 });
+
+it('should render a modifier class reflecting a layout property', () => {
+  const node = mount(<ControlGroup layout='horizontal' />);
+  
+  expect(node.find('.ControlGroup.ControlGroup--horizontal')).toBePresent();
+});

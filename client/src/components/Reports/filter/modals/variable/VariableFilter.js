@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Button, Select, Input} from 'components';
+import {Modal, Button, Select, Input, ControlGroup} from 'components';
 
 import {loadVariables, loadValues} from './service';
 import './VariableFilter.css';
@@ -77,16 +77,18 @@ export default class VariableFilter extends React.Component {
     const {variables, selectedVariableIdx, operator, values, availableValues} = this.state;
 
     return (<Modal open={true} onClose={this.props.close} className='VariableFilter__modal'>
-      <Modal.Header>New Variable Filter</Modal.Header>
+      <Modal.Header>Add Variable Filter</Modal.Header>
       <Modal.Content>
         <form>
-          <span>Variable Name</span>
-          <Select value={selectedVariableIdx} onChange={this.selectVariable}>
-            <Select.Option disabled value={-1}>Please Select Variable</Select.Option>
-            {variables.map(({name}, idx) => {
-              return <Select.Option value={idx} key={idx}>{name}</Select.Option>
-            })}
-          </Select>
+          <ControlGroup layout='horizontal'>
+            <label htmlFor='variables'>Variable Name</label>
+            <Select value={selectedVariableIdx} onChange={this.selectVariable} name='variables'>
+              <Select.Option disabled value={-1}>Please Select Variable</Select.Option>
+              {variables.map(({name}, idx) => {
+                return <Select.Option value={idx} key={idx}>{name}</Select.Option>
+              })}
+            </Select>
+          </ControlGroup>
           <div className='VariableFilter__operatorButtons'>
             {this.variableIsSelected() && this.renderOperatorButtons(
               variables[selectedVariableIdx].type,
@@ -103,8 +105,8 @@ export default class VariableFilter extends React.Component {
         </form>
       </Modal.Content>
       <Modal.Actions>
-        <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Create Filter</Button>
+        <Button onClick={this.props.close}>Cancel</Button>
+        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>
     );
