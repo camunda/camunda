@@ -74,7 +74,7 @@ export default class DateFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>
     );

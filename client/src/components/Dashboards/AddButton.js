@@ -74,7 +74,7 @@ export default class AddButton extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.closeModal}>Abort</Button>
-          <Button type='primary' onClick={this.addReport}>Add Report</Button>
+          <Button type='primary' className='Button--blue' onClick={this.addReport}>Add Report</Button>
         </Modal.Actions>
       </Modal>
     </div>;

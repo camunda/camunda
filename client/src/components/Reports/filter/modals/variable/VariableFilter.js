@@ -104,7 +104,7 @@ export default class VariableFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' onClick={this.createFilter}>Create Filter</Button>
+        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Create Filter</Button>
       </Modal.Actions>
     </Modal>
     );
