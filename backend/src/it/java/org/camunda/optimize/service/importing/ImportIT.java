@@ -632,6 +632,7 @@ public class ImportIT  {
     engineRule.waitForAllProcessesToFinish();
     long initialBackoff = embeddedOptimizeRule.getConfigurationService().getMaximumBackoff();
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
+    embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
     this.fullImportRound();
@@ -680,6 +681,7 @@ public class ImportIT  {
 
     //after
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
+    embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(false);
     embeddedOptimizeRule.reloadConfiguration();
   }
 

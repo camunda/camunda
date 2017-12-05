@@ -115,7 +115,6 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
-  private Object unfinishedProcessInstanceIdTrackingType;
 
   public ConfigurationService() {
     this((String[]) null);
