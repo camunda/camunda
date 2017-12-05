@@ -4,10 +4,20 @@ import {mount} from 'enzyme';
 import Dashboard from './Dashboard';
 import {loadDashboard, remove, update} from './service';
 
-jest.mock('components', () => {return {
-  Button: props => <button {...props}>{props.children}</button>,
-  Input: props => <input {...props}/>
-}});
+jest.mock('components', () => {
+  const Modal = props => <div id='Modal'>{props.children}</div>;
+  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
+  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
+  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+
+  return {
+    Modal,
+    Button: props => <button {...props}>{props.children}</button>,
+    Input: props => <input {...props}/>,
+    ControlGroup: props => <div {...props}>{props.children}</div>,
+    CopyToClipboard: () => <div></div>
+  };
+});
 
 jest.mock('./service', () => {
   return {
@@ -102,7 +112,7 @@ it('should remove a dashboard when delete button is clicked', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('button').simulate('click');
+  node.find('#delete').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -111,9 +121,29 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  await node.find('button').simulate('click');
+  await node.find('#delete').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /dashboards');
+});
+
+it('should show a modal on share button click', () => {
+  const node = mount(<Dashboard {...props} />);
+
+  node.setState({loaded: true});
+
+  node.find('#share').first().simulate('click');
+
+  expect(node.find('#Modal')).toBePresent();
+});
+
+it('should hide the modal on close button click', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true});
+
+  node.find('#share').first().simulate('click');
+  node.find('#close-shareModal-button').first().simulate('click');
+
+  expect(node.find('#Modal')).not.toBePresent();
 });
 
 

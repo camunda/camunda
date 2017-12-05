@@ -2,7 +2,8 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, Input} from 'components';
+import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
+
 import {loadDashboard, remove, update} from './service';
 
 import DashboardBuilder from './DashboardBuilder';
@@ -23,7 +24,8 @@ export default class Dashboard extends React.Component {
       redirect: false,
       originalName: null,
       reports: [],
-      originalReports : []
+      originalReports : [],
+      modalVisible: false
     };
 
     this.load();
@@ -85,6 +87,18 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  showModal = () => {
+    this.setState({
+      modalVisible: true
+    });
+  }
+
+  closeModal = () => {
+    this.setState({
+      modalVisible: false
+    });
+  }
+
   renderEditMode = (state) => {
     const {name, lastModifier, lastModified} = state;
 
@@ -118,9 +132,24 @@ export default class Dashboard extends React.Component {
           </div>
           <div className='Dashboard__tools'>
             <Link id='edit' className='Button Dashboard__tool-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
-            <Button onClick={this.deleteDashboard} className='Dashboard__tool-button'>Delete</Button>
+            <Button id='delete' onClick={this.deleteDashboard} className='Dashboard__tool-button'>Delete</Button>
+            <Button id='share' onClick={this.showModal} className='Dashboard__tool-button'>Share</Button>
           </div>
         </div>
+        {
+          (this.state && this.state.modalVisible) ?
+        <Modal open={true} onClose={this.closeModal} className='Dashboard__share-modal'>
+          <Modal.Header>Share {this.state.name}</Modal.Header>
+          <Modal.Content>
+            <ControlGroup>
+              <CopyToClipboard value={document.URL} />
+            </ControlGroup>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button id="close-shareModal-button" onClick={this.closeModal}>Close</Button>
+          </Modal.Actions>
+        </Modal> : ''
+        }
       </div>
     )
   }
