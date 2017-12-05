@@ -1,3 +1,10 @@
 .DashboardBuilder {
   position: relative;
 }
+
+.DashboardObject {
+  position: absolute;
+  overflow: auto;
+  background-color: white;
+  border: 1px solid lightgray;
+}

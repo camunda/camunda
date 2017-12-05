@@ -76,6 +76,15 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  addReport = newReport => {
+    this.setState({
+      reports: [
+        ...this.state.reports,
+        newReport
+      ]
+    });
+  }
+
   renderEditMode = (state) => {
     const {name, lastModifier, lastModified} = state;
 
@@ -91,7 +100,7 @@ export default class Dashboard extends React.Component {
             <Link id={'cancel'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <DashboardBuilder />
+        <DashboardBuilder reports={this.state.reports} addReport={this.addReport} />
       </div>
     )
   }
@@ -108,7 +117,7 @@ export default class Dashboard extends React.Component {
             <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Dashboard__tools'>
-            <Link id={'edit'} className='Button Dashboard__tool-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
+            <Link id='edit' className='Button Dashboard__tool-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
             <Button onClick={this.deleteDashboard} className='Dashboard__tool-button'>Delete</Button>
           </div>
         </div>

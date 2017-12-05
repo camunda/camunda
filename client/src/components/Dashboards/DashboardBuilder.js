@@ -13,26 +13,13 @@ const rows = 9;
 const addButtonSize = {width: 3, height: 3};
 
 export default class DashboardBuilder extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      reports: []
-    };
-  }
-
   addReport = id => {
     const position = this.getAddButtonPosition();
 
-    this.setState({
-      reports: [
-        ...this.state.reports,
-        {
-          position: {x: position.x, y: position.y},
-          dimensions: {width: position.width, height: position.height},
-          id
-        }
-      ]
+    this.props.addReport({
+      position: {x: position.x, y: position.y},
+      dimensions: {width: position.width, height: position.height},
+      id
     });
   }
 
@@ -44,7 +31,7 @@ export default class DashboardBuilder extends React.Component {
       <DashboardObject {...addButtonPosition}>
         <AddButton addReport={this.addReport} />
       </DashboardObject>
-      {this.state.reports.map((report, idx) => <DashboardObject key={idx} {...report.position} {...report.dimensions}>
+      {this.props.reports.map((report, idx) => <DashboardObject key={idx} {...report.position} {...report.dimensions}>
         <DashboardReport id={report.id} />
       </DashboardObject>)}
     </div>;
@@ -53,7 +40,7 @@ export default class DashboardBuilder extends React.Component {
   getAddButtonPosition = () => {
     const occupiedTiles = {};
 
-    this.state.reports.forEach(({position, dimensions}) => {
+    this.props.reports.forEach(({position, dimensions}) => {
       for(let x = position.x; x < position.x + dimensions.width; x++) {
         for(let y = position.y; y < position.y + dimensions.height; y++) {
           occupiedTiles[x] = occupiedTiles[x] || {};
@@ -113,15 +100,11 @@ export default class DashboardBuilder extends React.Component {
     if(this.container) {
       const {outerWidth, outerHeight} = this.getTileDimensions();
 
-      return (<div style={{
-        position: 'absolute',
-        overflow: 'auto',
-        backgroundColor: 'white',
+      return (<div className='DashboardObject' style={{
         top: y * outerHeight + tileMargin / 2 - 1,
         left: x * outerWidth + tileMargin / 2 - 1,
         width: width * outerWidth - tileMargin + 1,
         height: height * outerHeight - tileMargin + 1,
-        border: '1px solid lightgray'
       }}>
         {children}
       </div>);

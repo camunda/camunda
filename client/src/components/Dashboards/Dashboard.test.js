@@ -169,4 +169,13 @@ describe('edit mode', async () => {
     node.find('a#cancel').simulate('click');
     expect(node).toHaveState('name', 'test name');
   });
+
+  it('should contain the Dashboard builder', () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Dashboard {...props} />);
+    node.setState({loaded: true});
+
+    expect(node).toIncludeText('DashboardBuilder');
+  });
 });
