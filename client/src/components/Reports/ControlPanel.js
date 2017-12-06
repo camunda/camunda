@@ -17,7 +17,7 @@ const options = {
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
-    {key: 'flowNodes_null', label: 'Flow Nodes'},
+    {key: 'flowNode_null', label: 'Flow Nodes'},
     {key: 'startDate_year', label: 'Start Date of Process Instance - Year'},
     {key: 'startDate_month', label: 'Start Date of Process Instance - Month'},
     {key: 'startDate_week', label: 'Start Date of Process Instance - Week'},
