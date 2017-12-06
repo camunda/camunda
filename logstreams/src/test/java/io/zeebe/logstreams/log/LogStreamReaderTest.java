@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,9 @@ public class LogStreamReaderTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
     private BufferedLogStreamReader reader;
     private LogStream logStream;
     private ActorScheduler actorScheduler;
@@ -53,6 +57,7 @@ public class LogStreamReaderTest
 
         actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
         logStream = LogStreams.createFsLogStream(BufferUtil.wrapString("topic"), 0)
+                           .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
                            .actorScheduler(actorScheduler)
                            .deleteOnClose(true)
                            .build();
