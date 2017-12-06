@@ -5,10 +5,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -78,7 +75,17 @@ public abstract class AllEntitiesBasedImportIndexHandler
   protected abstract String getElasticsearchImportIndexType();
 
   public OptionalDouble computeProgress() {
-    if (hasNothingToImport()) {
+    long maxEntityCount = this.maxEntityCount;
+    long importIndex = this.importIndex;
+
+    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
+        importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineContext.getEngineAlias()));
+    if (storedIndex.isPresent()) {
+      maxEntityCount = storedIndex.get().getMaxEntityCount();
+      importIndex = storedIndex.get().getImportIndex();
+    }
+
+    if (hasNothingToImport(importIndex, maxEntityCount)) {
       return OptionalDouble.empty();
     } else if (indexReachedMaxCount()) {
       return OptionalDouble.of(100.0);
@@ -88,7 +95,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     }
   }
 
-  private boolean hasNothingToImport() {
+  private boolean hasNothingToImport(long importIndex, long maxEntityCount) {
     return importIndex == 0 && maxEntityCount == 0;
   }
 

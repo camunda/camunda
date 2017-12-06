@@ -666,7 +666,6 @@ public class ImportIT  {
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-
     reportData = createDefaultReportData(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
 
@@ -676,6 +675,23 @@ public class ImportIT  {
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(false);
     embeddedOptimizeRule.reloadConfiguration();
+  }
+
+  @Test
+  public void resetDoesNotAffectProgress() throws Exception {
+    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTask();
+    engineRule.waitForAllProcessesToFinish();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
+
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    embeddedOptimizeRule.resetImportStartIndexes();
+    
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
   }
 
   private ReportDataDto createDefaultReportData(String processDefinitionId) {

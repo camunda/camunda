@@ -131,6 +131,12 @@ public abstract class DefinitionBasedImportIndexHandler
     } catch (Exception e) {
       //nothing to do error has been already reported before
     }
+    Optional<DefinitionBasedImportIndexDto> dto =
+        importIndexReader.getImportIndex(getElasticsearchType(), engineContext.getEngineAlias());
+    long totalEntitiesImported = this.totalEntitiesImported;
+    if (dto.isPresent()) {
+      totalEntitiesImported = dto.get().getTotalEntitiesImported();
+    }
     boolean hasNothingToImport = totalEntityCount == 0L;
     boolean allEntitiesHaveBeenImported = totalEntitiesImported >= totalEntityCount;
     if (hasNothingToImport) {
@@ -139,7 +145,7 @@ public abstract class DefinitionBasedImportIndexHandler
       return OptionalDouble.of(100.0);
     } else {
       Long maxCount = Math.max(1L, totalEntityCount);
-      return OptionalDouble.of(totalEntitiesImported.doubleValue() / maxCount.doubleValue() * 100.0);
+      return OptionalDouble.of(totalEntitiesImported / maxCount.doubleValue() * 100.0);
     }
   }
 

@@ -114,7 +114,17 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   public OptionalDouble computeProgress() {
-    if (hasNothingToImport()) {
+    Long maxEntityCount = this.maxEntityCount;
+    Long importIndex = this.importIndex;
+
+    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
+        importIndexReader.getImportIndex(getElasticsearchId());
+    if (storedIndex.isPresent()) {
+      importIndex = storedIndex.get().getImportIndex();
+      maxEntityCount = storedIndex.get().getMaxEntityCount();
+    }
+
+    if (hasNothingToImport(importIndex, maxEntityCount)) {
       return OptionalDouble.empty();
     } else if (indexReachedMaxCount()) {
       return OptionalDouble.of(100.0);
@@ -126,8 +136,8 @@ public abstract class ScrollBasedImportIndexHandler
     }
   }
 
-  private boolean hasNothingToImport() {
-    return importIndex == 0L && maxEntityCount == 0L;
+  private boolean hasNothingToImport(long importIndex, long maxEntityCount) {
+    return importIndex == 0 && maxEntityCount == 0;
   }
 
   private void updateMaxEntityCount() {
