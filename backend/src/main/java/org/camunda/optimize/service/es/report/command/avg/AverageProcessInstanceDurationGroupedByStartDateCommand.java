@@ -11,6 +11,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
@@ -74,6 +75,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .field(ProcessInstanceType.START_DATE)
+      .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .subAggregation(
         AggregationBuilders

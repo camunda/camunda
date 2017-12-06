@@ -118,7 +118,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
         .setQuery(query)
         .setFetchSource(false)
         .setSize(configurationService.getEngineImportVariableInstanceMaxPageSize())
-        .addSort(SortBuilders.fieldSort("startDate").order(SortOrder.DESC))
+        .addSort(SortBuilders.fieldSort("startDate").order(SortOrder.ASC))
         .get();
 
     logger.debug("Initial search query got [{}] results", scrollResp.getHits().getHits().length);

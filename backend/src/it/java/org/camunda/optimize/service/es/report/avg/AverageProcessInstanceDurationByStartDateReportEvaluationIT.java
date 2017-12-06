@@ -171,7 +171,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  public void resultIsSortedInAscendingOrder() throws Exception {
+  public void resultIsSortedInDescendingOrder() throws Exception {
     // given
     LocalDateTime startDate = LocalDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -194,24 +194,24 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     // then
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
-    assertThat(new ArrayList<>(resultMap.keySet()), isInAscendingOrdering());
+    assertThat(new ArrayList<>(resultMap.keySet()), isInDescendingOrdering());
   }
 
-  private Matcher<? super List<String>> isInAscendingOrdering()
+  private Matcher<? super List<String>> isInDescendingOrdering()
   {
     return new TypeSafeMatcher<List<String>>()
     {
       @Override
       public void describeTo (Description description)
       {
-        description.appendText("The given list should be sorted in ascending order!");
+        description.appendText("The given list should be sorted in  order!");
       }
 
       @Override
       protected boolean matchesSafely (List<String> item)
       {
-        for(int i = 0 ; i < item.size() -1; i++) {
-          if(item.get(i).compareTo(item.get(i+1)) > 0) return false;
+        for(int i = (item.size() - 1) ; i > 0; i--) {
+          if(item.get(i).compareTo(item.get(i-1)) < 1) return false;
         }
         return true;
       }
