@@ -6,7 +6,9 @@ import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
 
 import {loadDashboard, remove, update} from './service';
 
-import DashboardBuilder from './DashboardBuilder';
+import DashboardView from './DashboardView';
+import AddButton from './AddButton';
+import Grid from './Grid';
 
 import './Dashboard.css';
 
@@ -114,7 +116,10 @@ export default class Dashboard extends React.Component {
             <Link className='Button Dashboard__tool-button Dashboard__cancel-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <DashboardBuilder reports={this.state.reports} addReport={this.addReport} />
+        <DashboardView reports={this.state.reports}>
+          <Grid />
+          <AddButton addReport={this.addReport} />
+        </DashboardView>
       </div>
     )
   }
@@ -147,6 +152,7 @@ export default class Dashboard extends React.Component {
             <Button className="Dashboard__close-share-modal-button" onClick={this.closeModal}>Close</Button>
           </Modal.Actions>
         </Modal>
+        <DashboardView reports={this.state.reports} />
       </div>
     )
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AddButton from './AddButton';
+import DashboardObject from './DashboardObject';
 import {loadReports} from './service';
 
 jest.mock('components', () => {
@@ -25,14 +26,24 @@ jest.mock('./service', () => {return {
   loadReports: jest.fn().mockReturnValue([])
 }});
 
+jest.mock('./DashboardObject', () => ({children}) => <div className="DashboardObject">{children}</div>);
+
+const props = {
+  tileDimensions: {
+    columns: 18
+  },
+  reports: []
+};
+
+
 it('should load the available reports', () => {
-  mount(<AddButton />);
+  mount(<AddButton {...props} />);
 
   expect(loadReports).toHaveBeenCalled();
 });
 
 it('should open a modal on click', () => {
-  const node = mount(<AddButton />);
+  const node = mount(<AddButton {...props} />);
 
   node.find('.AddButton').simulate('click');
 
@@ -40,7 +51,7 @@ it('should open a modal on click', () => {
 });
 
 it('should render a select element with the available reports as options', () => {
-  const node = mount(<AddButton />);
+  const node = mount(<AddButton {...props} />);
 
   node.setState({
     modalOpen: true,
@@ -58,7 +69,7 @@ it('should render a select element with the available reports as options', () =>
 
 it('should call the callback when adding a report', () => {
   const spy = jest.fn();
-  const node = mount(<AddButton addReport={spy}/>);
+  const node = mount(<AddButton {...props} addReport={spy}/>);
 
   node.setState({
     modalOpen: true,
@@ -72,5 +83,40 @@ it('should call the callback when adding a report', () => {
 
   node.find('button[type="primary"]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith('a');
+  expect(spy).toHaveBeenCalledWith({
+    dimensions: {
+      height: 3,
+      width: 3
+    },
+    position: {
+      x: 0,
+      y: 0
+    },
+    id: 'a'
+  });
 });
+
+it('should place the addButton where is no Report', () => {
+  const node = mount(<AddButton {...props} reports={[
+    {
+      position: {x: 0, y: 0},
+      dimensions: {width: 3, height: 1},
+      id: '1'
+    },
+    {
+      position: {x: 2, y: 0},
+      dimensions: {width: 1, height: 4},
+      id: '2'
+    },
+    {
+      position: {x: 3, y: 1},
+      dimensions: {width: 2, height: 2},
+      id: '3'
+    }
+  ]} />);
+
+  const addButtonPosition = node.instance().getAddButtonPosition();
+
+  expect(addButtonPosition.x).toBe(5);
+  expect(addButtonPosition.y).toBe(0);
+})

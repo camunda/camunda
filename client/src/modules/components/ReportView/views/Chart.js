@@ -71,7 +71,8 @@ export default class Chart extends React.Component {
           display: type === 'pie'
         },
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        animation: false
       }
     });
   }

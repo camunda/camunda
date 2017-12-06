@@ -4,6 +4,10 @@ import {mount} from 'enzyme';
 import Dashboard from './Dashboard';
 import {loadDashboard, remove, update} from './service';
 
+import DashboardView from './DashboardView';
+import AddButton from './AddButton';
+import Grid from './Grid';
+
 jest.mock('components', () => {
   const Modal = props => <div>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
@@ -44,7 +48,10 @@ jest.mock('moment', () => () => {
   }
 });
 
-jest.mock('./DashboardBuilder', () => () => <div>DashboardBuilder</div>);
+jest.mock('./DashboardView', () => ({children}) => <div className='DashboardView'>{children}</div>);
+
+jest.mock('./AddButton', () => () => <div>AddButton</div>);
+jest.mock('./Grid', () => () => <div>Grid</div>);
 
 const props = {
   match: {params: {id: '1'}}
@@ -200,12 +207,21 @@ describe('edit mode', async () => {
     expect(node).toHaveState('name', 'test name');
   });
 
-  it('should contain the Dashboard builder', () => {
+  it('should contain a Grid', () => {
     props.match.params.viewMode = 'edit';
 
     const node = mount(<Dashboard {...props} />);
     node.setState({loaded: true});
 
-    expect(node).toIncludeText('DashboardBuilder');
+    expect(node).toIncludeText('Grid');
+  });
+
+  it('should contain an AddButton', () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Dashboard {...props} />);
+    node.setState({loaded: true});
+
+    expect(node).toIncludeText('AddButton');
   });
 });
