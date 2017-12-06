@@ -46,6 +46,10 @@ export default class NodeFilter extends React.Component {
     });
   }
 
+  noNodeIsSeleacted = () => {
+    return this.state.selectedNodes.length==0;
+  }
+
   render() {
     return (<Modal open={true} onClose={this.props.close} className='NodeFilter__modal'>
       <Modal.Header>New Flownode Filter</Modal.Header>
@@ -60,7 +64,7 @@ export default class NodeFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Create Filter</Button>
+        <Button type='primary' className='Button--blue' disabled={this.noNodeIsSeleacted()} onClick={this.createFilter}>Create Filter</Button>
       </Modal.Actions>
     </Modal>);
   }

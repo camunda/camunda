@@ -80,3 +80,14 @@ it('should create a new filter', () => {
     }
   });
 });
+
+it('should disable create filter button if no node was selected', () => {
+  const node = mount(<NodeFilter processDefinitionId='procDefId'  />);
+  node.setState({
+    selectedNodes: []
+  });
+  
+  const buttons = node.find("#modal_actions button");
+  expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+  expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
+});
