@@ -98,12 +98,12 @@ it('should set aria-expanded to false when closed', () => {
   expect(node.find('.Dropdown__button')).toMatchSelector('.Dropdown__button[aria-expanded="false"]');
 })
 
-it('should set aria-labelledby on the menu as provided as a prop', () => {
+it('should set aria-labelledby on the menu as provided as a prop, amended by "-button"', () => {
   const node = mount(<Dropdown id='my-dropdown'>
     <Dropdown.Option>foo</Dropdown.Option>
   </Dropdown>);
 
-  expect(node.find('.Dropdown__menu')).toMatchSelector('.Dropdown__menu[aria-labelledby="my-dropdown"]');
+  expect(node.find('.Dropdown__menu')).toMatchSelector('.Dropdown__menu[aria-labelledby="my-dropdown-button"]');
 })
 
 it('should close after pressing Esc', () => {

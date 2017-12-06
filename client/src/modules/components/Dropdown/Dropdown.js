@@ -62,8 +62,8 @@ export default class Dropdown extends React.Component {
 
 
     return (<div {...this.props} className={'Dropdown ' + (this.state.open ? 'is-open' : '') + (this.props.className ? ' ' + this.props.className : '')} ref={this.storeContainer} onClick={this.toggleOpen} onKeyDown={this.handleKeyPress}>
-      <Button className="Dropdown__button" aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id}>{this.props.label} <span className='Dropdown__caret' /></Button>
-      <div className="Dropdown__menu" aria-labelledby={this.props.id}>
+      <Button className="Dropdown__button" aria-haspopup="true" aria-expanded={this.state.open ? "true" : "false"} id={this.props.id ? this.props.id + '-button' : ''}>{this.props.label} <span className='Dropdown__caret' /></Button>
+      <div className="Dropdown__menu" aria-labelledby={this.props.id ? this.props.id + '-button' : ''}>
         <ul className="Dropdown__menu-list">
           {React.Children.map(this.props.children,
             (child, idx) => <li ref={this.optionRef} key={idx}>{child}</li> 
