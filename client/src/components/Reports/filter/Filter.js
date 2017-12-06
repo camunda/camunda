@@ -42,6 +42,11 @@ export default class Filter extends React.Component {
     this.props.onChange('filter', [...this.props.data.filter(filter => !oldFilters.includes(filter))]);
   }
 
+  processDefinitionIsNotSelected = () => {
+    return !this.props.processDefinitionId || 
+    this.props.processDefinitionId === '';
+  }
+
   render() {
     const FilterModal = this.getFilterModal();
 
@@ -49,10 +54,12 @@ export default class Filter extends React.Component {
       <FilterList data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' name='filter' className='Filter__dropdown' aria-label='Filter'>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
-        <Dropdown.Option onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
-        <Dropdown.Option onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
+        <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
+        <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
       </Dropdown>
       <FilterModal addFilter={this.addFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId} />
     </div>);
   }
+
+  
 }

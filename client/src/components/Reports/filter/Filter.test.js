@@ -5,7 +5,7 @@ import Filter from './Filter';
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {
-  const Dropdown = ({children}) => <p>Dropdown: {children}</p>;
+  const Dropdown = ({children}) => <p id="dropwdown">Dropdown: {children}</p>;
   Dropdown.Option = (props) => <button {...props}>{props.children}</button>;
 
   return {Dropdown};
@@ -99,4 +99,13 @@ it('should remove multiple filters from the list of filters', () => {
   node.instance().deleteFilter('Filter 2', 'Filter 1');
 
   expect(spy.mock.calls[0][1]).toEqual(['Filter 3']);
+});
+
+it('should disable variable and executed flow node filter if no process definition is available', () => {
+  const node = mount(<Filter processDefinitionId="" />);
+   
+  const buttons = node.find("#dropwdown button");
+  expect(buttons.at(0).prop("disabled")).toBeFalsy(); // start date filter
+  expect(buttons.at(1).prop("disabled")).toBeTruthy(); // variable filter
+  expect(buttons.at(2).prop("disabled")).toBeTruthy(); // flow node filter
 });
