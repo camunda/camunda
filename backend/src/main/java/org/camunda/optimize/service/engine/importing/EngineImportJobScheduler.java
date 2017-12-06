@@ -108,4 +108,14 @@ public class EngineImportJobScheduler extends Thread {
   public boolean isEnabled() {
     return this.isEnabled;
   }
+
+  public long maxTimeToSleep() {
+    long timeToSleepInMs = jobFactories
+        .stream()
+        .map(EngineImportJobFactory::getBackoffTimeInMs)
+        .max(Long::compare)
+        .orElse(0L);
+
+    return timeToSleepInMs;
+  }
 }

@@ -28,8 +28,7 @@ import java.util.Optional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class StoreIndexesEngineImportJobFactory
-    extends EngineImportJobFactoryImpl
-    implements EngineImportJobFactory {
+    extends EngineImportJobFactoryImpl {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 

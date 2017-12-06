@@ -70,6 +70,42 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
+  public void waitForBackoff() throws InterruptedException {
+    boolean needSleep = true;
+    while(needSleep) {
+
+      boolean noSleepingRound = true;
+      for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+        long millis = scheduler.maxTimeToSleep();
+        if (millis > 0 ) {
+          logger.debug("sleeping for [{}]ms", millis);
+          Thread.sleep(millis);
+          noSleepingRound = false;
+        }
+      }
+
+      if (noSleepingRound) {
+        needSleep = false;
+      }
+    }
+
+  }
+
+  public void scheduleAllJobsAndImportEngineEntitiesWithoutReset() {
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
+    EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
+    engineImportJobExecutor.startExecutingImportJobs();
+    elasticsearchImportJobExecutor.startExecutingImportJobs();
+
+    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      if (scheduler.isEnabled()) {
+        scheduleImportAndWaitUntilIsFinished(scheduler);
+        // we need another round for the scroll based import index handlers
+        scheduleImportAndWaitUntilIsFinished(scheduler);
+      }
+    }
+  }
+
   private void scheduleImportAndWaitUntilIsFinished(EngineImportJobScheduler scheduler) {
     scheduler.scheduleUntilCantCreateNewJobs();
     makeSureAllScheduledJobsAreFinished();
@@ -114,27 +150,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     } catch (InterruptedException e) {
       logger.error("interrupted while synchronizing", e);
     }
-  }
-
-  /**
-   * Execute one round\job using import scheduler infrastructure
-   *
-   * NOTE: this method does not reset indexes.
-   * NOTE: exceptions due to backoff will be ignored
-   */
-  public void importEngineEntitiesRound() throws OptimizeException {
-    getElasticsearchImportJobExecutor().startExecutingImportJobs();
-
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      try {
-        scheduler.scheduleNextRound();
-      } catch (ArithmeticException e) {
-        //happens due to backoff - nothing to do
-      }
-    }
-
-    this.makeSureAllScheduledJobsAreFinished();
-
   }
 
   public void scheduleImport() {
@@ -286,10 +301,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getDateTimeFormatter();
   }
 
-  public int getMaxVariableValueListSize() {
-    return getConfigurationService().getMaxVariableValueListSize();
-  }
-
   public ConfigurationService getConfigurationService() {
     return getOptimize().getConfigurationService();
   }
@@ -317,4 +328,5 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public ImportIndexHandlerProvider getIndexProvider() {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
+
 }

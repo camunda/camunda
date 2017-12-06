@@ -8,8 +8,11 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -43,6 +46,7 @@ import java.util.Map.Entry;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -635,27 +639,19 @@ public class ImportIT  {
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
-    this.fullImportRound();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+    ReportDataDto reportData = createDefaultReportData(process1.getDefinitionId());
+    RawDataReportResultDto result = evaluateReport(reportData);
 
-    HeatMapResponseDto heatMap = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + process1.getDefinitionId() + "/" + "heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(HeatMapResponseDto.class);
-    assertThat(heatMap.getPiCount(), is(1L));
+    assertThat(result.getResult().size(), is(1));
 
-    heatMap = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + process2.getDefinitionId() + "/" + "heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(HeatMapResponseDto.class);
-    assertThat(heatMap.getPiCount(), is(1L));
+    reportData = createDefaultReportData(process2.getDefinitionId());
+    result = evaluateReport(reportData);
 
-
+    assertThat(result.getResult().size(), is(1));
 
     //when
     ProcessInstanceEngineDto targetProcess = process2;
@@ -665,19 +661,16 @@ public class ImportIT  {
 
     engineRule.waitForAllProcessesToFinish();
 
-    this.fullImportRound();
+    embeddedOptimizeRule.waitForBackoff();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
 
-    heatMap = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + targetProcess.getDefinitionId() + "/" + "heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(HeatMapResponseDto.class);
+    reportData = createDefaultReportData(targetProcess.getDefinitionId());
+    result = evaluateReport(reportData);
 
-    //then
-    assertThat(heatMap.getPiCount(), is(2L));
+    assertThat(result.getResult().size(), is(2));
 
     //after
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
@@ -685,13 +678,28 @@ public class ImportIT  {
     embeddedOptimizeRule.reloadConfiguration();
   }
 
-  private void fullImportRound() throws OptimizeException {
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
-    embeddedOptimizeRule.importEngineEntitiesRound();
+  private ReportDataDto createDefaultReportData(String processDefinitionId) {
+    ReportDataDto reportData = new ReportDataDto();
+    reportData.setProcessDefinitionId(processDefinitionId);
+    reportData.setVisualization("table");
+    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
+    return reportData;
   }
 
+  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(RawDataReportResultDto.class);
+  }
+
+  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/evaluate")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(reportData));
+  }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();

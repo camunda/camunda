@@ -8,7 +8,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class EngineImportJobFactoryImpl <T extends ImportIndexHandler> {
+public abstract class EngineImportJobFactoryImpl <T extends ImportIndexHandler> implements EngineImportJobFactory {
 
   protected T importIndexHandler;
   @Autowired

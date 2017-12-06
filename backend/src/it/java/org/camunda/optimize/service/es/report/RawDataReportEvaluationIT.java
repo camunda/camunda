@@ -61,7 +61,10 @@ public class RawDataReportEvaluationIT {
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+      .around(engineRule)
+      .around(embeddedOptimizeRule)
+      .around(engineDatabaseRule);
 
   @Test
   public void reportEvaluationForOneProcessInstance() throws Exception {

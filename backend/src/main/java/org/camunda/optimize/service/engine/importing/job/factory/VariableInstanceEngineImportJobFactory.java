@@ -25,8 +25,7 @@ import java.util.Optional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceEngineImportJobFactory
-    extends EngineImportJobFactoryImpl<VariableInstanceImportIndexHandler>
-    implements EngineImportJobFactory {
+    extends EngineImportJobFactoryImpl<VariableInstanceImportIndexHandler> {
 
   private MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder;
   private VariableInstanceFetcher engineEntityFetcher;

@@ -24,8 +24,7 @@ import java.util.Optional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FinishedProcessInstanceEngineImportJobFactory
-    extends EngineImportJobFactoryImpl <FinishedProcessInstanceImportIndexHandler>
-    implements EngineImportJobFactory {
+    extends EngineImportJobFactoryImpl <FinishedProcessInstanceImportIndexHandler> {
 
   private FinishedProcessInstanceImportIndexHandler importIndexHandler;
   private MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder;
