@@ -14,7 +14,6 @@ jest.mock('components', () =>{
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => <input id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
-    ControlGroup: props => <div {...props}>{props.children}</div>,
     CopyToClipboard: () => <div></div>,
     ReportView: () => <div>ReportView</div>
   }
