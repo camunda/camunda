@@ -60,12 +60,12 @@ export default class Login extends React.Component {
         {error ? (<Message type='error' message='Could not log you in. Please check your username and password.'/>) : ('')}
         <div className='Login__controls'>
           <div className='Login__row'>
-            <label className='Login__label visually-hidden' htmlFor='Login__username'>Username</label>
-            <Input className='Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='Login__username' autoFocus={true} />
+            <label className='Login__label visually-hidden' htmlFor='username'>Username</label>
+            <Input className='Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
           </div>
           <div className='Login__row'>
-            <label className='Login__label visually-hidden' htmlFor='Login__password'>Password</label>
-            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} type='password' name='Login__password' reference={input => this.passwordField = input} />
+            <label className='Login__label visually-hidden' htmlFor='password'>Password</label>
+            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} type='password' name='password' reference={input => this.passwordField = input} />
           </div>
         </div>
         <Button type='submit' onClick={this.submit} className='Button--primary Button--blue Login__button'>Login</Button>
